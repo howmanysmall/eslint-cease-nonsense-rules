@@ -1,3 +1,86 @@
+# Ignore node.js for the future
+**/node_modules/**
+
+/node_modules/
+
+# output
+out
+dist
+*.tgz
+
+# code coverage
+coverage
+*.lcov
+
+# logs
+logs
+_.log
+report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# caches
+.eslintcache
+.cache
+*.tsbuildinfo
+
+# IntelliJ based IDEs
+.idea
+
+# Finder (MacOS) folder config
+.DS_Store
+
+/Packages/
+/ServerPackages/
+/DevPackages/
+# CLAUDE.md
+problematic
+
+/docs/
+
+/do-not-sync-ever/
+
+src/server/ZapServer.luau
+src/client/ZapClient.luau
+src/shared/Types/ZapTypes.luau
+src/shared/Types/_IGNORE_ME_ZAP_TYPES_MOONWAVE.luau
+src/shared/SharedModules/Types/ZapTypes.luau
+src/shared/SharedModules/ZapTooling.luau
+src/shared/SharedModules/Types/_IGNORE_ME_ZAP_TYPES_MOONWAVE.luau
+
+.bevel/do_not_share
+/git-diffs/
+
+flamework.build
+luau/run-package-tests-custom.luau
+
+# Claude Code
+.claude/settings.local.json
+.claude/cache/
+.claude/logs/
+.claude/temp/
+.claude/tmp/
+.claude/session/
+.claude/history/
+.claude/*.log
+.claude/workspace.json
+.claude/state.json
+
+# Claude Code artifacts (if any)
+claude-artifacts/
+.claude-temp/
+claude-session-*
+
+# Backup files that Claude Code might create
+*.claude-backup
+*.claude-orig
+.claude-backup/
+
 # Claude Code
 .claude/settings.local.json
 .claude/cache/

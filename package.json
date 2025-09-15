@@ -1,47 +1,58 @@
 {
-  "name": "@pobammer-ts/eslint-cease-nonsense-rules",
-  "version": "0.0.0",
-  "description": "A bunch of lints to prevent idiot mistakes I encounter with frequency.",
-  "license": "MIT",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "sideEffects": false,
-  "engines": {
-    "node": ">=18.18",
-    "bun": ">=1.1.0"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/howmanysmall/eslint-cease-nonsense-rules.git"
-  },
-  "author": "HowManySmall",
-  "peerDependencies": {
-    "eslint": "^8.56.0 || ^9.0.0"
-  },
-  "devDependencies": {
-    "@types/bun": "^1.1.6",
-    "@types/node": "^20.14.11",
-    "eslint": "^9.9.0",
-    "typescript": "^5.6.3"
-  },
-  "scripts": {
-    "build": "bunx --bun tsc -p tsconfig.json",
-    "typecheck": "bunx --bun tsc --noEmit",
-    "dev": "bunx --bun tsc -w",
-    "test": "bun test",
-    "prepublishOnly": "bun run build"
-  }
+	"author": "HowManySmall",
+	"description": "A bunch of lints to prevent idiot mistakes I encounter with frequency.",
+	"devDependencies": {
+		"@biomejs/biome": "^2.2.4",
+		"@mitata/counters": "^0.0.8",
+		"@types/bun": "1.2.22",
+		"@types/node": "^20.14.11",
+		"eslint": "9.35.0",
+		"jiti": "^2.4.2",
+		"knip": "^5.63.1",
+		"mitata": "^1.0.34",
+		"oxlint": "^1.15.0",
+		"typescript": "^5.6.3"
+	},
+	"engines": {
+		"bun": ">=1.1.0",
+		"node": ">=18.18"
+	},
+	"exports": {
+		".": {
+			"default": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"files": ["dist"],
+	"license": "MIT",
+	"main": "./dist/index.js",
+	"name": "@pobammer-ts/eslint-cease-nonsense-rules",
+	"peerDependencies": {
+		"eslint": "^9.35.0"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/howmanysmall/eslint-cease-nonsense-rules.git"
+	},
+	"scripts": {
+		"biome": "bun x --bun biome lint",
+		"biome:ci": "bun x --bun biome ci",
+		"biome:fix": "bun x --bun biome fix",
+		"build": "bunx --bun tsc -p tsconfig.json",
+		"dev": "bunx --bun tsc -w",
+		"format": "bun x --bun. biome format --fix",
+		"format:report": "bun x --bun. biome format",
+		"lint": "bun x --bun oxlint . && bun x --bun biome lint .",
+		"oxc": "bun x --bun oxlint --type-aware",
+		"prepublishOnly": "bun run build",
+		"test": "bun test",
+		"typecheck": "bunx --bun tsc --noEmit"
+	},
+	"sideEffects": false,
+	"type": "module",
+	"types": "./dist/index.d.ts",
+	"version": "0.0.0"
 }

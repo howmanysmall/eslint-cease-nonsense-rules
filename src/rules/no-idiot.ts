@@ -20,31 +20,36 @@ type MessageId = "disallowIdiotIdentifier";
  * class Editor {}
  */
 const noIdiotRule: Rule.RuleModule = {
-  meta: {
-    type: "problem",
-    docs: {
-      description: "Disallow the identifier name 'idiot'.",
-      recommended: false
-    },
-    schema: [],
-    messages: {
-      disallowIdiotIdentifier:
-        "Avoid using the identifier 'idiot'; choose a more descriptive and respectful name."
-    }
-  },
-  create(context) {
-    return {
-      Identifier(node) {
-        const name = node.name;
-        if (typeof name === "string" && name.toLowerCase() === "idiot") {
-          context.report({
-            node,
-            messageId: "disallowIdiotIdentifier" satisfies MessageId
-          });
-        }
-      }
-    };
-  }
+	/**
+	 *
+	 * @param context - The rule context provided by ESLint.
+	 * @returns - An object with visitor methods to check `Identifier` nodes.
+	 */
+	create(context) {
+		return {
+			Identifier(node) {
+				const name = node.name;
+				if (typeof name === "string" && name.toLowerCase() === "idiot") {
+					context.report({
+						messageId: "disallowIdiotIdentifier" satisfies MessageId,
+						node,
+					});
+				}
+			},
+		};
+	},
+	meta: {
+		docs: {
+			description: "Disallow the identifier name 'idiot'.",
+			recommended: false,
+		},
+		messages: {
+			disallowIdiotIdentifier:
+				"Avoid using the identifier 'idiot'; choose a more descriptive and respectful name.",
+		},
+		schema: [],
+		type: "problem",
+	},
 };
 
 export default noIdiotRule;

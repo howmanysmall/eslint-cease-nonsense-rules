@@ -7,7 +7,7 @@ import noIdiotRule from "./rules/no-idiot";
  * Exposes rule implementations and configuration presets.
  */
 const rules: Readonly<Record<string, Rule.RuleModule>> = {
-  "no-idiot": noIdiotRule
+	"no-idiot": noIdiotRule,
 };
 
 /**
@@ -19,11 +19,11 @@ const rules: Readonly<Record<string, Rule.RuleModule>> = {
 const recommended = {} as const;
 
 const plugin: Readonly<{
-  readonly rules: Readonly<Record<string, Rule.RuleModule>>;
-  readonly configs: Readonly<Record<string, unknown>>;
+	readonly rules: Readonly<Record<string, Rule.RuleModule>>;
+	readonly configs: Readonly<Record<string, unknown>>;
 }> = {
-  rules,
-  configs: { recommended }
+	configs: { recommended },
+	rules,
 } as const;
 
 export default plugin;
