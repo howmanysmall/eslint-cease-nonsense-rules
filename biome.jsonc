@@ -1,5 +1,5 @@
 {
-	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+	"$schema": "https://biomejs.dev/schemas/latest/schema.json",
 	"assist": {
 		"actions": {
 			"source": {
@@ -170,6 +170,7 @@
 				"noUnreachableSuper": "error",
 				"noUnsafeFinally": "error",
 				"noUnsafeOptionalChaining": "error",
+				"noUnusedImports": "off",
 				"noUnusedLabels": "error",
 				"noUnusedPrivateClassMembers": "off",
 				"noUnusedVariables": "error",

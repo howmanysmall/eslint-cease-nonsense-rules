@@ -43,7 +43,6 @@
 	"editor.codeActionsOnSave": {
 		"source.addMissingImports": "explicit",
 		"source.addMissingImports.ts": "explicit",
-		"source.biome": "explicit",
 		"source.fixAll.biome": "explicit",
 		"source.fixAll.oxc": "explicit",
 		"source.organizeImports": "never",

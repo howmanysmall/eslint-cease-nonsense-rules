@@ -33,6 +33,17 @@
 				"no-non-null-assertion": "off",
 			},
 		},
+		{
+			"files": ["src/rules/enforce-ianitor-check-type.ts", "src/rules/require-react-component-keys.ts", "src/index.ts"],
+			"rules": {
+				"@typescript-eslint/no-unsafe-argument": "off",
+				"@typescript-eslint/no-unsafe-assignment": "off",
+				"@typescript-eslint/no-unsafe-enum-comparison": "off",
+				"@typescript-eslint/no-unsafe-member-access": "off",
+				"@typescript-eslint/no-unsafe-type-assertion": "off",
+				"@typescript-eslint/switch-exhaustiveness-check": "off",
+			},
+		},
 	],
 	"plugins": ["eslint", "import", "jsdoc", "node", "oxc", "promise", "regex", "typescript", "unicorn"],
 	"rules": {

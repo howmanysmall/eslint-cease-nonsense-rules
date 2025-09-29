@@ -42,7 +42,6 @@
 		"editor.codeActionsOnSave": {
 			"source.addMissingImports": "explicit",
 			"source.addMissingImports.ts": "explicit",
-			"source.biome": "explicit",
 			"source.fixAll.biome": "explicit",
 			"source.fixAll.eslint": "explicit",
 			"source.fixAll.oxc": "explicit",
@@ -63,5 +62,6 @@
 		"oxc.flags": {},
 		"oxc.lint.run": "onType",
 		"oxc.typeAware": true,
+		"biome.suggestInstallingGlobally": false,
 	},
 }

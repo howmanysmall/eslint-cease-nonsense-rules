@@ -1,0 +1,6 @@
+[test]
+coverage = true
+coverageThreshold = 0.95
+
+[install]
+auto = "force"
