@@ -464,7 +464,7 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					context.report({
 						data: { score: data.complexity.toFixed(1) },
 						messageId: "missingIanitorCheckType",
-						node,
+						node: node.id,
 					});
 				}
 			},
