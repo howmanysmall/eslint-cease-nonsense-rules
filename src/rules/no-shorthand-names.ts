@@ -1,58 +1,86 @@
 import type { Rule } from "eslint";
 
-interface ShorthandInfo {
-	shorthand: string;
-	replacement: string;
-	messageId: "useLocalPlayer" | "usePlayer" | "useParameters" | "useDeltaTime" | "useCharacter";
+/**
+ * Configuration options for the no-shorthand-names rule.
+ */
+interface RuleOptions {
+	shorthands?: Record<string, string>;
+	allowPropertyAccess?: Array<string>;
 }
 
-const SHORTHANDS: ReadonlyArray<ShorthandInfo> = [
-	{ messageId: "useParameters", replacement: "parameters", shorthand: "args" },
-	{ messageId: "useDeltaTime", replacement: "deltaTime", shorthand: "dt" },
-	{ messageId: "useCharacter", replacement: "character", shorthand: "char" },
-] as const;
+interface NormalizedOptions {
+	readonly shorthands: ReadonlyMap<string, string>;
+	readonly allowPropertyAccess: ReadonlySet<string>;
+	readonly selector: string;
+}
 
 /**
- * Checks if a node is Players.LocalPlayer member expression.
- *
- * @param node - The node to check.
- * @returns True if node is Players.LocalPlayer.
+ * Default configuration values for the rule.
  */
-function isPlayersLocalPlayer(node: unknown): boolean {
-	if (!node || typeof node !== "object") return false;
-	const n = node as { type?: string; object?: unknown; property?: unknown };
-	if (n.type !== "MemberExpression") return false;
+const DEFAULT_OPTIONS: Required<RuleOptions> = {
+	allowPropertyAccess: ["char"],
+	shorthands: {
+		args: "parameters",
+		char: "character",
+		dt: "deltaTime",
+		plr: "player",
+	},
+};
 
-	const obj = n.object;
-	const prop = n.property;
-	if (!obj || typeof obj !== "object" || !prop || typeof prop !== "object") return false;
+function isUnknownRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
 
-	const objNode = obj as { type?: string; name?: string };
-	const propNode = prop as { type?: string; name?: string };
+function isStringRecord(value: unknown): value is Record<string, string> {
+	return isUnknownRecord(value) && Object.values(value).every((v) => typeof v === "string");
+}
+
+function isStringArray(value: unknown): value is Array<string> {
+	return Array.isArray(value) && value.every((entry) => typeof entry === "string");
+}
+
+/**
+ * Escapes special regex characters in a string.
+ *
+ * @param str - The string to escape.
+ * @returns The escaped string safe for use in regex.
+ */
+function escapeRegex(str: string): string {
+	return str.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Type guard to check if an unknown value is valid RuleOptions.
+ *
+ * @param value - The value to check.
+ * @returns True if the value is valid RuleOptions.
+ */
+function isRuleOptions(value: unknown): value is RuleOptions {
+	if (!isUnknownRecord(value)) return false;
 
 	return (
-		objNode.type === "Identifier" &&
-		objNode.name === "Players" &&
-		propNode.type === "Identifier" &&
-		propNode.name === "LocalPlayer"
+		(!("shorthands" in value) || isStringRecord(value.shorthands)) &&
+		(!("allowPropertyAccess" in value) || isStringArray(value.allowPropertyAccess))
 	);
 }
 
-function isProperParent(parent?: unknown): parent is { type?: string; property?: unknown } {
-	return parent !== undefined && typeof parent === "object";
-}
+function normalizeOptions(rawOptions: RuleOptions | undefined): NormalizedOptions {
+	const mergedShorthands: Record<string, string> = { ...DEFAULT_OPTIONS.shorthands };
+	if (rawOptions?.shorthands)
+		for (const [key, value] of Object.entries(rawOptions.shorthands)) mergedShorthands[key] = value;
 
-/**
- * Checks if an identifier is used as a property access.
- *
- * @param node - The identifier node to check.
- * @returns True if the identifier is a property in a member expression.
- */
-function isPropertyAccess(node: { parent?: unknown }): boolean {
-	const parent = node.parent;
-	if (!isProperParent(parent)) return false;
+	const shorthandsMap = new Map(Object.entries(mergedShorthands));
+	const allowPropertyAccessSource = rawOptions?.allowPropertyAccess ?? DEFAULT_OPTIONS.allowPropertyAccess;
 
-	return parent.type === "MemberExpression" && parent.property === node;
+	// Build regex selector to only visit identifiers matching shorthand names
+	const escapedKeys = Array.from(shorthandsMap.keys()).map((key) => escapeRegex(key));
+	const selector = `Identifier[name=/^(${escapedKeys.join("|")})$/]`;
+
+	return {
+		allowPropertyAccess: new Set(allowPropertyAccessSource),
+		selector,
+		shorthands: shorthandsMap,
+	};
 }
 
 /**
@@ -87,66 +115,89 @@ const noShorthandNames: Rule.RuleModule = {
 	 * @returns The visitor object with AST node handlers.
 	 */
 	create(context) {
+		const validatedOptions = isRuleOptions(context.options[0]) ? context.options[0] : undefined;
+		const normalized = normalizeOptions(validatedOptions);
+		const { shorthands, allowPropertyAccess, selector } = normalized;
+
 		return {
-			Identifier(node) {
-				const name = node.name;
+			[selector](node: Rule.Node & { name: string; parent?: unknown }) {
+				const shorthandName = node.name;
+				const replacement = shorthands.get(shorthandName);
+				if (!replacement) return;
 
-				// Special case: plr
-				if (name === "plr") {
-					// Skip if it's a property access
-					if (isPropertyAccess(node)) return;
+				// Cache parent lookup
+				const parent = node.parent;
 
-					// Check if this is a variable declarator with Players.LocalPlayer
-					const parent = node.parent;
-					if (
-						parent?.type === "VariableDeclarator" &&
-						parent.id === node &&
-						isPlayersLocalPlayer(parent.init)
-					) {
-						context.report({
-							messageId: "useLocalPlayer",
-							node,
-						});
-						return;
-					}
-
-					// Default case: use player
-					context.report({
-						messageId: "usePlayer",
-						node,
-					});
+				// Inline property access check
+				if (
+					allowPropertyAccess.has(shorthandName) &&
+					parent &&
+					isUnknownRecord(parent) &&
+					parent.type === "MemberExpression" &&
+					parent.property === node
+				) {
 					return;
 				}
 
-				// Check other shorthands
-				for (const { messageId, shorthand } of SHORTHANDS) {
-					if (name === shorthand) {
-						// Special case: char - skip property access
-						if (shorthand === "char" && isPropertyAccess(node)) continue;
-
+				// Special case: plr → localPlayer for Players.LocalPlayer
+				if (shorthandName === "plr" && parent?.type === "VariableDeclarator" && parent.id === node) {
+					const init = parent.init;
+					if (
+						init &&
+						isUnknownRecord(init) &&
+						init.type === "MemberExpression" &&
+						init.object &&
+						isUnknownRecord(init.object) &&
+						init.object.type === "Identifier" &&
+						init.object.name === "Players" &&
+						init.property &&
+						isUnknownRecord(init.property) &&
+						init.property.type === "Identifier" &&
+						init.property.name === "LocalPlayer"
+					) {
 						context.report({
-							messageId,
+							data: { replacement: "localPlayer", shorthand: shorthandName },
+							messageId: "useReplacement",
 							node,
 						});
 						return;
 					}
 				}
+
+				context.report({
+					data: { replacement, shorthand: shorthandName },
+					messageId: "useReplacement",
+					node,
+				});
 			},
 		};
 	},
 	meta: {
 		docs: {
 			description: "Ban shorthand variable names. Use descriptive full names instead.",
-			recommended: false,
+			recommended: true,
 		},
 		messages: {
-			useCharacter: "Use 'character' instead of 'char' shorthand",
-			useDeltaTime: "Use 'deltaTime' instead of 'dt' shorthand",
-			useLocalPlayer: "Use 'localPlayer' instead of 'plr' when assigning Players.LocalPlayer",
-			useParameters: "Use 'parameters' instead of 'args' shorthand",
-			usePlayer: "Use 'player' instead of 'plr' shorthand",
+			useReplacement: "Use '{{replacement}}' instead of '{{shorthand}}' shorthand",
 		},
-		schema: [],
+		schema: [
+			{
+				additionalProperties: false,
+				properties: {
+					allowPropertyAccess: {
+						description: "Shorthand names that are allowed as property access",
+						items: { type: "string" },
+						type: "array",
+					},
+					shorthands: {
+						description: "Map of shorthand names to their full replacements",
+						type: "object",
+						additionalProperties: { type: "string" },
+					},
+				},
+				type: "object",
+			},
+		],
 		type: "suggestion",
 	},
 };

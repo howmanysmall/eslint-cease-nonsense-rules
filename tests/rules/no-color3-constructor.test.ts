@@ -24,6 +24,11 @@ describe("no-color3-constructor", () => {
 					"const c = someOtherConstructor(1, 2, 3);",
 				],
 				invalid: [
+						{
+							code: "new Color3(value);",
+							errors: [{ messageId: "useFromRGB" }],
+							output: null,
+						},
 					{
 						code: "new Color3(255);",
 						errors: [{ messageId: "useFromRGB" }],
@@ -74,6 +79,11 @@ describe("no-color3-constructor", () => {
 						errors: [{ messageId: "onlyZeroArgs" }],
 						output: "const c = Color3.fromRGB(128, 128, 128);",
 					},
+						{
+							code: "new Color3(255, green, 64);",
+							errors: [{ messageId: "onlyZeroArgs" }],
+							output: null,
+						},
 				],
 			});
 		}).not.toThrow();

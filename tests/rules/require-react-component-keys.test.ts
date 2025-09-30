@@ -126,6 +126,123 @@ describe("require-react-component-keys", () => {
 						},
 						options: [{ allowRootKeys: true }],
 					},
+					// Map callback with keyed element
+					{
+						code: `
+							function Good5(items) {
+								return items.map((item) => <span key={item.id} />);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+						// Expression container sibling with keys
+						{
+							code: `
+								function Good6() {
+									return (
+										<div>
+											{<span key="first" />}
+											<p key="second" />
+										</div>
+									);
+								}
+							`,
+							languageOptions: {
+								parser,
+								parserOptions: {
+									ecmaFeatures: { jsx: true },
+								},
+							},
+						},
+					// Ternary conditional return (both branches are root)
+					{
+						code: `
+							function Good7({ condition }) {
+								return condition ? <div /> : <span />;
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// Logical expression return
+					{
+						code: `
+							function Good8({ show }) {
+								return show && <Component />;
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// JSX fragment as prop value
+					{
+						code: `
+							function Good9() {
+								return <Suspense fallback={<></>}><Content key="content" /></Suspense>;
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// JSX element as prop value
+					{
+						code: `
+							function Good10() {
+								return <ErrorBoundary fallback={<div>Error</div>}><App key="app" /></ErrorBoundary>;
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// Ternary with fragment in prop
+					{
+						code: `
+							function Good11({ placeholder }) {
+								return <Suspense fallback={placeholder ?? <></>}><Content key="content" /></Suspense>;
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// Nested ternary return
+					{
+						code: `
+							function Good12({ a, b }) {
+								return a ? <div /> : b ? <span /> : <p />;
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
 				],
 				invalid: [
 					// Elements in fragment
@@ -236,6 +353,86 @@ describe("require-react-component-keys", () => {
 						},
 						errors: [{ messageId: "rootComponentWithKey" }],
 					},
+					// Map callback missing key
+					{
+						code: `
+							function Bad7(items) {
+								return items.map((item) => <div />);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+						errors: 1,
+					},
+					// Expression container map missing key
+					{
+						code: `
+							function Bad8(items) {
+								return (
+									<div>
+										{items.map((item) => <span />)}
+									</div>
+								);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+						errors: 1,
+					},
+						// Array literal with single element without key
+						{
+							code: `
+								const elements = [<div />];
+							`,
+							languageOptions: {
+								parser,
+								parserOptions: {
+									ecmaFeatures: { jsx: true },
+								},
+							},
+							errors: 1,
+						},
+						// Array literal without keys
+						{
+							code: `
+								const elements = [<div />, <span />];
+							`,
+							languageOptions: {
+								parser,
+								parserOptions: {
+									ecmaFeatures: { jsx: true },
+								},
+							},
+							errors: 2,
+						},
+						// Expression container siblings without key
+						{
+							code: `
+								function Bad9() {
+									return (
+										<div>
+											{<span />}
+											<p />
+										</div>
+									);
+								}
+							`,
+							languageOptions: {
+								parser,
+								parserOptions: {
+									ecmaFeatures: { jsx: true },
+								},
+							},
+							errors: 2,
+						},
 				],
 			});
 		}).not.toThrow();

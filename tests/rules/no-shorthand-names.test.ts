@@ -20,60 +20,79 @@ describe("no-shorthand-names", () => {
 					"const deltaTime = 0.016;",
 					"const character = getCharacter();",
 					"const model = entity.char;",
-					"const result = obj.plr;",
 					"function foo(player) {}",
 					"const { player } = obj;",
+						"class Example { constructor() {} }",
+						"class Serializer { toString() { return 'value'; } }",
+						"const wrapper = { valueOf() { return 1; } };",
+						{
+							code: "const result = container.plr;",
+							options: [
+								{
+									allowPropertyAccess: ["plr"],
+								},
+							],
+						},
 				],
 				invalid: [
 					{
 						code: "const plr = getPlayer();",
-						errors: [{ messageId: "usePlayer" }],
+						errors: [{ messageId: "useReplacement" }],
 					},
 					{
 						code: "const plr = Players.LocalPlayer;",
-						errors: [{ messageId: "useLocalPlayer" }],
+						errors: [{ messageId: "useReplacement" }],
 					},
 					{
 						code: "const args = [1, 2, 3];",
-						errors: [{ messageId: "useParameters" }],
+						errors: [{ messageId: "useReplacement" }],
 					},
 					{
 						code: "const dt = 0.016;",
-						errors: [{ messageId: "useDeltaTime" }],
+						errors: [{ messageId: "useReplacement" }],
 					},
 					{
 						code: "const char = getCharacter();",
-						errors: [{ messageId: "useCharacter" }],
+						errors: [{ messageId: "useReplacement" }],
 					},
 					{
 						code: "function foo(plr) { return plr; }",
 						errors: [
-							{ messageId: "usePlayer" },
-							{ messageId: "usePlayer" },
+							{ messageId: "useReplacement" },
+							{ messageId: "useReplacement" },
 						],
 					},
 					{
 						code: "function bar(args) { return args; }",
 						errors: [
-							{ messageId: "useParameters" },
-							{ messageId: "useParameters" },
+							{ messageId: "useReplacement" },
+							{ messageId: "useReplacement" },
 						],
 					},
 					{
 						code: "const { plr } = obj;",
 						errors: [
-							{ messageId: "usePlayer" },
-							{ messageId: "usePlayer" },
+							{ messageId: "useReplacement" },
+							{ messageId: "useReplacement" },
 						],
 					},
 					{
-						code: "for (const plr of players) {}",
-						errors: [{ messageId: "usePlayer" }],
+						code: "const obj = { plr: 'value' };",
+						errors: [{ messageId: "useReplacement" }],
 					},
 					{
-						code: "const obj = { plr: 'value' };",
-						errors: [{ messageId: "usePlayer" }],
+						code: "const result = obj.plr;",
+						errors: [{ messageId: "useReplacement" }],
 					},
+						{
+							code: "const result = obj.fr;",
+							options: [
+								{
+									shorthands: { fr: "fullResult" },
+								},
+							],
+							errors: [{ messageId: "useReplacement" }],
+						},
 				],
 			});
 		}).not.toThrow();

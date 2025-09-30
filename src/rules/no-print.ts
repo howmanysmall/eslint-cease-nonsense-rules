@@ -24,9 +24,7 @@ const noPrint: Rule.RuleModule = {
 	 */
 	create(context) {
 		return {
-			CallExpression(node) {
-				if (node.callee.type !== "Identifier" || node.callee.name !== "print") return;
-
+			'CallExpression[callee.type="Identifier"][callee.name="print"]'(node: Rule.Node) {
 				context.report({
 					messageId: "useLog",
 					node,

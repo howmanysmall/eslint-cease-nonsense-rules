@@ -7,7 +7,6 @@ import type { Rule } from "eslint";
 interface RuleOptions {
 	ignoreCallExpressions?: string[];
 	allowRootKeys?: boolean;
-	requireKeysForSingleChildren?: boolean;
 }
 
 /**
@@ -16,7 +15,6 @@ interface RuleOptions {
 const DEFAULT_OPTIONS: Required<RuleOptions> = {
 	allowRootKeys: false,
 	ignoreCallExpressions: ["ReactTree.mount"],
-	requireKeysForSingleChildren: false,
 };
 
 /**
@@ -26,7 +24,10 @@ const DEFAULT_OPTIONS: Required<RuleOptions> = {
  * @returns True if the element has a key attribute.
  */
 function hasKeyAttribute(node: TSESTree.JSXElement): boolean {
-	return node.openingElement.attributes.some((attr) => attr.type === "JSXAttribute" && attr.name.name === "key");
+	for (const attr of node.openingElement.attributes) {
+		if (attr.type === "JSXAttribute" && attr.name.name === "key") return true;
+	}
+	return false;
 }
 
 /**
@@ -36,20 +37,27 @@ function hasKeyAttribute(node: TSESTree.JSXElement): boolean {
  * @returns True if the element is directly returned from a component.
  */
 function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
-	// Check if this element is a direct child of a return statement
 	let parent = node.parent;
 	if (!parent) return false;
 
 	// Handle return with parentheses: return (<div>...)
 	if (parent.type === "JSXExpressionContainer") parent = parent.parent;
+	if (!parent) return false;
+
+	// Traverse through conditional and logical expressions
+	// Example: return condition ? <A/> : <B/>
+	// Example: return condition && <Component/>
+	while (parent && (parent.type === "ConditionalExpression" || parent.type === "LogicalExpression")) {
+		parent = parent.parent;
+	}
+
+	if (!parent) return false;
 
 	// Handle direct return
-	if (parent?.type === "ReturnStatement") return true;
+	if (parent.type === "ReturnStatement") return true;
 
 	// Handle arrow function direct return: () => <div>
-	if (parent?.type === "ArrowFunctionExpression") return true;
-
-	return false;
+	return parent.type === "ArrowFunctionExpression" && parent.parent?.type !== "CallExpression";
 }
 
 /**
@@ -63,32 +71,80 @@ function isIgnoredCallExpression(node: TSESTree.JSXElement | TSESTree.JSXFragmen
 	let parent: TSESTree.Node | undefined = node.parent;
 	if (!parent) return false;
 
-	// Traverse up to find CallExpression
-	while (parent && parent.type !== "CallExpression") {
-		// Stop if we hit a JSX boundary (element is a child of JSX)
-		if (parent.type === "JSXElement" || parent.type === "JSXFragment") return false;
+	// Handle JSXExpressionContainer wrapper
+	if (parent.type === "JSXExpressionContainer") {
 		parent = parent.parent;
-		if (!parent) break;
+		if (!parent) return false;
 	}
 
-	if (!parent || parent.type !== "CallExpression") return false;
+	// Traverse up to find CallExpression
+	const maxDepth = 10;
+	for (let depth = 0; depth < maxDepth && parent; depth++) {
+		const { type } = parent;
 
-	const callExpr = parent;
-	const { callee } = callExpr;
+		// Found CallExpression - check if it's in the ignore list
+		if (type === "CallExpression") {
+			const { callee } = parent;
 
-	// Check for simple identifier calls: mount(...)
-	if (callee.type === "Identifier" && ignoreList.includes(callee.name)) return true;
+			// Simple identifier: mount(...)
+			if (callee.type === "Identifier") return ignoreList.includes(callee.name);
 
-	// Check for member expression calls: ReactTree.mount(...)
-	if (callee.type === "MemberExpression") {
-		const memberExpr = callee;
-		if (memberExpr.object.type === "Identifier" && memberExpr.property.type === "Identifier") {
-			const fullName = `${memberExpr.object.name}.${memberExpr.property.name}`;
-			return ignoreList.includes(fullName);
+			// Member expression: ReactTree.mount(...)
+			if (
+				callee.type === "MemberExpression" &&
+				callee.object.type === "Identifier" &&
+				callee.property.type === "Identifier"
+			) {
+				return ignoreList.includes(`${callee.object.name}.${callee.property.name}`);
+			}
+
+			return false;
 		}
+
+		// Stop at JSX or function boundaries
+		if (
+			type === "JSXElement" ||
+			type === "JSXFragment" ||
+			type === "FunctionDeclaration" ||
+			type === "FunctionExpression" ||
+			type === "ArrowFunctionExpression"
+		) {
+			return false;
+		}
+
+		parent = parent.parent;
 	}
 
 	return false;
+}
+
+/**
+ * Checks if a JSX element is passed as a prop value.
+ *
+ * @param node - The JSX element or fragment to check.
+ * @returns True if the element is passed as a prop value.
+ */
+function isJSXPropValue(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
+	let parent = node.parent;
+	if (!parent) return false;
+
+	// Traverse through conditional and logical expressions
+	// Example: fallback={condition ? <A/> : <B/>}
+	// Example: fallback={placeholder ?? <></>}
+	while (parent && (parent.type === "ConditionalExpression" || parent.type === "LogicalExpression")) {
+		parent = parent.parent;
+	}
+
+	if (!parent) return false;
+
+	// Handle JSXExpressionContainer wrapper: prop={<div/>}
+	if (parent.type === "JSXExpressionContainer") {
+		parent = parent.parent;
+		if (!parent) return false;
+	}
+
+	// Check if parent is a JSXAttribute (prop)
+	return parent.type === "JSXAttribute";
 }
 
 const requireReactComponentKeys: Rule.RuleModule = {
@@ -103,7 +159,6 @@ const requireReactComponentKeys: Rule.RuleModule = {
 			...DEFAULT_OPTIONS,
 			...context.options[0],
 		};
-		const returnStack = new Array<{ node: TSESTree.Node; depth: number }>();
 
 		/**
 		 * Checks a JSX element or fragment for required key prop.
@@ -112,19 +167,23 @@ const requireReactComponentKeys: Rule.RuleModule = {
 		 */
 		function checkElement(node: TSESTree.JSXElement | TSESTree.JSXFragment): void {
 			const isRoot = isTopLevelReturn(node);
-			const isIgnored = isIgnoredCallExpression(node, options.ignoreCallExpressions);
 
 			// Check if root component has a key (and it's not allowed)
-			if (isRoot && !options.allowRootKeys && node.type === "JSXElement" && hasKeyAttribute(node)) {
-				context.report({
-					messageId: "rootComponentWithKey",
-					node,
-				});
+			if (isRoot) {
+				if (!options.allowRootKeys && node.type === "JSXElement" && hasKeyAttribute(node)) {
+					context.report({
+						messageId: "rootComponentWithKey",
+						node,
+					});
+				}
 				return;
 			}
 
-			// Skip key requirement for root returns and ignored call expressions
-			if (isRoot || isIgnored) return;
+			// Skip key requirement for ignored call expressions
+			if (isIgnoredCallExpression(node, options.ignoreCallExpressions)) return;
+
+			// Skip key requirement for JSX passed as props
+			if (isJSXPropValue(node)) return;
 
 			// Fragments always need keys when not top-level
 			if (node.type === "JSXFragment") {
@@ -136,23 +195,15 @@ const requireReactComponentKeys: Rule.RuleModule = {
 			}
 
 			// Check if element has key
-			if (hasKeyAttribute(node)) return;
-			context.report({
-				messageId: "missingKey",
-				node,
-			});
+			if (!hasKeyAttribute(node)) {
+				context.report({
+					messageId: "missingKey",
+					node,
+				});
+			}
 		}
 
 		return {
-			// Track function/component boundaries for top-level detection
-			"FunctionDeclaration, FunctionExpression, ArrowFunctionExpression"(node: TSESTree.Node) {
-				returnStack.push({ depth: returnStack.length, node });
-			},
-
-			"FunctionDeclaration, FunctionExpression, ArrowFunctionExpression:exit"() {
-				returnStack.pop();
-			},
-
 			// Check JSX elements
 			JSXElement(node) {
 				checkElement(node);
@@ -167,7 +218,7 @@ const requireReactComponentKeys: Rule.RuleModule = {
 	meta: {
 		docs: {
 			description: "Enforce key props on all React elements except top-level returns",
-			recommended: false,
+			recommended: true,
 		},
 		fixable: undefined,
 		messages: {
@@ -188,11 +239,6 @@ const requireReactComponentKeys: Rule.RuleModule = {
 						description: "Function calls where JSX arguments don't need keys",
 						items: { type: "string" },
 						type: "array",
-					},
-					requireKeysForSingleChildren: {
-						default: false,
-						description: "Require keys even for single children",
-						type: "boolean",
 					},
 				},
 				type: "object",
