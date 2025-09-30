@@ -81,6 +81,48 @@ function isIanitorValidator(node: {
 }
 
 /**
+ * Checks if a type annotation uses the Ianitor.Static<typeof ...> pattern.
+ *
+ * @param typeAnnotation - The TypeScript type annotation to check.
+ * @returns True if the type uses Ianitor.Static pattern.
+ */
+function hasIanitorStaticType(typeAnnotation: TSESTree.TypeNode): boolean {
+	let currentType = typeAnnotation;
+
+	// Handle Readonly<...> wrapper
+	if (
+		currentType.type === "TSTypeReference" &&
+		currentType.typeName.type === "Identifier" &&
+		currentType.typeName.name === "Readonly" &&
+		currentType.typeArguments &&
+		currentType.typeArguments.params.length === 1
+	) {
+		currentType = currentType.typeArguments.params[0]!;
+	}
+
+	// Check for Ianitor.Static<typeof ...>
+	if (currentType.type === "TSTypeReference") {
+		const { typeName } = currentType;
+
+		// Check if it's a qualified name like Ianitor.Static
+		if (
+			typeName.type === "TSQualifiedName" &&
+			typeName.left.type === "Identifier" &&
+			typeName.left.name === "Ianitor" &&
+			typeName.right.type === "Identifier" &&
+			typeName.right.name === "Static" &&
+			currentType.typeArguments &&
+			currentType.typeArguments.params.length > 0
+		) {
+			const firstParam = currentType.typeArguments.params[0];
+			if (firstParam && firstParam.type === "TSTypeQuery") return true;
+		}
+	}
+
+	return false;
+}
+
+/**
  * Calculates the complexity score of an Ianitor validator.
  *
  * @param node - The Ianitor validator node.
@@ -158,6 +200,57 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 			nodeCache: new WeakMap(),
 			visitedNodes: new WeakSet(),
 		};
+		// Track variable names used in Ianitor.Static<typeof varName> patterns
+		const ianitorStaticVariables = new Set<string>();
+
+		/**
+		 * Extracts the variable name from Ianitor.Static<typeof varName> pattern.
+		 *
+		 * @param typeAnnotation - The TypeScript type annotation to check.
+		 * @returns The variable name if found, null otherwise.
+		 */
+		// oxlint-disable-next-line consistent-function-scoping
+		function extractIanitorStaticVariable(typeAnnotation: TSESTree.TypeNode): string | null {
+			let currentType = typeAnnotation;
+
+			// Handle Readonly<...> wrapper
+			if (
+				currentType.type === "TSTypeReference" &&
+				currentType.typeName.type === "Identifier" &&
+				currentType.typeName.name === "Readonly" &&
+				currentType.typeArguments &&
+				currentType.typeArguments.params.length === 1
+			) {
+				currentType = currentType.typeArguments.params[0]!;
+			}
+
+			// Check for Ianitor.Static<typeof varName>
+			if (currentType.type === "TSTypeReference") {
+				const { typeName } = currentType;
+
+				if (
+					typeName.type === "TSQualifiedName" &&
+					typeName.left.type === "Identifier" &&
+					typeName.left.name === "Ianitor" &&
+					typeName.right.type === "Identifier" &&
+					typeName.right.name === "Static"
+				) {
+					// oxlint-disable-next-line no-lonely-if
+					if (currentType.typeArguments && currentType.typeArguments.params.length > 0) {
+						const firstParam = currentType.typeArguments.params[0];
+						if (
+							firstParam &&
+							firstParam.type === "TSTypeQuery" &&
+							firstParam.exprName.type === "Identifier"
+						) {
+							return firstParam.exprName.name;
+						}
+					}
+				}
+			}
+
+			return null;
+		}
 
 		/**
 		 * Calculates the structural complexity of a TypeScript type.
@@ -290,8 +383,7 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 				case "TSMappedType": {
 					const mapped = node;
 					score = 5;
-					if (mapped.typeParameter?.constraint)
-						score += calculateStructuralComplexity(mapped.typeParameter.constraint, depth + 1);
+					if (mapped.constraint) score += calculateStructuralComplexity(mapped.constraint, depth + 1);
 
 					if (mapped.typeAnnotation) score += calculateStructuralComplexity(mapped.typeAnnotation, depth + 1);
 
@@ -327,6 +419,38 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 		}
 
 		return {
+			// Pre-pass: Collect all variable names used in Ianitor.Static patterns
+			Program(node) {
+				const visited = new WeakSet();
+
+				// Walk through all type aliases to find Ianitor.Static usage
+				function walk(currentNode: TSESTree.Node): void {
+					// Avoid infinite recursion
+					if (visited.has(currentNode)) return;
+					visited.add(currentNode);
+
+					if (currentNode.type === "TSTypeAliasDeclaration") {
+						const varName = extractIanitorStaticVariable(currentNode.typeAnnotation);
+						if (varName) ianitorStaticVariables.add(varName);
+					}
+
+					// Recursively walk all children (skip parent to avoid cycles)
+					for (const key of Object.keys(currentNode)) {
+						if (key === "parent") continue; // Skip parent references
+
+						const value = (currentNode as unknown as Record<string, unknown>)[key];
+						if (Array.isArray(value)) {
+							for (const item of value)
+								if (item && typeof item === "object" && "type" in item) walk(item as TSESTree.Node);
+						} else if (value && typeof value === "object" && "type" in value) {
+							walk(value as TSESTree.Node);
+						}
+					}
+				}
+
+				walk(node as unknown as TSESTree.Node);
+			},
+
 			// Check interface declarations
 			TSInterfaceDeclaration(node) {
 				const complexity = calculateStructuralComplexity(node);
@@ -343,6 +467,9 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 
 			// Check type alias declarations
 			TSTypeAliasDeclaration(node) {
+				// Skip if the type uses Ianitor.Static<typeof ...> pattern
+				if (hasIanitorStaticType(node.typeAnnotation)) return;
+
 				const complexity = calculateStructuralComplexity(node.typeAnnotation);
 
 				if (complexity < config.baseThreshold) return;
@@ -358,6 +485,9 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 				if (!node.init || node.init.type !== "CallExpression") return;
 				if (!isIanitorValidator(node.init)) return;
 				if (hasTypeAnnotation(node)) return;
+
+				// Skip if this variable is used in an Ianitor.Static<typeof ...> pattern
+				if (node.id.type === "Identifier" && ianitorStaticVariables.has(node.id.name)) return;
 
 				const complexity = calculateIanitorComplexity(node.init);
 

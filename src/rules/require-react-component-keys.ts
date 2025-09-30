@@ -2,6 +2,24 @@ import type { TSESTree } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
 
 /**
+ * Configuration options for the require-react-component-keys rule.
+ */
+interface RuleOptions {
+	ignoreCallExpressions?: string[];
+	allowRootKeys?: boolean;
+	requireKeysForSingleChildren?: boolean;
+}
+
+/**
+ * Default configuration values for the rule.
+ */
+const DEFAULT_OPTIONS: Required<RuleOptions> = {
+	allowRootKeys: false,
+	ignoreCallExpressions: ["ReactTree.mount"],
+	requireKeysForSingleChildren: false,
+};
+
+/**
  * Checks if a JSX element has a key attribute.
  *
  * @param node - The JSX element to check.
@@ -34,6 +52,45 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 	return false;
 }
 
+/**
+ * Checks if a JSX element is an argument to an ignored call expression.
+ *
+ * @param node - The JSX element or fragment to check.
+ * @param ignoreList - List of function names to ignore.
+ * @returns True if the element is passed to an ignored function.
+ */
+function isIgnoredCallExpression(node: TSESTree.JSXElement | TSESTree.JSXFragment, ignoreList: string[]): boolean {
+	let parent: TSESTree.Node | undefined = node.parent;
+	if (!parent) return false;
+
+	// Traverse up to find CallExpression
+	while (parent && parent.type !== "CallExpression") {
+		// Stop if we hit a JSX boundary (element is a child of JSX)
+		if (parent.type === "JSXElement" || parent.type === "JSXFragment") return false;
+		parent = parent.parent;
+		if (!parent) break;
+	}
+
+	if (!parent || parent.type !== "CallExpression") return false;
+
+	const callExpr = parent;
+	const { callee } = callExpr;
+
+	// Check for simple identifier calls: mount(...)
+	if (callee.type === "Identifier" && ignoreList.includes(callee.name)) return true;
+
+	// Check for member expression calls: ReactTree.mount(...)
+	if (callee.type === "MemberExpression") {
+		const memberExpr = callee;
+		if (memberExpr.object.type === "Identifier" && memberExpr.property.type === "Identifier") {
+			const fullName = `${memberExpr.object.name}.${memberExpr.property.name}`;
+			return ignoreList.includes(fullName);
+		}
+	}
+
+	return false;
+}
+
 const requireReactComponentKeys: Rule.RuleModule = {
 	/**
 	 * Creates the ESLint rule visitor.
@@ -42,6 +99,10 @@ const requireReactComponentKeys: Rule.RuleModule = {
 	 * @returns The visitor object with AST node handlers.
 	 */
 	create(context) {
+		const options: Required<RuleOptions> = {
+			...DEFAULT_OPTIONS,
+			...context.options[0],
+		};
 		const returnStack = new Array<{ node: TSESTree.Node; depth: number }>();
 
 		/**
@@ -50,8 +111,20 @@ const requireReactComponentKeys: Rule.RuleModule = {
 		 * @param node - The JSX element or fragment to check.
 		 */
 		function checkElement(node: TSESTree.JSXElement | TSESTree.JSXFragment): void {
-			// Top-level return doesn't need key
-			if (isTopLevelReturn(node)) return;
+			const isRoot = isTopLevelReturn(node);
+			const isIgnored = isIgnoredCallExpression(node, options.ignoreCallExpressions);
+
+			// Check if root component has a key (and it's not allowed)
+			if (isRoot && !options.allowRootKeys && node.type === "JSXElement" && hasKeyAttribute(node)) {
+				context.report({
+					messageId: "rootComponentWithKey",
+					node,
+				});
+				return;
+			}
+
+			// Skip key requirement for root returns and ignored call expressions
+			if (isRoot || isIgnored) return;
 
 			// Fragments always need keys when not top-level
 			if (node.type === "JSXFragment") {
@@ -99,8 +172,32 @@ const requireReactComponentKeys: Rule.RuleModule = {
 		fixable: undefined,
 		messages: {
 			missingKey: "All React elements except top-level returns require a key prop",
+			rootComponentWithKey: "Root component returns should not have key props",
 		},
-		schema: [],
+		schema: [
+			{
+				additionalProperties: false,
+				properties: {
+					allowRootKeys: {
+						default: false,
+						description: "Allow key props on root component returns",
+						type: "boolean",
+					},
+					ignoreCallExpressions: {
+						default: ["ReactTree.mount"],
+						description: "Function calls where JSX arguments don't need keys",
+						items: { type: "string" },
+						type: "array",
+					},
+					requireKeysForSingleChildren: {
+						default: false,
+						description: "Require keys even for single children",
+						type: "boolean",
+					},
+				},
+				type: "object",
+			},
+		],
 		type: "problem",
 	},
 };

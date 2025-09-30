@@ -27,42 +27,52 @@ describe("no-color3-constructor", () => {
 					{
 						code: "new Color3(255);",
 						errors: [{ messageId: "useFromRGB" }],
+						output: "Color3.fromRGB(255, 0, 0);",
 					},
 					{
 						code: "new Color3(0.5);",
 						errors: [{ messageId: "useFromRGB" }],
+						output: "Color3.fromRGB(128, 0, 0);",
 					},
 					{
 						code: "new Color3(1, 0);",
 						errors: [{ messageId: "useFromRGB" }],
+						output: "Color3.fromRGB(255, 0, 0);",
 					},
 					{
 						code: "new Color3(255, 128);",
 						errors: [{ messageId: "useFromRGB" }],
+						output: "Color3.fromRGB(255, 128, 0);",
 					},
 					{
 						code: "new Color3(255, 128, 64);",
 						errors: [{ messageId: "onlyZeroArgs" }],
+						output: "Color3.fromRGB(255, 128, 64);",
 					},
 					{
 						code: "new Color3(1, 1, 1);",
 						errors: [{ messageId: "onlyZeroArgs" }],
+						output: "Color3.fromRGB(255, 255, 255);",
 					},
 					{
 						code: "new Color3(0, 0, 1);",
 						errors: [{ messageId: "onlyZeroArgs" }],
+						output: "Color3.fromRGB(0, 0, 255);",
 					},
 					{
 						code: "new Color3(0, 1, 0);",
 						errors: [{ messageId: "onlyZeroArgs" }],
+						output: "Color3.fromRGB(0, 255, 0);",
 					},
 					{
 						code: "new Color3(1, 0, 0);",
 						errors: [{ messageId: "onlyZeroArgs" }],
+						output: "Color3.fromRGB(255, 0, 0);",
 					},
 					{
 						code: "const c = new Color3(0.5, 0.5, 0.5);",
 						errors: [{ messageId: "onlyZeroArgs" }],
+						output: "const c = Color3.fromRGB(128, 128, 128);",
 					},
 				],
 			});

@@ -85,6 +85,47 @@ describe("require-react-component-keys", () => {
 							},
 						},
 					},
+					// ReactTree.mount doesn't require key
+					{
+						code: `
+							const screenGui = screenGuiProvider.Get("ACTION_BAR");
+							ReactTree.mount(<ActionBarApp />, screenGui, "action-bar");
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// Custom ignored call expression
+					{
+						code: `
+							Portal.render(<CustomComponent />);
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+						options: [{ ignoreCallExpressions: ["Portal.render"] }],
+					},
+					// Allow root keys when configured
+					{
+						code: `
+							function Component() {
+								return <div key="allowed" />;
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+						options: [{ allowRootKeys: true }],
+					},
 				],
 				invalid: [
 					// Elements in fragment
@@ -166,6 +207,34 @@ describe("require-react-component-keys", () => {
 							},
 						},
 						errors: 2,
+					},
+					// Root component with key
+					{
+						code: `
+							function Bad5() {
+								return <div key="bad" />;
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+						errors: [{ messageId: "rootComponentWithKey" }],
+					},
+					// Arrow function root component with key
+					{
+						code: `
+							const Bad6 = () => <span key="bad" />;
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+						errors: [{ messageId: "rootComponentWithKey" }],
 					},
 				],
 			});

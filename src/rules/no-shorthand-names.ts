@@ -6,7 +6,7 @@ interface ShorthandInfo {
 	messageId: "useLocalPlayer" | "usePlayer" | "useParameters" | "useDeltaTime" | "useCharacter";
 }
 
-const SHORTHANDS: readonly ShorthandInfo[] = [
+const SHORTHANDS: ReadonlyArray<ShorthandInfo> = [
 	{ messageId: "useParameters", replacement: "parameters", shorthand: "args" },
 	{ messageId: "useDeltaTime", replacement: "deltaTime", shorthand: "dt" },
 	{ messageId: "useCharacter", replacement: "character", shorthand: "char" },
@@ -38,6 +38,10 @@ function isPlayersLocalPlayer(node: unknown): boolean {
 	);
 }
 
+function isProperParent(parent?: unknown): parent is { type?: string; property?: unknown } {
+	return parent !== undefined && typeof parent === "object";
+}
+
 /**
  * Checks if an identifier is used as a property access.
  *
@@ -46,10 +50,9 @@ function isPlayersLocalPlayer(node: unknown): boolean {
  */
 function isPropertyAccess(node: { parent?: unknown }): boolean {
 	const parent = node.parent;
-	if (!parent || typeof parent !== "object") return false;
+	if (!isProperParent(parent)) return false;
 
-	const p = parent as { type?: string; property?: unknown };
-	return p.type === "MemberExpression" && p.property === node;
+	return parent.type === "MemberExpression" && parent.property === node;
 }
 
 /**

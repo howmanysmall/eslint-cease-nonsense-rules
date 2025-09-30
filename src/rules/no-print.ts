@@ -3,7 +3,7 @@ import type { Rule } from "eslint";
 /**
  * Bans use of `print()` function calls. Use `Log` instead.
  *
- * The `print()` function is deprecated or discouraged in favor of a proper
+ * The `print()` function is not wanted in this codebase and discouraged in favor of a proper
  * logging system like `Log`.
  *
  * @example
