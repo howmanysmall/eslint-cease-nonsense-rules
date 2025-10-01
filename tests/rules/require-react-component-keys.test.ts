@@ -296,6 +296,108 @@ describe("require-react-component-keys", () => {
 							},
 						},
 					},
+					// React.forwardRef - root return doesn't need key
+					{
+						code: `
+							const Component = React.forwardRef((props, ref) => {
+								return <div ref={ref} />;
+							});
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// forwardRef without React namespace
+					{
+						code: `
+							const Component = forwardRef((props, ref) => <span ref={ref} />);
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// React.memo - root return doesn't need key
+					{
+						code: `
+							const Component = React.memo(() => {
+								return <div />;
+							});
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// memo without React namespace
+					{
+						code: `
+							const Component = memo(() => <span />);
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// forwardRef with wrapper and children
+					{
+						code: `
+							const Component = React.forwardRef((props, ref) => (
+								<ErrorBoundary>
+									<div key="content" ref={ref} />
+								</ErrorBoundary>
+							));
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// memo with wrapper and children
+					{
+						code: `
+							const Component = React.memo(() => (
+								<Wrapper>
+									<Child key="child" />
+								</Wrapper>
+							));
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// HOC pattern with forwardRef (user's case)
+					{
+						code: `
+							function withErrorBoundary(Component) {
+								return React.forwardRef((props, ref) => (
+									<ErrorBoundary>
+										<Component {...props} key="component" ref={ref} />
+									</ErrorBoundary>
+								));
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
 				],
 				invalid: [
 					// Elements in fragment
@@ -517,6 +619,56 @@ describe("require-react-component-keys", () => {
 								},
 							},
 							errors: 2,
+						},
+						// forwardRef children still need keys
+						{
+							code: `
+								const Component = React.forwardRef((props, ref) => (
+									<div>
+										<span />
+										<p />
+									</div>
+								));
+							`,
+							languageOptions: {
+								parser,
+								parserOptions: {
+									ecmaFeatures: { jsx: true },
+								},
+							},
+							errors: 2,
+						},
+						// memo children still need keys
+						{
+							code: `
+								const Component = React.memo(() => (
+									<Wrapper>
+										<Child />
+									</Wrapper>
+								));
+							`,
+							languageOptions: {
+								parser,
+								parserOptions: {
+									ecmaFeatures: { jsx: true },
+								},
+							},
+							errors: 1,
+						},
+						// forwardRef root element should not have key
+						{
+							code: `
+								const Component = React.forwardRef((props, ref) => (
+									<div key="bad" ref={ref} />
+								));
+							`,
+							languageOptions: {
+								parser,
+								parserOptions: {
+									ecmaFeatures: { jsx: true },
+								},
+							},
+							errors: [{ messageId: "rootComponentWithKey" }],
 						},
 				],
 			});
