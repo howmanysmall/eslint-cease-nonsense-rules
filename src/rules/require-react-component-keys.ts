@@ -31,6 +31,33 @@ function hasKeyAttribute(node: TSESTree.JSXElement): boolean {
 }
 
 /**
+ * Checks if a CallExpression is for React.forwardRef or React.memo.
+ *
+ * @param callExpr - The CallExpression to check.
+ * @returns True if the call is for forwardRef or memo.
+ */
+function isReactComponentHOC(callExpr: TSESTree.CallExpression): boolean {
+	const { callee } = callExpr;
+
+	// Simple identifier: forwardRef(...) or memo(...)
+	if (callee.type === "Identifier") {
+		return callee.name === "forwardRef" || callee.name === "memo";
+	}
+
+	// Member expression: React.forwardRef(...) or React.memo(...)
+	if (
+		callee.type === "MemberExpression" &&
+		callee.object.type === "Identifier" &&
+		callee.object.name === "React" &&
+		callee.property.type === "Identifier"
+	) {
+		return callee.property.name === "forwardRef" || callee.property.name === "memo";
+	}
+
+	return false;
+}
+
+/**
  * Checks if a JSX element is a top-level return from a component.
  *
  * @param node - The JSX element or fragment to check.
@@ -67,8 +94,13 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 
 		// Check if this is a callback (arrow/function expression inside a call expression)
 		if (currentNode.type === "ArrowFunctionExpression" || currentNode.type === "FunctionExpression") {
-			// If the function is an argument to a call expression (like useCallback), it's a callback, not a top-level return
-			return currentNode.parent?.type !== "CallExpression";
+			// If the function is an argument to a call expression, check if it's a React HOC
+			if (currentNode.parent?.type === "CallExpression") {
+				// React.forwardRef and React.memo callbacks are component definitions, treat as top-level
+				return isReactComponentHOC(currentNode.parent);
+			}
+			// Not inside a call expression, so it's a top-level component
+			return true;
 		}
 
 		// Function declarations are always top-level
@@ -76,7 +108,17 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 	}
 
 	// Handle arrow function direct return: () => <div>
-	return parent.type === "ArrowFunctionExpression" && parent.parent?.type !== "CallExpression";
+	if (parent.type === "ArrowFunctionExpression") {
+		// Check if this arrow function is inside a call expression
+		if (parent.parent?.type === "CallExpression") {
+			// React.forwardRef and React.memo callbacks are component definitions, treat as top-level
+			return isReactComponentHOC(parent.parent);
+		}
+		// Not inside a call expression, so it's a top-level component
+		return true;
+	}
+
+	return false;
 }
 
 /**
