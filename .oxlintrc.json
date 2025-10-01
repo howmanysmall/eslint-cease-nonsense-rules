@@ -34,7 +34,13 @@
 			},
 		},
 		{
-			"files": ["src/rules/enforce-ianitor-check-type.ts", "src/rules/require-react-component-keys.ts", "src/index.ts"],
+			"files": [
+				"src/rules/enforce-ianitor-check-type.ts",
+				"src/rules/require-react-component-keys.ts",
+				"src/rules/use-exhaustive-dependencies.ts",
+				"src/rules/use-hook-at-top-level.ts",
+				"src/index.ts"
+			],
 			"rules": {
 				"@typescript-eslint/no-unsafe-argument": "off",
 				"@typescript-eslint/no-unsafe-assignment": "off",

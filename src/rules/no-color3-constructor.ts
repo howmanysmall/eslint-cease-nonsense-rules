@@ -10,12 +10,7 @@ function isUnknownRecord(value: unknown): value is Record<PropertyKey, unknown> 
 }
 
 function isNumericLiteralNode(value: unknown): value is NumericLiteralNode {
-	return (
-		isUnknownRecord(value) &&
-		value.type === "Literal" &&
-		"value" in value &&
-		typeof value.value === "number"
-	);
+	return isUnknownRecord(value) && value.type === "Literal" && "value" in value && typeof value.value === "number";
 }
 
 function mapComponentToRgbRange(value: number): number {
@@ -23,12 +18,12 @@ function mapComponentToRgbRange(value: number): number {
 }
 
 interface NumericComponentCollection {
-	readonly components: Array<number>;
+	readonly components: ReadonlyArray<number>;
 	readonly allZero: boolean;
 }
 
 function collectNumericComponents(parameters: ReadonlyArray<unknown>): NumericComponentCollection | undefined {
-	const components: number[] = [];
+	const components = new Array<number>();
 	let allZero = true;
 
 	for (const parameter of parameters) {
