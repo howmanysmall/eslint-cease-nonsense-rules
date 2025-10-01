@@ -111,6 +111,29 @@ describe("require-react-component-keys", () => {
 						},
 						options: [{ ignoreCallExpressions: ["Portal.render"] }],
 					},
+					// CreateReactStory with function argument (default ignore)
+					{
+						code: `
+							import { CreateReactStory } from "@rbxts/ui-labs";
+							export = CreateReactStory(
+								{
+									controls: { maxValue: 100, value: 50 },
+									summary: "Bar component demo.",
+								},
+								({ controls }) => (
+									<frame BackgroundTransparency={1}>
+										<Bar {...controls} key="bar" />
+									</frame>
+								),
+							);
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
 					// Allow root keys when configured
 					{
 						code: `
@@ -131,6 +154,36 @@ describe("require-react-component-keys", () => {
 						code: `
 							function Good5(items) {
 								return items.map((item) => <span key={item.id} />);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// useCallback with keyed elements
+					{
+						code: `
+							function Component() {
+								const renderLayout = useCallback(() => {
+									return <div key="layout" />;
+								}, []);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// useMemo with keyed elements
+					{
+						code: `
+							function Component() {
+								const element = useMemo(() => <span key="memoized" />, []);
 							}
 						`,
 						languageOptions: {
@@ -358,6 +411,38 @@ describe("require-react-component-keys", () => {
 						code: `
 							function Bad7(items) {
 								return items.map((item) => <div />);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+						errors: 1,
+					},
+					// useCallback missing key
+					{
+						code: `
+							function Bad10() {
+								const renderLayout = useCallback(() => {
+									return <div />;
+								}, []);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+						errors: 1,
+					},
+					// useMemo missing key
+					{
+						code: `
+							function Bad11() {
+								const element = useMemo(() => <span />, []);
 							}
 						`,
 						languageOptions: {

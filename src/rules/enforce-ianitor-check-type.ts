@@ -48,10 +48,10 @@ function hasTypeAnnotation(node: { type: string; id?: unknown; returnType?: unkn
  * Extracts the type name from a TypeScript type node.
  *
  * @param node - The TypeScript AST node.
- * @returns The type name or null if not applicable.
+ * @returns The type name or undefined if not applicable.
  */
-function getTypeName(node: TSESTree.Node): string | null {
-	return node.type === "TSInterfaceDeclaration" || node.type === "TSTypeAliasDeclaration" ? node.id.name : null;
+function getTypeName(node: TSESTree.Node): string | undefined {
+	return node.type === "TSInterfaceDeclaration" || node.type === "TSTypeAliasDeclaration" ? node.id.name : undefined;
 }
 
 /**
@@ -87,9 +87,8 @@ function hasIanitorStaticType(typeAnnotation: TSESTree.TypeNode): boolean {
 		currentType.typeName.type === "Identifier" &&
 		currentType.typeName.name === "Readonly" &&
 		currentType.typeArguments?.params[0]
-	) {
+	)
 		currentType = currentType.typeArguments.params[0];
-	}
 
 	// Check for Ianitor.Static<typeof ...>
 	if (currentType.type !== "TSTypeReference") return false;
@@ -118,7 +117,7 @@ function calculateIanitorComplexity(node: {
 		readonly type: string;
 		readonly property?: { type: string; name?: string };
 	};
-	readonly arguments?: ReadonlyArray<{ type?: string; properties?: unknown[] }>;
+	readonly arguments?: ReadonlyArray<{ type?: string; properties?: Array<unknown> }>;
 }): number {
 	const callee = node.callee;
 	if (callee?.type !== "MemberExpression" || callee.property?.type !== "Identifier") return 0;
@@ -127,8 +126,8 @@ function calculateIanitorComplexity(node: {
 	switch (method) {
 		case "interface":
 		case "strictInterface": {
-			const props = node.arguments?.[0];
-			return props?.type === "ObjectExpression" ? 10 + (props.properties?.length || 0) * 3 : 0;
+			const properties = node.arguments?.[0];
+			return properties?.type === "ObjectExpression" ? 10 + (properties.properties?.length || 0) * 3 : 0;
 		}
 
 		case "optional":
@@ -216,9 +215,8 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 				currentType.typeName.type === "Identifier" &&
 				currentType.typeName.name === "Readonly" &&
 				currentType.typeArguments?.params[0]
-			) {
+			)
 				currentType = currentType.typeArguments.params[0];
-			}
 
 			// Check for Ianitor.Static<typeof varName>
 			if (currentType.type !== "TSTypeReference") return null;
@@ -234,9 +232,8 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 				typeName.right.name === "Static" &&
 				firstParam?.type === "TSTypeQuery" &&
 				firstParam.exprName.type === "Identifier"
-			) {
+			)
 				return firstParam.exprName.name;
-			}
 
 			return null;
 		}
@@ -293,7 +290,10 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					for (const member of body) {
 						const typeAnnotation = "typeAnnotation" in member ? member.typeAnnotation : undefined;
 						if (typeAnnotation)
-							score = addScore(score, calculateStructuralComplexity(typeAnnotation.typeAnnotation, nextDepth));
+							score = addScore(
+								score,
+								calculateStructuralComplexity(typeAnnotation.typeAnnotation, nextDepth),
+							);
 					}
 					break;
 				}
@@ -305,7 +305,10 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					for (const member of members) {
 						const typeAnnotation = "typeAnnotation" in member ? member.typeAnnotation : undefined;
 						if (typeAnnotation)
-							score = addScore(score, calculateStructuralComplexity(typeAnnotation.typeAnnotation, nextDepth));
+							score = addScore(
+								score,
+								calculateStructuralComplexity(typeAnnotation.typeAnnotation, nextDepth),
+							);
 					}
 					break;
 				}
@@ -368,7 +371,8 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 				// Mapped types
 				case "TSMappedType": {
 					score = 5;
-					if (node.constraint) score = addScore(score, calculateStructuralComplexity(node.constraint, nextDepth));
+					if (node.constraint)
+						score = addScore(score, calculateStructuralComplexity(node.constraint, nextDepth));
 					if (node.typeAnnotation)
 						score = addScore(score, calculateStructuralComplexity(node.typeAnnotation, nextDepth));
 					break;
@@ -382,10 +386,16 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					for (const param of func.params) {
 						const typeAnnotation = "typeAnnotation" in param ? param.typeAnnotation : undefined;
 						if (typeAnnotation)
-							score = addScore(score, calculateStructuralComplexity(typeAnnotation.typeAnnotation, nextDepth));
+							score = addScore(
+								score,
+								calculateStructuralComplexity(typeAnnotation.typeAnnotation, nextDepth),
+							);
 					}
 					if (func.returnType)
-						score = addScore(score, calculateStructuralComplexity(func.returnType.typeAnnotation, nextDepth));
+						score = addScore(
+							score,
+							calculateStructuralComplexity(func.returnType.typeAnnotation, nextDepth),
+						);
 					break;
 				}
 

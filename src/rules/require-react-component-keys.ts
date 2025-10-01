@@ -14,7 +14,7 @@ interface RuleOptions {
  */
 const DEFAULT_OPTIONS: Required<RuleOptions> = {
 	allowRootKeys: false,
-	ignoreCallExpressions: ["ReactTree.mount"],
+	ignoreCallExpressions: ["ReactTree.mount", "CreateReactStory"],
 };
 
 /**
@@ -54,7 +54,26 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 	if (!parent) return false;
 
 	// Handle direct return
-	if (parent.type === "ReturnStatement") return true;
+	if (parent.type === "ReturnStatement") {
+		// Walk up to find the containing function
+		let currentNode: TSESTree.Node | undefined = parent.parent;
+
+		// Skip through block statement to get to function
+		if (currentNode?.type === "BlockStatement") {
+			currentNode = currentNode.parent;
+		}
+
+		if (!currentNode) return false;
+
+		// Check if this is a callback (arrow/function expression inside a call expression)
+		if (currentNode.type === "ArrowFunctionExpression" || currentNode.type === "FunctionExpression") {
+			// If the function is an argument to a call expression (like useCallback), it's a callback, not a top-level return
+			return currentNode.parent?.type !== "CallExpression";
+		}
+
+		// Function declarations are always top-level
+		return currentNode.type === "FunctionDeclaration";
+	}
 
 	// Handle arrow function direct return: () => <div>
 	return parent.type === "ArrowFunctionExpression" && parent.parent?.type !== "CallExpression";
@@ -78,7 +97,7 @@ function isIgnoredCallExpression(node: TSESTree.JSXElement | TSESTree.JSXFragmen
 	}
 
 	// Traverse up to find CallExpression
-	const maxDepth = 10;
+	const maxDepth = 20;
 	for (let depth = 0; depth < maxDepth && parent; depth++) {
 		const { type } = parent;
 
@@ -94,24 +113,13 @@ function isIgnoredCallExpression(node: TSESTree.JSXElement | TSESTree.JSXFragmen
 				callee.type === "MemberExpression" &&
 				callee.object.type === "Identifier" &&
 				callee.property.type === "Identifier"
-			) {
+			)
 				return ignoreList.includes(`${callee.object.name}.${callee.property.name}`);
-			}
 
 			return false;
 		}
 
-		// Stop at JSX or function boundaries
-		if (
-			type === "JSXElement" ||
-			type === "JSXFragment" ||
-			type === "FunctionDeclaration" ||
-			type === "FunctionExpression" ||
-			type === "ArrowFunctionExpression"
-		) {
-			return false;
-		}
-
+		// Don't stop at any boundaries - continue traversing until we find CallExpression or run out of parents
 		parent = parent.parent;
 	}
 
@@ -131,9 +139,8 @@ function isJSXPropValue(node: TSESTree.JSXElement | TSESTree.JSXFragment): boole
 	// Traverse through conditional and logical expressions
 	// Example: fallback={condition ? <A/> : <B/>}
 	// Example: fallback={placeholder ?? <></>}
-	while (parent && (parent.type === "ConditionalExpression" || parent.type === "LogicalExpression")) {
+	while (parent && (parent.type === "ConditionalExpression" || parent.type === "LogicalExpression"))
 		parent = parent.parent;
-	}
 
 	if (!parent) return false;
 

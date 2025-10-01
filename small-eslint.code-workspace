@@ -64,4 +64,9 @@
 		"oxc.typeAware": true,
 		"biome.suggestInstallingGlobally": false,
 	},
+	"extensions": {
+		"recommendations": [
+			"oxc.oxc-vscode"
+		]
+	},
 }
