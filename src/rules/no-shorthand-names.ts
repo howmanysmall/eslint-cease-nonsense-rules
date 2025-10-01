@@ -135,9 +135,8 @@ const noShorthandNames: Rule.RuleModule = {
 					isUnknownRecord(parent) &&
 					parent.type === "MemberExpression" &&
 					parent.property === node
-				) {
+				)
 					return;
-				}
 
 				// Special case: plr → localPlayer for Players.LocalPlayer
 				if (shorthandName === "plr" && parent?.type === "VariableDeclarator" && parent.id === node) {
