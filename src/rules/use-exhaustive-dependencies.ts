@@ -8,8 +8,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
 import type { TSESTree } from "@typescript-eslint/types";
-import type { Rule } from "eslint";
-import type { Scope } from "eslint";
+import type { Rule, Scope } from "eslint";
 
 /**
  * Hook configuration entry.
@@ -510,7 +509,7 @@ function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree
 
 			// Check if variable is defined inside this function
 			return variable.defs.some((def) => {
-				let node: TSESTree.Node | undefined = def.node.parent;
+				let node: TSESTree.Node | undefined = def.node.parent as TSESTree.Node | undefined;
 
 				while (node && node !== functionParent) {
 					node = node.parent;
@@ -630,7 +629,7 @@ function collectCaptures(
 					// Only capture variables declared in the component body
 					// Per React rules, only "variables declared directly inside the component body" are reactive
 					// Variables from outer scopes (module-level, parent functions) are non-reactive and stable
-					if (!isDeclaredInComponentBody(variable, node)) {
+					if (!isDeclaredInComponentBody(variable as VariableLike, node)) {
 						testingMetrics.outerScopeSkip += 1;
 						return; // From outer scope - skip
 					}
@@ -643,7 +642,7 @@ function collectCaptures(
 						name,
 						node: depthNode,
 						usagePath,
-						variable,
+						variable: variable as VariableLike,
 					});
 				}
 			}
@@ -868,7 +867,7 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 
 						// Generate fix suggestion - add dependencies array
 						const usagePaths = requiredCaptures.map((c) => c.usagePath);
-						const uniqueDeps = Array.from(new Set(usagePaths)).toSorted() as string[];
+						const uniqueDeps = Array.from(new Set(usagePaths)).toSorted();
 						const depsArrayString = `[${uniqueDeps.join(", ")}]`;
 
 						context.report({
@@ -991,7 +990,7 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 
 						// Generate fix suggestion
 						const depNames = dependencies.map((d) => d.name);
-						const newDeps = [...depNames, capture.usagePath].toSorted() as string[];
+						const newDeps = [...depNames, capture.usagePath].toSorted();
 						const newDepsString = `[${newDeps.join(", ")}]`;
 
 						context.report({
@@ -1029,7 +1028,10 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 
 						if (isMatch && isDirectIdentifier) {
 							const def = capture.variable?.defs[0];
-							const initNode = def?.node.type === "VariableDeclarator" ? def.node.init : undefined;
+							const initNode: TSESTree.Node | undefined =
+								def?.node.type === "VariableDeclarator"
+									? ((def.node.init ?? undefined) as TSESTree.Expression | undefined)
+									: undefined;
 
 							if (isUnstableValue(initNode)) {
 								context.report({
@@ -1118,12 +1120,12 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 };
 
 export const __testing = {
+	collectCaptures,
 	convertStableResult,
 	isDeclaredInComponentBody,
 	isInTypePosition,
 	isStableArrayIndex,
 	isStableValue,
-	collectCaptures,
 	metrics: testingMetrics,
 	resetMetrics: resetTestingMetrics,
 };
