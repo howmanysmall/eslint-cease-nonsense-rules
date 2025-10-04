@@ -47,6 +47,20 @@ describe("require-react-component-keys", () => {
 							},
 						},
 					},
+					// Arrow function with block body top-level return
+					{
+						code: `
+							const Good2Block = () => {
+								return <div />;
+							};
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
 					// Proper keys
 					{
 						code: `
@@ -154,6 +168,52 @@ describe("require-react-component-keys", () => {
 						code: `
 							function Good5(items) {
 								return items.map((item) => <span key={item.id} />);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// Map callback with block body and keyed element
+					{
+						code: `
+							function Good5Block(items) {
+								return items.map((item) => {
+									const value = item.value;
+									if (value <= 0) return;
+									return <div key={item.id}>{value}</div>;
+								});
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// Map with spread operator and keyed element (user's scenario)
+					{
+						code: `
+							function HealthBar() {
+								const enemies = [];
+								return (
+									<screengui>
+										{...enemies.map((entity) => {
+											const health = { current: 10 };
+											if (health.current <= 0) return;
+
+											return (
+												<billboardgui key={entity}>
+													<frame key="health" />
+												</billboardgui>
+											);
+										})}
+									</screengui>
+								);
 							}
 						`,
 						languageOptions: {
@@ -287,6 +347,57 @@ describe("require-react-component-keys", () => {
 						code: `
 							function Good12({ a, b }) {
 								return a ? <div /> : b ? <span /> : <p />;
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// Ternary with fragments as JSX children (frame.tsx pattern)
+					{
+						code: `
+							function Component({ hasGlow }) {
+								return (
+									<frame>
+										{hasGlow ? (
+											<>
+												<frame key="inner" />
+												<Glow key="glow" />
+											</>
+										) : (
+											<>
+												<div key="child1" />
+												<span key="child2" />
+											</>
+										)}
+									</frame>
+								);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// Logical expression with fragment as JSX child
+					{
+						code: `
+							function Component({ show }) {
+								return (
+									<div>
+										{show && (
+											<>
+												<span key="a" />
+												<p key="b" />
+											</>
+										)}
+									</div>
+								);
 							}
 						`,
 						languageOptions: {
@@ -513,6 +624,54 @@ describe("require-react-component-keys", () => {
 						code: `
 							function Bad7(items) {
 								return items.map((item) => <div />);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+						errors: 1,
+					},
+					// Map callback with block body missing key
+					{
+						code: `
+							function Bad7Block(items) {
+								return items.map((item) => {
+									const value = item.value;
+									if (value <= 0) return;
+									return <div>{value}</div>;
+								});
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+						errors: 1,
+					},
+					// Map with spread operator missing key
+					{
+						code: `
+							function HealthBar() {
+								const enemies = [];
+								return (
+									<screengui>
+										{...enemies.map((entity) => {
+											const health = { current: 10 };
+											if (health.current <= 0) return;
+
+											return (
+												<billboardgui>
+													<frame key="health" />
+												</billboardgui>
+											);
+										})}
+									</screengui>
+								);
 							}
 						`,
 						languageOptions: {

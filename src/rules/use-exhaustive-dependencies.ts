@@ -4,6 +4,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 
 import type { TSESTree } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
@@ -42,6 +44,34 @@ interface HookConfig {
 type StableResult = boolean | ReadonlySet<number> | ReadonlySet<string>;
 
 /**
+ * Internal metrics used for testing to ensure specific branches execute.
+ */
+const testingMetrics = {
+	moduleLevelStableConst: 0,
+	outerScopeSkip: 0,
+};
+
+function resetTestingMetrics(): void {
+	testingMetrics.moduleLevelStableConst = 0;
+	testingMetrics.outerScopeSkip = 0;
+}
+
+/**
+ * Minimal definition information used for stability analysis.
+ */
+interface VariableDefinitionLike {
+	readonly node: TSESTree.Node | Rule.Node;
+	readonly type: string;
+}
+
+/**
+ * Minimal variable interface compatible with ESLint scope variables.
+ */
+interface VariableLike {
+	readonly defs: ReadonlyArray<VariableDefinitionLike>;
+}
+
+/**
  * Dependency information.
  */
 interface DependencyInfo {
@@ -57,7 +87,7 @@ interface CaptureInfo {
 	readonly name: string;
 	readonly node: TSESTree.Node;
 	readonly usagePath: string;
-	readonly variable: Scope.Variable | undefined;
+	readonly variable: VariableLike | undefined;
 	readonly depth: number;
 }
 
@@ -71,6 +101,12 @@ const DEFAULT_HOOKS = new Map<string, HookConfig>([
 	["useCallback", { closureIndex: 0, dependenciesIndex: 1 }],
 	["useMemo", { closureIndex: 0, dependenciesIndex: 1 }],
 	["useImperativeHandle", { closureIndex: 1, dependenciesIndex: 2 }],
+	// React Spring hooks (function factory pattern)
+	// Note: These hooks support both function and object patterns.
+	// Only the function pattern is analyzed for dependencies.
+	["useSpring", { closureIndex: 0, dependenciesIndex: 1 }],
+	["useSprings", { closureIndex: 1, dependenciesIndex: 2 }],
+	["useTrail", { closureIndex: 1, dependenciesIndex: 2 }],
 ]);
 
 /**
@@ -301,7 +337,7 @@ function isStableHookValue(
  */
 /* eslint-disable jsdoc/require-param, jsdoc/require-returns */
 function isStableValue(
-	variable: Scope.Variable | undefined,
+	variable: VariableLike | undefined,
 	identifierName: string,
 	stableHooks: Map<string, StableResult>,
 ): boolean {
@@ -374,6 +410,7 @@ function isStableValue(
 				const declParent = (varDef.node as TSESTree.VariableDeclarator).parent?.parent;
 				// Module-level (Program or ExportNamedDeclaration)
 				if (declParent && (declParent.type === "Program" || declParent.type === "ExportNamedDeclaration")) {
+					testingMetrics.moduleLevelStableConst += 1;
 					return true;
 				}
 			}
@@ -444,7 +481,7 @@ function isInTypePosition(identifier: TSESTree.Identifier): boolean {
  * @param closureNode - The closure node (useEffect callback, etc.).
  * @returns True if the variable is declared in the component body or is a prop.
  */
-function isDeclaredInComponentBody(variable: Scope.Variable, closureNode: TSESTree.Node): boolean {
+function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree.Node): boolean {
 	// Find the parent component/hook function
 	let parent: TSESTree.Node | undefined = closureNode.parent;
 
@@ -487,6 +524,51 @@ function isDeclaredInComponentBody(variable: Scope.Variable, closureNode: TSESTr
 	}
 
 	return false;
+}
+
+/**
+ * Resolves an identifier to its function definition if it references a function.
+ *
+ * @param identifier - The identifier node.
+ * @param scope - The scope to search in.
+ * @returns The function node if found, undefined otherwise.
+ */
+function resolveFunctionReference(
+	identifier: TSESTree.Identifier,
+	scope: Scope.Scope,
+): TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression | undefined {
+	// Look up the variable in the scope chain
+	let variable: Scope.Variable | undefined;
+	let currentScope: Scope.Scope | null = scope;
+
+	while (currentScope) {
+		variable = currentScope.set.get(identifier.name);
+		if (variable) break;
+		currentScope = currentScope.upper;
+	}
+
+	if (!variable || variable.defs.length === 0) return undefined;
+
+	// Check all definitions for a function
+	for (const def of variable.defs) {
+		const { node } = def;
+
+		// Direct function declaration
+		if (node.type === "FunctionDeclaration") {
+			return node as unknown as TSESTree.FunctionExpression;
+		}
+
+		// Variable declarator with function initializer
+		if (
+			node.type === "VariableDeclarator" &&
+			node.init &&
+			(node.init.type === "ArrowFunctionExpression" || node.init.type === "FunctionExpression")
+		) {
+			return node.init as TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression;
+		}
+	}
+
+	return undefined;
 }
 
 /**
@@ -549,6 +631,7 @@ function collectCaptures(
 					// Per React rules, only "variables declared directly inside the component body" are reactive
 					// Variables from outer scopes (module-level, parent functions) are non-reactive and stable
 					if (!isDeclaredInComponentBody(variable, node)) {
+						testingMetrics.outerScopeSkip += 1;
 						return; // From outer scope - skip
 					}
 
@@ -564,6 +647,17 @@ function collectCaptures(
 					});
 				}
 			}
+		}
+
+		// Unwrap TypeScript type expressions to visit the actual expression
+		if (
+			current.type === "TSSatisfiesExpression" ||
+			current.type === "TSAsExpression" ||
+			current.type === "TSTypeAssertion" ||
+			current.type === "TSNonNullExpression"
+		) {
+			visit(current.expression);
+			return;
 		}
 
 		// Traverse member expressions
@@ -740,10 +834,20 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 				const closureArg = args[closureIndex];
 				if (!closureArg) return;
 
-				// Early exit: check if closure is a function
-				if (closureArg.type !== "ArrowFunctionExpression" && closureArg.type !== "FunctionExpression") {
-					return;
+				// Resolve the actual closure function (handles both inline and reference cases)
+				let closureFunction: TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression | undefined;
+
+				if (closureArg.type === "ArrowFunctionExpression" || closureArg.type === "FunctionExpression") {
+					// Inline function
+					closureFunction = closureArg;
+				} else if (closureArg.type === "Identifier") {
+					// Function reference - try to resolve it
+					const scope = getScope(callNode);
+					closureFunction = resolveFunctionReference(closureArg, scope);
 				}
+
+				// Early exit: check if we have a valid closure function
+				if (!closureFunction) return;
 
 				// Get dependencies argument
 				const depsArg = args[dependenciesIndex];
@@ -751,8 +855,8 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 				// Report missing dependencies array if configured
 				if (!depsArg && options.reportMissingDependenciesArray) {
 					// Collect captures to see if any are needed
-					const scope = getScope(closureArg);
-					const captures = collectCaptures(closureArg, scope, context.sourceCode);
+					const scope = getScope(closureFunction);
+					const captures = collectCaptures(closureFunction, scope, context.sourceCode);
 
 					// Filter out stable values
 					const requiredCaptures = captures.filter(
@@ -761,10 +865,26 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 
 					if (requiredCaptures.length > 0) {
 						const missingNames = Array.from(new Set(requiredCaptures.map((c) => c.name))).join(", ");
+
+						// Generate fix suggestion - add dependencies array
+						const usagePaths = requiredCaptures.map((c) => c.usagePath);
+						const uniqueDeps = Array.from(new Set(usagePaths)).toSorted() as string[];
+						const depsArrayString = `[${uniqueDeps.join(", ")}]`;
+
 						context.report({
 							data: { deps: missingNames },
 							messageId: "missingDependenciesArray",
 							node: callNode,
+							suggest: [
+								{
+									desc: `Add dependencies array: ${depsArrayString}`,
+									fix(fixer): Rule.Fix | null {
+										// Insert the dependencies array after the closure argument
+										const closureArgNode = args[closureIndex] as unknown as Rule.Node;
+										return fixer.insertTextAfter(closureArgNode, `, ${depsArrayString}`);
+									},
+								},
+							],
 						});
 					}
 					return;
@@ -779,8 +899,8 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 				const depsArray = depsArg;
 
 				// Collect captures from closure
-				const scope = getScope(closureArg);
-				const captures = collectCaptures(closureArg, scope, context.sourceCode);
+				const scope = getScope(closureFunction);
+				const captures = collectCaptures(closureFunction, scope, context.sourceCode);
 
 				// Parse dependencies array
 				const dependencies = parseDependencies(depsArray, context.sourceCode);
@@ -798,10 +918,22 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 					// If no captures use this identifier at all, it's unnecessary
 					if (matchingCaptures.length === 0) {
 						if (options.reportUnnecessaryDependencies) {
+							// Generate fix suggestion
+							const newDeps = dependencies.filter((d) => d.name !== dep.name).map((d) => d.name);
+							const newDepsString = `[${newDeps.join(", ")}]`;
+
 							context.report({
 								data: { name: dep.name },
 								messageId: "unnecessaryDependency",
 								node: dep.node,
+								suggest: [
+									{
+										desc: `Remove '${dep.name}' from dependencies array`,
+										fix(fixer): Rule.Fix | null {
+											return fixer.replaceText(depsArray as unknown as Rule.Node, newDepsString);
+										},
+									},
+								],
 							});
 						}
 						continue;
@@ -811,10 +943,22 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 					// dep.depth > all capture depths means the dep is too specific
 					const maxCaptureDepth = Math.max(...matchingCaptures.map((c) => c.depth));
 					if (dep.depth > maxCaptureDepth && options.reportUnnecessaryDependencies) {
+						// Generate fix suggestion
+						const newDeps = dependencies.filter((d) => d.name !== dep.name).map((d) => d.name);
+						const newDepsString = `[${newDeps.join(", ")}]`;
+
 						context.report({
 							data: { name: dep.name },
 							messageId: "unnecessaryDependency",
 							node: dep.node,
+							suggest: [
+								{
+									desc: `Remove '${dep.name}' from dependencies array`,
+									fix(fixer): Rule.Fix | null {
+										return fixer.replaceText(depsArray as unknown as Rule.Node, newDepsString);
+									},
+								},
+							],
 						});
 					}
 				}
@@ -844,10 +988,24 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 					if (!isInDeps) {
 						// Report on the last dependency in the array for better error positioning
 						const lastDep = dependencies[dependencies.length - 1];
+
+						// Generate fix suggestion
+						const depNames = dependencies.map((d) => d.name);
+						const newDeps = [...depNames, capture.usagePath].toSorted() as string[];
+						const newDepsString = `[${newDeps.join(", ")}]`;
+
 						context.report({
 							data: { name: capture.usagePath },
 							messageId: "missingDependency",
 							node: lastDep?.node || depsArray,
+							suggest: [
+								{
+									desc: `Add '${capture.usagePath}' to dependencies array`,
+									fix(fixer): Rule.Fix | null {
+										return fixer.replaceText(depsArray as unknown as Rule.Node, newDepsString);
+									},
+								},
+							],
 						});
 					}
 				}
@@ -896,6 +1054,7 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 			url: "https://biomejs.dev/linter/rules/use-exhaustive-dependencies/",
 		},
 		fixable: "code",
+		hasSuggestions: true,
 		messages: {
 			missingDependenciesArray: "This hook does not specify its dependencies array. Missing: {{deps}}",
 			missingDependency: "This hook does not specify its dependency on {{name}}.",
@@ -956,6 +1115,17 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 		],
 		type: "problem",
 	},
+};
+
+export const __testing = {
+	convertStableResult,
+	isDeclaredInComponentBody,
+	isInTypePosition,
+	isStableArrayIndex,
+	isStableValue,
+	collectCaptures,
+	metrics: testingMetrics,
+	resetMetrics: resetTestingMetrics,
 };
 
 export default useExhaustiveDependencies;
