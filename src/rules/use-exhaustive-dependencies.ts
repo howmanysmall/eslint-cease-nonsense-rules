@@ -986,7 +986,7 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 
 					if (!isInDeps) {
 						// Report on the last dependency in the array for better error positioning
-						const lastDep = dependencies[dependencies.length - 1];
+						const lastDep = dependencies.at(-1);
 
 						// Generate fix suggestion
 						const depNames = dependencies.map((d) => d.name);

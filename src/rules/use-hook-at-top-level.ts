@@ -175,7 +175,7 @@ const useHookAtTopLevel: Rule.RuleModule = {
 		 * @returns The current context or undefined if not in a component/hook.
 		 */
 		function getCurrentContext(): ControlFlowContext | undefined {
-			return contextStack.length > 0 ? contextStack[contextStack.length - 1] : undefined;
+			return contextStack.length > 0 ? contextStack.at(-1) : undefined;
 		}
 
 		/**

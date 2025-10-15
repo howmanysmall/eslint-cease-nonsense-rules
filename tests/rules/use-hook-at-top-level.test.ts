@@ -1,5 +1,5 @@
 import { RuleTester } from "eslint";
-import { describe, expect, it } from "bun:test";
+import { describe } from "bun:test";
 import rule from "../../src/rules/use-hook-at-top-level";
 
 const ruleTester = new RuleTester({
@@ -15,10 +15,8 @@ const ruleTester = new RuleTester({
 });
 
 describe("use-hook-at-top-level", () => {
-	it("should pass valid cases and fail invalid cases", () => {
-		expect(() => {
-			ruleTester.run("use-hook-at-top-level", rule, {
-				invalid: [
+	ruleTester.run("use-hook-at-top-level", rule, {
+		invalid: [
 					// Conditional execution - if statement
 					{
 						code: `
@@ -484,6 +482,4 @@ describe("use-hook-at-top-level", () => {
 					`,
 				],
 			});
-		}).not.toThrow();
-	});
 });

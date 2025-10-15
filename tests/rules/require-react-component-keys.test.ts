@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test";
+import { describe } from "bun:test";
 import { RuleTester } from "eslint";
 import parser from "@typescript-eslint/parser";
 import rule from "../../src/rules/require-react-component-keys";
@@ -17,10 +17,8 @@ const ruleTester = new RuleTester({
 });
 
 describe("require-react-component-keys", () => {
-	it("should pass valid cases", () => {
-		expect(() => {
-			ruleTester.run("require-react-component-keys", rule, {
-				valid: [
+	ruleTester.run("require-react-component-keys", rule, {
+		valid: [
 					// Top-level return
 					{
 						code: `
@@ -509,6 +507,42 @@ describe("require-react-component-keys", () => {
 							},
 						},
 					},
+					// Conditional as only child (no siblings) - doesn't need key
+					{
+						code: `
+							function OnlyChild({ show }) {
+								return (
+									<div>
+										{show && <span>Visible</span>}
+									</div>
+								);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// Ternary as only child - elements don't need keys
+					{
+						code: `
+							function TernaryOnlyChild({ type }) {
+								return (
+									<div>
+										{type === "a" ? <ComponentA /> : <ComponentB />}
+									</div>
+								);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
 				],
 				invalid: [
 					// Elements in fragment
@@ -829,8 +863,70 @@ describe("require-react-component-keys", () => {
 							},
 							errors: [{ messageId: "rootComponentWithKey" }],
 						},
+						// Conditional element with siblings - needs key (user's original issue)
+						{
+							code: `
+								function Page({ navigation, title, children }) {
+									return (
+										<frame>
+											<VerticalList key="vertical-list" />
+											<Label key="page-label" />
+											<NavigationPanel key="navigation-panel" />
+											{navigation && <Label key="back-button" />}
+											{children && <frame>{children}</frame>}
+										</frame>
+									);
+								}
+							`,
+							languageOptions: {
+								parser,
+								parserOptions: {
+									ecmaFeatures: { jsx: true },
+								},
+							},
+							errors: 1,
+						},
+						// Multiple conditional siblings without keys
+						{
+							code: `
+								function MultipleConditionals({ showA, showB }) {
+									return (
+										<div>
+											<Header key="header" />
+											{showA && <ComponentA />}
+											{showB && <ComponentB />}
+										</div>
+									);
+								}
+							`,
+							languageOptions: {
+								parser,
+								parserOptions: {
+									ecmaFeatures: { jsx: true },
+								},
+							},
+							errors: 2,
+						},
+						// Ternary conditional with siblings - both branches need keys
+						{
+							code: `
+								function TernaryWithSiblings({ condition }) {
+									return (
+										<div>
+											<Header key="header" />
+											{condition ? <ComponentA /> : <ComponentB />}
+										</div>
+									);
+								}
+							`,
+							languageOptions: {
+								parser,
+								parserOptions: {
+									ecmaFeatures: { jsx: true },
+								},
+							},
+							errors: 2,
+						},
 				],
 			});
-		}).not.toThrow();
-	});
 });

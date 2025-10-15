@@ -2,9 +2,9 @@
 	"author": "HowManySmall",
 	"description": "A bunch of lints to prevent idiot mistakes I encounter with frequency.",
 	"devDependencies": {
-		"@biomejs/biome": "^2.2.4",
+		"@biomejs/biome": "^2.2.6",
 		"@mitata/counters": "^0.0.8",
-		"@types/bun": "1.2.22",
+		"@types/bun": "latest",
 		"@types/node": "^20.14.11",
 		"@typescript-eslint/parser": "^8.0.0",
 		"@typescript-eslint/types": "^8.0.0",
@@ -13,7 +13,7 @@
 		"jiti": "^2.4.2",
 		"knip": "^5.63.1",
 		"mitata": "^1.0.34",
-		"oxlint": "^1.15.0",
+		"oxlint": "^1.23.0",
 		"oxlint-tsgolint": "^0.2.0",
 		"typescript": "^5.6.3"
 	},

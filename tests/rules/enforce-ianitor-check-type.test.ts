@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import { RuleTester } from "eslint";
 import type { Rule } from "eslint";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
@@ -20,13 +20,11 @@ const ruleTester = new RuleTester({
 });
 
 describe("enforce-ianitor-check-type", () => {
-	it("should pass valid cases", () => {
-			const originalLog2 = Math.log2;
-			Math.log2 = (value: number): number => (value === 1 ? 1 : originalLog2(value));
-			try {
-				expect(() => {
-					ruleTester.run("enforce-ianitor-check-type", rule, {
-				valid: [
+	const originalLog2 = Math.log2;
+	Math.log2 = (value: number): number => (value === 1 ? 1 : originalLog2(value));
+	try {
+		ruleTester.run("enforce-ianitor-check-type", rule, {
+			valid: [
 					// Simple types (score < 10)
 					{
 						code: "type Simple = string;",
@@ -324,13 +322,11 @@ describe("enforce-ianitor-check-type", () => {
 					},
 				],
 			});
-			}).not.toThrow();
-			} finally {
-				Math.log2 = originalLog2;
-			}
-	});
+	} finally {
+		Math.log2 = originalLog2;
+	}
 
-		it("reports complex types without Ianitor checks", () => {
+	it("reports complex types without Ianitor checks", () => {
 			const originalLog2 = Math.log2;
 			Math.log2 = (value: number): number => (value === 1 ? 1 : originalLog2(value));
 			try {

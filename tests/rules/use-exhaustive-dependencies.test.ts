@@ -1,5 +1,5 @@
 import { RuleTester } from "eslint";
-import { describe, expect, it } from "bun:test";
+import { describe } from "bun:test";
 import rule from "../../src/rules/use-exhaustive-dependencies";
 
 const ruleTester = new RuleTester({
@@ -15,10 +15,8 @@ const ruleTester = new RuleTester({
 });
 
 describe("use-exhaustive-dependencies", () => {
-	it("should pass valid cases and fail invalid cases", () => {
-		expect(() => {
-			ruleTester.run("use-exhaustive-dependencies", rule, {
-				invalid: [
+	ruleTester.run("use-exhaustive-dependencies", rule, {
+		invalid: [
 					// Missing dependency
 					{
 						code: `
@@ -833,12 +831,8 @@ describe("use-exhaustive-dependencies", () => {
 					`,
 				],
 			});
-		}).not.toThrow();
-	});
 
-	it("should respect configuration options", () => {
-		expect(() => {
-			ruleTester.run("use-exhaustive-dependencies", rule, {
+	ruleTester.run("use-exhaustive-dependencies", rule, {
 				invalid: [
 					// Custom hook with missing dependency
 					{
@@ -978,6 +972,4 @@ describe("use-exhaustive-dependencies", () => {
 					},
 				],
 			});
-		}).not.toThrow();
-	});
 });
