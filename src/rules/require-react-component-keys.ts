@@ -58,6 +58,66 @@ function isReactComponentHOC(callExpr: TSESTree.CallExpression): boolean {
 }
 
 /**
+ * Checks if a JSX element is inside a conditional or logical expression that is a JSX child,
+ * and is the ONLY child (no siblings).
+ *
+ * @param node - The JSX element or fragment to check.
+ * @returns True if inside a ternary/logical expression as the only JSX child.
+ */
+function isInConditionalJSXChild(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
+	let parent = node.parent;
+	if (!parent) return false;
+
+	// Check if the immediate parent is a conditional or logical expression
+	const hasConditional = parent.type === "ConditionalExpression" || parent.type === "LogicalExpression";
+	if (!hasConditional) return false;
+
+	// Traverse up through conditional/logical expressions
+	while (parent && (parent.type === "ConditionalExpression" || parent.type === "LogicalExpression")) {
+		parent = parent.parent;
+	}
+
+	if (!parent) return false;
+
+	// If the conditional/logical is inside a JSXExpressionContainer, check for siblings
+	// Example: <div>{cond ? <A/> : <B/>}</div> - A and B don't need keys (only child)
+	// Example: <div><X key="x"/>{cond && <A/>}</div> - A needs a key (has siblings)
+	if (parent.type === "JSXExpressionContainer") {
+		const jsxExprContainer = parent;
+		const containerParent = jsxExprContainer.parent;
+
+		if (!containerParent) return false;
+
+		// Check if the parent is a JSX element or fragment
+		if (containerParent.type === "JSXElement" || containerParent.type === "JSXFragment") {
+			const children = containerParent.children;
+
+			// Count non-whitespace children
+			const significantChildren = children.filter((child) => {
+				// JSXText nodes that are just whitespace don't count as siblings
+				if (child.type === "JSXText") {
+					return child.value.trim().length > 0;
+				}
+				return true;
+			});
+
+			// If there's more than one significant child, elements inside need keys
+			if (significantChildren.length > 1) {
+				return false;
+			}
+
+			// If it's the only child, elements inside don't need keys
+			return true;
+		}
+
+		// For other parent types, default to requiring keys
+		return false;
+	}
+
+	return false;
+}
+
+/**
  * Checks if a JSX element is a top-level return from a component.
  *
  * @param node - The JSX element or fragment to check.
@@ -233,6 +293,10 @@ const requireReactComponentKeys: Rule.RuleModule = {
 
 			// Skip key requirement for JSX passed as props
 			if (isJSXPropValue(node)) return;
+
+			// Skip key requirement for elements in conditional/logical expressions as JSX children
+			// Example: <div>{cond ? <A/> : <B/>}</div> - A and B don't need keys
+			if (isInConditionalJSXChild(node)) return;
 
 			// Fragments always need keys when not top-level
 			if (node.type === "JSXFragment") {

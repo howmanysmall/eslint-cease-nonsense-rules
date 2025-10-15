@@ -1,5 +1,5 @@
 import { RuleTester } from "eslint";
-import { describe, expect, it } from "bun:test";
+import { describe } from "bun:test";
 import rule from "../../src/rules/no-shorthand-names";
 
 const ruleTester = new RuleTester({
@@ -10,10 +10,8 @@ const ruleTester = new RuleTester({
 });
 
 describe("no-shorthand-names", () => {
-	it("should pass valid cases and fail invalid cases", () => {
-		expect(() => {
-			ruleTester.run("no-shorthand-names", rule, {
-				valid: [
+	ruleTester.run("no-shorthand-names", rule, {
+		valid: [
 					"const player = getPlayer();",
 					"const localPlayer = Players.LocalPlayer;",
 					"const parameters = [1, 2, 3];",
@@ -95,6 +93,4 @@ describe("no-shorthand-names", () => {
 						},
 				],
 			});
-		}).not.toThrow();
-	});
 });

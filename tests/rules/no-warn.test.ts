@@ -1,5 +1,5 @@
 import { RuleTester } from "eslint";
-import { describe, expect, it } from "bun:test";
+import { describe } from "bun:test";
 import rule from "../../src/rules/no-warn";
 
 const ruleTester = new RuleTester({
@@ -10,10 +10,8 @@ const ruleTester = new RuleTester({
 });
 
 describe("no-warn", () => {
-	it("should pass valid cases and fail invalid cases", () => {
-		expect(() => {
-			ruleTester.run("no-warn", rule, {
-				valid: [
+	ruleTester.run("no-warn", rule, {
+		valid: [
 					"Log.warn('Warning');",
 					"Log.error(error);",
 					"console.warn('test');",
@@ -45,6 +43,4 @@ describe("no-warn", () => {
 					},
 				],
 			});
-		}).not.toThrow();
-	});
 });

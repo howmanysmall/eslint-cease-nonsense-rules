@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test";
+import { describe } from "bun:test";
 import { RuleTester } from "eslint";
 import parser from "@typescript-eslint/parser";
 import rule from "../../src/rules/require-react-component-keys";
@@ -17,10 +17,8 @@ const ruleTester = new RuleTester({
 });
 
 describe("require-react-component-keys", () => {
-	it("should pass valid cases", () => {
-		expect(() => {
-			ruleTester.run("require-react-component-keys", rule, {
-				valid: [
+	ruleTester.run("require-react-component-keys", rule, {
+		valid: [
 					// Top-level return
 					{
 						code: `
@@ -39,6 +37,20 @@ describe("require-react-component-keys", () => {
 					{
 						code: `
 							const Good2 = () => <span />;
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// Arrow function with block body top-level return
+					{
+						code: `
+							const Good2Block = () => {
+								return <div />;
+							};
 						`,
 						languageOptions: {
 							parser,
@@ -154,6 +166,52 @@ describe("require-react-component-keys", () => {
 						code: `
 							function Good5(items) {
 								return items.map((item) => <span key={item.id} />);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// Map callback with block body and keyed element
+					{
+						code: `
+							function Good5Block(items) {
+								return items.map((item) => {
+									const value = item.value;
+									if (value <= 0) return;
+									return <div key={item.id}>{value}</div>;
+								});
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// Map with spread operator and keyed element (user's scenario)
+					{
+						code: `
+							function HealthBar() {
+								const enemies = [];
+								return (
+									<screengui>
+										{...enemies.map((entity) => {
+											const health = { current: 10 };
+											if (health.current <= 0) return;
+
+											return (
+												<billboardgui key={entity}>
+													<frame key="health" />
+												</billboardgui>
+											);
+										})}
+									</screengui>
+								);
 							}
 						`,
 						languageOptions: {
@@ -296,6 +354,57 @@ describe("require-react-component-keys", () => {
 							},
 						},
 					},
+					// Ternary with fragments as JSX children (frame.tsx pattern)
+					{
+						code: `
+							function Component({ hasGlow }) {
+								return (
+									<frame>
+										{hasGlow ? (
+											<>
+												<frame key="inner" />
+												<Glow key="glow" />
+											</>
+										) : (
+											<>
+												<div key="child1" />
+												<span key="child2" />
+											</>
+										)}
+									</frame>
+								);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// Logical expression with fragment as JSX child
+					{
+						code: `
+							function Component({ show }) {
+								return (
+									<div>
+										{show && (
+											<>
+												<span key="a" />
+												<p key="b" />
+											</>
+										)}
+									</div>
+								);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
 					// React.forwardRef - root return doesn't need key
 					{
 						code: `
@@ -389,6 +498,42 @@ describe("require-react-component-keys", () => {
 										<Component {...props} key="component" ref={ref} />
 									</ErrorBoundary>
 								));
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// Conditional as only child (no siblings) - doesn't need key
+					{
+						code: `
+							function OnlyChild({ show }) {
+								return (
+									<div>
+										{show && <span>Visible</span>}
+									</div>
+								);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+					},
+					// Ternary as only child - elements don't need keys
+					{
+						code: `
+							function TernaryOnlyChild({ type }) {
+								return (
+									<div>
+										{type === "a" ? <ComponentA /> : <ComponentB />}
+									</div>
+								);
 							}
 						`,
 						languageOptions: {
@@ -513,6 +658,54 @@ describe("require-react-component-keys", () => {
 						code: `
 							function Bad7(items) {
 								return items.map((item) => <div />);
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+						errors: 1,
+					},
+					// Map callback with block body missing key
+					{
+						code: `
+							function Bad7Block(items) {
+								return items.map((item) => {
+									const value = item.value;
+									if (value <= 0) return;
+									return <div>{value}</div>;
+								});
+							}
+						`,
+						languageOptions: {
+							parser,
+							parserOptions: {
+								ecmaFeatures: { jsx: true },
+							},
+						},
+						errors: 1,
+					},
+					// Map with spread operator missing key
+					{
+						code: `
+							function HealthBar() {
+								const enemies = [];
+								return (
+									<screengui>
+										{...enemies.map((entity) => {
+											const health = { current: 10 };
+											if (health.current <= 0) return;
+
+											return (
+												<billboardgui>
+													<frame key="health" />
+												</billboardgui>
+											);
+										})}
+									</screengui>
+								);
 							}
 						`,
 						languageOptions: {
@@ -670,8 +863,70 @@ describe("require-react-component-keys", () => {
 							},
 							errors: [{ messageId: "rootComponentWithKey" }],
 						},
+						// Conditional element with siblings - needs key (user's original issue)
+						{
+							code: `
+								function Page({ navigation, title, children }) {
+									return (
+										<frame>
+											<VerticalList key="vertical-list" />
+											<Label key="page-label" />
+											<NavigationPanel key="navigation-panel" />
+											{navigation && <Label key="back-button" />}
+											{children && <frame>{children}</frame>}
+										</frame>
+									);
+								}
+							`,
+							languageOptions: {
+								parser,
+								parserOptions: {
+									ecmaFeatures: { jsx: true },
+								},
+							},
+							errors: 1,
+						},
+						// Multiple conditional siblings without keys
+						{
+							code: `
+								function MultipleConditionals({ showA, showB }) {
+									return (
+										<div>
+											<Header key="header" />
+											{showA && <ComponentA />}
+											{showB && <ComponentB />}
+										</div>
+									);
+								}
+							`,
+							languageOptions: {
+								parser,
+								parserOptions: {
+									ecmaFeatures: { jsx: true },
+								},
+							},
+							errors: 2,
+						},
+						// Ternary conditional with siblings - both branches need keys
+						{
+							code: `
+								function TernaryWithSiblings({ condition }) {
+									return (
+										<div>
+											<Header key="header" />
+											{condition ? <ComponentA /> : <ComponentB />}
+										</div>
+									);
+								}
+							`,
+							languageOptions: {
+								parser,
+								parserOptions: {
+									ecmaFeatures: { jsx: true },
+								},
+							},
+							errors: 2,
+						},
 				],
 			});
-		}).not.toThrow();
-	});
 });
