@@ -1,5 +1,5 @@
 import { RuleTester } from "eslint";
-import { describe, expect, it } from "bun:test";
+import { describe } from "bun:test";
 import rule from "../../src/rules/use-exhaustive-dependencies";
 
 const ruleTester = new RuleTester({
@@ -15,10 +15,8 @@ const ruleTester = new RuleTester({
 });
 
 describe("use-exhaustive-dependencies", () => {
-	it("should pass valid cases and fail invalid cases", () => {
-		expect(() => {
-			ruleTester.run("use-exhaustive-dependencies", rule, {
-				invalid: [
+	ruleTester.run("use-exhaustive-dependencies", rule, {
+		invalid: [
 					// Missing dependency
 					{
 						code: `
@@ -29,7 +27,20 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{ messageId: "missingDependency" }],
+						errors: [{
+							messageId: "missingDependency",
+							suggestions: [{
+								desc: "Add 'count' to dependencies array",
+								output: `
+							function Component() {
+								const [count, setCount] = useState(0);
+								useEffect(() => {
+									console.log(count);
+								}, [count]);
+							}
+						`,
+							}],
+						}],
 					},
 
 					// Missing multiple dependencies
@@ -43,7 +54,38 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{ messageId: "missingDependency" }, { messageId: "missingDependency" }],
+						errors: [
+							{
+								messageId: "missingDependency",
+								suggestions: [{
+									desc: "Add 'count' to dependencies array",
+									output: `
+							function Component() {
+								const [count, setCount] = useState(0);
+								const [name, setName] = useState("");
+								useEffect(() => {
+									console.log(count, name);
+								}, [count]);
+							}
+						`,
+								}],
+							},
+							{
+								messageId: "missingDependency",
+								suggestions: [{
+									desc: "Add 'name' to dependencies array",
+									output: `
+							function Component() {
+								const [count, setCount] = useState(0);
+								const [name, setName] = useState("");
+								useEffect(() => {
+									console.log(count, name);
+								}, [name]);
+							}
+						`,
+								}],
+							},
+						],
 					},
 
 					// Missing dependencies array
@@ -56,7 +98,20 @@ describe("use-exhaustive-dependencies", () => {
 								});
 							}
 						`,
-						errors: [{ messageId: "missingDependenciesArray" }],
+						errors: [{
+							messageId: "missingDependenciesArray",
+							suggestions: [{
+								desc: "Add dependencies array: [count]",
+								output: `
+							function Component() {
+								const [count, setCount] = useState(0);
+								useEffect(() => {
+									console.log(count);
+								}, [count]);
+							}
+						`,
+							}],
+						}],
 					},
 
 					// Unnecessary dependency
@@ -67,7 +122,18 @@ describe("use-exhaustive-dependencies", () => {
 								useEffect(() => {}, [count]);
 							}
 						`,
-						errors: [{ messageId: "unnecessaryDependency" }],
+						errors: [{
+							messageId: "unnecessaryDependency",
+							suggestions: [{
+								desc: "Remove 'count' from dependencies array",
+								output: `
+							function Component() {
+								const [count, setCount] = useState(0);
+								useEffect(() => {}, []);
+							}
+						`,
+							}],
+						}],
 					},
 
 					// Unstable dependency - inline function
@@ -106,7 +172,20 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{ messageId: "missingDependency" }],
+						errors: [{
+							messageId: "missingDependency",
+							suggestions: [{
+								desc: "Add 'count' to dependencies array",
+								output: `
+							function Component() {
+								const [count, setCount] = useState(0);
+								const callback = useCallback(() => {
+									console.log(count);
+								}, [count]);
+							}
+						`,
+							}],
+						}],
 					},
 
 					// Missing dependency in useMemo
@@ -119,7 +198,20 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{ messageId: "missingDependency" }],
+						errors: [{
+							messageId: "missingDependency",
+							suggestions: [{
+								desc: "Add 'count' to dependencies array",
+								output: `
+							function Component() {
+								const [count, setCount] = useState(0);
+								const value = useMemo(() => {
+									return count * 2;
+								}, [count]);
+							}
+						`,
+							}],
+						}],
 					},
 
 					// Missing dependency in useLayoutEffect
@@ -132,7 +224,20 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{ messageId: "missingDependency" }],
+						errors: [{
+							messageId: "missingDependency",
+							suggestions: [{
+								desc: "Add 'count' to dependencies array",
+								output: `
+							function Component() {
+								const [count, setCount] = useState(0);
+								useLayoutEffect(() => {
+									console.log(count);
+								}, [count]);
+							}
+						`,
+							}],
+						}],
 					},
 
 					// Missing dependency with member expression
@@ -145,7 +250,20 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{ messageId: "missingDependency" }],
+						errors: [{
+							messageId: "missingDependency",
+							suggestions: [{
+								desc: "Add 'obj.prop' to dependencies array",
+								output: `
+							function Component() {
+								const obj = { prop: 1 };
+								useEffect(() => {
+									console.log(obj.prop);
+								}, [obj.prop]);
+							}
+						`,
+							}],
+						}],
 					},
 
 					// Member expression - dependency too specific
@@ -158,7 +276,36 @@ describe("use-exhaustive-dependencies", () => {
 								}, [obj.nested.value]);
 							}
 						`,
-						errors: [{ messageId: "unnecessaryDependency" }, { messageId: "missingDependency" }],
+						errors: [
+							{
+								messageId: "unnecessaryDependency",
+								suggestions: [{
+									desc: "Remove 'obj.nested.value' from dependencies array",
+									output: `
+							function Component() {
+								const obj = { nested: { value: 1 } };
+								useEffect(() => {
+									console.log(obj.nested);
+								}, []);
+							}
+						`,
+								}],
+							},
+							{
+								messageId: "missingDependency",
+								suggestions: [{
+									desc: "Add 'obj.nested' to dependencies array",
+									output: `
+							function Component() {
+								const obj = { nested: { value: 1 } };
+								useEffect(() => {
+									console.log(obj.nested);
+								}, [obj.nested, obj.nested.value]);
+							}
+						`,
+								}],
+							},
+						],
 					},
 
 					// Missing dependency in useImperativeHandle (closure at index 1)
@@ -171,7 +318,20 @@ describe("use-exhaustive-dependencies", () => {
 								}), []);
 							}
 						`,
-						errors: [{ messageId: "missingDependency" }],
+						errors: [{
+							messageId: "missingDependency",
+							suggestions: [{
+								desc: "Add 'value' to dependencies array",
+								output: `
+							function Component(ref) {
+								const [value, setValue] = useState(0);
+								useImperativeHandle(ref, () => ({
+									getValue: () => value
+								}), [value]);
+							}
+						`,
+							}],
+						}],
 					},
 
 					// React Lua - useBinding with missing dependency
@@ -185,7 +345,21 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{ messageId: "missingDependency" }],
+						errors: [{
+							messageId: "missingDependency",
+							suggestions: [{
+								desc: "Add 'count' to dependencies array",
+								output: `
+							function Component() {
+								const [count, setCount] = useState(0);
+								const [binding, setBinding] = useBinding(() => count);
+								useEffect(() => {
+									console.log(count);
+								}, [count]);
+							}
+						`,
+							}],
+						}],
 					},
 
 					// Multiple hooks with missing dependencies
@@ -201,7 +375,42 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{ messageId: "missingDependency" }, { messageId: "missingDependency" }],
+						errors: [
+							{
+								messageId: "missingDependency",
+								suggestions: [{
+									desc: "Add 'count' to dependencies array",
+									output: `
+							function Component() {
+								const [count, setCount] = useState(0);
+								useEffect(() => {
+									console.log(count);
+								}, [count]);
+								useCallback(() => {
+									console.log(count);
+								}, []);
+							}
+						`,
+								}],
+							},
+							{
+								messageId: "missingDependency",
+								suggestions: [{
+									desc: "Add 'count' to dependencies array",
+									output: `
+							function Component() {
+								const [count, setCount] = useState(0);
+								useEffect(() => {
+									console.log(count);
+								}, []);
+								useCallback(() => {
+									console.log(count);
+								}, [count]);
+							}
+						`,
+								}],
+							},
+						],
 					},
 
 					// Prop dependency missing
@@ -213,7 +422,19 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{ messageId: "missingDependency" }],
+						errors: [{
+							messageId: "missingDependency",
+							suggestions: [{
+								desc: "Add 'props.value' to dependencies array",
+								output: `
+							function Component(props) {
+								useEffect(() => {
+									console.log(props.value);
+								}, [props.value]);
+							}
+						`,
+							}],
+						}],
 					},
 				],
 				valid: [
@@ -610,12 +831,8 @@ describe("use-exhaustive-dependencies", () => {
 					`,
 				],
 			});
-		}).not.toThrow();
-	});
 
-	it("should respect configuration options", () => {
-		expect(() => {
-			ruleTester.run("use-exhaustive-dependencies", rule, {
+	ruleTester.run("use-exhaustive-dependencies", rule, {
 				invalid: [
 					// Custom hook with missing dependency
 					{
@@ -627,7 +844,20 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{ messageId: "missingDependency" }],
+						errors: [{
+							messageId: "missingDependency",
+							suggestions: [{
+								desc: "Add 'count' to dependencies array",
+								output: `
+							function Component() {
+								const [count, setCount] = useState(0);
+								useCustomHook(() => {
+									console.log(count);
+								}, [count]);
+							}
+						`,
+							}],
+						}],
 						options: [
 							{
 								hooks: [
@@ -742,6 +972,4 @@ describe("use-exhaustive-dependencies", () => {
 					},
 				],
 			});
-		}).not.toThrow();
-	});
 });

@@ -1,5 +1,5 @@
 import { RuleTester } from "eslint";
-import { describe, expect, it } from "bun:test";
+import { describe } from "bun:test";
 import rule from "../../src/rules/no-print";
 
 const ruleTester = new RuleTester({
@@ -10,10 +10,8 @@ const ruleTester = new RuleTester({
 });
 
 describe("no-print", () => {
-	it("should pass valid cases and fail invalid cases", () => {
-		expect(() => {
-			ruleTester.run("no-print", rule, {
-				valid: [
+	ruleTester.run("no-print", rule, {
+		valid: [
 					"Log.info('Hello');",
 					"Log.debug(value);",
 					"console.log('test');",
@@ -45,6 +43,4 @@ describe("no-print", () => {
 					},
 				],
 			});
-		}).not.toThrow();
-	});
 });

@@ -1,5 +1,5 @@
 import { RuleTester } from "eslint";
-import { describe, expect, it } from "bun:test";
+import { describe } from "bun:test";
 import rule from "../../src/rules/no-color3-constructor";
 
 const ruleTester = new RuleTester({
@@ -10,10 +10,8 @@ const ruleTester = new RuleTester({
 });
 
 describe("no-color3-constructor", () => {
-	it("should pass valid cases and fail invalid cases", () => {
-		expect(() => {
-			ruleTester.run("no-color3-constructor", rule, {
-				valid: [
+	ruleTester.run("no-color3-constructor", rule, {
+		valid: [
 					"new Color3();",
 					"new Color3(0, 0, 0);",
 					"Color3.fromRGB(255, 128, 64);",
@@ -86,6 +84,4 @@ describe("no-color3-constructor", () => {
 						},
 				],
 			});
-		}).not.toThrow();
-	});
 });
