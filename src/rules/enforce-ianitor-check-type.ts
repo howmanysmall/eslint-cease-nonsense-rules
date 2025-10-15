@@ -416,6 +416,35 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 		const variableDeclaratorsToCheck = new Map<unknown, { complexity: number }>();
 
 		return {
+			// After all nodes are visited, check the collected variable declarators
+			"Program:exit"() {
+				for (const [nodeKey, data] of variableDeclaratorsToCheck.entries()) {
+					const node = nodeKey as TSESTree.VariableDeclarator;
+
+					// Skip if this variable is used in an Ianitor.Static<typeof ...> pattern
+					if (node.id.type === "Identifier" && ianitorStaticVariables.has(node.id.name)) continue;
+
+					context.report({
+						data: { score: data.complexity.toFixed(1) },
+						messageId: "missingIanitorCheckType",
+						node: node.id,
+					});
+				}
+			},
+
+			// Check interface declarations
+			TSInterfaceDeclaration(node) {
+				const complexity = calculateStructuralComplexity(node);
+				const name = getTypeName(node);
+
+				if (complexity >= config.interfacePenalty) {
+					context.report({
+						data: { name: name || "unknown" },
+						messageId: "complexInterfaceNeedsCheck",
+						node,
+					});
+				}
+			},
 			// Handle type alias declarations
 			TSTypeAliasDeclaration(node: TSESTree.TSTypeAliasDeclaration) {
 				// First, check if this uses Ianitor.Static pattern and collect the variable name
@@ -436,20 +465,6 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 				});
 			},
 
-			// Check interface declarations
-			TSInterfaceDeclaration(node) {
-				const complexity = calculateStructuralComplexity(node);
-				const name = getTypeName(node);
-
-				if (complexity >= config.interfacePenalty) {
-					context.report({
-						data: { name: name || "unknown" },
-						messageId: "complexInterfaceNeedsCheck",
-						node,
-					});
-				}
-			},
-
 			// Collect variable declarators that might need checking
 			VariableDeclarator(node) {
 				if (!node.init || node.init.type !== "CallExpression") return;
@@ -461,22 +476,6 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 
 				// Store for later checking in Program:exit
 				variableDeclaratorsToCheck.set(node as unknown, { complexity });
-			},
-
-			// After all nodes are visited, check the collected variable declarators
-			"Program:exit"() {
-				for (const [nodeKey, data] of variableDeclaratorsToCheck.entries()) {
-					const node = nodeKey as TSESTree.VariableDeclarator;
-
-					// Skip if this variable is used in an Ianitor.Static<typeof ...> pattern
-					if (node.id.type === "Identifier" && ianitorStaticVariables.has(node.id.name)) continue;
-
-					context.report({
-						data: { score: data.complexity.toFixed(1) },
-						messageId: "missingIanitorCheckType",
-						node: node.id,
-					});
-				}
 			},
 		};
 	},

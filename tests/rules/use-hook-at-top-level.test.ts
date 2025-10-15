@@ -1,5 +1,5 @@
-import { RuleTester } from "eslint";
 import { describe } from "bun:test";
+import { RuleTester } from "eslint";
 import rule from "../../src/rules/use-hook-at-top-level";
 
 const ruleTester = new RuleTester({
@@ -17,51 +17,51 @@ const ruleTester = new RuleTester({
 describe("use-hook-at-top-level", () => {
 	ruleTester.run("use-hook-at-top-level", rule, {
 		invalid: [
-					// Conditional execution - if statement
-					{
-						code: `
+			// Conditional execution - if statement
+			{
+				code: `
 							function Component() {
 								if (condition) {
 									useEffect(() => {});
 								}
 							}
 						`,
-						errors: [{ messageId: "conditionalHook" }],
-					},
+				errors: [{ messageId: "conditionalHook" }],
+			},
 
-					// Conditional execution - ternary operator
-					{
-						code: `
+			// Conditional execution - ternary operator
+			{
+				code: `
 							function Component() {
 								const x = condition ? useCallback(() => {}) : null;
 							}
 						`,
-						errors: [{ messageId: "conditionalHook" }],
-					},
+				errors: [{ messageId: "conditionalHook" }],
+			},
 
-					// Conditional execution - logical AND
-					{
-						code: `
+			// Conditional execution - logical AND
+			{
+				code: `
 							function Component() {
 								condition && useEffect(() => {});
 							}
 						`,
-						errors: [{ messageId: "conditionalHook" }],
-					},
+				errors: [{ messageId: "conditionalHook" }],
+			},
 
-					// Conditional execution - logical OR
-					{
-						code: `
+			// Conditional execution - logical OR
+			{
+				code: `
 							function Component() {
 								condition || useMemo(() => {});
 							}
 						`,
-						errors: [{ messageId: "conditionalHook" }],
-					},
+				errors: [{ messageId: "conditionalHook" }],
+			},
 
-					// Conditional execution - switch statement
-					{
-						code: `
+			// Conditional execution - switch statement
+			{
+				code: `
 							function Component() {
 								switch (value) {
 									case 1:
@@ -70,143 +70,143 @@ describe("use-hook-at-top-level", () => {
 								}
 							}
 						`,
-						errors: [{ messageId: "conditionalHook" }],
-					},
+				errors: [{ messageId: "conditionalHook" }],
+			},
 
-					// Early return
-					{
-						code: `
+			// Early return
+			{
+				code: `
 							function Component() {
 								if (condition) return null;
 								useEffect(() => {});
 							}
 						`,
-						errors: [{ messageId: "afterEarlyReturn" }],
-					},
+				errors: [{ messageId: "afterEarlyReturn" }],
+			},
 
-					// Multiple early returns
-					{
-						code: `
+			// Multiple early returns
+			{
+				code: `
 							function Component() {
 								if (a) return null;
 								if (b) return null;
 								useEffect(() => {});
 							}
 						`,
-						errors: [{ messageId: "afterEarlyReturn" }],
-					},
+				errors: [{ messageId: "afterEarlyReturn" }],
+			},
 
-					// Loop - for statement
-					{
-						code: `
+			// Loop - for statement
+			{
+				code: `
 							function Component() {
 								for (let i = 0; i < 10; i++) {
 									useState(i);
 								}
 							}
 						`,
-						errors: [{ messageId: "loopHook" }],
-					},
+				errors: [{ messageId: "loopHook" }],
+			},
 
-					// Loop - while statement
-					{
-						code: `
+			// Loop - while statement
+			{
+				code: `
 							function Component() {
 								while (condition) {
 									useEffect(() => {});
 								}
 							}
 						`,
-						errors: [{ messageId: "loopHook" }],
-					},
+				errors: [{ messageId: "loopHook" }],
+			},
 
-					// Loop - do-while statement
-					{
-						code: `
+			// Loop - do-while statement
+			{
+				code: `
 							function Component() {
 								do {
 									useMemo(() => {});
 								} while (condition);
 							}
 						`,
-						errors: [{ messageId: "loopHook" }],
-					},
+				errors: [{ messageId: "loopHook" }],
+			},
 
-					// Loop - for-of statement
-					{
-						code: `
+			// Loop - for-of statement
+			{
+				code: `
 							function Component() {
 								for (const item of items) {
 									useCallback(() => {});
 								}
 							}
 						`,
-						errors: [{ messageId: "loopHook" }],
-					},
+				errors: [{ messageId: "loopHook" }],
+			},
 
-					// Loop - for-in statement
-					{
-						code: `
+			// Loop - for-in statement
+			{
+				code: `
 							function Component() {
 								for (const key in object) {
 									useState(0);
 								}
 							}
 						`,
-						errors: [{ messageId: "loopHook" }],
-					},
+				errors: [{ messageId: "loopHook" }],
+			},
 
-					// Nested function - arrow function
-					{
-						code: `
+			// Nested function - arrow function
+			{
+				code: `
 							function Component() {
 								const helper = () => {
 									useState(0);
 								};
 							}
 						`,
-						errors: [{ messageId: "nestedFunction" }],
-					},
+				errors: [{ messageId: "nestedFunction" }],
+			},
 
-					// Nested function - function expression
-					{
-						code: `
+			// Nested function - function expression
+			{
+				code: `
 							function Component() {
 								const helper = function() {
 									useEffect(() => {});
 								};
 							}
 						`,
-						errors: [{ messageId: "nestedFunction" }],
-					},
+				errors: [{ messageId: "nestedFunction" }],
+			},
 
-					// Nested function - function declaration
-					{
-						code: `
+			// Nested function - function declaration
+			{
+				code: `
 							function Component() {
 								function helper() {
 									useMemo(() => {});
 								}
 							}
 						`,
-						errors: [{ messageId: "nestedFunction" }],
-					},
+				errors: [{ messageId: "nestedFunction" }],
+			},
 
-					// Try block
-					{
-						code: `
+			// Try block
+			{
+				code: `
 							function Component() {
 								try {
 									useEffect(() => {});
 								} catch (error) {}
 							}
 						`,
-						errors: [{ messageId: "tryBlockHook" }],
-					},
+				errors: [{ messageId: "tryBlockHook" }],
+			},
 
-					// Catch block
-					{
-						code: `
+			// Catch block
+			{
+				code: `
 							function Component() {
 								try {
 									something();
@@ -215,60 +215,60 @@ describe("use-hook-at-top-level", () => {
 								}
 							}
 						`,
-						errors: [{ messageId: "tryBlockHook" }],
-					},
+				errors: [{ messageId: "tryBlockHook" }],
+			},
 
-					// Recursive call
-					{
-						code: `
+			// Recursive call
+			{
+				code: `
 							function useRecursive() {
 								const callback = useCallback(() => {
 									useRecursive();
 								}, []);
 							}
 						`,
-						errors: [{ messageId: "recursiveHookCall" }],
-					},
+				errors: [{ messageId: "recursiveHookCall" }],
+			},
 
-					// Custom hook - arrow function
-					{
-						code: `
+			// Custom hook - arrow function
+			{
+				code: `
 							const useCustom = () => {
 								if (condition) {
 									useState(0);
 								}
 							};
 						`,
-						errors: [{ messageId: "conditionalHook" }],
-					},
+				errors: [{ messageId: "conditionalHook" }],
+			},
 
-					// React Lua - useBinding in conditional
-					{
-						code: `
+			// React Lua - useBinding in conditional
+			{
+				code: `
 							function Component() {
 								if (condition) {
 									useBinding(0);
 								}
 							}
 						`,
-						errors: [{ messageId: "conditionalHook" }],
-					},
+				errors: [{ messageId: "conditionalHook" }],
+			},
 
-					// React Lua - useBinding in loop
-					{
-						code: `
+			// React Lua - useBinding in loop
+			{
+				code: `
 							function Component() {
 								for (let i = 0; i < 10; i++) {
 									useBinding(i);
 								}
 							}
 						`,
-						errors: [{ messageId: "loopHook" }],
-					},
+				errors: [{ messageId: "loopHook" }],
+			},
 
-					// Complex nesting
-					{
-						code: `
+			// Complex nesting
+			{
+				code: `
 							function Component() {
 								if (a) {
 									if (b) {
@@ -277,30 +277,30 @@ describe("use-hook-at-top-level", () => {
 								}
 							}
 						`,
-						errors: [{ messageId: "conditionalHook" }],
-					},
+				errors: [{ messageId: "conditionalHook" }],
+			},
 
-					// Hook after conditional with early return
-					{
-						code: `
+			// Hook after conditional with early return
+			{
+				code: `
 							function Component() {
 								if (loading) return <div>Loading</div>;
 								useMemo(() => {});
 							}
 						`,
-						errors: [{ messageId: "afterEarlyReturn" }],
-					},
-				],
-				valid: [
-					// Basic top-level call
-					`
+				errors: [{ messageId: "afterEarlyReturn" }],
+			},
+		],
+		valid: [
+			// Basic top-level call
+			`
 						function Component() {
 							useEffect(() => {});
 						}
 					`,
 
-					// Multiple hooks at top level
-					`
+			// Multiple hooks at top level
+			`
 						function Component() {
 							useState(0);
 							useEffect(() => {});
@@ -308,8 +308,8 @@ describe("use-hook-at-top-level", () => {
 						}
 					`,
 
-					// Conditional logic inside hook
-					`
+			// Conditional logic inside hook
+			`
 						function Component() {
 							useEffect(() => {
 								if (condition) {
@@ -319,8 +319,8 @@ describe("use-hook-at-top-level", () => {
 						}
 					`,
 
-					// Custom hook
-					`
+			// Custom hook
+			`
 						function useCustom() {
 							const [state, setState] = useState(0);
 							useEffect(() => {});
@@ -328,22 +328,22 @@ describe("use-hook-at-top-level", () => {
 						}
 					`,
 
-					// Arrow function component
-					`
+			// Arrow function component
+			`
 						const Component = () => {
 							useEffect(() => {});
 						};
 					`,
 
-					// Function expression component
-					`
+			// Function expression component
+			`
 						const Component = function() {
 							useState(0);
 						};
 					`,
 
-					// Finally block (always executes)
-					`
+			// Finally block (always executes)
+			`
 						function Component() {
 							try {
 								something();
@@ -353,8 +353,8 @@ describe("use-hook-at-top-level", () => {
 						}
 					`,
 
-					// Non-hook function calls in conditionals (should not error)
-					`
+			// Non-hook function calls in conditionals (should not error)
+			`
 						function Component() {
 							if (condition) {
 								doSomething();
@@ -362,23 +362,23 @@ describe("use-hook-at-top-level", () => {
 						}
 					`,
 
-					// Hook before early return
-					`
+			// Hook before early return
+			`
 						function Component() {
 							useEffect(() => {});
 							if (condition) return null;
 						}
 					`,
 
-					// Hook IN return statement (not after)
-					`
+			// Hook IN return statement (not after)
+			`
 						function Component() {
 							return useMemo(() => ({ value: 1 }), []);
 						}
 					`,
 
-					// Hook IN return statement with complex expression
-					`
+			// Hook IN return statement with complex expression
+			`
 						function usePixel() {
 							const binding = useBinding(0);
 							return useMemo(
@@ -390,8 +390,8 @@ describe("use-hook-at-top-level", () => {
 						}
 					`,
 
-					// Non-component function (hooks don't apply)
-					`
+			// Non-component function (hooks don't apply)
+			`
 						function helper() {
 							if (condition) {
 								useEffect(() => {});
@@ -399,30 +399,30 @@ describe("use-hook-at-top-level", () => {
 						}
 					`,
 
-					// React Lua - useBinding at top level
-					`
+			// React Lua - useBinding at top level
+			`
 						function Component() {
 							const [binding, setBinding] = useBinding(0);
 						}
 					`,
 
-					// React Lua - useBinding in custom hook
-					`
+			// React Lua - useBinding in custom hook
+			`
 						function useCustomBinding() {
 							const [binding, setBinding] = useBinding(0);
 							return binding;
 						}
 					`,
 
-					// Member expression hook call
-					`
+			// Member expression hook call
+			`
 						function Component() {
 							React.useEffect(() => {});
 						}
 					`,
 
-					// Multiple custom hooks
-					`
+			// Multiple custom hooks
+			`
 						function useMultiple() {
 							useEffect(() => {});
 							useCallback(() => {});
@@ -430,8 +430,8 @@ describe("use-hook-at-top-level", () => {
 						}
 					`,
 
-					// Hooks with all standard names
-					`
+			// Hooks with all standard names
+			`
 						function Component() {
 							useState(0);
 							useEffect(() => {});
@@ -446,8 +446,8 @@ describe("use-hook-at-top-level", () => {
 						}
 					`,
 
-					// Component with props
-					`
+			// Component with props
+			`
 						function Component(props) {
 							useEffect(() => {
 								console.log(props);
@@ -455,16 +455,16 @@ describe("use-hook-at-top-level", () => {
 						}
 					`,
 
-					// Arrow function with implicit return
-					`
+			// Arrow function with implicit return
+			`
 						const Component = () => {
 							const value = useMemo(() => expensive());
 							return value;
 						};
 					`,
 
-					// Hooks in object method that looks like component
-					`
+			// Hooks in object method that looks like component
+			`
 						const obj = {
 							Component() {
 								useState(0);
@@ -472,14 +472,14 @@ describe("use-hook-at-top-level", () => {
 						};
 					`,
 
-					// All React Lua hooks
-					`
+			// All React Lua hooks
+			`
 						function Component() {
 							useState(0);
 							useEffect(() => {});
 							useBinding(0);
 						}
 					`,
-				],
-			});
+		],
+	});
 });
