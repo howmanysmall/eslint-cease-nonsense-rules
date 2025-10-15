@@ -1,4 +1,7 @@
 {
+	"extensions": {
+		"recommendations": ["oxc.oxc-vscode"],
+	},
 	"folders": [
 		{
 			"name": "Small ESLint",
@@ -36,6 +39,7 @@
 			"editor.defaultFormatter": "biomejs.biome",
 			"editor.formatOnSave": true,
 		},
+		"biome.suggestInstallingGlobally": false,
 
 		"editor.acceptSuggestionOnCommitCharacter": true,
 		"editor.acceptSuggestionOnEnter": "on",
@@ -62,11 +66,5 @@
 		"oxc.flags": {},
 		"oxc.lint.run": "onType",
 		"oxc.typeAware": true,
-		"biome.suggestInstallingGlobally": false,
-	},
-	"extensions": {
-		"recommendations": [
-			"oxc.oxc-vscode"
-		]
 	},
 }
