@@ -18,6 +18,33 @@ const DEFAULT_OPTIONS: Required<RuleOptions> = {
 };
 
 /**
+ * Parent node types that simply wrap another expression without changing its semantics.
+ * These should be skipped when walking up the AST to analyze structural context.
+ */
+const WRAPPER_PARENT_TYPES = new Set([
+	"ParenthesizedExpression",
+	"TSAsExpression",
+	"TSSatisfiesExpression",
+	"TSTypeAssertion",
+	"TSNonNullExpression",
+	"TSInstantiationExpression",
+	"ChainExpression",
+]);
+
+/**
+ * Walks up the AST from a starting node, skipping wrapper expressions that do not
+ * materially affect JSX placement (e.g. parentheses, type assertions).
+ *
+ * @param node - The starting node whose wrappers should be skipped.
+ * @returns The first ancestor node that is not a simple wrapper, or undefined.
+ */
+function ascendPastWrappers(node: TSESTree.Node | undefined): TSESTree.Node | undefined {
+	let current = node;
+	while (current && WRAPPER_PARENT_TYPES.has(current.type)) current = current.parent;
+	return current;
+}
+
+/**
  * Checks if a JSX element has a key attribute.
  *
  * @param node - The JSX element to check.
@@ -124,18 +151,18 @@ function isInConditionalJSXChild(node: TSESTree.JSXElement | TSESTree.JSXFragmen
  * @returns True if the element is directly returned from a component.
  */
 function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
-	let parent = node.parent;
+	let parent = ascendPastWrappers(node.parent);
 	if (!parent) return false;
 
 	// Handle return with parentheses: return (<div>...)
-	if (parent.type === "JSXExpressionContainer") parent = parent.parent;
+	if (parent.type === "JSXExpressionContainer") parent = ascendPastWrappers(parent.parent);
 	if (!parent) return false;
 
 	// Traverse through conditional and logical expressions
 	// Example: return condition ? <A/> : <B/>
 	// Example: return condition && <Component/>
 	while (parent && (parent.type === "ConditionalExpression" || parent.type === "LogicalExpression")) {
-		parent = parent.parent;
+		parent = ascendPastWrappers(parent.parent);
 	}
 
 	if (!parent) return false;
@@ -143,11 +170,11 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 	// Handle direct return
 	if (parent.type === "ReturnStatement") {
 		// Walk up to find the containing function
-		let currentNode: TSESTree.Node | undefined = parent.parent;
+		let currentNode: TSESTree.Node | undefined = ascendPastWrappers(parent.parent);
 
 		// Skip through block statement to get to function
 		if (currentNode?.type === "BlockStatement") {
-			currentNode = currentNode.parent;
+			currentNode = ascendPastWrappers(currentNode.parent);
 		}
 
 		if (!currentNode) return false;
@@ -155,9 +182,11 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 		// Check if this is a callback (arrow/function expression inside a call expression)
 		if (currentNode.type === "ArrowFunctionExpression" || currentNode.type === "FunctionExpression") {
 			// If the function is an argument to a call expression, check if it's a React HOC
-			if (currentNode.parent?.type === "CallExpression") {
+			const functionParent = ascendPastWrappers(currentNode.parent);
+
+			if (functionParent?.type === "CallExpression") {
 				// React.forwardRef and React.memo callbacks are component definitions, treat as top-level
-				return isReactComponentHOC(currentNode.parent);
+				return isReactComponentHOC(functionParent);
 			}
 			// Not inside a call expression, so it's a top-level component
 			return true;
@@ -170,9 +199,11 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 	// Handle arrow function direct return: () => <div>
 	if (parent.type === "ArrowFunctionExpression") {
 		// Check if this arrow function is inside a call expression
-		if (parent.parent?.type === "CallExpression") {
+		const functionParent = ascendPastWrappers(parent.parent);
+
+		if (functionParent?.type === "CallExpression") {
 			// React.forwardRef and React.memo callbacks are component definitions, treat as top-level
-			return isReactComponentHOC(parent.parent);
+			return isReactComponentHOC(functionParent);
 		}
 		// Not inside a call expression, so it's a top-level component
 		return true;

@@ -267,94 +267,8 @@ const useHookAtTopLevel: Rule.RuleModule = {
 		}
 
 		return {
-			// Function entry
-			FunctionDeclaration: handleFunctionEnter,
-			FunctionExpression: handleFunctionEnter,
 			ArrowFunctionExpression: handleFunctionEnter,
-
-			// Function exit
-			"FunctionDeclaration:exit": handleFunctionExit,
-			"FunctionExpression:exit": handleFunctionExit,
 			"ArrowFunctionExpression:exit": handleFunctionExit,
-
-			// Conditional statements
-			IfStatement() {
-				updateContext({ inConditional: true });
-			},
-			"IfStatement:exit"() {
-				updateContext({ inConditional: false });
-			},
-
-			SwitchStatement() {
-				updateContext({ inConditional: true });
-			},
-			"SwitchStatement:exit"() {
-				updateContext({ inConditional: false });
-			},
-
-			ConditionalExpression() {
-				updateContext({ inConditional: true });
-			},
-			"ConditionalExpression:exit"() {
-				updateContext({ inConditional: false });
-			},
-
-			LogicalExpression() {
-				updateContext({ inConditional: true });
-			},
-			"LogicalExpression:exit"() {
-				updateContext({ inConditional: false });
-			},
-
-			// Early returns - set flag on exit so hooks IN the return expression aren't flagged
-			"ReturnStatement:exit"() {
-				updateContext({ afterEarlyReturn: true });
-			},
-
-			// Loops
-			ForStatement() {
-				updateContext({ inLoop: true });
-			},
-			"ForStatement:exit"() {
-				updateContext({ inLoop: false });
-			},
-
-			WhileStatement() {
-				updateContext({ inLoop: true });
-			},
-			"WhileStatement:exit"() {
-				updateContext({ inLoop: false });
-			},
-
-			DoWhileStatement() {
-				updateContext({ inLoop: true });
-			},
-			"DoWhileStatement:exit"() {
-				updateContext({ inLoop: false });
-			},
-
-			ForInStatement() {
-				updateContext({ inLoop: true });
-			},
-			"ForInStatement:exit"() {
-				updateContext({ inLoop: false });
-			},
-
-			ForOfStatement() {
-				updateContext({ inLoop: true });
-			},
-			"ForOfStatement:exit"() {
-				updateContext({ inLoop: false });
-			},
-
-			// Try blocks
-			TryStatement() {
-				// Mark entering try block (but not finally)
-				updateContext({ inTryBlock: true });
-			},
-			"TryStatement:exit"() {
-				updateContext({ inTryBlock: false });
-			},
 
 			// Hook calls
 			CallExpression(node) {
@@ -426,6 +340,92 @@ const useHookAtTopLevel: Rule.RuleModule = {
 						node: callNode,
 					});
 				}
+			},
+
+			ConditionalExpression() {
+				updateContext({ inConditional: true });
+			},
+			"ConditionalExpression:exit"() {
+				updateContext({ inConditional: false });
+			},
+
+			DoWhileStatement() {
+				updateContext({ inLoop: true });
+			},
+			"DoWhileStatement:exit"() {
+				updateContext({ inLoop: false });
+			},
+
+			ForInStatement() {
+				updateContext({ inLoop: true });
+			},
+			"ForInStatement:exit"() {
+				updateContext({ inLoop: false });
+			},
+
+			ForOfStatement() {
+				updateContext({ inLoop: true });
+			},
+			"ForOfStatement:exit"() {
+				updateContext({ inLoop: false });
+			},
+
+			// Loops
+			ForStatement() {
+				updateContext({ inLoop: true });
+			},
+			"ForStatement:exit"() {
+				updateContext({ inLoop: false });
+			},
+			// Function entry
+			FunctionDeclaration: handleFunctionEnter,
+
+			// Function exit
+			"FunctionDeclaration:exit": handleFunctionExit,
+			FunctionExpression: handleFunctionEnter,
+			"FunctionExpression:exit": handleFunctionExit,
+
+			// Conditional statements
+			IfStatement() {
+				updateContext({ inConditional: true });
+			},
+			"IfStatement:exit"() {
+				updateContext({ inConditional: false });
+			},
+
+			LogicalExpression() {
+				updateContext({ inConditional: true });
+			},
+			"LogicalExpression:exit"() {
+				updateContext({ inConditional: false });
+			},
+
+			// Early returns - set flag on exit so hooks IN the return expression aren't flagged
+			"ReturnStatement:exit"() {
+				updateContext({ afterEarlyReturn: true });
+			},
+
+			SwitchStatement() {
+				updateContext({ inConditional: true });
+			},
+			"SwitchStatement:exit"() {
+				updateContext({ inConditional: false });
+			},
+
+			// Try blocks
+			TryStatement() {
+				// Mark entering try block (but not finally)
+				updateContext({ inTryBlock: true });
+			},
+			"TryStatement:exit"() {
+				updateContext({ inTryBlock: false });
+			},
+
+			WhileStatement() {
+				updateContext({ inLoop: true });
+			},
+			"WhileStatement:exit"() {
+				updateContext({ inLoop: false });
 			},
 		};
 	},

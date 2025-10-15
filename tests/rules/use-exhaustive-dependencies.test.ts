@@ -1,5 +1,5 @@
-import { RuleTester } from "eslint";
 import { describe } from "bun:test";
+import { RuleTester } from "eslint";
 import rule from "../../src/rules/use-exhaustive-dependencies";
 
 const ruleTester = new RuleTester({
@@ -17,9 +17,9 @@ const ruleTester = new RuleTester({
 describe("use-exhaustive-dependencies", () => {
 	ruleTester.run("use-exhaustive-dependencies", rule, {
 		invalid: [
-					// Missing dependency
-					{
-						code: `
+			// Missing dependency
+			{
+				code: `
 							function Component() {
 								const [count, setCount] = useState(0);
 								useEffect(() => {
@@ -27,9 +27,11 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{
-							messageId: "missingDependency",
-							suggestions: [{
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
 								desc: "Add 'count' to dependencies array",
 								output: `
 							function Component() {
@@ -39,13 +41,15 @@ describe("use-exhaustive-dependencies", () => {
 								}, [count]);
 							}
 						`,
-							}],
-						}],
+							},
+						],
 					},
+				],
+			},
 
-					// Missing multiple dependencies
-					{
-						code: `
+			// Missing multiple dependencies
+			{
+				code: `
 							function Component() {
 								const [count, setCount] = useState(0);
 								const [name, setName] = useState("");
@@ -54,12 +58,13 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
 							{
-								messageId: "missingDependency",
-								suggestions: [{
-									desc: "Add 'count' to dependencies array",
-									output: `
+								desc: "Add 'count' to dependencies array",
+								output: `
 							function Component() {
 								const [count, setCount] = useState(0);
 								const [name, setName] = useState("");
@@ -68,13 +73,15 @@ describe("use-exhaustive-dependencies", () => {
 								}, [count]);
 							}
 						`,
-								}],
 							},
+						],
+					},
+					{
+						messageId: "missingDependency",
+						suggestions: [
 							{
-								messageId: "missingDependency",
-								suggestions: [{
-									desc: "Add 'name' to dependencies array",
-									output: `
+								desc: "Add 'name' to dependencies array",
+								output: `
 							function Component() {
 								const [count, setCount] = useState(0);
 								const [name, setName] = useState("");
@@ -83,14 +90,15 @@ describe("use-exhaustive-dependencies", () => {
 								}, [name]);
 							}
 						`,
-								}],
 							},
 						],
 					},
+				],
+			},
 
-					// Missing dependencies array
-					{
-						code: `
+			// Missing dependencies array
+			{
+				code: `
 							function Component() {
 								const [count, setCount] = useState(0);
 								useEffect(() => {
@@ -98,9 +106,11 @@ describe("use-exhaustive-dependencies", () => {
 								});
 							}
 						`,
-						errors: [{
-							messageId: "missingDependenciesArray",
-							suggestions: [{
+				errors: [
+					{
+						messageId: "missingDependenciesArray",
+						suggestions: [
+							{
 								desc: "Add dependencies array: [count]",
 								output: `
 							function Component() {
@@ -110,21 +120,25 @@ describe("use-exhaustive-dependencies", () => {
 								}, [count]);
 							}
 						`,
-							}],
-						}],
+							},
+						],
 					},
+				],
+			},
 
-					// Unnecessary dependency
-					{
-						code: `
+			// Unnecessary dependency
+			{
+				code: `
 							function Component() {
 								const [count, setCount] = useState(0);
 								useEffect(() => {}, [count]);
 							}
 						`,
-						errors: [{
-							messageId: "unnecessaryDependency",
-							suggestions: [{
+				errors: [
+					{
+						messageId: "unnecessaryDependency",
+						suggestions: [
+							{
 								desc: "Remove 'count' from dependencies array",
 								output: `
 							function Component() {
@@ -132,13 +146,15 @@ describe("use-exhaustive-dependencies", () => {
 								useEffect(() => {}, []);
 							}
 						`,
-							}],
-						}],
+							},
+						],
 					},
+				],
+			},
 
-					// Unstable dependency - inline function
-					{
-						code: `
+			// Unstable dependency - inline function
+			{
+				code: `
 							function Component() {
 								const handler = () => {};
 								useEffect(() => {
@@ -146,12 +162,12 @@ describe("use-exhaustive-dependencies", () => {
 								}, [handler]);
 							}
 						`,
-						errors: [{ messageId: "unstableDependency" }],
-					},
+				errors: [{ messageId: "unstableDependency" }],
+			},
 
-					// Unstable dependency - inline object
-					{
-						code: `
+			// Unstable dependency - inline object
+			{
+				code: `
 							function Component() {
 								const config = {};
 								useEffect(() => {
@@ -159,12 +175,12 @@ describe("use-exhaustive-dependencies", () => {
 								}, [config]);
 							}
 						`,
-						errors: [{ messageId: "unstableDependency" }],
-					},
+				errors: [{ messageId: "unstableDependency" }],
+			},
 
-					// Missing dependency in useCallback
-					{
-						code: `
+			// Missing dependency in useCallback
+			{
+				code: `
 							function Component() {
 								const [count, setCount] = useState(0);
 								const callback = useCallback(() => {
@@ -172,9 +188,11 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{
-							messageId: "missingDependency",
-							suggestions: [{
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
 								desc: "Add 'count' to dependencies array",
 								output: `
 							function Component() {
@@ -184,13 +202,15 @@ describe("use-exhaustive-dependencies", () => {
 								}, [count]);
 							}
 						`,
-							}],
-						}],
+							},
+						],
 					},
+				],
+			},
 
-					// Missing dependency in useMemo
-					{
-						code: `
+			// Missing dependency in useMemo
+			{
+				code: `
 							function Component() {
 								const [count, setCount] = useState(0);
 								const value = useMemo(() => {
@@ -198,9 +218,11 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{
-							messageId: "missingDependency",
-							suggestions: [{
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
 								desc: "Add 'count' to dependencies array",
 								output: `
 							function Component() {
@@ -210,13 +232,15 @@ describe("use-exhaustive-dependencies", () => {
 								}, [count]);
 							}
 						`,
-							}],
-						}],
+							},
+						],
 					},
+				],
+			},
 
-					// Missing dependency in useLayoutEffect
-					{
-						code: `
+			// Missing dependency in useLayoutEffect
+			{
+				code: `
 							function Component() {
 								const [count, setCount] = useState(0);
 								useLayoutEffect(() => {
@@ -224,9 +248,11 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{
-							messageId: "missingDependency",
-							suggestions: [{
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
 								desc: "Add 'count' to dependencies array",
 								output: `
 							function Component() {
@@ -236,13 +262,15 @@ describe("use-exhaustive-dependencies", () => {
 								}, [count]);
 							}
 						`,
-							}],
-						}],
+							},
+						],
 					},
+				],
+			},
 
-					// Missing dependency with member expression
-					{
-						code: `
+			// Missing dependency with member expression
+			{
+				code: `
 							function Component() {
 								const obj = { prop: 1 };
 								useEffect(() => {
@@ -250,9 +278,11 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{
-							messageId: "missingDependency",
-							suggestions: [{
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
 								desc: "Add 'obj.prop' to dependencies array",
 								output: `
 							function Component() {
@@ -262,13 +292,15 @@ describe("use-exhaustive-dependencies", () => {
 								}, [obj.prop]);
 							}
 						`,
-							}],
-						}],
+							},
+						],
 					},
+				],
+			},
 
-					// Member expression - dependency too specific
-					{
-						code: `
+			// Member expression - dependency too specific
+			{
+				code: `
 							function Component() {
 								const obj = { nested: { value: 1 } };
 								useEffect(() => {
@@ -276,12 +308,13 @@ describe("use-exhaustive-dependencies", () => {
 								}, [obj.nested.value]);
 							}
 						`,
-						errors: [
+				errors: [
+					{
+						messageId: "unnecessaryDependency",
+						suggestions: [
 							{
-								messageId: "unnecessaryDependency",
-								suggestions: [{
-									desc: "Remove 'obj.nested.value' from dependencies array",
-									output: `
+								desc: "Remove 'obj.nested.value' from dependencies array",
+								output: `
 							function Component() {
 								const obj = { nested: { value: 1 } };
 								useEffect(() => {
@@ -289,13 +322,15 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-								}],
 							},
+						],
+					},
+					{
+						messageId: "missingDependency",
+						suggestions: [
 							{
-								messageId: "missingDependency",
-								suggestions: [{
-									desc: "Add 'obj.nested' to dependencies array",
-									output: `
+								desc: "Add 'obj.nested' to dependencies array",
+								output: `
 							function Component() {
 								const obj = { nested: { value: 1 } };
 								useEffect(() => {
@@ -303,14 +338,15 @@ describe("use-exhaustive-dependencies", () => {
 								}, [obj.nested, obj.nested.value]);
 							}
 						`,
-								}],
 							},
 						],
 					},
+				],
+			},
 
-					// Missing dependency in useImperativeHandle (closure at index 1)
-					{
-						code: `
+			// Missing dependency in useImperativeHandle (closure at index 1)
+			{
+				code: `
 							function Component(ref) {
 								const [value, setValue] = useState(0);
 								useImperativeHandle(ref, () => ({
@@ -318,9 +354,11 @@ describe("use-exhaustive-dependencies", () => {
 								}), []);
 							}
 						`,
-						errors: [{
-							messageId: "missingDependency",
-							suggestions: [{
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
 								desc: "Add 'value' to dependencies array",
 								output: `
 							function Component(ref) {
@@ -330,13 +368,15 @@ describe("use-exhaustive-dependencies", () => {
 								}), [value]);
 							}
 						`,
-							}],
-						}],
+							},
+						],
 					},
+				],
+			},
 
-					// React Lua - useBinding with missing dependency
-					{
-						code: `
+			// React Lua - useBinding with missing dependency
+			{
+				code: `
 							function Component() {
 								const [count, setCount] = useState(0);
 								const [binding, setBinding] = useBinding(() => count);
@@ -345,9 +385,11 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{
-							messageId: "missingDependency",
-							suggestions: [{
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
 								desc: "Add 'count' to dependencies array",
 								output: `
 							function Component() {
@@ -358,73 +400,81 @@ describe("use-exhaustive-dependencies", () => {
 								}, [count]);
 							}
 						`,
-							}],
-						}],
-					},
-
-					// Multiple hooks with missing dependencies
-					{
-						code: `
-							function Component() {
-								const [count, setCount] = useState(0);
-								useEffect(() => {
-									console.log(count);
-								}, []);
-								useCallback(() => {
-									console.log(count);
-								}, []);
-							}
-						`,
-						errors: [
-							{
-								messageId: "missingDependency",
-								suggestions: [{
-									desc: "Add 'count' to dependencies array",
-									output: `
-							function Component() {
-								const [count, setCount] = useState(0);
-								useEffect(() => {
-									console.log(count);
-								}, [count]);
-								useCallback(() => {
-									console.log(count);
-								}, []);
-							}
-						`,
-								}],
-							},
-							{
-								messageId: "missingDependency",
-								suggestions: [{
-									desc: "Add 'count' to dependencies array",
-									output: `
-							function Component() {
-								const [count, setCount] = useState(0);
-								useEffect(() => {
-									console.log(count);
-								}, []);
-								useCallback(() => {
-									console.log(count);
-								}, [count]);
-							}
-						`,
-								}],
 							},
 						],
 					},
+				],
+			},
 
-					// Prop dependency missing
+			// Multiple hooks with missing dependencies
+			{
+				code: `
+							function Component() {
+								const [count, setCount] = useState(0);
+								useEffect(() => {
+									console.log(count);
+								}, []);
+								useCallback(() => {
+									console.log(count);
+								}, []);
+							}
+						`,
+				errors: [
 					{
-						code: `
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'count' to dependencies array",
+								output: `
+							function Component() {
+								const [count, setCount] = useState(0);
+								useEffect(() => {
+									console.log(count);
+								}, [count]);
+								useCallback(() => {
+									console.log(count);
+								}, []);
+							}
+						`,
+							},
+						],
+					},
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'count' to dependencies array",
+								output: `
+							function Component() {
+								const [count, setCount] = useState(0);
+								useEffect(() => {
+									console.log(count);
+								}, []);
+								useCallback(() => {
+									console.log(count);
+								}, [count]);
+							}
+						`,
+							},
+						],
+					},
+				],
+			},
+
+			// Prop dependency missing
+			{
+				code: `
 							function Component(props) {
 								useEffect(() => {
 									console.log(props.value);
 								}, []);
 							}
 						`,
-						errors: [{
-							messageId: "missingDependency",
-							suggestions: [{
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
 								desc: "Add 'props.value' to dependencies array",
 								output: `
 							function Component(props) {
@@ -433,13 +483,15 @@ describe("use-exhaustive-dependencies", () => {
 								}, [props.value]);
 							}
 						`,
-							}],
-						}],
+							},
+						],
 					},
 				],
-				valid: [
-					// Correct dependencies
-					`
+			},
+		],
+		valid: [
+			// Correct dependencies
+			`
 						function Component() {
 							const a = 1;
 							useEffect(() => {
@@ -448,8 +500,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// Multiple correct dependencies
-					`
+			// Multiple correct dependencies
+			`
 						function Component() {
 							const a = 1;
 							const b = 2;
@@ -459,8 +511,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// No dependencies needed - no captures
-					`
+			// No dependencies needed - no captures
+			`
 						function Component() {
 							useEffect(() => {
 								console.log("hello");
@@ -468,8 +520,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// useState setter is stable
-					`
+			// useState setter is stable
+			`
 						function Component() {
 							const [state, setState] = useState(0);
 							useEffect(() => {
@@ -478,8 +530,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// useState with state in deps
-					`
+			// useState with state in deps
+			`
 						function Component() {
 							const [state, setState] = useState(0);
 							useEffect(() => {
@@ -489,8 +541,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// useReducer dispatch is stable
-					`
+			// useReducer dispatch is stable
+			`
 						function Component() {
 							const [state, dispatch] = useReducer(reducer, initial);
 							useEffect(() => {
@@ -499,8 +551,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// useRef is stable
-					`
+			// useRef is stable
+			`
 						function Component() {
 							const ref = useRef(null);
 							useEffect(() => {
@@ -509,8 +561,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// React Lua - useBinding is fully stable
-					`
+			// React Lua - useBinding is fully stable
+			`
 						function Component() {
 							const [binding, setBinding] = useBinding(0);
 							useEffect(() => {
@@ -520,8 +572,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// Imported values don't need dependencies
-					`
+			// Imported values don't need dependencies
+			`
 						import { helper } from "./utils";
 						function Component() {
 							useEffect(() => {
@@ -530,8 +582,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// Constants are stable
-					`
+			// Constants are stable
+			`
 						const CONSTANT = 10;
 						function Component() {
 							useEffect(() => {
@@ -540,8 +592,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// Member expression with correct dependency
-					`
+			// Member expression with correct dependency
+			`
 						function Component() {
 							const obj = { prop: 1 };
 							useEffect(() => {
@@ -550,8 +602,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// Member expression - exact match
-					`
+			// Member expression - exact match
+			`
 						function Component() {
 							const obj = { nested: { value: 1 } };
 							useEffect(() => {
@@ -560,8 +612,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// useCallback with correct dependencies
-					`
+			// useCallback with correct dependencies
+			`
 						function Component() {
 							const a = 1;
 							const callback = useCallback(() => {
@@ -570,8 +622,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// useMemo with correct dependencies
-					`
+			// useMemo with correct dependencies
+			`
 						function Component() {
 							const a = 1;
 							const value = useMemo(() => {
@@ -580,8 +632,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// useLayoutEffect with correct dependencies
-					`
+			// useLayoutEffect with correct dependencies
+			`
 						function Component() {
 							const a = 1;
 							useLayoutEffect(() => {
@@ -590,8 +642,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// useImperativeHandle with correct dependencies
-					`
+			// useImperativeHandle with correct dependencies
+			`
 						function Component(ref) {
 							const value = 1;
 							useImperativeHandle(ref, () => ({
@@ -600,8 +652,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// Destructured props
-					`
+			// Destructured props
+			`
 						function Component({ value }) {
 							useEffect(() => {
 								console.log(value);
@@ -609,8 +661,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// Function parameter
-					`
+			// Function parameter
+			`
 						function Component(callback) {
 							useEffect(() => {
 								callback();
@@ -618,8 +670,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// No dependencies array with no captures
-					`
+			// No dependencies array with no captures
+			`
 						function Component() {
 							useEffect(() => {
 								console.log("hello");
@@ -627,8 +679,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// Conditional logic inside hook
-					`
+			// Conditional logic inside hook
+			`
 						function Component() {
 							const a = 1;
 							useEffect(() => {
@@ -639,8 +691,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// React namespace hook
-					`
+			// React namespace hook
+			`
 						function Component() {
 							const a = 1;
 							React.useEffect(() => {
@@ -649,8 +701,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// All standard hooks with correct deps
-					`
+			// All standard hooks with correct deps
+			`
 						function Component() {
 							const a = 1;
 							useEffect(() => { console.log(a); }, [a]);
@@ -660,8 +712,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// useTransition startTransition is stable
-					`
+			// useTransition startTransition is stable
+			`
 						function Component() {
 							const [isPending, startTransition] = useTransition();
 							useEffect(() => {
@@ -672,8 +724,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// Props with stable setter
-					`
+			// Props with stable setter
+			`
 						function Component(props) {
 							const [state, setState] = useState(0);
 							useEffect(() => {
@@ -682,8 +734,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// Computed property access
-					`
+			// Computed property access
+			`
 						function Component() {
 							const obj = { prop: 1 };
 							const key = "prop";
@@ -693,8 +745,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// React Lua - multiple useBinding calls
-					`
+			// React Lua - multiple useBinding calls
+			`
 						function Component() {
 							const [binding1] = useBinding(0);
 							const [binding2] = useBinding(0);
@@ -704,8 +756,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// Global built-ins should not be reported as dependencies
-					`
+			// Global built-ins should not be reported as dependencies
+			`
 						function Component() {
 							useEffect(() => {
 								const arr = new Array();
@@ -713,8 +765,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// TypeScript type parameters should not be dependencies (simplified without generic syntax)
-					`
+			// TypeScript type parameters should not be dependencies (simplified without generic syntax)
+			`
 						function Component() {
 							const setMemorySafeState = useCallback((newState) => {
 								// Type annotations like SetStateAction<S> would be here in real code
@@ -723,8 +775,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// React.joinBindings returns a stable binding
-					`
+			// React.joinBindings returns a stable binding
+			`
 						function Component() {
 							const joined = React.joinBindings({ a, b });
 							useEffect(() => {
@@ -733,8 +785,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// Binding.map() returns a stable binding
-					`
+			// Binding.map() returns a stable binding
+			`
 						function Component() {
 							const binding = useBinding(0);
 							const mapped = binding.map(x => x * 2);
@@ -744,8 +796,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// React.joinBindings().map() chained call is stable
-					`
+			// React.joinBindings().map() chained call is stable
+			`
 						function Component() {
 							const scaleBinding = React.joinBindings({ a, b }).map(({ a, b }) => a + b);
 							useMemo(() => {
@@ -754,8 +806,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// Module-level constants should not be dependencies
-					`
+			// Module-level constants should not be dependencies
+			`
 						const log = { Warning: () => {}, Info: () => {} };
 						function Component() {
 							useEffect(() => {
@@ -765,8 +817,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// Outer function scope should not be dependencies
-					`
+			// Outer function scope should not be dependencies
+			`
 						function useOuter() {
 							const helper = () => {};
 
@@ -778,8 +830,8 @@ describe("use-exhaustive-dependencies", () => {
 						}
 					`,
 
-					// Component-scope literal constant is stable
-					`
+			// Component-scope literal constant is stable
+			`
 						function Component() {
 							const x = 1;
 							const y = "string";
@@ -789,7 +841,7 @@ describe("use-exhaustive-dependencies", () => {
 							}, []);
 						}
 					`,
-					`
+			`
 						function Component() {
 							const value = 10;
 							useMemo(() => {
@@ -798,21 +850,21 @@ describe("use-exhaustive-dependencies", () => {
 							}, [value]);
 						}
 					`,
-					`
+			`
 						function Component() {
 							useCallback(() => {
 								return Promise.resolve();
 							}, []);
 						}
 					`,
-					`
+			`
 						function Component() {
 							useEffect(() => {
 								console.log(Math.PI);
 							}, []);
 						}
 					`,
-					`
+			`
 						function Component() {
 							useMemo(() => {
 								const arr = new Array();
@@ -820,7 +872,7 @@ describe("use-exhaustive-dependencies", () => {
 							}, []);
 						}
 					`,
-					`
+			`
 						function Component() {
 							useEffect(() => {
 								const map = new Map();
@@ -829,14 +881,14 @@ describe("use-exhaustive-dependencies", () => {
 							}, []);
 						}
 					`,
-				],
-			});
+		],
+	});
 
 	ruleTester.run("use-exhaustive-dependencies", rule, {
-				invalid: [
-					// Custom hook with missing dependency
-					{
-						code: `
+		invalid: [
+			// Custom hook with missing dependency
+			{
+				code: `
 							function Component() {
 								const [count, setCount] = useState(0);
 								useCustomHook(() => {
@@ -844,9 +896,11 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						errors: [{
-							messageId: "missingDependency",
-							suggestions: [{
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
 								desc: "Add 'count' to dependencies array",
 								output: `
 							function Component() {
@@ -856,40 +910,42 @@ describe("use-exhaustive-dependencies", () => {
 								}, [count]);
 							}
 						`,
-							}],
-						}],
-						options: [
-							{
-								hooks: [
-									{
-										closureIndex: 0,
-										dependenciesIndex: 1,
-										name: "useCustomHook",
-									},
-								],
 							},
 						],
 					},
 				],
-				valid: [
-					// Disable reportUnnecessaryDependencies
+				options: [
 					{
-						code: `
+						hooks: [
+							{
+								closureIndex: 0,
+								dependenciesIndex: 1,
+								name: "useCustomHook",
+							},
+						],
+					},
+				],
+			},
+		],
+		valid: [
+			// Disable reportUnnecessaryDependencies
+			{
+				code: `
 							function Component() {
 								const b = 1;
 								useEffect(() => {}, [b]);
 							}
 						`,
-						options: [
-							{
-								reportUnnecessaryDependencies: false,
-							},
-						],
-					},
-
-					// Disable reportMissingDependenciesArray
+				options: [
 					{
-						code: `
+						reportUnnecessaryDependencies: false,
+					},
+				],
+			},
+
+			// Disable reportMissingDependenciesArray
+			{
+				code: `
 							function Component() {
 								const a = 1;
 								useEffect(() => {
@@ -897,16 +953,16 @@ describe("use-exhaustive-dependencies", () => {
 								});
 							}
 						`,
-						options: [
-							{
-								reportMissingDependenciesArray: false,
-							},
-						],
-					},
-
-					// Custom hook with correct dependencies
+				options: [
 					{
-						code: `
+						reportMissingDependenciesArray: false,
+					},
+				],
+			},
+
+			// Custom hook with correct dependencies
+			{
+				code: `
 							function Component() {
 								const a = 1;
 								useCustomHook(() => {
@@ -914,22 +970,22 @@ describe("use-exhaustive-dependencies", () => {
 								}, [a]);
 							}
 						`,
-						options: [
+				options: [
+					{
+						hooks: [
 							{
-								hooks: [
-									{
-										closureIndex: 0,
-										dependenciesIndex: 1,
-										name: "useCustomHook",
-									},
-								],
+								closureIndex: 0,
+								dependenciesIndex: 1,
+								name: "useCustomHook",
 							},
 						],
 					},
+				],
+			},
 
-					// Custom hook with stable result
-					{
-						code: `
+			// Custom hook with stable result
+			{
+				code: `
 							function Component() {
 								const setter = useCustomState();
 								useEffect(() => {
@@ -937,21 +993,21 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						options: [
+				options: [
+					{
+						hooks: [
 							{
-								hooks: [
-									{
-										name: "useCustomState",
-										stableResult: true,
-									},
-								],
+								name: "useCustomState",
+								stableResult: true,
 							},
 						],
 					},
+				],
+			},
 
-					// Custom hook with stable array index
-					{
-						code: `
+			// Custom hook with stable array index
+			{
+				code: `
 							function Component() {
 								const [state, setter] = useCustomState();
 								useEffect(() => {
@@ -959,17 +1015,17 @@ describe("use-exhaustive-dependencies", () => {
 								}, []);
 							}
 						`,
-						options: [
+				options: [
+					{
+						hooks: [
 							{
-								hooks: [
-									{
-										name: "useCustomState",
-										stableResult: [1],
-									},
-								],
+								name: "useCustomState",
+								stableResult: [1],
 							},
 						],
 					},
 				],
-			});
+			},
+		],
+	});
 });
