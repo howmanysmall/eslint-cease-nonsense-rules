@@ -25,6 +25,7 @@
 		"types": ["bun-types"],
 		"useUnknownInCatchVariables": true,
 		"verbatimModuleSyntax": true,
+		"skipLibCheck": true,
 	},
 	"exclude": ["dist", "node_modules"],
 	"include": ["src/**/*.ts"],
