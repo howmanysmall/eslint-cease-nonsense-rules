@@ -605,6 +605,31 @@ describe("require-react-component-keys", () => {
 					},
 				},
 			},
+			// Map callback wrapped in a type assertion with keyed element
+			{
+				code: `
+							function HealthBarWithAssertion() {
+								const enemies = [];
+								return (
+									<screengui>
+										{...enemies.map(((entity) => {
+											return (
+												<billboardgui key={tostring(entity)}>
+													<frame key="health" />
+												</billboardgui>
+											);
+										}) as ((entity: unknown) => unknown))}
+									</screengui>
+								);
+							}
+						`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
 			// useCallback with keyed elements
 			{
 				code: `
