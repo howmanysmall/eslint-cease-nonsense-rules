@@ -320,7 +320,7 @@
 	"vcs": {
 		"clientKind": "git",
 		"defaultBranch": "main",
-		"enabled": false,
-		"useIgnoreFile": false
+		"enabled": true,
+		"useIgnoreFile": true
 	}
 }

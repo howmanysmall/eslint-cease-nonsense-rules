@@ -189,9 +189,9 @@ const noShorthandNames: Rule.RuleModule = {
 						type: "array",
 					},
 					shorthands: {
+						additionalProperties: { type: "string" },
 						description: "Map of shorthand names to their full replacements",
 						type: "object",
-						additionalProperties: { type: "string" },
 					},
 				},
 				type: "object",
