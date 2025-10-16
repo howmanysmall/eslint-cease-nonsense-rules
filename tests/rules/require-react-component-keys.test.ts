@@ -190,6 +190,53 @@ describe("require-react-component-keys", () => {
 					},
 				},
 			},
+			// Named callback passed to map without keys
+			{
+				code: `
+							const renderEnemy = (enemy) => <billboardgui />;
+
+							function EnemyList(enemies) {
+								return enemies.map(renderEnemy);
+							}
+						`,
+				errors: 1,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Array.from without key in mapping callback
+			{
+				code: `
+							function FromList(iterable) {
+								return Array.from(iterable, (item) => <frame />);
+							}
+						`,
+				errors: 1,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Array.prototype.map.call without key
+			{
+				code: `
+							function CallMapped(items) {
+								return Array.prototype.map.call(items, (item) => <span />);
+							}
+						`,
+				errors: 1,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
 			// useCallback missing key
 			{
 				code: `
@@ -596,6 +643,50 @@ describe("require-react-component-keys", () => {
 										})}
 									</screengui>
 								);
+							}
+						`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Named callback passed to map with keyed element
+			{
+				code: `
+							const renderEnemy = (enemy) => <billboardgui key={enemy} />;
+
+							function EnemyList(enemies) {
+								return enemies.map(renderEnemy);
+							}
+						`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Array.from callback with keyed element
+			{
+				code: `
+							function FromList(iterable) {
+								return Array.from(iterable, (item) => <frame key={item} />);
+							}
+						`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Array.prototype.map.call with keyed element
+			{
+				code: `
+							function CallMapped(items) {
+								return Array.prototype.map.call(items, (item) => <span key={item} />);
 							}
 						`,
 				languageOptions: {
