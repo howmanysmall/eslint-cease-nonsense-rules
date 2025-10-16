@@ -60,34 +60,17 @@ describe("use-exhaustive-dependencies", () => {
 						`,
 				errors: [
 					{
-						messageId: "missingDependency",
+						messageId: "missingDependencies",
 						suggestions: [
 							{
-								desc: "Add 'count' to dependencies array",
+								desc: "Add missing dependencies to array",
 								output: `
 							function Component() {
 								const [count, setCount] = useState(0);
 								const [name, setName] = useState("");
 								useEffect(() => {
 									console.log(count, name);
-								}, [count]);
-							}
-						`,
-							},
-						],
-					},
-					{
-						messageId: "missingDependency",
-						suggestions: [
-							{
-								desc: "Add 'name' to dependencies array",
-								output: `
-							function Component() {
-								const [count, setCount] = useState(0);
-								const [name, setName] = useState("");
-								useEffect(() => {
-									console.log(count, name);
-								}, [name]);
+								}, [count, name]);
 							}
 						`,
 							},
