@@ -1,5 +1,5 @@
 import type { TSESTree } from "@typescript-eslint/types";
-import type { Rule } from "eslint";
+import type { TSESLint } from "@typescript-eslint/utils";
 
 /**
  * Configuration options for the require-react-component-keys rule.
@@ -8,6 +8,9 @@ interface RuleOptions {
 	ignoreCallExpressions?: string[];
 	allowRootKeys?: boolean;
 }
+
+type Options = [RuleOptions?];
+type MessageIds = "missingKey" | "rootComponentWithKey";
 
 /**
  * Default configuration values for the rule.
@@ -30,6 +33,24 @@ const WRAPPER_PARENT_TYPES = new Set([
 	"TSInstantiationExpression",
 	"ChainExpression",
 ]);
+
+/**
+ * Node types that act as transparent wrappers when walking from a call argument to its call expression.
+ */
+const ARGUMENT_WRAPPER_TYPES = new Set([
+	...WRAPPER_PARENT_TYPES,
+	"AwaitExpression",
+	"ConditionalExpression",
+	"LogicalExpression",
+	"SequenceExpression",
+	"SpreadElement",
+]);
+
+type FunctionLike = TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression | TSESTree.FunctionDeclaration;
+
+interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
+	recommended?: boolean;
+}
 
 /**
  * Walks up the AST from a starting node, skipping wrapper expressions that do not
@@ -139,6 +160,128 @@ function isInConditionalJSXChild(node: TSESTree.JSXElement | TSESTree.JSXFragmen
 
 		// For other parent types, default to requiring keys
 		return false;
+	}
+
+	return false;
+}
+
+/**
+ * Finds the nearest function-like ancestor for a given node.
+ *
+ * @param node - The starting node.
+ * @returns The nearest function declaration/expression/arrow function ancestor if any.
+ */
+function getEnclosingFunctionLike(node: TSESTree.Node): FunctionLike | undefined {
+	let current: TSESTree.Node | undefined = node.parent;
+
+	while (current) {
+		if (
+			current.type === "ArrowFunctionExpression" ||
+			current.type === "FunctionExpression" ||
+			current.type === "FunctionDeclaration"
+		) {
+			return current;
+		}
+
+		current = current.parent;
+	}
+
+	return undefined;
+}
+
+/**
+ * Walks upward from a potential call argument to find the enclosing CallExpression, if any.
+ *
+ * @param node - The starting node.
+ * @returns The nearest CallExpression where the node participates as an argument.
+ */
+function findEnclosingCallExpression(node: TSESTree.Node): TSESTree.CallExpression | undefined {
+	let current: TSESTree.Node = node;
+	let parent = node.parent;
+
+	while (parent) {
+		if (parent.type === "CallExpression") {
+			for (const argument of parent.arguments) {
+				if (argument === current) return parent;
+				if (argument.type === "SpreadElement" && argument.argument === current) return parent;
+			}
+			return undefined;
+		}
+
+		if (ARGUMENT_WRAPPER_TYPES.has(parent.type)) {
+			current = parent;
+			parent = parent.parent;
+			continue;
+		}
+
+		break;
+	}
+
+	return undefined;
+}
+
+/**
+ * Fetches the declared variable associated with a function-like node, if any.
+ *
+ * @param context - ESLint rule context.
+ * @param fn - The function-like node.
+ * @returns The corresponding scope variable, when available.
+ */
+function getVariableForFunction(
+	context: TSESLint.RuleContext<MessageIds, Options>,
+	fn: FunctionLike,
+): TSESLint.Scope.Variable | undefined {
+	if (fn.type === "FunctionDeclaration") {
+		const declared = context.sourceCode.getDeclaredVariables(fn);
+		if (declared.length > 0) return declared[0];
+		return undefined;
+	}
+
+	const parent = fn.parent;
+	if (!parent) return undefined;
+
+	if (parent.type === "VariableDeclarator" || parent.type === "AssignmentExpression") {
+		const declared = context.sourceCode.getDeclaredVariables(parent);
+		if (declared.length > 0) return declared[0];
+	}
+
+	return undefined;
+}
+
+/**
+ * Checks whether a scope reference is used as an argument to a call expression that is not a React HOC.
+ *
+ * @param reference - The reference to evaluate.
+ * @returns True if the reference participates in a non-HOC call as an argument.
+ */
+function referenceActsAsCallback(reference: TSESLint.Scope.Reference): boolean {
+	if (!reference.isRead()) return false;
+
+	const callExpression = findEnclosingCallExpression(reference.identifier);
+	if (!callExpression) return false;
+
+	return !isReactComponentHOC(callExpression);
+}
+
+/**
+ * Determines whether a function-like node is used as a callback (passed to a call expression),
+ * excluding known React component HOCs.
+ *
+ * @param context - ESLint rule context.
+ * @param fn - The function node to inspect.
+ * @returns True if the function participates in callback invocations.
+ */
+function isFunctionUsedAsCallback(context: TSESLint.RuleContext<MessageIds, Options>, fn: FunctionLike): boolean {
+	const inlineCall = findEnclosingCallExpression(fn);
+	if (inlineCall && !isReactComponentHOC(inlineCall)) {
+		return true;
+	}
+
+	const variable = getVariableForFunction(context, fn);
+	if (!variable) return false;
+
+	for (const reference of variable.references) {
+		if (referenceActsAsCallback(reference)) return true;
 	}
 
 	return false;
@@ -287,7 +430,12 @@ function isJSXPropValue(node: TSESTree.JSXElement | TSESTree.JSXFragment): boole
 	return parent.type === "JSXAttribute";
 }
 
-const requireReactComponentKeys: Rule.RuleModule = {
+const docs: RuleDocsWithRecommended = {
+	description: "Enforce key props on all React elements except top-level returns",
+	recommended: true,
+};
+
+const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRecommended> = {
 	/**
 	 * Creates the ESLint rule visitor.
 	 *
@@ -306,10 +454,12 @@ const requireReactComponentKeys: Rule.RuleModule = {
 		 * @param node - The JSX element or fragment to check.
 		 */
 		function checkElement(node: TSESTree.JSXElement | TSESTree.JSXFragment): void {
+			const functionLike = getEnclosingFunctionLike(node);
+			const isCallback = functionLike ? isFunctionUsedAsCallback(context, functionLike) : false;
 			const isRoot = isTopLevelReturn(node);
 
 			// Check if root component has a key (and it's not allowed)
-			if (isRoot) {
+			if (isRoot && !isCallback) {
 				if (!options.allowRootKeys && node.type === "JSXElement" && hasKeyAttribute(node)) {
 					context.report({
 						messageId: "rootComponentWithKey",
@@ -359,12 +509,9 @@ const requireReactComponentKeys: Rule.RuleModule = {
 			},
 		};
 	},
+	defaultOptions: [DEFAULT_OPTIONS],
 	meta: {
-		docs: {
-			description: "Enforce key props on all React elements except top-level returns",
-			recommended: true,
-		},
-		fixable: undefined,
+		docs,
 		messages: {
 			missingKey: "All React elements except top-level returns require a key prop",
 			rootComponentWithKey: "Root component returns should not have key props",

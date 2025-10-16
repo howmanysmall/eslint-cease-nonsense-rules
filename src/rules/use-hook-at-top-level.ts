@@ -1,4 +1,4 @@
-import type { TSESTree } from "@typescript-eslint/types";
+import { TSESTree } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
 
 /**
@@ -96,17 +96,20 @@ function isHookCall(node: TSESTree.CallExpression): boolean {
 	const { callee } = node;
 
 	// Direct call: useEffect(...)
-	if (callee.type === "Identifier") {
-		return isReactHook(callee.name);
-	}
+	if (callee.type === "Identifier") return isReactHook(callee.name);
 
 	// Member expression: React.useEffect(...)
-	if (callee.type === "MemberExpression" && callee.property.type === "Identifier") {
+	if (callee.type === "MemberExpression" && callee.property.type === "Identifier")
 		return isReactHook(callee.property.name);
-	}
 
 	return false;
 }
+
+const FUNCTION_BOUNDARIES = new Set<TSESTree.AST_NODE_TYPES>([
+	TSESTree.AST_NODE_TYPES.FunctionDeclaration,
+	TSESTree.AST_NODE_TYPES.FunctionExpression,
+	TSESTree.AST_NODE_TYPES.ArrowFunctionExpression,
+]);
 
 /**
  * Checks if a node is inside a finally block.
@@ -120,13 +123,7 @@ function isInFinallyBlock(node: TSESTree.Node): boolean {
 
 	for (let depth = 0; depth < maxDepth && current; depth++) {
 		// Stop at function boundaries
-		if (
-			current.type === "FunctionDeclaration" ||
-			current.type === "FunctionExpression" ||
-			current.type === "ArrowFunctionExpression"
-		) {
-			return false;
-		}
+		if (FUNCTION_BOUNDARIES.has(current.type)) return false;
 
 		// Found try statement - check if we're in the finalizer
 		if (current.type === "TryStatement") {
@@ -156,9 +153,7 @@ function isRecursiveCall(node: TSESTree.CallExpression, functionName: string | u
 	if (!functionName) return false;
 
 	const { callee } = node;
-	if (callee.type === "Identifier") {
-		return callee.name === functionName;
-	}
+	if (callee.type === "Identifier") return callee.name === functionName;
 
 	return false;
 }
@@ -166,7 +161,7 @@ function isRecursiveCall(node: TSESTree.CallExpression, functionName: string | u
 const useHookAtTopLevel: Rule.RuleModule = {
 	create(context) {
 		// Context stack for tracking control flow
-		const contextStack: ControlFlowContext[] = [];
+		const contextStack = new Array<ControlFlowContext>();
 		let currentFunctionName: string | undefined;
 
 		/**
@@ -226,9 +221,7 @@ const useHookAtTopLevel: Rule.RuleModule = {
 			const isComp = isComponentOrHook(funcNode);
 
 			// Store function name for recursion detection
-			if (funcNode.type === "FunctionDeclaration" && funcNode.id) {
-				currentFunctionName = funcNode.id.name;
-			}
+			if (funcNode.type === "FunctionDeclaration" && funcNode.id) currentFunctionName = funcNode.id.name;
 
 			// If we're already inside a component/hook, this is a nested function
 			if (current?.isComponentOrHook) {
@@ -260,9 +253,7 @@ const useHookAtTopLevel: Rule.RuleModule = {
 		 */
 		function handleFunctionExit(): void {
 			const current = getCurrentContext();
-			if (current) {
-				popContext();
-			}
+			if (current) popContext();
 			currentFunctionName = undefined;
 		}
 

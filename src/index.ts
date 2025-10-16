@@ -1,4 +1,5 @@
-import type { Linter, Rule } from "eslint";
+import type { TSESLint } from "@typescript-eslint/utils";
+import type { Rule } from "eslint";
 import enforceIanitorCheckType from "./rules/enforce-ianitor-check-type";
 import noColor3Constructor from "./rules/no-color3-constructor";
 import noPrint from "./rules/no-print";
@@ -8,12 +9,14 @@ import requireReactComponentKeys from "./rules/require-react-component-keys";
 import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
 import useHookAtTopLevel from "./rules/use-hook-at-top-level";
 
+type AnyRuleModule = Rule.RuleModule | TSESLint.AnyRuleModuleWithMetaDocs;
+
 /**
  * ESLint plugin entry for eslint-cease-nonsense-rules.
  *
  * Exposes rule implementations and configuration presets for ESLint flat config.
  */
-const rules: Readonly<Record<string, Rule.RuleModule>> = {
+const rules: Readonly<Record<string, AnyRuleModule>> = {
 	"enforce-ianitor-check-type": enforceIanitorCheckType,
 	"no-color3-constructor": noColor3Constructor,
 	"no-print": noPrint,
@@ -40,7 +43,7 @@ const rules: Readonly<Record<string, Rule.RuleModule>> = {
  * ];
  * ```
  */
-const recommended: Linter.Config = {
+const recommended = {
 	plugins: {
 		"cease-nonsense": {
 			rules,
@@ -58,10 +61,12 @@ const recommended: Linter.Config = {
 	},
 } as const;
 
+type PluginConfig = typeof recommended;
+
 interface Plugin {
-	readonly rules: Readonly<Record<string, Rule.RuleModule>>;
+	readonly rules: Readonly<Record<string, AnyRuleModule>>;
 	readonly configs: {
-		readonly recommended: Linter.Config;
+		readonly recommended: PluginConfig;
 	};
 }
 
