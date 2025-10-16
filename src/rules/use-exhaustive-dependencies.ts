@@ -1,14 +1,18 @@
-/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison */
-/* eslint-disable @typescript-eslint/no-unsafe-type-assertion */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-
-import type { TSESTree } from "@typescript-eslint/types";
+import { TSESTree } from "@typescript-eslint/types";
 import type { Rule, Scope } from "eslint";
+import * as S from "sury";
+
+const FUNCTION_DECLARATIONS = new Set<TSESTree.AST_NODE_TYPES>([
+	TSESTree.AST_NODE_TYPES.FunctionExpression,
+	TSESTree.AST_NODE_TYPES.ArrowFunctionExpression,
+	TSESTree.AST_NODE_TYPES.FunctionDeclaration,
+]);
+
+const UNSTABLE_VALUES = new Set<TSESTree.AST_NODE_TYPES>([
+	...FUNCTION_DECLARATIONS,
+	TSESTree.AST_NODE_TYPES.ObjectExpression,
+	TSESTree.AST_NODE_TYPES.ArrayExpression,
+]);
 
 /**
  * Hook configuration entry.
@@ -236,7 +240,7 @@ function getMemberExpressionDepth(node: TSESTree.Node): number {
 	let current: TSESTree.Node = node;
 
 	while (current.type === "MemberExpression") {
-		depth++;
+		depth += 1;
 		current = current.object;
 	}
 
@@ -252,9 +256,7 @@ function getMemberExpressionDepth(node: TSESTree.Node): number {
 function getRootIdentifier(node: TSESTree.Node): TSESTree.Identifier | undefined {
 	let current: TSESTree.Node = node;
 
-	while (current.type === "MemberExpression") {
-		current = current.object;
-	}
+	while (current.type === "MemberExpression") current = current.object;
 
 	return current.type === "Identifier" ? current : undefined;
 }
@@ -284,16 +286,14 @@ function isStableArrayIndex(
 	identifierName: string,
 ): boolean {
 	if (!stableResult) return false;
-	if (!(stableResult instanceof Set) || node.type !== "VariableDeclarator" || node.id.type !== "ArrayPattern") {
+	if (!(stableResult instanceof Set) || node.type !== "VariableDeclarator" || node.id.type !== "ArrayPattern")
 		return false;
-	}
 
 	const elements = node.id.elements;
-	for (let i = 0; i < elements.length; i++) {
-		const element = elements[i];
-		if (element && element.type === "Identifier" && element.name === identifierName) {
-			return (stableResult as Set<number>).has(i);
-		}
+	for (let index = 0; index < elements.length; index += 1) {
+		const element = elements[index];
+		if (element?.type === "Identifier" && element.name === identifierName)
+			return (stableResult as Set<number>).has(index);
 	}
 
 	return false;
@@ -354,17 +354,13 @@ function isStableValue(
 		// Check for const declarations with constant initializers
 		if (type === "Variable" && node.type === "VariableDeclarator") {
 			const parent = (node as TSESTree.VariableDeclarator).parent;
-			if (!parent || parent.type !== "VariableDeclaration" || parent.kind !== "const") {
-				continue;
-			}
+			if (!parent || parent.type !== "VariableDeclaration" || parent.kind !== "const") continue;
 
 			const { init } = node;
 
 			// Check if it's from a stable hook first
 			// @ts-expect-error - Type mismatch between ESLint and TypeScript AST types
-			if (init && isStableHookValue(init, node, identifierName, stableHooks)) {
-				return true;
-			}
+			if (init && isStableHookValue(init, node, identifierName, stableHooks)) return true;
 
 			// Check for React Lua bindings - bindings are always stable
 			if (init?.type === "CallExpression") {
@@ -377,9 +373,8 @@ function isStableValue(
 					callee.object.name === "React" &&
 					callee.property.type === "Identifier" &&
 					callee.property.name === "joinBindings"
-				) {
+				)
 					return true;
-				}
 
 				// .map() on bindings returns a stable binding
 				// This covers: binding.map(...), React.joinBindings(...).map(...), etc.
@@ -387,19 +382,14 @@ function isStableValue(
 					callee.type === "MemberExpression" &&
 					callee.property.type === "Identifier" &&
 					callee.property.name === "map"
-				) {
+				)
 					return true;
-				}
 			}
 
 			// Check for literal values FIRST (stable regardless of scope)
 			if (init) {
-				if (init.type === "Literal" || init.type === "TemplateLiteral") {
-					return true;
-				}
-				if (init.type === "UnaryExpression" && init.argument.type === "Literal") {
-					return true;
-				}
+				if (init.type === "Literal" || init.type === "TemplateLiteral") return true;
+				if (init.type === "UnaryExpression" && init.argument.type === "Literal") return true;
 			}
 
 			// For non-literal constants, only module-level is stable
@@ -438,6 +428,13 @@ function findTopmostMemberExpression(node: TSESTree.Node): TSESTree.Node {
 	return current;
 }
 
+const IS_CEASE_BOUNDARY = new Set<TSESTree.AST_NODE_TYPES>([
+	TSESTree.AST_NODE_TYPES.FunctionDeclaration,
+	TSESTree.AST_NODE_TYPES.FunctionExpression,
+	TSESTree.AST_NODE_TYPES.ArrowFunctionExpression,
+	TSESTree.AST_NODE_TYPES.VariableDeclarator,
+]);
+
 /**
  * Checks if an identifier is in a TypeScript type-only position.
  * Type parameters and type annotations are compile-time only and should not be dependencies.
@@ -450,19 +447,10 @@ function isInTypePosition(identifier: TSESTree.Identifier): boolean {
 
 	while (parent) {
 		// Any TypeScript-specific node indicates a type-only position
-		if (parent.type.startsWith("TS")) {
-			return true;
-		}
+		if (parent.type.startsWith("TS")) return true;
 
 		// Stop searching at certain boundaries
-		if (
-			parent.type === "FunctionDeclaration" ||
-			parent.type === "FunctionExpression" ||
-			parent.type === "ArrowFunctionExpression" ||
-			parent.type === "VariableDeclarator"
-		) {
-			return false;
-		}
+		if (IS_CEASE_BOUNDARY.has(parent.type)) return false;
 
 		parent = parent.parent;
 	}
@@ -485,10 +473,7 @@ function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree
 	let parent: TSESTree.Node | undefined = closureNode.parent;
 
 	while (parent) {
-		const isFunction =
-			parent.type === "FunctionDeclaration" ||
-			parent.type === "FunctionExpression" ||
-			parent.type === "ArrowFunctionExpression";
+		const isFunction = FUNCTION_DECLARATIONS.has(parent.type);
 
 		if (isFunction) {
 			// Capture parent in a const so TypeScript understands it's stable in closures
@@ -503,18 +488,12 @@ function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree
 				return def.node === functionParent;
 			});
 
-			if (isParameter) {
-				return true; // Props are reactive
-			}
+			if (isParameter) return true; // Props are reactive
 
 			// Check if variable is defined inside this function
 			return variable.defs.some((def) => {
 				let node: TSESTree.Node | undefined = def.node.parent as TSESTree.Node | undefined;
-
-				while (node && node !== functionParent) {
-					node = node.parent;
-				}
-
+				while (node && node !== functionParent) node = node.parent;
 				return node === functionParent;
 			});
 		}
@@ -553,18 +532,15 @@ function resolveFunctionReference(
 		const { node } = def;
 
 		// Direct function declaration
-		if (node.type === "FunctionDeclaration") {
-			return node as unknown as TSESTree.FunctionExpression;
-		}
+		if (node.type === "FunctionDeclaration") return node as unknown as TSESTree.FunctionExpression;
 
 		// Variable declarator with function initializer
 		if (
 			node.type === "VariableDeclarator" &&
 			node.init &&
 			(node.init.type === "ArrowFunctionExpression" || node.init.type === "FunctionExpression")
-		) {
+		)
 			return node.init as TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression;
-		}
 	}
 
 	return undefined;
@@ -582,8 +558,8 @@ function collectCaptures(
 	node: TSESTree.Node,
 	scope: Scope.Scope,
 	sourceCode: Rule.RuleContext["sourceCode"],
-): CaptureInfo[] {
-	const captures: CaptureInfo[] = [];
+): ReadonlyArray<CaptureInfo> {
+	const captures = new Array<CaptureInfo>();
 	const captureSet = new Set<string>();
 
 	/**
@@ -662,9 +638,7 @@ function collectCaptures(
 		// Traverse member expressions
 		if (current.type === "MemberExpression") {
 			visit(current.object);
-			if (current.computed) {
-				visit(current.property);
-			}
+			if (current.computed) visit(current.property);
 			return;
 		}
 
@@ -673,14 +647,9 @@ function collectCaptures(
 		for (const key of keys) {
 			const value = (current as unknown as Record<string, unknown>)[key];
 			if (Array.isArray(value)) {
-				for (const item of value) {
-					if (item && typeof item === "object" && "type" in item) {
-						visit(item as TSESTree.Node);
-					}
-				}
-			} else if (value && typeof value === "object" && "type" in value) {
-				visit(value as TSESTree.Node);
-			}
+				for (const item of value)
+					if (item && typeof item === "object" && "type" in item) visit(item as TSESTree.Node);
+			} else if (value && typeof value === "object" && "type" in value) visit(value as TSESTree.Node);
 		}
 	}
 
@@ -698,8 +667,8 @@ function collectCaptures(
 function parseDependencies(
 	node: TSESTree.ArrayExpression,
 	sourceCode: Rule.RuleContext["sourceCode"],
-): DependencyInfo[] {
-	const dependencies: DependencyInfo[] = [];
+): ReadonlyArray<DependencyInfo> {
+	const dependencies = new Array<DependencyInfo>();
 
 	for (const element of node.elements) {
 		if (!element || element.type === "SpreadElement") continue;
@@ -724,28 +693,14 @@ function parseDependencies(
  * @returns True if the node is an unstable value.
  */
 function isUnstableValue(node: TSESTree.Node | undefined): boolean {
-	if (!node) return false;
+	return node ? UNSTABLE_VALUES.has(node.type) : false;
+}
 
-	// Inline functions
-	if (
-		node.type === "FunctionExpression" ||
-		node.type === "ArrowFunctionExpression" ||
-		node.type === "FunctionDeclaration"
-	) {
-		return true;
-	}
+const isNumberArray = S.array(S.number);
+const isStringArray = S.array(S.string);
 
-	// Object literals
-	if (node.type === "ObjectExpression") {
-		return true;
-	}
-
-	// Array literals
-	if (node.type === "ArrayExpression") {
-		return true;
-	}
-
-	return false;
+function validate<T>(validator: S.Schema<T>, value: unknown): value is T {
+	return S.safe(() => S.parseOrThrow(value, validator)).success;
 }
 
 /**
@@ -759,12 +714,10 @@ function convertStableResult(
 ): StableResult {
 	if (typeof stableResult === "boolean") return stableResult;
 	if (typeof stableResult === "number") return new Set([stableResult]);
-	if (Array.isArray(stableResult) && stableResult.length > 0) {
-		if (typeof stableResult[0] === "number") {
-			return new Set(stableResult as number[]);
-		}
-		return new Set(stableResult as string[]);
-	}
+
+	if (validate(isNumberArray, stableResult) && stableResult.length > 0) return new Set(stableResult);
+	if (validate(isStringArray, stableResult) && stableResult.length > 0) return new Set(stableResult);
+
 	return false;
 }
 
@@ -837,7 +790,6 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 				let closureFunction: TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression | undefined;
 
 				if (closureArg.type === "ArrowFunctionExpression" || closureArg.type === "FunctionExpression") {
-					// Inline function
 					closureFunction = closureArg;
 				} else if (closureArg.type === "Identifier") {
 					// Function reference - try to resolve it
@@ -849,10 +801,10 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 				if (!closureFunction) return;
 
 				// Get dependencies argument
-				const depsArg = args[dependenciesIndex];
+				const dependenciesArgument = args[dependenciesIndex];
 
 				// Report missing dependencies array if configured
-				if (!depsArg && options.reportMissingDependenciesArray) {
+				if (!dependenciesArgument && options.reportMissingDependenciesArray) {
 					// Collect captures to see if any are needed
 					const scope = getScope(closureFunction);
 					const captures = collectCaptures(closureFunction, scope, context.sourceCode);
@@ -863,10 +815,10 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 					);
 
 					if (requiredCaptures.length > 0) {
-						const missingNames = Array.from(new Set(requiredCaptures.map((c) => c.name))).join(", ");
+						const missingNames = Array.from(new Set(requiredCaptures.map(({ name }) => name))).join(", ");
 
 						// Generate fix suggestion - add dependencies array
-						const usagePaths = requiredCaptures.map((c) => c.usagePath);
+						const usagePaths = requiredCaptures.map(({ usagePath }) => usagePath);
 						const uniqueDeps = Array.from(new Set(usagePaths)).toSorted();
 						const depsArrayString = `[${uniqueDeps.join(", ")}]`;
 
@@ -890,12 +842,12 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 				}
 
 				// Early exit: no dependencies array
-				if (!depsArg) return;
+				if (!dependenciesArgument) return;
 
 				// Dependencies must be an array
-				if (depsArg.type !== "ArrayExpression") return;
+				if (dependenciesArgument.type !== "ArrayExpression") return;
 
-				const depsArray = depsArg;
+				const depsArray = dependenciesArgument;
 
 				// Collect captures from closure
 				const scope = getScope(closureFunction);
@@ -905,29 +857,31 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 				const dependencies = parseDependencies(depsArray, context.sourceCode);
 
 				// Check for unnecessary dependencies first (for consistent error ordering)
-				for (const dep of dependencies) {
-					const depRootIdent = getRootIdentifier(dep.node);
-					if (!depRootIdent) continue;
+				for (const dependency of dependencies) {
+					const dependencyRootIdentifier = getRootIdentifier(dependency.node);
+					if (!dependencyRootIdentifier) continue;
 
-					const depName = depRootIdent.name;
+					const dependencyName = dependencyRootIdentifier.name;
 
 					// Find all captures with the same root identifier
-					const matchingCaptures = captures.filter((c) => getRootIdentifier(c.node)?.name === depName);
+					const matchingCaptures = captures.filter(
+						({ node }) => getRootIdentifier(node)?.name === dependencyName,
+					);
 
 					// If no captures use this identifier at all, it's unnecessary
 					if (matchingCaptures.length === 0) {
 						if (options.reportUnnecessaryDependencies) {
 							// Generate fix suggestion
-							const newDeps = dependencies.filter((d) => d.name !== dep.name).map((d) => d.name);
+							const newDeps = dependencies.filter((d) => d.name !== dependency.name).map((d) => d.name);
 							const newDepsString = `[${newDeps.join(", ")}]`;
 
 							context.report({
-								data: { name: dep.name },
+								data: { name: dependency.name },
 								messageId: "unnecessaryDependency",
-								node: dep.node,
+								node: dependency.node,
 								suggest: [
 									{
-										desc: `Remove '${dep.name}' from dependencies array`,
+										desc: `Remove '${dependency.name}' from dependencies array`,
 										fix(fixer): Rule.Fix | null {
 											return fixer.replaceText(depsArray as unknown as Rule.Node, newDepsString);
 										},
@@ -941,18 +895,18 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 					// Check if dependency is more specific than any usage
 					// dep.depth > all capture depths means the dep is too specific
 					const maxCaptureDepth = Math.max(...matchingCaptures.map((c) => c.depth));
-					if (dep.depth > maxCaptureDepth && options.reportUnnecessaryDependencies) {
+					if (dependency.depth > maxCaptureDepth && options.reportUnnecessaryDependencies) {
 						// Generate fix suggestion
-						const newDeps = dependencies.filter((d) => d.name !== dep.name).map((d) => d.name);
+						const newDeps = dependencies.filter((d) => d.name !== dependency.name).map((d) => d.name);
 						const newDepsString = `[${newDeps.join(", ")}]`;
 
 						context.report({
-							data: { name: dep.name },
+							data: { name: dependency.name },
 							messageId: "unnecessaryDependency",
-							node: dep.node,
+							node: dependency.node,
 							suggest: [
 								{
-									desc: `Remove '${dep.name}' from dependencies array`,
+									desc: `Remove '${dependency.name}' from dependencies array`,
 									fix(fixer): Rule.Fix | null {
 										return fixer.replaceText(depsArray as unknown as Rule.Node, newDepsString);
 									},
@@ -968,40 +922,43 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 					if (isStableValue(capture.variable, capture.name, stableHooks)) continue;
 
 					// Check if the capture is in the dependencies
-					const rootIdent = getRootIdentifier(capture.node);
-					if (!rootIdent) continue;
+					const rootIdentifier = getRootIdentifier(capture.node);
+					if (!rootIdentifier) continue;
 
-					const captureName = rootIdent.name;
-					let isInDeps = false;
+					const captureName = rootIdentifier.name;
+					let isInDependencies = false;
 
 					// Check if capture is covered by dependencies
-					for (const dep of dependencies) {
-						const depRootIdent = getRootIdentifier(dep.node);
+					for (const dependency of dependencies) {
+						const dependencyRootIdentifier = getRootIdentifier(dependency.node);
 						// Check name match and depth: dependency should not be more specific than capture
-						if (depRootIdent?.name === captureName && dep.depth <= capture.depth) {
-							isInDeps = true;
+						if (dependencyRootIdentifier?.name === captureName && dependency.depth <= capture.depth) {
+							isInDependencies = true;
 							break;
 						}
 					}
 
-					if (!isInDeps) {
+					if (!isInDependencies) {
 						// Report on the last dependency in the array for better error positioning
-						const lastDep = dependencies.at(-1);
+						const lastDependency = dependencies.at(-1);
 
 						// Generate fix suggestion
-						const depNames = dependencies.map((d) => d.name);
-						const newDeps = [...depNames, capture.usagePath].toSorted();
-						const newDepsString = `[${newDeps.join(", ")}]`;
+						const dependencyNames = dependencies.map(({ name }) => name);
+						const newDependencies = [...dependencyNames, capture.usagePath].toSorted();
+						const newDependenciesString = `[${newDependencies.join(", ")}]`;
 
 						context.report({
 							data: { name: capture.usagePath },
 							messageId: "missingDependency",
-							node: lastDep?.node || depsArray,
+							node: lastDependency?.node || depsArray,
 							suggest: [
 								{
 									desc: `Add '${capture.usagePath}' to dependencies array`,
 									fix(fixer): Rule.Fix | null {
-										return fixer.replaceText(depsArray as unknown as Rule.Node, newDepsString);
+										return fixer.replaceText(
+											depsArray as unknown as Rule.Node,
+											newDependenciesString,
+										);
 									},
 								},
 							],
@@ -1015,29 +972,30 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 					if (isStableValue(capture.variable, capture.name, stableHooks)) continue;
 
 					// Check if this capture has a corresponding dependency
-					const rootIdent = getRootIdentifier(capture.node);
-					if (!rootIdent) continue;
+					const rootIdentifier = getRootIdentifier(capture.node);
+					if (!rootIdentifier) continue;
 
-					const captureName = rootIdent.name;
+					const captureName = rootIdentifier.name;
 
 					// Find if there's a matching dependency
-					for (const dep of dependencies) {
-						const depRootIdent = getRootIdentifier(dep.node);
-						const isMatch = depRootIdent?.name === captureName && dep.depth === capture.depth;
-						const isDirectIdentifier = dep.depth === 0;
+					for (const dependency of dependencies) {
+						const dependencyRootIdentifier = getRootIdentifier(dependency.node);
+						const isMatch =
+							dependencyRootIdentifier?.name === captureName && dependency.depth === capture.depth;
+						const isDirectIdentifier = dependency.depth === 0;
 
 						if (isMatch && isDirectIdentifier) {
-							const def = capture.variable?.defs[0];
-							const initNode: TSESTree.Node | undefined =
-								def?.node.type === "VariableDeclarator"
-									? ((def.node.init ?? undefined) as TSESTree.Expression | undefined)
+							const variableDefinition = capture.variable?.defs[0];
+							const initialNode: TSESTree.Node | undefined =
+								variableDefinition?.node.type === "VariableDeclarator"
+									? ((variableDefinition.node.init ?? undefined) as TSESTree.Expression | undefined)
 									: undefined;
 
-							if (isUnstableValue(initNode)) {
+							if (isUnstableValue(initialNode)) {
 								context.report({
 									data: { name: capture.usagePath },
 									messageId: "unstableDependency",
-									node: dep.node,
+									node: dependency.node,
 								});
 							}
 							break;
