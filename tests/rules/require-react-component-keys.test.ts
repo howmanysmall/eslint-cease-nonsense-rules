@@ -17,6 +17,8 @@ const ruleTester = new RuleTester({
 });
 
 describe("require-react-component-keys", () => {
+	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
+	// and this test file intentionally passes the rule as-is for runtime validation.
 	ruleTester.run("require-react-component-keys", rule, {
 		invalid: [
 			// Elements in fragment
