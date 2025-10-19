@@ -917,6 +917,8 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 				}
 
 				// Check for missing dependencies
+				const missingCaptures = new Array<CaptureInfo>();
+
 				for (const capture of captures) {
 					// Skip stable values
 					if (isStableValue(capture.variable, capture.name, stableHooks)) continue;
@@ -938,22 +940,46 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 						}
 					}
 
-					if (!isInDependencies) {
-						// Report on the last dependency in the array for better error positioning
-						const lastDependency = dependencies.at(-1);
+					if (!isInDependencies) missingCaptures.push(capture);
+				}
 
-						// Generate fix suggestion
-						const dependencyNames = dependencies.map(({ name }) => name);
-						const newDependencies = [...dependencyNames, capture.usagePath].toSorted();
-						const newDependenciesString = `[${newDependencies.join(", ")}]`;
+				// Report all missing dependencies at once
+				if (missingCaptures.length > 0) {
+					const dependencyNames = dependencies.map(({ name }) => name);
+					const missingPaths = missingCaptures.map(({ usagePath }) => usagePath);
+					const newDependencies = [...dependencyNames, ...missingPaths].toSorted();
+					const newDependenciesString = `[${newDependencies.join(", ")}]`;
+					const lastDependency = dependencies.at(-1);
+					const firstMissing = missingCaptures.at(0);
 
+					// For single missing dependency, use singular message for backward compat
+					if (missingCaptures.length === 1 && firstMissing) {
 						context.report({
-							data: { name: capture.usagePath },
+							data: { name: firstMissing.usagePath },
 							messageId: "missingDependency",
 							node: lastDependency?.node || depsArray,
 							suggest: [
 								{
-									desc: `Add '${capture.usagePath}' to dependencies array`,
+									desc: `Add '${firstMissing.usagePath}' to dependencies array`,
+									fix(fixer): Rule.Fix | null {
+										return fixer.replaceText(
+											depsArray as unknown as Rule.Node,
+											newDependenciesString,
+										);
+									},
+								},
+							],
+						});
+					} else {
+						// For multiple missing dependencies, use plural message
+						const missingNames = missingPaths.join(", ");
+						context.report({
+							data: { names: missingNames },
+							messageId: "missingDependencies",
+							node: lastDependency?.node || depsArray,
+							suggest: [
+								{
+									desc: "Add missing dependencies to array",
 									fix(fixer): Rule.Fix | null {
 										return fixer.replaceText(
 											depsArray as unknown as Rule.Node,
@@ -1016,6 +1042,7 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 		fixable: "code",
 		hasSuggestions: true,
 		messages: {
+			missingDependencies: "This hook does not specify all its dependencies. Missing: {{names}}",
 			missingDependenciesArray: "This hook does not specify its dependencies array. Missing: {{deps}}",
 			missingDependency: "This hook does not specify its dependency on {{name}}.",
 			unnecessaryDependency: "This dependency {{name}} can be removed from the list.",

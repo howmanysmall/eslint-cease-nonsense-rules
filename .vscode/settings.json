@@ -49,7 +49,15 @@
 		"source.organizeImports.biome": "explicit",
 		"source.removeUnusedImports": "explicit",
 	},
+	"editor.quickSuggestions": {
+		"comments": "off",
+		"other": "on",
+		"strings": "on",
+	},
+
 	"oxc.flags": {},
 	"oxc.lint.run": "onType",
 	"oxc.typeAware": true,
+
+	"typescript.preferences.autoImportSpecifierExcludeRegexes": ["^(node:)?os$"],
 }
