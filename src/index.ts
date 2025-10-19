@@ -6,7 +6,6 @@ import noPrint from "./rules/no-print";
 import noShorthandNames from "./rules/no-shorthand-names";
 import noWarn from "./rules/no-warn";
 import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
-import requireNamedEffectFunctions from "./rules/require-named-effect-functions";
 import requireReactComponentKeys from "./rules/require-react-component-keys";
 import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
 import useHookAtTopLevel from "./rules/use-hook-at-top-level";
@@ -25,7 +24,6 @@ const rules: Readonly<Record<string, AnyRuleModule>> = {
 	"no-shorthand-names": noShorthandNames,
 	"no-warn": noWarn,
 	"prefer-udim2-shorthand": preferUDim2Shorthand,
-	"require-named-effect-functions": requireNamedEffectFunctions,
 	"require-react-component-keys": requireReactComponentKeys,
 	"use-exhaustive-dependencies": useExhaustiveDependencies,
 	"use-hook-at-top-level": useHookAtTopLevel,
@@ -60,7 +58,6 @@ const recommended = {
 		"cease-nonsense/no-shorthand-names": "error",
 		"cease-nonsense/no-warn": "error",
 		"cease-nonsense/prefer-udim2-shorthand": "error",
-		"cease-nonsense/require-named-effect-functions": "error",
 		"cease-nonsense/require-react-component-keys": "error",
 		"cease-nonsense/use-exhaustive-dependencies": "error",
 		"cease-nonsense/use-hook-at-top-level": "error",
