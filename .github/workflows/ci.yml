@@ -21,6 +21,12 @@ jobs:
       - name: Install
         run: bun install --no-cache
 
+      - name: Setup oxlint-tsgolint
+        run: bun run add-tsgolint
+
+      - name: Lint
+        run: bun run lint
+
       - name: Typecheck
         run: bun run typecheck
 
