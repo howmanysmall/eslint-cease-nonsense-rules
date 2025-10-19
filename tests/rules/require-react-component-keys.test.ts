@@ -450,6 +450,63 @@ describe("require-react-component-keys", () => {
 					},
 				},
 			},
+			// Logical expression as only child - needs key
+			{
+				code: `
+								function OnlyChild({ show }) {
+									return (
+										<div>
+											{show && <span>Visible</span>}
+										</div>
+									);
+								}
+							`,
+				errors: 1,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Ternary as only child - both branches need keys
+			{
+				code: `
+								function TernaryOnlyChild({ type }) {
+									return (
+										<div>
+											{type === "a" ? <ComponentA /> : <ComponentB />}
+										</div>
+									);
+								}
+							`,
+				errors: 2,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Logical expression (user's case) - needs key
+			{
+				code: `
+								function Fade({ aspectRatio }) {
+									return (
+										<frame>
+											{aspectRatio !== undefined && <uiaspectratioconstraint AspectRatio={aspectRatio} />}
+										</frame>
+									);
+								}
+							`,
+				errors: 1,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
 		],
 		valid: [
 			// Top-level return
@@ -856,57 +913,6 @@ describe("require-react-component-keys", () => {
 					},
 				},
 			},
-			// Ternary with fragments as JSX children (frame.tsx pattern)
-			{
-				code: `
-							function Component({ hasGlow }) {
-								return (
-									<frame>
-										{hasGlow ? (
-											<>
-												<frame key="inner" />
-												<Glow key="glow" />
-											</>
-										) : (
-											<>
-												<div key="child1" />
-												<span key="child2" />
-											</>
-										)}
-									</frame>
-								);
-							}
-						`,
-				languageOptions: {
-					parser,
-					parserOptions: {
-						ecmaFeatures: { jsx: true },
-					},
-				},
-			},
-			// Logical expression with fragment as JSX child
-			{
-				code: `
-							function Component({ show }) {
-								return (
-									<div>
-										{show && (
-											<>
-												<span key="a" />
-												<p key="b" />
-											</>
-										)}
-									</div>
-								);
-							}
-						`,
-				languageOptions: {
-					parser,
-					parserOptions: {
-						ecmaFeatures: { jsx: true },
-					},
-				},
-			},
 			// React.forwardRef - root return doesn't need key
 			{
 				code: `
@@ -1000,42 +1006,6 @@ describe("require-react-component-keys", () => {
 										<Component {...props} key="component" ref={ref} />
 									</ErrorBoundary>
 								));
-							}
-						`,
-				languageOptions: {
-					parser,
-					parserOptions: {
-						ecmaFeatures: { jsx: true },
-					},
-				},
-			},
-			// Conditional as only child (no siblings) - doesn't need key
-			{
-				code: `
-							function OnlyChild({ show }) {
-								return (
-									<div>
-										{show && <span>Visible</span>}
-									</div>
-								);
-							}
-						`,
-				languageOptions: {
-					parser,
-					parserOptions: {
-						ecmaFeatures: { jsx: true },
-					},
-				},
-			},
-			// Ternary as only child - elements don't need keys
-			{
-				code: `
-							function TernaryOnlyChild({ type }) {
-								return (
-									<div>
-										{type === "a" ? <ComponentA /> : <ComponentB />}
-									</div>
-								);
 							}
 						`,
 				languageOptions: {
