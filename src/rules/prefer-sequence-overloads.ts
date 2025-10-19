@@ -107,24 +107,27 @@ const preferSequenceOverloads: TSESLint.RuleModuleWithMetaDocs<
 
 				if (normalizedFirstValue === normalizedSecondValue) {
 					context.report({
-						fix: (fixer) => fixer.replaceText(node, `new ${descriptor.sequenceName}(${firstValueText})`),
-						messageId: "preferSingleOverload",
-						node,
 						data: {
 							sequenceName: descriptor.sequenceName,
 						},
+						fix: (fixer) => fixer.replaceText(node, `new ${descriptor.sequenceName}(${firstValueText})`),
+						messageId: "preferSingleOverload",
+						node,
 					});
 					return;
 				}
 
 				context.report({
-					fix: (fixer) =>
-						fixer.replaceText(node, `new ${descriptor.sequenceName}(${firstValueText}, ${secondValueText})`),
-					messageId: "preferTwoPointOverload",
-					node,
 					data: {
 						sequenceName: descriptor.sequenceName,
 					},
+					fix: (fixer) =>
+						fixer.replaceText(
+							node,
+							`new ${descriptor.sequenceName}(${firstValueText}, ${secondValueText})`,
+						),
+					messageId: "preferTwoPointOverload",
+					node,
 				});
 			},
 		};
