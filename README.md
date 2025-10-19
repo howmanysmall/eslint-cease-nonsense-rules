@@ -24,6 +24,7 @@ export default [
     },
     rules: {
       // Enable all rules (recommended)
+      "cease-nonsense/ban-react-fc": "error",
       "cease-nonsense/enforce-ianitor-check-type": "error",
       "cease-nonsense/no-color3-constructor": "error",
       "cease-nonsense/no-print": "error",
@@ -103,6 +104,46 @@ const config = userConfigValidator.check(getUserConfig());
 ```
 
 ### React
+
+#### `ban-react-fc`
+
+Bans React.FC and similar component type annotations. Use explicit function declarations instead.
+
+React.FC (Function Component) and related types break debug information in React DevTools, making profiling exponentially harder. They also encourage poor patterns and add unnecessary complexity.
+
+**❌ Bad:**
+
+```typescript
+export const MyComponent: React.FC<Props> = ({ children }) => {
+  return <div>{children}</div>;
+};
+
+const Button: FC<ButtonProps> = ({ label }) => <button>{label}</button>;
+
+const Modal: React.FunctionComponent = () => <div>Modal</div>;
+
+const Input: VFC = () => <input />;
+```
+
+**✅ Good:**
+
+```typescript
+export function MyComponent({ children }: Props) {
+  return <div>{children}</div>;
+}
+
+function Button({ label }: ButtonProps) {
+  return <button>{label}</button>;
+}
+
+function Modal() {
+  return <div>Modal</div>;
+}
+
+function Input() {
+  return <input />;
+}
+```
 
 #### `require-react-component-keys`
 

@@ -1,5 +1,6 @@
 import type { TSESLint } from "@typescript-eslint/utils";
 import type { Rule } from "eslint";
+import banReactFC from "./rules/ban-react-fc";
 import enforceIanitorCheckType from "./rules/enforce-ianitor-check-type";
 import noColor3Constructor from "./rules/no-color3-constructor";
 import noPrint from "./rules/no-print";
@@ -20,6 +21,7 @@ type AnyRuleModule = Rule.RuleModule | TSESLint.AnyRuleModuleWithMetaDocs;
  * Exposes rule implementations and configuration presets for ESLint flat config.
  */
 const rules: Readonly<Record<string, AnyRuleModule>> = {
+	"ban-react-fc": banReactFC,
 	"enforce-ianitor-check-type": enforceIanitorCheckType,
 	"no-color3-constructor": noColor3Constructor,
 	"no-print": noPrint,
@@ -56,6 +58,7 @@ const recommended = {
 		},
 	},
 	rules: {
+		"cease-nonsense/ban-react-fc": "error",
 		"cease-nonsense/enforce-ianitor-check-type": "error",
 		"cease-nonsense/no-color3-constructor": "error",
 		"cease-nonsense/no-print": "error",
