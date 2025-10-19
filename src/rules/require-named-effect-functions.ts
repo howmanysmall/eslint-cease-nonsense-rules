@@ -4,29 +4,73 @@ import type { Rule } from "eslint";
 /**
  * Default effect hooks to check.
  */
-const DEFAULT_HOOKS = ["useEffect", "useLayoutEffect", "useInsertionEffect"];
+const DEFAULT_HOOKS = ["useEffect", "useLayoutEffect", "useInsertionEffect"] as const;
 
 /**
- * Gets the hook name from a call expression.
+ * Type for environment modes.
+ */
+type EnvironmentMode = "roblox-ts" | "standard";
+
+/**
+ * Type for rule options.
+ */
+interface RuleOptions {
+	readonly environment: EnvironmentMode;
+	readonly hooks: ReadonlyArray<string>;
+}
+
+/**
+ * Parses and validates rule options.
  *
- * @param node - The call expression node.
+ * @param optionsInput - Raw options from ESLint context.
+ * @returns Validated options with defaults.
+ */
+function parseOptions(optionsInput: unknown): RuleOptions {
+	if (optionsInput === undefined) {
+		return {
+			environment: "roblox-ts",
+			hooks: DEFAULT_HOOKS,
+		};
+	}
+
+	if (typeof optionsInput !== "object" || optionsInput === null) {
+		return {
+			environment: "roblox-ts",
+			hooks: DEFAULT_HOOKS,
+		};
+	}
+
+	const opts = optionsInput as Record<PropertyKey, unknown>;
+
+	const envValue = opts.environment;
+	const environment: EnvironmentMode = envValue === "standard" ? "standard" : "roblox-ts";
+
+	const hooksValue = opts.hooks;
+	const hooks: ReadonlyArray<string> =
+		Array.isArray(hooksValue) && hooksValue.every((h) => typeof h === "string") ? hooksValue : DEFAULT_HOOKS;
+
+	return { environment, hooks };
+}
+
+/**
+ * Gets the hook name from a call expression-like object.
+ *
+ * @param callExpr - The call expression object.
  * @returns The hook name or undefined.
  */
-function getHookName(node: TSESTree.CallExpression): string | undefined {
-	const { callee } = node;
+function getHookName(callExpr: {
+	callee: { type: string; name?: string; property?: { type: string; name?: string } };
+}): string | undefined {
+	const { callee } = callExpr;
 
-	// Direct call: useEffect(...)
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
-		return callee.name;
-	}
+	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier && callee.name) return callee.name;
 
-	// Member expression: React.useEffect(...)
 	if (
 		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-	) {
+		callee.property?.type === TSESTree.AST_NODE_TYPES.Identifier &&
+		callee.property.name
+	)
 		return callee.property.name;
-	}
 
 	return undefined;
 }
@@ -39,45 +83,25 @@ const requireNamedEffectFunctions: Rule.RuleModule = {
 	 * @returns The visitor object with AST node handlers.
 	 */
 	create(context) {
-		// Get options with defaults
-		// @ts-expect-error context.options is any[] and accessing dynamic property
-		const environment: unknown = (context.options[0] as unknown)?.environment ?? "roblox-ts";
-		// @ts-expect-error context.options is any[] and accessing dynamic property
-		const hooks: unknown = (context.options[0] as unknown)?.hooks ?? DEFAULT_HOOKS;
-
-		// Validate environment
-		if (environment !== "roblox-ts" && environment !== "standard") {
-			return {};
-		}
-
-		// Validate hooks is an array
-		if (!Array.isArray(hooks) || !hooks.every((hook) => typeof hook === "string")) {
-			return {};
-		}
-
-		const effectHooks = new Set(hooks as readonly string[]);
-		const isRobloxTsMode = environment === "roblox-ts";
+		const options = parseOptions(context.options[0]);
+		const effectHooks = new Set(options.hooks);
+		const isRobloxTsMode = options.environment === "roblox-ts";
 
 		return {
 			CallExpression(node: Rule.Node) {
-				const callNode = node as unknown as TSESTree.CallExpression;
+				const callExpr = node as unknown as { callee: unknown; arguments: unknown[] };
 
-				// Get the hook name
-				const hookName = getHookName(callNode);
+				const hookName = getHookName(callExpr as Parameters<typeof getHookName>[0]);
 				if (!hookName || !effectHooks.has(hookName)) return;
 
-				// Get the first argument (the effect callback)
-				const firstArg = callNode.arguments[0];
+				const firstArg = callExpr.arguments?.[0];
 				if (!firstArg) return;
 
-				// Check the type of the first argument
-				if (firstArg.type === TSESTree.AST_NODE_TYPES.Identifier) {
-					// Valid: named function reference
-					return;
-				}
+				const argNode = firstArg as { type: string; id?: unknown };
 
-				if (firstArg.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression) {
-					// Invalid: arrow function
+				if (argNode.type === TSESTree.AST_NODE_TYPES.Identifier) return;
+
+				if (argNode.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression) {
 					context.report({
 						data: { hook: hookName },
 						messageId: "arrowFunction",
@@ -86,21 +110,16 @@ const requireNamedEffectFunctions: Rule.RuleModule = {
 					return;
 				}
 
-				if (firstArg.type === TSESTree.AST_NODE_TYPES.FunctionExpression) {
-					// Check if it's a named function expression
-					if ("id" in firstArg && firstArg.id) {
-						// Named function expression
+				if (argNode.type === TSESTree.AST_NODE_TYPES.FunctionExpression) {
+					if (argNode.id) {
 						if (isRobloxTsMode) {
-							// Not allowed in roblox-ts mode
 							context.report({
 								data: { hook: hookName },
 								messageId: "functionExpression",
 								node,
 							});
 						}
-						// Allowed in standard mode
 					} else {
-						// Anonymous function expression
 						context.report({
 							data: { hook: hookName },
 							messageId: "anonymousFunction",
@@ -121,7 +140,8 @@ const requireNamedEffectFunctions: Rule.RuleModule = {
 		messages: {
 			anonymousFunction: "Use a named function instead of an anonymous function for better debuggability",
 			arrowFunction: "Use a named function instead of an arrow function for better debuggability",
-			functionExpression: "Use a named function reference instead of a function expression for better debuggability",
+			functionExpression:
+				"Use a named function reference instead of a function expression for better debuggability",
 		},
 		schema: [
 			{
@@ -129,7 +149,8 @@ const requireNamedEffectFunctions: Rule.RuleModule = {
 				properties: {
 					environment: {
 						default: "roblox-ts",
-						description: "Environment mode: 'roblox-ts' only allows identifiers, 'standard' allows both identifiers and named function expressions",
+						description:
+							"Environment mode: 'roblox-ts' only allows identifiers, 'standard' allows both identifiers and named function expressions",
 						enum: ["roblox-ts", "standard"],
 						type: "string",
 					},
