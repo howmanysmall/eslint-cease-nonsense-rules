@@ -744,9 +744,8 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 		// Build stable hooks map
 		const stableHooks = new Map<string, StableResult>(STABLE_HOOKS);
 		for (const customHook of options.hooks) {
-			if (customHook.stableResult !== undefined) {
-				stableHooks.set(customHook.name, convertStableResult(customHook.stableResult));
-			}
+			if (customHook.stableResult === undefined) continue;
+			stableHooks.set(customHook.name, convertStableResult(customHook.stableResult));
 		}
 
 		// Performance: cache scope lookups
