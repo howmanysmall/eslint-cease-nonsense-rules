@@ -19,8 +19,7 @@ describe("prefer-sequence-overloads", () => {
 					"\tnew ColorSequenceKeypoint(1, Color3.fromRGB(255, 100, 200)),\n" +
 					"]);",
 				errors: [{ messageId: "preferTwoPointOverload" }],
-				output:
-					"const gradient = new ColorSequence(Color3.fromRGB(100, 200, 255), Color3.fromRGB(255, 100, 200));",
+				output: "const gradient = new ColorSequence(Color3.fromRGB(100, 200, 255), Color3.fromRGB(255, 100, 200));",
 			},
 			{
 				code:
