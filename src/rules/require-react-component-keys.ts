@@ -250,6 +250,11 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 
 	if (!parent) return false;
 
+	// After traversing conditionals/logicals, we might have a JSXExpressionContainer
+	// Handle: return {...props} or return (condition && <JSX/>)
+	if (parent.type === "JSXExpressionContainer") parent = ascendPastWrappers(parent.parent);
+	if (!parent) return false;
+
 	// Handle direct return
 	if (parent.type === "ReturnStatement") {
 		// Walk up to find the containing function
