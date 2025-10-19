@@ -1,0 +1,8 @@
+{
+	"servers": {
+		"package-registry": {
+			"args": ["--bun", "-y", "package-registry-mcp"],
+			"command": "bunx",
+		},
+	},
+}
