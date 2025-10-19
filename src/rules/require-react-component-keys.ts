@@ -72,9 +72,9 @@ function ascendPastWrappers(node: TSESTree.Node | undefined): TSESTree.Node | un
  * @returns True if the element has a key attribute.
  */
 function hasKeyAttribute(node: TSESTree.JSXElement): boolean {
-	for (const attribute of node.openingElement.attributes)
-		if (attribute.type === "JSXAttribute" && attribute.name.name === "key") return true;
-
+	for (const attr of node.openingElement.attributes) {
+		if (attr.type === "JSXAttribute" && attr.name.name === "key") return true;
+	}
 	return false;
 }
 
@@ -87,15 +87,20 @@ function hasKeyAttribute(node: TSESTree.JSXElement): boolean {
 function isReactComponentHOC(callExpr: TSESTree.CallExpression): boolean {
 	const { callee } = callExpr;
 
-	if (callee.type === "Identifier") return callee.name === "forwardRef" || callee.name === "memo";
+	// Simple identifier: forwardRef(...) or memo(...)
+	if (callee.type === "Identifier") {
+		return callee.name === "forwardRef" || callee.name === "memo";
+	}
 
+	// Member expression: React.forwardRef(...) or React.memo(...)
 	if (
 		callee.type === "MemberExpression" &&
 		callee.object.type === "Identifier" &&
 		callee.object.name === "React" &&
 		callee.property.type === "Identifier"
-	)
+	) {
 		return callee.property.name === "forwardRef" || callee.property.name === "memo";
+	}
 
 	return false;
 }
@@ -114,8 +119,9 @@ function getEnclosingFunctionLike(node: TSESTree.Node): FunctionLike | undefined
 			current.type === "ArrowFunctionExpression" ||
 			current.type === "FunctionExpression" ||
 			current.type === "FunctionDeclaration"
-		)
+		) {
 			return current;
+		}
 
 		current = current.parent;
 	}
@@ -207,12 +213,16 @@ function referenceActsAsCallback(reference: TSESLint.Scope.Reference): boolean {
  */
 function isFunctionUsedAsCallback(context: TSESLint.RuleContext<MessageIds, Options>, fn: FunctionLike): boolean {
 	const inlineCall = findEnclosingCallExpression(fn);
-	if (inlineCall && !isReactComponentHOC(inlineCall)) return true;
+	if (inlineCall && !isReactComponentHOC(inlineCall)) {
+		return true;
+	}
 
 	const variable = getVariableForFunction(context, fn);
 	if (!variable) return false;
 
-	for (const reference of variable.references) if (referenceActsAsCallback(reference)) return true;
+	for (const reference of variable.references) {
+		if (referenceActsAsCallback(reference)) return true;
+	}
 
 	return false;
 }
@@ -227,38 +237,63 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 	let parent = ascendPastWrappers(node.parent);
 	if (!parent) return false;
 
+	// Handle return with parentheses: return (<div>...)
 	if (parent.type === "JSXExpressionContainer") parent = ascendPastWrappers(parent.parent);
 	if (!parent) return false;
 
-	while (parent && (parent.type === "ConditionalExpression" || parent.type === "LogicalExpression"))
+	// Traverse through conditional and logical expressions
+	// Example: return condition ? <A/> : <B/>
+	// Example: return condition && <Component/>
+	while (parent && (parent.type === "ConditionalExpression" || parent.type === "LogicalExpression")) {
 		parent = ascendPastWrappers(parent.parent);
+	}
 
 	if (!parent) return false;
 
+	// After traversing conditionals/logicals, we might have a JSXExpressionContainer
+	// Handle: return {...props} or return (condition && <JSX/>)
 	if (parent.type === "JSXExpressionContainer") parent = ascendPastWrappers(parent.parent);
 	if (!parent) return false;
 
+	// Handle direct return
 	if (parent.type === "ReturnStatement") {
+		// Walk up to find the containing function
 		let currentNode: TSESTree.Node | undefined = ascendPastWrappers(parent.parent);
 
-		if (currentNode?.type === "BlockStatement") currentNode = ascendPastWrappers(currentNode.parent);
+		// Skip through block statement to get to function
+		if (currentNode?.type === "BlockStatement") {
+			currentNode = ascendPastWrappers(currentNode.parent);
+		}
 
 		if (!currentNode) return false;
 
+		// Check if this is a callback (arrow/function expression inside a call expression)
 		if (currentNode.type === "ArrowFunctionExpression" || currentNode.type === "FunctionExpression") {
+			// If the function is an argument to a call expression, check if it's a React HOC
 			const functionParent = ascendPastWrappers(currentNode.parent);
 
-			if (functionParent?.type === "CallExpression") return isReactComponentHOC(functionParent);
-
+			if (functionParent?.type === "CallExpression") {
+				// React.forwardRef and React.memo callbacks are component definitions, treat as top-level
+				return isReactComponentHOC(functionParent);
+			}
+			// Not inside a call expression, so it's a top-level component
 			return true;
 		}
 
+		// Function declarations are always top-level
 		return currentNode.type === "FunctionDeclaration";
 	}
 
+	// Handle arrow function direct return: () => <div>
 	if (parent.type === "ArrowFunctionExpression") {
+		// Check if this arrow function is inside a call expression
 		const functionParent = ascendPastWrappers(parent.parent);
-		if (functionParent?.type === "CallExpression") return isReactComponentHOC(functionParent);
+
+		if (functionParent?.type === "CallExpression") {
+			// React.forwardRef and React.memo callbacks are component definitions, treat as top-level
+			return isReactComponentHOC(functionParent);
+		}
+		// Not inside a call expression, so it's a top-level component
 		return true;
 	}
 
@@ -276,20 +311,25 @@ function isIgnoredCallExpression(node: TSESTree.JSXElement | TSESTree.JSXFragmen
 	let parent: TSESTree.Node | undefined = node.parent;
 	if (!parent) return false;
 
+	// Handle JSXExpressionContainer wrapper
 	if (parent.type === "JSXExpressionContainer") {
 		parent = parent.parent;
 		if (!parent) return false;
 	}
 
+	// Traverse up to find CallExpression
 	const maxDepth = 20;
 	for (let depth = 0; depth < maxDepth && parent; depth++) {
 		const { type } = parent;
 
+		// Found CallExpression - check if it's in the ignore list
 		if (type === "CallExpression") {
 			const { callee } = parent;
 
+			// Simple identifier: mount(...)
 			if (callee.type === "Identifier") return ignoreList.includes(callee.name);
 
+			// Member expression: ReactTree.mount(...)
 			if (
 				callee.type === "MemberExpression" &&
 				callee.object.type === "Identifier" &&
@@ -300,6 +340,7 @@ function isIgnoredCallExpression(node: TSESTree.JSXElement | TSESTree.JSXFragmen
 			return false;
 		}
 
+		// Don't stop at any boundaries - continue traversing until we find CallExpression or run out of parents
 		parent = parent.parent;
 	}
 
@@ -316,16 +357,21 @@ function isJSXPropValue(node: TSESTree.JSXElement | TSESTree.JSXFragment): boole
 	let parent = node.parent;
 	if (!parent) return false;
 
+	// Traverse through conditional and logical expressions
+	// Example: fallback={condition ? <A/> : <B/>}
+	// Example: fallback={placeholder ?? <></>}
 	while (parent && (parent.type === "ConditionalExpression" || parent.type === "LogicalExpression"))
 		parent = parent.parent;
 
 	if (!parent) return false;
 
+	// Handle JSXExpressionContainer wrapper: prop={<div/>}
 	if (parent.type === "JSXExpressionContainer") {
 		parent = parent.parent;
 		if (!parent) return false;
 	}
 
+	// Check if parent is a JSXAttribute (prop)
 	return parent.type === "JSXAttribute";
 }
 
@@ -357,6 +403,7 @@ const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 			const isCallback = functionLike ? isFunctionUsedAsCallback(context, functionLike) : false;
 			const isRoot = isTopLevelReturn(node);
 
+			// Check if root component has a key (and it's not allowed)
 			if (isRoot && !isCallback) {
 				if (!options.allowRootKeys && node.type === "JSXElement" && hasKeyAttribute(node)) {
 					context.report({
@@ -367,9 +414,13 @@ const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 				return;
 			}
 
+			// Skip key requirement for ignored call expressions
 			if (isIgnoredCallExpression(node, options.ignoreCallExpressions)) return;
+
+			// Skip key requirement for JSX passed as props
 			if (isJSXPropValue(node)) return;
 
+			// Fragments always need keys when not top-level
 			if (node.type === "JSXFragment") {
 				context.report({
 					messageId: "missingKey",
@@ -378,6 +429,7 @@ const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 				return;
 			}
 
+			// Check if element has key
 			if (!hasKeyAttribute(node)) {
 				context.report({
 					messageId: "missingKey",
@@ -387,10 +439,12 @@ const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 		}
 
 		return {
+			// Check JSX elements
 			JSXElement(node) {
 				checkElement(node);
 			},
 
+			// Check JSX fragments
 			JSXFragment(node) {
 				checkElement(node);
 			},
