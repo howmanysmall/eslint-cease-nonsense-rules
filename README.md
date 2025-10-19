@@ -29,11 +29,18 @@ export default [
       "cease-nonsense/no-print": "error",
       "cease-nonsense/no-shorthand-names": "error",
       "cease-nonsense/no-warn": "error",
+      "cease-nonsense/prefer-udim2-shorthand": "error",
+      "cease-nonsense/require-named-effect-functions": "error",
       "cease-nonsense/require-react-component-keys": "error",
       "cease-nonsense/use-exhaustive-dependencies": "error",
       "cease-nonsense/use-hook-at-top-level": "error",
     },
   },
+];
+
+// Or just include the preset
+export default [
+  ceaseNonsense.configs.recommended,
 ];
 ```
 
@@ -111,6 +118,57 @@ function UserList({ users }) {
       ))}
     </div>
   );
+}
+```
+
+#### `require-named-effect-functions`
+
+Enforce named effect functions for better debuggability. Prevent inline arrow functions in `useEffect` and similar hooks.
+
+Behavior by environment (option `environment`):
+
+- `roblox-ts` (default): only identifiers allowed (e.g., `useEffect(onTick, [...])`). Inline function expressions or arrows are reported.
+- `standard`: identifiers and named function expressions are allowed; arrows are still reported.
+
+Default hooks checked: `useEffect`, `useLayoutEffect`, `useInsertionEffect`.
+
+**❌ Bad:**
+
+```typescript
+// Arrow function
+useEffect(() => {
+  doThing();
+}, [dep]);
+
+// Anonymous function expression
+useEffect(function () {
+  doThing();
+}, [dep]);
+```
+
+**✅ Good:**
+
+```typescript
+// Preferred: reference a named function
+function onDepChange() {
+  doThing();
+}
+useEffect(onDepChange, [dep]);
+
+// Allowed in `standard` mode
+useEffect(function onDepChange() {
+  doThing();
+}, [dep]);
+```
+
+**Configuration:**
+
+```typescript
+{
+  "cease-nonsense/require-named-effect-functions": ["error", {
+    "environment": "roblox-ts", // or "standard"
+    "hooks": ["useEffect", "useLayoutEffect", "useInsertionEffect"]
+  }]
 }
 ```
 
@@ -269,6 +327,25 @@ const blue = new Color3(0.5, 0.5, 1);
 const red = Color3.fromRGB(255, 0, 0);
 const blue = Color3.fromRGB(127, 127, 255);
 const black = new Color3(0, 0, 0); // Allowed
+```
+
+#### `prefer-udim2-shorthand`
+
+Prefer `UDim2.fromScale()` or `UDim2.fromOffset()` when all offsets or all scales are zero. Leaves `new UDim2(0, 0, 0, 0)` alone. Includes auto-fix.
+
+**❌ Bad:**
+
+```typescript
+new UDim2(1, 0, 1, 0);
+new UDim2(0, 100, 0, 50);
+```
+
+**✅ Good:**
+
+```typescript
+UDim2.fromScale(1, 1);
+UDim2.fromOffset(100, 50);
+new UDim2(0, 0, 0, 0); // Allowed
 ```
 
 #### `no-shorthand-names`
