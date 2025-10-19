@@ -1,0 +1,89 @@
+import { describe } from "bun:test";
+import { RuleTester } from "eslint";
+import rule from "../../src/rules/prefer-sequence-overloads";
+
+const ruleTester = new RuleTester({
+	languageOptions: {
+		ecmaVersion: 2022,
+		sourceType: "module",
+	},
+});
+
+describe("prefer-sequence-overloads", () => {
+	ruleTester.run("prefer-sequence-overloads", rule, {
+		invalid: [
+			{
+				code:
+					"const gradient = new ColorSequence([\n" +
+					"\tnew ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),\n" +
+					"\tnew ColorSequenceKeypoint(1, Color3.fromRGB(255, 100, 200)),\n" +
+					"]);",
+				errors: [{ messageId: "preferTwoPointOverload" }],
+				output:
+					"const gradient = new ColorSequence(Color3.fromRGB(100, 200, 255), Color3.fromRGB(255, 100, 200));",
+			},
+			{
+				code:
+					"const solid = new ColorSequence([\n" +
+					"\tnew ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),\n" +
+					"\tnew ColorSequenceKeypoint(1, Color3.fromRGB(100, 200, 255)),\n" +
+					"]);",
+				errors: [{ messageId: "preferSingleOverload" }],
+				output: "const solid = new ColorSequence(Color3.fromRGB(100, 200, 255));",
+			},
+			{
+				code:
+					"const fade = new NumberSequence([\n" +
+					"\tnew NumberSequenceKeypoint(0, 0),\n" +
+					"\tnew NumberSequenceKeypoint(1, 100),\n" +
+					"]);",
+				errors: [{ messageId: "preferTwoPointOverload" }],
+				output: "const fade = new NumberSequence(0, 100);",
+			},
+			{
+				code:
+					"const constant = new NumberSequence([\n" +
+					"\tnew NumberSequenceKeypoint(0, 42),\n" +
+					"\tnew NumberSequenceKeypoint(1, 42),\n" +
+					"]);",
+				errors: [{ messageId: "preferSingleOverload" }],
+				output: "const constant = new NumberSequence(42);",
+			},
+		],
+		valid: [
+			// Non-endpoint keypoints should be untouched.
+			`
+new ColorSequence([
+	new ColorSequenceKeypoint(0, Color3.fromRGB(255, 255, 255)),
+	new ColorSequenceKeypoint(0.5, Color3.fromRGB(128, 128, 128)),
+	new ColorSequenceKeypoint(1, Color3.fromRGB(0, 0, 0)),
+]);
+`,
+
+			// Wrong keypoint ordering
+			`
+new ColorSequence([
+	new ColorSequenceKeypoint(1, Color3.fromRGB(255, 100, 200)),
+	new ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),
+]);
+`,
+
+			// Unsupported overload with envelope
+			`
+new NumberSequence([
+	new NumberSequenceKeypoint(0, 10, 0.2),
+	new NumberSequenceKeypoint(1, 90, 0.8),
+]);
+`,
+
+			// Already optimized constructors
+			"new ColorSequence(Color3.fromRGB(100, 200, 255));",
+			"new ColorSequence(Color3.fromRGB(0, 0, 0), Color3.fromRGB(255, 255, 255));",
+			"new NumberSequence(0);",
+			"new NumberSequence(0, 1);",
+
+			// Additional arguments or different constructors
+			"new SomethingElse([new ColorSequenceKeypoint(0, Color3.fromRGB(0, 0, 0)), new ColorSequenceKeypoint(1, Color3.fromRGB(255, 255, 255))]);",
+		],
+	});
+});

@@ -29,6 +29,7 @@ export default [
       "cease-nonsense/no-print": "error",
       "cease-nonsense/no-shorthand-names": "error",
       "cease-nonsense/no-warn": "error",
+      "cease-nonsense/prefer-sequence-overloads": "error",
       "cease-nonsense/prefer-udim2-shorthand": "error",
       "cease-nonsense/require-named-effect-functions": "error",
       "cease-nonsense/require-react-component-keys": "error",
@@ -347,6 +348,38 @@ UDim2.fromScale(1, 1);
 UDim2.fromOffset(100, 50);
 new UDim2(0, 0, 0, 0); // Allowed
 ```
+
+#### `prefer-sequence-overloads`
+
+Prefer the optimized `ColorSequence` and `NumberSequence` constructor overloads instead of building an array of `*SequenceKeypoint`s for the 0/1 endpoints. Includes auto-fix.
+
+**❌ Bad:**
+
+```typescript
+new ColorSequence([
+  new ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),
+  new ColorSequenceKeypoint(1, Color3.fromRGB(255, 100, 200)),
+]);
+
+new NumberSequence([
+  new NumberSequenceKeypoint(0, 0),
+  new NumberSequenceKeypoint(1, 100),
+]);
+```
+
+**✅ Good:**
+
+```typescript
+new ColorSequence(Color3.fromRGB(100, 200, 255), Color3.fromRGB(255, 100, 200));
+
+new ColorSequence(Color3.fromRGB(255, 255, 255));
+
+new NumberSequence(0, 100);
+
+new NumberSequence(42);
+```
+
+Automatically collapses identical 0/1 endpoints to the single-argument overload.
 
 #### `no-shorthand-names`
 
