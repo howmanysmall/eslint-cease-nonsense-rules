@@ -1015,6 +1015,57 @@ describe("require-react-component-keys", () => {
 					},
 				},
 			},
+			// Component registration with manager - top-level returns should not need keys
+			{
+				code: `
+							interface DialogProperties {
+								readonly onClose: () => void;
+								readonly title: string;
+							}
+							
+							function SimpleDialog({ onClose, title }: DialogProperties): React.ReactNode {
+								return (
+									<frame
+										AnchorPoint={center}
+										BackgroundColor3={Color3.fromRGB(51, 51, 77)}
+										BorderSizePixel={0}
+										Position={centerScale}
+										Size={UDim2.fromOffset(300, 150)}
+									>
+										<textlabel
+											key="title"
+											BackgroundTransparency={1}
+											Size={UDim2.fromScale(1, 0.5)}
+											Text={title}
+											TextColor3={Color3.fromRGB(255, 255, 255)}
+											TextSize={18}
+										/>
+										<textbutton
+											key="close-button"
+											BackgroundColor3={Color3.fromRGB(77, 77, 77)}
+											Event={{ Activated: onClose }}
+											Position={new UDim2(0, 10, 1, -50)}
+											Size={new UDim2(1, -20, 0, 40)}
+											Text="Close"
+											TextColor3={Color3.fromRGB(255, 255, 255)}
+										/>
+									</frame>
+								);
+							}
+							
+							const manager = useWindowManager();
+							const dialog = manager.registerWindow("BasicDialog", SimpleDialog, {
+								closeOnBackdrop: true,
+								modal: true,
+							});
+						`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
 		],
 	});
 });
