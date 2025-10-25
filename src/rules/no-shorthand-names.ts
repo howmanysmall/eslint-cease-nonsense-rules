@@ -4,8 +4,8 @@ import type { Rule } from "eslint";
  * Configuration options for the no-shorthand-names rule.
  */
 interface RuleOptions {
-	shorthands?: Record<string, string>;
-	allowPropertyAccess?: Array<string>;
+	readonly shorthands?: Record<string, string>;
+	readonly allowPropertyAccess?: Array<string>;
 }
 
 interface NormalizedOptions {

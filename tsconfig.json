@@ -17,6 +17,7 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"outDir": "dist",
+		"plugins": [],
 		"resolveJsonModule": false,
 		"rootDir": "src",
 		"skipLibCheck": true,
