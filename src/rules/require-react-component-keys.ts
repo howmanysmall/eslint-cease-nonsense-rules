@@ -1,12 +1,47 @@
-import type { TSESTree } from "@typescript-eslint/types";
+import { TSESTree } from "@typescript-eslint/types";
 import type { TSESLint } from "@typescript-eslint/utils";
 
 /**
  * Configuration options for the require-react-component-keys rule.
+ * 
+ * @example
+ * // Roblox-TS project with custom utilities
+ * {
+ *   "cease-nonsense/require-react-component-keys": ["error", {
+ *     "iterationMethods": ["map", "filter", "forEach", "each"],
+ *     "memoizationHooks": ["useCallback", "useMemo", "useBinding"]
+ *   }]
+ * }
+ * 
+ * @example
+ * // Lodash/Ramda project
+ * {
+ *   "cease-nonsense/require-react-component-keys": ["error", {
+ *     "iterationMethods": ["map", "filter", "forEach", "each", "forOwn"]
+ *   }]
+ * }
+ * 
+ * @example
+ * // Remove specific methods from being flagged
+ * {
+ *   "cease-nonsense/require-react-component-keys": ["error", {
+ *     "iterationMethods": ["map", "filter"] // Allow forEach without keys
+ *   }]
+ * }
  */
 interface RuleOptions {
-	ignoreCallExpressions?: string[];
-	allowRootKeys?: boolean;
+	readonly allowRootKeys?: boolean;
+	readonly ignoreCallExpressions?: Array<string>;
+	/**
+	 * Array method names that indicate iteration contexts where keys are required.
+	 * Defaults to standard array methods like 'map', 'filter', 'forEach', etc.
+	 */
+	readonly iterationMethods?: Array<string>;
+	/**
+	 * Hook names that indicate memoization contexts where keys are required.
+	 * Defaults to React hooks like 'useCallback' and 'useMemo'.
+	 */
+	readonly memoizationHooks?: Array<string>;
 }
 
 type Options = [RuleOptions?];
@@ -18,6 +53,19 @@ type MessageIds = "missingKey" | "rootComponentWithKey";
 const DEFAULT_OPTIONS: Required<RuleOptions> = {
 	allowRootKeys: false,
 	ignoreCallExpressions: ["ReactTree.mount", "CreateReactStory"],
+	iterationMethods: [
+		"map",
+		"filter",
+		"forEach",
+		"flatMap",
+		"reduce",
+		"reduceRight",
+		"some",
+		"every",
+		"find",
+		"findIndex",
+	],
+	memoizationHooks: ["useCallback", "useMemo"],
 };
 
 /**
@@ -46,10 +94,12 @@ const ARGUMENT_WRAPPER_TYPES = new Set([
 	"SpreadElement",
 ]);
 
+
+
 type FunctionLike = TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression | TSESTree.FunctionDeclaration;
 
 interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
-	recommended?: boolean;
+	readonly recommended?: boolean;
 }
 
 /**
@@ -124,6 +174,54 @@ function getEnclosingFunctionLike(node: TSESTree.Node): FunctionLike | undefined
 }
 
 /**
+ * Checks if a CallExpression represents an array iteration or memoization context that requires keys.
+ *
+ * @param callExpr - The CallExpression to check.
+ * @param iterationMethods - Set of method names that indicate iteration contexts.
+ * @param memoizationHooks - Set of hook names that indicate memoization contexts.
+ * @returns True if the call represents an iteration or memo context.
+ */
+function isIterationOrMemoCallback(
+	callExpr: TSESTree.CallExpression,
+	iterationMethods: Set<string>,
+	memoizationHooks: Set<string>,
+): boolean {
+	const { callee } = callExpr;
+
+	// Check for memoization hooks
+	if (callee.type === "Identifier" && memoizationHooks.has(callee.name)) return true;
+
+	if (callee.type === "MemberExpression" && callee.property.type === "Identifier") {
+		const methodName = callee.property.name;
+
+		// Check for Array iteration methods
+		if (iterationMethods.has(methodName)) return true;
+
+		// Check for Array.from with mapper
+		if (
+			methodName === "from" &&
+			callee.object.type === "MemberExpression" &&
+			callee.object.object.type === "Identifier" &&
+			callee.object.object.name === "Array" &&
+			callExpr.arguments.length >= 2 // has mapper argument
+		)
+			return true;
+
+		// Check for Array.prototype.[method].call pattern
+		if (
+			methodName === "call" &&
+			callee.object.type === "MemberExpression" &&
+			callee.object.object.type === "MemberExpression" &&
+			callee.object.object.property.type === "Identifier" &&
+			iterationMethods.has(callee.object.object.property.name)
+		)
+			return true;
+	}
+
+	return false;
+}
+
+/**
  * Walks upward from a potential call argument to find the enclosing CallExpression, if any.
  *
  * @param node - The starting node.
@@ -158,23 +256,26 @@ function findEnclosingCallExpression(node: TSESTree.Node): TSESTree.CallExpressi
  * Fetches the declared variable associated with a function-like node, if any.
  *
  * @param context - ESLint rule context.
- * @param fn - The function-like node.
+ * @param functionLike - The function-like node.
  * @returns The corresponding scope variable, when available.
  */
 function getVariableForFunction(
 	context: TSESLint.RuleContext<MessageIds, Options>,
-	fn: FunctionLike,
+	functionLike: FunctionLike,
 ): TSESLint.Scope.Variable | undefined {
-	if (fn.type === "FunctionDeclaration") {
-		const declared = context.sourceCode.getDeclaredVariables(fn);
+	if (functionLike.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration) {
+		const declared = context.sourceCode.getDeclaredVariables(functionLike);
 		if (declared.length > 0) return declared[0];
 		return undefined;
 	}
 
-	const parent = fn.parent;
+	const parent = functionLike.parent;
 	if (!parent) return undefined;
 
-	if (parent.type === "VariableDeclarator" || parent.type === "AssignmentExpression") {
+	if (
+		parent.type === TSESTree.AST_NODE_TYPES.VariableDeclarator ||
+		parent.type === TSESTree.AST_NODE_TYPES.AssignmentExpression
+	) {
 		const declared = context.sourceCode.getDeclaredVariables(parent);
 		if (declared.length > 0) return declared[0];
 	}
@@ -183,36 +284,58 @@ function getVariableForFunction(
 }
 
 /**
- * Checks whether a scope reference is used as an argument to a call expression that is not a React HOC.
+ * Checks whether a scope reference is used as an argument to a call expression that requires keys.
  *
  * @param reference - The reference to evaluate.
- * @returns True if the reference participates in a non-HOC call as an argument.
+ * @param iterationMethods - Set of method names that indicate iteration contexts.
+ * @param memoizationHooks - Set of hook names that indicate memoization contexts.
+ * @returns True if the reference participates in an iteration or memoization call as an argument.
  */
-function referenceActsAsCallback(reference: TSESLint.Scope.Reference): boolean {
+function referenceActsAsCallback(
+	reference: TSESLint.Scope.Reference,
+	iterationMethods: Set<string>,
+	memoizationHooks: Set<string>,
+): boolean {
 	if (!reference.isRead()) return false;
 
 	const callExpression = findEnclosingCallExpression(reference.identifier);
 	if (!callExpression) return false;
 
-	return !isReactComponentHOC(callExpression);
+	// React HOCs don't need keys on top-level returns
+	if (isReactComponentHOC(callExpression)) return false;
+
+	// Only iteration or memoization contexts need keys on top-level returns
+	return isIterationOrMemoCallback(callExpression, iterationMethods, memoizationHooks);
 }
 
 /**
- * Determines whether a function-like node is used as a callback (passed to a call expression),
- * excluding known React component HOCs.
+ * Determines whether a function-like node is used as a callback in iteration or memoization contexts.
  *
  * @param context - ESLint rule context.
  * @param fn - The function node to inspect.
- * @returns True if the function participates in callback invocations.
+ * @param iterationMethods - Set of method names that indicate iteration contexts.
+ * @param memoizationHooks - Set of hook names that indicate memoization contexts.
+ * @returns True if the function participates in iteration or memoization invocations.
  */
-function isFunctionUsedAsCallback(context: TSESLint.RuleContext<MessageIds, Options>, fn: FunctionLike): boolean {
+function isFunctionUsedAsCallback(
+	context: TSESLint.RuleContext<MessageIds, Options>,
+	fn: FunctionLike,
+	iterationMethods: Set<string>,
+	memoizationHooks: Set<string>,
+): boolean {
 	const inlineCall = findEnclosingCallExpression(fn);
-	if (inlineCall && !isReactComponentHOC(inlineCall)) return true;
+	if (inlineCall) {
+		// React HOCs don't need keys on top-level returns
+		if (isReactComponentHOC(inlineCall)) return false;
+		// Only iteration or memoization contexts need keys on top-level returns
+		return isIterationOrMemoCallback(inlineCall, iterationMethods, memoizationHooks);
+	}
 
 	const variable = getVariableForFunction(context, fn);
 	if (!variable) return false;
 
-	for (const reference of variable.references) if (referenceActsAsCallback(reference)) return true;
+	for (const reference of variable.references)
+		if (referenceActsAsCallback(reference, iterationMethods, memoizationHooks)) return true;
 
 	return false;
 }
@@ -240,16 +363,12 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 
 	if (parent.type === "ReturnStatement") {
 		let currentNode: TSESTree.Node | undefined = ascendPastWrappers(parent.parent);
-
 		if (currentNode?.type === "BlockStatement") currentNode = ascendPastWrappers(currentNode.parent);
-
 		if (!currentNode) return false;
 
 		if (currentNode.type === "ArrowFunctionExpression" || currentNode.type === "FunctionExpression") {
 			const functionParent = ascendPastWrappers(currentNode.parent);
-
 			if (functionParent?.type === "CallExpression") return isReactComponentHOC(functionParent);
-
 			return true;
 		}
 
@@ -347,6 +466,10 @@ const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 			...context.options[0],
 		};
 
+		// Convert arrays to Sets for performance
+		const iterationMethods = new Set(options.iterationMethods);
+		const memoizationHooks = new Set(options.memoizationHooks);
+
 		/**
 		 * Checks a JSX element or fragment for required key prop.
 		 *
@@ -354,7 +477,9 @@ const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 		 */
 		function checkElement(node: TSESTree.JSXElement | TSESTree.JSXFragment): void {
 			const functionLike = getEnclosingFunctionLike(node);
-			const isCallback = functionLike ? isFunctionUsedAsCallback(context, functionLike) : false;
+			const isCallback = functionLike
+				? isFunctionUsedAsCallback(context, functionLike, iterationMethods, memoizationHooks)
+				: false;
 			const isRoot = isTopLevelReturn(node);
 
 			if (isRoot && !isCallback) {
@@ -415,6 +540,29 @@ const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 					ignoreCallExpressions: {
 						default: ["ReactTree.mount"],
 						description: "Function calls where JSX arguments don't need keys",
+						items: { type: "string" },
+						type: "array",
+					},
+					iterationMethods: {
+						default: [
+							"map",
+							"filter",
+							"forEach",
+							"flatMap",
+							"reduce",
+							"reduceRight",
+							"some",
+							"every",
+							"find",
+							"findIndex",
+						],
+						description: "Array method names that indicate iteration contexts where keys are required",
+						items: { type: "string" },
+						type: "array",
+					},
+					memoizationHooks: {
+						default: ["useCallback", "useMemo"],
+						description: "Hook names that indicate memoization contexts where keys are required",
 						items: { type: "string" },
 						type: "array",
 					},
