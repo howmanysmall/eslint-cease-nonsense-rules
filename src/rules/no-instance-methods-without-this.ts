@@ -16,7 +16,7 @@ interface NormalizedOptions {
 }
 
 interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
-	recommended?: boolean;
+	readonly recommended?: boolean;
 }
 
 const DEFAULT_OPTIONS: Required<RuleOptions> = {

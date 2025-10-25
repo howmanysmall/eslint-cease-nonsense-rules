@@ -4,5 +4,9 @@
 			"args": ["--bun", "-y", "package-registry-mcp"],
 			"command": "bunx",
 		},
+		"sequential-thinking": {
+			"args": ["--bun", "-y", "@modelcontextprotocol/server-sequential-thinking"],
+			"command": "bunx",
+		},
 	},
 }

@@ -12,7 +12,7 @@ interface KeypointData {
 }
 
 interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
-	recommended?: boolean;
+	readonly recommended?: boolean;
 }
 
 const sequenceDescriptors: ReadonlyArray<SequenceDescriptor> = [
