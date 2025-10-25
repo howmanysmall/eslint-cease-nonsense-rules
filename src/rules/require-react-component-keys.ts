@@ -3,10 +3,45 @@ import type { TSESLint } from "@typescript-eslint/utils";
 
 /**
  * Configuration options for the require-react-component-keys rule.
+ * 
+ * @example
+ * // Roblox-TS project with custom utilities
+ * {
+ *   "cease-nonsense/require-react-component-keys": ["error", {
+ *     "iterationMethods": ["map", "filter", "forEach", "each"],
+ *     "memoizationHooks": ["useCallback", "useMemo", "useBinding"]
+ *   }]
+ * }
+ * 
+ * @example
+ * // Lodash/Ramda project
+ * {
+ *   "cease-nonsense/require-react-component-keys": ["error", {
+ *     "iterationMethods": ["map", "filter", "forEach", "each", "forOwn"]
+ *   }]
+ * }
+ * 
+ * @example
+ * // Remove specific methods from being flagged
+ * {
+ *   "cease-nonsense/require-react-component-keys": ["error", {
+ *     "iterationMethods": ["map", "filter"] // Allow forEach without keys
+ *   }]
+ * }
  */
 interface RuleOptions {
 	readonly allowRootKeys?: boolean;
 	readonly ignoreCallExpressions?: Array<string>;
+	/**
+	 * Array method names that indicate iteration contexts where keys are required.
+	 * Defaults to standard array methods like 'map', 'filter', 'forEach', etc.
+	 */
+	readonly iterationMethods?: Array<string>;
+	/**
+	 * Hook names that indicate memoization contexts where keys are required.
+	 * Defaults to React hooks like 'useCallback' and 'useMemo'.
+	 */
+	readonly memoizationHooks?: Array<string>;
 }
 
 type Options = [RuleOptions?];
@@ -18,6 +53,19 @@ type MessageIds = "missingKey" | "rootComponentWithKey";
 const DEFAULT_OPTIONS: Required<RuleOptions> = {
 	allowRootKeys: false,
 	ignoreCallExpressions: ["ReactTree.mount", "CreateReactStory"],
+	iterationMethods: [
+		"map",
+		"filter",
+		"forEach",
+		"flatMap",
+		"reduce",
+		"reduceRight",
+		"some",
+		"every",
+		"find",
+		"findIndex",
+	],
+	memoizationHooks: ["useCallback", "useMemo"],
 };
 
 /**
@@ -46,26 +94,7 @@ const ARGUMENT_WRAPPER_TYPES = new Set([
 	"SpreadElement",
 ]);
 
-/**
- * Methods that indicate array iteration contexts where keys are required.
- */
-const ARRAY_ITERATION_METHODS = new Set([
-	"map",
-	"filter",
-	"forEach",
-	"flatMap",
-	"reduce",
-	"reduceRight",
-	"some",
-	"every",
-	"find",
-	"findIndex",
-]);
 
-/**
- * React hooks that indicate memoization contexts where keys are required.
- */
-const REACT_MEMO_HOOKS = new Set(["useCallback", "useMemo"]);
 
 type FunctionLike = TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression | TSESTree.FunctionDeclaration;
 
@@ -148,19 +177,25 @@ function getEnclosingFunctionLike(node: TSESTree.Node): FunctionLike | undefined
  * Checks if a CallExpression represents an array iteration or memoization context that requires keys.
  *
  * @param callExpr - The CallExpression to check.
+ * @param iterationMethods - Set of method names that indicate iteration contexts.
+ * @param memoizationHooks - Set of hook names that indicate memoization contexts.
  * @returns True if the call represents an iteration or memo context.
  */
-function isIterationOrMemoCallback(callExpr: TSESTree.CallExpression): boolean {
+function isIterationOrMemoCallback(
+	callExpr: TSESTree.CallExpression,
+	iterationMethods: Set<string>,
+	memoizationHooks: Set<string>,
+): boolean {
 	const { callee } = callExpr;
 
-	// Check for React memo hooks
-	if (callee.type === "Identifier" && REACT_MEMO_HOOKS.has(callee.name)) return true;
+	// Check for memoization hooks
+	if (callee.type === "Identifier" && memoizationHooks.has(callee.name)) return true;
 
 	if (callee.type === "MemberExpression" && callee.property.type === "Identifier") {
 		const methodName = callee.property.name;
 
 		// Check for Array iteration methods
-		if (ARRAY_ITERATION_METHODS.has(methodName)) return true;
+		if (iterationMethods.has(methodName)) return true;
 
 		// Check for Array.from with mapper
 		if (
@@ -178,7 +213,7 @@ function isIterationOrMemoCallback(callExpr: TSESTree.CallExpression): boolean {
 			callee.object.type === "MemberExpression" &&
 			callee.object.object.type === "MemberExpression" &&
 			callee.object.object.property.type === "Identifier" &&
-			ARRAY_ITERATION_METHODS.has(callee.object.object.property.name)
+			iterationMethods.has(callee.object.object.property.name)
 		)
 			return true;
 	}
@@ -252,9 +287,15 @@ function getVariableForFunction(
  * Checks whether a scope reference is used as an argument to a call expression that requires keys.
  *
  * @param reference - The reference to evaluate.
+ * @param iterationMethods - Set of method names that indicate iteration contexts.
+ * @param memoizationHooks - Set of hook names that indicate memoization contexts.
  * @returns True if the reference participates in an iteration or memoization call as an argument.
  */
-function referenceActsAsCallback(reference: TSESLint.Scope.Reference): boolean {
+function referenceActsAsCallback(
+	reference: TSESLint.Scope.Reference,
+	iterationMethods: Set<string>,
+	memoizationHooks: Set<string>,
+): boolean {
 	if (!reference.isRead()) return false;
 
 	const callExpression = findEnclosingCallExpression(reference.identifier);
@@ -264,7 +305,7 @@ function referenceActsAsCallback(reference: TSESLint.Scope.Reference): boolean {
 	if (isReactComponentHOC(callExpression)) return false;
 
 	// Only iteration or memoization contexts need keys on top-level returns
-	return isIterationOrMemoCallback(callExpression);
+	return isIterationOrMemoCallback(callExpression, iterationMethods, memoizationHooks);
 }
 
 /**
@@ -272,21 +313,29 @@ function referenceActsAsCallback(reference: TSESLint.Scope.Reference): boolean {
  *
  * @param context - ESLint rule context.
  * @param fn - The function node to inspect.
+ * @param iterationMethods - Set of method names that indicate iteration contexts.
+ * @param memoizationHooks - Set of hook names that indicate memoization contexts.
  * @returns True if the function participates in iteration or memoization invocations.
  */
-function isFunctionUsedAsCallback(context: TSESLint.RuleContext<MessageIds, Options>, fn: FunctionLike): boolean {
+function isFunctionUsedAsCallback(
+	context: TSESLint.RuleContext<MessageIds, Options>,
+	fn: FunctionLike,
+	iterationMethods: Set<string>,
+	memoizationHooks: Set<string>,
+): boolean {
 	const inlineCall = findEnclosingCallExpression(fn);
 	if (inlineCall) {
 		// React HOCs don't need keys on top-level returns
 		if (isReactComponentHOC(inlineCall)) return false;
 		// Only iteration or memoization contexts need keys on top-level returns
-		return isIterationOrMemoCallback(inlineCall);
+		return isIterationOrMemoCallback(inlineCall, iterationMethods, memoizationHooks);
 	}
 
 	const variable = getVariableForFunction(context, fn);
 	if (!variable) return false;
 
-	for (const reference of variable.references) if (referenceActsAsCallback(reference)) return true;
+	for (const reference of variable.references)
+		if (referenceActsAsCallback(reference, iterationMethods, memoizationHooks)) return true;
 
 	return false;
 }
@@ -417,6 +466,10 @@ const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 			...context.options[0],
 		};
 
+		// Convert arrays to Sets for performance
+		const iterationMethods = new Set(options.iterationMethods);
+		const memoizationHooks = new Set(options.memoizationHooks);
+
 		/**
 		 * Checks a JSX element or fragment for required key prop.
 		 *
@@ -424,7 +477,9 @@ const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 		 */
 		function checkElement(node: TSESTree.JSXElement | TSESTree.JSXFragment): void {
 			const functionLike = getEnclosingFunctionLike(node);
-			const isCallback = functionLike ? isFunctionUsedAsCallback(context, functionLike) : false;
+			const isCallback = functionLike
+				? isFunctionUsedAsCallback(context, functionLike, iterationMethods, memoizationHooks)
+				: false;
 			const isRoot = isTopLevelReturn(node);
 
 			if (isRoot && !isCallback) {
@@ -485,6 +540,29 @@ const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 					ignoreCallExpressions: {
 						default: ["ReactTree.mount"],
 						description: "Function calls where JSX arguments don't need keys",
+						items: { type: "string" },
+						type: "array",
+					},
+					iterationMethods: {
+						default: [
+							"map",
+							"filter",
+							"forEach",
+							"flatMap",
+							"reduce",
+							"reduceRight",
+							"some",
+							"every",
+							"find",
+							"findIndex",
+						],
+						description: "Array method names that indicate iteration contexts where keys are required",
+						items: { type: "string" },
+						type: "array",
+					},
+					memoizationHooks: {
+						default: ["useCallback", "useMemo"],
+						description: "Hook names that indicate memoization contexts where keys are required",
 						items: { type: "string" },
 						type: "array",
 					},
