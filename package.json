@@ -5,7 +5,7 @@
 	},
 	"description": "A bunch of lints to prevent idiot mistakes I encounter with frequency.",
 	"devDependencies": {
-		"@biomejs/biome": "^2.2.6",
+		"@biomejs/biome": "^2.3.0",
 		"@mitata/counters": "^0.0.8",
 		"@types/bun": "latest",
 		"@types/node": "^20.14.11",
@@ -17,8 +17,8 @@
 		"jiti": "^2.4.2",
 		"knip": "^5.66.0",
 		"mitata": "^1.0.34",
-		"oxlint": "^1.23.0",
-		"oxlint-tsgolint": "^0.2.0",
+		"oxlint": "^1.24.0",
+		"oxlint-tsgolint": "^0.3.0",
 		"typescript": "^5.6.3"
 	},
 	"engines": {

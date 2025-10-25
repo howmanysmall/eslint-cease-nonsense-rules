@@ -27,6 +27,7 @@ export default [
       "cease-nonsense/ban-react-fc": "error",
       "cease-nonsense/enforce-ianitor-check-type": "error",
       "cease-nonsense/no-color3-constructor": "error",
+      "cease-nonsense/no-instance-methods-without-this": "error",
       "cease-nonsense/no-print": "error",
       "cease-nonsense/no-shorthand-names": "error",
       "cease-nonsense/no-warn": "error",
@@ -421,6 +422,68 @@ new NumberSequence(42);
 ```
 
 Automatically collapses identical 0/1 endpoints to the single-argument overload.
+
+#### `no-instance-methods-without-this`
+
+Detects instance methods that don't use `this` and should be converted to standalone functions for better performance in roblox-ts.
+
+In roblox-ts, instance methods create metatable objects with significant performance overhead. Methods that don't use `this` can be moved outside the class and called as standalone functions, eliminating this overhead entirely.
+
+**❌ Bad:**
+
+```typescript
+type OnChange = (currentValue: number, previousValue: number) => void;
+
+class MyClass {
+  private readonly onChanges = new Array<OnChange>();
+  private value = 0;
+
+  public increment(): void {
+    const previousValue = this.value;
+    const value = previousValue + 1;
+    this.value = value;
+    this.notifyChanges(value, previousValue); // ← Bad: method doesn't use this
+  }
+
+  private notifyChanges(value: number, previousValue: number): void {
+    for (const onChange of this.onChanges) onChange(value, previousValue);
+  }
+}
+```
+
+**✅ Good:**
+
+```typescript
+type OnChange = (currentValue: number, previousValue: number) => void;
+
+function notifyChanges(value: number, previousValue: number, onChanges: ReadonlyArray<OnChange>): void {
+  for (const onChange of onChanges) onChange(value, previousValue);
+}
+
+class MyClass {
+  private readonly onChanges = new Array<OnChange>();
+  private value = 0;
+
+  public increment(): void {
+    const previousValue = this.value;
+    const value = previousValue + 1;
+    this.value = value;
+    notifyChanges(value, previousValue, this.onChanges); // ← Standalone function call
+  }
+}
+```
+
+**Configuration:**
+
+```typescript
+{
+  "cease-nonsense/no-instance-methods-without-this": ["error", {
+    "checkPrivate": true,       // Check private methods (default: true)
+    "checkProtected": true,     // Check protected methods (default: true)
+    "checkPublic": true         // Check public methods (default: true)
+  }]
+}
+```
 
 #### `no-shorthand-names`
 
