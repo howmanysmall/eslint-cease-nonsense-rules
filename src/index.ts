@@ -3,11 +3,12 @@ import type { Rule } from "eslint";
 import banReactFC from "./rules/ban-react-fc";
 import enforceIanitorCheckType from "./rules/enforce-ianitor-check-type";
 import noColor3Constructor from "./rules/no-color3-constructor";
+import noInstanceMethodsWithoutThis from "./rules/no-instance-methods-without-this";
 import noPrint from "./rules/no-print";
 import noShorthandNames from "./rules/no-shorthand-names";
 import noWarn from "./rules/no-warn";
-import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
 import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
+import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
 import requireNamedEffectFunctions from "./rules/require-named-effect-functions";
 import requireReactComponentKeys from "./rules/require-react-component-keys";
 import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
@@ -24,6 +25,7 @@ const rules: Readonly<Record<string, AnyRuleModule>> = {
 	"ban-react-fc": banReactFC,
 	"enforce-ianitor-check-type": enforceIanitorCheckType,
 	"no-color3-constructor": noColor3Constructor,
+	"no-instance-methods-without-this": noInstanceMethodsWithoutThis,
 	"no-print": noPrint,
 	"no-shorthand-names": noShorthandNames,
 	"no-warn": noWarn,
@@ -61,6 +63,7 @@ const recommended = {
 		"cease-nonsense/ban-react-fc": "error",
 		"cease-nonsense/enforce-ianitor-check-type": "error",
 		"cease-nonsense/no-color3-constructor": "error",
+		"cease-nonsense/no-instance-methods-without-this": "error",
 		"cease-nonsense/no-print": "error",
 		"cease-nonsense/no-shorthand-names": "error",
 		"cease-nonsense/no-warn": "error",
