@@ -1,6 +1,7 @@
 import { TSESTree } from "@typescript-eslint/types";
 import type { Rule, Scope } from "eslint";
-import * as S from "sury";
+import Type from "typebox";
+import { Compile } from "typebox/compile";
 
 const FUNCTION_DECLARATIONS = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.FunctionExpression,
@@ -696,12 +697,8 @@ function isUnstableValue(node: TSESTree.Node | undefined): boolean {
 	return node ? UNSTABLE_VALUES.has(node.type) : false;
 }
 
-const isNumberArray = S.array(S.number);
-const isStringArray = S.array(S.string);
-
-function validate<T>(validator: S.Schema<T>, value: unknown): value is T {
-	return S.safe(() => S.parseOrThrow(value, validator)).success;
-}
+const isNumberArray = Compile(Type.Array(Type.Number(), { minItems: 1, readOnly: true }));
+const isStringArray = Compile(Type.Array(Type.String(), { minItems: 1, readOnly: true }));
 
 /**
  * Converts stableResult configuration to internal format.
@@ -715,8 +712,8 @@ function convertStableResult(
 	if (typeof stableResult === "boolean") return stableResult;
 	if (typeof stableResult === "number") return new Set([stableResult]);
 
-	if (validate(isNumberArray, stableResult) && stableResult.length > 0) return new Set(stableResult);
-	if (validate(isStringArray, stableResult) && stableResult.length > 0) return new Set(stableResult);
+	if (isNumberArray.Check(stableResult)) return new Set(stableResult);
+	if (isStringArray.Check(stableResult)) return new Set(stableResult);
 
 	return false;
 }

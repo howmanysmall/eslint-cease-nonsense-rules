@@ -1,7 +1,7 @@
 {
 	"author": "HowManySmall",
 	"dependencies": {
-		"sury": "^11.0.0-alpha.4"
+		"typebox": "^1.0.43"
 	},
 	"description": "A bunch of lints to prevent idiot mistakes I encounter with frequency.",
 	"devDependencies": {

@@ -1,23 +1,23 @@
-import type { TSESTree } from "@typescript-eslint/types";
+import { TSESTree } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
 
 /**
  * Configuration options for the enforce-ianitor-check-type rule.
  */
 interface ComplexityConfig {
-	baseThreshold: number;
-	warnThreshold: number;
-	errorThreshold: number;
-	interfacePenalty: number;
-	performanceMode: boolean;
+	readonly baseThreshold: number;
+	readonly warnThreshold: number;
+	readonly errorThreshold: number;
+	readonly interfacePenalty: number;
+	readonly performanceMode: boolean;
 }
 
 /**
  * Cache for complexity calculations to improve performance.
  */
 interface ComplexityCache {
-	nodeCache: WeakMap<object, number>;
-	visitedNodes: WeakSet<object>;
+	readonly nodeCache: WeakMap<object, number>;
+	readonly visitedNodes: WeakSet<object>;
 }
 
 /**
@@ -51,7 +51,10 @@ function hasTypeAnnotation(node: { type: string; id?: unknown; returnType?: unkn
  * @returns The type name or undefined if not applicable.
  */
 function getTypeName(node: TSESTree.Node): string | undefined {
-	return node.type === "TSInterfaceDeclaration" || node.type === "TSTypeAliasDeclaration" ? node.id.name : undefined;
+	return node.type === TSESTree.AST_NODE_TYPES.TSInterfaceDeclaration ||
+		node.type === TSESTree.AST_NODE_TYPES.TSTypeAliasDeclaration
+		? node.id.name
+		: undefined;
 }
 
 /**
