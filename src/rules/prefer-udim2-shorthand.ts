@@ -36,27 +36,7 @@ function collectNumericArguments(parameters: ReadonlyArray<unknown>): NumericArg
 	};
 }
 
-/**
- * Detects `new UDim2(...)` calls that can be simplified to `UDim2.fromScale()` or `UDim2.fromOffset()`.
- *
- * @example
- * // ❌ Reports
- * new UDim2(1, 0, 1, 0);
- * new UDim2(0, 100, 0, 50);
- *
- * // ✅ OK
- * new UDim2(0, 0, 0, 0);
- * new UDim2(1, 2, 3, 4);
- * UDim2.fromScale(1, 1);
- * UDim2.fromOffset(100, 50);
- */
 const preferUDim2Shorthand: Rule.RuleModule = {
-	/**
-	 * Creates the ESLint rule visitor.
-	 *
-	 * @param context - The ESLint rule context.
-	 * @returns The visitor object with AST node handlers.
-	 */
 	create(context) {
 		return {
 			NewExpression(node) {
@@ -67,10 +47,8 @@ const preferUDim2Shorthand: Rule.RuleModule = {
 
 				const { scaleX, offsetX, scaleY, offsetY } = collected;
 
-				// Allow all zeros
 				if (scaleX === 0 && offsetX === 0 && scaleY === 0 && offsetY === 0) return;
 
-				// Check for fromScale pattern (offsets are zero)
 				if (offsetX === 0 && offsetY === 0) {
 					context.report({
 						fix: (fixer) => fixer.replaceText(node, `UDim2.fromScale(${scaleX}, ${scaleY})`),
@@ -80,7 +58,6 @@ const preferUDim2Shorthand: Rule.RuleModule = {
 					return;
 				}
 
-				// Check for fromOffset pattern (scales are zero)
 				if (scaleX === 0 && scaleY === 0) {
 					context.report({
 						fix: (fixer) => fixer.replaceText(node, `UDim2.fromOffset(${offsetX}, ${offsetY})`),

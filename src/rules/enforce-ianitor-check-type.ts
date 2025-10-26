@@ -1,9 +1,6 @@
 import { TSESTree } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
 
-/**
- * Configuration options for the enforce-ianitor-check-type rule.
- */
 interface ComplexityConfig {
 	readonly baseThreshold: number;
 	readonly warnThreshold: number;
@@ -12,17 +9,11 @@ interface ComplexityConfig {
 	readonly performanceMode: boolean;
 }
 
-/**
- * Cache for complexity calculations to improve performance.
- */
 interface ComplexityCache {
 	readonly nodeCache: WeakMap<object, number>;
 	readonly visitedNodes: WeakSet<object>;
 }
 
-/**
- * Default configuration values for the rule.
- */
 const DEFAULT_CONFIG: ComplexityConfig = {
 	baseThreshold: 10,
 	errorThreshold: 25,
@@ -31,12 +22,6 @@ const DEFAULT_CONFIG: ComplexityConfig = {
 	warnThreshold: 15,
 };
 
-/**
- * Checks if a node has a type annotation.
- *
- * @param node - The node to check.
- * @returns True if the node has a type annotation.
- */
 function hasTypeAnnotation(node: { type: string; id?: unknown; returnType?: unknown }): boolean {
 	if (node.type === "VariableDeclarator" && node.id && typeof node.id === "object" && "typeAnnotation" in node.id)
 		return !!node.id.typeAnnotation;
@@ -44,12 +29,6 @@ function hasTypeAnnotation(node: { type: string; id?: unknown; returnType?: unkn
 	return false;
 }
 
-/**
- * Extracts the type name from a TypeScript type node.
- *
- * @param node - The TypeScript AST node.
- * @returns The type name or undefined if not applicable.
- */
 function getTypeName(node: TSESTree.Node): string | undefined {
 	return node.type === TSESTree.AST_NODE_TYPES.TSInterfaceDeclaration ||
 		node.type === TSESTree.AST_NODE_TYPES.TSTypeAliasDeclaration
@@ -57,12 +36,6 @@ function getTypeName(node: TSESTree.Node): string | undefined {
 		: undefined;
 }
 
-/**
- * Checks if a node is an Ianitor validator call.
- *
- * @param node - The node to check.
- * @returns True if the node is an Ianitor validator.
- */
 function isIanitorValidator(node: {
 	type: string;
 	callee?: { type: string; object?: { type: string; name?: string } };
@@ -75,16 +48,9 @@ function isIanitorValidator(node: {
 	);
 }
 
-/**
- * Checks if a type annotation uses the Ianitor.Static<typeof ...> pattern.
- *
- * @param typeAnnotation - The TypeScript type annotation to check.
- * @returns True if the type uses Ianitor.Static pattern.
- */
-function hasIanitorStaticType(typeAnnotation: TSESTree.TypeNode): boolean {
+function extractIanitorStaticVariable(typeAnnotation: TSESTree.TypeNode): string | null {
 	let currentType = typeAnnotation;
 
-	// Handle Readonly<...> wrapper
 	if (
 		currentType.type === "TSTypeReference" &&
 		currentType.typeName.type === "Identifier" &&
@@ -93,7 +59,36 @@ function hasIanitorStaticType(typeAnnotation: TSESTree.TypeNode): boolean {
 	)
 		currentType = currentType.typeArguments.params[0];
 
-	// Check for Ianitor.Static<typeof ...>
+	if (currentType.type !== "TSTypeReference") return null;
+
+	const { typeName, typeArguments } = currentType;
+	const firstParam = typeArguments?.params[0];
+
+	if (
+		typeName.type === "TSQualifiedName" &&
+		typeName.left.type === "Identifier" &&
+		typeName.left.name === "Ianitor" &&
+		typeName.right.type === "Identifier" &&
+		typeName.right.name === "Static" &&
+		firstParam?.type === "TSTypeQuery" &&
+		firstParam.exprName.type === "Identifier"
+	)
+		return firstParam.exprName.name;
+
+	return null;
+}
+
+function hasIanitorStaticType(typeAnnotation: TSESTree.TypeNode): boolean {
+	let currentType = typeAnnotation;
+
+	if (
+		currentType.type === "TSTypeReference" &&
+		currentType.typeName.type === "Identifier" &&
+		currentType.typeName.name === "Readonly" &&
+		currentType.typeArguments?.params[0]
+	)
+		currentType = currentType.typeArguments.params[0];
+
 	if (currentType.type !== "TSTypeReference") return false;
 
 	const { typeName, typeArguments } = currentType;
@@ -109,12 +104,6 @@ function hasIanitorStaticType(typeAnnotation: TSESTree.TypeNode): boolean {
 	);
 }
 
-/**
- * Calculates the complexity score of an Ianitor validator.
- *
- * @param node - The Ianitor validator node.
- * @returns The complexity score.
- */
 function calculateIanitorComplexity(node: {
 	readonly callee?: {
 		readonly type: string;
@@ -158,29 +147,16 @@ function calculateIanitorComplexity(node: {
 }
 
 const enforceIanitorCheckType: Rule.RuleModule = {
-	/**
-	 * Creates the ESLint rule visitor.
-	 *
-	 * @param context - The ESLint rule context.
-	 * @returns The visitor object with AST node handlers.
-	 */
 	create(context) {
 		const config: ComplexityConfig = { ...DEFAULT_CONFIG, ...context.options[0] };
 		const cache: ComplexityCache = {
 			nodeCache: new WeakMap(),
 			visitedNodes: new WeakSet(),
 		};
-		// Track variable names used in Ianitor.Static<typeof varName> patterns
 		const ianitorStaticVariables = new Set<string>();
 		const depthMultiplierCache = new Map<number, number>();
 		const complexityCeiling = config.errorThreshold * 2;
 
-		/**
-		 * Retrieves the cached logarithmic multiplier for a given depth.
-		 *
-		 * @param depth - The current recursion depth.
-		 * @returns The multiplier applied to the accumulated score.
-		 */
 		function getDepthMultiplier(depth: number): number {
 			const cached = depthMultiplierCache.get(depth);
 			if (cached !== undefined) return cached;
@@ -189,71 +165,16 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 			return computed;
 		}
 
-		/**
-		 * Adds a contribution to the running score, respecting performance ceilings.
-		 *
-		 * @param current - The current accumulated score.
-		 * @param addition - The contribution that should be added.
-		 * @returns The bounded score after applying the contribution.
-		 */
 		function addScore(current: number, addition: number): number {
 			const nextScore = current + addition;
 			if (!config.performanceMode) return nextScore;
 			return nextScore > complexityCeiling ? complexityCeiling : nextScore;
 		}
 
-		/**
-		 * Extracts the variable name from Ianitor.Static<typeof varName> pattern.
-		 *
-		 * @param typeAnnotation - The TypeScript type annotation to check.
-		 * @returns The variable name if found, null otherwise.
-		 */
-		// oxlint-disable-next-line consistent-function-scoping
-		function extractIanitorStaticVariable(typeAnnotation: TSESTree.TypeNode): string | null {
-			let currentType = typeAnnotation;
-
-			// Handle Readonly<...> wrapper
-			if (
-				currentType.type === "TSTypeReference" &&
-				currentType.typeName.type === "Identifier" &&
-				currentType.typeName.name === "Readonly" &&
-				currentType.typeArguments?.params[0]
-			)
-				currentType = currentType.typeArguments.params[0];
-
-			// Check for Ianitor.Static<typeof varName>
-			if (currentType.type !== "TSTypeReference") return null;
-
-			const { typeName, typeArguments } = currentType;
-			const firstParam = typeArguments?.params[0];
-
-			if (
-				typeName.type === "TSQualifiedName" &&
-				typeName.left.type === "Identifier" &&
-				typeName.left.name === "Ianitor" &&
-				typeName.right.type === "Identifier" &&
-				typeName.right.name === "Static" &&
-				firstParam?.type === "TSTypeQuery" &&
-				firstParam.exprName.type === "Identifier"
-			)
-				return firstParam.exprName.name;
-
-			return null;
-		}
-
-		/**
-		 * Calculates the structural complexity of a TypeScript type.
-		 *
-		 * @param node - The TypeScript AST node.
-		 * @param depth - The current depth in the type tree.
-		 * @returns The complexity score.
-		 */
 		function calculateStructuralComplexity(node: TSESTree.Node, depth = 0): number {
-			// Performance: Cache everything
 			const cached = cache.nodeCache.get(node);
 			if (cached !== undefined) return cached;
 
-			// Cycle detection without TypeChecker
 			if (cache.visitedNodes.has(node)) return 50;
 
 			cache.visitedNodes.add(node);
@@ -262,7 +183,6 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 			const nextDepth = depth + 1;
 
 			switch (node.type) {
-				// Primitives
 				case "TSStringKeyword":
 				case "TSNumberKeyword":
 				case "TSBooleanKeyword":
@@ -274,14 +194,12 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					score = 1;
 					break;
 
-				// Short-circuits
 				case "TSNeverKeyword":
 				case "TSUnknownKeyword":
 				case "TSAnyKeyword":
 					score = 0;
 					break;
 
-				// INTERFACES - ALWAYS COMPLEX
 				case "TSInterfaceDeclaration": {
 					const iface = node;
 					score = config.interfacePenalty;
@@ -301,7 +219,6 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					break;
 				}
 
-				// Type literals (object types)
 				case "TSTypeLiteral": {
 					const { members } = node;
 					score = 2 + members.length * 0.5;
@@ -316,7 +233,6 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					break;
 				}
 
-				// Unions
 				case "TSUnionType": {
 					const { types } = node;
 					for (const type of types) score = addScore(score, calculateStructuralComplexity(type, nextDepth));
@@ -324,7 +240,6 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					break;
 				}
 
-				// Intersections
 				case "TSIntersectionType": {
 					const { types } = node;
 					for (const type of types) score = addScore(score, calculateStructuralComplexity(type, nextDepth));
@@ -332,12 +247,10 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					break;
 				}
 
-				// Arrays
 				case "TSArrayType":
 					score = addScore(calculateStructuralComplexity(node.elementType, nextDepth), 1);
 					break;
 
-				// Tuples
 				case "TSTupleType": {
 					const { elementTypes } = node;
 					score = 1;
@@ -350,7 +263,6 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					break;
 				}
 
-				// Type references (including generics)
 				case "TSTypeReference": {
 					score = 2;
 					const { typeArguments } = node;
@@ -361,7 +273,6 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					break;
 				}
 
-				// Conditional types
 				case "TSConditionalType": {
 					score = 3;
 					score = addScore(score, calculateStructuralComplexity(node.checkType, nextDepth));
@@ -371,7 +282,6 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					break;
 				}
 
-				// Mapped types
 				case "TSMappedType": {
 					score = 5;
 					if (node.constraint)
@@ -381,7 +291,6 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					break;
 				}
 
-				// Function types
 				case "TSFunctionType":
 				case "TSMethodSignature": {
 					const func = node as TSESTree.TSFunctionType | TSESTree.TSMethodSignature;
@@ -406,25 +315,20 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					score = 1;
 			}
 
-			// Apply depth multiplier (logarithmic to prevent explosion)
 			score *= getDepthMultiplier(depth);
 
-			// Cache and return
 			cache.nodeCache.set(node, score);
 			cache.visitedNodes.delete(node);
 			return score;
 		}
 
-		// Track which VariableDeclarator nodes need checking after type aliases are collected
 		const variableDeclaratorsToCheck = new Map<unknown, { complexity: number }>();
 
 		return {
-			// After all nodes are visited, check the collected variable declarators
 			"Program:exit"() {
 				for (const [nodeKey, data] of variableDeclaratorsToCheck.entries()) {
 					const node = nodeKey as TSESTree.VariableDeclarator;
 
-					// Skip if this variable is used in an Ianitor.Static<typeof ...> pattern
 					if (node.id.type === "Identifier" && ianitorStaticVariables.has(node.id.name)) continue;
 
 					context.report({
@@ -435,7 +339,6 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 				}
 			},
 
-			// Check interface declarations
 			TSInterfaceDeclaration(node) {
 				const complexity = calculateStructuralComplexity(node);
 				const name = getTypeName(node);
@@ -448,16 +351,13 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					});
 				}
 			},
-			// Handle type alias declarations
+
 			TSTypeAliasDeclaration(node: TSESTree.TSTypeAliasDeclaration) {
-				// First, check if this uses Ianitor.Static pattern and collect the variable name
 				const varName = extractIanitorStaticVariable(node.typeAnnotation);
 				if (varName) ianitorStaticVariables.add(varName);
 
-				// Skip complexity check if the type uses Ianitor.Static<typeof ...> pattern
 				if (hasIanitorStaticType(node.typeAnnotation)) return;
 
-				// Check complexity of the type alias
 				const complexity = calculateStructuralComplexity(node.typeAnnotation);
 				if (complexity < config.baseThreshold) return;
 
@@ -468,7 +368,6 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 				});
 			},
 
-			// Collect variable declarators that might need checking
 			VariableDeclarator(node) {
 				if (!node.init || node.init.type !== "CallExpression") return;
 				if (!isIanitorValidator(node.init)) return;
@@ -477,7 +376,6 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 				const complexity = calculateIanitorComplexity(node.init);
 				if (complexity < config.baseThreshold) return;
 
-				// Store for later checking in Program:exit
 				variableDeclaratorsToCheck.set(node as unknown, { complexity });
 			},
 		};

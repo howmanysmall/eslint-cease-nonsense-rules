@@ -1,8 +1,5 @@
 import type { Rule } from "eslint";
 
-/**
- * Configuration options for the no-shorthand-names rule.
- */
 interface RuleOptions {
 	readonly shorthands?: Record<string, string>;
 	readonly allowPropertyAccess?: Array<string>;
@@ -14,9 +11,6 @@ interface NormalizedOptions {
 	readonly selector: string;
 }
 
-/**
- * Default configuration values for the rule.
- */
 const DEFAULT_OPTIONS: Required<RuleOptions> = {
 	allowPropertyAccess: ["char"],
 	shorthands: {
@@ -39,22 +33,10 @@ function isStringArray(value: unknown): value is Array<string> {
 	return Array.isArray(value) && value.every((entry) => typeof entry === "string");
 }
 
-/**
- * Escapes special regex characters in a string.
- *
- * @param str - The string to escape.
- * @returns The escaped string safe for use in regex.
- */
 function escapeRegex(str: string): string {
 	return str.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/**
- * Type guard to check if an unknown value is valid RuleOptions.
- *
- * @param value - The value to check.
- * @returns True if the value is valid RuleOptions.
- */
 function isRuleOptions(value: unknown): value is RuleOptions {
 	if (!isUnknownRecord(value)) return false;
 
@@ -72,7 +54,6 @@ function normalizeOptions(rawOptions: RuleOptions | undefined): NormalizedOption
 	const shorthandsMap = new Map(Object.entries(mergedShorthands));
 	const allowPropertyAccessSource = rawOptions?.allowPropertyAccess ?? DEFAULT_OPTIONS.allowPropertyAccess;
 
-	// Build regex selector to only visit identifiers matching shorthand names
 	const escapedKeys = Array.from(shorthandsMap.keys()).map((key) => escapeRegex(key));
 	const selector = `Identifier[name=/^(${escapedKeys.join("|")})$/]`;
 
@@ -83,37 +64,7 @@ function normalizeOptions(rawOptions: RuleOptions | undefined): NormalizedOption
 	};
 }
 
-/**
- * Bans shorthand variable names in favor of descriptive full names.
- *
- * Enforces:
- * - `plr` → `player` (or `localPlayer` for Players.LocalPlayer assignments)
- * - `args` → `parameters`
- * - `dt` → `deltaTime`
- * - `char` → `character` (except when used as property access)
- *
- * @example
- * // ❌ Reports
- * const plr = getPlayer();
- * const args = [1, 2, 3];
- * const dt = 0.016;
- * const char = getCharacter();
- *
- * // ✅ OK
- * const player = getPlayer();
- * const localPlayer = Players.LocalPlayer;
- * const parameters = [1, 2, 3];
- * const deltaTime = 0.016;
- * const character = getCharacter();
- * const model = entity.char; // property access is allowed
- */
 const noShorthandNames: Rule.RuleModule = {
-	/**
-	 * Creates the ESLint rule visitor.
-	 *
-	 * @param context - The ESLint rule context.
-	 * @returns The visitor object with AST node handlers.
-	 */
 	create(context) {
 		const validatedOptions = isRuleOptions(context.options[0]) ? context.options[0] : undefined;
 		const normalized = normalizeOptions(validatedOptions);
@@ -125,10 +76,8 @@ const noShorthandNames: Rule.RuleModule = {
 				const replacement = shorthands.get(shorthandName);
 				if (!replacement) return;
 
-				// Cache parent lookup
 				const parent = node.parent;
 
-				// Inline property access check
 				if (
 					allowPropertyAccess.has(shorthandName) &&
 					parent &&
@@ -138,7 +87,6 @@ const noShorthandNames: Rule.RuleModule = {
 				)
 					return;
 
-				// Special case: plr → localPlayer for Players.LocalPlayer
 				if (shorthandName === "plr" && parent?.type === "VariableDeclarator" && parent.id === node) {
 					const init = parent.init;
 					if (

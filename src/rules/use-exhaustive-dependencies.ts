@@ -15,9 +15,6 @@ const UNSTABLE_VALUES = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.ArrayExpression,
 ]);
 
-/**
- * Hook configuration entry.
- */
 interface HookEntry {
 	readonly name: string;
 	readonly closureIndex?: number;
@@ -25,31 +22,19 @@ interface HookEntry {
 	readonly stableResult?: boolean | number | ReadonlyArray<number> | ReadonlyArray<string>;
 }
 
-/**
- * Configuration options for the use-exhaustive-dependencies rule.
- */
 interface UseExhaustiveDependenciesOptions {
 	readonly hooks?: ReadonlyArray<HookEntry>;
 	readonly reportMissingDependenciesArray?: boolean;
 	readonly reportUnnecessaryDependencies?: boolean;
 }
 
-/**
- * Internal hook configuration.
- */
 interface HookConfig {
 	readonly closureIndex: number;
 	readonly dependenciesIndex: number;
 }
 
-/**
- * Stable result configuration.
- */
 type StableResult = boolean | ReadonlySet<number> | ReadonlySet<string>;
 
-/**
- * Internal metrics used for testing to ensure specific branches execute.
- */
 const testingMetrics = {
 	moduleLevelStableConst: 0,
 	outerScopeSkip: 0,
@@ -60,33 +45,21 @@ function resetTestingMetrics(): void {
 	testingMetrics.outerScopeSkip = 0;
 }
 
-/**
- * Minimal definition information used for stability analysis.
- */
 interface VariableDefinitionLike {
 	readonly node: TSESTree.Node | Rule.Node;
 	readonly type: string;
 }
 
-/**
- * Minimal variable interface compatible with ESLint scope variables.
- */
 interface VariableLike {
 	readonly defs: ReadonlyArray<VariableDefinitionLike>;
 }
 
-/**
- * Dependency information.
- */
 interface DependencyInfo {
 	readonly name: string;
 	readonly node: TSESTree.Node;
 	readonly depth: number;
 }
 
-/**
- * Capture information from closure analysis.
- */
 interface CaptureInfo {
 	readonly name: string;
 	readonly node: TSESTree.Node;
@@ -95,9 +68,6 @@ interface CaptureInfo {
 	readonly depth: number;
 }
 
-/**
- * Default hooks to check for exhaustive dependencies.
- */
 const DEFAULT_HOOKS = new Map<string, HookConfig>([
 	["useEffect", { closureIndex: 0, dependenciesIndex: 1 }],
 	["useLayoutEffect", { closureIndex: 0, dependenciesIndex: 1 }],
@@ -105,42 +75,27 @@ const DEFAULT_HOOKS = new Map<string, HookConfig>([
 	["useCallback", { closureIndex: 0, dependenciesIndex: 1 }],
 	["useMemo", { closureIndex: 0, dependenciesIndex: 1 }],
 	["useImperativeHandle", { closureIndex: 1, dependenciesIndex: 2 }],
-	// React Spring hooks (function factory pattern)
-	// Note: These hooks support both function and object patterns.
-	// Only the function pattern is analyzed for dependencies.
 	["useSpring", { closureIndex: 0, dependenciesIndex: 1 }],
 	["useSprings", { closureIndex: 1, dependenciesIndex: 2 }],
 	["useTrail", { closureIndex: 1, dependenciesIndex: 2 }],
 ]);
 
-/**
- * Hooks with stable results that don't need to be in dependencies.
- */
 const STABLE_HOOKS = new Map<string, StableResult>([
-	["useState", new Set([1])], // setter at index 1
-	["useReducer", new Set([1])], // dispatch at index 1
-	["useTransition", new Set([1])], // startTransition at index 1
-	["useRef", true], // entire result is stable
-	["useBinding", true], // React Lua: both binding and setter are stable
+	["useState", new Set([1])],
+	["useReducer", new Set([1])],
+	["useTransition", new Set([1])],
+	["useRef", true],
+	["useBinding", true],
 ]);
 
-/**
- * Values that don't need to be in dependencies (imported, constants, etc.).
- */
 const STABLE_VALUE_TYPES = new Set(["ImportBinding", "FunctionDeclaration", "ClassDeclaration", "FunctionName"]);
 
-/**
- * Global built-in identifiers that are always stable and should never be dependencies.
- * Includes JavaScript/TypeScript globals, constructors, and type-only names.
- */
 const GLOBAL_BUILTINS = new Set([
-	// Primitive values
 	"undefined",
 	"null",
 	"Infinity",
 	"NaN",
 
-	// Constructors
 	"Array",
 	"Object",
 	"String",
@@ -150,23 +105,19 @@ const GLOBAL_BUILTINS = new Set([
 	"BigInt",
 	"Function",
 
-	// Collections
 	"Map",
 	"Set",
 	"WeakMap",
 	"WeakSet",
 
-	// Promises and async
 	"Promise",
 
-	// Utility
 	"Date",
 	"RegExp",
 	"Error",
 	"Math",
 	"JSON",
 
-	// Global functions
 	"parseInt",
 	"parseFloat",
 	"isNaN",
@@ -176,7 +127,6 @@ const GLOBAL_BUILTINS = new Set([
 	"decodeURI",
 	"decodeURIComponent",
 
-	// TypeScript utility types (appear in type annotations but shouldn't be dependencies)
 	"ReadonlyArray",
 	"ReadonlyMap",
 	"ReadonlySet",
@@ -193,14 +143,12 @@ const GLOBAL_BUILTINS = new Set([
 	"InstanceType",
 	"Parameters",
 
-	// Web/Node globals commonly seen
 	"console",
 	"setTimeout",
 	"setInterval",
 	"clearTimeout",
 	"clearInterval",
 
-	// Common DOM/Web types
 	"Element",
 	"Node",
 	"Document",
@@ -208,21 +156,13 @@ const GLOBAL_BUILTINS = new Set([
 	"Event",
 ]);
 
-/**
- * Gets the hook name from a call expression.
- *
- * @param node - The call expression node.
- * @returns The hook name or undefined.
- */
 function getHookName(node: TSESTree.CallExpression): string | undefined {
 	const { callee } = node;
 
-	// Direct call: useEffect(...)
 	if (callee.type === "Identifier") {
 		return callee.name;
 	}
 
-	// Member expression: React.useEffect(...)
 	if (callee.type === "MemberExpression" && callee.property.type === "Identifier") {
 		return callee.property.name;
 	}
@@ -230,12 +170,6 @@ function getHookName(node: TSESTree.CallExpression): string | undefined {
 	return undefined;
 }
 
-/**
- * Gets the member expression depth (number of property accesses).
- *
- * @param node - The node to analyze.
- * @returns The depth count.
- */
 function getMemberExpressionDepth(node: TSESTree.Node): number {
 	let depth = 0;
 	let current: TSESTree.Node = node;
@@ -248,12 +182,6 @@ function getMemberExpressionDepth(node: TSESTree.Node): number {
 	return depth;
 }
 
-/**
- * Gets the root identifier from a member expression.
- *
- * @param node - The node to analyze.
- * @returns The root identifier or undefined.
- */
 function getRootIdentifier(node: TSESTree.Node): TSESTree.Identifier | undefined {
 	let current: TSESTree.Node = node;
 
@@ -262,25 +190,10 @@ function getRootIdentifier(node: TSESTree.Node): TSESTree.Identifier | undefined
 	return current.type === "Identifier" ? current : undefined;
 }
 
-/**
- * Converts a node to a dependency string representation.
- *
- * @param node - The node to convert.
- * @param sourceCode - The source code instance.
- * @returns The dependency string.
- */
 function nodeToDependencyString(node: TSESTree.Node, sourceCode: Rule.RuleContext["sourceCode"]): string {
 	return sourceCode.getText(node as unknown as Rule.Node);
 }
 
-/**
- * Checks if a stable array index is being accessed.
- *
- * @param stableResult - The stable result set.
- * @param node - The variable declarator node.
- * @param identifierName - The identifier name being accessed.
- * @returns True if accessing a stable array index.
- */
 function isStableArrayIndex(
 	stableResult: StableResult | undefined,
 	node: Scope.Definition["node"],
@@ -300,15 +213,6 @@ function isStableArrayIndex(
 	return false;
 }
 
-/**
- * Checks if a value is from a stable hook.
- *
- * @param init - The initializer expression.
- * @param node - The variable declarator node.
- * @param identifierName - The identifier name being accessed.
- * @param stableHooks - Map of stable hooks.
- * @returns True if the value is from a stable hook.
- */
 function isStableHookValue(
 	init: TSESTree.Expression | Rule.Node,
 	node: Scope.Definition["node"],
@@ -327,14 +231,6 @@ function isStableHookValue(
 	return isStableArrayIndex(stableResult, node, identifierName);
 }
 
-/**
- * Checks if a value is stable (doesn't need to be in dependencies).
- *
- * @param variable - The variable to check.
- * @param identifierName - The identifier name being accessed.
- * @param stableHooks - Map of stable hooks.
- * @returns True if the value is stable.
- */
 /* eslint-disable jsdoc/require-param, jsdoc/require-returns */
 function isStableValue(
 	variable: VariableLike | undefined,
@@ -349,25 +245,20 @@ function isStableValue(
 	for (const def of defs) {
 		const { node, type } = def;
 
-		// Imports, functions, classes are stable
 		if (STABLE_VALUE_TYPES.has(type)) return true;
 
-		// Check for const declarations with constant initializers
 		if (type === "Variable" && node.type === "VariableDeclarator") {
 			const parent = (node as TSESTree.VariableDeclarator).parent;
 			if (!parent || parent.type !== "VariableDeclaration" || parent.kind !== "const") continue;
 
 			const { init } = node;
 
-			// Check if it's from a stable hook first
 			// @ts-expect-error - Type mismatch between ESLint and TypeScript AST types
 			if (init && isStableHookValue(init, node, identifierName, stableHooks)) return true;
 
-			// Check for React Lua bindings - bindings are always stable
 			if (init?.type === "CallExpression") {
 				const { callee } = init;
 
-				// React.joinBindings() returns a stable binding
 				if (
 					callee.type === "MemberExpression" &&
 					callee.object.type === "Identifier" &&
@@ -377,8 +268,6 @@ function isStableValue(
 				)
 					return true;
 
-				// .map() on bindings returns a stable binding
-				// This covers: binding.map(...), React.joinBindings(...).map(...), etc.
 				if (
 					callee.type === "MemberExpression" &&
 					callee.property.type === "Identifier" &&
@@ -387,18 +276,14 @@ function isStableValue(
 					return true;
 			}
 
-			// Check for literal values FIRST (stable regardless of scope)
 			if (init) {
 				if (init.type === "Literal" || init.type === "TemplateLiteral") return true;
 				if (init.type === "UnaryExpression" && init.argument.type === "Literal") return true;
 			}
 
-			// For non-literal constants, only module-level is stable
-			// Component-scoped non-literal constants are recreated on every render
 			const varDef = variable.defs.find((d) => d.node === node);
 			if (varDef && varDef.node.type === "VariableDeclarator") {
 				const declParent = (varDef.node as TSESTree.VariableDeclarator).parent?.parent;
-				// Module-level (Program or ExportNamedDeclaration)
 				if (declParent && (declParent.type === "Program" || declParent.type === "ExportNamedDeclaration")) {
 					testingMetrics.moduleLevelStableConst += 1;
 					return true;
@@ -547,14 +432,6 @@ function resolveFunctionReference(
 	return undefined;
 }
 
-/**
- * Collects all captured identifiers from a closure.
- *
- * @param node - The closure node (function/arrow function).
- * @param scope - The scope of the closure.
- * @param sourceCode - The source code instance.
- * @returns Array of captured identifiers.
- */
 function collectCaptures(
 	node: TSESTree.Node,
 	scope: Scope.Scope,
@@ -563,25 +440,16 @@ function collectCaptures(
 	const captures = new Array<CaptureInfo>();
 	const captureSet = new Set<string>();
 
-	/**
-	 * Recursively visits nodes to find identifier references.
-	 *
-	 * @param current - The current node.
-	 */
 	function visit(current: TSESTree.Node): void {
 		if (current.type === "Identifier") {
 			const { name } = current;
 
-			// Skip if already captured
 			if (captureSet.has(name)) return;
 
-			// Skip global built-ins (always stable, never need to be in dependencies)
 			if (GLOBAL_BUILTINS.has(name)) return;
 
-			// Skip TypeScript type-only positions (type parameters, annotations, etc.)
 			if (isInTypePosition(current)) return;
 
-			// Look up the variable in the scope chain
 			let variable: Scope.Variable | undefined;
 			let currentScope: Scope.Scope | null = scope;
 
@@ -591,7 +459,6 @@ function collectCaptures(
 				currentScope = currentScope.upper;
 			}
 
-			// Only capture if variable is defined outside the closure
 			if (variable) {
 				const isDefinedInClosure = variable.defs.some((def) => {
 					let defNode: TSESTree.Node | undefined = def.node;
@@ -603,12 +470,9 @@ function collectCaptures(
 				});
 
 				if (!isDefinedInClosure) {
-					// Only capture variables declared in the component body
-					// Per React rules, only "variables declared directly inside the component body" are reactive
-					// Variables from outer scopes (module-level, parent functions) are non-reactive and stable
 					if (!isDeclaredInComponentBody(variable as VariableLike, node)) {
 						testingMetrics.outerScopeSkip += 1;
-						return; // From outer scope - skip
+						return;
 					}
 
 					captureSet.add(name);
@@ -625,7 +489,6 @@ function collectCaptures(
 			}
 		}
 
-		// Unwrap TypeScript type expressions to visit the actual expression
 		if (
 			current.type === "TSSatisfiesExpression" ||
 			current.type === "TSAsExpression" ||
@@ -636,14 +499,12 @@ function collectCaptures(
 			return;
 		}
 
-		// Traverse member expressions
 		if (current.type === "MemberExpression") {
 			visit(current.object);
 			if (current.computed) visit(current.property);
 			return;
 		}
 
-		// Visit children
 		const keys = sourceCode.visitorKeys?.[current.type] || [];
 		for (const key of keys) {
 			const value = (current as unknown as Record<string, unknown>)[key];
@@ -658,13 +519,6 @@ function collectCaptures(
 	return captures;
 }
 
-/**
- * Parses dependencies from a dependency array expression.
- *
- * @param node - The dependency array node.
- * @param sourceCode - The source code instance.
- * @returns Array of dependency information.
- */
 function parseDependencies(
 	node: TSESTree.ArrayExpression,
 	sourceCode: Rule.RuleContext["sourceCode"],
@@ -687,12 +541,6 @@ function parseDependencies(
 	return dependencies;
 }
 
-/**
- * Checks if a dependency or capture is an inline function or object (unstable).
- *
- * @param node - The node to check.
- * @returns True if the node is an unstable value.
- */
 function isUnstableValue(node: TSESTree.Node | undefined): boolean {
 	return node ? UNSTABLE_VALUES.has(node.type) : false;
 }
@@ -700,12 +548,6 @@ function isUnstableValue(node: TSESTree.Node | undefined): boolean {
 const isNumberArray = Compile(Type.Array(Type.Number(), { minItems: 1, readOnly: true }));
 const isStringArray = Compile(Type.Array(Type.String(), { minItems: 1, readOnly: true }));
 
-/**
- * Converts stableResult configuration to internal format.
- *
- * @param stableResult - The stable result configuration.
- * @returns The internal stable result format.
- */
 function convertStableResult(
 	stableResult: boolean | number | ReadonlyArray<number> | ReadonlyArray<string>,
 ): StableResult {
