@@ -11,10 +11,6 @@ interface KeypointData {
 	readonly value: TSESTree.Expression;
 }
 
-interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
-	readonly recommended?: boolean;
-}
-
 const sequenceDescriptors: ReadonlyArray<SequenceDescriptor> = [
 	{ keypointName: "ColorSequenceKeypoint", sequenceName: "ColorSequence" },
 	{ keypointName: "NumberSequenceKeypoint", sequenceName: "NumberSequence" },
@@ -61,6 +57,10 @@ function extractKeypoint(
 		time: timeArgument.value,
 		value: valueArgument,
 	};
+}
+
+interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
+	readonly recommended?: boolean;
 }
 
 const docs: RuleDocsWithRecommended = {
