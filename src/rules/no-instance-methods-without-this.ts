@@ -52,7 +52,6 @@ function isNode(value: unknown): value is TSESTree.Node {
 
 // Widen node to allow safe enumeration without producing implicit any values
 function hasDynamicProps(_node: TSESTree.Node): _node is TSESTree.Node & { readonly [k: string]: unknown } {
-	// All AST nodes are plain objects with enumerable properties; this guard widens typing only.
 	return true;
 }
 

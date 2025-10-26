@@ -7,38 +7,9 @@ interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
 	readonly recommended?: boolean;
 }
 
-/**
- * Bans React.FC and similar component type annotations.
- *
- * React.FC (Function Component) and related types like FunctionComponent, VFC, and VoidFunctionComponent
- * have several drawbacks:
- * - They break debug information in React DevTools, making profiling harder
- * - They add unnecessary complexity compared to simple function declarations
- * - They encourage poor patterns like implicit children handling
- *
- * Instead, use explicit function declarations with proper parameter typing.
- *
- * @example
- * // ❌ Reports
- * export const MyComponent: React.FC<Props> = ({ children }) => {
- *   return <div>{children}</div>;
- * };
- *
- * // ✅ OK
- * export function MyComponent({ children }: Props) {
- *   return <div>{children}</div>;
- * }
- */
-
 const BANNED_FC_NAMES = new Set(["FC", "FunctionComponent", "VFC", "VoidFunctionComponent"]);
 
 const banReactFC: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], RuleDocsWithRecommended> = {
-	/**
-	 * Creates the ESLint rule visitor.
-	 *
-	 * @param context - The ESLint rule context.
-	 * @returns The visitor object with AST node handlers.
-	 */
 	create(context) {
 		return {
 			VariableDeclarator(node: TSESTree.VariableDeclarator) {

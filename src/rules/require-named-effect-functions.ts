@@ -1,30 +1,15 @@
 import { TSESTree } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
 
-/**
- * Default effect hooks to check.
- */
 const DEFAULT_HOOKS = ["useEffect", "useLayoutEffect", "useInsertionEffect"] as const;
 
-/**
- * Type for environment modes.
- */
 type EnvironmentMode = "roblox-ts" | "standard";
 
-/**
- * Type for rule options.
- */
 interface RuleOptions {
 	readonly environment: EnvironmentMode;
 	readonly hooks: ReadonlyArray<string>;
 }
 
-/**
- * Parses and validates rule options.
- *
- * @param optionsInput - Raw options from ESLint context.
- * @returns Validated options with defaults.
- */
 function parseOptions(optionsInput: unknown): RuleOptions {
 	if (optionsInput === undefined) {
 		return {
@@ -52,12 +37,6 @@ function parseOptions(optionsInput: unknown): RuleOptions {
 	return { environment, hooks };
 }
 
-/**
- * Gets the hook name from a call expression-like object.
- *
- * @param callExpr - The call expression object.
- * @returns The hook name or undefined.
- */
 function getHookName(callExpr: {
 	callee: { type: string; name?: string; property?: { type: string; name?: string } };
 }): string | undefined {
@@ -76,12 +55,6 @@ function getHookName(callExpr: {
 }
 
 const requireNamedEffectFunctions: Rule.RuleModule = {
-	/**
-	 * Creates the ESLint rule visitor.
-	 *
-	 * @param context - The ESLint rule context.
-	 * @returns The visitor object with AST node handlers.
-	 */
 	create(context) {
 		const options = parseOptions(context.options[0]);
 		const effectHooks = new Set(options.hooks);
