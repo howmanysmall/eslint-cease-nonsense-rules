@@ -1,27 +1,6 @@
 import type { Rule } from "eslint";
 
-/**
- * Bans use of `print()` function calls. Use `Log` instead.
- *
- * The `print()` function is not wanted in this codebase and discouraged in favor of a proper
- * logging system like `Log`.
- *
- * @example
- * // ❌ Reports
- * print("Hello");
- * print(value);
- *
- * // ✅ OK
- * Log.info("Hello");
- * Log.debug(value);
- */
 const noPrint: Rule.RuleModule = {
-	/**
-	 * Creates the ESLint rule visitor.
-	 *
-	 * @param context - The ESLint rule context.
-	 * @returns The visitor object with AST node handlers.
-	 */
 	create(context) {
 		return {
 			'CallExpression[callee.type="Identifier"][callee.name="print"]'(node: Rule.Node) {

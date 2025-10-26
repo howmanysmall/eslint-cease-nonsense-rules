@@ -1,55 +1,16 @@
 import { TSESTree } from "@typescript-eslint/types";
 import type { TSESLint } from "@typescript-eslint/utils";
 
-/**
- * Configuration options for the require-react-component-keys rule.
- * 
- * @example
- * // Roblox-TS project with custom utilities
- * {
- *   "cease-nonsense/require-react-component-keys": ["error", {
- *     "iterationMethods": ["map", "filter", "forEach", "each"],
- *     "memoizationHooks": ["useCallback", "useMemo", "useBinding"]
- *   }]
- * }
- * 
- * @example
- * // Lodash/Ramda project
- * {
- *   "cease-nonsense/require-react-component-keys": ["error", {
- *     "iterationMethods": ["map", "filter", "forEach", "each", "forOwn"]
- *   }]
- * }
- * 
- * @example
- * // Remove specific methods from being flagged
- * {
- *   "cease-nonsense/require-react-component-keys": ["error", {
- *     "iterationMethods": ["map", "filter"] // Allow forEach without keys
- *   }]
- * }
- */
 interface RuleOptions {
 	readonly allowRootKeys?: boolean;
 	readonly ignoreCallExpressions?: Array<string>;
-	/**
-	 * Array method names that indicate iteration contexts where keys are required.
-	 * Defaults to standard array methods like 'map', 'filter', 'forEach', etc.
-	 */
 	readonly iterationMethods?: Array<string>;
-	/**
-	 * Hook names that indicate memoization contexts where keys are required.
-	 * Defaults to React hooks like 'useCallback' and 'useMemo'.
-	 */
 	readonly memoizationHooks?: Array<string>;
 }
 
 type Options = [RuleOptions?];
 type MessageIds = "missingKey" | "rootComponentWithKey";
 
-/**
- * Default configuration values for the rule.
- */
 const DEFAULT_OPTIONS: Required<RuleOptions> = {
 	allowRootKeys: false,
 	ignoreCallExpressions: ["ReactTree.mount", "CreateReactStory"],
@@ -68,10 +29,6 @@ const DEFAULT_OPTIONS: Required<RuleOptions> = {
 	memoizationHooks: ["useCallback", "useMemo"],
 };
 
-/**
- * Parent node types that simply wrap another expression without changing its semantics.
- * These should be skipped when walking up the AST to analyze structural context.
- */
 const WRAPPER_PARENT_TYPES = new Set([
 	"ParenthesizedExpression",
 	"TSAsExpression",
@@ -82,9 +39,6 @@ const WRAPPER_PARENT_TYPES = new Set([
 	"ChainExpression",
 ]);
 
-/**
- * Node types that act as transparent wrappers when walking from a call argument to its call expression.
- */
 const ARGUMENT_WRAPPER_TYPES = new Set([
 	...WRAPPER_PARENT_TYPES,
 	"AwaitExpression",
@@ -94,33 +48,18 @@ const ARGUMENT_WRAPPER_TYPES = new Set([
 	"SpreadElement",
 ]);
 
-
-
 type FunctionLike = TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression | TSESTree.FunctionDeclaration;
 
 interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
 	readonly recommended?: boolean;
 }
 
-/**
- * Walks up the AST from a starting node, skipping wrapper expressions that do not
- * materially affect JSX placement (e.g. parentheses, type assertions).
- *
- * @param node - The starting node whose wrappers should be skipped.
- * @returns The first ancestor node that is not a simple wrapper, or undefined.
- */
 function ascendPastWrappers(node: TSESTree.Node | undefined): TSESTree.Node | undefined {
 	let current = node;
 	while (current && WRAPPER_PARENT_TYPES.has(current.type)) current = current.parent;
 	return current;
 }
 
-/**
- * Checks if a JSX element has a key attribute.
- *
- * @param node - The JSX element to check.
- * @returns True if the element has a key attribute.
- */
 function hasKeyAttribute(node: TSESTree.JSXElement): boolean {
 	for (const attribute of node.openingElement.attributes)
 		if (attribute.type === "JSXAttribute" && attribute.name.name === "key") return true;
@@ -128,12 +67,6 @@ function hasKeyAttribute(node: TSESTree.JSXElement): boolean {
 	return false;
 }
 
-/**
- * Checks if a CallExpression is for React.forwardRef or React.memo.
- *
- * @param callExpr - The CallExpression to check.
- * @returns True if the call is for forwardRef or memo.
- */
 function isReactComponentHOC(callExpr: TSESTree.CallExpression): boolean {
 	const { callee } = callExpr;
 
@@ -150,12 +83,6 @@ function isReactComponentHOC(callExpr: TSESTree.CallExpression): boolean {
 	return false;
 }
 
-/**
- * Finds the nearest function-like ancestor for a given node.
- *
- * @param node - The starting node.
- * @returns The nearest function declaration/expression/arrow function ancestor if any.
- */
 function getEnclosingFunctionLike(node: TSESTree.Node): FunctionLike | undefined {
 	let current: TSESTree.Node | undefined = node.parent;
 
@@ -173,14 +100,6 @@ function getEnclosingFunctionLike(node: TSESTree.Node): FunctionLike | undefined
 	return undefined;
 }
 
-/**
- * Checks if a CallExpression represents an array iteration or memoization context that requires keys.
- *
- * @param callExpr - The CallExpression to check.
- * @param iterationMethods - Set of method names that indicate iteration contexts.
- * @param memoizationHooks - Set of hook names that indicate memoization contexts.
- * @returns True if the call represents an iteration or memo context.
- */
 function isIterationOrMemoCallback(
 	callExpr: TSESTree.CallExpression,
 	iterationMethods: Set<string>,
@@ -188,26 +107,22 @@ function isIterationOrMemoCallback(
 ): boolean {
 	const { callee } = callExpr;
 
-	// Check for memoization hooks
 	if (callee.type === "Identifier" && memoizationHooks.has(callee.name)) return true;
 
 	if (callee.type === "MemberExpression" && callee.property.type === "Identifier") {
 		const methodName = callee.property.name;
 
-		// Check for Array iteration methods
 		if (iterationMethods.has(methodName)) return true;
 
-		// Check for Array.from with mapper
 		if (
 			methodName === "from" &&
 			callee.object.type === "MemberExpression" &&
 			callee.object.object.type === "Identifier" &&
 			callee.object.object.name === "Array" &&
-			callExpr.arguments.length >= 2 // has mapper argument
+			callExpr.arguments.length >= 2
 		)
 			return true;
 
-		// Check for Array.prototype.[method].call pattern
 		if (
 			methodName === "call" &&
 			callee.object.type === "MemberExpression" &&
@@ -221,12 +136,6 @@ function isIterationOrMemoCallback(
 	return false;
 }
 
-/**
- * Walks upward from a potential call argument to find the enclosing CallExpression, if any.
- *
- * @param node - The starting node.
- * @returns The nearest CallExpression where the node participates as an argument.
- */
 function findEnclosingCallExpression(node: TSESTree.Node): TSESTree.CallExpression | undefined {
 	let current: TSESTree.Node = node;
 	let parent = node.parent;
@@ -252,13 +161,6 @@ function findEnclosingCallExpression(node: TSESTree.Node): TSESTree.CallExpressi
 	return undefined;
 }
 
-/**
- * Fetches the declared variable associated with a function-like node, if any.
- *
- * @param context - ESLint rule context.
- * @param functionLike - The function-like node.
- * @returns The corresponding scope variable, when available.
- */
 function getVariableForFunction(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	functionLike: FunctionLike,
@@ -283,14 +185,6 @@ function getVariableForFunction(
 	return undefined;
 }
 
-/**
- * Checks whether a scope reference is used as an argument to a call expression that requires keys.
- *
- * @param reference - The reference to evaluate.
- * @param iterationMethods - Set of method names that indicate iteration contexts.
- * @param memoizationHooks - Set of hook names that indicate memoization contexts.
- * @returns True if the reference participates in an iteration or memoization call as an argument.
- */
 function referenceActsAsCallback(
 	reference: TSESLint.Scope.Reference,
 	iterationMethods: Set<string>,
@@ -301,22 +195,11 @@ function referenceActsAsCallback(
 	const callExpression = findEnclosingCallExpression(reference.identifier);
 	if (!callExpression) return false;
 
-	// React HOCs don't need keys on top-level returns
 	if (isReactComponentHOC(callExpression)) return false;
 
-	// Only iteration or memoization contexts need keys on top-level returns
 	return isIterationOrMemoCallback(callExpression, iterationMethods, memoizationHooks);
 }
 
-/**
- * Determines whether a function-like node is used as a callback in iteration or memoization contexts.
- *
- * @param context - ESLint rule context.
- * @param fn - The function node to inspect.
- * @param iterationMethods - Set of method names that indicate iteration contexts.
- * @param memoizationHooks - Set of hook names that indicate memoization contexts.
- * @returns True if the function participates in iteration or memoization invocations.
- */
 function isFunctionUsedAsCallback(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	fn: FunctionLike,
@@ -325,9 +208,7 @@ function isFunctionUsedAsCallback(
 ): boolean {
 	const inlineCall = findEnclosingCallExpression(fn);
 	if (inlineCall) {
-		// React HOCs don't need keys on top-level returns
 		if (isReactComponentHOC(inlineCall)) return false;
-		// Only iteration or memoization contexts need keys on top-level returns
 		return isIterationOrMemoCallback(inlineCall, iterationMethods, memoizationHooks);
 	}
 
@@ -340,12 +221,6 @@ function isFunctionUsedAsCallback(
 	return false;
 }
 
-/**
- * Checks if a JSX element is a top-level return from a component.
- *
- * @param node - The JSX element or fragment to check.
- * @returns True if the element is directly returned from a component.
- */
 function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
 	let parent = ascendPastWrappers(node.parent);
 	if (!parent) return false;
@@ -384,13 +259,6 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 	return false;
 }
 
-/**
- * Checks if a JSX element is an argument to an ignored call expression.
- *
- * @param node - The JSX element or fragment to check.
- * @param ignoreList - List of function names to ignore.
- * @returns True if the element is passed to an ignored function.
- */
 function isIgnoredCallExpression(node: TSESTree.JSXElement | TSESTree.JSXFragment, ignoreList: string[]): boolean {
 	let parent: TSESTree.Node | undefined = node.parent;
 	if (!parent) return false;
@@ -425,12 +293,6 @@ function isIgnoredCallExpression(node: TSESTree.JSXElement | TSESTree.JSXFragmen
 	return false;
 }
 
-/**
- * Checks if a JSX element is passed as a prop value.
- *
- * @param node - The JSX element or fragment to check.
- * @returns True if the element is passed as a prop value.
- */
 function isJSXPropValue(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
 	let parent = node.parent;
 	if (!parent) return false;
@@ -454,27 +316,15 @@ const docs: RuleDocsWithRecommended = {
 };
 
 const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRecommended> = {
-	/**
-	 * Creates the ESLint rule visitor.
-	 *
-	 * @param context - The ESLint rule context.
-	 * @returns The visitor object with AST node handlers.
-	 */
 	create(context) {
 		const options: Required<RuleOptions> = {
 			...DEFAULT_OPTIONS,
 			...context.options[0],
 		};
 
-		// Convert arrays to Sets for performance
 		const iterationMethods = new Set(options.iterationMethods);
 		const memoizationHooks = new Set(options.memoizationHooks);
 
-		/**
-		 * Checks a JSX element or fragment for required key prop.
-		 *
-		 * @param node - The JSX element or fragment to check.
-		 */
 		function checkElement(node: TSESTree.JSXElement | TSESTree.JSXFragment): void {
 			const functionLike = getEnclosingFunctionLike(node);
 			const isCallback = functionLike
