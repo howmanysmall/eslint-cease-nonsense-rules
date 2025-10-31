@@ -44,9 +44,9 @@ function extractKeypoint(
 	descriptor: SequenceDescriptor,
 ): KeypointData | undefined {
 	if (element === null || element.type !== AST_NODE_TYPES.NewExpression) return undefined;
-	if (element.callee.type !== AST_NODE_TYPES.Identifier || element.callee.name !== descriptor.keypointName) {
+	if (element.callee.type !== AST_NODE_TYPES.Identifier || element.callee.name !== descriptor.keypointName)
 		return undefined;
-	}
+
 	if (element.arguments.length !== 2) return undefined;
 
 	const [timeArgument, valueArgument] = element.arguments;
@@ -75,29 +75,31 @@ const preferSequenceOverloads: TSESLint.RuleModuleWithMetaDocs<
 	RuleDocsWithRecommended
 > = {
 	create(context) {
-		const sourceCode = context.getSourceCode();
+		const { sourceCode } = context;
 
 		return {
 			NewExpression(node) {
-				const callee = node.callee;
+				const { callee } = node;
 				if (!isSequenceIdentifier(callee)) return;
 
 				const descriptor = findDescriptor(callee.name);
-				if (descriptor === undefined) return;
-
-				if (node.arguments.length !== 1) return;
+				if (descriptor === undefined || node.arguments.length !== 1) return;
 
 				const [argument] = node.arguments;
-				if (argument === undefined || argument.type !== AST_NODE_TYPES.ArrayExpression) return;
-				if (argument.elements.length !== 2) return;
+				if (
+					argument === undefined ||
+					argument.type !== AST_NODE_TYPES.ArrayExpression ||
+					argument.elements.length !== 2
+				)
+					return;
 
 				const firstElement = argument.elements[0] ?? null;
 				const secondElement = argument.elements[1] ?? null;
 
 				const firstKeypoint = extractKeypoint(firstElement, descriptor);
 				const secondKeypoint = extractKeypoint(secondElement, descriptor);
-				if (firstKeypoint === undefined || secondKeypoint === undefined) return;
 
+				if (firstKeypoint === undefined || secondKeypoint === undefined) return;
 				if (firstKeypoint.time !== 0 || secondKeypoint.time !== 1) return;
 
 				const firstValueText = sourceCode.getText(firstKeypoint.value);
@@ -107,9 +109,7 @@ const preferSequenceOverloads: TSESLint.RuleModuleWithMetaDocs<
 
 				if (normalizedFirstValue === normalizedSecondValue) {
 					context.report({
-						data: {
-							sequenceName: descriptor.sequenceName,
-						},
+						data: { sequenceName: descriptor.sequenceName },
 						fix: (fixer) => fixer.replaceText(node, `new ${descriptor.sequenceName}(${firstValueText})`),
 						messageId: "preferSingleOverload",
 						node,
@@ -118,9 +118,7 @@ const preferSequenceOverloads: TSESLint.RuleModuleWithMetaDocs<
 				}
 
 				context.report({
-					data: {
-						sequenceName: descriptor.sequenceName,
-					},
+					data: { sequenceName: descriptor.sequenceName },
 					fix: (fixer) =>
 						fixer.replaceText(
 							node,

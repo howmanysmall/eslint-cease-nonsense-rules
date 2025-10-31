@@ -3,9 +3,9 @@ import type { TSESLint } from "@typescript-eslint/utils";
 
 interface RuleOptions {
 	readonly allowRootKeys?: boolean;
-	readonly ignoreCallExpressions?: Array<string>;
-	readonly iterationMethods?: Array<string>;
-	readonly memoizationHooks?: Array<string>;
+	readonly ignoreCallExpressions?: ReadonlyArray<string>;
+	readonly iterationMethods?: ReadonlyArray<string>;
+	readonly memoizationHooks?: ReadonlyArray<string>;
 }
 
 type Options = [RuleOptions?];
@@ -171,7 +171,7 @@ function getVariableForFunction(
 		return undefined;
 	}
 
-	const parent = functionLike.parent;
+	const { parent } = functionLike;
 	if (!parent) return undefined;
 
 	if (
@@ -202,17 +202,17 @@ function referenceActsAsCallback(
 
 function isFunctionUsedAsCallback(
 	context: TSESLint.RuleContext<MessageIds, Options>,
-	fn: FunctionLike,
+	functionLike: FunctionLike,
 	iterationMethods: Set<string>,
 	memoizationHooks: Set<string>,
 ): boolean {
-	const inlineCall = findEnclosingCallExpression(fn);
+	const inlineCall = findEnclosingCallExpression(functionLike);
 	if (inlineCall) {
 		if (isReactComponentHOC(inlineCall)) return false;
 		return isIterationOrMemoCallback(inlineCall, iterationMethods, memoizationHooks);
 	}
 
-	const variable = getVariableForFunction(context, fn);
+	const variable = getVariableForFunction(context, functionLike);
 	if (!variable) return false;
 
 	for (const reference of variable.references)
@@ -221,66 +221,77 @@ function isFunctionUsedAsCallback(
 	return false;
 }
 
+const SHOULD_ASCEND_TYPES = new Set<TSESTree.AST_NODE_TYPES>([
+	TSESTree.AST_NODE_TYPES.ConditionalExpression,
+	TSESTree.AST_NODE_TYPES.LogicalExpression,
+]);
+const IS_FUNCTION_EXPRESSION = new Set<TSESTree.AST_NODE_TYPES>([
+	TSESTree.AST_NODE_TYPES.FunctionExpression,
+	TSESTree.AST_NODE_TYPES.ArrowFunctionExpression,
+]);
+
 function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
 	let parent = ascendPastWrappers(node.parent);
 	if (!parent) return false;
 
-	if (parent.type === "JSXExpressionContainer") parent = ascendPastWrappers(parent.parent);
+	if (parent.type === TSESTree.AST_NODE_TYPES.JSXExpressionContainer) parent = ascendPastWrappers(parent.parent);
 	if (!parent) return false;
 
-	while (parent && (parent.type === "ConditionalExpression" || parent.type === "LogicalExpression"))
-		parent = ascendPastWrappers(parent.parent);
-
+	while (parent && SHOULD_ASCEND_TYPES.has(parent.type)) parent = ascendPastWrappers(parent.parent);
 	if (!parent) return false;
 
-	if (parent.type === "JSXExpressionContainer") parent = ascendPastWrappers(parent.parent);
+	if (parent.type === TSESTree.AST_NODE_TYPES.JSXExpressionContainer) parent = ascendPastWrappers(parent.parent);
 	if (!parent) return false;
 
-	if (parent.type === "ReturnStatement") {
+	if (parent.type === TSESTree.AST_NODE_TYPES.ReturnStatement) {
 		let currentNode: TSESTree.Node | undefined = ascendPastWrappers(parent.parent);
-		if (currentNode?.type === "BlockStatement") currentNode = ascendPastWrappers(currentNode.parent);
+		if (currentNode?.type === TSESTree.AST_NODE_TYPES.BlockStatement)
+			currentNode = ascendPastWrappers(currentNode.parent);
 		if (!currentNode) return false;
 
-		if (currentNode.type === "ArrowFunctionExpression" || currentNode.type === "FunctionExpression") {
+		if (IS_FUNCTION_EXPRESSION.has(currentNode.type)) {
 			const functionParent = ascendPastWrappers(currentNode.parent);
-			if (functionParent?.type === "CallExpression") return isReactComponentHOC(functionParent);
+			if (functionParent?.type === TSESTree.AST_NODE_TYPES.CallExpression)
+				return isReactComponentHOC(functionParent);
 			return true;
 		}
 
-		return currentNode.type === "FunctionDeclaration";
+		return currentNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration;
 	}
 
-	if (parent.type === "ArrowFunctionExpression") {
+	if (parent.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression) {
 		const functionParent = ascendPastWrappers(parent.parent);
-		if (functionParent?.type === "CallExpression") return isReactComponentHOC(functionParent);
+		if (functionParent?.type === TSESTree.AST_NODE_TYPES.CallExpression) return isReactComponentHOC(functionParent);
 		return true;
 	}
 
 	return false;
 }
 
-function isIgnoredCallExpression(node: TSESTree.JSXElement | TSESTree.JSXFragment, ignoreList: string[]): boolean {
+function isIgnoredCallExpression(
+	node: TSESTree.JSXElement | TSESTree.JSXFragment,
+	ignoreList: ReadonlyArray<string>,
+): boolean {
 	let parent: TSESTree.Node | undefined = node.parent;
 	if (!parent) return false;
 
-	if (parent.type === "JSXExpressionContainer") {
+	if (parent.type === TSESTree.AST_NODE_TYPES.JSXExpressionContainer) {
 		parent = parent.parent;
 		if (!parent) return false;
 	}
 
 	const maxDepth = 20;
-	for (let depth = 0; depth < maxDepth && parent; depth++) {
+	for (let depth = 0; depth < maxDepth && parent; depth += 1) {
 		const { type } = parent;
 
-		if (type === "CallExpression") {
+		if (type === TSESTree.AST_NODE_TYPES.CallExpression) {
 			const { callee } = parent;
-
-			if (callee.type === "Identifier") return ignoreList.includes(callee.name);
+			if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return ignoreList.includes(callee.name);
 
 			if (
-				callee.type === "MemberExpression" &&
-				callee.object.type === "Identifier" &&
-				callee.property.type === "Identifier"
+				callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+				callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
+				callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
 			)
 				return ignoreList.includes(`${callee.object.name}.${callee.property.name}`);
 
@@ -294,20 +305,24 @@ function isIgnoredCallExpression(node: TSESTree.JSXElement | TSESTree.JSXFragmen
 }
 
 function isJSXPropValue(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
-	let parent = node.parent;
+	let { parent } = node;
 	if (!parent) return false;
 
-	while (parent && (parent.type === "ConditionalExpression" || parent.type === "LogicalExpression"))
+	while (
+		parent &&
+		(parent.type === TSESTree.AST_NODE_TYPES.ConditionalExpression ||
+			parent.type === TSESTree.AST_NODE_TYPES.LogicalExpression)
+	)
 		parent = parent.parent;
 
 	if (!parent) return false;
 
-	if (parent.type === "JSXExpressionContainer") {
+	if (parent.type === TSESTree.AST_NODE_TYPES.JSXExpressionContainer) {
 		parent = parent.parent;
 		if (!parent) return false;
 	}
 
-	return parent.type === "JSXAttribute";
+	return parent.type === TSESTree.AST_NODE_TYPES.JSXAttribute;
 }
 
 const docs: RuleDocsWithRecommended = {
@@ -333,7 +348,11 @@ const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 			const isRoot = isTopLevelReturn(node);
 
 			if (isRoot && !isCallback) {
-				if (!options.allowRootKeys && node.type === "JSXElement" && hasKeyAttribute(node)) {
+				if (
+					!options.allowRootKeys &&
+					node.type === TSESTree.AST_NODE_TYPES.JSXElement &&
+					hasKeyAttribute(node)
+				) {
 					context.report({
 						messageId: "rootComponentWithKey",
 						node,
@@ -345,7 +364,7 @@ const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 			if (isIgnoredCallExpression(node, options.ignoreCallExpressions)) return;
 			if (isJSXPropValue(node)) return;
 
-			if (node.type === "JSXFragment") {
+			if (node.type === TSESTree.AST_NODE_TYPES.JSXFragment) {
 				context.report({
 					messageId: "missingKey",
 					node,

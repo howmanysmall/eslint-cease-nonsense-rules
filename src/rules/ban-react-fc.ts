@@ -13,13 +13,13 @@ const banReactFC: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], RuleDocsWithRe
 	create(context) {
 		return {
 			VariableDeclarator(node: TSESTree.VariableDeclarator) {
-				const typeAnnotation = node.id.typeAnnotation;
+				const { typeAnnotation } = node.id;
 				if (!typeAnnotation) return;
 
 				const inner = typeAnnotation.typeAnnotation;
 				if (inner.type !== TSESTree.AST_NODE_TYPES.TSTypeReference) return;
 
-				const typeName = inner.typeName;
+				const { typeName } = inner;
 
 				let isBannedFC = false;
 				if (typeName.type === TSESTree.AST_NODE_TYPES.Identifier)

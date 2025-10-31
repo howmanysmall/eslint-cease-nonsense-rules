@@ -22,10 +22,21 @@ const DEFAULT_CONFIG: ComplexityConfig = {
 	warnThreshold: 15,
 };
 
+const SHOULD_NOT_NOT_RETURN_TYPE = new Set<string>([
+	TSESTree.AST_NODE_TYPES.FunctionDeclaration,
+	TSESTree.AST_NODE_TYPES.FunctionExpression,
+]);
+
 function hasTypeAnnotation(node: { type: string; id?: unknown; returnType?: unknown }): boolean {
-	if (node.type === "VariableDeclarator" && node.id && typeof node.id === "object" && "typeAnnotation" in node.id)
+	if (
+		node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
+		node.id &&
+		typeof node.id === "object" &&
+		"typeAnnotation" in node.id
+	)
 		return !!node.id.typeAnnotation;
-	if (node.type === "FunctionDeclaration" || node.type === "FunctionExpression") return !!node.returnType;
+
+	if (SHOULD_NOT_NOT_RETURN_TYPE.has(node.type)) return !!node.returnType;
 	return false;
 }
 
@@ -41,9 +52,9 @@ function isIanitorValidator(node: {
 	callee?: { type: string; object?: { type: string; name?: string } };
 }): boolean {
 	return (
-		node.type === "CallExpression" &&
-		node.callee?.type === "MemberExpression" &&
-		node.callee.object?.type === "Identifier" &&
+		node.type === TSESTree.AST_NODE_TYPES.CallExpression &&
+		node.callee?.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+		node.callee.object?.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		node.callee.object.name === "Ianitor"
 	);
 }
@@ -52,26 +63,26 @@ function extractIanitorStaticVariable(typeAnnotation: TSESTree.TypeNode): string
 	let currentType = typeAnnotation;
 
 	if (
-		currentType.type === "TSTypeReference" &&
-		currentType.typeName.type === "Identifier" &&
+		currentType.type === TSESTree.AST_NODE_TYPES.TSTypeReference &&
+		currentType.typeName.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		currentType.typeName.name === "Readonly" &&
 		currentType.typeArguments?.params[0]
 	)
 		currentType = currentType.typeArguments.params[0];
 
-	if (currentType.type !== "TSTypeReference") return null;
+	if (currentType.type !== TSESTree.AST_NODE_TYPES.TSTypeReference) return null;
 
 	const { typeName, typeArguments } = currentType;
 	const firstParam = typeArguments?.params[0];
 
 	if (
-		typeName.type === "TSQualifiedName" &&
-		typeName.left.type === "Identifier" &&
+		typeName.type === TSESTree.AST_NODE_TYPES.TSQualifiedName &&
+		typeName.left.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		typeName.left.name === "Ianitor" &&
-		typeName.right.type === "Identifier" &&
+		typeName.right.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		typeName.right.name === "Static" &&
-		firstParam?.type === "TSTypeQuery" &&
-		firstParam.exprName.type === "Identifier"
+		firstParam?.type === TSESTree.AST_NODE_TYPES.TSTypeQuery &&
+		firstParam.exprName.type === TSESTree.AST_NODE_TYPES.Identifier
 	)
 		return firstParam.exprName.name;
 
@@ -82,25 +93,24 @@ function hasIanitorStaticType(typeAnnotation: TSESTree.TypeNode): boolean {
 	let currentType = typeAnnotation;
 
 	if (
-		currentType.type === "TSTypeReference" &&
-		currentType.typeName.type === "Identifier" &&
+		currentType.type === TSESTree.AST_NODE_TYPES.TSTypeReference &&
+		currentType.typeName.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		currentType.typeName.name === "Readonly" &&
 		currentType.typeArguments?.params[0]
 	)
 		currentType = currentType.typeArguments.params[0];
 
-	if (currentType.type !== "TSTypeReference") return false;
+	if (currentType.type !== TSESTree.AST_NODE_TYPES.TSTypeReference) return false;
 
 	const { typeName, typeArguments } = currentType;
-	const firstParam = typeArguments?.params[0];
 
 	return (
-		typeName.type === "TSQualifiedName" &&
-		typeName.left.type === "Identifier" &&
+		typeName.type === TSESTree.AST_NODE_TYPES.TSQualifiedName &&
+		typeName.left.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		typeName.left.name === "Ianitor" &&
-		typeName.right.type === "Identifier" &&
+		typeName.right.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		typeName.right.name === "Static" &&
-		firstParam?.type === "TSTypeQuery"
+		typeArguments?.params[0]?.type === TSESTree.AST_NODE_TYPES.TSTypeQuery
 	);
 }
 
@@ -112,14 +122,20 @@ function calculateIanitorComplexity(node: {
 	readonly arguments?: ReadonlyArray<{ type?: string; properties?: Array<unknown> }>;
 }): number {
 	const callee = node.callee;
-	if (callee?.type !== "MemberExpression" || callee.property?.type !== "Identifier") return 0;
+	if (
+		callee?.type !== TSESTree.AST_NODE_TYPES.MemberExpression ||
+		callee.property?.type !== TSESTree.AST_NODE_TYPES.Identifier
+	)
+		return 0;
 
 	const method = callee.property.name;
 	switch (method) {
 		case "interface":
 		case "strictInterface": {
 			const properties = node.arguments?.[0];
-			return properties?.type === "ObjectExpression" ? 10 + (properties.properties?.length || 0) * 3 : 0;
+			return properties?.type === TSESTree.AST_NODE_TYPES.ObjectExpression
+				? 10 + (properties.properties?.length || 0) * 3
+				: 0;
 		}
 
 		case "optional":
@@ -183,24 +199,24 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 			const nextDepth = depth + 1;
 
 			switch (node.type) {
-				case "TSStringKeyword":
-				case "TSNumberKeyword":
-				case "TSBooleanKeyword":
-				case "TSNullKeyword":
-				case "TSUndefinedKeyword":
-				case "TSVoidKeyword":
-				case "TSSymbolKeyword":
-				case "TSBigIntKeyword":
+				case TSESTree.AST_NODE_TYPES.TSStringKeyword:
+				case TSESTree.AST_NODE_TYPES.TSNumberKeyword:
+				case TSESTree.AST_NODE_TYPES.TSBooleanKeyword:
+				case TSESTree.AST_NODE_TYPES.TSNullKeyword:
+				case TSESTree.AST_NODE_TYPES.TSUndefinedKeyword:
+				case TSESTree.AST_NODE_TYPES.TSVoidKeyword:
+				case TSESTree.AST_NODE_TYPES.TSSymbolKeyword:
+				case TSESTree.AST_NODE_TYPES.TSBigIntKeyword:
 					score = 1;
 					break;
 
-				case "TSNeverKeyword":
-				case "TSUnknownKeyword":
-				case "TSAnyKeyword":
+				case TSESTree.AST_NODE_TYPES.TSNeverKeyword:
+				case TSESTree.AST_NODE_TYPES.TSUnknownKeyword:
+				case TSESTree.AST_NODE_TYPES.TSAnyKeyword:
 					score = 0;
 					break;
 
-				case "TSInterfaceDeclaration": {
+				case TSESTree.AST_NODE_TYPES.TSInterfaceDeclaration: {
 					const iface = node;
 					score = config.interfacePenalty;
 					const extendsLength = iface.extends?.length;
@@ -219,7 +235,7 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					break;
 				}
 
-				case "TSTypeLiteral": {
+				case TSESTree.AST_NODE_TYPES.TSTypeLiteral: {
 					const { members } = node;
 					score = 2 + members.length * 0.5;
 					for (const member of members) {
@@ -233,25 +249,25 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					break;
 				}
 
-				case "TSUnionType": {
+				case TSESTree.AST_NODE_TYPES.TSUnionType: {
 					const { types } = node;
 					for (const type of types) score = addScore(score, calculateStructuralComplexity(type, nextDepth));
 					score = addScore(score, 2 * (types.length - 1));
 					break;
 				}
 
-				case "TSIntersectionType": {
+				case TSESTree.AST_NODE_TYPES.TSIntersectionType: {
 					const { types } = node;
 					for (const type of types) score = addScore(score, calculateStructuralComplexity(type, nextDepth));
 					score = addScore(score, 3 * types.length);
 					break;
 				}
 
-				case "TSArrayType":
+				case TSESTree.AST_NODE_TYPES.TSArrayType:
 					score = addScore(calculateStructuralComplexity(node.elementType, nextDepth), 1);
 					break;
 
-				case "TSTupleType": {
+				case TSESTree.AST_NODE_TYPES.TSTupleType: {
 					const { elementTypes } = node;
 					score = 1;
 					for (const element of elementTypes) {
@@ -263,7 +279,7 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					break;
 				}
 
-				case "TSTypeReference": {
+				case TSESTree.AST_NODE_TYPES.TSTypeReference: {
 					score = 2;
 					const { typeArguments } = node;
 					if (typeArguments) {
@@ -273,7 +289,7 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					break;
 				}
 
-				case "TSConditionalType": {
+				case TSESTree.AST_NODE_TYPES.TSConditionalType: {
 					score = 3;
 					score = addScore(score, calculateStructuralComplexity(node.checkType, nextDepth));
 					score = addScore(score, calculateStructuralComplexity(node.extendsType, nextDepth));
@@ -282,7 +298,7 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					break;
 				}
 
-				case "TSMappedType": {
+				case TSESTree.AST_NODE_TYPES.TSMappedType: {
 					score = 5;
 					if (node.constraint)
 						score = addScore(score, calculateStructuralComplexity(node.constraint, nextDepth));
@@ -291,8 +307,8 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 					break;
 				}
 
-				case "TSFunctionType":
-				case "TSMethodSignature": {
+				case TSESTree.AST_NODE_TYPES.TSFunctionType:
+				case TSESTree.AST_NODE_TYPES.TSMethodSignature: {
 					const func = node as TSESTree.TSFunctionType | TSESTree.TSMethodSignature;
 					score = 2;
 					for (const param of func.params) {
@@ -329,7 +345,8 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 				for (const [nodeKey, data] of variableDeclaratorsToCheck.entries()) {
 					const node = nodeKey as TSESTree.VariableDeclarator;
 
-					if (node.id.type === "Identifier" && ianitorStaticVariables.has(node.id.name)) continue;
+					if (node.id.type === TSESTree.AST_NODE_TYPES.Identifier && ianitorStaticVariables.has(node.id.name))
+						continue;
 
 					context.report({
 						data: { score: data.complexity.toFixed(1) },
@@ -369,7 +386,7 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 			},
 
 			VariableDeclarator(node) {
-				if (!node.init || node.init.type !== "CallExpression") return;
+				if (!node.init || node.init.type !== TSESTree.AST_NODE_TYPES.CallExpression) return;
 				if (!isIanitorValidator(node.init)) return;
 				if (hasTypeAnnotation(node)) return;
 

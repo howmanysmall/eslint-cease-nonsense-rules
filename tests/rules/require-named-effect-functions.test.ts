@@ -102,6 +102,36 @@ describe("require-named-effect-functions", () => {
 				`,
 				errors: [{ messageId: "anonymousFunction" }],
 			},
+			// Arrow function assigned to variable is invalid (doesn't have a real name)
+			{
+				code: `
+					const handleEffect = () => {
+						console.log("effect");
+					};
+					useEffect(handleEffect, []);
+				`,
+				errors: [{ messageId: "identifierReferencesArrow" }],
+			},
+			// Arrow function assigned to const in more complex case
+			{
+				code: `
+					const effect = () => {
+						console.log("effect");
+					};
+					useEffect(effect, []);
+				`,
+				errors: [{ messageId: "identifierReferencesArrow" }],
+			},
+			// Named function expression via identifier in roblox-ts mode
+			{
+				code: `
+					const effect = function handleEffect() {
+						console.log("effect");
+					};
+					useEffect(effect, []);
+				`,
+				errors: [{ messageId: "functionExpression" }],
+			},
 		],
 		valid: [
 			// Named function reference
@@ -110,15 +140,6 @@ describe("require-named-effect-functions", () => {
 					function handleEffect() {
 						console.log("effect");
 					}
-					useEffect(handleEffect, []);
-				`,
-			},
-			// Arrow function assigned to const (stored in variable)
-			{
-				code: `
-					const handleEffect = () => {
-						console.log("effect");
-					};
 					useEffect(handleEffect, []);
 				`,
 			},
@@ -193,13 +214,21 @@ describe("require-named-effect-functions", () => {
 				`,
 				options: [{ environment: "standard" }],
 			},
-			// Arrow function stored in variable, then referenced
+			// Named function expression (not arrow) is invalid in roblox-ts but valid in standard
 			{
 				code: `
-					const effect = () => {
+					const effect = function handleEffect() {
 						console.log("effect");
 					};
 					useEffect(effect, []);
+				`,
+				options: [{ environment: "standard" }],
+			},
+			// Imported function reference (can't resolve, assume valid)
+			{
+				code: `
+					import { handleEffect } from './effects';
+					useEffect(handleEffect, []);
 				`,
 			},
 		],

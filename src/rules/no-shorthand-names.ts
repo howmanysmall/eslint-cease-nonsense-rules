@@ -1,9 +1,18 @@
 import type { Rule } from "eslint";
+import Type from "typebox";
+import { Compile } from "typebox/compile";
 
 interface RuleOptions {
-	readonly shorthands?: Record<string, string>;
 	readonly allowPropertyAccess?: Array<string>;
+	readonly shorthands?: Record<string, string>;
 }
+
+const isRuleOptions = Compile(
+	Type.Object({
+		allowPropertyAccess: Type.Optional(Type.Array(Type.String())),
+		shorthands: Type.Optional(Type.Record(Type.String(), Type.String())),
+	}),
+);
 
 interface NormalizedOptions {
 	readonly shorthands: ReadonlyMap<string, string>;
@@ -25,25 +34,9 @@ function isUnknownRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
 }
 
-function isStringRecord(value: unknown): value is Record<string, string> {
-	return isUnknownRecord(value) && Object.values(value).every((v) => typeof v === "string");
-}
-
-function isStringArray(value: unknown): value is Array<string> {
-	return Array.isArray(value) && value.every((entry) => typeof entry === "string");
-}
-
-function escapeRegex(str: string): string {
-	return str.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function isRuleOptions(value: unknown): value is RuleOptions {
-	if (!isUnknownRecord(value)) return false;
-
-	return (
-		(!("shorthands" in value) || isStringRecord(value.shorthands)) &&
-		(!("allowPropertyAccess" in value) || isStringArray(value.allowPropertyAccess))
-	);
+const ESCAPE_REGEXP = /[.*+?^${}()|[\]\\]/g;
+function escapeRegex(value: string): string {
+	return value.replaceAll(ESCAPE_REGEXP, "\\$&");
 }
 
 function normalizeOptions(rawOptions: RuleOptions | undefined): NormalizedOptions {
@@ -54,7 +47,8 @@ function normalizeOptions(rawOptions: RuleOptions | undefined): NormalizedOption
 	const shorthandsMap = new Map(Object.entries(mergedShorthands));
 	const allowPropertyAccessSource = rawOptions?.allowPropertyAccess ?? DEFAULT_OPTIONS.allowPropertyAccess;
 
-	const escapedKeys = Array.from(shorthandsMap.keys()).map((key) => escapeRegex(key));
+	// oxlint-disable-next-line no-array-callback-reference
+	const escapedKeys = Array.from(shorthandsMap.keys()).map(escapeRegex);
 	const selector = `Identifier[name=/^(${escapedKeys.join("|")})$/]`;
 
 	return {
@@ -66,21 +60,20 @@ function normalizeOptions(rawOptions: RuleOptions | undefined): NormalizedOption
 
 const noShorthandNames: Rule.RuleModule = {
 	create(context) {
-		const validatedOptions = isRuleOptions(context.options[0]) ? context.options[0] : undefined;
-		const normalized = normalizeOptions(validatedOptions);
-		const { shorthands, allowPropertyAccess, selector } = normalized;
+		const validatedOptions = isRuleOptions.Check(context.options[0]) ? context.options[0] : undefined;
+		const { shorthands, allowPropertyAccess, selector } = normalizeOptions(validatedOptions);
 
 		return {
 			[selector](node: Rule.Node & { name: string; parent?: unknown }) {
 				const shorthandName = node.name;
 				const replacement = shorthands.get(shorthandName);
-				if (!replacement) return;
+				if (replacement === undefined || replacement === "") return;
 
 				const parent = node.parent;
 
 				if (
 					allowPropertyAccess.has(shorthandName) &&
-					parent &&
+					parent !== undefined &&
 					isUnknownRecord(parent) &&
 					parent.type === "MemberExpression" &&
 					parent.property === node
@@ -88,16 +81,16 @@ const noShorthandNames: Rule.RuleModule = {
 					return;
 
 				if (shorthandName === "plr" && parent?.type === "VariableDeclarator" && parent.id === node) {
-					const init = parent.init;
+					const { init } = parent;
 					if (
 						init &&
 						isUnknownRecord(init) &&
 						init.type === "MemberExpression" &&
-						init.object &&
+						init.object !== undefined &&
 						isUnknownRecord(init.object) &&
 						init.object.type === "Identifier" &&
 						init.object.name === "Players" &&
-						init.property &&
+						init.property !== undefined &&
 						isUnknownRecord(init.property) &&
 						init.property.type === "Identifier" &&
 						init.property.name === "LocalPlayer"
