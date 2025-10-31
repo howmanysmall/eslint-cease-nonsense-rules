@@ -1,17 +1,18 @@
+import { TSESTree } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
+import Type from "typebox";
+import { Compile } from "typebox/compile";
 
-interface NumericLiteralNode {
-	readonly type: string;
-	readonly value: number;
-}
+const isNumericLiteralNode = Compile(
+	Type.Object({
+		type: Type.Literal(TSESTree.AST_NODE_TYPES.Literal),
+		value: Type.Number(),
+	}),
+);
 
-function isUnknownRecord(value: unknown): value is Record<PropertyKey, unknown> {
-	return typeof value === "object" && value !== null;
-}
-
-function isNumericLiteralNode(value: unknown): value is NumericLiteralNode {
-	return isUnknownRecord(value) && value.type === "Literal" && "value" in value && typeof value.value === "number";
-}
+const isCorrectParameters = Compile(
+	Type.Tuple([isNumericLiteralNode, isNumericLiteralNode, isNumericLiteralNode, isNumericLiteralNode], {}),
+);
 
 interface NumericArgumentsCollection {
 	readonly scaleX: number;
@@ -21,32 +22,26 @@ interface NumericArgumentsCollection {
 }
 
 function collectNumericArguments(parameters: ReadonlyArray<unknown>): NumericArgumentsCollection | undefined {
-	if (parameters.length !== 4) return undefined;
-
-	if (!isNumericLiteralNode(parameters[0])) return undefined;
-	if (!isNumericLiteralNode(parameters[1])) return undefined;
-	if (!isNumericLiteralNode(parameters[2])) return undefined;
-	if (!isNumericLiteralNode(parameters[3])) return undefined;
-
-	return {
-		offsetX: parameters[1].value,
-		offsetY: parameters[3].value,
-		scaleX: parameters[0].value,
-		scaleY: parameters[2].value,
-	};
+	return isCorrectParameters.Check(parameters)
+		? {
+				offsetX: parameters[1].value,
+				offsetY: parameters[3].value,
+				scaleX: parameters[0].value,
+				scaleY: parameters[2].value,
+			}
+		: undefined;
 }
 
 const preferUDim2Shorthand: Rule.RuleModule = {
 	create(context) {
 		return {
 			NewExpression(node) {
-				if (node.callee.type !== "Identifier" || node.callee.name !== "UDim2") return;
+				if (node.callee.type !== TSESTree.AST_NODE_TYPES.Identifier || node.callee.name !== "UDim2") return;
 
 				const collected = collectNumericArguments(node.arguments);
 				if (!collected) return;
 
 				const { scaleX, offsetX, scaleY, offsetY } = collected;
-
 				if (scaleX === 0 && offsetX === 0 && scaleY === 0 && offsetY === 0) return;
 
 				if (offsetX === 0 && offsetY === 0) {
