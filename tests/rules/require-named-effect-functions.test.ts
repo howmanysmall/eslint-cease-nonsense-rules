@@ -132,9 +132,56 @@ describe("require-named-effect-functions", () => {
 				`,
 				errors: [{ messageId: "functionExpression" }],
 			},
+			// Async arrow function inline
+			{
+				code: `
+					useEffect(async () => {
+						await fetchData();
+					}, []);
+				`,
+				errors: [{ messageId: "asyncArrowFunction" }],
+			},
+			// Async named function expression inline
+			{
+				code: `
+					useEffect(async function handleEffect() {
+						await fetchData();
+					}, []);
+				`,
+				errors: [{ messageId: "asyncFunctionExpression" }],
+			},
+			// Async anonymous function expression inline
+			{
+				code: `
+					useEffect(async function() {
+						await fetchData();
+					}, []);
+				`,
+				errors: [{ messageId: "asyncAnonymousFunction" }],
+			},
+			// Async function declaration referenced via identifier
+			{
+				code: `
+					async function handleEffect() {
+						await fetchData();
+					}
+					useEffect(handleEffect, []);
+				`,
+				errors: [{ messageId: "identifierReferencesAsyncFunction" }],
+			},
+			// Async arrow via identifier (not allowed by default)
+			{
+				code: `
+					const effect = async () => {
+						await fetchData();
+					};
+					useEffect(effect, []);
+				`,
+				errors: [{ messageId: "identifierReferencesAsyncArrow" }],
+			},
 		],
 		valid: [
-			// Named function reference
+			// Named function reference (function declaration)
 			{
 				code: `
 					function handleEffect() {
@@ -143,7 +190,7 @@ describe("require-named-effect-functions", () => {
 					useEffect(handleEffect, []);
 				`,
 			},
-			// Function declaration referenced
+			// Function declaration referenced with cleanup
 			{
 				code: `
 					function myEffect() {
@@ -214,7 +261,7 @@ describe("require-named-effect-functions", () => {
 				`,
 				options: [{ environment: "standard" }],
 			},
-			// Named function expression (not arrow) is invalid in roblox-ts but valid in standard
+			// Named function expression via identifier in standard mode
 			{
 				code: `
 					const effect = function handleEffect() {
@@ -231,6 +278,46 @@ describe("require-named-effect-functions", () => {
 					useEffect(handleEffect, []);
 				`,
 			},
+			// Async arrow via identifier with allowAsyncFunctionDeclarations enabled
+			{
+				code: `
+					const effect = async () => {
+						await fetchData();
+					};
+					useEffect(effect, []);
+				`,
+				options: [{ allowAsyncFunctionDeclarations: true }],
+			},
+			// Async function declaration with allowAsyncFunctionDeclarations enabled
+			{
+				code: `
+					async function handleEffect() {
+						await fetchData();
+					}
+					useEffect(handleEffect, []);
+				`,
+				options: [{ allowAsyncFunctionDeclarations: true }],
+			},
+		// Computed member access (getHookName returns undefined, rule doesn't check)
+		{
+			code: `
+				const hooks = { useEffect };
+				hooks['useEffect'](() => {
+					console.log("effect");
+				}, []);
+			`,
+		},
+		// Outer scope function reference
+		{
+			code: `
+				function makeComponent() {
+					function handleEffect() {
+						console.log("effect");
+					}
+					return useEffect(handleEffect, []);
+				}
+			`,
+		},
 		],
 	});
 
