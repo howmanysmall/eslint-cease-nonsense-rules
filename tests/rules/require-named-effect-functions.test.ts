@@ -298,18 +298,18 @@ describe("require-named-effect-functions", () => {
 				`,
 				options: [{ allowAsyncFunctionDeclarations: true }],
 			},
-		// Computed member access (getHookName returns undefined, rule doesn't check)
-		{
-			code: `
+			// Computed member access (getHookName returns undefined, rule doesn't check)
+			{
+				code: `
 				const hooks = { useEffect };
 				hooks['useEffect'](() => {
 					console.log("effect");
 				}, []);
 			`,
-		},
-		// Outer scope function reference
-		{
-			code: `
+			},
+			// Outer scope function reference
+			{
+				code: `
 				function makeComponent() {
 					function handleEffect() {
 						console.log("effect");
@@ -317,7 +317,7 @@ describe("require-named-effect-functions", () => {
 					return useEffect(handleEffect, []);
 				}
 			`,
-		},
+			},
 		],
 	});
 
