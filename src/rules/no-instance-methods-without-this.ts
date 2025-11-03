@@ -51,7 +51,7 @@ function isNode(value: unknown): value is TSESTree.Node {
 }
 
 // Widen node to allow safe enumeration without producing implicit any values
-function hasDynamicProps(_node: TSESTree.Node): _node is TSESTree.Node & { readonly [k: string]: unknown } {
+function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & { readonly [key: string]: unknown } {
 	return true;
 }
 
@@ -60,7 +60,7 @@ function traverseForThis(currentNode: TSESTree.Node, visited: WeakSet<TSESTree.N
 	visited.add(currentNode);
 	if (currentNode.type === AST_NODE_TYPES.ThisExpression || currentNode.type === AST_NODE_TYPES.Super) return true;
 
-	if (!hasDynamicProps(currentNode)) return false;
+	if (!hasDynamicProperties(currentNode)) return false;
 
 	for (const key in currentNode) {
 		const childValue = currentNode[key];
