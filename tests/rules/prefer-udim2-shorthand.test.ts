@@ -55,6 +55,55 @@ describe("prefer-udim2-shorthand", () => {
 				errors: [{ messageId: "preferFromOffset" }],
 				output: "method(UDim2.fromOffset(20, 30));",
 			},
+
+			// Math expressions - fromScale
+			{
+				code: "new UDim2(1 + 1, 0, 2 + 2, 0);",
+				errors: [{ messageId: "preferFromScale" }],
+				output: "UDim2.fromScale(1 + 1, 2 + 2);",
+			},
+			{
+				code: "new UDim2(5 / 4, 0, 0.85, 0);",
+				errors: [{ messageId: "preferFromScale" }],
+				output: "UDim2.fromScale(5 / 4, 0.85);",
+			},
+			{
+				code: "new UDim2(1 * 2, 0, 3 / 4, 0);",
+				errors: [{ messageId: "preferFromScale" }],
+				output: "UDim2.fromScale(1 * 2, 3 / 4);",
+			},
+			{
+				code: "new UDim2(+0.5, 0, +0.75, 0);",
+				errors: [{ messageId: "preferFromScale" }],
+				output: "UDim2.fromScale(+0.5, +0.75);",
+			},
+
+			// Math expressions - fromOffset
+			{
+				code: "new UDim2(0, -1, 0, 5);",
+				errors: [{ messageId: "preferFromOffset" }],
+				output: "UDim2.fromOffset(-1, 5);",
+			},
+			{
+				code: "new UDim2(0, 100 - 10, 0, 50);",
+				errors: [{ messageId: "preferFromOffset" }],
+				output: "UDim2.fromOffset(100 - 10, 50);",
+			},
+			{
+				code: "new UDim2(0, 10 + 2, 0, 5 * 2);",
+				errors: [{ messageId: "preferFromOffset" }],
+				output: "UDim2.fromOffset(10 + 2, 5 * 2);",
+			},
+			{
+				code: "new UDim2(8 % 3, 0, 12 % 5, 0);",
+				errors: [{ messageId: "preferFromScale" }],
+				output: "UDim2.fromScale(8 % 3, 12 % 5);",
+			},
+			{
+				code: "new UDim2(0, 20 % 7, 0, 15 % 4);",
+				errors: [{ messageId: "preferFromOffset" }],
+				output: "UDim2.fromOffset(20 % 7, 15 % 4);",
+			},
 		],
 		valid: [
 			// Mixed values - not simplifiable
@@ -80,8 +129,8 @@ describe("prefer-udim2-shorthand", () => {
 			"new UDim2(x, 0, y, 0);",
 			"new UDim2(0, offset, 0, offset);",
 
-			// Expressions as arguments
-			"new UDim2(1 + 1, 0, 2 + 2, 0);",
+			// Mixed values that can't be evaluated
+			"new UDim2(0, x, 0, 10);",
 
 			// Wrong argument counts
 			"new UDim2();",
@@ -92,6 +141,24 @@ describe("prefer-udim2-shorthand", () => {
 
 			// Other constructors
 			"const c = someOtherConstructor(0, 0, 0, 0);",
+
+			// Unsupported operators (bitwise, logical, etc)
+			"new UDim2(1 & 2, 0, 1 | 2, 0);",
+			"new UDim2(1 ^ 2, 0, 1 << 2, 0);",
+			"new UDim2(1 >> 2, 0, 1 >>> 2, 0);",
+
+			// Division/modulo by variables (can't evaluate)
+			"new UDim2(10 / x, 0, 10 % y, 0);",
+
+			// Expressions with variables
+			"new UDim2(x + 1, 0, 1 - y, 0);",
+			"new UDim2(x * 2, 0, 2 / z, 0);",
+
+			// Non-literal values (booleans, null, etc in Literal nodes)
+			"new UDim2(true, 0, false, 0);",
+
+			// String literals (not supported)
+			"new UDim2('hello', 0, 'world', 0);",
 		],
 	});
 });

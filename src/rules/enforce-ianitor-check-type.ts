@@ -1,7 +1,7 @@
 import { TSESTree } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
 
-interface ComplexityConfig {
+export interface ComplexityConfiguration {
 	readonly baseThreshold: number;
 	readonly warnThreshold: number;
 	readonly errorThreshold: number;
@@ -14,7 +14,7 @@ interface ComplexityCache {
 	readonly visitedNodes: WeakSet<object>;
 }
 
-const DEFAULT_CONFIG: ComplexityConfig = {
+const DEFAULT_CONFIGURATION: ComplexityConfiguration = {
 	baseThreshold: 10,
 	errorThreshold: 25,
 	interfacePenalty: 20,
@@ -164,7 +164,7 @@ function calculateIanitorComplexity(node: {
 
 const enforceIanitorCheckType: Rule.RuleModule = {
 	create(context) {
-		const config: ComplexityConfig = { ...DEFAULT_CONFIG, ...context.options[0] };
+		const config: ComplexityConfiguration = { ...DEFAULT_CONFIGURATION, ...context.options[0] };
 		const cache: ComplexityCache = {
 			nodeCache: new WeakMap(),
 			visitedNodes: new WeakSet(),

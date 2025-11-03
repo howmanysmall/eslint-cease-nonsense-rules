@@ -20,6 +20,7 @@
 		"oxfmt": "^0.9.0",
 		"oxlint": "^1.25.0",
 		"oxlint-tsgolint": "^0.3.0",
+		"sury": "^11.0.0-alpha.4",
 		"typescript": "^5.6.3"
 	},
 	"engines": {
@@ -67,5 +68,5 @@
 	"sideEffects": false,
 	"type": "module",
 	"types": "./dist/index.d.ts",
-	"version": "0.11.0"
+	"version": "0.11.1"
 }

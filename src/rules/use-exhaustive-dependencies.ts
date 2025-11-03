@@ -159,13 +159,13 @@ const GLOBAL_BUILTINS = new Set([
 function getHookName(node: TSESTree.CallExpression): string | undefined {
 	const { callee } = node;
 
-	if (callee.type === "Identifier") {
-		return callee.name;
-	}
+	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return callee.name;
 
-	if (callee.type === "MemberExpression" && callee.property.type === "Identifier") {
+	if (
+		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
+	)
 		return callee.property.name;
-	}
 
 	return undefined;
 }
@@ -206,10 +206,11 @@ function isStableArrayIndex(
 		return false;
 
 	const elements = node.id.elements;
-	for (let index = 0; index < elements.length; index += 1) {
-		const element = elements[index];
-		if (element?.type === TSESTree.AST_NODE_TYPES.Identifier && element.name === identifierName)
+	let index = 0;
+	for (const element of elements) {
+		if (element.type === TSESTree.AST_NODE_TYPES.Identifier && element.name === identifierName)
 			return (stableResult as Set<number>).has(index);
+		index += 1;
 	}
 
 	return false;
@@ -233,7 +234,6 @@ function isStableHookValue(
 	return isStableArrayIndex(stableResult, node, identifierName);
 }
 
-/* eslint-disable jsdoc/require-param, jsdoc/require-returns */
 function isStableValue(
 	variable: VariableLike | undefined,
 	identifierName: string,
@@ -249,14 +249,12 @@ function isStableValue(
 
 		if (STABLE_VALUE_TYPES.has(type)) return true;
 
-		if (type === "Variable" && node.type === "VariableDeclarator") {
+		if (type === "Variable" && node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator) {
 			const parent = (node as TSESTree.VariableDeclarator).parent;
 			if (!parent || parent.type !== TSESTree.AST_NODE_TYPES.VariableDeclaration || parent.kind !== "const")
 				continue;
 
-			const { init } = node;
-
-			// @ts-expect-error - Type mismatch between ESLint and TypeScript AST types
+			const init = node.init as TSESTree.Expression | Rule.Node | undefined | null;
 			if (init && isStableHookValue(init, node, identifierName, stableHooks)) return true;
 
 			if (init?.type === TSESTree.AST_NODE_TYPES.CallExpression) {
@@ -310,17 +308,10 @@ function isStableValue(
 	return false;
 }
 
-/**
- * Finds the topmost member expression in a chain when an identifier is the object.
- *
- * @param node - The identifier node.
- * @returns The topmost member expression or the node itself.
- */
 function findTopmostMemberExpression(node: TSESTree.Node): TSESTree.Node {
 	let current: TSESTree.Node = node;
 	let { parent } = node;
 
-	// Walk up the tree while we're the object of a member expression
 	while (parent?.type === TSESTree.AST_NODE_TYPES.MemberExpression && parent.object === current) {
 		current = parent;
 		parent = parent.parent;
@@ -336,62 +327,34 @@ const IS_CEASE_BOUNDARY = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.VariableDeclarator,
 ]);
 
-/**
- * Checks if an identifier is in a TypeScript type-only position.
- * Type parameters and type annotations are compile-time only and should not be dependencies.
- *
- * @param identifier - The identifier node to check.
- * @returns True if the identifier is in a type-only position.
- */
 function isInTypePosition(identifier: TSESTree.Identifier): boolean {
 	let parent: TSESTree.Node | undefined = identifier.parent;
 
 	while (parent) {
-		// Any TypeScript-specific node indicates a type-only position
 		if (parent.type.startsWith("TS")) return true;
-
-		// Stop searching at certain boundaries
 		if (IS_CEASE_BOUNDARY.has(parent.type)) return false;
-
 		parent = parent.parent;
 	}
 
 	return false;
 }
 
-/**
- * Checks if a variable is declared directly in the component/hook body OR is a prop (parameter).
- * Per React rules, only variables "declared directly inside the component body" are reactive.
- * This includes props (function parameters).
- * Variables from outer scopes (module-level, parent functions) are non-reactive.
- *
- * @param variable - The variable to check.
- * @param closureNode - The closure node (useEffect callback, etc.).
- * @returns True if the variable is declared in the component body or is a prop.
- */
 function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree.Node): boolean {
-	// Find the parent component/hook function
 	let parent: TSESTree.Node | undefined = closureNode.parent;
 
 	while (parent) {
 		const isFunction = FUNCTION_DECLARATIONS.has(parent.type);
 
 		if (isFunction) {
-			// Capture parent in a const so TypeScript understands it's stable in closures
 			const functionParent = parent;
 
-			// Check if variable is a parameter of this function (props)
 			const isParameter = variable.defs.some((definition) => {
 				if (definition.type !== "Parameter") return false;
-
-				// For parameters, the def.node is the function itself
-				// Just check if the definition's node is the current function parent
 				return definition.node === functionParent;
 			});
 
-			if (isParameter) return true; // Props are reactive
+			if (isParameter) return true;
 
-			// Check if variable is defined inside this function
 			return variable.defs.some((definition) => {
 				let node: TSESTree.Node | undefined = definition.node.parent as TSESTree.Node | undefined;
 				while (node && node !== functionParent) node = node.parent;
@@ -405,18 +368,10 @@ function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree
 	return false;
 }
 
-/**
- * Resolves an identifier to its function definition if it references a function.
- *
- * @param identifier - The identifier node.
- * @param scope - The scope to search in.
- * @returns The function node if found, undefined otherwise.
- */
 function resolveFunctionReference(
 	identifier: TSESTree.Identifier,
 	scope: Scope.Scope,
 ): TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression | undefined {
-	// Look up the variable in the scope chain
 	let variable: Scope.Variable | undefined;
 	let currentScope: Scope.Scope | null = scope;
 
@@ -428,15 +383,12 @@ function resolveFunctionReference(
 
 	if (!variable || variable.defs.length === 0) return undefined;
 
-	// Check all definitions for a function
 	for (const definition of variable.defs) {
 		const { node } = definition;
 
-		// Direct function declaration
 		if (node.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration)
 			return node as unknown as TSESTree.FunctionExpression;
 
-		// Variable declarator with function initializer
 		if (
 			node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
 			node.init &&
@@ -554,6 +506,10 @@ function parseDependencies(
 	return dependencies;
 }
 
+function returnName({ name }: { readonly name: string }): string {
+	return name;
+}
+
 function isUnstableValue(node: TSESTree.Node | undefined): boolean {
 	return node ? UNSTABLE_VALUES.has(node.type) : false;
 }
@@ -582,7 +538,6 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 			...context.options[0],
 		};
 
-		// Build hook configuration map
 		const hookConfigs = new Map<string, HookConfig>(DEFAULT_HOOKS);
 		for (const customHook of options.hooks) {
 			if (customHook.closureIndex === undefined || customHook.dependenciesIndex === undefined) continue;
@@ -592,22 +547,14 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 			});
 		}
 
-		// Build stable hooks map
 		const stableHooks = new Map<string, StableResult>(STABLE_HOOKS);
 		for (const customHook of options.hooks) {
 			if (customHook.stableResult === undefined) continue;
 			stableHooks.set(customHook.name, convertStableResult(customHook.stableResult));
 		}
 
-		// Performance: cache scope lookups
 		const scopeCache = new WeakMap<TSESTree.Node, Scope.Scope>();
 
-		/**
-		 * Gets the scope for a node with caching.
-		 *
-		 * @param node - The node to get scope for.
-		 * @returns The scope.
-		 */
 		function getScope(node: TSESTree.Node): Scope.Scope {
 			const cached = scopeCache.get(node);
 			if (cached) return cached;
@@ -621,22 +568,18 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 			CallExpression(node) {
 				const callNode = node as unknown as TSESTree.CallExpression;
 
-				// Early exit: get hook name
 				const hookName = getHookName(callNode);
 				if (hookName === undefined || hookName === "") return;
 
-				// Early exit: check if this hook needs dependency checking
 				const hookConfig = hookConfigs.get(hookName);
 				if (!hookConfig) return;
 
 				const { closureIndex, dependenciesIndex } = hookConfig;
 				const parameters = callNode.arguments;
 
-				// Early exit: check if closure argument exists
 				const closureArgument = parameters[closureIndex];
 				if (closureArgument === undefined) return;
 
-				// Resolve the actual closure function (handles both inline and reference cases)
 				let closureFunction: TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression | undefined;
 
 				if (
@@ -645,35 +588,28 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 				)
 					closureFunction = closureArgument;
 				else if (closureArgument.type === TSESTree.AST_NODE_TYPES.Identifier) {
-					// Function reference - try to resolve it
 					const scope = getScope(callNode);
 					closureFunction = resolveFunctionReference(closureArgument, scope);
 				}
 
-				// Early exit: check if we have a valid closure function
 				if (!closureFunction) return;
 
-				// Get dependencies argument
 				const dependenciesArgument = parameters[dependenciesIndex];
-
-				// Report missing dependencies array if configured
 				if (!dependenciesArgument && options.reportMissingDependenciesArray) {
-					// Collect captures to see if any are needed
 					const scope = getScope(closureFunction);
 					const captures = collectCaptures(closureFunction, scope, context.sourceCode);
 
-					// Filter out stable values
 					const requiredCaptures = captures.filter(
 						(capture) => !isStableValue(capture.variable, capture.name, stableHooks),
 					);
 
 					if (requiredCaptures.length > 0) {
-						const missingNames = Array.from(new Set(requiredCaptures.map(({ name }) => name))).join(", ");
+						// oxlint-disable-next-line no-array-callback-reference
+						const missingNames = Array.from(new Set(requiredCaptures.map(returnName))).join(", ");
 
-						// Generate fix suggestion - add dependencies array
 						const usagePaths = requiredCaptures.map(({ usagePath }) => usagePath);
-						const uniqueDeps = Array.from(new Set(usagePaths)).toSorted();
-						const depsArrayString = `[${uniqueDeps.join(", ")}]`;
+						const uniqueDependencies = Array.from(new Set(usagePaths)).toSorted();
+						const dependenciesString = `[${uniqueDependencies.join(", ")}]`;
 
 						context.report({
 							data: { deps: missingNames },
@@ -681,11 +617,11 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 							node: callNode,
 							suggest: [
 								{
-									desc: `Add dependencies array: ${depsArrayString}`,
+									desc: `Add dependencies array: ${dependenciesString}`,
 									fix(fixer): Rule.Fix | null {
-										// Insert the dependencies array after the closure argument
+										//
 										const closureArgumentNode = parameters[closureIndex] as unknown as Rule.Node;
-										return fixer.insertTextAfter(closureArgumentNode, `, ${depsArrayString}`);
+										return fixer.insertTextAfter(closureArgumentNode, `, ${dependenciesString}`);
 									},
 								},
 							],
@@ -694,40 +630,33 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 					return;
 				}
 
-				// Early exit: no dependencies array
 				if (!dependenciesArgument) return;
 
-				// Dependencies must be an array
 				if (dependenciesArgument.type !== TSESTree.AST_NODE_TYPES.ArrayExpression) return;
 
 				const dependenciesArray = dependenciesArgument;
 
-				// Collect captures from closure
 				const scope = getScope(closureFunction);
 				const captures = collectCaptures(closureFunction, scope, context.sourceCode);
 
-				// Parse dependencies array
 				const dependencies = parseDependencies(dependenciesArray, context.sourceCode);
 
-				// Check for unnecessary dependencies first (for consistent error ordering)
 				for (const dependency of dependencies) {
 					const dependencyRootIdentifier = getRootIdentifier(dependency.node);
 					if (!dependencyRootIdentifier) continue;
 
 					const dependencyName = dependencyRootIdentifier.name;
 
-					// Find all captures with the same root identifier
 					const matchingCaptures = captures.filter(
 						({ node }) => getRootIdentifier(node)?.name === dependencyName,
 					);
 
-					// If no captures use this identifier at all, it's unnecessary
 					if (matchingCaptures.length === 0) {
 						if (options.reportUnnecessaryDependencies) {
-							// Generate fix suggestion
 							const newDependencies = dependencies
 								.filter((value) => value.name !== dependency.name)
-								.map(({ name }) => name);
+								// oxlint-disable-next-line no-array-callback-reference
+								.map(returnName);
 							const dependenciesString = `[${newDependencies.join(", ")}]`;
 
 							context.report({
@@ -750,15 +679,13 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 						continue;
 					}
 
-					// Check if dependency is more specific than any usage
-					// dep.depth > all capture depths means the dep is too specific
 					const maxCaptureDepth = Math.max(...matchingCaptures.map(({ depth }) => depth));
 					if (dependency.depth > maxCaptureDepth && options.reportUnnecessaryDependencies) {
-						// Generate fix suggestion
 						const newDependencies = dependencies
 							.filter(({ name }) => name !== dependency.name)
-							.map(({ name }) => name);
-						const newDependenciesString = `[${newDependencies.join(", ")}]`;
+							// oxlint-disable-next-line no-array-callback-reference
+							.map(returnName);
+						const dependencyString = `[${newDependencies.join(", ")}]`;
 
 						context.report({
 							data: { name: dependency.name },
@@ -770,7 +697,7 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 									fix(fixer): Rule.Fix | null {
 										return fixer.replaceText(
 											dependenciesArray as unknown as Rule.Node,
-											newDependenciesString,
+											dependencyString,
 										);
 									},
 								},
@@ -779,24 +706,19 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 					}
 				}
 
-				// Check for missing dependencies
 				const missingCaptures = new Array<CaptureInfo>();
-
 				for (const capture of captures) {
-					// Skip stable values
 					if (isStableValue(capture.variable, capture.name, stableHooks)) continue;
 
-					// Check if the capture is in the dependencies
 					const rootIdentifier = getRootIdentifier(capture.node);
 					if (!rootIdentifier) continue;
 
 					const captureName = rootIdentifier.name;
 					let isInDependencies = false;
 
-					// Check if capture is covered by dependencies
 					for (const dependency of dependencies) {
 						const dependencyRootIdentifier = getRootIdentifier(dependency.node);
-						// Check name match and depth: dependency should not be more specific than capture
+
 						if (dependencyRootIdentifier?.name === captureName && dependency.depth <= capture.depth) {
 							isInDependencies = true;
 							break;
@@ -806,7 +728,6 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 					if (!isInDependencies) missingCaptures.push(capture);
 				}
 
-				// Report all missing dependencies at once
 				if (missingCaptures.length > 0) {
 					const dependencyNames = dependencies.map(({ name }) => name);
 					const missingPaths = missingCaptures.map(({ usagePath }) => usagePath);
@@ -815,7 +736,6 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 					const lastDependency = dependencies.at(-1);
 					const firstMissing = missingCaptures.at(0);
 
-					// For single missing dependency, use singular message for backward compat
 					if (missingCaptures.length === 1 && firstMissing) {
 						context.report({
 							data: { name: firstMissing.usagePath },
@@ -834,7 +754,6 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 							],
 						});
 					} else {
-						// For multiple missing dependencies, use plural message
 						const missingNames = missingPaths.join(", ");
 						context.report({
 							data: { names: missingNames },
@@ -855,18 +774,14 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 					}
 				}
 
-				// Check for unstable dependencies in the array
 				for (const capture of captures) {
-					// Skip stable values
 					if (isStableValue(capture.variable, capture.name, stableHooks)) continue;
 
-					// Check if this capture has a corresponding dependency
 					const rootIdentifier = getRootIdentifier(capture.node);
 					if (!rootIdentifier) continue;
 
 					const captureName = rootIdentifier.name;
 
-					// Find if there's a matching dependency
 					for (const dependency of dependencies) {
 						const dependencyRootIdentifier = getRootIdentifier(dependency.node);
 						const isMatch =
