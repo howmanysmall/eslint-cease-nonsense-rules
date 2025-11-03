@@ -1,23 +1,24 @@
 {
 	"author": "HowManySmall",
 	"dependencies": {
-		"typebox": "^1.0.43"
+		"typebox": "^1.0.49"
 	},
 	"description": "A bunch of lints to prevent idiot mistakes I encounter with frequency.",
 	"devDependencies": {
-		"@biomejs/biome": "^2.3.0",
+		"@biomejs/biome": "^2.3.3",
 		"@mitata/counters": "^0.0.8",
 		"@types/bun": "latest",
 		"@types/node": "^20.14.11",
 		"@typescript-eslint/parser": "^8.0.0",
 		"@typescript-eslint/types": "^8.0.0",
 		"@typescript-eslint/utils": "^8.0.0",
-		"arktype": "^2.1.23",
+		"arktype": "^2.1.25",
 		"eslint": "9.35.0",
 		"jiti": "^2.4.2",
 		"knip": "^5.66.0",
 		"mitata": "^1.0.34",
-		"oxlint": "^1.24.0",
+		"oxfmt": "^0.9.0",
+		"oxlint": "^1.25.0",
 		"oxlint-tsgolint": "^0.3.0",
 		"typescript": "^5.6.3"
 	},
@@ -53,8 +54,9 @@
 		"biome:ci": "bun x --bun biome ci",
 		"build": "bun x --bun tsc -p tsconfig.json",
 		"dev": "bun x --bun tsc -w",
-		"format": "bun x --bun biome format --fix",
-		"format:report": "bun x --bun. biome format",
+		"format": "bun x --bun oxfmt",
+		"format:biome": "bun x --bun biome format --fix",
+		"format:biome:report": "bun x --bun. biome format",
 		"knip": "knip",
 		"lint": "bun run oxc . && bun x --bun biome lint .",
 		"oxc": "bun x --bun oxlint --type-aware",
@@ -65,5 +67,5 @@
 	"sideEffects": false,
 	"type": "module",
 	"types": "./dist/index.d.ts",
-	"version": "0.10.1"
+	"version": "0.11.0"
 }

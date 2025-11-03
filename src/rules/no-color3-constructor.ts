@@ -1,17 +1,14 @@
+import { TSESTree } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
+import Type from "typebox";
+import { Compile } from "typebox/compile";
 
-interface NumericLiteralNode {
-	readonly type: string;
-	readonly value: number;
-}
-
-function isUnknownRecord(value: unknown): value is Record<PropertyKey, unknown> {
-	return typeof value === "object" && value !== null;
-}
-
-function isNumericLiteralNode(value: unknown): value is NumericLiteralNode {
-	return isUnknownRecord(value) && value.type === "Literal" && "value" in value && typeof value.value === "number";
-}
+const isNumericLiteralNode = Compile(
+	Type.Object({
+		type: Type.Literal(TSESTree.AST_NODE_TYPES.Literal),
+		value: Type.Number(),
+	}),
+);
 
 function mapComponentToRgbRange(value: number): number {
 	return Math.round(value > 1 ? value : value * 255);
@@ -27,7 +24,7 @@ function collectNumericComponents(parameters: ReadonlyArray<unknown>): NumericCo
 	let allZero = true;
 
 	for (const parameter of parameters) {
-		if (!isNumericLiteralNode(parameter)) return undefined;
+		if (!isNumericLiteralNode.Check(parameter)) return undefined;
 
 		const mapped = mapComponentToRgbRange(parameter.value);
 		components.push(mapped);
@@ -41,7 +38,7 @@ const noColor3Constructor: Rule.RuleModule = {
 	create(context) {
 		return {
 			NewExpression(node) {
-				if (node.callee.type !== "Identifier" || node.callee.name !== "Color3") return;
+				if (node.callee.type !== TSESTree.AST_NODE_TYPES.Identifier || node.callee.name !== "Color3") return;
 
 				const parameters = node.arguments;
 				if (parameters.length === 0) return;
