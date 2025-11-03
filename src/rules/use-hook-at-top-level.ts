@@ -1,9 +1,15 @@
 import { TSESTree } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
 
-/**
- * Context tracking for control flow analysis.
+/*
+ * Rule: use-hook-at-top-level
+ * Tracks a small control-flow context stack for component/hook functions
+ * to detect hooks used conditionally, inside loops, nested functions, try
+ * blocks, or after early returns. Finally blocks are allowed (they always run),
+ * and recursion is treated as a violation because it implies conditional
+ * termination and non-deterministic hook ordering.
  */
+
 interface ControlFlowContext {
 	readonly inConditional: boolean;
 	readonly afterEarlyReturn: boolean;
@@ -14,70 +20,51 @@ interface ControlFlowContext {
 	readonly isComponentOrHook: boolean;
 }
 
-/**
- * Pre-compiled regex for hook name detection (performance optimization).
- */
 const HOOK_NAME_PATTERN = /^use[A-Z]/;
-
-/**
- * Pre-compiled regex for component name detection (performance optimization).
- */
 const COMPONENT_NAME_PATTERN = /^[A-Z]/;
-
-/**
- * Checks if a function name matches the React hook naming convention.
- *
- * @param name - The function name to check.
- * @returns True if the name starts with "use" followed by an uppercase letter.
- */
 function isReactHook(name: string): boolean {
 	return HOOK_NAME_PATTERN.test(name);
 }
 
-/**
- * Checks if a function name matches the React component naming convention.
- *
- * @param name - The function name to check.
- * @returns True if the name starts with an uppercase letter.
- */
 function isComponent(name: string): boolean {
 	return COMPONENT_NAME_PATTERN.test(name);
 }
 
-/**
- * Determines if a function is a React component or custom hook.
- *
- * @param node - The function node to check.
- * @returns True if the function is a component or hook.
- */
 function isComponentOrHook(
 	node: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
 ): boolean {
-	// Function declarations with names
-	if (node.type === "FunctionDeclaration" && node.id) {
+	if (node.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration && node.id) {
 		const { name } = node.id;
 		return isComponent(name) || isReactHook(name);
 	}
 
-	// Function expressions and arrow functions: check parent context
-	if (node.type === "FunctionExpression" || node.type === "ArrowFunctionExpression") {
+	if (
+		node.type === TSESTree.AST_NODE_TYPES.FunctionExpression ||
+		node.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression
+	) {
 		const { parent } = node;
 		if (!parent) return false;
 
-		// Variable declarator: const Component = () => {}
-		if (parent.type === "VariableDeclarator" && parent.id.type === "Identifier") {
+		if (
+			parent.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
+			parent.id.type === TSESTree.AST_NODE_TYPES.Identifier
+		) {
 			const { name } = parent.id;
 			return isComponent(name) || isReactHook(name);
 		}
 
-		// Property: { Component: () => {} }
-		if (parent.type === "Property" && parent.key.type === "Identifier") {
+		if (
+			parent.type === TSESTree.AST_NODE_TYPES.Property &&
+			parent.key.type === TSESTree.AST_NODE_TYPES.Identifier
+		) {
 			const { name } = parent.key;
 			return isComponent(name) || isReactHook(name);
 		}
 
-		// Method definition: class { Component() {} }
-		if (parent.type === "MethodDefinition" && parent.key.type === "Identifier") {
+		if (
+			parent.type === TSESTree.AST_NODE_TYPES.MethodDefinition &&
+			parent.key.type === TSESTree.AST_NODE_TYPES.Identifier
+		) {
 			const { name } = parent.key;
 			return isComponent(name) || isReactHook(name);
 		}
@@ -86,20 +73,15 @@ function isComponentOrHook(
 	return false;
 }
 
-/**
- * Checks if a call expression is a hook call.
- *
- * @param node - The call expression node.
- * @returns True if the call is a hook.
- */
 function isHookCall(node: TSESTree.CallExpression): boolean {
 	const { callee } = node;
 
-	// Direct call: useEffect(...)
-	if (callee.type === "Identifier") return isReactHook(callee.name);
+	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return isReactHook(callee.name);
 
-	// Member expression: React.useEffect(...)
-	if (callee.type === "MemberExpression" && callee.property.type === "Identifier")
+	if (
+		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
+	)
 		return isReactHook(callee.property.name);
 
 	return false;
@@ -111,23 +93,14 @@ const FUNCTION_BOUNDARIES = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.ArrowFunctionExpression,
 ]);
 
-/**
- * Checks if a node is inside a finally block.
- *
- * @param node - The node to check.
- * @returns True if the node is in a finally block.
- */
 function isInFinallyBlock(node: TSESTree.Node): boolean {
 	let current: TSESTree.Node | undefined = node.parent;
 	const maxDepth = 20;
 
-	for (let depth = 0; depth < maxDepth && current; depth++) {
-		// Stop at function boundaries
+	for (let depth = 0; depth < maxDepth && current; depth += 1) {
 		if (FUNCTION_BOUNDARIES.has(current.type)) return false;
 
-		// Found try statement - check if we're in the finalizer
-		if (current.type === "TryStatement") {
-			// Walk back down to see which block we're in
+		if (current.type === TSESTree.AST_NODE_TYPES.TryStatement) {
 			let checkNode: TSESTree.Node | undefined = node;
 			while (checkNode && checkNode !== current) {
 				if (checkNode === current.finalizer) return true;
@@ -142,13 +115,6 @@ function isInFinallyBlock(node: TSESTree.Node): boolean {
 	return false;
 }
 
-/**
- * Checks if a call expression is recursive (calls itself).
- *
- * @param node - The call expression node.
- * @param functionName - The name of the containing function.
- * @returns True if the call is recursive.
- */
 function isRecursiveCall(node: TSESTree.CallExpression, functionName: string | undefined): boolean {
 	if (!functionName) return false;
 
@@ -160,55 +126,23 @@ function isRecursiveCall(node: TSESTree.CallExpression, functionName: string | u
 
 const useHookAtTopLevel: Rule.RuleModule = {
 	create(context) {
-		// Context stack for tracking control flow
 		const contextStack = new Array<ControlFlowContext>();
 		let currentFunctionName: string | undefined;
 
-		/**
-		 * Gets the current control flow context.
-		 *
-		 * @returns The current context or undefined if not in a component/hook.
-		 */
 		function getCurrentContext(): ControlFlowContext | undefined {
 			return contextStack.length > 0 ? contextStack.at(-1) : undefined;
 		}
-
-		/**
-		 * Pushes a new context onto the stack.
-		 *
-		 * @param newContext - The context to push.
-		 */
 		function pushContext(newContext: ControlFlowContext): void {
 			contextStack.push(newContext);
 		}
-
-		/**
-		 * Pops the top context from the stack.
-		 */
 		function popContext(): void {
 			contextStack.pop();
 		}
-
-		/**
-		 * Updates the current context with new flags.
-		 *
-		 * @param updates - Partial context updates.
-		 */
 		function updateContext(updates: Partial<ControlFlowContext>): void {
 			const current = getCurrentContext();
-			if (!current) return;
-
-			contextStack[contextStack.length - 1] = {
-				...current,
-				...updates,
-			};
+			if (current) contextStack[contextStack.length - 1] = { ...current, ...updates };
 		}
 
-		/**
-		 * Handles function entry (component or hook).
-		 *
-		 * @param node - The function node.
-		 */
 		function handleFunctionEnter(node: unknown): void {
 			const funcNode = node as
 				| TSESTree.FunctionDeclaration
@@ -217,13 +151,11 @@ const useHookAtTopLevel: Rule.RuleModule = {
 			const current = getCurrentContext();
 			const depth = current ? current.functionDepth + 1 : 0;
 
-			// Check if this is a component or hook
 			const isComp = isComponentOrHook(funcNode);
 
-			// Store function name for recursion detection
-			if (funcNode.type === "FunctionDeclaration" && funcNode.id) currentFunctionName = funcNode.id.name;
+			if (funcNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration && funcNode.id)
+				currentFunctionName = funcNode.id.name;
 
-			// If we're already inside a component/hook, this is a nested function
 			if (current?.isComponentOrHook) {
 				pushContext({
 					afterEarlyReturn: false,
@@ -235,7 +167,6 @@ const useHookAtTopLevel: Rule.RuleModule = {
 					isComponentOrHook: false,
 				});
 			} else if (isComp) {
-				// This is a top-level component or hook
 				pushContext({
 					afterEarlyReturn: false,
 					functionDepth: depth,
@@ -247,10 +178,6 @@ const useHookAtTopLevel: Rule.RuleModule = {
 				});
 			}
 		}
-
-		/**
-		 * Handles function exit.
-		 */
 		function handleFunctionExit(): void {
 			const current = getCurrentContext();
 			if (current) popContext();
@@ -261,25 +188,19 @@ const useHookAtTopLevel: Rule.RuleModule = {
 			ArrowFunctionExpression: handleFunctionEnter,
 			"ArrowFunctionExpression:exit": handleFunctionExit,
 
-			// Hook calls
 			CallExpression(node) {
 				const callNode = node as unknown as TSESTree.CallExpression;
 
-				// Early exit: not a hook call
 				if (!isHookCall(callNode)) return;
 
 				const current = getCurrentContext();
 
-				// Early exit: not in any tracked context
 				if (!current) return;
 
-				// Early exit: not in a component/hook and not in a nested function
 				if (!current.isComponentOrHook && !current.inNestedFunction) return;
 
-				// Allow hooks in finally blocks (they always execute)
 				if (isInFinallyBlock(callNode)) return;
 
-				// Check for recursion
 				if (isRecursiveCall(callNode, currentFunctionName)) {
 					context.report({
 						messageId: "recursiveHookCall",
@@ -288,7 +209,6 @@ const useHookAtTopLevel: Rule.RuleModule = {
 					return;
 				}
 
-				// Check for nested function
 				if (current.inNestedFunction) {
 					context.report({
 						messageId: "nestedFunction",
@@ -297,7 +217,6 @@ const useHookAtTopLevel: Rule.RuleModule = {
 					return;
 				}
 
-				// Check for conditional execution
 				if (current.inConditional) {
 					context.report({
 						messageId: "conditionalHook",
@@ -306,7 +225,6 @@ const useHookAtTopLevel: Rule.RuleModule = {
 					return;
 				}
 
-				// Check for loops
 				if (current.inLoop) {
 					context.report({
 						messageId: "loopHook",
@@ -315,7 +233,6 @@ const useHookAtTopLevel: Rule.RuleModule = {
 					return;
 				}
 
-				// Check for try blocks
 				if (current.inTryBlock) {
 					context.report({
 						messageId: "tryBlockHook",
@@ -324,7 +241,6 @@ const useHookAtTopLevel: Rule.RuleModule = {
 					return;
 				}
 
-				// Check for early return (this should be caught by conditional, but double-check)
 				if (current.afterEarlyReturn) {
 					context.report({
 						messageId: "afterEarlyReturn",
@@ -361,22 +277,18 @@ const useHookAtTopLevel: Rule.RuleModule = {
 				updateContext({ inLoop: false });
 			},
 
-			// Loops
 			ForStatement() {
 				updateContext({ inLoop: true });
 			},
 			"ForStatement:exit"() {
 				updateContext({ inLoop: false });
 			},
-			// Function entry
 			FunctionDeclaration: handleFunctionEnter,
 
-			// Function exit
 			"FunctionDeclaration:exit": handleFunctionExit,
 			FunctionExpression: handleFunctionEnter,
 			"FunctionExpression:exit": handleFunctionExit,
 
-			// Conditional statements
 			IfStatement() {
 				updateContext({ inConditional: true });
 			},
@@ -391,7 +303,6 @@ const useHookAtTopLevel: Rule.RuleModule = {
 				updateContext({ inConditional: false });
 			},
 
-			// Early returns - set flag on exit so hooks IN the return expression aren't flagged
 			"ReturnStatement:exit"() {
 				updateContext({ afterEarlyReturn: true });
 			},
@@ -403,9 +314,7 @@ const useHookAtTopLevel: Rule.RuleModule = {
 				updateContext({ inConditional: false });
 			},
 
-			// Try blocks
 			TryStatement() {
-				// Mark entering try block (but not finally)
 				updateContext({ inTryBlock: true });
 			},
 			"TryStatement:exit"() {

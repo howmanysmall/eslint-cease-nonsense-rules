@@ -21,13 +21,13 @@ const banReactFC: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], RuleDocsWithRe
 
 				const { typeName } = inner;
 
-				let isBannedFC = false;
+				let isBannedFc = false;
 				if (typeName.type === TSESTree.AST_NODE_TYPES.Identifier)
-					isBannedFC = BANNED_FC_NAMES.has(typeName.name);
+					isBannedFc = BANNED_FC_NAMES.has(typeName.name);
 				else if (typeName.type === TSESTree.AST_NODE_TYPES.TSQualifiedName)
-					isBannedFC = BANNED_FC_NAMES.has(typeName.right.name);
+					isBannedFc = BANNED_FC_NAMES.has(typeName.right.name);
 
-				if (!isBannedFC) return;
+				if (!isBannedFc) return;
 
 				const initType = node.init?.type;
 				if (initType !== TSESTree.AST_NODE_TYPES.ArrowFunctionExpression) return;
