@@ -1,3 +1,4 @@
+import { TSESTree } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
 import Type from "typebox";
 import { Compile } from "typebox/compile";
@@ -13,6 +14,7 @@ const isRuleOptions = Compile(
 		shorthands: Type.Optional(Type.Record(Type.String(), Type.String())),
 	}),
 );
+const isUnknownRecord = Compile(Type.Record(Type.String(), Type.Unknown()));
 
 interface NormalizedOptions {
 	readonly shorthands: ReadonlyMap<string, string>;
@@ -30,14 +32,7 @@ const DEFAULT_OPTIONS: Required<RuleOptions> = {
 	},
 };
 
-function isUnknownRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null;
-}
-
 const ESCAPE_REGEXP = /[.*+?^${}()|[\]\\]/g;
-function escapeRegex(value: string): string {
-	return value.replaceAll(ESCAPE_REGEXP, "\\$&");
-}
 
 function normalizeOptions(rawOptions: RuleOptions | undefined): NormalizedOptions {
 	const mergedShorthands: Record<string, string> = { ...DEFAULT_OPTIONS.shorthands };
@@ -47,8 +42,10 @@ function normalizeOptions(rawOptions: RuleOptions | undefined): NormalizedOption
 	const shorthandsMap = new Map(Object.entries(mergedShorthands));
 	const allowPropertyAccessSource = rawOptions?.allowPropertyAccess ?? DEFAULT_OPTIONS.allowPropertyAccess;
 
-	// oxlint-disable-next-line no-array-callback-reference
-	const escapedKeys = Array.from(shorthandsMap.keys()).map(escapeRegex);
+	const escapedKeys = new Array<string>();
+	let length = 0;
+	for (const key of shorthandsMap.keys()) escapedKeys[length++] = key.replaceAll(ESCAPE_REGEXP, "\\$&");
+
 	const selector = `Identifier[name=/^(${escapedKeys.join("|")})$/]`;
 
 	return {
@@ -69,30 +66,34 @@ const noShorthandNames: Rule.RuleModule = {
 				const replacement = shorthands.get(shorthandName);
 				if (replacement === undefined || replacement === "") return;
 
-				const parent = node.parent;
+				const { parent } = node;
 
 				if (
 					allowPropertyAccess.has(shorthandName) &&
 					parent !== undefined &&
-					isUnknownRecord(parent) &&
-					parent.type === "MemberExpression" &&
+					isUnknownRecord.Check(parent) &&
+					parent.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 					parent.property === node
 				)
 					return;
 
-				if (shorthandName === "plr" && parent?.type === "VariableDeclarator" && parent.id === node) {
+				if (
+					shorthandName === "plr" &&
+					parent?.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
+					parent.id === node
+				) {
 					const { init } = parent;
 					if (
 						init &&
-						isUnknownRecord(init) &&
-						init.type === "MemberExpression" &&
+						isUnknownRecord.Check(init) &&
+						init.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 						init.object !== undefined &&
-						isUnknownRecord(init.object) &&
-						init.object.type === "Identifier" &&
+						isUnknownRecord.Check(init.object) &&
+						init.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
 						init.object.name === "Players" &&
 						init.property !== undefined &&
-						isUnknownRecord(init.property) &&
-						init.property.type === "Identifier" &&
+						isUnknownRecord.Check(init.property) &&
+						init.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
 						init.property.name === "LocalPlayer"
 					) {
 						context.report({

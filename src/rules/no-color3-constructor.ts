@@ -21,13 +21,14 @@ interface NumericComponentCollection {
 
 function collectNumericComponents(parameters: ReadonlyArray<unknown>): NumericComponentCollection | undefined {
 	const components = new Array<number>();
+	let size = 0;
 	let allZero = true;
 
 	for (const parameter of parameters) {
 		if (!isNumericLiteralNode.Check(parameter)) return undefined;
 
 		const mapped = mapComponentToRgbRange(parameter.value);
-		components.push(mapped);
+		components[size++] = mapped;
 		if (mapped !== 0) allZero = false;
 	}
 

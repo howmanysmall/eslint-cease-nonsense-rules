@@ -62,7 +62,7 @@ function ascendPastWrappers(node: TSESTree.Node | undefined): TSESTree.Node | un
 
 function hasKeyAttribute(node: TSESTree.JSXElement): boolean {
 	for (const attribute of node.openingElement.attributes)
-		if (attribute.type === "JSXAttribute" && attribute.name.name === "key") return true;
+		if (attribute.type === TSESTree.AST_NODE_TYPES.JSXAttribute && attribute.name.name === "key") return true;
 
 	return false;
 }
@@ -70,13 +70,14 @@ function hasKeyAttribute(node: TSESTree.JSXElement): boolean {
 function isReactComponentHOC(callExpr: TSESTree.CallExpression): boolean {
 	const { callee } = callExpr;
 
-	if (callee.type === "Identifier") return callee.name === "forwardRef" || callee.name === "memo";
+	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier)
+		return callee.name === "forwardRef" || callee.name === "memo";
 
 	if (
-		callee.type === "MemberExpression" &&
-		callee.object.type === "Identifier" &&
+		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+		callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		callee.object.name === "React" &&
-		callee.property.type === "Identifier"
+		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
 	)
 		return callee.property.name === "forwardRef" || callee.property.name === "memo";
 
@@ -88,9 +89,9 @@ function getEnclosingFunctionLike(node: TSESTree.Node): FunctionLike | undefined
 
 	while (current) {
 		if (
-			current.type === "ArrowFunctionExpression" ||
-			current.type === "FunctionExpression" ||
-			current.type === "FunctionDeclaration"
+			current.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression ||
+			current.type === TSESTree.AST_NODE_TYPES.FunctionExpression ||
+			current.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration
 		)
 			return current;
 
@@ -107,17 +108,20 @@ function isIterationOrMemoCallback(
 ): boolean {
 	const { callee } = callExpr;
 
-	if (callee.type === "Identifier" && memoizationHooks.has(callee.name)) return true;
+	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier && memoizationHooks.has(callee.name)) return true;
 
-	if (callee.type === "MemberExpression" && callee.property.type === "Identifier") {
+	if (
+		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
+	) {
 		const methodName = callee.property.name;
 
 		if (iterationMethods.has(methodName)) return true;
 
 		if (
 			methodName === "from" &&
-			callee.object.type === "MemberExpression" &&
-			callee.object.object.type === "Identifier" &&
+			callee.object.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+			callee.object.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
 			callee.object.object.name === "Array" &&
 			callExpr.arguments.length >= 2
 		)
@@ -125,9 +129,9 @@ function isIterationOrMemoCallback(
 
 		if (
 			methodName === "call" &&
-			callee.object.type === "MemberExpression" &&
-			callee.object.object.type === "MemberExpression" &&
-			callee.object.object.property.type === "Identifier" &&
+			callee.object.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+			callee.object.object.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+			callee.object.object.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
 			iterationMethods.has(callee.object.object.property.name)
 		)
 			return true;
@@ -141,10 +145,11 @@ function findEnclosingCallExpression(node: TSESTree.Node): TSESTree.CallExpressi
 	let parent = node.parent;
 
 	while (parent) {
-		if (parent.type === "CallExpression") {
+		if (parent.type === TSESTree.AST_NODE_TYPES.CallExpression) {
 			for (const argument of parent.arguments) {
 				if (argument === current) return parent;
-				if (argument.type === "SpreadElement" && argument.argument === current) return parent;
+				if (argument.type === TSESTree.AST_NODE_TYPES.SpreadElement && argument.argument === current)
+					return parent;
 			}
 			return undefined;
 		}

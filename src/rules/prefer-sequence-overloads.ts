@@ -1,5 +1,7 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import Type from "typebox";
+import { Compile } from "typebox/compile";
 
 interface SequenceDescriptor {
 	readonly sequenceName: "ColorSequence" | "NumberSequence";
@@ -19,21 +21,23 @@ const sequenceDescriptors: ReadonlyArray<SequenceDescriptor> = [
 function isSequenceIdentifier(
 	node: TSESTree.Expression | TSESTree.Super,
 ): node is TSESTree.Identifier & { readonly name: SequenceDescriptor["sequenceName"] } {
-	return (
-		node.type === AST_NODE_TYPES.Identifier &&
-		sequenceDescriptors.some((descriptor) => descriptor.sequenceName === node.name)
-	);
+	if (node.type !== AST_NODE_TYPES.Identifier) return false;
+
+	for (const { sequenceName } of sequenceDescriptors) if (sequenceName === node.name) return true;
+	return false;
 }
 
 function findDescriptor(sequenceName: SequenceDescriptor["sequenceName"]): SequenceDescriptor | undefined {
-	return sequenceDescriptors.find((descriptor) => descriptor.sequenceName === sequenceName);
+	for (const descriptor of sequenceDescriptors) if (descriptor.sequenceName === sequenceName) return descriptor;
+	return undefined;
 }
 
-function isNumericLiteral(argument: TSESTree.CallExpressionArgument | undefined): argument is TSESTree.Literal & {
-	readonly value: number;
-} {
-	return argument !== undefined && argument.type === AST_NODE_TYPES.Literal && typeof argument.value === "number";
-}
+const isNumericLiteral = Compile(
+	Type.Object({
+		type: Type.Literal(AST_NODE_TYPES.Literal),
+		value: Type.Number(),
+	}),
+);
 
 function isExpressionArgument(argument: TSESTree.CallExpressionArgument | undefined): argument is TSESTree.Expression {
 	return argument !== undefined && argument.type !== AST_NODE_TYPES.SpreadElement;
@@ -50,7 +54,7 @@ function extractKeypoint(
 	if (element.arguments.length !== 2) return undefined;
 
 	const [timeArgument, valueArgument] = element.arguments;
-	if (!isNumericLiteral(timeArgument)) return undefined;
+	if (!isNumericLiteral.Check(timeArgument)) return undefined;
 	if (!isExpressionArgument(valueArgument)) return undefined;
 
 	return {
