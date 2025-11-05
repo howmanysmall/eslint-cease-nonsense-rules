@@ -3,21 +3,33 @@ import type { Rule } from "eslint";
 import Type from "typebox";
 import { Compile } from "typebox/compile";
 
-const DEFAULT_HOOKS = ["useEffect", "useLayoutEffect", "useInsertionEffect"] as const;
+interface HookConfiguration {
+	readonly allowAsync: boolean;
+	readonly name: string;
+}
+
+const DEFAULT_HOOKS: ReadonlyArray<HookConfiguration> = [
+	{ allowAsync: false, name: "useEffect" },
+	{ allowAsync: false, name: "useLayoutEffect" },
+	{ allowAsync: false, name: "useInsertionEffect" },
+] as const;
 
 type EnvironmentMode = "roblox-ts" | "standard";
 
 interface RuleOptions {
 	readonly environment: EnvironmentMode;
-	readonly hooks: ReadonlyArray<string>;
-	readonly allowAsyncFunctionDeclarations: boolean;
+	readonly hooks: ReadonlyArray<HookConfiguration>;
 }
+const isHookConfiguration = Type.Object({
+	allowAsync: Type.Boolean(),
+	name: Type.String(),
+});
+
 const isRuleOptions = Compile(
 	Type.Object(
 		{
-			allowAsyncFunctionDeclarations: Type.Boolean(),
 			environment: Type.Union([Type.Literal("roblox-ts"), Type.Literal("standard")]),
-			hooks: Type.Array(Type.String()),
+			hooks: Type.Array(isHookConfiguration),
 		},
 		{ additionalProperties: true },
 	),
@@ -26,7 +38,6 @@ const isRuleOptions = Compile(
 function parseOptions(options: unknown): RuleOptions {
 	if (options === undefined) {
 		return {
-			allowAsyncFunctionDeclarations: false,
 			environment: "roblox-ts",
 			hooks: DEFAULT_HOOKS,
 		};
@@ -34,14 +45,12 @@ function parseOptions(options: unknown): RuleOptions {
 
 	if (!isRuleOptions.Check(options)) {
 		return {
-			allowAsyncFunctionDeclarations: false,
 			environment: "roblox-ts",
 			hooks: DEFAULT_HOOKS,
 		};
 	}
 
 	return {
-		allowAsyncFunctionDeclarations: options.allowAsyncFunctionDeclarations,
 		environment: options.environment === "standard" ? "standard" : "roblox-ts",
 		hooks: options.hooks,
 	};
@@ -114,10 +123,9 @@ function resolveIdentifierToFunction(
 
 			const castNode = node as { type?: string; init?: unknown; async?: boolean };
 			if (castNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration) {
-				const funcNode = node as unknown as TSESTree.FunctionDeclaration;
 				return {
-					isAsync: Boolean(funcNode.async),
-					node: funcNode,
+					isAsync: Boolean(castNode.async),
+					node: node as unknown as TSESTree.FunctionDeclaration,
 					type: "function-declaration",
 				};
 			}
@@ -138,10 +146,10 @@ function resolveIdentifierToFunction(
 				}
 
 				if (castInit.type === TSESTree.AST_NODE_TYPES.FunctionExpression) {
-					const funcExprNode = castNode.init as unknown as TSESTree.FunctionExpression;
+					const castInitNode = castNode.init as unknown as TSESTree.FunctionExpression;
 					return {
-						isAsync: Boolean(funcExprNode.async),
-						node: funcExprNode,
+						isAsync: Boolean(castInitNode.async),
+						node: castInitNode,
 						type: "function-expression",
 					};
 				}
@@ -154,11 +162,65 @@ function resolveIdentifierToFunction(
 	}
 }
 
+function isCallbackHookResult(identifier: TSESTree.Identifier, context: Rule.RuleContext): boolean {
+	try {
+		const scope = context.sourceCode.getScope?.(identifier) as unknown;
+		if (typeof scope !== "object" || scope === null) return false;
+
+		const scopeObj = scope as { set: Map<string, unknown>; upper?: unknown };
+		const setVal = scopeObj.set;
+		if (!(setVal instanceof Map)) return false;
+
+		let variable: unknown;
+		let currentScope: unknown = scope;
+
+		while (typeof currentScope === "object" && currentScope !== null) {
+			const current = currentScope as { set: Map<string, unknown>; upper?: unknown };
+			variable = current.set.get(identifier.name);
+			if (typeof variable === "object" && variable !== null) break;
+			currentScope = current.upper;
+		}
+
+		if (typeof variable !== "object" || variable === null) return false;
+
+		const castVariable = variable as { defs: Array<unknown> };
+		if (!Array.isArray(castVariable.defs) || castVariable.defs.length === 0) return false;
+
+		for (const definition of castVariable.defs) {
+			if (typeof definition !== "object" || definition === null) continue;
+
+			const castDefinition = definition as { node?: unknown };
+			const node = castDefinition.node;
+			if (typeof node !== "object" || node === null) continue;
+
+			const castNode = node as { type?: string; init?: unknown };
+			if (castNode.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator) continue;
+			if (typeof castNode.init !== "object" || castNode.init === null) continue;
+
+			const init = castNode.init as { type?: string; callee?: unknown };
+			if (init.type !== TSESTree.AST_NODE_TYPES.CallExpression) continue;
+
+			const calleeHookName = getHookName(init as Parameters<typeof getHookName>[0]);
+			if (calleeHookName === "useCallback" || calleeHookName === "useMemo") return true;
+		}
+
+		return false;
+	} catch {
+		return false;
+	}
+}
+
 const requireNamedEffectFunctions: Rule.RuleModule = {
 	create(context) {
-		const { hooks, environment, allowAsyncFunctionDeclarations } = parseOptions(context.options[0]);
-		const effectHooks = new Set(hooks);
+		const { hooks, environment } = parseOptions(context.options[0]);
+		const hookAsyncConfig = new Map(hooks.map((hookConfig) => [hookConfig.name, hookConfig.allowAsync]));
+		const effectHooks = new Set(hookAsyncConfig.keys());
 		const isRobloxTsMode = environment === "roblox-ts";
+
+		function isAsyncAllowed(hookName: string): boolean {
+			const result = hookAsyncConfig.get(hookName);
+			return typeof result === "boolean" ? result : false;
+		}
 
 		return {
 			CallExpression(node: Rule.Node) {
@@ -175,11 +237,20 @@ const requireNamedEffectFunctions: Rule.RuleModule = {
 					const identifier = argumentNode as unknown as TSESTree.Identifier;
 					const resolved = resolveIdentifierToFunction(identifier, context);
 
-					if (resolved === undefined) return;
+					if (resolved === undefined) {
+						if (isCallbackHookResult(identifier, context)) {
+							context.report({
+								data: { hook: hookName },
+								messageId: "identifierReferencesCallback",
+								node,
+							});
+						}
+						return;
+					}
 
 					if (resolved.type === "arrow") {
 						if (resolved.isAsync) {
-							if (!allowAsyncFunctionDeclarations) {
+							if (!isAsyncAllowed(hookName)) {
 								context.report({
 									data: { hook: hookName },
 									messageId: "identifierReferencesAsyncArrow",
@@ -194,8 +265,8 @@ const requireNamedEffectFunctions: Rule.RuleModule = {
 							});
 						}
 					} else if (resolved.type === "function-expression") {
-						const funcExpr = resolved.node as unknown as { id?: unknown };
-						if (funcExpr.id === undefined) {
+						const castNode = resolved.node as unknown as { id?: unknown };
+						if (castNode.id === undefined) {
 							context.report({
 								data: { hook: hookName },
 								messageId: "anonymousFunction",
@@ -211,7 +282,7 @@ const requireNamedEffectFunctions: Rule.RuleModule = {
 					} else if (
 						resolved.type === "function-declaration" &&
 						resolved.isAsync &&
-						!allowAsyncFunctionDeclarations
+						!isAsyncAllowed(hookName)
 					) {
 						context.report({
 							data: { hook: hookName },
@@ -288,7 +359,7 @@ const requireNamedEffectFunctions: Rule.RuleModule = {
 			asyncArrowFunction:
 				"Async arrow functions are not allowed in {{ hook }}. Use an async function declaration instead",
 			asyncFunctionDeclaration:
-				"Async function declarations are not allowed in {{ hook }} unless allowAsyncFunctionDeclarations is enabled",
+				"Async function declarations are not allowed in {{ hook }}. Set allowAsync: true for this hook to enable",
 			asyncFunctionExpression:
 				"Async function expressions are not allowed in {{ hook }}. Use an async function declaration instead",
 			functionExpression:
@@ -296,20 +367,16 @@ const requireNamedEffectFunctions: Rule.RuleModule = {
 			identifierReferencesArrow:
 				"{{ hook }} called with identifier that references an arrow function. Use a named function declaration instead",
 			identifierReferencesAsyncArrow:
-				"{{ hook }} called with identifier that references an async arrow function. Async functions are not allowed unless allowAsyncFunctionDeclarations is enabled",
+				"{{ hook }} called with identifier that references an async arrow function. Set allowAsync: true for this hook to enable",
 			identifierReferencesAsyncFunction:
-				"{{ hook }} called with identifier that references an async function. Async functions are not allowed unless allowAsyncFunctionDeclarations is enabled",
+				"{{ hook }} called with identifier that references an async function. Set allowAsync: true for this hook to enable",
+			identifierReferencesCallback:
+				"{{ hook }} called with identifier that references a useCallback/useMemo result. Use a named function declaration instead",
 		},
 		schema: [
 			{
 				additionalProperties: false,
 				properties: {
-					allowAsyncFunctionDeclarations: {
-						default: false,
-						description:
-							"If true, allows async function declarations and identifiers that reference async functions. Other async function types remain disallowed.",
-						type: "boolean",
-					},
 					environment: {
 						default: "roblox-ts",
 						description:
@@ -319,8 +386,22 @@ const requireNamedEffectFunctions: Rule.RuleModule = {
 					},
 					hooks: {
 						default: DEFAULT_HOOKS,
-						description: "Array of hook names to check",
-						items: { type: "string" },
+						description: "Array of hook configuration objects with name and allowAsync settings",
+						items: {
+							additionalProperties: false,
+							properties: {
+								allowAsync: {
+									description: "Whether async functions are allowed for this hook",
+									type: "boolean",
+								},
+								name: {
+									description: "Hook name to check",
+									type: "string",
+								},
+							},
+							required: ["name", "allowAsync"],
+							type: "object",
+						},
 						type: "array",
 					},
 				},
