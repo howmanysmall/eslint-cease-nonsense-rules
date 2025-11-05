@@ -27,10 +27,7 @@ const banReactFC: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], RuleDocsWithRe
 				else if (typeName.type === TSESTree.AST_NODE_TYPES.TSQualifiedName)
 					isBannedFc = BANNED_FC_NAMES.has(typeName.right.name);
 
-				if (!isBannedFc) return;
-
-				const initType = node.init?.type;
-				if (initType !== TSESTree.AST_NODE_TYPES.ArrowFunctionExpression) return;
+				if (!isBannedFc || node.init?.type !== TSESTree.AST_NODE_TYPES.ArrowFunctionExpression) return;
 
 				context.report({
 					messageId: "banReactFC",
