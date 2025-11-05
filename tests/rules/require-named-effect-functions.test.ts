@@ -102,6 +102,16 @@ describe("require-named-effect-functions", () => {
 				`,
 				errors: [{ messageId: "anonymousFunction" }],
 			},
+			// Identifier referencing function expression with inferred name (roblox-ts mode)
+			{
+				code: `
+					const anonymousFunc = function() {
+						console.log("effect");
+					};
+					useEffect(anonymousFunc, []);
+				`,
+				errors: [{ messageId: "functionExpression" }],
+			},
 			// Arrow function assigned to variable is invalid (doesn't have a real name)
 			{
 				code: `
@@ -178,6 +188,46 @@ describe("require-named-effect-functions", () => {
 					useEffect(effect, []);
 				`,
 				errors: [{ messageId: "identifierReferencesAsyncArrow" }],
+			},
+			// useCallback result referenced via identifier
+			{
+				code: `
+					const incorrectUsage = useCallback(() => {
+						print("Some property changed!");
+					}, []);
+					useEffect(incorrectUsage, [someProperty]);
+				`,
+				errors: [{ messageId: "identifierReferencesCallback" }],
+			},
+			// async useCallback result referenced via identifier
+			{
+				code: `
+					const asyncCallback = useCallback(async () => {
+						await fetchData();
+					}, []);
+					useEffect(asyncCallback, [dep]);
+				`,
+				errors: [{ messageId: "identifierReferencesCallback" }],
+			},
+			// useMemo result referenced via identifier
+			{
+				code: `
+					const memoizedCallback = useMemo(() => () => {
+						console.log("memoized");
+					}, []);
+					useEffect(memoizedCallback, []);
+				`,
+				errors: [{ messageId: "identifierReferencesCallback" }],
+			},
+			// React.useCallback result referenced via identifier
+			{
+				code: `
+					const callback = React.useCallback(() => {
+						console.log("callback");
+					}, []);
+					useEffect(callback, []);
+				`,
+				errors: [{ messageId: "identifierReferencesCallback" }],
 			},
 		],
 		valid: [
@@ -259,7 +309,16 @@ describe("require-named-effect-functions", () => {
 						console.log("effect");
 					}, []);
 				`,
-				options: [{ environment: "standard" }],
+				options: [
+					{
+						environment: "standard",
+						hooks: [
+							{ name: "useEffect", allowAsync: false },
+							{ name: "useLayoutEffect", allowAsync: false },
+							{ name: "useInsertionEffect", allowAsync: false },
+						],
+					},
+				],
 			},
 			// Named function expression via identifier in standard mode
 			{
@@ -269,7 +328,16 @@ describe("require-named-effect-functions", () => {
 					};
 					useEffect(effect, []);
 				`,
-				options: [{ environment: "standard" }],
+				options: [
+					{
+						environment: "standard",
+						hooks: [
+							{ name: "useEffect", allowAsync: false },
+							{ name: "useLayoutEffect", allowAsync: false },
+							{ name: "useInsertionEffect", allowAsync: false },
+						],
+					},
+				],
 			},
 			// Imported function reference (can't resolve, assume valid)
 			{
@@ -278,7 +346,7 @@ describe("require-named-effect-functions", () => {
 					useEffect(handleEffect, []);
 				`,
 			},
-			// Async arrow via identifier with allowAsyncFunctionDeclarations enabled
+			// Async arrow via identifier with per-hook allowAsync enabled
 			{
 				code: `
 					const effect = async () => {
@@ -286,9 +354,17 @@ describe("require-named-effect-functions", () => {
 					};
 					useEffect(effect, []);
 				`,
-				options: [{ allowAsyncFunctionDeclarations: true }],
+				options: [
+					{
+						hooks: [
+							{ name: "useEffect", allowAsync: true },
+							{ name: "useLayoutEffect", allowAsync: false },
+							{ name: "useInsertionEffect", allowAsync: false },
+						],
+					},
+				],
 			},
-			// Async function declaration with allowAsyncFunctionDeclarations enabled
+			// Async function declaration with per-hook allowAsync enabled
 			{
 				code: `
 					async function handleEffect() {
@@ -296,7 +372,15 @@ describe("require-named-effect-functions", () => {
 					}
 					useEffect(handleEffect, []);
 				`,
-				options: [{ allowAsyncFunctionDeclarations: true }],
+				options: [
+					{
+						hooks: [
+							{ name: "useEffect", allowAsync: true },
+							{ name: "useLayoutEffect", allowAsync: false },
+							{ name: "useInsertionEffect", allowAsync: false },
+						],
+					},
+				],
 			},
 			// Computed member access (getHookName returns undefined, rule doesn't check)
 			{
@@ -404,7 +488,7 @@ describe("require-named-effect-functions", () => {
 						}, []);
 					`,
 					errors: [{ messageId: "arrowFunction" }],
-					options: [{ hooks: ["useCustomHook"] }],
+					options: [{ hooks: [{ name: "useCustomHook", allowAsync: false }] }],
 				},
 			],
 			valid: [
@@ -416,7 +500,7 @@ describe("require-named-effect-functions", () => {
 						}
 						useCustomHook(handleCustom, []);
 					`,
-					options: [{ hooks: ["useCustomHook"] }],
+					options: [{ hooks: [{ name: "useCustomHook", allowAsync: false }] }],
 				},
 				// Default hooks should not be checked when custom hooks are specified
 				{
@@ -425,7 +509,7 @@ describe("require-named-effect-functions", () => {
 							console.log("effect");
 						}, []);
 					`,
-					options: [{ hooks: ["useCustomHook"] }],
+					options: [{ hooks: [{ name: "useCustomHook", allowAsync: false }] }],
 				},
 			],
 		});
