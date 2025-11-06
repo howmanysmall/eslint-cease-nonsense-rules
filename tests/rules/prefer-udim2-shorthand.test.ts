@@ -104,6 +104,40 @@ describe("prefer-udim2-shorthand", () => {
 				errors: [{ messageId: "preferFromOffset" }],
 				output: "UDim2.fromOffset(20 % 7, 15 % 4);",
 			},
+
+			// Variables as arguments
+			{
+				code: "new UDim2(x, 0, y, 0);",
+				errors: [{ messageId: "preferFromScale" }],
+				output: "UDim2.fromScale(x, y);",
+			},
+			{
+				code: "new UDim2(0, offset, 0, offset);",
+				errors: [{ messageId: "preferFromOffset" }],
+				output: "UDim2.fromOffset(offset, offset);",
+			},
+			{
+				code: "new UDim2(0, x, 0, 10);",
+				errors: [{ messageId: "preferFromOffset" }],
+				output: "UDim2.fromOffset(x, 10);",
+			},
+
+			// Expressions with variables
+			{
+				code: "new UDim2(10 / x, 0, 10 % y, 0);",
+				errors: [{ messageId: "preferFromScale" }],
+				output: "UDim2.fromScale(10 / x, 10 % y);",
+			},
+			{
+				code: "new UDim2(x + 1, 0, 1 - y, 0);",
+				errors: [{ messageId: "preferFromScale" }],
+				output: "UDim2.fromScale(x + 1, 1 - y);",
+			},
+			{
+				code: "new UDim2(x * 2, 0, 2 / z, 0);",
+				errors: [{ messageId: "preferFromScale" }],
+				output: "UDim2.fromScale(x * 2, 2 / z);",
+			},
 		],
 		valid: [
 			// Mixed values - not simplifiable
@@ -125,13 +159,6 @@ describe("prefer-udim2-shorthand", () => {
 			"new Vector2(1, 2);",
 			"new Color3(1, 1, 1);",
 
-			// Variables as arguments - can't verify literals
-			"new UDim2(x, 0, y, 0);",
-			"new UDim2(0, offset, 0, offset);",
-
-			// Mixed values that can't be evaluated
-			"new UDim2(0, x, 0, 10);",
-
 			// Wrong argument counts
 			"new UDim2();",
 			"new UDim2(1);",
@@ -146,13 +173,6 @@ describe("prefer-udim2-shorthand", () => {
 			"new UDim2(1 & 2, 0, 1 | 2, 0);",
 			"new UDim2(1 ^ 2, 0, 1 << 2, 0);",
 			"new UDim2(1 >> 2, 0, 1 >>> 2, 0);",
-
-			// Division/modulo by variables (can't evaluate)
-			"new UDim2(10 / x, 0, 10 % y, 0);",
-
-			// Expressions with variables
-			"new UDim2(x + 1, 0, 1 - y, 0);",
-			"new UDim2(x * 2, 0, 2 / z, 0);",
 
 			// Non-literal values (booleans, null, etc in Literal nodes)
 			"new UDim2(true, 0, false, 0);",

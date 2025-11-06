@@ -1,11 +1,7 @@
 import { TSESTree } from "@typescript-eslint/utils";
 import type { Rule } from "eslint";
 
-interface NumericArgumentsCollection {
-	readonly scaleX: number;
-	readonly offsetX: number;
-	readonly scaleY: number;
-	readonly offsetY: number;
+interface ArgumentsCollection {
 	readonly scaleXText: string;
 	readonly offsetXText: string;
 	readonly scaleYText: string;
@@ -21,49 +17,48 @@ function isNumber(value: unknown): value is number {
 function isRecord(node: unknown): node is Record<PropertyKey, unknown> {
 	return typeof node === "object" && node !== null;
 }
-
-function hasTypeProperty(obj: Record<PropertyKey, unknown>): obj is Record<PropertyKey, unknown> & { type: unknown } {
-	return "type" in obj;
+function hasTypeProperty(
+	object: Record<PropertyKey, unknown>,
+): object is Record<PropertyKey, unknown> & { type: unknown } {
+	return "type" in object;
 }
+
+const OPERATORS = new Set(["+", "-", "*", "/", "%"]);
 
 function reconstructText(node: Record<PropertyKey, unknown>): string | undefined {
 	const nodeType = node.type;
 
 	if (nodeType === TSESTree.AST_NODE_TYPES.Literal) {
-		const value = node.value;
-		if (isNumber(value)) {
-			return String(value);
-		}
-		return undefined;
+		const { value } = node;
+		return isNumber(value) ? String(value) : undefined;
+	}
+
+	if (nodeType === TSESTree.AST_NODE_TYPES.Identifier) {
+		const { name } = node;
+		return typeof name === "string" ? name : undefined;
 	}
 
 	if (nodeType === TSESTree.AST_NODE_TYPES.UnaryExpression) {
-		const operator = node.operator;
+		const { operator } = node;
 		if (typeof operator !== "string") return undefined;
 
-		const argument = node.argument;
+		const { argument } = node;
 		if (!isRecord(argument)) return undefined;
 
-		const argText = reconstructText(argument);
-		return argText === undefined ? undefined : `${operator}${argText}`;
+		const text = reconstructText(argument);
+		return text === undefined ? undefined : `${operator}${text}`;
 	}
 
 	if (nodeType === TSESTree.AST_NODE_TYPES.BinaryExpression) {
-		const operator = node.operator;
-		if (typeof operator !== "string") return undefined;
+		const { operator } = node;
+		if (typeof operator !== "string" || !OPERATORS.has(operator)) return undefined;
 
-		const left = node.left;
-		const right = node.right;
-		if (!isRecord(left) || !isRecord(right)) {
-			return undefined;
-		}
+		const { left, right } = node;
+		if (!isRecord(left) || !isRecord(right)) return undefined;
 
 		const leftText = reconstructText(left);
 		const rightText = reconstructText(right);
-		if (leftText === undefined || rightText === undefined) {
-			return undefined;
-		}
-		return `${leftText} ${operator} ${rightText}`;
+		return leftText === undefined || rightText === undefined ? undefined : `${leftText} ${operator} ${rightText}`;
 	}
 
 	return undefined;
@@ -75,29 +70,24 @@ function evaluateExpression(node: unknown): number | undefined {
 	const nodeType = node.type;
 
 	if (nodeType === TSESTree.AST_NODE_TYPES.Literal) {
-		const value = node.value;
-		if (isNumber(value)) return value;
-		return undefined;
+		const { value } = node;
+		return isNumber(value) ? value : undefined;
 	}
 
 	if (nodeType === TSESTree.AST_NODE_TYPES.UnaryExpression) {
-		const operator = node.operator;
-		const argument = node.argument;
+		const { argument, operator } = node;
 
 		if (typeof argument === "object" && argument !== null) {
-			const argValue = evaluateExpression(argument);
-			if (argValue === undefined) return undefined;
-
-			if (operator === "-") return -argValue;
-			if (operator === "+") return argValue;
+			const value = evaluateExpression(argument);
+			if (value === undefined) return undefined;
+			if (operator === "-") return -value;
+			if (operator === "+") return value;
 		}
 		return undefined;
 	}
 
 	if (nodeType === TSESTree.AST_NODE_TYPES.BinaryExpression) {
-		const left = node.left;
-		const right = node.right;
-		const operator = node.operator;
+		const { right, left, operator } = node;
 
 		if (typeof left === "object" && left !== null && typeof right === "object" && right !== null) {
 			const leftValue = evaluateExpression(left);
@@ -107,18 +97,19 @@ function evaluateExpression(node: unknown): number | undefined {
 			switch (operator) {
 				case "+":
 					return leftValue + rightValue;
+
 				case "-":
 					return leftValue - rightValue;
+
 				case "*":
 					return leftValue * rightValue;
-				case "/": {
-					if (rightValue === 0) return undefined;
-					return leftValue / rightValue;
-				}
-				case "%": {
-					if (rightValue === 0) return undefined;
-					return leftValue % rightValue;
-				}
+
+				case "/":
+					return rightValue === 0 ? undefined : leftValue / rightValue;
+
+				case "%":
+					return rightValue === 0 ? undefined : leftValue % rightValue;
+
 				default:
 					return undefined;
 			}
@@ -129,48 +120,28 @@ function evaluateExpression(node: unknown): number | undefined {
 	return undefined;
 }
 
-function collectNumericArguments(
-	_context: RuleContext,
-	parameters: readonly unknown[],
-): NumericArgumentsCollection | undefined {
+function collectArguments(_context: RuleContext, parameters: ReadonlyArray<unknown>): ArgumentsCollection | undefined {
 	if (parameters.length !== 4) return undefined;
 
-	const values: (number | undefined)[] = [undefined, undefined, undefined, undefined];
-	const texts: (string | undefined)[] = [undefined, undefined, undefined, undefined];
+	const texts: Array<string | undefined> = [undefined, undefined, undefined, undefined];
 
-	for (let i = 0; i < 4; i++) {
-		const parameter = parameters[i];
-		if (!isRecord(parameter)) return undefined;
-		if (!hasTypeProperty(parameter)) return undefined;
+	for (let index = 0; index < 4; index++) {
+		const parameter = parameters[index];
+		if (!isRecord(parameter) || !hasTypeProperty(parameter)) return undefined;
 
-		if (parameter.type === "SpreadElement") return undefined;
+		if (parameter.type === TSESTree.AST_NODE_TYPES.SpreadElement) return undefined;
 
-		const value = evaluateExpression(parameter);
-		if (value === undefined) return undefined;
-
-		values[i] = value;
 		const text = reconstructText(parameter);
 		if (text === undefined) return undefined;
-		texts[i] = text;
+		texts[index] = text;
 	}
 
-	const [scaleX, offsetX, scaleY, offsetY] = values;
 	const [scaleXText, offsetXText, scaleYText, offsetYText] = texts;
 
-	if (
-		scaleX === undefined ||
-		offsetX === undefined ||
-		scaleY === undefined ||
-		offsetY === undefined ||
-		scaleXText === undefined ||
-		offsetXText === undefined ||
-		scaleYText === undefined ||
-		offsetYText === undefined
-	) {
+	if (scaleXText === undefined || offsetXText === undefined || scaleYText === undefined || offsetYText === undefined)
 		return undefined;
-	}
 
-	return { offsetX, offsetXText, offsetY, offsetYText, scaleX, scaleXText, scaleY, scaleYText };
+	return { offsetXText, offsetYText, scaleXText, scaleYText };
 }
 
 const preferUDim2Shorthand: Rule.RuleModule = {
@@ -179,11 +150,16 @@ const preferUDim2Shorthand: Rule.RuleModule = {
 			NewExpression(node) {
 				if (node.callee.type !== TSESTree.AST_NODE_TYPES.Identifier || node.callee.name !== "UDim2") return;
 
-				const collected = collectNumericArguments(context, node.arguments);
+				const collected = collectArguments(context, node.arguments);
 				if (!collected) return;
 
-				const { scaleX, offsetX, scaleY, offsetY, scaleXText, offsetXText, scaleYText, offsetYText } =
-					collected;
+				const { offsetXText, offsetYText, scaleXText, scaleYText } = collected;
+
+				const scaleX = evaluateExpression(node.arguments[0]);
+				const offsetX = evaluateExpression(node.arguments[1]);
+				const scaleY = evaluateExpression(node.arguments[2]);
+				const offsetY = evaluateExpression(node.arguments[3]);
+
 				if (scaleX === 0 && offsetX === 0 && scaleY === 0 && offsetY === 0) return;
 
 				if (offsetX === 0 && offsetY === 0) {
