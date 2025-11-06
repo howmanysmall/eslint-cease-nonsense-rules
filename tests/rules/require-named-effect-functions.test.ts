@@ -313,9 +313,9 @@ describe("require-named-effect-functions", () => {
 					{
 						environment: "standard",
 						hooks: [
-							{ name: "useEffect", allowAsync: false },
-							{ name: "useLayoutEffect", allowAsync: false },
-							{ name: "useInsertionEffect", allowAsync: false },
+							{ allowAsync: false, name: "useEffect" },
+							{ allowAsync: false, name: "useLayoutEffect" },
+							{ allowAsync: false, name: "useInsertionEffect" },
 						],
 					},
 				],
@@ -332,9 +332,9 @@ describe("require-named-effect-functions", () => {
 					{
 						environment: "standard",
 						hooks: [
-							{ name: "useEffect", allowAsync: false },
-							{ name: "useLayoutEffect", allowAsync: false },
-							{ name: "useInsertionEffect", allowAsync: false },
+							{ allowAsync: false, name: "useEffect" },
+							{ allowAsync: false, name: "useLayoutEffect" },
+							{ allowAsync: false, name: "useInsertionEffect" },
 						],
 					},
 				],
@@ -357,9 +357,9 @@ describe("require-named-effect-functions", () => {
 				options: [
 					{
 						hooks: [
-							{ name: "useEffect", allowAsync: true },
-							{ name: "useLayoutEffect", allowAsync: false },
-							{ name: "useInsertionEffect", allowAsync: false },
+							{ allowAsync: true, name: "useEffect" },
+							{ allowAsync: false, name: "useLayoutEffect" },
+							{ allowAsync: false, name: "useInsertionEffect" },
 						],
 					},
 				],
@@ -375,9 +375,9 @@ describe("require-named-effect-functions", () => {
 				options: [
 					{
 						hooks: [
-							{ name: "useEffect", allowAsync: true },
-							{ name: "useLayoutEffect", allowAsync: false },
-							{ name: "useInsertionEffect", allowAsync: false },
+							{ allowAsync: true, name: "useEffect" },
+							{ allowAsync: false, name: "useLayoutEffect" },
+							{ allowAsync: false, name: "useInsertionEffect" },
 						],
 					},
 				],
@@ -488,7 +488,7 @@ describe("require-named-effect-functions", () => {
 						}, []);
 					`,
 					errors: [{ messageId: "arrowFunction" }],
-					options: [{ hooks: [{ name: "useCustomHook", allowAsync: false }] }],
+					options: [{ hooks: [{ allowAsync: false, name: "useCustomHook" }] }],
 				},
 			],
 			valid: [
@@ -500,7 +500,7 @@ describe("require-named-effect-functions", () => {
 						}
 						useCustomHook(handleCustom, []);
 					`,
-					options: [{ hooks: [{ name: "useCustomHook", allowAsync: false }] }],
+					options: [{ hooks: [{ allowAsync: false, name: "useCustomHook" }] }],
 				},
 				// Default hooks should not be checked when custom hooks are specified
 				{
@@ -509,7 +509,7 @@ describe("require-named-effect-functions", () => {
 							console.log("effect");
 						}, []);
 					`,
-					options: [{ hooks: [{ name: "useCustomHook", allowAsync: false }] }],
+					options: [{ hooks: [{ allowAsync: false, name: "useCustomHook" }] }],
 				},
 			],
 		});
