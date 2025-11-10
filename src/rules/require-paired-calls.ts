@@ -12,6 +12,8 @@ const isStringArray = Compile(Type.Readonly(Type.Array(Type.String())));
 export interface PairConfiguration {
 	/** Opener function name (e.g., "debug.profilebegin") */
 	readonly opener: string;
+	/** Additional opener names that share this closer */
+	readonly openerAlternatives?: ReadonlyArray<string>;
 	/** Closer function name(s) - single or alternatives */
 	readonly closer: string | ReadonlyArray<string>;
 	/** Alternative closers (any one satisfies) */
@@ -29,6 +31,7 @@ const isPairConfiguration = Compile(
 			alternatives: Type.Optional(isStringArray),
 			closer: Type.Union([Type.String(), isStringArray]),
 			opener: Type.String(),
+			openerAlternatives: Type.Optional(isStringArray),
 			platform: Type.Optional(Type.Literal("roblox")),
 			requireSync: Type.Optional(Type.Boolean()),
 			yieldingFunctions: Type.Optional(isStringArray),
@@ -73,11 +76,28 @@ interface OpenerStackEntry {
 	readonly location: TSESTree.SourceLocation;
 	/** AST node */
 	readonly node: TSESTree.Node;
+	/** Active loops when opener was called */
+	readonly loopAncestors: ReadonlyArray<LoopLikeStatement>;
 	/** Configuration for this pair */
 	readonly config: PairConfiguration;
 	/** Index in stack (for LIFO validation) */
 	readonly index: number;
 }
+
+type LoopLikeStatement =
+	| TSESTree.DoWhileStatement
+	| TSESTree.ForInStatement
+	| TSESTree.ForOfStatement
+	| TSESTree.ForStatement
+	| TSESTree.WhileStatement;
+
+const LOOP_NODE_TYPES = new Set([
+	AST_NODE_TYPES.DoWhileStatement,
+	AST_NODE_TYPES.ForInStatement,
+	AST_NODE_TYPES.ForOfStatement,
+	AST_NODE_TYPES.ForStatement,
+	AST_NODE_TYPES.WhileStatement,
+]);
 
 /**
  * Control flow context tracking
@@ -129,8 +149,84 @@ function getValidClosers(configuration: PairConfiguration): ReadonlyArray<string
 	return result;
 }
 
-function cloneEntry<T extends object>(value: T): T {
-	return { ...value };
+function getAllOpeners(configuration: PairConfiguration): ReadonlyArray<string> {
+	const openers = [configuration.opener];
+	if (configuration.openerAlternatives) openers.push(...configuration.openerAlternatives);
+	return openers;
+}
+
+function formatOpenerList(openers: ReadonlyArray<string>): string {
+	if (openers.length === 0) return "configured opener";
+	if (openers.length === 1) return openers[0] ?? "configured opener";
+	return openers.join("' or '");
+}
+
+function isLoopLikeStatement(node: TSESTree.Node | undefined): node is LoopLikeStatement {
+	if (!node) return false;
+
+	return LOOP_NODE_TYPES.has(node.type);
+}
+
+function isSwitchStatement(node: TSESTree.Node | undefined): node is TSESTree.SwitchStatement {
+	return node?.type === AST_NODE_TYPES.SwitchStatement;
+}
+
+function findLabeledStatementBody(
+	label: TSESTree.Identifier,
+	startingNode: TSESTree.Node | undefined,
+): TSESTree.Statement | undefined {
+	let current: TSESTree.Node | undefined = startingNode;
+
+	while (current) {
+		if (current.type === AST_NODE_TYPES.LabeledStatement && current.label.name === label.name) {
+			return current.body;
+		}
+
+		current = current.parent ?? undefined;
+	}
+
+	return undefined;
+}
+
+function resolveBreakTargetLoop(statement: TSESTree.BreakStatement): LoopLikeStatement | undefined {
+	const labeledBody = statement.label
+		? findLabeledStatementBody(statement.label, statement.parent ?? undefined)
+		: undefined;
+
+	if (labeledBody) {
+		return isLoopLikeStatement(labeledBody) ? labeledBody : undefined;
+	}
+
+	let current: TSESTree.Node | undefined = statement.parent ?? undefined;
+	while (current) {
+		if (isLoopLikeStatement(current)) return current;
+		if (isSwitchStatement(current)) return undefined;
+		current = current.parent ?? undefined;
+	}
+
+	return undefined;
+}
+
+function resolveContinueTargetLoop(statement: TSESTree.ContinueStatement): LoopLikeStatement | undefined {
+	const labeledBody = statement.label
+		? findLabeledStatementBody(statement.label, statement.parent ?? undefined)
+		: undefined;
+
+	if (labeledBody) {
+		return isLoopLikeStatement(labeledBody) ? labeledBody : undefined;
+	}
+
+	let current: TSESTree.Node | undefined = statement.parent ?? undefined;
+	while (current) {
+		if (isLoopLikeStatement(current)) return current;
+		current = current.parent ?? undefined;
+	}
+
+	return undefined;
+}
+
+function cloneEntry(value: OpenerStackEntry): OpenerStackEntry {
+	return { ...value, loopAncestors: [...value.loopAncestors] };
 }
 
 const rule: Rule.RuleModule = {
@@ -159,6 +255,7 @@ const rule: Rule.RuleModule = {
 		}
 
 		const openerStack = new Array<OpenerStackEntry>();
+		const loopStack = new Array<LoopLikeStatement>();
 		let stackIndexCounter = 0;
 		const functionStacks = new Array<Array<OpenerStackEntry>>();
 
@@ -168,6 +265,23 @@ const rule: Rule.RuleModule = {
 		const contextStack = new Array<ControlFlowContext>();
 		const stackSnapshots = new Map<TSESTree.Node, Array<OpenerStackEntry>>();
 		const branchStacks = new Map<TSESTree.Node, Array<Array<OpenerStackEntry>>>();
+		const closerToOpenersCache = new Map<string, ReadonlyArray<string>>();
+
+		function getConfiguredOpenersForCloser(closer: string): ReadonlyArray<string> {
+			if (closerToOpenersCache.has(closer)) return closerToOpenersCache.get(closer) ?? [];
+
+			const names = new Array<string>();
+			for (const pair of options.pairs) {
+				if (!getValidClosers(pair).includes(closer)) continue;
+
+				for (const openerName of getAllOpeners(pair)) {
+					if (!names.includes(openerName)) names.push(openerName);
+				}
+			}
+
+			closerToOpenersCache.set(closer, names);
+			return names;
+		}
 
 		function getCurrentContext(): ControlFlowContext {
 			return contextStack.length > 0
@@ -210,7 +324,7 @@ const rule: Rule.RuleModule = {
 
 		function findPairConfig(functionName: string, isOpener: boolean): PairConfiguration | undefined {
 			return options.pairs.find((pair) => {
-				if (isOpener) return pair.opener === functionName;
+				if (isOpener) return getAllOpeners(pair).includes(functionName);
 
 				// Check if it matches closer or alternatives
 				const validClosers = getValidClosers(pair);
@@ -565,11 +679,15 @@ const rule: Rule.RuleModule = {
 			}
 		}
 
-		function onLoopEnter(): void {
+		function onLoopEnter(node: unknown): void {
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
+			const loopNode = node as LoopLikeStatement;
+			loopStack.push(loopNode);
 			pushContext({ inLoop: true });
 		}
 
 		function onLoopExit(): void {
+			if (loopStack.length > 0) loopStack.pop();
 			popContext();
 		}
 
@@ -603,11 +721,18 @@ const rule: Rule.RuleModule = {
 		function onBreakContinue(node: unknown): void {
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const statementNode = node as TSESTree.BreakStatement | TSESTree.ContinueStatement;
-			const currentContext = getCurrentContext();
+			if (openerStack.length === 0) return;
 
-			if (!currentContext.inLoop || openerStack.length <= 0) return;
+			const targetLoop =
+				statementNode.type === AST_NODE_TYPES.ContinueStatement
+					? resolveContinueTargetLoop(statementNode)
+					: resolveBreakTargetLoop(statementNode);
 
-			for (const { node, config, opener } of openerStack) {
+			if (!targetLoop) return;
+
+			for (const { node: openerNode, config, opener, loopAncestors } of openerStack) {
+				if (!loopAncestors.some((loopNode) => loopNode === targetLoop)) continue;
+
 				const validClosers = getValidClosers(config);
 				const closer = validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
 
@@ -621,7 +746,7 @@ const rule: Rule.RuleModule = {
 						paths: `${statementType} at line ${lineNumber}`,
 					},
 					messageId: "unpairedOpener",
-					node,
+					node: openerNode,
 				});
 			}
 		}
@@ -638,9 +763,8 @@ const rule: Rule.RuleModule = {
 				return;
 			}
 
-			const closerConfiguration = findPairConfig(callName, false);
-			if (closerConfiguration) {
-				handleCloser(callNode, callName, closerConfiguration);
+			if (findPairConfig(callName, false)) {
+				handleCloser(callNode, callName);
 				return;
 			}
 
@@ -681,6 +805,7 @@ const rule: Rule.RuleModule = {
 				config,
 				index: stackIndexCounter++,
 				location: node.loc,
+				loopAncestors: [...loopStack],
 				node,
 				opener,
 			};
@@ -688,10 +813,8 @@ const rule: Rule.RuleModule = {
 			openerStack.push(entry);
 		}
 
-		function handleCloser(node: TSESTree.CallExpression, closer: string, configuration: PairConfiguration): void {
-			const matchingIndex = openerStack.findLastIndex(
-				(entry) => getValidClosers(entry.config).includes(closer) && entry.config === configuration,
-			);
+		function handleCloser(node: TSESTree.CallExpression, closer: string): void {
+			const matchingIndex = openerStack.findLastIndex((entry) => getValidClosers(entry.config).includes(closer));
 
 			if (matchingIndex === -1) {
 				if (yieldingAutoClosed && !yieldingReportedFirst) {
@@ -699,10 +822,13 @@ const rule: Rule.RuleModule = {
 					return;
 				}
 
+				const openerCandidates = getConfiguredOpenersForCloser(closer);
+				const openerDescription = formatOpenerList(openerCandidates);
+
 				context.report({
 					data: {
 						closer,
-						opener: configuration.opener,
+						opener: openerDescription,
 					},
 					messageId: "unpairedCloser",
 					node,
@@ -781,8 +907,10 @@ const rule: Rule.RuleModule = {
 			ForInStatement: onLoopEnter,
 			"ForInStatement:exit": onLoopExit,
 			ForOfStatement: (node) => {
-				if (node.await) onAsyncYield(node);
-				onLoopEnter();
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
+				const forOfNode = node as TSESTree.ForOfStatement;
+				if (forOfNode.await) onAsyncYield(forOfNode);
+				onLoopEnter(forOfNode);
 			},
 			"ForOfStatement:exit": onLoopExit,
 
@@ -875,6 +1003,10 @@ const rule: Rule.RuleModule = {
 								opener: {
 									minLength: 1,
 									type: "string",
+								},
+								openerAlternatives: {
+									items: { minLength: 1, type: "string" },
+									type: "array",
 								},
 								platform: {
 									enum: ["roblox"],
