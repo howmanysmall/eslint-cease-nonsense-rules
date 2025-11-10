@@ -581,6 +581,48 @@ describe("require-paired-calls", () => {
 				],
 			},
 
+			// Multiple Iris widgets sharing the same closer
+			{
+				code: `
+					function test(state) {
+						Iris.Window(["Main"]);
+						Iris.CollapsingHeader(["Units"]);
+						Iris.Combo(["Units"], { index: state });
+						Iris.End();
+						Iris.End();
+						Iris.End();
+					}
+				`,
+				options: [
+					{
+						allowMultipleOpeners: false,
+						pairs: [
+							{
+								closer: "Iris.End",
+								opener: "Iris.CollapsingHeader",
+								platform: "roblox",
+								requireSync: true,
+								yieldingFunctions: ["task.wait", "wait"],
+							},
+							{
+								closer: "Iris.End",
+								opener: "Iris.Window",
+								platform: "roblox",
+								requireSync: true,
+								yieldingFunctions: ["task.wait", "wait"],
+							},
+							{
+								closer: "Iris.End",
+								opener: "Iris.Combo",
+								platform: "roblox",
+								requireSync: true,
+								yieldingFunctions: ["task.wait", "wait"],
+							},
+						],
+					},
+				],
+			},
+
 			// Separate functions have their own scopes
 			{
 				code: `
