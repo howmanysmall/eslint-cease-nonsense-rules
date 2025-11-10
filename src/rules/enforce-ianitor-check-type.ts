@@ -59,7 +59,7 @@ function isIanitorValidator(node: {
 	);
 }
 
-function extractIanitorStaticVariable(typeAnnotation: TSESTree.TypeNode): string | null {
+function extractIanitorStaticVariable(typeAnnotation: TSESTree.TypeNode): string | undefined {
 	let currentType = typeAnnotation;
 
 	if (
@@ -70,7 +70,7 @@ function extractIanitorStaticVariable(typeAnnotation: TSESTree.TypeNode): string
 	)
 		currentType = currentType.typeArguments.params[0];
 
-	if (currentType.type !== TSESTree.AST_NODE_TYPES.TSTypeReference) return null;
+	if (currentType.type !== TSESTree.AST_NODE_TYPES.TSTypeReference) return undefined;
 
 	const { typeName, typeArguments } = currentType;
 	const firstParam = typeArguments?.params[0];
@@ -86,7 +86,7 @@ function extractIanitorStaticVariable(typeAnnotation: TSESTree.TypeNode): string
 	)
 		return firstParam.exprName.name;
 
-	return null;
+	return undefined;
 }
 
 function hasIanitorStaticType(typeAnnotation: TSESTree.TypeNode): boolean {
@@ -370,9 +370,8 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 			},
 
 			TSTypeAliasDeclaration(node: TSESTree.TSTypeAliasDeclaration) {
-				const varName = extractIanitorStaticVariable(node.typeAnnotation);
-				if (varName) ianitorStaticVariables.add(varName);
-
+				const variableName = extractIanitorStaticVariable(node.typeAnnotation);
+				if (variableName) ianitorStaticVariables.add(variableName);
 				if (hasIanitorStaticType(node.typeAnnotation)) return;
 
 				const complexity = calculateStructuralComplexity(node.typeAnnotation);

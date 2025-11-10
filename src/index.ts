@@ -10,6 +10,7 @@ import noWarn from "./rules/no-warn";
 import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
 import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
 import requireNamedEffectFunctions from "./rules/require-named-effect-functions";
+import requirePairedCalls from "./rules/require-paired-calls";
 import requireReactComponentKeys from "./rules/require-react-component-keys";
 import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
 import useHookAtTopLevel from "./rules/use-hook-at-top-level";
@@ -32,6 +33,7 @@ const rules: Readonly<Record<string, AnyRuleModule>> = {
 	"prefer-sequence-overloads": preferSequenceOverloads,
 	"prefer-udim2-shorthand": preferUDim2Shorthand,
 	"require-named-effect-functions": requireNamedEffectFunctions,
+	"require-paired-calls": requirePairedCalls,
 	"require-react-component-keys": requireReactComponentKeys,
 	"use-exhaustive-dependencies": useExhaustiveDependencies,
 	"use-hook-at-top-level": useHookAtTopLevel,
