@@ -18,7 +18,8 @@
 	"globals": {
 		"Bun": "readonly",
 	},
-	"ignorePatterns": ["dist", "test-circular-deps/**", "do-not-sync-ever/**", "**/*.js"],
+	"ignorePatterns": ["dist", "test-circular-deps/**", "do-not-sync-ever/**", "**/*.js", "scripts-local/**"],
+	"jsPlugins": [],
 	"overrides": [
 		{
 			"files": ["**/__tests__/*.test.ts"],

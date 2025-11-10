@@ -34,6 +34,7 @@ export default [
       "cease-nonsense/prefer-sequence-overloads": "error",
       "cease-nonsense/prefer-udim2-shorthand": "error",
       "cease-nonsense/require-named-effect-functions": "error",
+      "cease-nonsense/require-paired-calls": "error",
       "cease-nonsense/require-react-component-keys": "error",
       "cease-nonsense/use-exhaustive-dependencies": "error",
       "cease-nonsense/use-hook-at-top-level": "error",
@@ -348,6 +349,234 @@ warn("Warning message");
 ```typescript
 Log.warn("Warning message");
 ```
+
+### Resource Management
+
+#### `require-paired-calls`
+
+Enforces that paired function calls (opener/closer) are properly balanced across all execution paths with LIFO ordering. Prevents resource leaks, unbalanced operations, and control flow errors.
+
+**Key features:**
+
+- Control flow analysis across all paths (if/else, switch, try/catch, loops)
+- Early exit detection (return, throw, break, continue)
+- LIFO validation for nested pairs
+- Async operation detection (await/yield) with `requireSync`
+- Roblox-specific auto-close detection for yielding functions
+
+**❌ Bad:**
+
+```typescript
+// Missing closer on early return
+function test() {
+  debug.profilebegin("task");
+  if (error) return; // profilebegin never closed on this path
+  debug.profileend();
+}
+
+// Unpaired closer (no matching opener)
+function test() {
+  doWork();
+  debug.profileend(); // No matching profilebegin
+}
+
+// Wrong LIFO order
+function test() {
+  debug.profilebegin("outer");
+  debug.profilebegin("inner");
+  debug.profileend(); // closes inner
+  // outer is never closed
+}
+
+// Async operation with requireSync: true
+async function test() {
+  debug.profilebegin("task");
+  await fetch("/api"); // Cannot await between profilebegin/end
+  debug.profileend();
+}
+
+// Roblox yielding function auto-closes
+function test() {
+  debug.profilebegin("task");
+  task.wait(1); // Auto-closes all profiles
+  debug.profileend(); // This will error - already closed
+}
+
+// Conditional branch missing closer
+function test() {
+  debug.profilebegin("task");
+  if (condition) {
+    debug.profileend();
+  } else {
+    return; // Missing closer on this path
+  }
+}
+
+// Break/continue skip closer
+function test() {
+  debug.profilebegin("loop");
+  for (const item of items) {
+    if (item.stop) break; // Skips closer
+  }
+  debug.profileend();
+}
+```
+
+**✅ Good:**
+
+```typescript
+// Simple pairing
+function test() {
+  debug.profilebegin("task");
+  doWork();
+  debug.profileend();
+}
+
+// Proper LIFO nesting
+function test() {
+  debug.profilebegin("outer");
+  debug.profilebegin("inner");
+  debug.profileend(); // closes inner
+  debug.profileend(); // closes outer
+}
+
+// Try-finally ensures closer on all paths
+function test() {
+  debug.profilebegin("task");
+  try {
+    riskyOperation();
+  } finally {
+    debug.profileend();
+  }
+}
+
+// Try-catch with alternative closers
+function test() {
+  db.transaction();
+  try {
+    db.users.insert({ name: "test" });
+    db.commit(); // Normal closer
+  } catch (err) {
+    db.rollback(); // Alternative closer
+    throw err;
+  }
+}
+
+// Closer in all branches
+function test() {
+  debug.profilebegin("task");
+  if (condition) {
+    debug.profileend();
+  } else {
+    debug.profileend();
+  }
+}
+
+// Pairs inside loop iterations (not across)
+function test() {
+  for (const item of items) {
+    debug.profilebegin("item");
+    process(item);
+    debug.profileend();
+  }
+}
+
+// Multiple closers with requireAll
+function test() {
+  resource.init();
+  resource.setup();
+  // Both cleanup1 and cleanup2 must be called
+  resource.cleanup1();
+  resource.cleanup2();
+}
+```
+
+**Configuration:**
+
+```typescript
+{
+  "cease-nonsense/require-paired-calls": ["error", {
+    "pairs": [{
+      "opener": "debug.profilebegin",        // Opener function name
+      "closer": "debug.profileend",          // Closer function name(s)
+      "alternatives": ["db.rollback"],       // Alternative closers (any one)
+      "requireAll": ["cleanup1", "cleanup2"], // All must be called
+      "requireSync": true,                   // Disallow await/yield
+      "platform": "roblox",                  // Platform-specific behavior
+      "yieldingFunctions": [                 // Custom yielding patterns
+        "task.wait",
+        "*.WaitForChild"                     // Supports wildcards
+      ]
+    }],
+    "scope": "function",                     // "function", "block", "file"
+    "allowConditionalClosers": false,        // Allow closers in some branches
+    "allowMultipleOpeners": true,            // Allow consecutive openers
+    "maxNestingDepth": 0                     // Nesting limit (0 = unlimited)
+  }]
+}
+```
+
+**Default configuration (Roblox profiling):**
+
+```typescript
+{
+  "cease-nonsense/require-paired-calls": ["error", {
+    "pairs": [{
+      "opener": "debug.profilebegin",
+      "closer": "debug.profileend",
+      "platform": "roblox",
+      "requireSync": true,
+      "yieldingFunctions": ["task.wait", "wait", "*.WaitForChild"]
+    }]
+  }]
+}
+```
+
+**Real-world examples:**
+
+```typescript
+// Database transactions
+{
+  "pairs": [{
+    "opener": "db.transaction",
+    "closer": "db.commit",
+    "alternatives": ["db.rollback"]
+  }]
+}
+
+// Lock acquire/release
+{
+  "pairs": [{
+    "opener": "lock.acquire",
+    "closer": ["lock.release", "lock.free"]
+  }]
+}
+
+// Multiple pairs
+{
+  "pairs": [
+    { "opener": "debug.profilebegin", "closer": "debug.profileend" },
+    { "opener": "db.transaction", "closer": "db.commit", "alternatives": ["db.rollback"] },
+    { "opener": "file.open", "closer": "file.close" }
+  ]
+}
+
+// Strict nesting
+{
+  "pairs": [{ "opener": "begin", "closer": "end" }],
+  "maxNestingDepth": 2,
+  "allowMultipleOpeners": false
+}
+```
+
+**Use cases:**
+
+- Roblox/Luau profiling (debug.profilebegin/end)
+- Database transactions (transaction/commit/rollback)
+- Resource locks (acquire/release)
+- File handles (open/close)
+- Network connections (connect/disconnect)
+- Any begin/end API pattern
 
 ### Code Quality
 
