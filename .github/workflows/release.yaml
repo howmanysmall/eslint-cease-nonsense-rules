@@ -97,7 +97,10 @@ jobs:
         if: ${{ env.DRY_RUN != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bun x changelogithub
+        run: |
+          # Allow changelogithub to fail gracefully if it can't generate a changelog
+          # (e.g., when there's no previous tag or when the tag points to the same commit)
+          bun x changelogithub || echo "::warning::changelogithub could not automatically create a release. Please create it manually using the link provided above."
 
       - name: Publish to NPM (Trusted Publishing)
         if: ${{ env.DRY_RUN != 'true' }}
