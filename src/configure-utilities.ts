@@ -5,6 +5,7 @@ import type { EffectFunctionOptions, HookConfiguration } from "./rules/require-n
 import type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
 import type { ReactKeysOptions } from "./rules/require-react-component-keys";
 import type { UseExhaustiveDependenciesOptions } from "./rules/use-exhaustive-dependencies";
+import type { UseHookAtTopLevelOptions } from "./rules/use-hook-at-top-level";
 
 /**
  * Creates a pair configuration for require-paired-calls rule
@@ -139,6 +140,22 @@ export function createUseExhaustiveDependenciesOptions(
 		hooks: [],
 		reportMissingDependenciesArray: false,
 		reportUnnecessaryDependencies: false,
+		...options,
+	};
+}
+
+/**
+ * Creates options for use-hook-at-top-level rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createUseHookAtTopLevelOptions(
+	options: Partial<UseHookAtTopLevelOptions> = {},
+): UseHookAtTopLevelOptions {
+	return {
+		ignoreHooks: [],
+		importSources: {},
+		onlyHooks: [],
 		...options,
 	};
 }
