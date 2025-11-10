@@ -9,8 +9,7 @@ export type InspectFunction = (value: unknown, options?: InspectOptions) => stri
 interface BunLike {
 	readonly inspect: InspectFunction;
 }
-interface DenoLike {
-	readonly inspect?: InspectFunction;
+interface DenoLike extends BunLike {
 	readonly writeTextFile: (filePath: string, content: string) => Promise<void>;
 }
 interface InGlobalThis {
