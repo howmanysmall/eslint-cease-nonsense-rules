@@ -10,11 +10,34 @@ import noWarn from "./rules/no-warn";
 import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
 import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
 import requireNamedEffectFunctions from "./rules/require-named-effect-functions";
+import requirePairedCalls from "./rules/require-paired-calls";
 import requireReactComponentKeys from "./rules/require-react-component-keys";
 import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
 import useHookAtTopLevel from "./rules/use-hook-at-top-level";
 
 type AnyRuleModule = Rule.RuleModule | TSESLint.AnyRuleModuleWithMetaDocs;
+
+// Export utilities
+export {
+	createComplexityConfiguration,
+	createEffectFunctionOptions,
+	createHookConfiguration,
+	createNoInstanceMethodsOptions,
+	createNoShorthandOptions,
+	createPairConfiguration,
+	createReactKeysOptions,
+	createRequirePairedCallsOptions,
+	createUseExhaustiveDependenciesOptions,
+	defaultRobloxProfilePair,
+} from "./configure-utilities";
+// Export configuration types directly from rules to avoid barrel file issues
+export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
+export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
+export type { NoShorthandOptions } from "./rules/no-shorthand-names";
+export type { EffectFunctionOptions, EnvironmentMode, HookConfiguration } from "./rules/require-named-effect-functions";
+export type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
+export type { ReactKeysOptions } from "./rules/require-react-component-keys";
+export type { HookEntry, UseExhaustiveDependenciesOptions } from "./rules/use-exhaustive-dependencies";
 
 /**
  * ESLint plugin entry for eslint-cease-nonsense-rules.
@@ -32,6 +55,7 @@ const rules: Readonly<Record<string, AnyRuleModule>> = {
 	"prefer-sequence-overloads": preferSequenceOverloads,
 	"prefer-udim2-shorthand": preferUDim2Shorthand,
 	"require-named-effect-functions": requireNamedEffectFunctions,
+	"require-paired-calls": requirePairedCalls,
 	"require-react-component-keys": requireReactComponentKeys,
 	"use-exhaustive-dependencies": useExhaustiveDependencies,
 	"use-hook-at-top-level": useHookAtTopLevel,

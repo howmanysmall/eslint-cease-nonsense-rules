@@ -34,6 +34,7 @@ export default [
       "cease-nonsense/prefer-sequence-overloads": "error",
       "cease-nonsense/prefer-udim2-shorthand": "error",
       "cease-nonsense/require-named-effect-functions": "error",
+      "cease-nonsense/require-paired-calls": "error",
       "cease-nonsense/require-react-component-keys": "error",
       "cease-nonsense/use-exhaustive-dependencies": "error",
       "cease-nonsense/use-hook-at-top-level": "error",
@@ -349,13 +350,279 @@ warn("Warning message");
 Log.warn("Warning message");
 ```
 
+### Resource Management
+
+#### `require-paired-calls`
+
+Enforces that paired function calls (opener/closer) are properly balanced across all execution paths with LIFO ordering. Prevents resource leaks, unbalanced operations, and control flow errors.
+
+**Key features:**
+
+- Control flow analysis across all paths (if/else, switch, try/catch, loops)
+- Early exit detection (return, throw, break, continue)
+- LIFO validation for nested pairs
+- Async operation detection (await/yield) with `requireSync`
+- Roblox-specific auto-close detection for yielding functions
+
+**❌ Bad:**
+
+```typescript
+// Missing closer on early return
+function test() {
+  debug.profilebegin("task");
+  if (error) return; // profilebegin never closed on this path
+  debug.profileend();
+}
+
+// Unpaired closer (no matching opener)
+function test() {
+  doWork();
+  debug.profileend(); // No matching profilebegin
+}
+
+// Wrong LIFO order
+function test() {
+  debug.profilebegin("outer");
+  debug.profilebegin("inner");
+  debug.profileend(); // closes inner
+  // outer is never closed
+}
+
+// Async operation with requireSync: true
+async function test() {
+  debug.profilebegin("task");
+  await fetch("/api"); // Cannot await between profilebegin/end
+  debug.profileend();
+}
+
+// Roblox yielding function auto-closes
+function test() {
+  debug.profilebegin("task");
+  task.wait(1); // Auto-closes all profiles
+  debug.profileend(); // This will error - already closed
+}
+
+// Conditional branch missing closer
+function test() {
+  debug.profilebegin("task");
+  if (condition) {
+    debug.profileend();
+  } else {
+    return; // Missing closer on this path
+  }
+}
+
+// Break/continue skip closer
+function test() {
+  debug.profilebegin("loop");
+  for (const item of items) {
+    if (item.stop) break; // Skips closer
+  }
+  debug.profileend();
+}
+```
+
+**✅ Good:**
+
+```typescript
+// Simple pairing
+function test() {
+  debug.profilebegin("task");
+  doWork();
+  debug.profileend();
+}
+
+// Proper LIFO nesting
+function test() {
+  debug.profilebegin("outer");
+  debug.profilebegin("inner");
+  debug.profileend(); // closes inner
+  debug.profileend(); // closes outer
+}
+
+// Try-finally ensures closer on all paths
+function test() {
+  debug.profilebegin("task");
+  try {
+    riskyOperation();
+  } finally {
+    debug.profileend();
+  }
+}
+
+// Try-catch with alternative closers
+function test() {
+  db.transaction();
+  try {
+    db.users.insert({ name: "test" });
+    db.commit(); // Normal closer
+  } catch (err) {
+    db.rollback(); // Alternative closer
+    throw err;
+  }
+}
+
+// Closer in all branches
+function test() {
+  debug.profilebegin("task");
+  if (condition) {
+    debug.profileend();
+  } else {
+    debug.profileend();
+  }
+}
+
+// Pairs inside loop iterations (not across)
+function test() {
+  for (const item of items) {
+    debug.profilebegin("item");
+    process(item);
+    debug.profileend();
+  }
+}
+
+// Multiple closers with requireAll
+function test() {
+  resource.init();
+  resource.setup();
+  // Both cleanup1 and cleanup2 must be called
+  resource.cleanup1();
+  resource.cleanup2();
+}
+```
+
+**Configuration:**
+
+```typescript
+{
+  "cease-nonsense/require-paired-calls": ["error", {
+    "pairs": [{
+      "opener": "debug.profilebegin",        // Opener function name
+      "closer": "debug.profileend",          // Closer function name(s)
+      "alternatives": ["db.rollback"],       // Alternative closers (any one)
+      "requireSync": true,                   // Disallow await/yield
+      "platform": "roblox",                  // Platform-specific behavior
+      "yieldingFunctions": [                 // Custom yielding patterns
+        "task.wait",
+        "*.WaitForChild"                     // Supports wildcards
+      ]
+    }],
+    "allowConditionalClosers": false,        // Allow closers in some branches
+    "allowMultipleOpeners": true,            // Allow consecutive openers
+    "maxNestingDepth": 0                     // Nesting limit (0 = unlimited)
+  }]
+}
+```
+
+**Configuration Options:**
+
+**Pair Configuration** (per-pair settings in the `pairs` array):
+
+- `opener` (required, string) - Function name that starts the paired operation (e.g., `"debug.profilebegin"`). Must be an exact function name including member access (e.g., `"obj.method"`).
+
+- `closer` (required, string | string[]) - Function name(s) that close the paired operation. Can be:
+  - Single string: `"debug.profileend"` - only this function can close
+  - Array of strings: `["lock.release", "lock.free"]` - ANY of these functions can close (alternatives within closer)
+
+- `alternatives` (optional, string[]) - Alternative closer function names used for error paths. When present, ANY ONE of the `closer` or `alternatives` satisfies the requirement. Example: `"closer": "db.commit", "alternatives": ["db.rollback"]` means either commit OR rollback closes the transaction.
+
+- `requireSync` (optional, boolean, default: `false`) - When `true`, disallows `await` or `yield` expressions between opener and closer. Reports error if async operations occur within the paired scope.
+
+- `platform` (optional, `"roblox"`) - Enables Roblox-specific behavior:
+  - Auto-detects yielding function calls (configured via `yieldingFunctions`)
+  - When a yielding function is called, ALL open profiles are automatically closed
+  - Subsequent closer calls after yielding will report errors (already closed)
+
+- `yieldingFunctions` (optional, string[], only with `platform: "roblox"`) - Custom patterns for Roblox yielding functions. Supports wildcards:
+  - Exact match: `"task.wait"` matches only `task.wait()`
+  - Wildcard method: `"*.WaitForChild"` matches `instance.WaitForChild()`, `player.WaitForChild()`, etc.
+  - Default: `["task.wait", "wait", "*.WaitForChild"]`
+
+**Top-Level Options:**
+
+- `pairs` (required, array) - Array of pair configurations to enforce. Rule checks all configured pairs simultaneously.
+
+- `allowConditionalClosers` (optional, boolean, default: `false`) - Controls whether closers must be called on ALL execution paths:
+  - `false` (strict): Requires closer on every path (if/else both branches, all switch cases, etc.)
+  - `true` (permissive): Allows closers in some but not all branches
+
+- `allowMultipleOpeners` (optional, boolean, default: `true`) - Controls consecutive opener calls:
+  - `true`: Allows multiple opener calls before closers (nesting)
+  - `false`: Reports error if opener is called again before closer
+
+- `maxNestingDepth` (optional, number, default: `0`) - Maximum nesting depth for paired calls:
+  - `0`: Unlimited nesting
+  - `> 0`: Reports error if nesting exceeds this depth
+
+**Default configuration (Roblox profiling):**
+
+```typescript
+{
+  "cease-nonsense/require-paired-calls": ["error", {
+    "pairs": [{
+      "opener": "debug.profilebegin",
+      "closer": "debug.profileend",
+      "platform": "roblox",
+      "requireSync": true,
+      "yieldingFunctions": ["task.wait", "wait", "*.WaitForChild"]
+    }]
+  }]
+}
+```
+
+**Real-world examples:**
+
+```typescript
+// Database transactions
+{
+  "pairs": [{
+    "opener": "db.transaction",
+    "closer": "db.commit",
+    "alternatives": ["db.rollback"]
+  }]
+}
+
+// Lock acquire/release
+{
+  "pairs": [{
+    "opener": "lock.acquire",
+    "closer": ["lock.release", "lock.free"]
+  }]
+}
+
+// Multiple pairs
+{
+  "pairs": [
+    { "opener": "debug.profilebegin", "closer": "debug.profileend" },
+    { "opener": "db.transaction", "closer": "db.commit", "alternatives": ["db.rollback"] },
+    { "opener": "file.open", "closer": "file.close" }
+  ]
+}
+
+// Strict nesting
+{
+  "pairs": [{ "opener": "begin", "closer": "end" }],
+  "maxNestingDepth": 2,
+  "allowMultipleOpeners": false
+}
+```
+
+**Use cases:**
+
+- Roblox/Luau profiling (debug.profilebegin/end)
+- Database transactions (transaction/commit/rollback)
+- Resource locks (acquire/release)
+- File handles (open/close)
+- Network connections (connect/disconnect)
+- Any begin/end API pattern
+
 ### Code Quality
 
 #### `no-color3-constructor`
 
 Bans `new Color3(...)` except for `new Color3()` or `new Color3(0, 0, 0)`. Use `Color3.fromRGB()` instead for better performance.
 
-**✨ Has auto-fix**
+##### ✨ Has auto-fix
 
 **❌ Bad:**
 

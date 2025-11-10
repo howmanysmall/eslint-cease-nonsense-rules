@@ -3,30 +3,26 @@ import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds = "noInstanceMethodWithoutThis";
 
-interface RuleOptions {
+export interface NoInstanceMethodsOptions {
 	checkPrivate?: boolean;
 	checkProtected?: boolean;
 	checkPublic?: boolean;
 }
 
-interface NormalizedOptions {
-	readonly checkPrivate: boolean;
-	readonly checkProtected: boolean;
-	readonly checkPublic: boolean;
-}
+type NormalizedOptions = Readonly<Required<NoInstanceMethodsOptions>>;
 
 interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
 	readonly recommended?: boolean;
 }
 
-const DEFAULT_OPTIONS: Required<RuleOptions> = {
+const DEFAULT_OPTIONS: Required<NoInstanceMethodsOptions> = {
 	checkPrivate: true,
 	checkProtected: true,
 	checkPublic: true,
 };
 
-function normalizeOptions(rawOptions: RuleOptions | undefined): NormalizedOptions {
-	const mergedOptions: Required<RuleOptions> = { ...DEFAULT_OPTIONS };
+function normalizeOptions(rawOptions: NoInstanceMethodsOptions | undefined): NormalizedOptions {
+	const mergedOptions: Required<NoInstanceMethodsOptions> = { ...DEFAULT_OPTIONS };
 	if (rawOptions?.checkPrivate !== undefined) mergedOptions.checkPrivate = rawOptions.checkPrivate;
 	if (rawOptions?.checkProtected !== undefined) mergedOptions.checkProtected = rawOptions.checkProtected;
 	if (rawOptions?.checkPublic !== undefined) mergedOptions.checkPublic = rawOptions.checkPublic;
@@ -85,7 +81,7 @@ function methodUsesThis(node: TSESTree.MethodDefinition): boolean {
 
 const noInstanceMethodsWithoutThis: TSESLint.RuleModuleWithMetaDocs<
 	MessageIds,
-	[RuleOptions | undefined],
+	[NoInstanceMethodsOptions | undefined],
 	RuleDocsWithRecommended
 > = {
 	create(context) {
