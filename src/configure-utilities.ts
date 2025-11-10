@@ -108,7 +108,6 @@ export function createRequirePairedCallsOptions(
 		allowMultipleOpeners: true,
 		maxNestingDepth: 0,
 		pairs: [],
-		scope: "function",
 		...options,
 	};
 }

@@ -135,13 +135,14 @@ describe("configure-utilities", () => {
 				allowMultipleOpeners: true,
 				maxNestingDepth: 0,
 				pairs: [],
-				scope: "function",
 			});
 		});
 
 		it("should override defaults", () => {
-			const configuration = createRequirePairedCallsOptions({ scope: "block" });
-			expect(configuration.scope).toBe("block");
+			const configuration = createRequirePairedCallsOptions({
+				maxNestingDepth: 3,
+			});
+			expect(configuration.maxNestingDepth).toBe(3);
 		});
 	});
 
