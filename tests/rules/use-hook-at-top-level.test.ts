@@ -290,6 +290,34 @@ describe("use-hook-at-top-level", () => {
 						`,
 				errors: [{ messageId: "afterEarlyReturn" }],
 			},
+
+			// Configuration: onlyHooks should only check specified hooks
+			{
+				code: `
+							function Component() {
+								if (condition) {
+									useState(0);
+									useEffect(() => {});
+								}
+							}
+						`,
+				errors: [{ messageId: "conditionalHook" }],
+				options: [{ onlyHooks: ["useState"] }],
+			},
+
+			// Configuration: importSources - should check React hooks
+			{
+				code: `
+							import { useState } from 'react';
+							function Component() {
+								if (condition) {
+									useState(0);
+								}
+							}
+						`,
+				errors: [{ messageId: "conditionalHook" }],
+				options: [{ importSources: { "my-ecs": false, react: true } }],
+			},
 		],
 		valid: [
 			// Basic top-level call
@@ -480,6 +508,62 @@ describe("use-hook-at-top-level", () => {
 							useBinding(0);
 						}
 					`,
+
+			// Configuration: ignoreHooks - should ignore specified hooks
+			{
+				code: `
+							function Component() {
+								if (condition) {
+									useEntity(0);
+									useComponent(0);
+								}
+								useState(0);
+							}
+						`,
+				options: [{ ignoreHooks: ["useEntity", "useComponent"] }],
+			},
+
+			// Configuration: onlyHooks - should only check specified hooks
+			{
+				code: `
+							function Component() {
+								useEntity(0);
+								if (condition) {
+									useComponent(0);
+								}
+								useCustomHook(0);
+							}
+						`,
+				options: [{ onlyHooks: ["useState", "useEffect"] }],
+			},
+
+			// Configuration: importSources - should ignore ECS hooks
+			{
+				code: `
+							import { useState } from 'react';
+							import { useState as useEcsState } from 'my-ecs';
+							function Component() {
+								useState(0);
+								if (condition) {
+									useEcsState(0);
+								}
+							}
+						`,
+				options: [{ importSources: { "my-ecs": false, react: true } }],
+			},
+
+			// Configuration: importSources with member expressions
+			{
+				code: `
+							function Component() {
+								if (condition) {
+									ECS.useState(0);
+															}
+								React.useState(0);
+							}
+						`,
+				options: [{ importSources: { ECS: false, React: true } }],
+			},
 		],
 	});
 });

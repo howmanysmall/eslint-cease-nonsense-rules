@@ -316,6 +316,56 @@ function UserProfile({ userId }) {
 }
 ```
 
+**Configuration:**
+
+```typescript
+{
+  "cease-nonsense/use-hook-at-top-level": ["error", {
+    // Strategy 1: Ignore hooks by name
+    "ignoreHooks": ["useEntity", "useComponent"],
+    
+    // Strategy 2: Control by import source (handles naming conflicts)
+    "importSources": {
+      "react": true,           // Check hooks from React
+      "my-ecs-library": false  // Ignore ECS hooks
+    },
+    
+    // Strategy 3: Whitelist mode (only check these hooks)
+    "onlyHooks": ["useState", "useEffect", "useContext"]
+  }]
+}
+```
+
+**Examples:**
+
+```typescript
+// Ignore ECS hooks: { "ignoreHooks": ["useEntity"] }
+function Component() {
+  if (condition) {
+    useEntity(0);  // ✅ Ignored
+  }
+  useState(0);     // ❌ Error - still checked
+}
+
+// Handle naming conflicts: { "importSources": { "react": true, "my-ecs": false } }
+import { useState } from 'react';
+import { useState as useEcsState } from 'my-ecs';
+function Component() {
+  if (condition) {
+    useState(0);      // ❌ Error - React hook checked
+    useEcsState(0);   // ✅ Ignored - ECS hook ignored
+  }
+}
+
+// Whitelist: { "onlyHooks": ["useState"] }
+function Component() {
+  if (condition) {
+    useState(0);   // ❌ Error - in whitelist
+    useEffect(f);  // ✅ Ignored - not in whitelist
+  }
+}
+```
+
 ### Logging
 
 #### `no-print`

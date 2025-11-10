@@ -20,6 +20,28 @@ interface ControlFlowContext {
 	readonly isComponentOrHook: boolean;
 }
 
+interface RuleConfig {
+	/**
+	 * Strategy 1: Simple name-based filtering
+	 * Hooks to completely ignore (both React and ECS hooks with these names)
+	 */
+	readonly ignoreHooks?: string[];
+
+	/**
+	 * Strategy 2: Smart import source control
+	 * Control which import sources should be checked
+	 * true = check hooks from this source, false = ignore hooks from this source
+	 */
+	readonly importSources?: Record<string, boolean>;
+
+	/**
+	 * Strategy 3: Whitelist mode
+	 * Only check hooks that match these exact names
+	 * If provided, ignoreHooks and importSources are ignored
+	 */
+	readonly onlyHooks?: string[];
+}
+
 const HOOK_NAME_PATTERN = /^use[A-Z]/;
 const COMPONENT_NAME_PATTERN = /^[A-Z]/;
 function isReactHook(name: string): boolean {
@@ -126,8 +148,12 @@ function isRecursiveCall(node: TSESTree.CallExpression, functionName: string | u
 
 const useHookAtTopLevel: Rule.RuleModule = {
 	create(context) {
+		const config = (context.options[0] || {}) as RuleConfig;
 		const contextStack = new Array<ControlFlowContext>();
 		let currentFunctionName: string | undefined;
+
+		// Track import sources for hook name resolution
+		const importSourceMap = new Map<string, string>();
 
 		function getCurrentContext(): ControlFlowContext | undefined {
 			return contextStack.length > 0 ? contextStack.at(-1) : undefined;
@@ -141,6 +167,50 @@ const useHookAtTopLevel: Rule.RuleModule = {
 		function updateContext(updates: Partial<ControlFlowContext>): void {
 			const current = getCurrentContext();
 			if (current) contextStack[contextStack.length - 1] = { ...current, ...updates };
+		}
+
+		// Check if a hook should be ignored based on configuration
+		function shouldIgnoreHook(hookName: string, node: TSESTree.CallExpression): boolean {
+			// Strategy 3: Whitelist mode - only check explicitly listed hooks
+			if (config.onlyHooks && config.onlyHooks.length > 0) {
+				return !config.onlyHooks.includes(hookName);
+			}
+
+			// Strategy 1: Simple name-based ignoring
+			if (config.ignoreHooks?.includes(hookName)) {
+				return true;
+			}
+
+			// Strategy 2: Import source control
+			if (config.importSources && Object.keys(config.importSources).length > 0) {
+				// For member expressions (React.useState), check the object name
+				if (node.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
+					const objectName =
+						node.callee.object.type === TSESTree.AST_NODE_TYPES.Identifier
+							? node.callee.object.name
+							: undefined;
+
+					if (objectName && config.importSources[objectName] === false) {
+						return true; // Ignore hooks from this source
+					}
+					if (objectName && config.importSources[objectName] === true) {
+						return false; // Explicitly check hooks from this source
+					}
+				}
+
+				// For direct calls, check if we have import source info
+				if (node.callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
+					const importSource = importSourceMap.get(hookName);
+					if (importSource && config.importSources[importSource] === false) {
+						return true; // Ignore hooks from this source
+					}
+					if (importSource && config.importSources[importSource] === true) {
+						return false; // Explicitly check hooks from this source
+					}
+				}
+			}
+
+			return false; // Default to checking the hook
 		}
 
 		function handleFunctionEnter(node: unknown): void {
@@ -192,6 +262,17 @@ const useHookAtTopLevel: Rule.RuleModule = {
 				const callNode = node as unknown as TSESTree.CallExpression;
 
 				if (!isHookCall(callNode)) return;
+
+				// Check if this hook should be ignored based on configuration
+				const hookName =
+					callNode.callee.type === TSESTree.AST_NODE_TYPES.Identifier
+						? callNode.callee.name
+						: callNode.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+							  callNode.callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
+							? callNode.callee.property.name
+							: undefined;
+
+				if (!hookName || shouldIgnoreHook(hookName, callNode)) return;
 
 				const current = getCurrentContext();
 
@@ -295,6 +376,29 @@ const useHookAtTopLevel: Rule.RuleModule = {
 			"IfStatement:exit"() {
 				updateContext({ inConditional: false });
 			},
+			// Track import declarations to map hook names to their sources
+			ImportDeclaration(node) {
+				const importNode = node as unknown as TSESTree.ImportDeclaration;
+				const source = importNode.source.value;
+
+				// Only track imports if importSources config is provided
+				if (!config.importSources || Object.keys(config.importSources).length === 0) return;
+
+				for (const specifier of importNode.specifiers) {
+					if (
+						specifier.type === TSESTree.AST_NODE_TYPES.ImportSpecifier &&
+						specifier.imported.type === TSESTree.AST_NODE_TYPES.Identifier
+					) {
+						const importedName = specifier.imported.name;
+
+						// Only track hooks (use[A-Z]*)
+						if (isReactHook(importedName)) {
+							const localName = specifier.local.name;
+							importSourceMap.set(localName, source);
+						}
+					}
+				}
+			},
 
 			LogicalExpression() {
 				updateContext({ inConditional: true });
@@ -354,8 +458,19 @@ const useHookAtTopLevel: Rule.RuleModule = {
 			{
 				additionalProperties: false,
 				properties: {
-					hooks: {
-						description: "Additional custom hook names to check",
+					ignoreHooks: {
+						description: "Hook names to ignore (both React and non-React hooks)",
+						items: { type: "string" },
+						type: "array",
+					},
+					importSources: {
+						additionalProperties: { type: "boolean" },
+						description:
+							"Control which import sources to check. true = check hooks from source, false = ignore",
+						type: "object",
+					},
+					onlyHooks: {
+						description: "Only check hooks with these exact names (whitelist mode)",
 						items: { type: "string" },
 						type: "array",
 					},
