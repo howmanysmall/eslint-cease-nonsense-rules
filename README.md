@@ -526,6 +526,8 @@ function test() {
   - Single string: `"debug.profileend"` - only this function can close
   - Array of strings: `["lock.release", "lock.free"]` - ANY of these functions can close (alternatives within closer)
 
+- Multiple pair configs can share the same closer. The rule will always pop the most recent opener whose configuration allows that closer, so you can keep separate telemetry per widget/button/etc. while still reusing a single `End()` call.
+
 - `alternatives` (optional, string[]) - Alternative closer function names used for error paths. When present, ANY ONE of the `closer` or `alternatives` satisfies the requirement. Example: `"closer": "db.commit", "alternatives": ["db.rollback"]` means either commit OR rollback closes the transaction.
 
 - `requireSync` (optional, boolean, default: `false`) - When `true`, disallows `await` or `yield` expressions between opener and closer. Reports error if async operations occur within the paired scope.
