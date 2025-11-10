@@ -74,33 +74,89 @@ describe("require-paired-calls", () => {
 				errors: [{ messageId: "unpairedOpener" }],
 			},
 
-			// Break skips closer
+			// Break skips closer when opener lives inside loop
 			{
 				code: `
 					function test() {
-						debug.profilebegin("loop");
 						for (const item of items) {
+							debug.profilebegin("loop");
 							if (item.stop) break;
+							debug.profileend();
 						}
-						debug.profileend();
 					}
 				`,
 				errors: [{ messageId: "unpairedOpener" }],
 			},
 
-			// Continue skips closer
+			// Continue skips closer when opener lives inside loop
 			{
 				code: `
 					function test() {
-						debug.profilebegin("loop");
 						for (const item of items) {
+							debug.profilebegin("loop");
 							if (item.skip) continue;
 							process(item);
+							debug.profileend();
 						}
-						debug.profileend();
 					}
 				`,
 				errors: [{ messageId: "unpairedOpener" }],
+			},
+
+			// Labeled continue skipping closer in outer loop
+			{
+				code: `
+					function test(matrix) {
+						outer: for (const row of matrix) {
+							debug.profilebegin("row");
+							for (const cell of row) {
+								if (cell.skip) continue outer;
+							}
+							debug.profileend();
+						}
+					}
+				`,
+				errors: [{ messageId: "unpairedOpener" }],
+			},
+
+			// Labeled break skipping closer in outer loop
+			{
+				code: `
+						function test(matrix) {
+							outer: for (const row of matrix) {
+							debug.profilebegin("row");
+							for (const cell of row) {
+								if (cell.stop) break outer;
+							}
+							debug.profileend();
+						}
+					}
+				`,
+				errors: [{ messageId: "unpairedOpener" }],
+			},
+
+			// Alternative opener without closer
+			{
+				code: `
+					function test() {
+						Iris.Window("Title");
+						if (condition) return;
+						Iris.End();
+					}
+				`,
+				errors: [{ messageId: "unpairedOpener" }],
+				options: [
+					{
+						pairs: [
+							{
+								closer: "Iris.End",
+								opener: "Iris.CollapsingHeader",
+								openerAlternatives: ["Iris.Window"],
+								requireSync: false,
+							},
+						],
+					},
+				],
 			},
 
 			// Wrong LIFO order
@@ -450,6 +506,121 @@ describe("require-paired-calls", () => {
 						debug.profileend();
 					}
 				`,
+			},
+
+			// Loop control statements that don't bypass outer closer
+			{
+				code: `
+					function test(items) {
+						debug.profilebegin("loop");
+						for (const item of items) {
+							if (!item) continue;
+							if (item.done) break;
+							process(item);
+						}
+						debug.profileend();
+					}
+				`,
+			},
+
+			// Break inside switch should not trigger
+			{
+				code: `
+					function test(value) {
+						debug.profilebegin("task");
+						while (value > 0) {
+							switch (value) {
+								case 1:
+									break;
+								default:
+									value--;
+							}
+							value--;
+						}
+						debug.profileend();
+					}
+				`,
+			},
+
+			// Labeled continue that keeps outer opener paired
+			{
+				code: `
+					function test(matrix) {
+						debug.profilebegin("matrix");
+						outer: for (const row of matrix) {
+							for (const cell of row) {
+								if (!cell) continue outer;
+								processCell(cell);
+							}
+						}
+						debug.profileend();
+					}
+				`,
+			},
+
+			// Alternative opener with closer
+			{
+				code: `
+					function test() {
+						Iris.Window("Title");
+						doWork();
+						Iris.End();
+					}
+				`,
+				options: [
+					{
+						pairs: [
+							{
+								closer: "Iris.End",
+								opener: "Iris.CollapsingHeader",
+								openerAlternatives: ["Iris.Window"],
+								requireSync: false,
+							},
+						],
+					},
+				],
+			},
+
+			// Multiple Iris widgets sharing the same closer
+			{
+				code: `
+					function test(state) {
+						Iris.Window(["Main"]);
+						Iris.CollapsingHeader(["Units"]);
+						Iris.Combo(["Units"], { index: state });
+						Iris.End();
+						Iris.End();
+						Iris.End();
+					}
+				`,
+				options: [
+					{
+						allowMultipleOpeners: false,
+						pairs: [
+							{
+								closer: "Iris.End",
+								opener: "Iris.CollapsingHeader",
+								platform: "roblox",
+								requireSync: true,
+								yieldingFunctions: ["task.wait", "wait"],
+							},
+							{
+								closer: "Iris.End",
+								opener: "Iris.Window",
+								platform: "roblox",
+								requireSync: true,
+								yieldingFunctions: ["task.wait", "wait"],
+							},
+							{
+								closer: "Iris.End",
+								opener: "Iris.Combo",
+								platform: "roblox",
+								requireSync: true,
+								yieldingFunctions: ["task.wait", "wait"],
+							},
+						],
+					},
+				],
 			},
 
 			// Separate functions have their own scopes

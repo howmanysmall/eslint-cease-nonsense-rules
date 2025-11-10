@@ -1,4 +1,4 @@
-name: release
+name: Publish Package
 
 permissions:
   contents: write # For creating GitHub releases
@@ -19,14 +19,24 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    # Provide a unified DRY_RUN env (string) for both trigger types.
     env:
-      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run || 'false' }}
+      DRY_RUN: "false"
     steps:
       - name: Checkout (full history)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Determine dry run flag
+        run: |
+          DRY_RUN="false"
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            VALUE=$(jq -r '.inputs.dry_run // "false"' "$GITHUB_EVENT_PATH")
+            if [ "$VALUE" = "true" ]; then
+              DRY_RUN="true"
+            fi
+          fi
+          echo "DRY_RUN=$DRY_RUN" >> "$GITHUB_ENV"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -40,10 +50,11 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        run: bun install --no-cache
+        run: bun install --frozen-lockfile
 
       - name: Validate tag matches package.json version
         id: version_check
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           PACKAGE_VERSION=$(bun --print 'JSON.parse(await Bun.file("package.json").text()).version')
@@ -56,6 +67,7 @@ jobs:
           echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Verify tag commit reachable from main
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           git fetch origin main --depth=1
           if git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
@@ -64,9 +76,6 @@ jobs:
             echo "::error title=Tag not on main::Tag commit $GITHUB_SHA not reachable from main" >&2
             exit 1
           fi
-
-      - name: Setup oxlint-tsgolint
-        run: bun run add-tsgolint || echo 'Skipping add-tsgolint (script may be implicit)'
 
       - name: Lint
         run: bun run lint
@@ -83,28 +92,33 @@ jobs:
       - name: Assert build artifacts exist
         run: |
           if [ ! -d dist ]; then
-            echo "::error title=Missing output::dist directory not found" >&2; exit 1; fi
+            echo "::error title=Missing output::dist directory not found" >&2
+            exit 1
+          fi
           if [ ! -f dist/index.js ]; then
-            echo "::error title=Missing artifact::dist/index.js not found" >&2; ls -R dist || true; exit 1; fi
-            echo "Build artifacts OK"
-
-      - name: Setup npm for Trusted Publishing
-        if: ${{ env.DRY_RUN != 'true' }}
-        run: bun x npm@latest --version
+            echo "::error title=Missing artifact::dist/index.js not found" >&2
+            ls -R dist || true
+            exit 1
+          fi
+          echo "Build artifacts OK"
 
       - name: Generate changelog & GitHub release
-        # Skip when dry-run
         if: ${{ env.DRY_RUN != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Allow changelogithub to fail gracefully if it can't generate a changelog
-          # (e.g., when there's no previous tag or when the tag points to the same commit)
-          bun x changelogithub || echo "::warning::changelogithub could not automatically create a release. Please create it manually using the link provided above."
+          bun x changelogithub || echo "::warning::changelogithub could not automatically create a release. Please create it manually."
 
       - name: Publish to NPM (Trusted Publishing)
         if: ${{ env.DRY_RUN != 'true' }}
-        run: bun x npm@latest publish --access public
+        run: bun x npm@latest publish --provenance --access public
+
+      - name: Upload npm debug log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-debug-log
+          path: /home/runner/.npm/_logs/*.log
 
       - name: Dry-run summary
         if: ${{ env.DRY_RUN == 'true' }}
