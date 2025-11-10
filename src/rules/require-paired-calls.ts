@@ -791,10 +791,8 @@ const rule: Rule.RuleModule = {
 			"DoWhileStatement:exit": onLoopExit,
 			ForInStatement: onLoopEnter,
 			"ForInStatement:exit": onLoopExit,
-			ForOfStatement: (node: unknown) => {
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
-				const forOfNode = node as TSESTree.ForOfStatement;
-				if (forOfNode.await) onAsyncYield(node);
+			ForOfStatement: (node) => {
+				if (node.await) onAsyncYield(node);
 				onLoopEnter();
 			},
 			"ForOfStatement:exit": onLoopExit,
