@@ -1,25 +1,28 @@
 {
 	"author": "HowManySmall",
 	"dependencies": {
-		"typebox": "^1.0.50"
+		"type-fest": "^5.2.0",
+		"typebox": "^1.0.51"
 	},
 	"description": "A bunch of lints to prevent idiot mistakes I encounter with frequency.",
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.4",
 		"@mitata/counters": "^0.0.8",
+		"@total-typescript/ts-reset": "^0.6.1",
 		"@types/bun": "latest",
 		"@types/node": "^20.14.11",
 		"@typescript-eslint/parser": "^8.0.0",
 		"@typescript-eslint/types": "^8.0.0",
 		"@typescript-eslint/utils": "^8.0.0",
+		"@typescript/native-preview": "latest",
 		"arktype": "^2.1.25",
 		"eslint": "9.35.0",
 		"jiti": "^2.4.2",
 		"knip": "^5.66.0",
 		"mitata": "^1.0.34",
-		"oxfmt": "^0.9.0",
+		"oxfmt": "^0.11.0",
 		"oxlint": "^1.26.0",
-		"oxlint-tsgolint": "^0.5.0",
+		"oxlint-tsgolint": "^0.5.1",
 		"sury": "^11.0.0-alpha.4",
 		"typescript": "^5.6.3"
 	},
@@ -53,8 +56,10 @@
 		"add-tsgolint": "bun add -D oxlint-tsgolint@latest",
 		"biome": "bun x --bun biome lint",
 		"biome:ci": "bun x --bun biome ci",
-		"build": "bun x --bun tsc -p tsconfig.json",
-		"dev": "bun x --bun tsc -w",
+		"build": "bun x --bun tsgo -p tsconfig.json",
+		"build:compatible": "bun x --bun tsc -p tsconfig.json",
+		"dev": "bun x --bun tsgo -w",
+		"dev:compatible": "bun x --bun tsc -w",
 		"format": "bun x --bun oxfmt",
 		"format:biome": "bun x --bun biome format --fix",
 		"format:biome:report": "bun x --bun. biome format",
@@ -63,7 +68,8 @@
 		"oxc": "bun x --bun oxlint --type-aware",
 		"prepublishOnly": "bun run build",
 		"test": "bun test",
-		"typecheck": "bun x --bun tsc --noEmit"
+		"typecheck": "bun x --bun tsgo --noEmit",
+		"typecheck:compatible": "bun x --bun tsc --noEmit"
 	},
 	"sideEffects": false,
 	"type": "module",

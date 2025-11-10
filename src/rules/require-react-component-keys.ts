@@ -1,17 +1,17 @@
 import { TSESTree } from "@typescript-eslint/types";
 import type { TSESLint } from "@typescript-eslint/utils";
 
-interface RuleOptions {
+export interface ReactKeysOptions {
 	readonly allowRootKeys?: boolean;
 	readonly ignoreCallExpressions?: ReadonlyArray<string>;
 	readonly iterationMethods?: ReadonlyArray<string>;
 	readonly memoizationHooks?: ReadonlyArray<string>;
 }
 
-type Options = [RuleOptions?];
+type Options = [ReactKeysOptions?];
 type MessageIds = "missingKey" | "rootComponentWithKey";
 
-const DEFAULT_OPTIONS: Required<RuleOptions> = {
+const DEFAULT_OPTIONS: Required<ReactKeysOptions> = {
 	allowRootKeys: false,
 	ignoreCallExpressions: ["ReactTree.mount", "CreateReactStory"],
 	iterationMethods: [
@@ -142,7 +142,7 @@ function isIterationOrMemoCallback(
 
 function findEnclosingCallExpression(node: TSESTree.Node): TSESTree.CallExpression | undefined {
 	let current: TSESTree.Node = node;
-	let parent = node.parent;
+	let { parent } = node;
 
 	while (parent) {
 		if (parent.type === TSESTree.AST_NODE_TYPES.CallExpression) {
@@ -337,7 +337,7 @@ const docs: RuleDocsWithRecommended = {
 
 const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRecommended> = {
 	create(context) {
-		const options: Required<RuleOptions> = {
+		const options: Required<ReactKeysOptions> = {
 			...DEFAULT_OPTIONS,
 			...context.options[0],
 		};

@@ -15,25 +15,25 @@ const UNSTABLE_VALUES = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.ArrayExpression,
 ]);
 
-interface HookEntry {
+export interface HookEntry {
 	readonly name: string;
 	readonly closureIndex?: number;
 	readonly dependenciesIndex?: number;
 	readonly stableResult?: boolean | number | ReadonlyArray<number> | ReadonlyArray<string>;
 }
 
-interface UseExhaustiveDependenciesOptions {
+export interface UseExhaustiveDependenciesOptions {
 	readonly hooks?: ReadonlyArray<HookEntry>;
 	readonly reportMissingDependenciesArray?: boolean;
 	readonly reportUnnecessaryDependencies?: boolean;
 }
 
-interface HookConfig {
+export interface HookConfig {
 	readonly closureIndex: number;
 	readonly dependenciesIndex: number;
 }
 
-type StableResult = boolean | ReadonlySet<number> | ReadonlySet<string>;
+export type StableResult = boolean | ReadonlySet<number> | ReadonlySet<string>;
 
 const testingMetrics = {
 	moduleLevelStableConst: 0,
