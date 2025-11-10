@@ -1,9 +1,25 @@
 {
+	"inputs": [
+		{
+			"description": "The personal access token for the GitHub MCP.",
+			"id": "github-token",
+			"password": true,
+			"type": "promptString",
+		},
+	],
 	"servers": {
 		"context7": {
 			"args": ["x", "--bun", "@upstash/context7-mcp"],
 			"command": "bun",
 			"env": {},
+			"type": "stdio",
+		},
+		"github": {
+			"args": ["x", "--bun", "-y", "@modelcontextprotocol/server-github"],
+			"command": "bun",
+			"env": {
+				"GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github-token}",
+			},
 			"type": "stdio",
 		},
 		"package-registry": {

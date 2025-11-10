@@ -46,7 +46,7 @@ jobs:
         id: version_check
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-          PACKAGE_VERSION=$(bun --print 'JSON.parse(Bun.file("package.json").text()).version')
+          PACKAGE_VERSION=$(bun --print 'JSON.parse(await Bun.file("package.json").text()).version')
           echo "Tag version: $TAG_VERSION"
           echo "Package version: $PACKAGE_VERSION"
           if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
