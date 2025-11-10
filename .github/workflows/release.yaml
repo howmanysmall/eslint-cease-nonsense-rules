@@ -1,4 +1,4 @@
-name: release
+name: Publish Package
 
 permissions:
   contents: write # For creating GitHub releases
@@ -19,7 +19,6 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    # Provide a unified DRY_RUN env (string) for both trigger types.
     env:
       DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run || 'false' }}
     steps:
@@ -40,7 +39,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        run: bun install --no-cache
+        run: bun install --frozen-lockfile
 
       - name: Validate tag matches package.json version
         id: version_check
@@ -65,9 +64,6 @@ jobs:
             exit 1
           fi
 
-      - name: Setup oxlint-tsgolint
-        run: bun run add-tsgolint || echo 'Skipping add-tsgolint (script may be implicit)'
-
       - name: Lint
         run: bun run lint
 
@@ -83,28 +79,33 @@ jobs:
       - name: Assert build artifacts exist
         run: |
           if [ ! -d dist ]; then
-            echo "::error title=Missing output::dist directory not found" >&2; exit 1; fi
+            echo "::error title=Missing output::dist directory not found" >&2
+            exit 1
+          fi
           if [ ! -f dist/index.js ]; then
-            echo "::error title=Missing artifact::dist/index.js not found" >&2; ls -R dist || true; exit 1; fi
-            echo "Build artifacts OK"
-
-      - name: Setup npm for Trusted Publishing
-        if: ${{ env.DRY_RUN != 'true' }}
-        run: bun x npm@latest --version
+            echo "::error title=Missing artifact::dist/index.js not found" >&2
+            ls -R dist || true
+            exit 1
+          fi
+          echo "Build artifacts OK"
 
       - name: Generate changelog & GitHub release
-        # Skip when dry-run
         if: ${{ env.DRY_RUN != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Allow changelogithub to fail gracefully if it can't generate a changelog
-          # (e.g., when there's no previous tag or when the tag points to the same commit)
-          bun x changelogithub || echo "::warning::changelogithub could not automatically create a release. Please create it manually using the link provided above."
+          bun x changelogithub || echo "::warning::changelogithub could not automatically create a release. Please create it manually."
 
       - name: Publish to NPM (Trusted Publishing)
         if: ${{ env.DRY_RUN != 'true' }}
         run: bun x npm@latest publish --access public
+
+      - name: Upload npm debug log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-debug-log
+          path: /home/runner/.npm/_logs/*.log
 
       - name: Dry-run summary
         if: ${{ env.DRY_RUN == 'true' }}
