@@ -40,7 +40,7 @@ const isPairConfiguration = Compile(
 );
 
 const isScope = Compile(Type.Union([Type.Literal("function"), Type.Literal("block"), Type.Literal("file")]));
-type Scope = Type.Static<typeof isScope>;
+export type Scope = Type.Static<typeof isScope>;
 
 /**
  * Rule options schema
@@ -211,7 +211,7 @@ const rule: Rule.RuleModule = {
 		}
 
 		function cloneStack(): Array<OpenerStackEntry> {
-			// oxlint-disable-next-line no-array-callback-reference
+			// oxlint-disable-next-line no-array-callback-reference -- this is fine. leave it alone.
 			return openerStack.map(cloneEntry);
 		}
 
@@ -229,10 +229,10 @@ const rule: Rule.RuleModule = {
 			});
 		}
 
-		function isRobloxYieldingFunction(functionName: string, config: PairConfiguration): boolean {
-			if (config.platform !== "roblox") return false;
+		function isRobloxYieldingFunction(functionName: string, configuration: PairConfiguration): boolean {
+			if (configuration.platform !== "roblox") return false;
 
-			const yieldingFunctions = config.yieldingFunctions ?? DEFAULT_ROBLOX_YIELDING_FUNCTIONS;
+			const yieldingFunctions = configuration.yieldingFunctions ?? DEFAULT_ROBLOX_YIELDING_FUNCTIONS;
 			return yieldingFunctions.some((pattern) => {
 				if (pattern.startsWith("*.")) {
 					// Match any method call with this name
@@ -245,7 +245,7 @@ const rule: Rule.RuleModule = {
 
 		function onFunctionEnter(node: unknown): void {
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor functions receive unknown, we know the type from selector
-			const funcNode = node as
+			const functionNode = node as
 				| TSESTree.FunctionDeclaration
 				| TSESTree.FunctionExpression
 				| TSESTree.ArrowFunctionExpression;
@@ -257,8 +257,8 @@ const rule: Rule.RuleModule = {
 			yieldingReportedFirst = false;
 
 			pushContext({
-				asyncContext: funcNode.async ?? false,
-				currentFunction: funcNode,
+				asyncContext: functionNode.async ?? false,
+				currentFunction: functionNode,
 				hasEarlyExit: false,
 				inCatch: false,
 				inConditional: false,
