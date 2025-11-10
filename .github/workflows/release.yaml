@@ -87,7 +87,7 @@ jobs:
         if: ${{ env.DRY_RUN != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bunx changelogithub
+        run: bun x changelogithub
 
       - name: Publish to NPM
         if: ${{ env.DRY_RUN != 'true' }}
