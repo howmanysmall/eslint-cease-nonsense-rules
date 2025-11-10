@@ -155,6 +155,12 @@ function getAllOpeners(configuration: PairConfiguration): ReadonlyArray<string> 
 	return openers;
 }
 
+function formatOpenerList(openers: ReadonlyArray<string>): string {
+	if (openers.length === 0) return "configured opener";
+	if (openers.length === 1) return openers[0] ?? "configured opener";
+	return openers.join("' or '");
+}
+
 function isLoopLikeStatement(node: TSESTree.Node | undefined): node is LoopLikeStatement {
 	if (!node) return false;
 
@@ -259,6 +265,23 @@ const rule: Rule.RuleModule = {
 		const contextStack = new Array<ControlFlowContext>();
 		const stackSnapshots = new Map<TSESTree.Node, Array<OpenerStackEntry>>();
 		const branchStacks = new Map<TSESTree.Node, Array<Array<OpenerStackEntry>>>();
+		const closerToOpenersCache = new Map<string, ReadonlyArray<string>>();
+
+		function getConfiguredOpenersForCloser(closer: string): ReadonlyArray<string> {
+			if (closerToOpenersCache.has(closer)) return closerToOpenersCache.get(closer) ?? [];
+
+			const names = new Array<string>();
+			for (const pair of options.pairs) {
+				if (!getValidClosers(pair).includes(closer)) continue;
+
+				for (const openerName of getAllOpeners(pair)) {
+					if (!names.includes(openerName)) names.push(openerName);
+				}
+			}
+
+			closerToOpenersCache.set(closer, names);
+			return names;
+		}
 
 		function getCurrentContext(): ControlFlowContext {
 			return contextStack.length > 0
@@ -740,9 +763,8 @@ const rule: Rule.RuleModule = {
 				return;
 			}
 
-			const closerConfiguration = findPairConfig(callName, false);
-			if (closerConfiguration) {
-				handleCloser(callNode, callName, closerConfiguration);
+			if (findPairConfig(callName, false)) {
+				handleCloser(callNode, callName);
 				return;
 			}
 
@@ -791,10 +813,8 @@ const rule: Rule.RuleModule = {
 			openerStack.push(entry);
 		}
 
-		function handleCloser(node: TSESTree.CallExpression, closer: string, configuration: PairConfiguration): void {
-			const matchingIndex = openerStack.findLastIndex(
-				(entry) => getValidClosers(entry.config).includes(closer) && entry.config === configuration,
-			);
+		function handleCloser(node: TSESTree.CallExpression, closer: string): void {
+			const matchingIndex = openerStack.findLastIndex((entry) => getValidClosers(entry.config).includes(closer));
 
 			if (matchingIndex === -1) {
 				if (yieldingAutoClosed && !yieldingReportedFirst) {
@@ -802,10 +822,13 @@ const rule: Rule.RuleModule = {
 					return;
 				}
 
+				const openerCandidates = getConfiguredOpenersForCloser(closer);
+				const openerDescription = formatOpenerList(openerCandidates);
+
 				context.report({
 					data: {
 						closer,
-						opener: configuration.opener,
+						opener: openerDescription,
 					},
 					messageId: "unpairedCloser",
 					node,
