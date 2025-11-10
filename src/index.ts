@@ -17,7 +17,6 @@ import useHookAtTopLevel from "./rules/use-hook-at-top-level";
 
 type AnyRuleModule = Rule.RuleModule | TSESLint.AnyRuleModuleWithMetaDocs;
 
-// Export utilities
 export {
 	createComplexityConfiguration,
 	createEffectFunctionOptions,
@@ -28,9 +27,9 @@ export {
 	createReactKeysOptions,
 	createRequirePairedCallsOptions,
 	createUseExhaustiveDependenciesOptions,
+	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
 } from "./configure-utilities";
-// Export configuration types directly from rules to avoid barrel file issues
 export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
 export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
 export type { NoShorthandOptions } from "./rules/no-shorthand-names";
