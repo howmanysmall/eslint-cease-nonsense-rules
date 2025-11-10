@@ -520,6 +520,8 @@ function test() {
 
 - `opener` (required, string) - Function name that starts the paired operation (e.g., `"debug.profilebegin"`). Must be an exact function name including member access (e.g., `"obj.method"`).
 
+- `openerAlternatives` (optional, string[]) - Additional opener names that share the same closer. Every name in this array is treated exactly like `opener` (same stack entry, same diagnostics). Handy for APIs like Iris where `Iris.End` closes windows, collapsing headers, etc.
+
 - `closer` (required, string | string[]) - Function name(s) that close the paired operation. Can be:
   - Single string: `"debug.profileend"` - only this function can close
   - Array of strings: `["lock.release", "lock.free"]` - ANY of these functions can close (alternatives within closer)
@@ -587,6 +589,18 @@ function test() {
   "pairs": [{
     "opener": "lock.acquire",
     "closer": ["lock.release", "lock.free"]
+  }]
+}
+
+// Roblox Iris widgets all using Iris.End
+{
+  "pairs": [{
+    "opener": "Iris.CollapsingHeader",
+    "openerAlternatives": ["Iris.Window", "Iris.TreeNode", "Iris.Table"],
+    "closer": "Iris.End",
+    "platform": "roblox",
+    "requireSync": true,
+    "yieldingFunctions": ["task.wait", "wait", "*.WaitForChild", "*.*Async"]
   }]
 }
 
