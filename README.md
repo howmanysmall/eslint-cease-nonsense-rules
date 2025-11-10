@@ -500,7 +500,6 @@ function test() {
       "opener": "debug.profilebegin",        // Opener function name
       "closer": "debug.profileend",          // Closer function name(s)
       "alternatives": ["db.rollback"],       // Alternative closers (any one)
-      "requireAll": ["cleanup1", "cleanup2"], // All must be called
       "requireSync": true,                   // Disallow await/yield
       "platform": "roblox",                  // Platform-specific behavior
       "yieldingFunctions": [                 // Custom yielding patterns
@@ -508,13 +507,52 @@ function test() {
         "*.WaitForChild"                     // Supports wildcards
       ]
     }],
-    "scope": "function",                     // "function", "block", "file"
     "allowConditionalClosers": false,        // Allow closers in some branches
     "allowMultipleOpeners": true,            // Allow consecutive openers
     "maxNestingDepth": 0                     // Nesting limit (0 = unlimited)
   }]
 }
 ```
+
+**Configuration Options:**
+
+**Pair Configuration** (per-pair settings in the `pairs` array):
+
+- `opener` (required, string) - Function name that starts the paired operation (e.g., `"debug.profilebegin"`). Must be an exact function name including member access (e.g., `"obj.method"`).
+
+- `closer` (required, string | string[]) - Function name(s) that close the paired operation. Can be:
+  - Single string: `"debug.profileend"` - only this function can close
+  - Array of strings: `["lock.release", "lock.free"]` - ANY of these functions can close (alternatives within closer)
+
+- `alternatives` (optional, string[]) - Alternative closer function names used for error paths. When present, ANY ONE of the `closer` or `alternatives` satisfies the requirement. Example: `"closer": "db.commit", "alternatives": ["db.rollback"]` means either commit OR rollback closes the transaction.
+
+- `requireSync` (optional, boolean, default: `false`) - When `true`, disallows `await` or `yield` expressions between opener and closer. Reports error if async operations occur within the paired scope.
+
+- `platform` (optional, `"roblox"`) - Enables Roblox-specific behavior:
+  - Auto-detects yielding function calls (configured via `yieldingFunctions`)
+  - When a yielding function is called, ALL open profiles are automatically closed
+  - Subsequent closer calls after yielding will report errors (already closed)
+
+- `yieldingFunctions` (optional, string[], only with `platform: "roblox"`) - Custom patterns for Roblox yielding functions. Supports wildcards:
+  - Exact match: `"task.wait"` matches only `task.wait()`
+  - Wildcard method: `"*.WaitForChild"` matches `instance.WaitForChild()`, `player.WaitForChild()`, etc.
+  - Default: `["task.wait", "wait", "*.WaitForChild"]`
+
+**Top-Level Options:**
+
+- `pairs` (required, array) - Array of pair configurations to enforce. Rule checks all configured pairs simultaneously.
+
+- `allowConditionalClosers` (optional, boolean, default: `false`) - Controls whether closers must be called on ALL execution paths:
+  - `false` (strict): Requires closer on every path (if/else both branches, all switch cases, etc.)
+  - `true` (permissive): Allows closers in some but not all branches
+
+- `allowMultipleOpeners` (optional, boolean, default: `true`) - Controls consecutive opener calls:
+  - `true`: Allows multiple opener calls before closers (nesting)
+  - `false`: Reports error if opener is called again before closer
+
+- `maxNestingDepth` (optional, number, default: `0`) - Maximum nesting depth for paired calls:
+  - `0`: Unlimited nesting
+  - `> 0`: Reports error if nesting exceeds this depth
 
 **Default configuration (Roblox profiling):**
 
@@ -584,7 +622,7 @@ function test() {
 
 Bans `new Color3(...)` except for `new Color3()` or `new Color3(0, 0, 0)`. Use `Color3.fromRGB()` instead for better performance.
 
-**✨ Has auto-fix**
+##### ✨ Has auto-fix
 
 **❌ Bad:**
 

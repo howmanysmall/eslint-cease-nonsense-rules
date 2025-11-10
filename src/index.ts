@@ -35,7 +35,7 @@ export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type
 export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
 export type { NoShorthandOptions } from "./rules/no-shorthand-names";
 export type { EffectFunctionOptions, EnvironmentMode, HookConfiguration } from "./rules/require-named-effect-functions";
-export type { PairConfiguration, RequirePairedCallsOptions, Scope } from "./rules/require-paired-calls";
+export type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
 export type { ReactKeysOptions } from "./rules/require-react-component-keys";
 export type { HookEntry, UseExhaustiveDependenciesOptions } from "./rules/use-exhaustive-dependencies";
 

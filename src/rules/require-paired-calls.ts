@@ -16,8 +16,6 @@ export interface PairConfiguration {
 	readonly closer: string | ReadonlyArray<string>;
 	/** Alternative closers (any one satisfies) */
 	readonly alternatives?: ReadonlyArray<string>;
-	/** All listed closers must be called */
-	readonly requireAll?: ReadonlyArray<string>;
 	/** Disallow await/yield between opener and closer */
 	readonly requireSync?: boolean;
 	/** Platform-specific behavior */
@@ -32,15 +30,11 @@ const isPairConfiguration = Compile(
 			closer: Type.Union([Type.String(), isStringArray]),
 			opener: Type.String(),
 			platform: Type.Optional(Type.Literal("roblox")),
-			requireAll: Type.Optional(isStringArray),
 			requireSync: Type.Optional(Type.Boolean()),
 			yieldingFunctions: Type.Optional(isStringArray),
 		}),
 	),
 );
-
-const isScope = Compile(Type.Union([Type.Literal("function"), Type.Literal("block"), Type.Literal("file")]));
-export type Scope = Type.Static<typeof isScope>;
 
 /**
  * Rule options schema
@@ -48,8 +42,6 @@ export type Scope = Type.Static<typeof isScope>;
 export interface RequirePairedCallsOptions {
 	/** Array of paired function configurations */
 	readonly pairs: ReadonlyArray<PairConfiguration>;
-	/** Scope for balance checking */
-	readonly scope?: Scope;
 	/** Allow conditional closers */
 	readonly allowConditionalClosers?: boolean;
 	/** Allow multiple consecutive openers */
@@ -66,7 +58,6 @@ const isRuleOptions = Compile(
 				allowMultipleOpeners: Type.Optional(Type.Boolean()),
 				maxNestingDepth: Type.Optional(Type.Number()),
 				pairs: Type.Readonly(Type.Array(isPairConfiguration)),
-				scope: Type.Optional(isScope),
 			}),
 		),
 	),
@@ -134,7 +125,6 @@ function getValidClosers(configuration: PairConfiguration): ReadonlyArray<string
 	else if (typeof configuration.closer === "string") result.push(configuration.closer);
 
 	if (configuration.alternatives) for (const alternative of configuration.alternatives) result.push(alternative);
-	if (configuration.requireAll) for (const requirement of configuration.requireAll) result.push(requirement);
 
 	return result;
 }
@@ -154,7 +144,6 @@ const rule: Rule.RuleModule = {
 			allowMultipleOpeners: baseOptions.allowMultipleOpeners ?? true,
 			maxNestingDepth: baseOptions.maxNestingDepth ?? 0,
 			pairs: baseOptions.pairs ?? [],
-			scope: baseOptions.scope ?? "function",
 		};
 
 		if (options.pairs.length === 0) {
@@ -269,7 +258,7 @@ const rule: Rule.RuleModule = {
 		}
 
 		function onFunctionExit(): void {
-			if (options.scope === "function" && openerStack.length > 0) {
+			if (openerStack.length > 0) {
 				for (const entry of openerStack) {
 					const validClosers = getValidClosers(entry.config);
 					const closer =
@@ -891,10 +880,6 @@ const rule: Rule.RuleModule = {
 									enum: ["roblox"],
 									type: "string",
 								},
-								requireAll: {
-									items: { minLength: 1, type: "string" },
-									type: "array",
-								},
 								requireSync: {
 									default: false,
 									type: "boolean",
@@ -909,11 +894,6 @@ const rule: Rule.RuleModule = {
 						},
 						minItems: 1,
 						type: "array",
-					},
-					scope: {
-						default: "function",
-						enum: ["function", "block", "file"],
-						type: "string",
 					},
 				},
 				required: ["pairs"],
