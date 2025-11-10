@@ -40,7 +40,7 @@
 			"!**/garbage/**",
 			"!**/include/**",
 			"!**/node_modules/**",
-			"**/*.ts"
+			"!**/*.ts"
 		],
 		"indentStyle": "tab",
 		"indentWidth": 4,
