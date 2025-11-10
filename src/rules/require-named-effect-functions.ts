@@ -3,7 +3,7 @@ import type { Rule } from "eslint";
 import Type from "typebox";
 import { Compile } from "typebox/compile";
 
-interface HookConfiguration {
+export interface HookConfiguration {
 	readonly allowAsync: boolean;
 	readonly name: string;
 }
@@ -14,9 +14,10 @@ const DEFAULT_HOOKS: ReadonlyArray<HookConfiguration> = [
 	{ allowAsync: false, name: "useInsertionEffect" },
 ] as const;
 
-type EnvironmentMode = "roblox-ts" | "standard";
+const isEnvironmentMode = Type.Union([Type.Literal("roblox-ts"), Type.Literal("standard")]);
+export type EnvironmentMode = Type.Static<typeof isEnvironmentMode>;
 
-interface RuleOptions {
+export interface EffectFunctionOptions {
 	readonly environment: EnvironmentMode;
 	readonly hooks: ReadonlyArray<HookConfiguration>;
 }
@@ -28,14 +29,14 @@ const isHookConfiguration = Type.Object({
 const isRuleOptions = Compile(
 	Type.Object(
 		{
-			environment: Type.Union([Type.Literal("roblox-ts"), Type.Literal("standard")]),
+			environment: isEnvironmentMode,
 			hooks: Type.Array(isHookConfiguration),
 		},
 		{ additionalProperties: true },
 	),
 );
 
-function parseOptions(options: unknown): RuleOptions {
+function parseOptions(options: unknown): EffectFunctionOptions {
 	if (options === undefined) {
 		return {
 			environment: "roblox-ts",

@@ -3,8 +3,8 @@ import type { Rule } from "eslint";
 import Type from "typebox";
 import { Compile } from "typebox/compile";
 
-interface RuleOptions {
-	readonly allowPropertyAccess?: Array<string>;
+export interface NoShorthandOptions {
+	readonly allowPropertyAccess?: ReadonlyArray<string>;
 	readonly shorthands?: Record<string, string>;
 }
 
@@ -22,7 +22,7 @@ interface NormalizedOptions {
 	readonly selector: string;
 }
 
-const DEFAULT_OPTIONS: Required<RuleOptions> = {
+const DEFAULT_OPTIONS: Required<NoShorthandOptions> = {
 	allowPropertyAccess: ["char"],
 	shorthands: {
 		args: "parameters",
@@ -34,7 +34,7 @@ const DEFAULT_OPTIONS: Required<RuleOptions> = {
 
 const ESCAPE_REGEXP = /[.*+?^${}()|[\]\\]/g;
 
-function normalizeOptions(rawOptions: RuleOptions | undefined): NormalizedOptions {
+function normalizeOptions(rawOptions: NoShorthandOptions | undefined): NormalizedOptions {
 	const mergedShorthands: Record<string, string> = { ...DEFAULT_OPTIONS.shorthands };
 	if (rawOptions?.shorthands)
 		for (const [key, value] of Object.entries(rawOptions.shorthands)) mergedShorthands[key] = value;

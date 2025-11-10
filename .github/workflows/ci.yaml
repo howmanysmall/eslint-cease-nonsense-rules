@@ -5,10 +5,10 @@ on:
     branches:
       - main
     paths:
-      - 'src/**/*.ts'
+      - "src/**/*.ts"
   pull_request:
     paths:
-      - 'src/**/*.ts'
+      - "src/**/*.ts"
 
 jobs:
   build-and-test:
@@ -26,7 +26,7 @@ jobs:
         run: bun install --no-cache
 
       - name: Setup oxlint-tsgolint
-        run: bun run add-tsgolint
+        run: bun add -D oxlint-tsgolint@latest
 
       - name: Lint
         run: bun run lint
