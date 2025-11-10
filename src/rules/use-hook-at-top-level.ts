@@ -20,6 +20,28 @@ interface ControlFlowContext {
 	readonly isComponentOrHook: boolean;
 }
 
+export interface UseHookAtTopLevelOptions {
+	/**
+	 * Strategy 1: Simple name-based filtering
+	 * Hooks to completely ignore (both React and ECS hooks with these names)
+	 */
+	readonly ignoreHooks?: ReadonlyArray<string>;
+
+	/**
+	 * Strategy 2: Smart import source control
+	 * Control which import sources should be checked
+	 * true = check hooks from this source, false = ignore hooks from this source
+	 */
+	readonly importSources?: Record<string, boolean>;
+
+	/**
+	 * Strategy 3: Whitelist mode
+	 * Only check hooks that match these exact names
+	 * If provided, ignoreHooks and importSources are ignored
+	 */
+	readonly onlyHooks?: ReadonlyArray<string>;
+}
+
 const HOOK_NAME_PATTERN = /^use[A-Z]/;
 const COMPONENT_NAME_PATTERN = /^[A-Z]/;
 function isReactHook(name: string): boolean {
@@ -126,8 +148,11 @@ function isRecursiveCall(node: TSESTree.CallExpression, functionName: string | u
 
 const useHookAtTopLevel: Rule.RuleModule = {
 	create(context) {
+		const configuration = (context.options[0] || {}) as UseHookAtTopLevelOptions;
 		const contextStack = new Array<ControlFlowContext>();
 		let currentFunctionName: string | undefined;
+
+		const importSourceMap = new Map<string, string>();
 
 		function getCurrentContext(): ControlFlowContext | undefined {
 			return contextStack.length > 0 ? contextStack.at(-1) : undefined;
@@ -143,18 +168,44 @@ const useHookAtTopLevel: Rule.RuleModule = {
 			if (current) contextStack[contextStack.length - 1] = { ...current, ...updates };
 		}
 
+		function shouldIgnoreHook(hookName: string, node: TSESTree.CallExpression): boolean {
+			const { onlyHooks, ignoreHooks, importSources } = configuration;
+			if (onlyHooks && onlyHooks.length > 0) return !onlyHooks.includes(hookName);
+
+			if (ignoreHooks?.includes(hookName)) return true;
+
+			if (importSources && Object.keys(importSources).length > 0) {
+				if (node.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
+					const objectName =
+						node.callee.object.type === TSESTree.AST_NODE_TYPES.Identifier
+							? node.callee.object.name
+							: undefined;
+
+					if (objectName && importSources[objectName] === false) return true;
+					if (objectName && importSources[objectName] === true) return false;
+				}
+
+				if (node.callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
+					const importSource = importSourceMap.get(hookName);
+					if (importSource && importSources[importSource] === false) return true;
+					if (importSource && importSources[importSource] === true) return false;
+				}
+			}
+
+			return false;
+		}
+
 		function handleFunctionEnter(node: unknown): void {
-			const funcNode = node as
+			const functionNode = node as
 				| TSESTree.FunctionDeclaration
 				| TSESTree.FunctionExpression
 				| TSESTree.ArrowFunctionExpression;
 			const current = getCurrentContext();
 			const depth = current ? current.functionDepth + 1 : 0;
 
-			const isComp = isComponentOrHook(funcNode);
-
-			if (funcNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration && funcNode.id)
-				currentFunctionName = funcNode.id.name;
+			const isComponentOrHookFlag = isComponentOrHook(functionNode);
+			if (functionNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration && functionNode.id)
+				currentFunctionName = functionNode.id.name;
 
 			if (current?.isComponentOrHook) {
 				pushContext({
@@ -166,7 +217,7 @@ const useHookAtTopLevel: Rule.RuleModule = {
 					inTryBlock: false,
 					isComponentOrHook: false,
 				});
-			} else if (isComp) {
+			} else if (isComponentOrHookFlag) {
 				pushContext({
 					afterEarlyReturn: false,
 					functionDepth: depth,
@@ -193,12 +244,20 @@ const useHookAtTopLevel: Rule.RuleModule = {
 
 				if (!isHookCall(callNode)) return;
 
+				const { callee } = callNode;
+				const hookName =
+					callee.type === TSESTree.AST_NODE_TYPES.Identifier
+						? callee.name
+						: callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+							  callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
+							? callee.property.name
+							: undefined;
+
+				if (!hookName || shouldIgnoreHook(hookName, callNode)) return;
+
 				const current = getCurrentContext();
-
 				if (!current) return;
-
 				if (!current.isComponentOrHook && !current.inNestedFunction) return;
-
 				if (isInFinallyBlock(callNode)) return;
 
 				if (isRecursiveCall(callNode, currentFunctionName)) {
@@ -296,6 +355,22 @@ const useHookAtTopLevel: Rule.RuleModule = {
 				updateContext({ inConditional: false });
 			},
 
+			ImportDeclaration(node) {
+				const importNode = node as unknown as TSESTree.ImportDeclaration;
+				const source = importNode.source.value;
+
+				if (!configuration.importSources || Object.keys(configuration.importSources).length === 0) return;
+
+				for (const specifier of importNode.specifiers) {
+					if (specifier.type !== TSESTree.AST_NODE_TYPES.ImportSpecifier) continue;
+
+					const { imported } = specifier;
+					if (imported.type !== TSESTree.AST_NODE_TYPES.Identifier) continue;
+
+					if (isReactHook(imported.name)) importSourceMap.set(specifier.local.name, source);
+				}
+			},
+
 			LogicalExpression() {
 				updateContext({ inConditional: true });
 			},
@@ -354,8 +429,19 @@ const useHookAtTopLevel: Rule.RuleModule = {
 			{
 				additionalProperties: false,
 				properties: {
-					hooks: {
-						description: "Additional custom hook names to check",
+					ignoreHooks: {
+						description: "Hook names to ignore (both React and non-React hooks)",
+						items: { type: "string" },
+						type: "array",
+					},
+					importSources: {
+						additionalProperties: { type: "boolean" },
+						description:
+							"Control which import sources to check. true = check hooks from source, false = ignore",
+						type: "object",
+					},
+					onlyHooks: {
+						description: "Only check hooks with these exact names (whitelist mode)",
 						items: { type: "string" },
 						type: "array",
 					},

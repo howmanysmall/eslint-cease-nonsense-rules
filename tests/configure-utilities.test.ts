@@ -9,6 +9,7 @@ import {
 	createReactKeysOptions,
 	createRequirePairedCallsOptions,
 	createUseExhaustiveDependenciesOptions,
+	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
 } from "../src/configure-utilities";
 
@@ -176,6 +177,28 @@ describe("configure-utilities", () => {
 		it("should override defaults", () => {
 			const configuration = createUseExhaustiveDependenciesOptions({ reportMissingDependenciesArray: true });
 			expect(configuration.reportMissingDependenciesArray).toBe(true);
+		});
+	});
+
+	describe("createUseHookAtTopLevelOptions", () => {
+		it("should create options with defaults", () => {
+			const configuration = createUseHookAtTopLevelOptions();
+			expect(configuration).toEqual({
+				ignoreHooks: [],
+				importSources: {},
+				onlyHooks: [],
+			});
+		});
+
+		it("should override defaults", () => {
+			const configuration = createUseHookAtTopLevelOptions({
+				ignoreHooks: ["useLegacyHook"],
+				importSources: { react: ["useEffect"] },
+				onlyHooks: ["useEffect"],
+			});
+			expect(configuration.ignoreHooks).toEqual(["useLegacyHook"]);
+			expect(configuration.importSources).toEqual({ react: ["useEffect"] });
+			expect(configuration.onlyHooks).toEqual(["useEffect"]);
 		});
 	});
 });
