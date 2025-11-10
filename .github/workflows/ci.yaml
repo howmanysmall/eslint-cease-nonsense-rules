@@ -26,7 +26,7 @@ jobs:
         run: bun install --no-cache
 
       - name: Setup oxlint-tsgolint
-        run: bun run add-tsgolint
+        run: bun add -D oxlint-tsgolint@latest
 
       - name: Lint
         run: bun run lint
