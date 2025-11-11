@@ -159,12 +159,12 @@ function Component() {
 			// Nested function - arrow function
 			{
 				code: `
-                            function Component() {
-                                const helper = () => {
-                                    useState(0);
-                                };
-                            }
-                        `,
+function Component() {
+    const helper = () => {
+        useState(0);
+    };
+}
+`,
 				errors: [{ messageId: "nestedFunction" }],
 			},
 
