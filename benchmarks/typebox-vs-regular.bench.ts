@@ -130,7 +130,7 @@ if (!result.success || process.argv.includes("--generate-files") || process.argv
 
 const { isNumericLiteralCode, isRecordCode } = result.value;
 
-const SIZE = 10000;
+const SIZE = 10_000;
 
 function validateArkType<T>(value: unknown, validator: arktype.Type<T>): value is T {
 	if (validator(value) instanceof arktype.type.errors) return false;

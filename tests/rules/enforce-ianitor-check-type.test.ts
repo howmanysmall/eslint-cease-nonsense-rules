@@ -28,15 +28,15 @@ describe("enforce-ianitor-check-type", () => {
 				// Complex Ianitor validator without type annotation
 				{
 					code: `
-							const isUser = Ianitor.strictInterface({
-								name: Ianitor.string,
-								age: Ianitor.number,
-								profile: Ianitor.interface({
-									email: Ianitor.string,
-									settings: Ianitor.record(Ianitor.string, Ianitor.unknown)
-								})
-							});
-						`,
+const isUser = Ianitor.strictInterface({
+    name: Ianitor.string,
+    age: Ianitor.number,
+    profile: Ianitor.interface({
+        email: Ianitor.string,
+        settings: Ianitor.record(Ianitor.string, Ianitor.unknown)
+    })
+});
+`,
 					errors: 1,
 					languageOptions: {
 						parser,
@@ -81,13 +81,13 @@ describe("enforce-ianitor-check-type", () => {
 				// Ianitor.Static<typeof ...> pattern
 				{
 					code: `
-							const isSpinOptions = Ianitor.strictInterface({
-								maxAttempts: Ianitor.optional(Ianitor.intersection(Ianitor.integer, Ianitor.numberPositive)),
-								random: Ianitor.optional(Ianitor.Random),
-								soFar: Ianitor.set(Ianitor.any),
-							});
-							export type SpinOptions = Ianitor.Static<typeof isSpinOptions>;
-						`,
+const isSpinOptions = Ianitor.strictInterface({
+    maxAttempts: Ianitor.optional(Ianitor.intersection(Ianitor.integer, Ianitor.numberPositive)),
+    random: Ianitor.optional(Ianitor.Random),
+    soFar: Ianitor.set(Ianitor.any),
+});
+export type SpinOptions = Ianitor.Static<typeof isSpinOptions>;
+`,
 					languageOptions: {
 						parser,
 					},
@@ -95,13 +95,13 @@ describe("enforce-ianitor-check-type", () => {
 				// Readonly<Ianitor.Static<typeof ...>> pattern
 				{
 					code: `
-							const isSpinOptions = Ianitor.strictInterface({
-								maxAttempts: Ianitor.optional(Ianitor.intersection(Ianitor.integer, Ianitor.numberPositive)),
-								random: Ianitor.optional(Ianitor.Random),
-								soFar: Ianitor.set(Ianitor.any),
-							});
-							export type SpinOptions = Readonly<Ianitor.Static<typeof isSpinOptions>>;
-						`,
+const isSpinOptions = Ianitor.strictInterface({
+    maxAttempts: Ianitor.optional(Ianitor.intersection(Ianitor.integer, Ianitor.numberPositive)),
+    random: Ianitor.optional(Ianitor.Random),
+    soFar: Ianitor.set(Ianitor.any),
+});
+export type SpinOptions = Readonly<Ianitor.Static<typeof isSpinOptions>>;
+`,
 					languageOptions: {
 						parser,
 					},
@@ -342,17 +342,17 @@ describe("enforce-ianitor-check-type", () => {
 
 			const parsed = parser.parse(
 				`
-						type ComplexAlias = {
-							id: string;
-							values: number[];
-						};
+type ComplexAlias = {
+    id: string;
+    values: number[];
+};
 
-						interface ComplexService extends Base {
-							config: {
-								mode: string;
-							};
-						}
-					`,
+interface ComplexService extends Base {
+    config: {
+        mode: string;
+    };
+}
+`,
 				{
 					ecmaVersion: 2022,
 					sourceType: "module",

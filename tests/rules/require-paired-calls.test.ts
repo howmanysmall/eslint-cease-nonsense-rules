@@ -210,6 +210,96 @@ describe("require-paired-calls", () => {
 				errors: [{ messageId: "unpairedCloser" }],
 			},
 
+			// Contextual error: empty stack
+			{
+				code: `
+					function test() {
+						Iris.End();
+					}
+				`,
+				errors: [{ data: { closer: "Iris.End" }, messageId: "unpairedCloser" }],
+				options: [
+					{
+						pairs: [
+							{
+								closer: "Iris.End",
+								opener: "Iris.CollapsingHeader",
+								openerAlternatives: ["Iris.Window", "Iris.Combo"],
+								platform: "roblox",
+								requireSync: true,
+							},
+						],
+					},
+				],
+			},
+
+			// Contextual error: wrong closer when stack has opener
+			{
+				code: `
+					function test() {
+						Iris.CollapsingHeader(["Units"]);
+						debug.profileend();
+					}
+				`,
+				errors: [
+					{ messageId: "unpairedOpener" }, // Iris.CollapsingHeader never closed
+					{ data: { closer: "debug.profileend", expected: "Iris.End" }, messageId: "unexpectedCloser" },
+				],
+				options: [
+					{
+						pairs: [
+							{
+								closer: "Iris.End",
+								opener: "Iris.CollapsingHeader",
+								platform: "roblox",
+								requireSync: true,
+							},
+							{
+								closer: "debug.profileend",
+								opener: "debug.profilebegin",
+								platform: "roblox",
+								requireSync: true,
+							},
+						],
+					},
+				],
+			},
+
+			// Contextual error: multiple expected closers
+			{
+				code: `
+					function test() {
+						db.transaction();
+						Iris.End();
+					}
+				`,
+				errors: [
+					{ messageId: "unpairedOpener" }, // db.transaction never closed
+					{
+						data: { closer: "Iris.End", expected: "db.commit' or 'db.rollback" },
+						messageId: "unexpectedCloser",
+					},
+				],
+				options: [
+					{
+						pairs: [
+							{
+								alternatives: ["db.rollback"],
+								closer: "db.commit",
+								opener: "db.transaction",
+								requireSync: false,
+							},
+							{
+								closer: "Iris.End",
+								opener: "Iris.CollapsingHeader",
+								platform: "roblox",
+								requireSync: true,
+							},
+						],
+					},
+				],
+			},
+
 			// Await with requireSync: true
 			{
 				code: `

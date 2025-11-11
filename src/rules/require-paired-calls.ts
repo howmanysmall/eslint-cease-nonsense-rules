@@ -266,6 +266,7 @@ const rule: Rule.RuleModule = {
 		const stackSnapshots = new Map<TSESTree.Node, Array<OpenerStackEntry>>();
 		const branchStacks = new Map<TSESTree.Node, Array<Array<OpenerStackEntry>>>();
 		const closerToOpenersCache = new Map<string, ReadonlyArray<string>>();
+		const openerToClosersCache = new Map<string, ReadonlyArray<string>>();
 
 		function getConfiguredOpenersForCloser(closer: string): ReadonlyArray<string> {
 			if (closerToOpenersCache.has(closer)) return closerToOpenersCache.get(closer) ?? [];
@@ -281,6 +282,24 @@ const rule: Rule.RuleModule = {
 
 			closerToOpenersCache.set(closer, names);
 			return names;
+		}
+
+		function getExpectedClosersForOpener(opener: string): ReadonlyArray<string> {
+			if (openerToClosersCache.has(opener)) return openerToClosersCache.get(opener) ?? [];
+
+			const closers = new Array<string>();
+			for (const pair of options.pairs) {
+				const allOpeners = getAllOpeners(pair);
+				if (!allOpeners.includes(opener)) continue;
+
+				const validClosers = getValidClosers(pair);
+				for (const closer of validClosers) {
+					if (!closers.includes(closer)) closers.push(closer);
+				}
+			}
+
+			openerToClosersCache.set(opener, closers);
+			return closers;
 		}
 
 		function getCurrentContext(): ControlFlowContext {
@@ -822,17 +841,47 @@ const rule: Rule.RuleModule = {
 					return;
 				}
 
-				const openerCandidates = getConfiguredOpenersForCloser(closer);
-				const openerDescription = formatOpenerList(openerCandidates);
+				// Contextual error messages based on stack state
+				if (openerStack.length === 0) {
+					// Stack is empty - no opener to close
+					context.report({
+						data: {
+							closer,
+						},
+						messageId: "unpairedCloser",
+						node,
+					});
+				} else {
+					// Stack has openers, but this closer doesn't match any
+					// Show what closer was expected for the top opener
+					const topEntry = openerStack.at(-1);
+					if (topEntry) {
+						const expectedClosers = getExpectedClosersForOpener(topEntry.opener);
+						const closerDescription = formatOpenerList(expectedClosers);
 
-				context.report({
-					data: {
-						closer,
-						opener: openerDescription,
-					},
-					messageId: "unpairedCloser",
-					node,
-				});
+						context.report({
+							data: {
+								closer,
+								expected: closerDescription,
+							},
+							messageId: "unexpectedCloser",
+							node,
+						});
+					} else {
+						// Fallback to old behavior if somehow no top entry
+						const openerCandidates = getConfiguredOpenersForCloser(closer);
+						const openerDescription = formatOpenerList(openerCandidates);
+
+						context.report({
+							data: {
+								closer,
+								opener: openerDescription,
+							},
+							messageId: "unpairedCloser",
+							node,
+						});
+					}
+				}
 				return;
 			}
 
@@ -960,7 +1009,8 @@ const rule: Rule.RuleModule = {
 				"Multiple consecutive calls to '{{opener}}' without matching closers (allowMultipleOpeners: false)",
 			robloxYieldViolation:
 				"Yielding function '{{yieldingFunction}}' auto-closes all profiles - subsequent '{{closer}}' will error",
-			unpairedCloser: "Unexpected call to '{{closer}}' - no matching '{{opener}}'",
+			unexpectedCloser: "Unexpected call to '{{closer}}' - expected one of: {{expected}}",
+			unpairedCloser: "Unexpected call to '{{closer}}' - no matching opener on stack",
 			unpairedOpener: "Unpaired call to '{{opener}}' - missing '{{closer}}' on {{paths}}",
 			wrongOrder:
 				"Closer '{{closer}}' called out of order - expected to close '{{expected}}' but '{{actual}}' is still open",
