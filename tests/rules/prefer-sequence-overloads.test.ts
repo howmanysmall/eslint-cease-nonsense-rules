@@ -10,13 +10,14 @@ const ruleTester = new RuleTester({
 });
 
 describe("prefer-sequence-overloads", () => {
+	// @ts-expect-error dumb piece of shit
 	ruleTester.run("prefer-sequence-overloads", rule, {
 		invalid: [
 			{
 				code:
 					"const gradient = new ColorSequence([\n" +
-					"\tnew ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),\n" +
-					"\tnew ColorSequenceKeypoint(1, Color3.fromRGB(255, 100, 200)),\n" +
+					"    new ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),\n" +
+					"    new ColorSequenceKeypoint(1, Color3.fromRGB(255, 100, 200)),\n" +
 					"]);",
 				errors: [{ messageId: "preferTwoPointOverload" }],
 				output: "const gradient = new ColorSequence(Color3.fromRGB(100, 200, 255), Color3.fromRGB(255, 100, 200));",
@@ -24,8 +25,8 @@ describe("prefer-sequence-overloads", () => {
 			{
 				code:
 					"const solid = new ColorSequence([\n" +
-					"\tnew ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),\n" +
-					"\tnew ColorSequenceKeypoint(1, Color3.fromRGB(100, 200, 255)),\n" +
+					"    new ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),\n" +
+					"    new ColorSequenceKeypoint(1, Color3.fromRGB(100, 200, 255)),\n" +
 					"]);",
 				errors: [{ messageId: "preferSingleOverload" }],
 				output: "const solid = new ColorSequence(Color3.fromRGB(100, 200, 255));",
@@ -33,8 +34,8 @@ describe("prefer-sequence-overloads", () => {
 			{
 				code:
 					"const fade = new NumberSequence([\n" +
-					"\tnew NumberSequenceKeypoint(0, 0),\n" +
-					"\tnew NumberSequenceKeypoint(1, 100),\n" +
+					"    new NumberSequenceKeypoint(0, 0),\n" +
+					"    new NumberSequenceKeypoint(1, 100),\n" +
 					"]);",
 				errors: [{ messageId: "preferTwoPointOverload" }],
 				output: "const fade = new NumberSequence(0, 100);",
@@ -42,8 +43,8 @@ describe("prefer-sequence-overloads", () => {
 			{
 				code:
 					"const constant = new NumberSequence([\n" +
-					"\tnew NumberSequenceKeypoint(0, 42),\n" +
-					"\tnew NumberSequenceKeypoint(1, 42),\n" +
+					"    new NumberSequenceKeypoint(0, 42),\n" +
+					"    new NumberSequenceKeypoint(1, 42),\n" +
 					"]);",
 				errors: [{ messageId: "preferSingleOverload" }],
 				output: "const constant = new NumberSequence(42);",
@@ -53,25 +54,25 @@ describe("prefer-sequence-overloads", () => {
 			// Non-endpoint keypoints should be untouched.
 			`
 new ColorSequence([
-	new ColorSequenceKeypoint(0, Color3.fromRGB(255, 255, 255)),
-	new ColorSequenceKeypoint(0.5, Color3.fromRGB(128, 128, 128)),
-	new ColorSequenceKeypoint(1, Color3.fromRGB(0, 0, 0)),
+    new ColorSequenceKeypoint(0, Color3.fromRGB(255, 255, 255)),
+    new ColorSequenceKeypoint(0.5, Color3.fromRGB(128, 128, 128)),
+    new ColorSequenceKeypoint(1, Color3.fromRGB(0, 0, 0)),
 ]);
 `,
 
 			// Wrong keypoint ordering
 			`
 new ColorSequence([
-	new ColorSequenceKeypoint(1, Color3.fromRGB(255, 100, 200)),
-	new ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),
+    new ColorSequenceKeypoint(1, Color3.fromRGB(255, 100, 200)),
+    new ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),
 ]);
 `,
 
 			// Unsupported overload with envelope
 			`
 new NumberSequence([
-	new NumberSequenceKeypoint(0, 10, 0.2),
-	new NumberSequenceKeypoint(1, 90, 0.8),
+    new NumberSequenceKeypoint(0, 10, 0.2),
+    new NumberSequenceKeypoint(1, 90, 0.8),
 ]);
 `,
 

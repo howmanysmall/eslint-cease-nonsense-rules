@@ -74,8 +74,8 @@ describe("ban-react-fc", () => {
 			},
 			{
 				code: `const UIInputProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-					return <div>{children}</div>;
-				};`,
+    return <div>{children}</div>;
+};`,
 				errors: [{ messageId: "banReactFC" }],
 			},
 			{

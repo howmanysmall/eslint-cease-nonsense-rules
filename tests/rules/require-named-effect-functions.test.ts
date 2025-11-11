@@ -202,21 +202,21 @@ useEffect(incorrectUsage, [someProperty]);
 			// async useCallback result referenced via identifier
 			{
 				code: `
-        	const asyncCallback = useCallback(async () => {
-            await fetchData();
-        	}, []);
-        	useEffect(asyncCallback, [dep]);
-        `,
+const asyncCallback = useCallback(async () => {
+    await fetchData();
+}, []);
+useEffect(asyncCallback, [dep]);
+`,
 				errors: [{ messageId: "identifierReferencesCallback" }],
 			},
 			// useMemo result referenced via identifier
 			{
 				code: `
-        	const memoizedCallback = useMemo(() => () => {
-            console.log("memoized");
-        	}, []);
-        	useEffect(memoizedCallback, []);
-        `,
+const memoizedCallback = useMemo(() => () => {
+    console.log("memoized");
+}, []);
+useEffect(memoizedCallback, []);
+`,
 				errors: [{ messageId: "identifierReferencesCallback" }],
 			},
 			// React.useCallback result referenced via identifier
