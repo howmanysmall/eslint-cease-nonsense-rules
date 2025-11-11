@@ -470,6 +470,17 @@ function test() {
   }
   debug.profileend();
 }
+
+// Contextual error: empty stack
+function test() {
+  Iris.End(); // Error: Unexpected call to 'Iris.End' - no matching opener on stack
+}
+
+// Contextual error: wrong closer
+function test() {
+  Iris.CollapsingHeader(["Units"]);
+  debug.profileend(); // Error: Unexpected call to 'debug.profileend' - expected one of: Iris.End
+}
 ```
 
 **✅ Good:**

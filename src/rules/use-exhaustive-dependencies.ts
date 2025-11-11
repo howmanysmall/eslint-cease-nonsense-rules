@@ -605,10 +605,10 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 
 					if (requiredCaptures.length > 0) {
 						// oxlint-disable-next-line no-array-callback-reference
-						const missingNames = Array.from(new Set(requiredCaptures.map(returnName))).join(", ");
+						const missingNames = [...new Set(requiredCaptures.map(returnName))].join(", ");
 
 						const usagePaths = requiredCaptures.map(({ usagePath }) => usagePath);
-						const uniqueDependencies = Array.from(new Set(usagePaths)).toSorted();
+						const uniqueDependencies = [...new Set(usagePaths)].toSorted();
 						const dependenciesString = `[${uniqueDependencies.join(", ")}]`;
 
 						context.report({
