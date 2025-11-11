@@ -44,10 +44,10 @@ function isExpressionArgument(argument: TSESTree.CallExpressionArgument | undefi
 }
 
 function extractKeypoint(
-	element: TSESTree.Expression | TSESTree.SpreadElement | null,
+	element: TSESTree.Expression | TSESTree.SpreadElement | undefined,
 	descriptor: SequenceDescriptor,
 ): KeypointData | undefined {
-	if (element === null || element.type !== AST_NODE_TYPES.NewExpression) return undefined;
+	if (element === undefined || element.type !== AST_NODE_TYPES.NewExpression) return undefined;
 	if (element.callee.type !== AST_NODE_TYPES.Identifier || element.callee.name !== descriptor.keypointName)
 		return undefined;
 
@@ -97,8 +97,8 @@ const preferSequenceOverloads: TSESLint.RuleModuleWithMetaDocs<
 				)
 					return;
 
-				const firstElement = argument.elements[0] ?? null;
-				const secondElement = argument.elements[1] ?? null;
+				const firstElement = argument.elements[0] ?? undefined;
+				const secondElement = argument.elements[1] ?? undefined;
 
 				const firstKeypoint = extractKeypoint(firstElement, descriptor);
 				const secondKeypoint = extractKeypoint(secondElement, descriptor);
