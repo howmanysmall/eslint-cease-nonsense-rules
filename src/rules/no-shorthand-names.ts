@@ -33,6 +33,7 @@ const DEFAULT_OPTIONS: Required<NoShorthandOptions> = {
 };
 
 const ESCAPE_REGEXP = /[.*+?^${}()|[\]\\]/g;
+const ESCAPE_WITH = String.raw`\$&`;
 
 function normalizeOptions(rawOptions: NoShorthandOptions | undefined): NormalizedOptions {
 	const mergedShorthands: Record<string, string> = { ...DEFAULT_OPTIONS.shorthands };
@@ -44,7 +45,7 @@ function normalizeOptions(rawOptions: NoShorthandOptions | undefined): Normalize
 
 	const escapedKeys = new Array<string>();
 	let length = 0;
-	for (const key of shorthandsMap.keys()) escapedKeys[length++] = key.replaceAll(ESCAPE_REGEXP, "\\$&");
+	for (const key of shorthandsMap.keys()) escapedKeys[length++] = key.replaceAll(ESCAPE_REGEXP, ESCAPE_WITH);
 
 	const selector = `Identifier[name=/^(${escapedKeys.join("|")})$/]`;
 
