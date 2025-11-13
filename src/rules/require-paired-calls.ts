@@ -304,8 +304,8 @@ const rule: Rule.RuleModule = {
 
 		function getCurrentContext(): ControlFlowContext {
 			return contextStack.length > 0
-				// oxlint-disable-next-line no-non-null-assertion -- this is fine! we checked already!
-				? contextStack.at(-1)!
+				? // oxlint-disable-next-line no-non-null-assertion -- this is fine! we checked already!
+					contextStack.at(-1)!
 				: {
 						asyncContext: false,
 						currentFunction: undefined,
