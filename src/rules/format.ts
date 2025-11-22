@@ -4,6 +4,8 @@ import { isOxfmtConfiguration, type OxfmtConfiguration } from "../types/oxfmt";
 import { isErrnoException } from "../utilities/error-utilities";
 import { toPrettyErrorsRaw } from "../utilities/typebox-utilities";
 
+// oxlint-disable-next-line no-void
+
 const OXFMT_CONFIGURATION_PATH = resolve(".", ".oxfmtrc.json");
 function indentLine(line: string): string {
 	return `  ${line}`;
