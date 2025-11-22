@@ -81,6 +81,8 @@
 		"@typescript-eslint/prefer-namespace-keyword": "error",
 		"@typescript-eslint/triple-slash-reference": "error",
 		"curly": "off",
+		// I love conflicts!
+		"default-case": "off",
 		"eqeqeq": "error",
 		"eslint/max-lines-per-function": [
 			"error",
