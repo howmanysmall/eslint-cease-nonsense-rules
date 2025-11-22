@@ -2,6 +2,7 @@ import type { TSESLint } from "@typescript-eslint/utils";
 import type { Rule } from "eslint";
 import banReactFC from "./rules/ban-react-fc";
 import enforceIanitorCheckType from "./rules/enforce-ianitor-check-type";
+import fastFormat from "./rules/fast-format";
 import noColor3Constructor from "./rules/no-color3-constructor";
 import noInstanceMethodsWithoutThis from "./rules/no-instance-methods-without-this";
 import noPrint from "./rules/no-print";
@@ -46,6 +47,7 @@ export type { HookEntry, UseExhaustiveDependenciesOptions } from "./rules/use-ex
 const rules: Readonly<Record<string, AnyRuleModule>> = {
 	"ban-react-fc": banReactFC,
 	"enforce-ianitor-check-type": enforceIanitorCheckType,
+	"fast-format": fastFormat,
 	"no-color3-constructor": noColor3Constructor,
 	"no-instance-methods-without-this": noInstanceMethodsWithoutThis,
 	"no-print": noPrint,
@@ -78,13 +80,12 @@ const rules: Readonly<Record<string, AnyRuleModule>> = {
  */
 const recommended = {
 	plugins: {
-		"cease-nonsense": {
-			rules,
-		},
+		"cease-nonsense": { rules },
 	},
 	rules: {
 		"cease-nonsense/ban-react-fc": "error",
 		"cease-nonsense/enforce-ianitor-check-type": "error",
+		"cease-nonsense/fast-format": "error",
 		"cease-nonsense/no-color3-constructor": "error",
 		"cease-nonsense/no-instance-methods-without-this": "error",
 		"cease-nonsense/no-print": "error",
@@ -103,9 +104,7 @@ type PluginConfig = typeof recommended;
 
 interface Plugin {
 	readonly rules: Readonly<Record<string, AnyRuleModule>>;
-	readonly configs: {
-		readonly recommended: PluginConfig;
-	};
+	readonly configs: { readonly recommended: PluginConfig };
 }
 
 const plugin: Plugin = {
