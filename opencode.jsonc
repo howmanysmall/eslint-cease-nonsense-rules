@@ -20,6 +20,16 @@
 		"uv format": { "disabled": true },
 		"zig": { "disabled": true }
 	},
+	"lsp": {
+		"eslint": { "disabled": true },
+		"oxc": {
+			"command": ["bun", "x", "--bun", "oxc_language_server"],
+			"disabled": false,
+			"env": {},
+			"extensions": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts"],
+			"initialization": {}
+		}
+	},
 	"mcp": {
 		"codex-subagent": {
 			"command": ["uvx", "codex-as-mcp@latest"],
