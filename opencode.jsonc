@@ -9,6 +9,12 @@
 			}
 		}
 	},
+	"experimental": {
+		"batch_tool": true,
+		"chatMaxRetries": 0,
+		"disable_paste_summary": false,
+		"hook": {}
+	},
 	"formatter": {
 		"gofmt": { "disabled": true },
 		"oxfmt": {
@@ -81,5 +87,6 @@
 	},
 	"tools": {
 		"simple-github*": true
-	}
+	},
+	"username": "HowManySmall"
 }
