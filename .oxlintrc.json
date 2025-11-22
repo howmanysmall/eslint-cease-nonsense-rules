@@ -25,7 +25,7 @@
 			"env": {},
 			"files": ["**/__tests__/*.test.ts"],
 			"globals": {
-				"jest": true,
+				"jest": "readonly",
 			},
 			"plugins": ["eslint", "import", "jest", "node", "oxc", "promise", "regex", "typescript", "unicorn"],
 			"rules": {
@@ -179,7 +179,6 @@
 		"no-useless-catch": "error",
 		"no-useless-concat": "error",
 		"no-useless-escape": "error",
-		"no-var": "error",
 		"no-var": "error",
 		"no-with": "error",
 		"node/no-new-require": "error",

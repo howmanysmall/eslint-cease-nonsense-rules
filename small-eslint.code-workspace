@@ -63,10 +63,8 @@
 			"*.code-workspace": "jsonc",
 		},
 
-		"json.validate.enable": false,
-
 		"oxc.enable": true,
-		"oxc.flags": {},
+		"oxc.fixKind": "safe_fix",
 		"oxc.fmt.experimental": true,
 		"oxc.lint.run": "onType",
 		"oxc.typeAware": true,
