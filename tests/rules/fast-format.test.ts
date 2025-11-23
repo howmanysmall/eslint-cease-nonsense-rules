@@ -18,30 +18,35 @@ describe("fast-format", () => {
 			{
 				code: "const x=1",
 				errors: [{ messageId: "REPLACE" }],
+				filename: "test.ts",
 				name: "missing semicolon and spacing",
 				output: "const x = 1;\n",
 			},
 			{
 				code: "const x = 1",
 				errors: [{ messageId: "REPLACE" }],
+				filename: "test.ts",
 				name: "missing semicolon only",
 				output: "const x = 1;\n",
 			},
 			{
 				code: "function foo() {\nreturn 42;\n}",
 				errors: [{ messageId: "REPLACE" }],
+				filename: "test.ts",
 				name: "wrong indentation (spaces instead of tabs)",
 				output: "function foo() {\n\treturn 42;\n}\n",
 			},
 			{
 				code: "const x=1;const y=2;",
 				errors: [{ messageId: "REPLACE" }],
+				filename: "test.ts",
 				name: "multiple formatting issues",
 				output: "const x = 1;\nconst y = 2;\n",
 			},
 			{
 				code: 'const str = "hello"',
 				errors: [{ messageId: "REPLACE" }],
+				filename: "test.ts",
 				name: "missing semicolon",
 				output: 'const str = "hello";\n',
 			},
@@ -49,18 +54,22 @@ describe("fast-format", () => {
 		valid: [
 			{
 				code: "const x = 1;\n",
+				filename: "test.ts",
 				name: "already formatted code with semicolon",
 			},
 			{
 				code: "function foo() {\n\treturn 42;\n}\n",
+				filename: "test.ts",
 				name: "already formatted function with tabs",
 			},
 			{
 				code: "",
+				filename: "test.ts",
 				name: "empty file",
 			},
 			{
-				code: "const obj = {\n\tfoo: 1,\n\tbar: 2,\n};\n",
+				code: "const obj = {\n\tfoo: 1,\n\tbar: 2\n};\n",
+				filename: "test.ts",
 				name: "object with trailing comma",
 			},
 		],
@@ -85,12 +94,14 @@ describe("fast-format", () => {
 			{
 				code: "const cached=1",
 				errors: [{ messageId: "REPLACE" }],
+				filename: "test.ts",
 				name: "caches formatted + already formatted",
 				output: "const cached = 1;\n",
 			},
 			{
 				code: "const cached=2",
 				errors: [{ messageId: "REPLACE" }],
+				filename: "test.ts",
 				name: "evicts older cache entries when limit reached",
 				output: "const cached = 2;\n",
 			},
@@ -117,6 +128,7 @@ describe("fast-format", () => {
 			{
 				code: "const broke=1",
 				errors: [{ message: "Oxfmt error: formatter broke" }],
+				filename: "test.ts",
 				name: "surface formatter errors once",
 			},
 		],
@@ -127,6 +139,7 @@ describe("fast-format", () => {
 			{
 				code: "const broke=1",
 				errors: [{ message: "Oxfmt error: formatter broke" }],
+				filename: "test.ts",
 				name: "uses cached error instead of reformatting",
 			},
 		],
@@ -144,7 +157,13 @@ describe("fast-format", () => {
 
 describe("resolveOxfmtPath", () => {
 	it("falls back when the resolver throws", () => {
-		expect(resolveOxfmtPath()).toEndWith("oxfmt");
+		const path = resolveOxfmtPath(
+			() => {
+				throw new Error("no resolver");
+			},
+			true,
+		);
+		expect(path).toBe("oxfmt");
 	});
 });
 
