@@ -107,7 +107,7 @@
 		"max-lines-per-function": "off",
 		"no-array-constructor": "off",
 		"no-async-promise-executor": "error",
-		"no-bitwise": "error",
+		"no-bitwise": "off",
 		"no-case-declarations": "error",
 		"no-class-assign": "error",
 		"no-compare-neg-zero": "error",
@@ -270,7 +270,8 @@
 		"unicorn/prefer-includes": "error",
 		"unicorn/prefer-logical-operator-over-ternary": "error",
 		"unicorn/prefer-math-min-max": "error",
-		"unicorn/prefer-math-trunc": "error",
+		// i love always incorrect garbage
+		"unicorn/prefer-math-trunc": "off",
 		"unicorn/prefer-modern-math-apis": "error",
 		"unicorn/prefer-native-coercion-functions": "error",
 		"unicorn/prefer-negative-index": "error",
