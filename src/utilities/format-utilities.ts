@@ -11,14 +11,21 @@ export interface Difference {
 	readonly insertText?: string;
 }
 
-function getOxfmtPath(): string {
-	try {
-		const currentDir = typeof __dirname === "undefined" ? dirname(fileURLToPath(import.meta.url)) : __dirname;
-		const oxfmtBin = resolve(currentDir, "../../node_modules/.bin/oxfmt");
-		return oxfmtBin;
-	} catch {
-		return "oxfmt";
+export function resolveOxfmtPath(
+	pathResolver: (path: string) => string = fileURLToPath,
+	usePathResolver: boolean = typeof __dirname === "undefined",
+): string {
+	if (usePathResolver) {
+		try {
+			const currentDirectory = dirname(pathResolver(import.meta.url));
+			const oxfmtBin = resolve(currentDirectory, "../../node_modules/.bin/oxfmt");
+			return oxfmtBin;
+		} catch {
+			return "oxfmt";
+		}
 	}
+
+	return resolve(__dirname, "../../node_modules/.bin/oxfmt");
 }
 
 function getExtension(filePath: string): string {
@@ -47,7 +54,7 @@ export function formatWithOxfmtSync(source: string, filePath: string): string {
 	try {
 		writeFileSync(tempFile, source, "utf8");
 
-		const oxfmtPath = getOxfmtPath();
+		const oxfmtPath = resolveOxfmtPath();
 		const result = spawnSync(oxfmtPath, [tempFile], {
 			encoding: "utf8",
 			stdio: ["ignore", "pipe", "pipe"],
@@ -90,6 +97,17 @@ export function generateDifferences(original: string, formatted: string): Readon
 }
 
 const MAX_LENGTH = 60;
+const SYMBOLS: Record<string, string> = {
+	" ": "·",
+	"\n": "␊",
+	"\r": "␍",
+	"\t": "→",
+};
+
+const WHITESPACE_REGEXP = /[\r\n\t ]/g;
+function toSymbol(character: string): string {
+	return SYMBOLS[character] ?? character;
+}
 
 /**
  * Show invisible characters for better error messages.
@@ -100,5 +118,5 @@ const MAX_LENGTH = 60;
 export function showInvisibles(text: string): string {
 	let result = text;
 	if (result.length > MAX_LENGTH) result = `${result.slice(0, MAX_LENGTH)}…`;
-	return result.replaceAll("\r", "␍").replaceAll("\n", "␊").replaceAll("\t", "→").replaceAll(" ", "·");
+	return result.replaceAll(WHITESPACE_REGEXP, toSymbol);
 }

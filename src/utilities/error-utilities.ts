@@ -1,18 +1,16 @@
 import Type from "typebox";
 import { Compile } from "typebox/compile";
 
-export interface ErrorLike {
-	name: string;
-	message: string;
-}
-
-export function isLiteralErrorLike(value: unknown): value is ErrorLike {
-	if (typeof value !== "object" || value === null) return false;
-	return "name" in value && typeof value.name === "string" && "message" in value && typeof value.message === "string";
-}
+export const isLiteralErrorLike = Compile(
+	Type.Object({
+		message: Type.String(),
+		name: Type.String(),
+	}),
+);
+export type ErrorLike = Type.Static<typeof isLiteralErrorLike>;
 
 export function isErrorLike(value: unknown): value is ErrorLike {
-	return value instanceof Error || isLiteralErrorLike(value);
+	return value instanceof Error || isLiteralErrorLike.Check(value);
 }
 
 const isErrnoProperties = Compile(
@@ -28,4 +26,17 @@ export function isErrnoException(value: unknown): value is NodeJS.ErrnoException
 	if (!isErrorLike(value)) return false;
 
 	return isErrnoProperties.Check(value);
+}
+
+/**
+ * Converts an unknown error value to a string message.
+ *
+ * If the error is an Error object, returns its message. Otherwise, coerces to
+ * string.
+ *
+ * @param error - The error value to stringify.
+ * @returns The string representation of the error.
+ */
+export function stringifyUnknownError(error: unknown): string {
+	return isErrorLike(error) ? error.message : String(error);
 }
