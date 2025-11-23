@@ -3,6 +3,7 @@ import {
 	type Difference,
 	formatWithOxfmtSync as formatWithOxfmt,
 	generateDifferences,
+	getExtension,
 	showInvisibles,
 } from "../utilities/format-utilities";
 
@@ -141,6 +142,11 @@ export function createFastFormatRule(options: FastFormatOptions = {}): Rule.Rule
 	return {
 		create(context) {
 			const { filename, sourceCode } = context;
+
+			// Optimization: Skip non-JS/TS files entirely
+			if (getExtension(filename) === undefined) {
+				return {};
+			}
 
 			return {
 				Program() {
