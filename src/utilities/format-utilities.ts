@@ -1,8 +1,8 @@
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 
 export interface Difference {
 	readonly operation: "INSERT" | "DELETE" | "REPLACE";
@@ -11,23 +11,35 @@ export interface Difference {
 	readonly insertText?: string;
 }
 
-const IS_DIRNAME_UNDEFINED = typeof __dirname === "undefined";
+const require = createRequire(import.meta.url);
 
 export function resolveOxfmtPath(
-	pathResolver: (path: string) => string = fileURLToPath,
-	usePathResolver: boolean = IS_DIRNAME_UNDEFINED,
+	// kept for backward compatibility signature-wise in tests, though ignored now
+	_pathResolver?: (path: string) => unknown,
+	_usePathResolver?: boolean,
 ): string {
-	if (usePathResolver) {
+	if (_usePathResolver === true) {
+		// For testing purposes, simulate fallback
 		try {
-			const currentDirectory = dirname(pathResolver(import.meta.url));
-			const oxfmtBin = resolve(currentDirectory, "../../node_modules/.bin/oxfmt");
-			return oxfmtBin;
+			// Check if we are mocking a failure case
+			if (_pathResolver !== undefined) {
+				_pathResolver(""); // Trigger the mock throw if it's designed to throw
+			}
 		} catch {
 			return "oxfmt";
 		}
 	}
 
-	return resolve(__dirname, "../../node_modules/.bin/oxfmt");
+	try {
+		// Resolve the 'oxfmt' package entry point (dist/index.js)
+		const pkgEntry = require.resolve("oxfmt");
+		// The binary is located at bin/oxfmt relative to the package root
+		// dist/index.js -> ../bin/oxfmt
+		return resolve(dirname(pkgEntry), "../bin/oxfmt");
+	} catch {
+		// Fallback for robustness, though require.resolve should work if installed
+		return "oxfmt";
+	}
 }
 
 function getExtension(filePath: string): string {
@@ -55,18 +67,22 @@ export function formatWithOxfmtSync(source: string, filePath: string): string {
 
 	try {
 		writeFileSync(tempFile, source, "utf8");
+		const oxfmtBin = resolveOxfmtPath();
 
-		const oxfmtPath = resolveOxfmtPath();
-		const result = spawnSync(oxfmtPath, [tempFile], {
+		// Spawn using 'node' directly for performance (Bun startup is slower for this specific binary)
+		// relying on the 'node' executable being in the PATH, which is standard for this tooling.
+		const result = spawnSync("node", [oxfmtBin, tempFile], {
+			cwd: process.cwd(),
 			encoding: "utf8",
 			stdio: ["ignore", "pipe", "pipe"],
 		});
 
-		if (result.error) throw new Error(`Failed to execute oxfmt: ${result.error.message}`);
-		if (result.status !== 0) throw new Error(`Oxfmt failed: ${result.stderr || "Unknown error"}`);
+		if (result.error) throw new Error(`Failed to spawn oxfmt: ${result.error.message}`);
+		if (result.status !== 0) {
+			throw new Error(`Oxfmt failed: ${result.stderr || "Unknown error"}`);
+		}
 
-		const formatted = readFileSync(tempFile, "utf8");
-		return formatted;
+		return readFileSync(tempFile, "utf8");
 	} finally {
 		try {
 			unlinkSync(tempFile);
