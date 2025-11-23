@@ -11,9 +11,11 @@ export interface Difference {
 	readonly insertText?: string;
 }
 
+const IS_DIRNAME_UNDEFINED = typeof __dirname === "undefined";
+
 export function resolveOxfmtPath(
 	pathResolver: (path: string) => string = fileURLToPath,
-	usePathResolver: boolean = typeof __dirname === "undefined",
+	usePathResolver: boolean = IS_DIRNAME_UNDEFINED,
 ): string {
 	if (usePathResolver) {
 		try {
