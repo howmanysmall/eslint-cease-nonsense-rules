@@ -13,31 +13,11 @@ export interface Difference {
 
 const require = createRequire(import.meta.url);
 
-export function resolveOxfmtPath(
-	// kept for backward compatibility signature-wise in tests, though ignored now
-	_pathResolver?: (path: string) => unknown,
-	_usePathResolver?: boolean,
-): string {
-	if (_usePathResolver === true) {
-		// For testing purposes, simulate fallback
-		try {
-			// Check if we are mocking a failure case
-			if (_pathResolver !== undefined) {
-				_pathResolver(""); // Trigger the mock throw if it's designed to throw
-			}
-		} catch {
-			return "oxfmt";
-		}
-	}
-
+export function resolveOxfmtPath(): string {
 	try {
-		// Resolve the 'oxfmt' package entry point (dist/index.js)
-		const pkgEntry = require.resolve("oxfmt");
-		// The binary is located at bin/oxfmt relative to the package root
-		// dist/index.js -> ../bin/oxfmt
-		return resolve(dirname(pkgEntry), "../bin/oxfmt");
+		const packageEntry = require.resolve("oxfmt");
+		return resolve(dirname(packageEntry), "../bin/oxfmt");
 	} catch {
-		// Fallback for robustness, though require.resolve should work if installed
 		return "oxfmt";
 	}
 }

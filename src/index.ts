@@ -2,7 +2,7 @@ import type { TSESLint } from "@typescript-eslint/utils";
 import type { Rule } from "eslint";
 import banReactFC from "./rules/ban-react-fc";
 import enforceIanitorCheckType from "./rules/enforce-ianitor-check-type";
-import fastFormat from "./rules/format";
+import fastFormat from "./rules/fast-format";
 import noColor3Constructor from "./rules/no-color3-constructor";
 import noInstanceMethodsWithoutThis from "./rules/no-instance-methods-without-this";
 import noPrint from "./rules/no-print";

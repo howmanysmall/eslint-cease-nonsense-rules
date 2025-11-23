@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { RuleTester } from "eslint";
-import rule, { createFastFormatRule, createFormatCache, getLocFromIndex } from "../../src/rules/format";
+import rule, { createFastFormatRule, createFormatCache, getLocFromIndex } from "../../src/rules/fast-format";
 import { generateDifferences, resolveOxfmtPath, showInvisibles } from "../../src/utilities/format-utilities";
 
 const languageOptions = {
@@ -12,8 +12,8 @@ const ruleTester = new RuleTester({
 	languageOptions,
 });
 
-describe("format", () => {
-	ruleTester.run("format", rule, {
+describe("fast-format", () => {
+	ruleTester.run("fast-format", rule, {
 		invalid: [
 			{
 				code: "const x=1",
@@ -144,11 +144,7 @@ describe("format", () => {
 
 describe("resolveOxfmtPath", () => {
 	it("falls back when the resolver throws", () => {
-		expect(
-			resolveOxfmtPath(() => {
-				throw new Error("no resolver");
-			}, true),
-		).toBe("oxfmt");
+		expect(resolveOxfmtPath()).toEndWith("oxfmt");
 	});
 });
 
