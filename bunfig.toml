@@ -1,6 +1,7 @@
 [test]
 coverage = true
 coverageThreshold = 0.9
+root = "./tests"
 
 [install]
 auto = "force"
