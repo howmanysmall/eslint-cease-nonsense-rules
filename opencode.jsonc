@@ -1,5 +1,21 @@
 {
 	"$schema": "https://opencode.ai/config.json",
+	"agent": {
+		"plan": {
+			"tools": {
+				"bash": false,
+				"edit": false,
+				"write": false
+			}
+		}
+	},
+	"command": {},
+	"experimental": {
+		"batch_tool": true,
+		"chatMaxRetries": 0,
+		"disable_paste_summary": false,
+		"hook": {}
+	},
 	"formatter": {
 		"gofmt": { "disabled": true },
 		"oxfmt": {
@@ -10,6 +26,21 @@
 		"prettier": { "disabled": true },
 		"uv format": { "disabled": true },
 		"zig": { "disabled": true }
+	},
+	"instructions": ["./AGENTS.md"],
+	"keybinds": {
+		"model_list": "ctrl+m"
+	},
+	"layout": "stretch",
+	"lsp": {
+		"eslint": { "disabled": true },
+		"oxc": {
+			"command": ["bun", "x", "--bun", "oxc_language_server"],
+			"disabled": false,
+			"env": {},
+			"extensions": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts"],
+			"initialization": {}
+		}
 	},
 	"mcp": {
 		"codex-subagent": {
@@ -51,5 +82,11 @@
 		"edit": "ask",
 		"external_directory": "ask",
 		"webfetch": "ask"
-	}
+	},
+	"share": "manual",
+	"tools": {
+		"simple-github*": true
+	},
+	"tui": {},
+	"username": "HowManySmall"
 }

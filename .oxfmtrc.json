@@ -6,7 +6,6 @@
 	"embeddedLanguageFormatting": "auto",
 	"endOfLine": "lf",
 	"experimentalOperatorPosition": "end",
-	"experimentalSortImports": null,
 	"ignorePatterns": ["dist/**", "node_modules/**"],
 	"jsxSingleQuote": false,
 	"objectWrap": "preserve",

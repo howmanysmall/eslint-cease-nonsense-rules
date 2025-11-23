@@ -15,13 +15,17 @@
 			"type": "stdio",
 		},
 		"github": {
-			"args": ["x", "--bun", "-y", "@modelcontextprotocol/server-github"],
-			"command": "bun",
-			"env": {
-				"GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github-token}",
-			},
-			"type": "stdio",
+			"type": "http",
+			"url": "https://api.githubcopilot.com/mcp/",
 		},
+		// "github-legacy": {
+		// 	"args": ["x", "--bun", "-y", "@modelcontextprotocol/server-github"],
+		// 	"command": "bun",
+		// 	"env": {
+		// 		"GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github-token}",
+		// 	},
+		// 	"type": "stdio",
+		// },
 		"package-registry": {
 			"args": ["x", "--bun", "package-registry-mcp"],
 			"command": "bun",
