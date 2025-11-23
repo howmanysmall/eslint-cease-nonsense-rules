@@ -1,5 +1,5 @@
 import { TSESTree } from "@typescript-eslint/types";
-import type { Rule } from "eslint";
+import type { TSESLint } from "@typescript-eslint/utils";
 
 export interface ComplexityConfiguration {
 	readonly baseThreshold: number;
@@ -26,6 +26,13 @@ const SHOULD_NOT_NOT_RETURN_TYPE = new Set<string>([
 	TSESTree.AST_NODE_TYPES.FunctionDeclaration,
 	TSESTree.AST_NODE_TYPES.FunctionExpression,
 ]);
+
+type MessageIds = "complexInterfaceNeedsCheck" | "missingIanitorCheckType";
+type Options = [Partial<ComplexityConfiguration>];
+
+interface RuleDocs extends TSESLint.RuleMetaDataDocs {
+	readonly recommended?: boolean;
+}
 
 function hasTypeAnnotation(node: { type: string; id?: unknown; returnType?: unknown }): boolean {
 	if (
@@ -162,9 +169,10 @@ function calculateIanitorComplexity(node: {
 	}
 }
 
-const enforceIanitorCheckType: Rule.RuleModule = {
+const enforceIanitorCheckType: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocs> = {
 	create(context) {
-		const config: ComplexityConfiguration = { ...DEFAULT_CONFIGURATION, ...context.options[0] };
+		const [rawOptions] = context.options;
+		const config: ComplexityConfiguration = { ...DEFAULT_CONFIGURATION, ...rawOptions };
 		const cache: ComplexityCache = {
 			nodeCache: new WeakMap(),
 			visitedNodes: new WeakSet(),
@@ -309,9 +317,8 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 
 				case TSESTree.AST_NODE_TYPES.TSFunctionType:
 				case TSESTree.AST_NODE_TYPES.TSMethodSignature: {
-					const func = node as TSESTree.TSFunctionType | TSESTree.TSMethodSignature;
 					score = 2;
-					for (const param of func.params) {
+					for (const param of node.params) {
 						const typeAnnotation = "typeAnnotation" in param ? param.typeAnnotation : undefined;
 						if (typeAnnotation)
 							score = addScore(
@@ -319,10 +326,10 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 								calculateStructuralComplexity(typeAnnotation.typeAnnotation, nextDepth),
 							);
 					}
-					if (func.returnType)
+					if (node.returnType)
 						score = addScore(
 							score,
-							calculateStructuralComplexity(func.returnType.typeAnnotation, nextDepth),
+							calculateStructuralComplexity(node.returnType.typeAnnotation, nextDepth),
 						);
 					break;
 				}
@@ -338,27 +345,25 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 			return score;
 		}
 
-		const variableDeclaratorsToCheck = new Map<unknown, { complexity: number }>();
+			const variableDeclaratorsToCheck = new Map<TSESTree.VariableDeclarator, { complexity: number }>();
 
-		return {
-			"Program:exit"() {
-				for (const [nodeKey, data] of variableDeclaratorsToCheck.entries()) {
-					const node = nodeKey as TSESTree.VariableDeclarator;
+			return {
+				"Program:exit"() {
+					for (const [node, data] of variableDeclaratorsToCheck.entries()) {
+						if (node.id.type === TSESTree.AST_NODE_TYPES.Identifier && ianitorStaticVariables.has(node.id.name))
+							continue;
 
-					if (node.id.type === TSESTree.AST_NODE_TYPES.Identifier && ianitorStaticVariables.has(node.id.name))
-						continue;
-
-					context.report({
-						data: { score: data.complexity.toFixed(1) },
+						context.report({
+							data: { score: data.complexity.toFixed(1) },
 						messageId: "missingIanitorCheckType",
 						node: node.id,
 					});
 				}
 			},
 
-			TSInterfaceDeclaration(node) {
-				const complexity = calculateStructuralComplexity(node);
-				const name = getTypeName(node);
+				TSInterfaceDeclaration(node: TSESTree.TSInterfaceDeclaration) {
+					const complexity = calculateStructuralComplexity(node);
+					const name = getTypeName(node);
 
 				if (complexity >= config.interfacePenalty) {
 					context.report({
@@ -384,24 +389,24 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 				});
 			},
 
-			VariableDeclarator(node) {
-				if (!node.init || node.init.type !== TSESTree.AST_NODE_TYPES.CallExpression) return;
-				if (!isIanitorValidator(node.init)) return;
-				if (hasTypeAnnotation(node)) return;
+				VariableDeclarator(node: TSESTree.VariableDeclarator) {
+					if (!node.init || node.init.type !== TSESTree.AST_NODE_TYPES.CallExpression) return;
+					if (!isIanitorValidator(node.init)) return;
+					if (hasTypeAnnotation(node)) return;
 
 				const complexity = calculateIanitorComplexity(node.init);
 				if (complexity < config.baseThreshold) return;
 
-				variableDeclaratorsToCheck.set(node as unknown, { complexity });
+				variableDeclaratorsToCheck.set(node, { complexity });
 			},
 		};
 	},
+	defaultOptions: [{}],
 	meta: {
 		docs: {
 			description: "Enforce Ianitor.Check<T> type annotations on complex TypeScript types",
 			recommended: false,
 		},
-		fixable: undefined,
 		messages: {
 			complexInterfaceNeedsCheck:
 				"Interface '{{name}}' requires Ianitor.Check<T> annotation (interfaces always need explicit checking)",
