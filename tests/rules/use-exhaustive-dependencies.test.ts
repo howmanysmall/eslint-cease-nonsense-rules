@@ -475,395 +475,419 @@ function Component(props) {
 		valid: [
 			// Correct dependencies
 			`
-                        function Component() {
-                            const a = 1;
-                            useEffect(() => {
-                                console.log(a);
-                            }, [a]);
-                        }
-                    `,
+function Component() {
+    const a = 1;
+    useEffect(() => {
+        console.log(a);
+    }, [a]);
+}
+`,
 
 			// Multiple correct dependencies
 			`
-                        function Component() {
-                            const a = 1;
-                            const b = 2;
-                            useEffect(() => {
-                                console.log(a, b);
-                            }, [a, b]);
-                        }
-                    `,
+function Component() {
+    const a = 1;
+    const b = 2;
+    useEffect(() => {
+        console.log(a, b);
+    }, [a, b]);
+}
+`,
 
 			// No dependencies needed - no captures
 			`
-                        function Component() {
-                            useEffect(() => {
-                                console.log("hello");
-                            }, []);
-                        }
-                    `,
+function Component() {
+    useEffect(() => {
+        console.log("hello");
+    }, []);
+}
+`,
 
 			// useState setter is stable
 			`
-                        function Component() {
-                            const [state, setState] = useState(0);
-                            useEffect(() => {
-                                setState(1);
-                            }, []);
-                        }
-                    `,
+function Component() {
+    const [state, setState] = useState(0);
+    useEffect(() => {
+        setState(1);
+    }, []);
+}
+`,
 
 			// useState with state in deps
 			`
-                        function Component() {
-                            const [state, setState] = useState(0);
-                            useEffect(() => {
-                                console.log(state);
-                                setState(1);
-                            }, [state]);
-                        }
-                    `,
+function Component() {
+    const [state, setState] = useState(0);
+    useEffect(() => {
+        console.log(state);
+        setState(1);
+    }, [state]);
+}
+`,
 
 			// useReducer dispatch is stable
 			`
-                        function Component() {
-                            const [state, dispatch] = useReducer(reducer, initial);
-                            useEffect(() => {
-                                dispatch({ type: "INCREMENT" });
-                            }, []);
-                        }
-                    `,
+function Component() {
+    const [state, dispatch] = useReducer(reducer, initial);
+    useEffect(() => {
+        dispatch({ type: "INCREMENT" });
+    }, []);
+}
+`,
 
 			// useRef is stable
 			`
-                        function Component() {
-                            const ref = useRef(null);
-                            useEffect(() => {
-                                console.log(ref.current);
-                            }, []);
-                        }
-                    `,
+function Component() {
+    const ref = useRef(null);
+    useEffect(() => {
+        console.log(ref.current);
+    }, []);
+}
+`,
 
 			// React Lua - useBinding is fully stable
 			`
-                        function Component() {
-                            const [binding, setBinding] = useBinding(0);
-                            useEffect(() => {
-                                setBinding(1);
-                                console.log(binding);
-                            }, []);
-                        }
-                    `,
+function Component() {
+    const [binding, setBinding] = useBinding(0);
+    useEffect(() => {
+        setBinding(1);
+        console.log(binding);
+    }, []);
+}
+`,
 
 			// Imported values don't need dependencies
 			`
-                        import { helper } from "./utils";
-                        function Component() {
-                            useEffect(() => {
-                                helper();
-                            }, []);
-                        }
-                    `,
+import { helper } from "./utils";
+function Component() {
+    useEffect(() => {
+        helper();
+    }, []);
+}
+`,
 
 			// Constants are stable
 			`
-                        const CONSTANT = 10;
-                        function Component() {
-                            useEffect(() => {
-                                console.log(CONSTANT);
-                            }, []);
-                        }
-                    `,
+const CONSTANT = 10;
+function Component() {
+    useEffect(() => {
+        console.log(CONSTANT);
+    }, []);
+}
+`,
 
 			// Member expression with correct dependency
 			`
-                        function Component() {
-                            const obj = { prop: 1 };
-                            useEffect(() => {
-                                console.log(obj.prop);
-                            }, [obj]);
-                        }
-                    `,
+function Component() {
+    const obj = { prop: 1 };
+    useEffect(() => {
+        console.log(obj.prop);
+    }, [obj]);
+}
+`,
 
 			// Member expression - exact match
 			`
-                        function Component() {
-                            const obj = { nested: { value: 1 } };
-                            useEffect(() => {
-                                console.log(obj.nested.value);
-                            }, [obj.nested.value]);
-                        }
-                    `,
+function Component() {
+    const obj = { nested: { value: 1 } };
+    useEffect(() => {
+        console.log(obj.nested.value);
+    }, [obj.nested.value]);
+}
+`,
 
 			// useCallback with correct dependencies
 			`
-                        function Component() {
-                            const a = 1;
-                            const callback = useCallback(() => {
-                                console.log(a);
-                            }, [a]);
-                        }
-                    `,
+function Component() {
+    const a = 1;
+    const callback = useCallback(() => {
+        console.log(a);
+    }, [a]);
+}
+`,
 
 			// useMemo with correct dependencies
 			`
-                        function Component() {
-                            const a = 1;
-                            const value = useMemo(() => {
-                                return a * 2;
-                            }, [a]);
-                        }
-                    `,
+function Component() {
+    const a = 1;
+    const value = useMemo(() => {
+        return a * 2;
+    }, [a]);
+}
+`,
 
 			// useLayoutEffect with correct dependencies
 			`
-                        function Component() {
-                            const a = 1;
-                            useLayoutEffect(() => {
-                                console.log(a);
-                            }, [a]);
-                        }
-                    `,
+function Component() {
+    const a = 1;
+    useLayoutEffect(() => {
+        console.log(a);
+    }, [a]);
+}
+`,
 
 			// useImperativeHandle with correct dependencies
 			`
-                        function Component(ref) {
-                            const value = 1;
-                            useImperativeHandle(ref, () => ({
-                                getValue: () => value
-                            }), [value]);
-                        }
-                    `,
+function Component(ref) {
+    const value = 1;
+    useImperativeHandle(ref, () => ({
+        getValue: () => value
+    }), [value]);
+}
+`,
 
 			// Destructured props
 			`
-                        function Component({ value }) {
-                            useEffect(() => {
-                                console.log(value);
-                            }, [value]);
-                        }
-                    `,
+function Component({ value }) {
+    useEffect(() => {
+        console.log(value);
+    }, [value]);
+}
+`,
 
 			// Function parameter
 			`
-                        function Component(callback) {
-                            useEffect(() => {
-                                callback();
-                            }, [callback]);
-                        }
-                    `,
+function Component(callback) {
+    useEffect(() => {
+        callback();
+    }, [callback]);
+}
+`,
 
 			// No dependencies array with no captures
 			`
-                        function Component() {
-                            useEffect(() => {
-                                console.log("hello");
-                            });
-                        }
-                    `,
+function Component() {
+    useEffect(() => {
+        console.log("hello");
+    });
+}
+`,
 
 			// Conditional logic inside hook
 			`
-                        function Component() {
-                            const a = 1;
-                            useEffect(() => {
-                                if (condition) {
-                                    console.log(a);
-                                }
-                            }, [a]);
-                        }
-                    `,
+function Component() {
+    const a = 1;
+    useEffect(() => {
+        if (condition) {
+            console.log(a);
+        }
+    }, [a]);
+}
+`,
 
 			// React namespace hook
 			`
-                        function Component() {
-                            const a = 1;
-                            React.useEffect(() => {
-                                console.log(a);
-                            }, [a]);
-                        }
-                    `,
+function Component() {
+    const a = 1;
+    React.useEffect(() => {
+        console.log(a);
+    }, [a]);
+}
+`,
 
 			// All standard hooks with correct deps
 			`
-                        function Component() {
-                            const a = 1;
-                            useEffect(() => { console.log(a); }, [a]);
-                            useLayoutEffect(() => { console.log(a); }, [a]);
-                            useCallback(() => { console.log(a); }, [a]);
-                            useMemo(() => a, [a]);
-                        }
-                    `,
+function Component() {
+    const a = 1;
+    useEffect(() => { console.log(a); }, [a]);
+    useLayoutEffect(() => { console.log(a); }, [a]);
+    useCallback(() => { console.log(a); }, [a]);
+    useMemo(() => a, [a]);
+}
+`,
 
 			// useTransition startTransition is stable
 			`
-                        function Component() {
-                            const [isPending, startTransition] = useTransition();
-                            useEffect(() => {
-                                startTransition(() => {
-                                    // transition
-                                });
-                            }, []);
-                        }
-                    `,
+function Component() {
+    const [isPending, startTransition] = useTransition();
+    useEffect(() => {
+        startTransition(() => {
+            // transition
+        });
+    }, []);
+}
+`,
 
 			// Props with stable setter
 			`
-                        function Component(props) {
-                            const [state, setState] = useState(0);
-                            useEffect(() => {
-                                setState(props.value);
-                            }, [props.value]);
-                        }
-                    `,
+function Component(props) {
+    const [state, setState] = useState(0);
+    useEffect(() => {
+        setState(props.value);
+    }, [props.value]);
+}
+`,
 
 			// Computed property access
 			`
-                        function Component() {
-                            const obj = { prop: 1 };
-                            const key = "prop";
-                            useEffect(() => {
-                                console.log(obj[key]);
-                            }, [obj, key]);
-                        }
-                    `,
+function Component() {
+    const obj = { prop: 1 };
+    const key = "prop";
+    useEffect(() => {
+        console.log(obj[key]);
+    }, [obj, key]);
+}
+`,
 
 			// React Lua - multiple useBinding calls
 			`
-                        function Component() {
-                            const [binding1] = useBinding(0);
-                            const [binding2] = useBinding(0);
-                            useEffect(() => {
-                                console.log(binding1, binding2);
-                            }, []);
-                        }
-                    `,
+function Component() {
+    const [binding1] = useBinding(0);
+    const [binding2] = useBinding(0);
+    useEffect(() => {
+        console.log(binding1, binding2);
+    }, []);
+}
+`,
 
 			// Global built-ins should not be reported as dependencies
 			`
-                        function Component() {
-                            useEffect(() => {
-                                const arr = new Array();
-                            }, []);
-                        }
-                    `,
+function Component() {
+    useEffect(() => {
+        const arr = new Array();
+    }, []);
+}
+`,
 
 			// TypeScript type parameters should not be dependencies (simplified without generic syntax)
 			`
-                        function Component() {
-                            const setMemorySafeState = useCallback((newState) => {
-                                // Type annotations like SetStateAction<S> would be here in real code
-                                setState(newState);
-                            }, []);
-                        }
-                    `,
+function Component() {
+    const setMemorySafeState = useCallback((newState) => {
+        // Type annotations like SetStateAction<S> would be here in real code
+        setState(newState);
+    }, []);
+}
+`,
 
 			// React.joinBindings returns a stable binding
 			`
-                        function Component() {
-                            const joined = React.joinBindings({ a, b });
-                            useEffect(() => {
-                                console.log(joined);
-                            }, []);
-                        }
-                    `,
+function Component() {
+    const joined = React.joinBindings({ a, b });
+    useEffect(() => {
+        console.log(joined);
+    }, []);
+}
+`,
 
 			// Binding.map() returns a stable binding
 			`
-                        function Component() {
-                            const binding = useBinding(0);
-                            const mapped = binding.map(x => x * 2);
-                            useEffect(() => {
-                                console.log(mapped);
-                            }, []);
-                        }
-                    `,
+function Component() {
+    const binding = useBinding(0);
+    const mapped = binding.map(x => x * 2);
+    useEffect(() => {
+        console.log(mapped);
+    }, []);
+}
+`,
 
 			// React.joinBindings().map() chained call is stable
 			`
-                        function Component() {
-                            const scaleBinding = React.joinBindings({ a, b }).map(({ a, b }) => a + b);
-                            useMemo(() => {
-                                return scaleBinding.map(scale => scale * 2);
-                            }, []);
-                        }
-                    `,
+function Component() {
+    const scaleBinding = React.joinBindings({ a, b }).map(({ a, b }) => a + b);
+    useMemo(() => {
+        return scaleBinding.map(scale => scale * 2);
+    }, []);
+}
+`,
 
 			// Module-level constants should not be dependencies
 			`
-                        const log = { Warning: () => {}, Info: () => {} };
-                        function Component() {
-                            useEffect(() => {
-                                log.Warning("test");
-                                log.Info("info");
-                            }, []);
-                        }
-                    `,
+const log = { Warning: () => {}, Info: () => {} };
+function Component() {
+    useEffect(() => {
+        log.Warning("test");
+        log.Info("info");
+    }, []);
+}
+`,
 
 			// Outer function scope should not be dependencies
 			`
-                        function useOuter() {
-                            const helper = () => {};
+function useOuter() {
+    const helper = () => {};
 
-                            function useInner() {
-                                useEffect(() => {
-                                    helper();
-                                }, []);
-                            }
-                        }
-                    `,
+    function useInner() {
+        useEffect(() => {
+            helper();
+        }, []);
+    }
+}
+`,
 
 			// Component-scope literal constant is stable
 			`
-                        function Component() {
-                            const x = 1;
-                            const y = "string";
-                            const z = null;
-                            useEffect(() => {
-                                console.log(x, y, z);
-                            }, []);
-                        }
-                    `,
+function Component() {
+    const x = 1;
+    const y = "string";
+    const z = null;
+    useEffect(() => {
+        console.log(x, y, z);
+    }, []);
+}
+`,
 			`
-                        function Component() {
-                            const value = 10;
-                            useMemo(() => {
-                                if (value === undefined) return null;
-                                return value;
-                            }, [value]);
-                        }
-                    `,
+function Component() {
+    const value = 10;
+    useMemo(() => {
+        if (value === undefined) return null;
+        return value;
+    }, [value]);
+}
+`,
 			`
-                        function Component() {
-                            useCallback(() => {
-                                return Promise.resolve();
-                            }, []);
-                        }
-                    `,
+function Component() {
+    useCallback(() => {
+        return Promise.resolve();
+    }, []);
+}
+`,
 			`
-                        function Component() {
-                            useEffect(() => {
-                                console.log(Math.PI);
-                            }, []);
-                        }
-                    `,
+function Component() {
+    useEffect(() => {
+        console.log(Math.PI);
+    }, []);
+}
+`,
 			`
-                        function Component() {
-                            useMemo(() => {
-                                const arr = new Array();
-                                return arr;
-                            }, []);
-                        }
-                    `,
+function Component() {
+    useMemo(() => {
+        const arr = new Array();
+        return arr;
+    }, []);
+}
+`,
 			`
-                        function Component() {
-                            useEffect(() => {
-                                const map = new Map();
-                                const set = new Set();
-                                const date = new Date();
-                            }, []);
-                        }
-                    `,
+function Component() {
+    useEffect(() => {
+        const map = new Map();
+        const set = new Set();
+        const date = new Date();
+    }, []);
+}
+`,
+			// Local loop variable in useMemo with shadowing
+			`
+function Component() {
+    const i = 10;
+    const items = [1, 2, 3];
+    useMemo(() => {
+        for (let i = 0; i < items.length; i++) {
+            console.log(i);
+        }
+    }, [items]);
+}
+`,
+			// Shadowing variable in nested block
+			`
+function Component() {
+    const local = 10;
+    useMemo(() => {
+        {
+            let local = 0;
+            console.log(local);
+        }
+    }, []);
+}
+`,
 		],
 	});
 

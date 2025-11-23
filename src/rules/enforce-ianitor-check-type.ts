@@ -1,5 +1,5 @@
+import { ESLintUtils, type TSESLint } from "@typescript-eslint/utils";
 import { TSESTree } from "@typescript-eslint/types";
-import type { Rule } from "eslint";
 
 export interface ComplexityConfiguration {
 	readonly baseThreshold: number;
@@ -27,12 +27,16 @@ const SHOULD_NOT_NOT_RETURN_TYPE = new Set<string>([
 	TSESTree.AST_NODE_TYPES.FunctionExpression,
 ]);
 
+function hasTypeAnnotationProperty(node: object): node is { typeAnnotation: unknown } {
+	return "typeAnnotation" in node;
+}
+
 function hasTypeAnnotation(node: { type: string; id?: unknown; returnType?: unknown }): boolean {
 	if (
 		node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
 		node.id &&
 		typeof node.id === "object" &&
-		"typeAnnotation" in node.id
+		hasTypeAnnotationProperty(node.id)
 	)
 		return !!node.id.typeAnnotation;
 
@@ -162,7 +166,42 @@ function calculateIanitorComplexity(node: {
 	}
 }
 
-const enforceIanitorCheckType: Rule.RuleModule = {
+type MessageIds = "complexInterfaceNeedsCheck" | "missingIanitorCheckType";
+type Options = [Partial<ComplexityConfiguration>];
+
+const createRule = ESLintUtils.RuleCreator(
+	(name) =>
+		`https://github.com/howmanysmall/eslint-cease-nonsense-rules/blob/main/docs/rules/${name}.md`,
+);
+
+const enforceIanitorCheckType = createRule<Options, MessageIds>({
+	name: "enforce-ianitor-check-type",
+	meta: {
+		docs: {
+			description: "Enforce Ianitor.Check<T> type annotations on complex TypeScript types",
+		},
+		messages: {
+			complexInterfaceNeedsCheck:
+				"Interface '{{name}}' requires Ianitor.Check<T> annotation (interfaces always need explicit checking)",
+			missingIanitorCheckType:
+				"Complex type (score: {{score}}) requires Ianitor.Check<T> annotation for type safety",
+		},
+		schema: [
+			{
+				additionalProperties: false,
+				properties: {
+					baseThreshold: { minimum: 1, type: "number" },
+					errorThreshold: { minimum: 1, type: "number" },
+					interfacePenalty: { minimum: 1, type: "number" },
+					performanceMode: { type: "boolean" },
+					warnThreshold: { minimum: 1, type: "number" },
+				},
+				type: "object",
+			},
+		],
+		type: "problem",
+	},
+	defaultOptions: [DEFAULT_CONFIGURATION],
 	create(context) {
 		const config: ComplexityConfiguration = { ...DEFAULT_CONFIGURATION, ...context.options[0] };
 		const cache: ComplexityCache = {
@@ -341,7 +380,7 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 		const variableDeclaratorsToCheck = new Map<unknown, { complexity: number }>();
 
 		return {
-			"Program:exit"() {
+			"Program:exit"(): void {
 				for (const [nodeKey, data] of variableDeclaratorsToCheck.entries()) {
 					const node = nodeKey as TSESTree.VariableDeclarator;
 
@@ -356,7 +395,7 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 				}
 			},
 
-			TSInterfaceDeclaration(node) {
+			TSInterfaceDeclaration(node): void {
 				const complexity = calculateStructuralComplexity(node);
 				const name = getTypeName(node);
 
@@ -369,7 +408,7 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 				}
 			},
 
-			TSTypeAliasDeclaration(node: TSESTree.TSTypeAliasDeclaration) {
+			TSTypeAliasDeclaration(node): void {
 				const variableName = extractIanitorStaticVariable(node.typeAnnotation);
 				if (variableName) ianitorStaticVariables.add(variableName);
 				if (hasIanitorStaticType(node.typeAnnotation)) return;
@@ -384,7 +423,7 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 				});
 			},
 
-			VariableDeclarator(node) {
+			VariableDeclarator(node): void {
 				if (!node.init || node.init.type !== TSESTree.AST_NODE_TYPES.CallExpression) return;
 				if (!isIanitorValidator(node.init)) return;
 				if (hasTypeAnnotation(node)) return;
@@ -396,33 +435,6 @@ const enforceIanitorCheckType: Rule.RuleModule = {
 			},
 		};
 	},
-	meta: {
-		docs: {
-			description: "Enforce Ianitor.Check<T> type annotations on complex TypeScript types",
-			recommended: false,
-		},
-		fixable: undefined,
-		messages: {
-			complexInterfaceNeedsCheck:
-				"Interface '{{name}}' requires Ianitor.Check<T> annotation (interfaces always need explicit checking)",
-			missingIanitorCheckType:
-				"Complex type (score: {{score}}) requires Ianitor.Check<T> annotation for type safety",
-		},
-		schema: [
-			{
-				additionalProperties: false,
-				properties: {
-					baseThreshold: { minimum: 1, type: "number" },
-					errorThreshold: { minimum: 1, type: "number" },
-					interfacePenalty: { minimum: 1, type: "number" },
-					performanceMode: { type: "boolean" },
-					warnThreshold: { minimum: 1, type: "number" },
-				},
-				type: "object",
-			},
-		],
-		type: "problem",
-	},
-};
+});
 
-export default enforceIanitorCheckType;
+export default enforceIanitorCheckType as unknown as TSESLint.AnyRuleModuleWithMetaDocs;

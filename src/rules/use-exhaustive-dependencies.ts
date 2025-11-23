@@ -401,11 +401,7 @@ function resolveFunctionReference(
 	return undefined;
 }
 
-function collectCaptures(
-	node: TSESTree.Node,
-	scope: Scope.Scope,
-	sourceCode: Rule.RuleContext["sourceCode"],
-): ReadonlyArray<CaptureInfo> {
+function collectCaptures(node: TSESTree.Node, sourceCode: Rule.RuleContext["sourceCode"]): ReadonlyArray<CaptureInfo> {
 	const captures = new Array<CaptureInfo>();
 	const captureSet = new Set<string>();
 
@@ -416,7 +412,7 @@ function collectCaptures(
 			if (captureSet.has(name) || GLOBAL_BUILTINS.has(name) || isInTypePosition(current)) return;
 
 			let variable: Scope.Variable | undefined;
-			let currentScope: Scope.Scope | null = scope;
+			let currentScope: Scope.Scope | null = sourceCode.getScope(current as unknown as Rule.Node);
 
 			while (currentScope) {
 				variable = currentScope.set.get(name);
@@ -596,8 +592,8 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 
 				const dependenciesArgument = parameters[dependenciesIndex];
 				if (!dependenciesArgument && options.reportMissingDependenciesArray) {
-					const scope = getScope(closureFunction);
-					const captures = collectCaptures(closureFunction, scope, context.sourceCode);
+					// const _scope = getScope(closureFunction);
+					const captures = collectCaptures(closureFunction, context.sourceCode);
 
 					const requiredCaptures = captures.filter(
 						(capture) => !isStableValue(capture.variable, capture.name, stableHooks),
@@ -636,8 +632,8 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 
 				const dependenciesArray = dependenciesArgument;
 
-				const scope = getScope(closureFunction);
-				const captures = collectCaptures(closureFunction, scope, context.sourceCode);
+				// const _scope = getScope(closureFunction);
+				const captures = collectCaptures(closureFunction, context.sourceCode);
 
 				const dependencies = parseDependencies(dependenciesArray, context.sourceCode);
 
