@@ -9,6 +9,7 @@
 			}
 		}
 	},
+	"command": {},
 	"experimental": {
 		"batch_tool": true,
 		"chatMaxRetries": 0,
@@ -26,6 +27,11 @@
 		"uv format": { "disabled": true },
 		"zig": { "disabled": true }
 	},
+	"instructions": ["./AGENTS.md"],
+	"keybinds": {
+		"model_list": "ctrl+m"
+	},
+	"layout": "stretch",
 	"lsp": {
 		"eslint": { "disabled": true },
 		"oxc": {
@@ -59,14 +65,6 @@
 			"type": "remote",
 			"url": "https://mcp.grep.app"
 		},
-		"github": {
-			"enabled": false,
-			"headers": {
-				"Authorization": "Bearer ${GITHUB_PAT}"
-			},
-			"type": "remote",
-			"url": "https://api.githubcopilot.com/mcp/"
-		},
 		"package-registry": {
 			"command": ["bun", "x", "--bun", "package-registry-mcp"],
 			"enabled": true,
@@ -85,8 +83,10 @@
 		"external_directory": "ask",
 		"webfetch": "ask"
 	},
+	"share": "manual",
 	"tools": {
 		"simple-github*": true
 	},
+	"tui": {},
 	"username": "HowManySmall"
 }
