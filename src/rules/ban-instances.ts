@@ -34,8 +34,13 @@ const isOptionsObject = Compile(
 	}),
 );
 
+interface BannedClassEntry {
+	readonly originalName: string;
+	readonly message: string | undefined;
+}
+
 interface NormalizedConfig {
-	readonly bannedClasses: ReadonlyMap<string, string | undefined>;
+	readonly bannedClasses: ReadonlyMap<string, BannedClassEntry>;
 }
 
 function normalizeConfig(options: unknown): NormalizedConfig {
@@ -44,14 +49,16 @@ function normalizeConfig(options: unknown): NormalizedConfig {
 	const { bannedInstances } = options;
 
 	if (isArrayConfig.Check(bannedInstances)) {
-		const map = new Map<string, string | undefined>();
-		for (const className of bannedInstances) map.set(className, undefined);
+		const map = new Map<string, BannedClassEntry>();
+		for (const className of bannedInstances)
+			map.set(className.toLowerCase(), { originalName: className, message: undefined });
 		return { bannedClasses: map };
 	}
 
 	if (isObjectConfig.Check(bannedInstances)) {
-		const map = new Map<string, string | undefined>();
-		for (const [className, message] of Object.entries(bannedInstances)) map.set(className, message);
+		const map = new Map<string, BannedClassEntry>();
+		for (const [className, message] of Object.entries(bannedInstances))
+			map.set(className.toLowerCase(), { originalName: className, message });
 		return { bannedClasses: map };
 	}
 
@@ -73,18 +80,18 @@ const banInstances: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDoc
 
 		if (config.bannedClasses.size === 0) return {};
 
-		function reportBannedClass(node: TSESTree.Node, className: string): void {
-			const customMessage = config.bannedClasses.get(className);
+		function reportBannedClass(node: TSESTree.Node, entry: BannedClassEntry): void {
+			const { originalName, message } = entry;
 
-			if (customMessage !== undefined && customMessage !== "") {
+			if (message !== undefined && message !== "") {
 				context.report({
-					data: { className, customMessage },
+					data: { className: originalName, customMessage: message },
 					messageId: "bannedInstanceCustom",
 					node,
 				});
 			} else {
 				context.report({
-					data: { className },
+					data: { className: originalName },
 					messageId: "bannedInstance",
 					node,
 				});
@@ -105,11 +112,11 @@ const banInstances: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDoc
 				// Only lowercase JSX elements are Roblox Instances
 				if (firstChar !== firstChar.toLowerCase()) return;
 
-				// Capitalize first letter to match Roblox class name convention
-				const className = firstChar.toUpperCase() + elementName.slice(1);
-				if (!config.bannedClasses.has(className)) return;
+				// Lookup by lowercase (config keys are stored lowercase)
+				const entry = config.bannedClasses.get(elementName.toLowerCase());
+				if (!entry) return;
 
-				reportBannedClass(node, className);
+				reportBannedClass(node, entry);
 			},
 			// Handle: new Instance("ClassName")
 			NewExpression(node: TSESTree.NewExpression) {
@@ -120,10 +127,11 @@ const banInstances: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDoc
 				if (!firstArgument || firstArgument.type !== TSESTree.AST_NODE_TYPES.Literal) return;
 				if (typeof firstArgument.value !== "string") return;
 
-				const className = firstArgument.value;
-				if (!config.bannedClasses.has(className)) return;
+				// Lookup by lowercase (config keys are stored lowercase)
+				const entry = config.bannedClasses.get(firstArgument.value.toLowerCase());
+				if (!entry) return;
 
-				reportBannedClass(node, className);
+				reportBannedClass(node, entry);
 			},
 		};
 	},

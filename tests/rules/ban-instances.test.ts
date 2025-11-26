@@ -64,6 +64,23 @@ describe("ban-instances", () => {
 				errors: [{ messageId: "bannedInstanceCustom" }],
 				options: [{ bannedInstances: { Script: "Scripts should not be created at runtime" } }],
 			},
+			// Case-insensitive lookup - UITextSizeConstraint
+			{
+				code: "<uitextsizeconstraint />;",
+				errors: [{ messageId: "bannedInstanceCustom" }],
+				options: [{ bannedInstances: { UITextSizeConstraint: "Use something else" } }],
+			},
+			{
+				code: 'new Instance("UITextSizeConstraint");',
+				errors: [{ messageId: "bannedInstanceCustom" }],
+				options: [{ bannedInstances: { UITextSizeConstraint: "Use something else" } }],
+			},
+			// Case-insensitive new Instance() - lowercase string matches
+			{
+				code: 'new Instance("part");',
+				errors: [{ messageId: "bannedInstance" }],
+				options: [{ bannedInstances: ["Part"] }],
+			},
 			// Multiple errors
 			{
 				code: 'new Instance("Part"); new Instance("Frame");',
@@ -150,11 +167,6 @@ describe("ban-instances", () => {
 			},
 			{
 				code: "<foo.part />;",
-				options: [{ bannedInstances: ["Part"] }],
-			},
-			// Different casing in new Instance() (case-sensitive string match)
-			{
-				code: 'new Instance("part");',
 				options: [{ bannedInstances: ["Part"] }],
 			},
 			// Object config - non-banned
