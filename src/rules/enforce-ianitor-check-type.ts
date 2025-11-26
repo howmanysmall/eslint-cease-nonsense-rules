@@ -1,5 +1,5 @@
-import { ESLintUtils, type TSESLint } from "@typescript-eslint/utils";
 import { TSESTree } from "@typescript-eslint/types";
+import { ESLintUtils, type TSESLint } from "@typescript-eslint/utils";
 
 export interface ComplexityConfiguration {
 	readonly baseThreshold: number;
@@ -170,38 +170,10 @@ type MessageIds = "complexInterfaceNeedsCheck" | "missingIanitorCheckType";
 type Options = [Partial<ComplexityConfiguration>];
 
 const createRule = ESLintUtils.RuleCreator(
-	(name) =>
-		`https://github.com/howmanysmall/eslint-cease-nonsense-rules/blob/main/docs/rules/${name}.md`,
+	(name) => `https://github.com/howmanysmall/eslint-cease-nonsense-rules/blob/main/docs/rules/${name}.md`,
 );
 
 const enforceIanitorCheckType = createRule<Options, MessageIds>({
-	name: "enforce-ianitor-check-type",
-	meta: {
-		docs: {
-			description: "Enforce Ianitor.Check<T> type annotations on complex TypeScript types",
-		},
-		messages: {
-			complexInterfaceNeedsCheck:
-				"Interface '{{name}}' requires Ianitor.Check<T> annotation (interfaces always need explicit checking)",
-			missingIanitorCheckType:
-				"Complex type (score: {{score}}) requires Ianitor.Check<T> annotation for type safety",
-		},
-		schema: [
-			{
-				additionalProperties: false,
-				properties: {
-					baseThreshold: { minimum: 1, type: "number" },
-					errorThreshold: { minimum: 1, type: "number" },
-					interfacePenalty: { minimum: 1, type: "number" },
-					performanceMode: { type: "boolean" },
-					warnThreshold: { minimum: 1, type: "number" },
-				},
-				type: "object",
-			},
-		],
-		type: "problem",
-	},
-	defaultOptions: [DEFAULT_CONFIGURATION],
 	create(context) {
 		const config: ComplexityConfiguration = { ...DEFAULT_CONFIGURATION, ...context.options[0] };
 		const cache: ComplexityCache = {
@@ -435,6 +407,33 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 			},
 		};
 	},
+	defaultOptions: [DEFAULT_CONFIGURATION],
+	meta: {
+		docs: {
+			description: "Enforce Ianitor.Check<T> type annotations on complex TypeScript types",
+		},
+		messages: {
+			complexInterfaceNeedsCheck:
+				"Interface '{{name}}' requires Ianitor.Check<T> annotation (interfaces always need explicit checking)",
+			missingIanitorCheckType:
+				"Complex type (score: {{score}}) requires Ianitor.Check<T> annotation for type safety",
+		},
+		schema: [
+			{
+				additionalProperties: false,
+				properties: {
+					baseThreshold: { minimum: 1, type: "number" },
+					errorThreshold: { minimum: 1, type: "number" },
+					interfacePenalty: { minimum: 1, type: "number" },
+					performanceMode: { type: "boolean" },
+					warnThreshold: { minimum: 1, type: "number" },
+				},
+				type: "object",
+			},
+		],
+		type: "problem",
+	},
+	name: "enforce-ianitor-check-type",
 });
 
 export default enforceIanitorCheckType as unknown as TSESLint.AnyRuleModuleWithMetaDocs;
