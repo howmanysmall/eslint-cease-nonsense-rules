@@ -36,14 +36,14 @@ describe("ban-instances", () => {
 				errors: [{ messageId: "bannedInstance" }],
 				options: [{ bannedInstances: ["Part", "Frame"] }],
 			},
-			// Array config - JSX
+			// Array config - JSX (lowercase = Roblox Instance)
 			{
-				code: "<Part />;",
+				code: "<part />;",
 				errors: [{ messageId: "bannedInstance" }],
 				options: [{ bannedInstances: ["Part"] }],
 			},
 			{
-				code: "<Frame><textlabel /></Frame>;",
+				code: "<frame><textlabel /></frame>;",
 				errors: [{ messageId: "bannedInstance" }],
 				options: [{ bannedInstances: ["Frame"] }],
 			},
@@ -58,9 +58,9 @@ describe("ban-instances", () => {
 				errors: [{ messageId: "bannedInstanceCustom" }],
 				options: [{ bannedInstances: { Part: "Use MeshPart instead" } }],
 			},
-			// Object config with custom messages - JSX
+			// Object config with custom messages - JSX (lowercase)
 			{
-				code: "<Script />;",
+				code: "<script />;",
 				errors: [{ messageId: "bannedInstanceCustom" }],
 				options: [{ bannedInstances: { Script: "Scripts should not be created at runtime" } }],
 			},
@@ -71,21 +71,27 @@ describe("ban-instances", () => {
 				options: [{ bannedInstances: ["Part", "Frame"] }],
 			},
 			{
-				code: "<Part />;  <Frame />;",
+				code: "<part />;  <frame />;",
 				errors: [{ messageId: "bannedInstance" }, { messageId: "bannedInstance" }],
 				options: [{ bannedInstances: ["Part", "Frame"] }],
 			},
 			// Mixed new Instance() and JSX
 			{
-				code: '<Part />; new Instance("Frame");',
+				code: '<part />; new Instance("Frame");',
 				errors: [{ messageId: "bannedInstance" }, { messageId: "bannedInstance" }],
 				options: [{ bannedInstances: ["Part", "Frame"] }],
 			},
-			// Nested JSX
+			// Nested JSX - only inner lowercase element errors
+			{
+				code: "<Frame><part /></Frame>;",
+				errors: [{ messageId: "bannedInstance" }],
+				options: [{ bannedInstances: ["Part"] }],
+			},
+			// Nested JSX - outer lowercase element errors
 			{
 				code: "<frame><Part /></frame>;",
 				errors: [{ messageId: "bannedInstance" }],
-				options: [{ bannedInstances: ["Part"] }],
+				options: [{ bannedInstances: ["Frame"] }],
 			},
 		],
 		valid: [
@@ -94,13 +100,27 @@ describe("ban-instances", () => {
 				code: 'new Instance("Part");',
 				options: [{ bannedInstances: [] }],
 			},
-			// Non-banned classes
+			// Non-banned classes - new Instance()
 			{
 				code: 'new Instance("MeshPart");',
 				options: [{ bannedInstances: ["Part"] }],
 			},
+			// Capitalized JSX = custom React component (NOT Roblox Instance)
 			{
-				code: "<MeshPart />;",
+				code: "<Part />;",
+				options: [{ bannedInstances: ["Part"] }],
+			},
+			{
+				code: "<Frame />;",
+				options: [{ bannedInstances: ["Frame"] }],
+			},
+			{
+				code: "<Script />;",
+				options: [{ bannedInstances: { Script: "Should not error" } }],
+			},
+			// Non-banned lowercase JSX
+			{
+				code: "<meshPart />;",
 				options: [{ bannedInstances: ["Part"] }],
 			},
 			// Not Instance constructor
@@ -123,18 +143,18 @@ describe("ban-instances", () => {
 				code: "new Instance();",
 				options: [{ bannedInstances: ["Part"] }],
 			},
-			// JSX member expression (not banned)
+			// JSX member expression (skipped)
 			{
 				code: "<Foo.Part />;",
 				options: [{ bannedInstances: ["Part"] }],
 			},
-			// Different casing (case-sensitive)
 			{
-				code: 'new Instance("part");',
+				code: "<foo.part />;",
 				options: [{ bannedInstances: ["Part"] }],
 			},
+			// Different casing in new Instance() (case-sensitive string match)
 			{
-				code: "<part />;",
+				code: 'new Instance("part");',
 				options: [{ bannedInstances: ["Part"] }],
 			},
 			// Object config - non-banned
