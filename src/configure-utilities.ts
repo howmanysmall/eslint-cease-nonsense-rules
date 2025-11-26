@@ -1,3 +1,4 @@
+import type { BanInstancesOptions } from "./rules/ban-instances";
 import type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
 import type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
 import type { NoShorthandOptions } from "./rules/no-shorthand-names";
@@ -32,6 +33,15 @@ export const defaultRobloxProfilePair: PairConfiguration = {
 	requireSync: true,
 	yieldingFunctions: ["task.wait", "wait", "*.WaitForChild"],
 };
+
+/**
+ * Creates options for ban-instances rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createBanInstancesOptions(options: Partial<BanInstancesOptions> = {}): BanInstancesOptions {
+	return { bannedInstances: [], ...options };
+}
 
 /**
  * Creates a complexity configuration for enforce-ianitor-check-type rule
