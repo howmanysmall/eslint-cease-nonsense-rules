@@ -11,6 +11,7 @@
 		"uv format": { "disabled": true },
 		"zig": { "disabled": true }
 	},
+	"lsp": {},
 	"mcp": {
 		"codex-subagent": {
 			"command": ["uvx", "codex-as-mcp@latest"],
