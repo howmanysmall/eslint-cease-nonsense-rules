@@ -121,7 +121,7 @@ interface ControlFlowContext {
 	readonly currentFunction: TSESTree.Node | undefined;
 }
 
-export const DEFAULT_ROBLOX_YIELDING_FUNCTIONS = ["task.wait", "wait", "*.WaitForChild"] as const;
+export const DEFAULT_ROBLOX_YIELDING_FUNCTIONS = ["task.wait", "wait", "*.WaitForChild", "*.*Async"] as const;
 
 function getCallName(node: TSESTree.CallExpression): string | undefined {
 	const { callee } = node;
@@ -178,10 +178,7 @@ function findLabeledStatementBody(
 	let current: TSESTree.Node | undefined = startingNode;
 
 	while (current) {
-		if (current.type === AST_NODE_TYPES.LabeledStatement && current.label.name === label.name) {
-			return current.body;
-		}
-
+		if (current.type === AST_NODE_TYPES.LabeledStatement && current.label.name === label.name) return current.body;
 		current = current.parent ?? undefined;
 	}
 
@@ -193,9 +190,7 @@ function resolveBreakTargetLoop(statement: TSESTree.BreakStatement): LoopLikeSta
 		? findLabeledStatementBody(statement.label, statement.parent ?? undefined)
 		: undefined;
 
-	if (labeledBody) {
-		return isLoopLikeStatement(labeledBody) ? labeledBody : undefined;
-	}
+	if (labeledBody) return isLoopLikeStatement(labeledBody) ? labeledBody : undefined;
 
 	let current: TSESTree.Node | undefined = statement.parent ?? undefined;
 	while (current) {
@@ -212,9 +207,7 @@ function resolveContinueTargetLoop(statement: TSESTree.ContinueStatement): LoopL
 		? findLabeledStatementBody(statement.label, statement.parent ?? undefined)
 		: undefined;
 
-	if (labeledBody) {
-		return isLoopLikeStatement(labeledBody) ? labeledBody : undefined;
-	}
+	if (labeledBody) return isLoopLikeStatement(labeledBody) ? labeledBody : undefined;
 
 	let current: TSESTree.Node | undefined = statement.parent ?? undefined;
 	while (current) {
@@ -275,9 +268,7 @@ const rule: Rule.RuleModule = {
 			for (const pair of options.pairs) {
 				if (!getValidClosers(pair).includes(closer)) continue;
 
-				for (const openerName of getAllOpeners(pair)) {
-					if (!names.includes(openerName)) names.push(openerName);
-				}
+				for (const openerName of getAllOpeners(pair)) if (!names.includes(openerName)) names.push(openerName);
 			}
 
 			closerToOpenersCache.set(closer, names);
@@ -293,9 +284,7 @@ const rule: Rule.RuleModule = {
 				if (!allOpeners.includes(opener)) continue;
 
 				const validClosers = getValidClosers(pair);
-				for (const closer of validClosers) {
-					if (!closers.includes(closer)) closers.push(closer);
-				}
+				for (const closer of validClosers) if (!closers.includes(closer)) closers.push(closer);
 			}
 
 			openerToClosersCache.set(opener, closers);
@@ -436,6 +425,29 @@ const rule: Rule.RuleModule = {
 
 			if (originalStack && branches && branches.length > 0) {
 				const hasCompleteElse = ifNode.alternate !== undefined && ifNode.alternate !== null;
+
+				// Check for openers added in branches that weren't closed
+				for (const branchStack of branches) {
+					for (const entry of branchStack) {
+						const wasInOriginal = originalStack.some((o) => o.index === entry.index);
+						if (!wasInOriginal) {
+							// This opener was added in a branch and not closed
+							const validClosers = getValidClosers(entry.config);
+							const closer =
+								validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
+
+							context.report({
+								data: {
+									closer,
+									opener: entry.opener,
+									paths: "conditional branch",
+								},
+								messageId: "unpairedOpener",
+								node: entry.node,
+							});
+						}
+					}
+				}
 
 				if (hasCompleteElse) {
 					for (const { index, config, opener, node } of originalStack) {
@@ -846,9 +858,7 @@ const rule: Rule.RuleModule = {
 				if (openerStack.length === 0) {
 					// Stack is empty - no opener to close
 					context.report({
-						data: {
-							closer,
-						},
+						data: { closer },
 						messageId: "unpairedCloser",
 						node,
 					});
