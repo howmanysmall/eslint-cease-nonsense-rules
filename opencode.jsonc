@@ -16,6 +16,13 @@
 		"plan": {
 			"description": "Used to generate a plan.",
 			"model": "anthropic/claude-opus-4-5",
+			"permission": {
+				"bash": "ask",
+				"doom_loop": "ask",
+				"edit": "deny",
+				"external_directory": "ask",
+				"webfetch": "ask"
+			},
 			"tools": {
 				"bash": false,
 				"edit": false,
@@ -40,7 +47,15 @@
 		"model_list": "ctrl+m"
 	},
 	"layout": "stretch",
-	"lsp": {},
+	"lsp": {
+		"eslint": { "disabled": true },
+		"oxc": {
+			"command": ["bun", "x", "--bun", "oxc_language_server"],
+			"disabled": false,
+			"extensions": [".ts", ".tsx", ".js", ".jsx"],
+			"initialization": {}
+		}
+	},
 	"mcp": {
 		"codex-subagent": {
 			"command": ["uvx", "codex-as-mcp@latest"],
