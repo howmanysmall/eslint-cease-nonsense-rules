@@ -1,17 +1,61 @@
 {
 	"$schema": "https://opencode.ai/config.json",
+	"agent": {
+		"build": {
+			"description": "Used after creating a plan or just whenever.",
+			"mode": "all",
+			"model": "anthropic/claude-sonnet-4-5",
+			"permission": {
+				"bash": "ask",
+				"doom_loop": "ask",
+				"edit": "allow",
+				"external_directory": "ask",
+				"webfetch": "ask"
+			}
+		},
+		"plan": {
+			"description": "Used to generate a plan.",
+			"model": "anthropic/claude-opus-4-5",
+			"permission": {
+				"bash": "ask",
+				"doom_loop": "ask",
+				"edit": "deny",
+				"external_directory": "ask",
+				"webfetch": "ask"
+			},
+			"tools": {
+				"bash": false,
+				"edit": false,
+				"write": false
+			}
+		}
+	},
 	"formatter": {
+		"biome": { "disabled": true },
 		"gofmt": { "disabled": true },
 		"oxfmt": {
 			"command": ["bun", "run", "format", "$FILE"],
 			"disabled": false,
+			"environment": {},
 			"extensions": [".ts", ".tsx", ".js", ".jsx"]
 		},
-		"prettier": { "disabled": true },
 		"uv format": { "disabled": true },
 		"zig": { "disabled": true }
 	},
-	"lsp": {},
+	"instructions": ["./AGENTS.md"],
+	"keybinds": {
+		"model_list": "ctrl+m"
+	},
+	"layout": "stretch",
+	"lsp": {
+		"eslint": { "disabled": true },
+		"oxc": {
+			"command": ["bun", "x", "--bun", "oxc_language_server"],
+			"disabled": false,
+			"extensions": [".ts", ".tsx", ".js", ".jsx"],
+			"initialization": {}
+		}
+	},
 	"mcp": {
 		"codex-subagent": {
 			"command": ["uvx", "codex-as-mcp@latest"],
@@ -52,5 +96,9 @@
 		"edit": "ask",
 		"external_directory": "ask",
 		"webfetch": "ask"
-	}
+	},
+	"share": "manual",
+	"tools": {},
+	"tui": {},
+	"username": "HowManySmall"
 }
