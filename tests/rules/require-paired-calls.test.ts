@@ -399,7 +399,7 @@ function test() {
     debug.profileend();
 }
 `,
-				errors: [{ messageId: "unpairedCloser" }],
+				errors: [{ messageId: "unpairedOpener" }, { messageId: "unpairedCloser" }],
 			},
 
 			// Switch without closer in all branches
@@ -502,6 +502,130 @@ function test() {
 }
 `,
 				errors: [{ messageId: "unpairedOpener" }],
+			},
+
+			// BUG FIX: Single opener in if-block without else (no closer)
+			{
+				code: `
+function test() {
+    if (shouldOpen) {
+        debug.profilebegin("task");
+        doWork();
+    }
+}
+`,
+				errors: [{ messageId: "unpairedOpener" }],
+			},
+
+			// BUG FIX: Multiple openers in if-block without else (no closers)
+			{
+				code: `
+function test() {
+    Iris.CollapsingHeader(["Units"]);
+    if (condition) {
+        Iris.Combo(["Units"], { index: state });
+        Iris.Window(["Popup"]);
+    }
+    Iris.End();
+}
+`,
+				errors: [{ messageId: "unpairedOpener" }, { messageId: "unpairedOpener" }],
+				options: [
+					{
+						pairs: [
+							{
+								closer: "Iris.End",
+								opener: "Iris.CollapsingHeader",
+								openerAlternatives: ["Iris.Window", "Iris.Combo"],
+								platform: "roblox",
+								requireSync: true,
+							},
+						],
+					},
+				],
+			},
+
+			// BUG FIX: Nested if-blocks with missing closers
+			{
+				code: `
+function test() {
+    if (outer) {
+        Iris.Window(["Outer"]);
+        if (inner) {
+            Iris.Combo(["Inner"]);
+        }
+    }
+}
+`,
+				errors: [{ messageId: "unpairedOpener" }, { messageId: "unpairedOpener" }],
+				options: [
+					{
+						pairs: [
+							{
+								closer: "Iris.End",
+								opener: "Iris.Window",
+								openerAlternatives: ["Iris.Combo"],
+								platform: "roblox",
+								requireSync: true,
+							},
+						],
+					},
+				],
+			},
+
+			// BUG FIX: Multiple openers with partial closers in if-block
+			{
+				code: `
+function test() {
+    if (condition) {
+        Iris.Window(["A"]);
+        Iris.Combo(["B"]);
+        Iris.Tree(["C"]);
+        Iris.End();
+    }
+}
+`,
+				errors: [{ messageId: "unpairedOpener" }, { messageId: "unpairedOpener" }],
+				options: [
+					{
+						pairs: [
+							{
+								closer: "Iris.End",
+								opener: "Iris.Window",
+								openerAlternatives: ["Iris.Combo", "Iris.Tree"],
+								platform: "roblox",
+								requireSync: true,
+							},
+						],
+					},
+				],
+			},
+
+			// BUG FIX: Openers in both if and else branches without closers
+			{
+				code: `
+function test() {
+    if (condition) {
+        Iris.Window(["A"]);
+    } else {
+        Iris.Combo(["B"]);
+    }
+}
+`,
+				errors: [{ messageId: "unpairedOpener" }, { messageId: "unpairedOpener" }],
+				options: [
+					{
+						pairs: [
+							{
+								closer: "Iris.End",
+								opener: "Iris.Window",
+								openerAlternatives: ["Iris.Combo"],
+								platform: "roblox",
+								requireSync: true,
+							},
+						],
+					},
+				],
 			},
 		],
 		valid: [
