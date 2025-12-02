@@ -15,6 +15,7 @@ import requireNamedEffectFunctions from "./rules/require-named-effect-functions"
 import requirePairedCalls from "./rules/require-paired-calls";
 import requireReactComponentKeys from "./rules/require-react-component-keys";
 import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
+import noCommentedCode from "./rules/no-commented-code";
 import useHookAtTopLevel from "./rules/use-hook-at-top-level";
 
 type AnyRuleModule = Rule.RuleModule | TSESLint.AnyRuleModuleWithMetaDocs;
@@ -53,6 +54,7 @@ const rules: Readonly<Record<string, AnyRuleModule>> = {
 	"enforce-ianitor-check-type": enforceIanitorCheckType,
 	"no-async-constructor": noAsyncConstructor,
 	"no-color3-constructor": noColor3Constructor,
+	"no-commented-code": noCommentedCode,
 	"no-instance-methods-without-this": noInstanceMethodsWithoutThis,
 	"no-print": noPrint,
 	"no-shorthand-names": noShorthandNames,
