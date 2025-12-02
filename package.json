@@ -1,6 +1,7 @@
 {
 	"author": "HowManySmall",
 	"dependencies": {
+		"oxc-parser": "^0.101.0",
 		"type-fest": "^5.2.0",
 		"typebox": "^1.0.60"
 	},
