@@ -3,6 +3,7 @@ import type { Rule } from "eslint";
 import banInstances from "./rules/ban-instances";
 import banReactFC from "./rules/ban-react-fc";
 import enforceIanitorCheckType from "./rules/enforce-ianitor-check-type";
+import noAsyncConstructor from "./rules/no-async-constructor";
 import noColor3Constructor from "./rules/no-color3-constructor";
 import noInstanceMethodsWithoutThis from "./rules/no-instance-methods-without-this";
 import noPrint from "./rules/no-print";
@@ -50,6 +51,7 @@ const rules: Readonly<Record<string, AnyRuleModule>> = {
 	"ban-instances": banInstances,
 	"ban-react-fc": banReactFC,
 	"enforce-ianitor-check-type": enforceIanitorCheckType,
+	"no-async-constructor": noAsyncConstructor,
 	"no-color3-constructor": noColor3Constructor,
 	"no-instance-methods-without-this": noInstanceMethodsWithoutThis,
 	"no-print": noPrint,
@@ -89,6 +91,7 @@ const recommended = {
 	rules: {
 		"cease-nonsense/ban-react-fc": "error",
 		"cease-nonsense/enforce-ianitor-check-type": "error",
+		"cease-nonsense/no-async-constructor": "error",
 		"cease-nonsense/no-color3-constructor": "error",
 		"cease-nonsense/no-instance-methods-without-this": "error",
 		"cease-nonsense/no-print": "error",
