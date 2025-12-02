@@ -132,7 +132,7 @@ describe("no-commented-code", () => {
 		],
 		invalid: [
 			{
-				code: `// if (something) {}`,
+				code: "// if (something) {}",
 				errors: [
 					{
 						message: "Remove this commented out code.",
@@ -181,7 +181,7 @@ foo(a, function(){
 				],
 			},
 			{
-				code: `// return foo().bar();`,
+				code: "// return foo().bar();",
 				errors: [
 					{
 						messageId: "commentedCode",
@@ -217,7 +217,7 @@ const a = 1;`,
 				],
 			},
 			{
-				code: `/* throw foo().bar(); */`,
+				code: "/* throw foo().bar(); */",
 				errors: [
 					{
 						messageId: "commentedCode",
@@ -249,7 +249,7 @@ const a = 1;`,
 				],
 			},
 			{
-				code: `// }}`,
+				code: "// }}",
 				errors: [
 					{
 						messageId: "commentedCode",
@@ -258,7 +258,7 @@ const a = 1;`,
 				],
 			},
 			{
-				code: `// {{`,
+				code: "// {{",
 				errors: [
 					{
 						messageId: "commentedCode",
@@ -277,11 +277,11 @@ const a = 1;`,
 				],
 			},
 			{
-				code: `let x = /* let x = 42; */ 0;`,
+				code: "let x = /* let x = 42; */ 0;",
 				errors: [
 					{
 						messageId: "commentedCode",
-						suggestions: [{ desc: "Remove this commented out code", output: `let x =  0;` }],
+						suggestions: [{ desc: "Remove this commented out code", output: "let x =  0;" }],
 					},
 				],
 			},
