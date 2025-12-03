@@ -471,6 +471,58 @@ function Component(props) {
 					},
 				],
 			},
+
+			// Optional chaining - missing dependency
+			{
+				code: `
+function Component() {
+    const obj = { prop: 1 };
+    useMemo(() => obj?.prop, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'obj?.prop' to dependencies array",
+								output: `
+function Component() {
+    const obj = { prop: 1 };
+    useMemo(() => obj?.prop, [obj?.prop]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Optional chaining - chained access missing
+			{
+				code: `
+function Component() {
+    const obj = { nested: { value: 1 } };
+    useMemo(() => obj?.nested?.value, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'obj?.nested?.value' to dependencies array",
+								output: `
+function Component() {
+    const obj = { nested: { value: 1 } };
+    useMemo(() => obj?.nested?.value, [obj?.nested?.value]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
 		],
 		valid: [
 			// Correct dependencies
@@ -886,6 +938,54 @@ function Component() {
             console.log(local);
         }
     }, []);
+}
+`,
+
+			// Optional chaining - basic
+			`
+function Component() {
+    const obj = { prop: 1 };
+    useMemo(() => obj?.prop, [obj?.prop]);
+}
+`,
+
+			// Optional chaining - chained access
+			`
+function Component() {
+    const obj = { nested: { value: 1 } };
+    useMemo(() => obj?.nested?.value, [obj?.nested?.value]);
+}
+`,
+
+			// Optional chaining - mixed (optional then regular)
+			`
+function Component() {
+    const obj = { nested: { value: 1 } };
+    useMemo(() => obj?.nested.value, [obj?.nested.value]);
+}
+`,
+
+			// Optional chaining - mixed (regular then optional)
+			`
+function Component() {
+    const obj = { nested: { value: 1 } };
+    useMemo(() => obj.nested?.value, [obj.nested?.value]);
+}
+`,
+
+			// Optional chaining - parent dependency covers optional access
+			`
+function Component() {
+    const obj = { prop: 1 };
+    useMemo(() => obj?.prop, [obj]);
+}
+`,
+
+			// Optional chaining with method call
+			`
+function Component() {
+    const obj = { method: () => 1 };
+    useMemo(() => obj?.method(), [obj]);
 }
 `,
 		],
