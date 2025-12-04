@@ -234,6 +234,21 @@ const IS_FUNCTION_EXPRESSION = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.FunctionExpression,
 	TSESTree.AST_NODE_TYPES.ArrowFunctionExpression,
 ]);
+const CONTROL_FLOW_TYPES = new Set<TSESTree.AST_NODE_TYPES>([
+	TSESTree.AST_NODE_TYPES.BlockStatement,
+	TSESTree.AST_NODE_TYPES.IfStatement,
+	TSESTree.AST_NODE_TYPES.SwitchStatement,
+	TSESTree.AST_NODE_TYPES.SwitchCase,
+	TSESTree.AST_NODE_TYPES.TryStatement,
+	TSESTree.AST_NODE_TYPES.CatchClause,
+	TSESTree.AST_NODE_TYPES.WhileStatement,
+	TSESTree.AST_NODE_TYPES.DoWhileStatement,
+	TSESTree.AST_NODE_TYPES.ForStatement,
+	TSESTree.AST_NODE_TYPES.ForInStatement,
+	TSESTree.AST_NODE_TYPES.ForOfStatement,
+	TSESTree.AST_NODE_TYPES.LabeledStatement,
+	TSESTree.AST_NODE_TYPES.WithStatement,
+]);
 
 function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
 	let parent = ascendPastWrappers(node.parent);
@@ -250,8 +265,11 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 
 	if (parent.type === TSESTree.AST_NODE_TYPES.ReturnStatement) {
 		let currentNode: TSESTree.Node | undefined = ascendPastWrappers(parent.parent);
-		if (currentNode?.type === TSESTree.AST_NODE_TYPES.BlockStatement)
+
+		// Ascend through control flow statements (if, switch, try, loops, etc.)
+		while (currentNode && CONTROL_FLOW_TYPES.has(currentNode.type))
 			currentNode = ascendPastWrappers(currentNode.parent);
+
 		if (!currentNode) return false;
 
 		if (IS_FUNCTION_EXPRESSION.has(currentNode.type)) {
@@ -330,6 +348,48 @@ function isJSXPropValue(node: TSESTree.JSXElement | TSESTree.JSXFragment): boole
 	return parent.type === TSESTree.AST_NODE_TYPES.JSXAttribute;
 }
 
+/**
+ * Checks if node is inside a ternary expression that's a direct child of a JSX
+ * element. Ternary branches are mutually exclusive alternatives (only one
+ * renders), so they don't need keys.
+ *
+ * Example: `{condition ? <A /> : <B />}` - A and B don't need keys
+ *
+ * Note: Logical AND (`&&`) is NOT included because those elements can
+ * appear/disappear, affecting sibling positions and requiring keys.
+ *
+ * @param node - The JSX element or fragment to check.
+ * @returns Whether the node is inside a ternary expression as a JSX child.
+ */
+function isTernaryJSXChild(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
+	let current: TSESTree.Node | undefined = node.parent;
+	if (!current) return false;
+
+	// Must be inside a ConditionalExpression (ternary), not LogicalExpression
+	let foundTernary = false;
+	while (
+		current &&
+		(current.type === TSESTree.AST_NODE_TYPES.ConditionalExpression || WRAPPER_PARENT_TYPES.has(current.type))
+	) {
+		if (current.type === TSESTree.AST_NODE_TYPES.ConditionalExpression) foundTernary = true;
+		current = current.parent;
+	}
+
+	if (!foundTernary || !current) return false;
+
+	// Must be inside JSXExpressionContainer
+	if (current.type !== TSESTree.AST_NODE_TYPES.JSXExpressionContainer) return false;
+
+	const containerParent = current.parent;
+	if (!containerParent) return false;
+
+	// Must be a child of a JSX element or fragment
+	return (
+		containerParent.type === TSESTree.AST_NODE_TYPES.JSXElement ||
+		containerParent.type === TSESTree.AST_NODE_TYPES.JSXFragment
+	);
+}
+
 const docs: RuleDocsWithRecommended = {
 	description: "Enforce key props on all React elements except top-level returns",
 	recommended: true,
@@ -368,6 +428,7 @@ const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 
 			if (isIgnoredCallExpression(node, options.ignoreCallExpressions)) return;
 			if (isJSXPropValue(node)) return;
+			if (isTernaryJSXChild(node)) return;
 
 			if (node.type === TSESTree.AST_NODE_TYPES.JSXFragment) {
 				context.report({
