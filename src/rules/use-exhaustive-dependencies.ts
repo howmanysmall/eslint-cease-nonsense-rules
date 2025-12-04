@@ -189,12 +189,56 @@ function getRootIdentifier(node: TSESTree.Node): TSESTree.Identifier | undefined
 
 	if (current.type === TSESTree.AST_NODE_TYPES.ChainExpression) current = current.expression;
 
-	while (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) current = current.object;
+	while (
+		current.type === TSESTree.AST_NODE_TYPES.MemberExpression ||
+		current.type === TSESTree.AST_NODE_TYPES.TSNonNullExpression
+	) {
+		if (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) current = current.object;
+		else current = current.expression;
+	}
 
 	return current.type === TSESTree.AST_NODE_TYPES.Identifier ? current : undefined;
 }
 
 function nodeToDependencyString(node: TSESTree.Node, sourceCode: Rule.RuleContext["sourceCode"]): string {
+	return sourceCode.getText(node as unknown as Rule.Node);
+}
+
+/**
+ * Converts a node to a dependency-safe string by stripping TypeScript assertions.
+ * For example, `foo!.bar` becomes `foo.bar` since non-null assertions can't appear
+ * in a dependency array.
+ * @param node - The AST node to convert
+ * @param sourceCode - The source code context for getting text
+ * @returns The dependency path string without TypeScript assertions
+ */
+function nodeToSafeDependencyPath(node: TSESTree.Node, sourceCode: Rule.RuleContext["sourceCode"]): string {
+	// For simple identifiers, just return the name
+	if (node.type === TSESTree.AST_NODE_TYPES.Identifier) return node.name;
+
+	// For chain expressions, unwrap and process
+	if (node.type === TSESTree.AST_NODE_TYPES.ChainExpression)
+		return nodeToSafeDependencyPath(node.expression, sourceCode);
+
+	// For TS runtime expressions, unwrap and process the inner expression
+	if (TS_RUNTIME_EXPRESSIONS.has(node.type)) {
+		const expr = node as TSESTree.TSNonNullExpression | TSESTree.TSAsExpression | TSESTree.TSSatisfiesExpression;
+		return nodeToSafeDependencyPath(expr.expression, sourceCode);
+	}
+
+	// For member expressions, build the path recursively
+	if (node.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
+		const objectPath = nodeToSafeDependencyPath(node.object, sourceCode);
+		if (node.computed) {
+			const propertyText = sourceCode.getText(node.property as unknown as Rule.Node);
+			return `${objectPath}[${propertyText}]`;
+		}
+		const propertyName = node.property.type === TSESTree.AST_NODE_TYPES.Identifier ? node.property.name : "";
+		const separator = node.optional ? "?." : ".";
+		return `${objectPath}${separator}${propertyName}`;
+	}
+
+	// Fallback to source text
 	return sourceCode.getText(node as unknown as Rule.Node);
 }
 
@@ -328,8 +372,9 @@ function findTopmostMemberExpression(node: TSESTree.Node): TSESTree.Node {
 
 		const isMemberParent = parent.type === TSESTree.AST_NODE_TYPES.MemberExpression && parent.object === current;
 		const isChainParent = parent.type === TSESTree.AST_NODE_TYPES.ChainExpression;
+		const isNonNullParent = parent.type === TSESTree.AST_NODE_TYPES.TSNonNullExpression;
 
-		if (!isMemberParent && !isChainParent) break;
+		if (!isMemberParent && !isChainParent && !isNonNullParent) break;
 
 		current = parent;
 		parent = parent.parent;
@@ -345,10 +390,24 @@ const IS_CEASE_BOUNDARY = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.VariableDeclarator,
 ]);
 
+// TypeScript runtime expressions - these evaluate to values, not type-only constructs
+const TS_RUNTIME_EXPRESSIONS = new Set<TSESTree.AST_NODE_TYPES>([
+	TSESTree.AST_NODE_TYPES.TSNonNullExpression,
+	TSESTree.AST_NODE_TYPES.TSAsExpression,
+	TSESTree.AST_NODE_TYPES.TSSatisfiesExpression,
+	TSESTree.AST_NODE_TYPES.TSTypeAssertion,
+	TSESTree.AST_NODE_TYPES.TSInstantiationExpression,
+]);
+
 function isInTypePosition(identifier: TSESTree.Identifier): boolean {
 	let parent: TSESTree.Node | undefined = identifier.parent;
 
 	while (parent) {
+		// Skip TS runtime expressions - they're not type-only positions
+		if (TS_RUNTIME_EXPRESSIONS.has(parent.type)) {
+			parent = parent.parent;
+			continue;
+		}
 		if (parent.type.startsWith("TS")) return true;
 		if (IS_CEASE_BOUNDARY.has(parent.type)) return false;
 		parent = parent.parent;
@@ -456,7 +515,7 @@ function collectCaptures(node: TSESTree.Node, sourceCode: Rule.RuleContext["sour
 
 					captureSet.add(name);
 					const depthNode = findTopmostMemberExpression(current);
-					const usagePath = sourceCode.getText(depthNode as unknown as Rule.Node);
+					const usagePath = nodeToSafeDependencyPath(depthNode, sourceCode);
 					captures.push({
 						depth: getMemberExpressionDepth(depthNode),
 						name,
