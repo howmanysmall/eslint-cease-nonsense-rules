@@ -174,6 +174,8 @@ function getMemberExpressionDepth(node: TSESTree.Node): number {
 	let depth = 0;
 	let current: TSESTree.Node = node;
 
+	if (current.type === TSESTree.AST_NODE_TYPES.ChainExpression) current = current.expression;
+
 	while (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
 		depth += 1;
 		current = current.object;
@@ -184,7 +186,11 @@ function getMemberExpressionDepth(node: TSESTree.Node): number {
 
 function getRootIdentifier(node: TSESTree.Node): TSESTree.Identifier | undefined {
 	let current: TSESTree.Node = node;
+
+	if (current.type === TSESTree.AST_NODE_TYPES.ChainExpression) current = current.expression;
+
 	while (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) current = current.object;
+
 	return current.type === TSESTree.AST_NODE_TYPES.Identifier ? current : undefined;
 }
 
@@ -312,7 +318,19 @@ function findTopmostMemberExpression(node: TSESTree.Node): TSESTree.Node {
 	let current: TSESTree.Node = node;
 	let { parent } = node;
 
-	while (parent?.type === TSESTree.AST_NODE_TYPES.MemberExpression && parent.object === current) {
+	while (parent) {
+		// Stop if this member expression is being called as a method
+		// e.g., items.map(fn) - we want "items", not "items.map"
+		if (parent.type === TSESTree.AST_NODE_TYPES.CallExpression && parent.callee === current) {
+			if (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) return current.object;
+			break;
+		}
+
+		const isMemberParent = parent.type === TSESTree.AST_NODE_TYPES.MemberExpression && parent.object === current;
+		const isChainParent = parent.type === TSESTree.AST_NODE_TYPES.ChainExpression;
+
+		if (!isMemberParent && !isChainParent) break;
+
 		current = parent;
 		parent = parent.parent;
 	}
@@ -463,6 +481,11 @@ function collectCaptures(node: TSESTree.Node, sourceCode: Rule.RuleContext["sour
 		if (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
 			visit(current.object);
 			if (current.computed) visit(current.property);
+			return;
+		}
+
+		if (current.type === TSESTree.AST_NODE_TYPES.ChainExpression) {
+			visit(current.expression);
 			return;
 		}
 
