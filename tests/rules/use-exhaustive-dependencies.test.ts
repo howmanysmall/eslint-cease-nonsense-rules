@@ -1,4 +1,5 @@
 import { describe } from "bun:test";
+import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 import rule from "../../src/rules/use-exhaustive-dependencies";
 
@@ -523,6 +524,31 @@ function Component() {
 					},
 				],
 			},
+
+			// Non-null assertion - missing dependency (strips ! for dependency array)
+			{
+				code: `
+function Component({ foo }) {
+    useMemo(() => foo!.bar, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'foo.bar' to dependencies array",
+								output: `
+function Component({ foo }) {
+    useMemo(() => foo!.bar, [foo.bar]);
+}
+`,
+							},
+						],
+					},
+				],
+				languageOptions: { parser: tsParser },
+			},
 		],
 		valid: [
 			// Correct dependencies
@@ -1015,6 +1041,46 @@ function Component({ obj }) {
     useMemo(() => obj.nested.items.map(x => x * 2), [obj.nested.items]);
 }
 `,
+
+			// Non-null assertion - should require the root object
+			{
+				code: `
+function Component({ foo }) {
+    useMemo(() => foo!.bar, [foo]);
+}
+`,
+				languageOptions: { parser: tsParser },
+			},
+
+			// Nested non-null assertions
+			{
+				code: `
+function Component({ foo }) {
+    useMemo(() => foo!.bar!.baz, [foo]);
+}
+`,
+				languageOptions: { parser: tsParser },
+			},
+
+			// Mixed optional chaining and non-null assertion
+			{
+				code: `
+function Component({ foo }) {
+    useMemo(() => foo?.bar!.baz, [foo]);
+}
+`,
+				languageOptions: { parser: tsParser },
+			},
+
+			// Non-null assertion with method call
+			{
+				code: `
+function Component({ obj }) {
+    useMemo(() => obj!.items.map(x => x * 2), [obj]);
+}
+`,
+				languageOptions: { parser: tsParser },
+			},
 		],
 	});
 
