@@ -319,8 +319,14 @@ function findTopmostMemberExpression(node: TSESTree.Node): TSESTree.Node {
 	let { parent } = node;
 
 	while (parent) {
-		const isMemberParent = parent.type === TSESTree.AST_NODE_TYPES.MemberExpression && parent.object === current;
+		// Stop if this member expression is being called as a method
+		// e.g., items.map(fn) - we want "items", not "items.map"
+		if (parent.type === TSESTree.AST_NODE_TYPES.CallExpression && parent.callee === current) {
+			if (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) return current.object;
+			break;
+		}
 
+		const isMemberParent = parent.type === TSESTree.AST_NODE_TYPES.MemberExpression && parent.object === current;
 		const isChainParent = parent.type === TSESTree.AST_NODE_TYPES.ChainExpression;
 
 		if (!isMemberParent && !isChainParent) break;

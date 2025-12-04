@@ -983,9 +983,36 @@ function Component() {
 
 			// Optional chaining with method call
 			`
-function Component() {
-    const obj = { method: () => 1 };
+function Component({ obj }) {
     useMemo(() => obj?.method(), [obj]);
+}
+`,
+
+			// Array.map() - should only require the array, not the method
+			`
+function Component({ items }) {
+    useMemo(() => items.map(x => x * 2), [items]);
+}
+`,
+
+			// Chained method calls - should only require the root object
+			`
+function Component({ items }) {
+    useMemo(() => items.filter(x => x > 1).map(x => x * 2), [items]);
+}
+`,
+
+			// Deep chained methods
+			`
+function Component({ data }) {
+    useMemo(() => data.users.filter(x => x > 0).map(x => x * 2).slice(0, 2), [data.users]);
+}
+`,
+
+			// Method call on nested property
+			`
+function Component({ obj }) {
+    useMemo(() => obj.nested.items.map(x => x * 2), [obj.nested.items]);
 }
 `,
 		],
