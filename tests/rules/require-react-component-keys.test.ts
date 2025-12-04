@@ -430,26 +430,6 @@ function MultipleConditionals({ showA, showB }) {
 					},
 				},
 			},
-			// Ternary conditional with siblings - both branches need keys
-			{
-				code: `
-function TernaryWithSiblings({ condition }) {
-    return (
-        <div>
-            <Header key="header" />
-            {condition ? <ComponentA /> : <ComponentB />}
-        </div>
-    );
-}
-`,
-				errors: 2,
-				languageOptions: {
-					parser,
-					parserOptions: {
-						ecmaFeatures: { jsx: true },
-					},
-				},
-			},
 			// Logical expression as only child - needs key
 			{
 				code: `
@@ -462,25 +442,6 @@ function OnlyChild({ show }) {
 }
 `,
 				errors: 1,
-				languageOptions: {
-					parser,
-					parserOptions: {
-						ecmaFeatures: { jsx: true },
-					},
-				},
-			},
-			// Ternary as only child - both branches need keys
-			{
-				code: `
-function TernaryOnlyChild({ type }) {
-    return (
-        <div>
-            {type === "a" ? <ComponentA /> : <ComponentB />}
-        </div>
-    );
-}
-`,
-				errors: 2,
 				languageOptions: {
 					parser,
 					parserOptions: {
@@ -1058,6 +1019,217 @@ const dialog = manager.registerWindow("BasicDialog", SimpleDialog, {
     closeOnBackdrop: true,
     modal: true,
 });
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Return inside if block should be recognized as root return
+			{
+				code: `
+function ItemImage({ imageType }) {
+    if (imageType === "button") {
+        return <Button />;
+    }
+    return <ImageLabel />;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Return inside else block
+			{
+				code: `
+function Component({ condition }) {
+    if (condition) {
+        return <div />;
+    } else {
+        return <span />;
+    }
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Nested if statements
+			{
+				code: `
+function Component({ a, b }) {
+    if (a) {
+        if (b) {
+            return <div />;
+        }
+        return <span />;
+    }
+    return <p />;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Return inside switch case
+			{
+				code: `
+function Component({ type }) {
+    switch (type) {
+        case "a":
+            return <div />;
+        case "b":
+            return <span />;
+        default:
+            return <p />;
+    }
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Return inside try block
+			{
+				code: `
+function Component() {
+    try {
+        return <div />;
+    } catch {
+        return <ErrorDisplay />;
+    }
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Return inside for loop
+			{
+				code: `
+function Component({ items }) {
+    for (const item of items) {
+        if (item.isMatch) {
+            return <MatchedItem />;
+        }
+    }
+    return <NoMatch />;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Early return pattern
+			{
+				code: `
+function Component({ error, data }) {
+    if (error) {
+        return <ErrorDisplay />;
+    }
+    if (!data) {
+        return <Loading />;
+    }
+    return <DataDisplay data={data} />;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Fragments inside ternary as JSX child (mutually exclusive alternatives)
+			{
+				code: `
+function Frame({ hasGlow, children }) {
+    return (
+        <frame>
+            {hasGlow ? (
+                <>
+                    <frame key="inner" />
+                    <Glow key="glow" />
+                </>
+            ) : (
+                <>
+                    {children}
+                </>
+            )}
+        </frame>
+    );
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Elements inside ternary as JSX child
+			{
+				code: `
+function Component({ condition }) {
+    return (
+        <div>
+            {condition ? <ComponentA /> : <ComponentB />}
+        </div>
+    );
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Exact frame.tsx pattern with spreads and extraChildren
+			{
+				code: `
+function Frame({ hasGlow, effectiveProperties, extraChildren, visualElements, children }) {
+    return (
+        <frame
+            {...effectiveProperties.nativeProperties}
+            BackgroundColor3={effectiveProperties.nativeProperties?.BackgroundColor3}
+            BackgroundTransparency={hasGlow ? 1 : effectiveProperties.nativeProperties?.BackgroundTransparency}
+        >
+            {extraChildren}
+            {hasGlow ? (
+                <>
+                    <frame key="inner" />
+                    <Glow key="glow" />
+                </>
+            ) : (
+                <>
+                    {visualElements}
+                    {children}
+                </>
+            )}
+        </frame>
+    );
+}
 `,
 				languageOptions: {
 					parser,
