@@ -70,7 +70,7 @@
 		"prepare": "bun x --bun simple-git-hooks",
 		"prepublishOnly": "bun run build",
 		"release": "bumpp",
-		"typecheck": "bun x --bun tsgo --noEmit",
+		"typecheck": "bun x --bun tsgo --noEmit || bun run typecheck:safe",
 		"typecheck:safe": "bun x --bun tsc --noEmit"
 	},
 	"sideEffects": false,
