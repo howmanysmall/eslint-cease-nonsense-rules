@@ -549,6 +549,60 @@ function Component({ foo }) {
 				],
 				languageOptions: { parser: tsParser },
 			},
+
+			// Shorthand property IS a capture - should detect missing dependency
+			{
+				code: `
+function Component() {
+    const cellPadding = { x: 1 };
+    useMemo(() => ({ cellPadding }), []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'cellPadding' to dependencies array",
+								output: `
+function Component() {
+    const cellPadding = { x: 1 };
+    useMemo(() => ({ cellPadding }), [cellPadding]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Computed property key IS a capture - should detect missing dependency
+			{
+				code: `
+function Component() {
+    const key = "prop";
+    const value = 1;
+    useMemo(() => ({ [key]: value }), [value]);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'key' to dependencies array",
+								output: `
+function Component() {
+    const key = "prop";
+    const value = 1;
+    useMemo(() => ({ [key]: value }), [key, value]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
 		],
 		valid: [
 			// Correct dependencies
@@ -1081,6 +1135,33 @@ function Component({ obj }) {
 `,
 				languageOptions: { parser: tsParser },
 			},
+
+			// Object literal with property name same as outer variable - only value is a capture
+			`
+function Component() {
+    const cellPadding = { x: 1 };
+    const resolvedCellPadding = cellPadding ?? { x: 0 };
+    useMemo(() => ({ cellPadding: resolvedCellPadding }), [resolvedCellPadding]);
+}
+`,
+
+			// Object literal with multiple properties - only values are captures
+			`
+function Component() {
+    const a = 1;
+    const b = 2;
+    useMemo(() => ({ a, b: b * 2 }), [a, b]);
+}
+`,
+
+			// Computed property key IS a capture
+			`
+function Component() {
+    const key = "prop";
+    const value = 1;
+    useMemo(() => ({ [key]: value }), [key, value]);
+}
+`,
 		],
 	});
 
