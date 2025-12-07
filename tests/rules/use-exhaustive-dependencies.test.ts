@@ -1,4 +1,5 @@
 import { describe } from "bun:test";
+import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 import rule from "../../src/rules/use-exhaustive-dependencies";
 
@@ -523,6 +524,85 @@ function Component() {
 					},
 				],
 			},
+
+			// Non-null assertion - missing dependency (strips ! for dependency array)
+			{
+				code: `
+function Component({ foo }) {
+    useMemo(() => foo!.bar, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'foo.bar' to dependencies array",
+								output: `
+function Component({ foo }) {
+    useMemo(() => foo!.bar, [foo.bar]);
+}
+`,
+							},
+						],
+					},
+				],
+				languageOptions: { parser: tsParser },
+			},
+
+			// Shorthand property IS a capture - should detect missing dependency
+			{
+				code: `
+function Component() {
+    const cellPadding = { x: 1 };
+    useMemo(() => ({ cellPadding }), []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'cellPadding' to dependencies array",
+								output: `
+function Component() {
+    const cellPadding = { x: 1 };
+    useMemo(() => ({ cellPadding }), [cellPadding]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Computed property key IS a capture - should detect missing dependency
+			{
+				code: `
+function Component() {
+    const key = "prop";
+    const value = 1;
+    useMemo(() => ({ [key]: value }), [value]);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'key' to dependencies array",
+								output: `
+function Component() {
+    const key = "prop";
+    const value = 1;
+    useMemo(() => ({ [key]: value }), [key, value]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
 		],
 		valid: [
 			// Correct dependencies
@@ -1013,6 +1093,73 @@ function Component({ data }) {
 			`
 function Component({ obj }) {
     useMemo(() => obj.nested.items.map(x => x * 2), [obj.nested.items]);
+}
+`,
+
+			// Non-null assertion - should require the root object
+			{
+				code: `
+function Component({ foo }) {
+    useMemo(() => foo!.bar, [foo]);
+}
+`,
+				languageOptions: { parser: tsParser },
+			},
+
+			// Nested non-null assertions
+			{
+				code: `
+function Component({ foo }) {
+    useMemo(() => foo!.bar!.baz, [foo]);
+}
+`,
+				languageOptions: { parser: tsParser },
+			},
+
+			// Mixed optional chaining and non-null assertion
+			{
+				code: `
+function Component({ foo }) {
+    useMemo(() => foo?.bar!.baz, [foo]);
+}
+`,
+				languageOptions: { parser: tsParser },
+			},
+
+			// Non-null assertion with method call
+			{
+				code: `
+function Component({ obj }) {
+    useMemo(() => obj!.items.map(x => x * 2), [obj]);
+}
+`,
+				languageOptions: { parser: tsParser },
+			},
+
+			// Object literal with property name same as outer variable - only value is a capture
+			`
+function Component() {
+    const cellPadding = { x: 1 };
+    const resolvedCellPadding = cellPadding ?? { x: 0 };
+    useMemo(() => ({ cellPadding: resolvedCellPadding }), [resolvedCellPadding]);
+}
+`,
+
+			// Object literal with multiple properties - only values are captures
+			`
+function Component() {
+    const a = 1;
+    const b = 2;
+    useMemo(() => ({ a, b: b * 2 }), [a, b]);
+}
+`,
+
+			// Computed property key IS a capture
+			`
+function Component() {
+    const key = "prop";
+    const value = 1;
+    useMemo(() => ({ [key]: value }), [key, value]);
 }
 `,
 		],

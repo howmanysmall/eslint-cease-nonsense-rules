@@ -61,6 +61,7 @@ interface DependencyInfo {
 }
 
 interface CaptureInfo {
+	readonly forceDependency: boolean;
 	readonly name: string;
 	readonly node: TSESTree.Node;
 	readonly usagePath: string;
@@ -164,8 +165,9 @@ function getHookName(node: TSESTree.CallExpression): string | undefined {
 	if (
 		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-	)
+	) {
 		return callee.property.name;
+	}
 
 	return undefined;
 }
@@ -189,12 +191,44 @@ function getRootIdentifier(node: TSESTree.Node): TSESTree.Identifier | undefined
 
 	if (current.type === TSESTree.AST_NODE_TYPES.ChainExpression) current = current.expression;
 
-	while (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) current = current.object;
+	while (
+		current.type === TSESTree.AST_NODE_TYPES.MemberExpression ||
+		current.type === TSESTree.AST_NODE_TYPES.TSNonNullExpression
+	) {
+		if (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) current = current.object;
+		else current = current.expression;
+	}
 
 	return current.type === TSESTree.AST_NODE_TYPES.Identifier ? current : undefined;
 }
 
 function nodeToDependencyString(node: TSESTree.Node, sourceCode: Rule.RuleContext["sourceCode"]): string {
+	return sourceCode.getText(node as unknown as Rule.Node);
+}
+
+function nodeToSafeDependencyPath(node: TSESTree.Node, sourceCode: Rule.RuleContext["sourceCode"]): string {
+	if (node.type === TSESTree.AST_NODE_TYPES.Identifier) return node.name;
+
+	if (node.type === TSESTree.AST_NODE_TYPES.ChainExpression) {
+		return nodeToSafeDependencyPath(node.expression, sourceCode);
+	}
+
+	if (TS_RUNTIME_EXPRESSIONS.has(node.type)) {
+		const expr = node as TSESTree.TSNonNullExpression | TSESTree.TSAsExpression | TSESTree.TSSatisfiesExpression;
+		return nodeToSafeDependencyPath(expr.expression, sourceCode);
+	}
+
+	if (node.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
+		const objectPath = nodeToSafeDependencyPath(node.object, sourceCode);
+		if (node.computed) {
+			const propertyText = sourceCode.getText(node.property as unknown as Rule.Node);
+			return `${objectPath}[${propertyText}]`;
+		}
+		const propertyName = node.property.type === TSESTree.AST_NODE_TYPES.Identifier ? node.property.name : "";
+		const separator = node.optional ? "?." : ".";
+		return `${objectPath}${separator}${propertyName}`;
+	}
+
 	return sourceCode.getText(node as unknown as Rule.Node);
 }
 
@@ -208,14 +242,17 @@ function isStableArrayIndex(
 		!(stableResult instanceof Set) ||
 		node.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator ||
 		node.id.type !== TSESTree.AST_NODE_TYPES.ArrayPattern
-	)
+	) {
 		return false;
+	}
 
 	const elements = node.id.elements;
 	let index = 0;
 	for (const element of elements) {
-		if (element.type === TSESTree.AST_NODE_TYPES.Identifier && element.name === identifierName)
-			return (stableResult as Set<number>).has(index);
+		if (element.type === TSESTree.AST_NODE_TYPES.Identifier && element.name === identifierName) {
+			return stableResult.has(index);
+		}
+
 		index += 1;
 	}
 
@@ -272,28 +309,32 @@ function isStableValue(
 					callee.object.name === "React" &&
 					callee.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
 					callee.property.name === "joinBindings"
-				)
+				) {
 					return true;
+				}
 
 				if (
 					callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 					callee.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
 					callee.property.name === "map"
-				)
+				) {
 					return true;
+				}
 			}
 
 			if (init) {
 				if (
 					init.type === TSESTree.AST_NODE_TYPES.Literal ||
 					init.type === TSESTree.AST_NODE_TYPES.TemplateLiteral
-				)
+				) {
 					return true;
+				}
 				if (
 					init.type === TSESTree.AST_NODE_TYPES.UnaryExpression &&
 					init.argument.type === TSESTree.AST_NODE_TYPES.Literal
-				)
+				) {
 					return true;
+				}
 			}
 
 			const variableDefinition = variable.defs.find((definition) => definition.node === node);
@@ -328,8 +369,9 @@ function findTopmostMemberExpression(node: TSESTree.Node): TSESTree.Node {
 
 		const isMemberParent = parent.type === TSESTree.AST_NODE_TYPES.MemberExpression && parent.object === current;
 		const isChainParent = parent.type === TSESTree.AST_NODE_TYPES.ChainExpression;
+		const isNonNullParent = parent.type === TSESTree.AST_NODE_TYPES.TSNonNullExpression;
 
-		if (!isMemberParent && !isChainParent) break;
+		if (!isMemberParent && !isChainParent && !isNonNullParent) break;
 
 		current = parent;
 		parent = parent.parent;
@@ -345,10 +387,29 @@ const IS_CEASE_BOUNDARY = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.VariableDeclarator,
 ]);
 
+// TypeScript runtime expressions - these evaluate to values, not type-only constructs
+const TS_RUNTIME_EXPRESSIONS = new Set<TSESTree.AST_NODE_TYPES>([
+	TSESTree.AST_NODE_TYPES.TSNonNullExpression,
+	TSESTree.AST_NODE_TYPES.TSAsExpression,
+	TSESTree.AST_NODE_TYPES.TSSatisfiesExpression,
+	TSESTree.AST_NODE_TYPES.TSTypeAssertion,
+	TSESTree.AST_NODE_TYPES.TSInstantiationExpression,
+]);
+
+function isComputedPropertyIdentifier(identifier: TSESTree.Identifier): boolean {
+	const parent = identifier.parent;
+	return parent?.type === TSESTree.AST_NODE_TYPES.Property && parent.computed && parent.key === identifier;
+}
+
 function isInTypePosition(identifier: TSESTree.Identifier): boolean {
 	let parent: TSESTree.Node | undefined = identifier.parent;
 
 	while (parent) {
+		// Skip TS runtime expressions - they're not type-only positions
+		if (TS_RUNTIME_EXPRESSIONS.has(parent.type)) {
+			parent = parent.parent;
+			continue;
+		}
 		if (parent.type.startsWith("TS")) return true;
 		if (IS_CEASE_BOUNDARY.has(parent.type)) return false;
 		parent = parent.parent;
@@ -404,16 +465,18 @@ function resolveFunctionReference(
 	for (const definition of variable.defs) {
 		const { node } = definition;
 
-		if (node.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration)
+		if (node.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration) {
 			return node as unknown as TSESTree.FunctionExpression;
+		}
 
 		if (
 			node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
 			node.init &&
 			(node.init.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression ||
 				node.init.type === TSESTree.AST_NODE_TYPES.FunctionExpression)
-		)
+		) {
 			return node.init as TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression;
+		}
 	}
 
 	return undefined;
@@ -456,9 +519,11 @@ function collectCaptures(node: TSESTree.Node, sourceCode: Rule.RuleContext["sour
 
 					captureSet.add(name);
 					const depthNode = findTopmostMemberExpression(current);
-					const usagePath = sourceCode.getText(depthNode as unknown as Rule.Node);
+					const usagePath = nodeToSafeDependencyPath(depthNode, sourceCode);
+					const depth = getMemberExpressionDepth(depthNode);
 					captures.push({
-						depth: getMemberExpressionDepth(depthNode),
+						depth,
+						forceDependency: isComputedPropertyIdentifier(current),
 						name,
 						node: depthNode,
 						usagePath,
@@ -486,6 +551,12 @@ function collectCaptures(node: TSESTree.Node, sourceCode: Rule.RuleContext["sour
 
 		if (current.type === TSESTree.AST_NODE_TYPES.ChainExpression) {
 			visit(current.expression);
+			return;
+		}
+
+		if (current.type === TSESTree.AST_NODE_TYPES.Property) {
+			if (current.computed) visit(current.key);
+			visit(current.value);
 			return;
 		}
 
@@ -604,9 +675,9 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 				if (
 					closureArgument.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression ||
 					closureArgument.type === TSESTree.AST_NODE_TYPES.FunctionExpression
-				)
+				) {
 					closureFunction = closureArgument;
-				else if (closureArgument.type === TSESTree.AST_NODE_TYPES.Identifier) {
+				} else if (closureArgument.type === TSESTree.AST_NODE_TYPES.Identifier) {
 					const scope = getScope(callNode);
 					closureFunction = resolveFunctionReference(closureArgument, scope);
 				}
@@ -619,7 +690,8 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 					const captures = collectCaptures(closureFunction, context.sourceCode);
 
 					const requiredCaptures = captures.filter(
-						(capture) => !isStableValue(capture.variable, capture.name, stableHooks),
+						(capture) =>
+							capture.forceDependency || !isStableValue(capture.variable, capture.name, stableHooks),
 					);
 
 					if (requiredCaptures.length > 0) {
@@ -727,7 +799,9 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 
 				const missingCaptures = new Array<CaptureInfo>();
 				for (const capture of captures) {
-					if (isStableValue(capture.variable, capture.name, stableHooks)) continue;
+					if (!capture.forceDependency && isStableValue(capture.variable, capture.name, stableHooks)) {
+						continue;
+					}
 
 					const rootIdentifier = getRootIdentifier(capture.node);
 					if (!rootIdentifier) continue;
@@ -794,7 +868,9 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 				}
 
 				for (const capture of captures) {
-					if (isStableValue(capture.variable, capture.name, stableHooks)) continue;
+					if (!capture.forceDependency && isStableValue(capture.variable, capture.name, stableHooks)) {
+						continue;
+					}
 
 					const rootIdentifier = getRootIdentifier(capture.node);
 					if (!rootIdentifier) continue;
