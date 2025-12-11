@@ -581,15 +581,18 @@ function parseDependencies(
 	const dependencies = new Array<DependencyInfo>();
 
 	for (const element of node.elements) {
-		if (!element || element.type === TSESTree.AST_NODE_TYPES.SpreadElement) continue;
+		if (!element) continue;
 
-		const name = nodeToDependencyString(element, sourceCode);
-		const depth = getMemberExpressionDepth(element);
+		const actualNode =
+			element.type === TSESTree.AST_NODE_TYPES.SpreadElement ? element.argument : element;
+
+		const name = nodeToDependencyString(actualNode, sourceCode);
+		const depth = getMemberExpressionDepth(actualNode);
 
 		dependencies.push({
 			depth,
 			name,
-			node: element,
+			node: actualNode,
 		});
 	}
 

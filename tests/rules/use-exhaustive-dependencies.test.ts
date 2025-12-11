@@ -626,6 +626,25 @@ function Component() {
 }
 `,
 
+			// Spread element in dependency array
+			`
+function Component({ deps }) {
+    useEffect(() => {
+        console.log(deps);
+    }, [...deps]);
+}
+`,
+
+			// Spread element with other dependencies
+			`
+function Component({ deps }) {
+    const a = 1;
+    useEffect(() => {
+        console.log(a, deps);
+    }, [a, ...deps]);
+}
+`,
+
 			// No dependencies needed - no captures
 			`
 function Component() {
