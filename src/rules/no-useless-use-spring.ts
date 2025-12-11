@@ -1,6 +1,6 @@
+import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
 
 type MessageIds = "uselessSpring";
 
@@ -158,14 +158,21 @@ function isNonPatternExpression(
 		| TSESTree.ArrayPattern
 		| TSESTree.ObjectPattern
 		| TSESTree.RestElement
-		| TSESTree.AssignmentPattern,
+		| TSESTree.AssignmentPattern
+		| TSESTree.TSEmptyBodyFunctionExpression,
 ): value is TSESTree.Expression {
 	return (
+		value.type !== AST_NODE_TYPES.PrivateIdentifier &&
 		value.type !== AST_NODE_TYPES.AssignmentPattern &&
 		value.type !== AST_NODE_TYPES.ArrayPattern &&
 		value.type !== AST_NODE_TYPES.ObjectPattern &&
-		value.type !== AST_NODE_TYPES.RestElement
+		value.type !== AST_NODE_TYPES.RestElement &&
+		value.type !== AST_NODE_TYPES.TSEmptyBodyFunctionExpression
 	);
+}
+
+function isNonPrivateExpression(value: TSESTree.Expression | TSESTree.PrivateIdentifier): value is TSESTree.Expression {
+	return value.type !== AST_NODE_TYPES.PrivateIdentifier;
 }
 
 function isStaticObjectLikeConfig(
@@ -237,7 +244,10 @@ function isStaticExpression(
 
 		case AST_NODE_TYPES.BinaryExpression:
 		case AST_NODE_TYPES.LogicalExpression:
-			return isStaticExpression(context, unwrapped.left, seen) && isStaticExpression(context, unwrapped.right, seen);
+			if (!isNonPrivateExpression(unwrapped.left) || !isNonPrivateExpression(unwrapped.right)) return false;
+			return (
+				isStaticExpression(context, unwrapped.left, seen) && isStaticExpression(context, unwrapped.right, seen)
+			);
 
 		case AST_NODE_TYPES.ConditionalExpression:
 			return (
