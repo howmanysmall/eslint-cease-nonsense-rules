@@ -55,7 +55,6 @@
 		"strings": "on",
 	},
 
-	"oxc.flags": {},
 	"oxc.fmt.experimental": true,
 	"oxc.lint.run": "onType",
 	"oxc.typeAware": true,

@@ -2,6 +2,7 @@ import type { BanInstancesOptions } from "./rules/ban-instances";
 import type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
 import type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
 import type { NoShorthandOptions } from "./rules/no-shorthand-names";
+import type { NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
 import type { EffectFunctionOptions, HookConfiguration } from "./rules/require-named-effect-functions";
 import type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
 import type { ReactKeysOptions } from "./rules/require-react-component-keys";
@@ -166,6 +167,21 @@ export function createUseHookAtTopLevelOptions(
 		ignoreHooks: [],
 		importSources: {},
 		onlyHooks: [],
+		...options,
+	};
+}
+
+/**
+ * Creates options for no-useless-use-spring rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNoUselessUseSpringOptions(
+	options: Partial<NoUselessUseSpringOptions> = {},
+): NoUselessUseSpringOptions {
+	return {
+		springHooks: ["useSpring"],
+		treatEmptyDepsAsViolation: true,
 		...options,
 	};
 }

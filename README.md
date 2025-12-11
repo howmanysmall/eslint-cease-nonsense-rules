@@ -36,6 +36,7 @@ export default [
       "cease-nonsense/require-named-effect-functions": "error",
       "cease-nonsense/require-paired-calls": "error",
       "cease-nonsense/require-react-component-keys": "error",
+      "cease-nonsense/no-useless-use-spring": "error",
       "cease-nonsense/use-exhaustive-dependencies": "error",
       "cease-nonsense/use-hook-at-top-level": "error",
     },
@@ -254,6 +255,33 @@ function UserProfile({ userId }) {
   useEffect(() => {
     fetchUser(userId).then(setUser);
   }, []); // Missing userId dependency!
+}
+```
+
+#### `no-useless-use-spring`
+
+Flags `useSpring`-style hooks that never change (static config plus non-updating deps). Defaults: `springHooks: ["useSpring"]`, `treatEmptyDepsAsViolation: true`.
+
+**❌ Bad:**
+
+```typescript
+const spring = useSpring({ opacity: 1 }, []);
+```
+
+**✅ Good:**
+
+```typescript
+const spring = useSpring({ opacity: isOpen ? 1 : 0 }, [isOpen]);
+```
+
+**Configuration:**
+
+```typescript
+{
+  "cease-nonsense/no-useless-use-spring": ["error", {
+    "springHooks": ["useSpring", "useMotion"],
+    "treatEmptyDepsAsViolation": true
+  }]
 }
 ```
 
