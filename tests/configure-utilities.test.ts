@@ -4,6 +4,7 @@ import {
 	createEffectFunctionOptions,
 	createHookConfiguration,
 	createNoInstanceMethodsOptions,
+	createNoUselessUseSpringOptions,
 	createNoShorthandOptions,
 	createPairConfiguration,
 	createReactKeysOptions,
@@ -79,6 +80,22 @@ describe("configure-utilities", () => {
 		it("should override defaults", () => {
 			const configuration = createNoInstanceMethodsOptions({ checkPublic: true });
 			expect(configuration.checkPublic).toBe(true);
+		});
+	});
+
+	describe("createNoUselessUseSpringOptions", () => {
+		it("should create options with defaults", () => {
+			const configuration = createNoUselessUseSpringOptions();
+			expect(configuration).toEqual({
+				springHooks: ["useSpring"],
+				treatEmptyDepsAsViolation: true,
+			});
+		});
+
+		it("should override defaults", () => {
+			const configuration = createNoUselessUseSpringOptions({ springHooks: ["useMotion"], treatEmptyDepsAsViolation: false });
+			expect(configuration.springHooks).toEqual(["useMotion"]);
+			expect(configuration.treatEmptyDepsAsViolation).toBe(false);
 		});
 	});
 
