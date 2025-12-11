@@ -43,6 +43,7 @@
 				"src/rules/use-exhaustive-dependencies.ts",
 				"src/rules/use-hook-at-top-level.ts",
 				"src/index.ts",
+				"src/rules/no-useless-use-spring.ts",
 			],
 			"rules": {
 				"@typescript-eslint/no-unsafe-argument": "off",

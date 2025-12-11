@@ -4,8 +4,8 @@ import {
 	createEffectFunctionOptions,
 	createHookConfiguration,
 	createNoInstanceMethodsOptions,
-	createNoUselessUseSpringOptions,
 	createNoShorthandOptions,
+	createNoUselessUseSpringOptions,
 	createPairConfiguration,
 	createReactKeysOptions,
 	createRequirePairedCallsOptions,
@@ -13,6 +13,7 @@ import {
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
 } from "../src/configure-utilities";
+import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../src/rules/no-useless-use-spring";
 
 describe("configure-utilities", () => {
 	describe("createPairConfiguration", () => {
@@ -88,13 +89,19 @@ describe("configure-utilities", () => {
 			const configuration = createNoUselessUseSpringOptions();
 			expect(configuration).toEqual({
 				springHooks: ["useSpring"],
+				staticGlobalFactories: DEFAULT_STATIC_GLOBAL_FACTORIES,
 				treatEmptyDepsAsViolation: true,
 			});
 		});
 
 		it("should override defaults", () => {
-			const configuration = createNoUselessUseSpringOptions({ springHooks: ["useMotion"], treatEmptyDepsAsViolation: false });
+			const configuration = createNoUselessUseSpringOptions({
+				springHooks: ["useMotion"],
+				staticGlobalFactories: ["CustomFactory"],
+				treatEmptyDepsAsViolation: false,
+			});
 			expect(configuration.springHooks).toEqual(["useMotion"]);
+			expect(configuration.staticGlobalFactories).toEqual(["CustomFactory"]);
 			expect(configuration.treatEmptyDepsAsViolation).toBe(false);
 		});
 	});
@@ -210,10 +217,12 @@ describe("configure-utilities", () => {
 		it("should override defaults", () => {
 			const configuration = createUseHookAtTopLevelOptions({
 				ignoreHooks: ["useLegacyHook"],
+				// @ts-expect-error Testing purposes
 				importSources: { react: ["useEffect"] },
 				onlyHooks: ["useEffect"],
 			});
 			expect(configuration.ignoreHooks).toEqual(["useLegacyHook"]);
+			// @ts-expect-error Testing purposes
 			expect(configuration.importSources).toEqual({ react: ["useEffect"] });
 			expect(configuration.onlyHooks).toEqual(["useEffect"]);
 		});
