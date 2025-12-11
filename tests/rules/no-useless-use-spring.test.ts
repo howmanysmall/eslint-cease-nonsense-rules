@@ -14,6 +14,24 @@ const ruleTester = new RuleTester({
 describe("no-useless-use-spring", () => {
 			ruleTester.run("no-useless-use-spring", rule, {
 				invalid: [
+					// Only `from` without `to` is still useless
+					{
+						code: `
+const springs = useSpring({
+  from: { x: 0 },
+});
+`,
+						errors: [{ messageId: "uselessSpring" }],
+					},
+					// Only `to` without `from` is still useless
+					{
+						code: `
+const springs = useSpring({
+  to: { x: 1 },
+});
+`,
+						errors: [{ messageId: "uselessSpring" }],
+					},
 					{
 						code: `
 import { config } from "./config";
@@ -187,6 +205,44 @@ const spring = useSpring(
 					},
 				],
 				valid: [
+					// Mount animations with from/to are valid
+					{
+						code: `
+const springs = useSpring({
+  from: { x: 0 },
+  to: { x: 1 },
+});
+`,
+					},
+					{
+						code: `
+const springs = useSpring({
+  from: { x: 0 },
+  to: { x: 1 },
+}, []);
+`,
+					},
+					{
+						code: `
+import { config } from "./config";
+
+const springs = useSpring({
+  config: config.default,
+  from: { position: UDim2.fromScale(0.5, 0.41) },
+  to: { position: UDim2.fromScale(0.5, 0.31) },
+});
+`,
+					},
+					{
+						code: `
+const MOUNT_ANIM = {
+  from: { opacity: 0 },
+  to: { opacity: 1 },
+} as const;
+
+const springs = useSpring(MOUNT_ANIM);
+`,
+					},
 					{
 						code: `
 import { config } from "./config";

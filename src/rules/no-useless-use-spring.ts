@@ -217,6 +217,49 @@ function isNonPrivateExpression(value: TSESTree.Expression | TSESTree.PrivateIde
 	return value.type !== AST_NODE_TYPES.PrivateIdentifier;
 }
 
+function objectHasFromAndTo(objectExpr: TSESTree.ObjectExpression): boolean {
+	let hasFrom = false;
+	let hasTo = false;
+
+	for (const property of objectExpr.properties) {
+		if (property.type !== AST_NODE_TYPES.Property) continue;
+		if (property.computed) continue;
+		if (property.key.type !== AST_NODE_TYPES.Identifier) continue;
+
+		if (property.key.name === "from") hasFrom = true;
+		if (property.key.name === "to") hasTo = true;
+		if (hasFrom && hasTo) return true;
+	}
+
+	return false;
+}
+
+function hasFromAndToProperties(
+	context: TSESLint.RuleContext<MessageIds, Options>,
+	expression: TSESTree.Expression,
+): boolean {
+	const unwrapped = unwrapExpression(expression);
+
+	if (unwrapped.type === AST_NODE_TYPES.ObjectExpression) return objectHasFromAndTo(unwrapped);
+
+	if (unwrapped.type === AST_NODE_TYPES.Identifier) {
+		const variable = findVariable(context, unwrapped);
+		if (variable === undefined) return false;
+		if (!isModuleLevelScope(variable.scope)) return false;
+		if (isImport(variable)) return false;
+
+		for (const def of variable.defs) {
+			const initializer = getConstInitializer(def);
+			if (initializer === undefined) continue;
+			const normalizedInitializer = unwrapExpression(initializer);
+			if (normalizedInitializer.type !== AST_NODE_TYPES.ObjectExpression) continue;
+			if (objectHasFromAndTo(normalizedInitializer)) return true;
+		}
+	}
+
+	return false;
+}
+
 function isStaticObjectLikeConfig(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	expression: TSESTree.Expression,
@@ -420,6 +463,9 @@ const noUselessUseSpring: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options> =
 
 				const seen = new Set<TSESTree.Node>();
 				if (!isStaticObjectLikeConfig(context, configArgument, seen, normalized)) return;
+
+				// Mount animations with both `from` and `to` are valid - they animate once on mount
+				if (hasFromAndToProperties(context, configArgument)) return;
 
 				const depsKind = classifyDependencies(context, node.arguments[1], seen, normalized);
 				if (!depsAreNonUpdating(depsKind, normalized)) return;
