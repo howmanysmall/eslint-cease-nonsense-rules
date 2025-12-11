@@ -12,10 +12,10 @@ const ruleTester = new RuleTester({
 });
 
 describe("no-useless-use-spring", () => {
-	ruleTester.run("no-useless-use-spring", rule, {
-		invalid: [
-			{
-				code: `
+			ruleTester.run("no-useless-use-spring", rule, {
+				invalid: [
+					{
+						code: `
 import { config } from "./config";
 import { UDim2 } from "./roblox";
 
@@ -27,25 +27,55 @@ const topDecorPositionSpring = useSpring(
   [],
 );
 `,
-				errors: [{ messageId: "uselessSpring" }],
-			},
-			{
-				code: `
+						errors: [{ messageId: "uselessSpring" }],
+					},
+					{
+						code: `
+import { config } from "./config";
+
+const starSizeSpring = useSpring(
+  {
+    config: config.default,
+    size: UDim2.fromScale(0.55, 0.45),
+  },
+  [],
+).size;
+`,
+						errors: [{ messageId: "uselessSpring" }],
+					},
+					{
+						code: `
+import { config } from "./config";
+
+const { japaneseTextPositionSpring, japaneseTextTransparencySpring } = useSpring(
+  {
+    config: config.default,
+    japaneseTextPositionSpring: UDim2.fromScale(0.375, 0.95),
+    japaneseTextTransparencySpring: 0.2,
+    rotation: 25,
+  },
+  [],
+);
+`,
+						errors: [{ messageId: "uselessSpring" }],
+					},
+					{
+						code: `
 const opacitySpring = useSpring(
   { opacity: 1 },
   [],
 );
 `,
-				errors: [{ messageId: "uselessSpring" }],
-			},
-			{
-				code: `
+						errors: [{ messageId: "uselessSpring" }],
+					},
+					{
+						code: `
 const opacitySpring = useSpring({ opacity: 1 });
 `,
-				errors: [{ messageId: "uselessSpring" }],
-			},
-			{
-				code: `
+						errors: [{ messageId: "uselessSpring" }],
+					},
+					{
+						code: `
 const ALWAYS = 1;
 
 function Component() {
@@ -53,10 +83,10 @@ function Component() {
   return spring;
 }
 `,
-				errors: [{ messageId: "uselessSpring" }],
-			},
-			{
-				code: `
+						errors: [{ messageId: "uselessSpring" }],
+					},
+					{
+						code: `
 const CONFIG = { opacity: 1 } as const;
 
 function Component() {
@@ -64,27 +94,27 @@ function Component() {
   return spring;
 }
 `,
-				errors: [{ messageId: "uselessSpring" }],
-			},
-			{
-				code: `
+						errors: [{ messageId: "uselessSpring" }],
+					},
+					{
+						code: `
 const spring = useMotion({ opacity: 1 }, []);
 `,
-				errors: [{ messageId: "uselessSpring" }],
-				options: [
-					{
-						springHooks: ["useMotion"],
+						errors: [{ messageId: "uselessSpring" }],
+						options: [
+							{
+								springHooks: ["useMotion"],
+							},
+						],
 					},
-				],
-			},
-			{
-				code: `
+					{
+						code: `
 const spring = useSpring({ opacity: (1 as const) }, []);
 `,
-				errors: [{ messageId: "uselessSpring" }],
-			},
-			{
-				code: `
+						errors: [{ messageId: "uselessSpring" }],
+					},
+					{
+						code: `
 import { StaticCtor } from "./ctors";
 const STATIC_OBJ = { value: 1 } as const;
 
@@ -104,19 +134,61 @@ const spring = useSpring(
   [],
 );
 `,
-				errors: [{ messageId: "uselessSpring" }],
-			},
-			{
-				code: `
+						errors: [{ messageId: "uselessSpring" }],
+					},
+					{
+						code: `
 import * as Numbers from "./numbers";
 
 const spring = useSpring({ value: Numbers["ONE"] }, []);
 `,
-				errors: [{ messageId: "uselessSpring" }],
-			},
-		],
-		valid: [
-			`
+						errors: [{ messageId: "uselessSpring" }],
+					},
+					{
+						code: `
+const colorSpring = useSpring(
+  { color: Color3.fromRGB(255, 0, 0) },
+  [],
+);
+`,
+						errors: [{ messageId: "uselessSpring" }],
+					},
+					{
+						code: `
+const spring = animated.useSpring(
+  { opacity: 1 },
+  [],
+);
+`,
+						errors: [{ messageId: "uselessSpring" }],
+					},
+					{
+						code: `
+const spring = useSpring(
+  { sequence: new NumberSequence(0, 1) },
+  [],
+);
+`,
+						errors: [{ messageId: "uselessSpring" }],
+					},
+					{
+						code: `
+const spring = useSpring(
+  { value: CustomFactory.make(1) },
+  [],
+);
+`,
+						errors: [{ messageId: "uselessSpring" }],
+						options: [
+							{
+								staticGlobalFactories: ["CustomFactory"],
+							},
+						],
+					},
+				],
+				valid: [
+					{
+						code: `
 import { config } from "./config";
 import { UDim2 } from "./roblox";
 
@@ -131,14 +203,18 @@ function Component({ x, y }) {
   return spring;
 }
 `,
-			`
+					},
+					{
+						code: `
 function Component() {
   const [isOpen] = useState(false);
   const opacitySpring = useSpring({ opacity: isOpen ? 1 : 0 }, [isOpen]);
   return opacitySpring;
 }
 `,
-			`
+					},
+					{
+						code: `
 import { UDim2 } from "./roblox";
 
 function Component({ x }) {
@@ -146,50 +222,100 @@ function Component({ x }) {
   return spring;
 }
 `,
-			`
+					},
+					{
+						code: `
+import { config } from "./config";
+
+function Component({ x }) {
+  const spring = useSpring(
+    {
+      config: config.default,
+      size: UDim2.fromScale(0.55, 0.45),
+    },
+    [x],
+  );
+  return spring;
+}
+`,
+					},
+					{
+						code: `
 function Component() {
   const options = getSpringOptions();
   const spring = useSpring({ opacity: 1 }, options);
   return spring;
 }
 `,
-			{
-				code: `
+					},
+					{
+						code: `
 const opacitySpring = useSpring(
   { opacity: 1 },
   [],
 );
 `,
-				options: [
-					{
-						treatEmptyDepsAsViolation: false,
+						options: [
+							{
+								treatEmptyDepsAsViolation: false,
+							},
+						],
 					},
-				],
-			},
-			`
+					{
+						code: `
 const spring = useMotion({ opacity: 1 }, []);
 `,
-			`
+					},
+					{
+						code: `
 const spring = useSpring({ opacity: MISSING }, []);
 `,
-			`
+					},
+					{
+						code: `
 import configObj from "./configObj";
 
 const spring = useSpring(configObj, []);
 `,
-			`
+					},
+					{
+						code: `
 function Component(deps) {
   const spring = useSpring({ opacity: 1 }, [...deps]);
   return spring;
 }
 `,
-			`
+					},
+					{
+						code: `
 const NON_STATIC = () => {};
 const spring = useSpring({ fn: NON_STATIC }, []);
 `,
-			`
+					},
+					{
+						code: `
 const spring = useSpring({ created: new Date() }, []);
 `,
-		],
+					},
+					{
+						code: `
+function Component({ x }) {
+  const spring = animated.useSpring(
+    { position: UDim2.fromScale(0.3, 0.1) },
+    [x],
+  );
+  return spring;
+}
+`,
+					},
+					{
+						code: `
+const spring = useSpring(
+  { value: CustomFactory.make(1) },
+  [],
+);
+`,
+					},
+				],
 	});
 });
