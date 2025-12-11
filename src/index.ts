@@ -27,6 +27,7 @@ export {
 	createEffectFunctionOptions,
 	createHookConfiguration,
 	createNoInstanceMethodsOptions,
+	createNoUselessUseSpringOptions,
 	createNoShorthandOptions,
 	createPairConfiguration,
 	createReactKeysOptions,
