@@ -11,6 +11,7 @@ import noPrint from "./rules/no-print";
 import noShorthandNames from "./rules/no-shorthand-names";
 import noUselessUseSpring from "./rules/no-useless-use-spring";
 import noWarn from "./rules/no-warn";
+import noGodComponents from "./rules/no-god-components";
 import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
 import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
 import requireNamedEffectFunctions from "./rules/require-named-effect-functions";
@@ -26,6 +27,7 @@ export {
 	createComplexityConfiguration,
 	createEffectFunctionOptions,
 	createHookConfiguration,
+	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
 	createNoUselessUseSpringOptions,
 	createNoShorthandOptions,
@@ -40,6 +42,7 @@ export type { BanInstancesOptions } from "./rules/ban-instances";
 export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
 export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
 export type { NoShorthandOptions } from "./rules/no-shorthand-names";
+export type { NoGodComponentsOptions } from "./rules/no-god-components";
 export type { NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
 export type { EffectFunctionOptions, EnvironmentMode, HookConfiguration } from "./rules/require-named-effect-functions";
 export type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
@@ -58,6 +61,7 @@ const rules: Readonly<Record<string, AnyRuleModule>> = {
 	"no-async-constructor": noAsyncConstructor,
 	"no-color3-constructor": noColor3Constructor,
 	"no-commented-code": noCommentedCode,
+	"no-god-components": noGodComponents,
 	"no-instance-methods-without-this": noInstanceMethodsWithoutThis,
 	"no-print": noPrint,
 	"no-shorthand-names": noShorthandNames,
@@ -100,6 +104,7 @@ const recommended = {
 		"cease-nonsense/no-async-constructor": "error",
 		"cease-nonsense/no-color3-constructor": "error",
 		"cease-nonsense/no-instance-methods-without-this": "error",
+		"cease-nonsense/no-god-components": "error",
 		"cease-nonsense/no-print": "error",
 		"cease-nonsense/no-shorthand-names": "error",
 		"cease-nonsense/no-warn": "error",
