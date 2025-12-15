@@ -8,26 +8,27 @@
 		},
 	],
 	"servers": {
+		"codex-subagent": {
+			"args": ["codex-as-mcp@latest"],
+			"command": "uvx",
+			"type": "stdio",
+		},
 		"context7": {
 			"args": ["x", "--bun", "@upstash/context7-mcp"],
 			"command": "bun",
 			"env": {},
 			"type": "stdio",
 		},
+		"gh-grep": {
+			"type": "http",
+			"url": "https://mcp.grep.app",
+		},
 		"github": {
-			"args": ["x", "--bun", "-y", "@modelcontextprotocol/server-github"],
-			"command": "bun",
-			"env": {
-				"GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github-token}",
-			},
-			"type": "stdio",
+			"type": "http",
+			"url": "https://api.githubcopilot.com/mcp/",
 		},
 		"package-registry": {
 			"args": ["x", "--bun", "package-registry-mcp"],
-			"command": "bun",
-		},
-		"sequential-thinking": {
-			"args": ["x", "--bun", "@modelcontextprotocol/server-sequential-thinking"],
 			"command": "bun",
 		},
 	},
