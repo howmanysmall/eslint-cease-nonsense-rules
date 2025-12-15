@@ -341,7 +341,6 @@ const requireNamedEffectFunctions: Rule.RuleModule = {
 							node,
 						});
 					}
-					return;
 				}
 			},
 		};
