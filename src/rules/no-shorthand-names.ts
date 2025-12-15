@@ -16,8 +16,14 @@ const isRuleOptions = Compile(
 );
 const isUnknownRecord = Compile(Type.Record(Type.String(), Type.Unknown()));
 
+interface ShorthandMatcher {
+	readonly pattern: RegExp;
+	readonly replacement: string;
+	readonly original: string;
+}
+
 interface NormalizedOptions {
-	readonly shorthands: ReadonlyMap<string, string>;
+	readonly matchers: ReadonlyArray<ShorthandMatcher>;
 	readonly allowPropertyAccess: ReadonlySet<string>;
 	readonly selector: string;
 }
@@ -32,54 +38,148 @@ const DEFAULT_OPTIONS: Required<NoShorthandOptions> = {
 	},
 };
 
-const ESCAPE_REGEXP = /[.*+?^${}()|[\]\\]/g;
-const ESCAPE_WITH = String.raw`\$&`;
+interface ShorthandMatch {
+	readonly shorthand: string;
+	readonly replacement: string;
+}
+
+interface ReplacementResult {
+	readonly replaced: string;
+	readonly matches: ReadonlyArray<ShorthandMatch>;
+}
+
+function splitIdentifierIntoWords(identifier: string): Array<string> {
+	return identifier
+		.replaceAll(/([a-z])([A-Z])/g, "$1\0$2") // camelCase boundaries
+		.replaceAll(/([A-Z]+)([A-Z][a-z])/g, "$1\0$2") // acronym boundaries
+		.replaceAll(/([a-zA-Z])(\d)/g, "$1\0$2") // letter->digit
+		.replaceAll(/(\d)([a-zA-Z])/g, "$1\0$2") // digit->letter
+		.split("\0");
+}
+
+function createMatcher(key: string, replacement: string): ShorthandMatcher {
+	// Regex: /pattern/ or /pattern/flags
+	if (key.startsWith("/")) {
+		const match = key.match(/^\/(.+)\/([gimsuy]*)$/);
+		if (match) {
+			return {
+				original: key,
+				pattern: new RegExp(`^${match[1]}$`, match[2]),
+				replacement,
+			};
+		}
+	}
+
+	// Glob: contains * or ?
+	if (key.includes("*") || key.includes("?")) {
+		const regexPattern = key
+			.replaceAll(/[.+^${}()|[\]\\]/g, String.raw`\$&`) // Escape regex chars except * and ?
+			.replaceAll(/\*/g, "(.*)")
+			.replaceAll(/\?/g, "(.)");
+
+		let captureIndex = 0;
+		const regexReplacement = replacement.replaceAll(/\*/g, () => `$${++captureIndex}`);
+
+		return {
+			original: key,
+			pattern: new RegExp(`^${regexPattern}$`),
+			replacement: regexReplacement,
+		};
+	}
+
+	// Exact match: escape and anchor
+	const escaped = key.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+	return {
+		original: key,
+		pattern: new RegExp(`^${escaped}$`),
+		replacement,
+	};
+}
+
+function matchWord(word: string, matchers: ReadonlyArray<ShorthandMatcher>): ShorthandMatch | undefined {
+	for (const matcher of matchers) {
+		const match = word.match(matcher.pattern);
+		if (match) {
+			let replaced = matcher.replacement;
+			for (let i = 1; i < match.length; i++) {
+				replaced = replaced.replaceAll(new RegExp(`\\$${i}`, "g"), match[i] ?? "");
+			}
+			return {
+				replacement: replaced,
+				shorthand: matcher.original,
+			};
+		}
+	}
+	return undefined;
+}
+
+function buildReplacementIdentifier(
+	identifier: string,
+	matchers: ReadonlyArray<ShorthandMatcher>,
+): ReplacementResult | undefined {
+	const words = splitIdentifierIntoWords(identifier);
+	const matches: Array<ShorthandMatch> = [];
+	let hasMatch = false;
+
+	const newWords = words.map((word) => {
+		const match = matchWord(word, matchers);
+		if (match) {
+			hasMatch = true;
+			matches.push(match);
+			return match.replacement;
+		}
+		return word;
+	});
+
+	if (!hasMatch) return undefined;
+	return { matches, replaced: newWords.join("") };
+}
 
 function normalizeOptions(rawOptions: NoShorthandOptions | undefined): NormalizedOptions {
 	const mergedShorthands: Record<string, string> = { ...DEFAULT_OPTIONS.shorthands };
 	if (rawOptions?.shorthands)
 		for (const [key, value] of Object.entries(rawOptions.shorthands)) mergedShorthands[key] = value;
 
-	const shorthandsMap = new Map(Object.entries(mergedShorthands));
+	const matchers = Object.entries(mergedShorthands).map(([key, value]) => createMatcher(key, value));
 	const allowPropertyAccessSource = rawOptions?.allowPropertyAccess ?? DEFAULT_OPTIONS.allowPropertyAccess;
-
-	const escapedKeys = new Array<string>();
-	let length = 0;
-	for (const key of shorthandsMap.keys()) escapedKeys[length++] = key.replaceAll(ESCAPE_REGEXP, ESCAPE_WITH);
-
-	const selector = `Identifier[name=/^(${escapedKeys.join("|")})$/]`;
 
 	return {
 		allowPropertyAccess: new Set(allowPropertyAccessSource),
-		selector,
-		shorthands: shorthandsMap,
+		matchers,
+		selector: "Identifier",
 	};
 }
 
 const noShorthandNames: Rule.RuleModule = {
 	create(context) {
 		const validatedOptions = isRuleOptions.Check(context.options[0]) ? context.options[0] : undefined;
-		const { shorthands, allowPropertyAccess, selector } = normalizeOptions(validatedOptions);
+		const { matchers, allowPropertyAccess, selector } = normalizeOptions(validatedOptions);
 
 		return {
 			[selector](node: Rule.Node & { name: string; parent?: unknown }) {
-				const shorthandName = node.name;
-				const replacement = shorthands.get(shorthandName);
-				if (replacement === undefined || replacement === "") return;
+				const identifierName = node.name;
+				const result = buildReplacementIdentifier(identifierName, matchers);
+				if (result === undefined) return;
 
+				const { replaced, matches } = result;
 				const { parent } = node;
 
-				if (
-					allowPropertyAccess.has(shorthandName) &&
-					parent !== undefined &&
-					isUnknownRecord.Check(parent) &&
-					parent.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-					parent.property === node
-				)
-					return;
+				// Handle allowPropertyAccess for single-word matches only
+				if (matches.length === 1) {
+					const match = matches[0];
+					if (
+						allowPropertyAccess.has(match.shorthand) &&
+						parent !== undefined &&
+						isUnknownRecord.Check(parent) &&
+						parent.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+						parent.property === node
+					)
+						return;
+				}
 
+				// Handle plr -> localPlayer special case (only for exact "plr" identifier)
 				if (
-					shorthandName === "plr" &&
+					identifierName === "plr" &&
 					parent?.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
 					parent.id === node
 				) {
@@ -98,7 +198,7 @@ const noShorthandNames: Rule.RuleModule = {
 						init.property.name === "LocalPlayer"
 					) {
 						context.report({
-							data: { replacement: "localPlayer", shorthand: shorthandName },
+							data: { replacement: "localPlayer", shorthand: "plr" },
 							messageId: "useReplacement",
 							node,
 						});
@@ -106,8 +206,9 @@ const noShorthandNames: Rule.RuleModule = {
 					}
 				}
 
+				const shorthandList = matches.map((m) => m.shorthand).join(", ");
 				context.report({
-					data: { replacement, shorthand: shorthandName },
+					data: { replacement: replaced, shorthand: shorthandList },
 					messageId: "useReplacement",
 					node,
 				});
