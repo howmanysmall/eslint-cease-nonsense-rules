@@ -8,10 +8,6 @@
 		"package-registry": {
 			"args": ["x", "--bun", "package-registry-mcp"],
 			"command": "bun"
-		},
-		"sequential-thinking": {
-			"args": ["x", "--bun", "@modelcontextprotocol/server-sequential-thinking"],
-			"command": "bun"
 		}
 	}
 }

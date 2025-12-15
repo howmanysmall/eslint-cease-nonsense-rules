@@ -59,7 +59,7 @@
 	"mcp": {
 		"codex-subagent": {
 			"command": ["uvx", "codex-as-mcp@latest"],
-			"enabled": true,
+			"enabled": false,
 			"environment": {},
 			"type": "local"
 		},
@@ -69,23 +69,13 @@
 			"environment": {},
 			"type": "local"
 		},
-		"fetch": {
-			"command": ["uvx", "mcp-server-fetch"],
-			"enabled": false,
-			"type": "local"
-		},
-		"gh_grep": {
+		"gh-grep": {
 			"enabled": true,
 			"type": "remote",
 			"url": "https://mcp.grep.app"
 		},
 		"package-registry": {
 			"command": ["bun", "x", "--bun", "package-registry-mcp"],
-			"enabled": true,
-			"type": "local"
-		},
-		"sequential-thinking": {
-			"command": ["bun", "x", "--bun", "@modelcontextprotocol/server-sequential-thinking"],
 			"enabled": true,
 			"type": "local"
 		}
