@@ -38,6 +38,8 @@ const DEFAULT_OPTIONS: Required<NoShorthandOptions> = {
 	},
 };
 
+const REGEX_PATTERN_MATCHER = /^\/(.+)\/([gimsuy]*)$/;
+
 interface ShorthandMatch {
 	readonly shorthand: string;
 	readonly replacement: string;
@@ -60,7 +62,7 @@ function splitIdentifierIntoWords(identifier: string): Array<string> {
 function createMatcher(key: string, replacement: string): ShorthandMatcher {
 	// Regex: /pattern/ or /pattern/flags
 	if (key.startsWith("/")) {
-		const match = key.match(/^\/(.+)\/([gimsuy]*)$/);
+		const match = key.match(REGEX_PATTERN_MATCHER);
 		if (match) {
 			return {
 				original: key,
@@ -74,11 +76,11 @@ function createMatcher(key: string, replacement: string): ShorthandMatcher {
 	if (key.includes("*") || key.includes("?")) {
 		const regexPattern = key
 			.replaceAll(/[.+^${}()|[\]\\]/g, String.raw`\$&`) // Escape regex chars except * and ?
-			.replaceAll(/\*/g, "(.*)")
-			.replaceAll(/\?/g, "(.)");
+			.replaceAll("*", "(.*)")
+			.replaceAll("?", "(.)");
 
 		let captureIndex = 0;
-		const regexReplacement = replacement.replaceAll(/\*/g, () => `$${++captureIndex}`);
+		const regexReplacement = replacement.replaceAll("*", () => `$${++captureIndex}`);
 
 		return {
 			original: key,
