@@ -14,7 +14,10 @@ const isRuleOptions = Compile(
 		shorthands: Type.Optional(Type.Record(Type.String(), Type.String())),
 	}),
 );
-const isUnknownRecord = Compile(Type.Record(Type.String(), Type.Unknown()));
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return value !== null && typeof value === "object";
+}
 
 interface ShorthandMatcher {
 	readonly pattern: RegExp;
@@ -24,6 +27,7 @@ interface ShorthandMatcher {
 
 interface NormalizedOptions {
 	readonly matchers: ReadonlyArray<ShorthandMatcher>;
+	readonly exactMatchers: Map<string, string>;
 	readonly allowPropertyAccess: ReadonlySet<string>;
 	readonly selector: string;
 }
@@ -50,24 +54,33 @@ interface ReplacementResult {
 	readonly matches: ReadonlyArray<ShorthandMatch>;
 }
 
+// Split by:
+// 1. camelCase boundaries: (?<=[a-z])(?=[A-Z])
+// 2. Acronym boundaries: (?<=[A-Z])(?=[A-Z][a-z])
+// 3. Letter-Digit: (?<=[a-zA-Z])(?=\d)
+// 4. Digit-Letter: (?<=\d)(?=[a-zA-Z])
+const WORD_BOUNDARY_REGEX = /(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])/;
+
 function splitIdentifierIntoWords(identifier: string): Array<string> {
-	return identifier
-		.replaceAll(/([a-z])([A-Z])/g, "$1\0$2") // camelCase boundaries
-		.replaceAll(/([A-Z]+)([A-Z][a-z])/g, "$1\0$2") // acronym boundaries
-		.replaceAll(/([a-zA-Z])(\d)/g, "$1\0$2") // letter->digit
-		.replaceAll(/(\d)([a-zA-Z])/g, "$1\0$2") // digit->letter
-		.split("\0");
+	return identifier.split(WORD_BOUNDARY_REGEX);
 }
 
-function createMatcher(key: string, replacement: string): ShorthandMatcher {
+type MatcherResult =
+	| { type: "exact"; original: string; replacement: string }
+	| { type: "pattern"; matcher: ShorthandMatcher };
+
+function createMatcher(key: string, replacement: string): MatcherResult {
 	// Regex: /pattern/ or /pattern/flags
 	if (key.startsWith("/")) {
 		const match = key.match(REGEX_PATTERN_MATCHER);
 		if (match) {
 			return {
-				original: key,
-				pattern: new RegExp(`^${match[1]}$`, match[2]),
-				replacement,
+				type: "pattern",
+				matcher: {
+					original: key,
+					pattern: new RegExp(`^${match[1]}$`, match[2]),
+					replacement,
+				},
 			};
 		}
 	}
@@ -83,22 +96,38 @@ function createMatcher(key: string, replacement: string): ShorthandMatcher {
 		const regexReplacement = replacement.replaceAll("*", () => `$${++captureIndex}`);
 
 		return {
-			original: key,
-			pattern: new RegExp(`^${regexPattern}$`),
-			replacement: regexReplacement,
+			type: "pattern",
+			matcher: {
+				original: key,
+				pattern: new RegExp(`^${regexPattern}$`),
+				replacement: regexReplacement,
+			},
 		};
 	}
 
-	// Exact match: escape and anchor
-	const escaped = key.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+	// Exact match
 	return {
+		type: "exact",
 		original: key,
-		pattern: new RegExp(`^${escaped}$`),
 		replacement,
 	};
 }
 
-function matchWord(word: string, matchers: ReadonlyArray<ShorthandMatcher>): ShorthandMatch | undefined {
+function matchWord(
+	word: string,
+	matchers: ReadonlyArray<ShorthandMatcher>,
+	exactMatchers: Map<string, string>,
+): ShorthandMatch | undefined {
+	// Check exact matches first (O(1))
+	const exactReplacement = exactMatchers.get(word);
+	if (exactReplacement !== undefined) {
+		return {
+			replacement: exactReplacement,
+			shorthand: word,
+		};
+	}
+
+	// Check regex/glob matchers
 	for (const matcher of matchers) {
 		const match = word.match(matcher.pattern);
 		if (match) {
@@ -117,14 +146,14 @@ function matchWord(word: string, matchers: ReadonlyArray<ShorthandMatcher>): Sho
 
 function buildReplacementIdentifier(
 	identifier: string,
-	matchers: ReadonlyArray<ShorthandMatcher>,
+	options: NormalizedOptions,
 ): ReplacementResult | undefined {
 	const words = splitIdentifierIntoWords(identifier);
 	const matches: Array<ShorthandMatch> = [];
 	let hasMatch = false;
 
 	const newWords = words.map((word) => {
-		const match = matchWord(word, matchers);
+		const match = matchWord(word, options.matchers, options.exactMatchers);
 		if (match) {
 			hasMatch = true;
 			matches.push(match);
@@ -142,11 +171,23 @@ function normalizeOptions(rawOptions: NoShorthandOptions | undefined): Normalize
 	if (rawOptions?.shorthands)
 		for (const [key, value] of Object.entries(rawOptions.shorthands)) mergedShorthands[key] = value;
 
-	const matchers = Object.entries(mergedShorthands).map(([key, value]) => createMatcher(key, value));
+	const matchers: Array<ShorthandMatcher> = [];
+	const exactMatchers = new Map<string, string>();
+
+	for (const [key, value] of Object.entries(mergedShorthands)) {
+		const result = createMatcher(key, value);
+		if (result.type === "exact") {
+			exactMatchers.set(result.original, result.replacement);
+		} else {
+			matchers.push(result.matcher);
+		}
+	}
+
 	const allowPropertyAccessSource = rawOptions?.allowPropertyAccess ?? DEFAULT_OPTIONS.allowPropertyAccess;
 
 	return {
 		allowPropertyAccess: new Set(allowPropertyAccessSource),
+		exactMatchers,
 		matchers,
 		selector: "Identifier",
 	};
@@ -155,29 +196,30 @@ function normalizeOptions(rawOptions: NoShorthandOptions | undefined): Normalize
 const noShorthandNames: Rule.RuleModule = {
 	create(context) {
 		const validatedOptions = isRuleOptions.Check(context.options[0]) ? context.options[0] : undefined;
-		const { matchers, allowPropertyAccess, selector } = normalizeOptions(validatedOptions);
+		const normalized = normalizeOptions(validatedOptions);
+		const { allowPropertyAccess, selector } = normalized;
 
 		return {
 			[selector](node: Rule.Node & { name: string; parent?: unknown }) {
 				const identifierName = node.name;
-				const result = buildReplacementIdentifier(identifierName, matchers);
+				const result = buildReplacementIdentifier(identifierName, normalized);
 				if (result === undefined) return;
 
 				const { replaced, matches } = result;
 				const { parent } = node;
 
 				// Handle allowPropertyAccess for single-word matches only
-				if (matches.length === 1) {
-					const match = matches[0];
-					if (
-						allowPropertyAccess.has(match.shorthand) &&
-						parent !== undefined &&
-						isUnknownRecord.Check(parent) &&
-						parent.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-						parent.property === node
-					)
-						return;
-				}
+				const [match] = matches;
+				if (
+					matches.length === 1 &&
+					match !== undefined &&
+					allowPropertyAccess.has(match.shorthand) &&
+					parent !== undefined &&
+					isRecord(parent) &&
+					parent.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+					parent.property === node
+				)
+					return;
 
 				// Handle plr -> localPlayer special case (only for exact "plr" identifier)
 				if (
@@ -188,14 +230,14 @@ const noShorthandNames: Rule.RuleModule = {
 					const { init } = parent;
 					if (
 						init &&
-						isUnknownRecord.Check(init) &&
+						isRecord(init) &&
 						init.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 						init.object !== undefined &&
-						isUnknownRecord.Check(init.object) &&
+						isRecord(init.object) &&
 						init.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
 						init.object.name === "Players" &&
 						init.property !== undefined &&
-						isUnknownRecord.Check(init.property) &&
+						isRecord(init.property) &&
 						init.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
 						init.property.name === "LocalPlayer"
 					) {

@@ -119,6 +119,18 @@ describe("no-shorthand-names", () => {
 				errors: [{ messageId: "useReplacement" }],
 				options: [{ shorthands: { "/^props$/i": "properties" } }],
 			},
+			// Regex with optional capture group
+			{
+				code: "const strName = '';",
+				errors: [{ messageId: "useReplacement" }],
+				options: [{ shorthands: { "/^str(Optional)?$/": "string$1" } }],
+			},
+			// Regex starting with / but invalid (falls back to exact match)
+			{
+				code: "const someVal = '';",
+				errors: [{ messageId: "useReplacement" }],
+				options: [{ shorthands: { "/invalid": "fixed", "some": "other" } }],
+			},
 		],
 		valid: [
 			"const player = getPlayer();",
