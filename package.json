@@ -56,9 +56,7 @@
 	"files": ["dist"],
 	"license": "MIT",
 	"lint-staged": {
-		"*": "bun run oxc --fix",
-		"*.{jsonc,json}": "bun x --bun biome format --write",
-		"*.{ts,tsx,js,jsx}": ["bun run format", "bun run oxc --fix", "bun x --bun biome lint --fix"]
+		"*": ["bun run oxc --fix"]
 	},
 	"main": "./dist/index.js",
 	"name": "@pobammer-ts/eslint-cease-nonsense-rules",
