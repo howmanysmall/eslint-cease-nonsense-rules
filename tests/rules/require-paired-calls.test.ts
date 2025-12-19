@@ -242,7 +242,8 @@ function test() {
 }
 `,
 				errors: [
-					{ messageId: "unpairedOpener" }, // Iris.CollapsingHeader never closed
+					// Iris.CollapsingHeader never closed
+					{ messageId: "unpairedOpener" },
 					{ data: { closer: "debug.profileend", expected: "Iris.End" }, messageId: "unexpectedCloser" },
 				],
 				options: [
@@ -274,7 +275,7 @@ function test() {
 }
 `,
 				errors: [
-					{ messageId: "unpairedOpener" }, // db.transaction never closed
+					{ messageId: "unpairedOpener" },
 					{
 						data: { closer: "Iris.End", expected: "db.commit' or 'db.rollback" },
 						messageId: "unexpectedCloser",
