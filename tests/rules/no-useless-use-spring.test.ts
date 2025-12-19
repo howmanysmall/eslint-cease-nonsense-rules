@@ -12,6 +12,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("no-useless-use-spring", () => {
+	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
 	ruleTester.run("no-useless-use-spring", rule, {
 		invalid: [
 			// Only `from` without `to` is still useless

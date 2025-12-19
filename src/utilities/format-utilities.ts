@@ -1,9 +1,10 @@
-import type { SpawnSyncReturns } from "node:child_process";
-import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
-import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { regex } from "arkregex";
+
+import type { FormatOptions } from "oxfmt";
+
+import { formatSync, terminateWorker } from "./oxfmt-sync";
 
 export interface Difference {
 	readonly operation: "INSERT" | "DELETE" | "REPLACE";
@@ -12,37 +13,29 @@ export interface Difference {
 	readonly insertText?: string;
 }
 
-const require = createRequire(import.meta.url);
+let cachedConfig: FormatOptions | undefined;
 
-export function resolveOxfmtPath(
-	// Kept for backward compatibility signature-wise in tests, though ignored now
-	_pathResolver?: (path: string) => unknown,
-	_usePathResolver?: boolean,
-): string {
-	if (_usePathResolver === true) {
-		// For testing purposes, simulate fallback
-		try {
-			// Check if we are mocking a failure case
-			if (_pathResolver !== undefined) {
-				// Trigger the mock throw if it's designed to throw
-				_pathResolver("");
-			}
-		} catch {
-			return "oxfmt";
-		}
-	}
+function loadOxfmtConfig(): FormatOptions {
+	if (cachedConfig !== undefined) return cachedConfig;
 
 	try {
-		// Check for local native binary first
-		const localBinary = resolve(__dirname, "../../oxfmt-native/target/release/oxfmt-native");
-		if (existsSync(localBinary)) {
-			return localBinary;
+		const configPath = resolve(process.cwd(), ".oxfmtrc.json");
+		const configText = readFileSync(configPath, "utf8");
+		const parsed: unknown = JSON.parse(configText);
+
+		if (typeof parsed !== "object" || parsed === null) {
+			cachedConfig = {};
+			return cachedConfig;
 		}
 
-		const packageEntry = require.resolve("oxfmt");
-		return resolve(dirname(packageEntry), "../bin/oxfmt");
+		const config = parsed as Record<string, unknown>;
+		const { $schema: _schema, ignorePatterns: _ignore, ...formatOptions } = config;
+
+		cachedConfig = formatOptions as FormatOptions;
+		return cachedConfig;
 	} catch {
-		return "oxfmt";
+		cachedConfig = {};
+		return cachedConfig;
 	}
 }
 
@@ -58,75 +51,14 @@ export function getExtension(filePath: string): string | undefined {
 	return undefined;
 }
 
-/**
- * Format source code with oxfmt (synchronous).
- *
- * @param source - The source code to format
- * @param filePath - Original filepath (used for extension detection)
- * @returns Formatted source code
- * @throws Error if formatting fails
- */
 export function formatWithOxfmtSync(source: string, filePath: string): string {
 	const extension = getExtension(filePath);
+	if (extension === undefined) throw new Error(`Unsupported file extension for ${filePath}`);
 
-	if (extension === undefined) {
-		throw new Error(`Unsupported file extension for ${filePath}`);
-	}
-
-	const tempDir = mkdtempSync(join(tmpdir(), "eslint-oxfmt-"));
-	const tempFile = join(tempDir, `format${extension}`);
-
-	try {
-		// Write file for fallback support and extension detection
-		writeFileSync(tempFile, source, "utf8");
-		const oxfmtBin = resolveOxfmtPath();
-		const isNative = oxfmtBin.endsWith("oxfmt-native");
-
-		let result: SpawnSyncReturns<string>;
-		if (isNative) {
-			result = spawnSync(oxfmtBin, [tempFile], {
-				cwd: process.cwd(),
-				encoding: "utf8",
-				input: source,
-				stdio: ["pipe", "pipe", "pipe"],
-			});
-		} else {
-			// Node fallback
-			result = spawnSync("node", [oxfmtBin, tempFile], {
-				cwd: process.cwd(),
-				encoding: "utf8",
-				stdio: ["ignore", "pipe", "pipe"],
-			});
-		}
-
-		if (result.error) throw new Error(`Failed to spawn oxfmt: ${result.error.message}`);
-		if (result.status !== 0) {
-			throw new Error(`Oxfmt failed: ${result.stderr ?? "Unknown error"}`);
-		}
-
-		// Native binary prints to stdout
-		if (isNative) return result.stdout;
-
-		// Node fallback writes to file
-		return readFileSync(tempFile, "utf8");
-	} finally {
-		try {
-			unlinkSync(tempFile);
-		} catch {
-			// No operation
-		}
-	}
+	const config = loadOxfmtConfig();
+	return formatSync(filePath, source, config);
 }
 
-/**
- * Generate differences between original and formatted text.
- * Simple implementation - just one big REPLACE if different.
- * ESLint will show the specific locations anyway.
- *
- * @param original - Original source code
- * @param formatted - Formatted source code
- * @returns Array of differences
- */
 export function generateDifferences(original: string, formatted: string): ReadonlyArray<Difference> {
 	if (original === formatted) return [];
 
@@ -148,19 +80,17 @@ const SYMBOLS: Record<string, string> = {
 	"\t": "→",
 };
 
-const WHITESPACE_REGEXP = /[\r\n\t ]/g;
+const WHITESPACE_REGEXP = regex("[\r\n\t ]", "g");
 function toSymbol(character: string): string {
 	return SYMBOLS[character] ?? character;
 }
 
-/**
- * Show invisible characters for better error messages.
- *
- * @param text - Text to process
- * @returns Text with invisible characters made visible
- */
 export function showInvisibles(text: string): string {
 	let result = text;
 	if (result.length > MAX_LENGTH) result = `${result.slice(0, MAX_LENGTH)}…`;
 	return result.replaceAll(WHITESPACE_REGEXP, toSymbol);
 }
+
+export const __testing = { loadOxfmtConfig };
+
+export { terminateWorker };

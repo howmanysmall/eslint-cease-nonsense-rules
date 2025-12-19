@@ -23,6 +23,7 @@ describe("enforce-ianitor-check-type", () => {
 	const originalLog2 = Math.log2;
 	Math.log2 = (value: number): number => (value === 1 ? 1 : originalLog2(value));
 	try {
+		// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
 		ruleTester.run("enforce-ianitor-check-type", rule, {
 			invalid: [
 				// Complex Ianitor validator without type annotation
@@ -327,6 +328,7 @@ export type SpinOptions = Readonly<Ianitor.Static<typeof isSpinOptions>>;
 	}
 
 	it("reports complex types without Ianitor checks", () => {
+		expect.assertions(1);
 		const originalLog2 = Math.log2;
 		Math.log2 = (value: number): number => (value === 1 ? 1 : originalLog2(value));
 		try {
