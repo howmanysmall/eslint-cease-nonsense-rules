@@ -56,7 +56,7 @@
 	"files": ["dist"],
 	"license": "MIT",
 	"lint-staged": {
-		"*": ["bun run oxc --fix"]
+		"*": ["bun run lint:fix"]
 	},
 	"main": "./dist/index.js",
 	"name": "@pobammer-ts/eslint-cease-nonsense-rules",
@@ -80,6 +80,7 @@
 		"dev": "bun x --bun tsgo -w",
 		"format": "bun x oxfmt",
 		"lint": "bun run oxc . && bun x --bun biome lint .",
+		"lint:fix": "bun run oxc . --fix && bun x --bun biome lint . --fix",
 		"oxc": "bun x oxlint --type-aware",
 		"prepare": "bun x --bun simple-git-hooks",
 		"prepublishOnly": "bun run build",
