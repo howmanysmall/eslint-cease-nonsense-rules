@@ -84,6 +84,7 @@
 		"prepare": "bun x --bun simple-git-hooks",
 		"prepublishOnly": "bun run build",
 		"release": "bumpp",
+		"test": "bun test",
 		"typecheck": "bun x --bun tsgo --noEmit",
 		"typecheck:safe": "bun x --bun tsc --noEmit"
 	},
