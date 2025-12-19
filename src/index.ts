@@ -1,29 +1,40 @@
+import banInstances from "@rules/ban-instances";
+import banReactFC from "@rules/ban-react-fc";
+import enforceIanitorCheckType from "@rules/enforce-ianitor-check-type";
+import fastFormat from "@rules/fast-format";
+import noAsyncConstructor from "@rules/no-async-constructor";
+import noColor3Constructor from "@rules/no-color3-constructor";
+import noCommentedCode from "@rules/no-commented-code";
+import noGodComponents from "@rules/no-god-components";
+import noIdentityMap from "@rules/no-identity-map";
+import noInstanceMethodsWithoutThis from "@rules/no-instance-methods-without-this";
+import noPrint from "@rules/no-print";
+import noShorthandNames from "@rules/no-shorthand-names";
+import noUselessUseSpring from "@rules/no-useless-use-spring";
+import noWarn from "@rules/no-warn";
+import preferSequenceOverloads from "@rules/prefer-sequence-overloads";
+import preferUDim2Shorthand from "@rules/prefer-udim2-shorthand";
+import requireNamedEffectFunctions from "@rules/require-named-effect-functions";
+import requirePairedCalls from "@rules/require-paired-calls";
+import requireReactComponentKeys from "@rules/require-react-component-keys";
+import useExhaustiveDependencies from "@rules/use-exhaustive-dependencies";
+import useHookAtTopLevel from "@rules/use-hook-at-top-level";
 import type { TSESLint } from "@typescript-eslint/utils";
 import type { Rule } from "eslint";
-import banInstances from "./rules/ban-instances";
-import banReactFC from "./rules/ban-react-fc";
-import enforceIanitorCheckType from "./rules/enforce-ianitor-check-type";
-import fastFormat from "./rules/fast-format";
-import noAsyncConstructor from "./rules/no-async-constructor";
-import noColor3Constructor from "./rules/no-color3-constructor";
-import noCommentedCode from "./rules/no-commented-code";
-import noGodComponents from "./rules/no-god-components";
-import noIdentityMap from "./rules/no-identity-map";
-import noInstanceMethodsWithoutThis from "./rules/no-instance-methods-without-this";
-import noPrint from "./rules/no-print";
-import noShorthandNames from "./rules/no-shorthand-names";
-import noUselessUseSpring from "./rules/no-useless-use-spring";
-import noWarn from "./rules/no-warn";
-import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
-import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
-import requireNamedEffectFunctions from "./rules/require-named-effect-functions";
-import requirePairedCalls from "./rules/require-paired-calls";
-import requireReactComponentKeys from "./rules/require-react-component-keys";
-import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
-import useHookAtTopLevel from "./rules/use-hook-at-top-level";
 
 type AnyRuleModule = Rule.RuleModule | TSESLint.AnyRuleModuleWithMetaDocs;
 
+export type { BanInstancesOptions } from "@rules/ban-instances";
+export type { ComplexityConfiguration } from "@rules/enforce-ianitor-check-type";
+export type { NoGodComponentsOptions } from "@rules/no-god-components";
+export type { NoIdentityMapOptions } from "@rules/no-identity-map";
+export type { NoInstanceMethodsOptions } from "@rules/no-instance-methods-without-this";
+export type { NoShorthandOptions } from "@rules/no-shorthand-names";
+export type { NoUselessUseSpringOptions } from "@rules/no-useless-use-spring";
+export type { EffectFunctionOptions, EnvironmentMode, HookConfiguration } from "@rules/require-named-effect-functions";
+export type { PairConfiguration, RequirePairedCallsOptions } from "@rules/require-paired-calls";
+export type { ReactKeysOptions } from "@rules/require-react-component-keys";
+export type { HookEntry, UseExhaustiveDependenciesOptions } from "@rules/use-exhaustive-dependencies";
 export {
 	createBanInstancesOptions,
 	createComplexityConfiguration,
@@ -39,18 +50,7 @@ export {
 	createUseExhaustiveDependenciesOptions,
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
-} from "./configure-utilities";
-export type { BanInstancesOptions } from "./rules/ban-instances";
-export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
-export type { NoGodComponentsOptions } from "./rules/no-god-components";
-export type { NoIdentityMapOptions } from "./rules/no-identity-map";
-export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
-export type { NoShorthandOptions } from "./rules/no-shorthand-names";
-export type { NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
-export type { EffectFunctionOptions, EnvironmentMode, HookConfiguration } from "./rules/require-named-effect-functions";
-export type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
-export type { ReactKeysOptions } from "./rules/require-react-component-keys";
-export type { HookEntry, UseExhaustiveDependenciesOptions } from "./rules/use-exhaustive-dependencies";
+} from "@utilities/configure-utilities";
 
 /**
  * ESLint plugin entry for eslint-cease-nonsense-rules.

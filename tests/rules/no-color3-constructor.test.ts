@@ -1,6 +1,6 @@
 import { describe } from "bun:test";
+import rule from "@rules/no-color3-constructor";
 import { RuleTester } from "eslint";
-import rule from "../../src/rules/no-color3-constructor";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

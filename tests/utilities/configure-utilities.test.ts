@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "@rules/no-useless-use-spring";
 import {
 	createComplexityConfiguration,
 	createEffectFunctionOptions,
@@ -13,8 +14,7 @@ import {
 	createUseExhaustiveDependenciesOptions,
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
-} from "../src/configure-utilities";
-import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../src/rules/no-useless-use-spring";
+} from "@utilities/configure-utilities";
 
 describe("configure-utilities", () => {
 	describe("createPairConfiguration", () => {

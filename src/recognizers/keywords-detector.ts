@@ -1,4 +1,4 @@
-import type { Detector } from "./detector";
+import type { Detector } from "@recognizers/detector";
 
 const WORD_SPLIT_REGEX = /[ \t(),{}]/;
 
@@ -10,7 +10,7 @@ const WORD_SPLIT_REGEX = /[ \t(),{}]/;
  * @param keywords - Keywords to detect
  * @returns Detector instance
  */
-function createKeywordsDetector(probability: number, keywords: ReadonlyArray<string>): Detector {
+export function createKeywordsDetector(probability: number, keywords: ReadonlyArray<string>): Detector {
 	const keywordsSet = new Set(keywords);
 
 	return {
@@ -25,5 +25,3 @@ function createKeywordsDetector(probability: number, keywords: ReadonlyArray<str
 		},
 	};
 }
-
-export { createKeywordsDetector };
