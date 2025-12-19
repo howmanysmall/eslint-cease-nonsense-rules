@@ -26,6 +26,7 @@ export const isOxfmtConfiguration = Compile(
 				sortSideEffects: Typebox.Optional(Typebox.Boolean()),
 			}),
 		),
+		experimentalSortPackageJson: Typebox.Optional(Typebox.Boolean()),
 		ignorePatterns: Typebox.Optional(Typebox.Array(Typebox.String())),
 		jsxSingleQuote: Typebox.Optional(Typebox.Boolean()),
 		objectWrap: Typebox.Optional(
@@ -37,7 +38,11 @@ export const isOxfmtConfiguration = Compile(
 		),
 		printWidth: Typebox.Optional(Typebox.Integer()),
 		quoteProps: Typebox.Optional(
-			Typebox.Union([Typebox.Literal("as-needed"), Typebox.Literal("preserve")] as const),
+			Typebox.Union([
+				Typebox.Literal("as-needed"),
+				Typebox.Literal("consistent"),
+				Typebox.Literal("preserve"),
+			] as const),
 		),
 		semi: Typebox.Optional(Typebox.Boolean()),
 		singleAttributePerLine: Typebox.Optional(Typebox.Boolean()),
