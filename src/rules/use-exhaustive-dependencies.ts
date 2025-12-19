@@ -583,8 +583,7 @@ function parseDependencies(
 	for (const element of node.elements) {
 		if (!element) continue;
 
-		const actualNode =
-			element.type === TSESTree.AST_NODE_TYPES.SpreadElement ? element.argument : element;
+		const actualNode = element.type === TSESTree.AST_NODE_TYPES.SpreadElement ? element.argument : element;
 
 		const name = nodeToDependencyString(actualNode, sourceCode);
 		const depth = getMemberExpressionDepth(actualNode);
@@ -836,7 +835,7 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 						context.report({
 							data: { name: firstMissing.usagePath },
 							messageId: "missingDependency",
-							node: lastDependency?.node || dependenciesArray,
+							node: lastDependency?.node ?? dependenciesArray,
 							suggest: [
 								{
 									desc: `Add '${firstMissing.usagePath}' to dependencies array`,
@@ -854,7 +853,7 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 						context.report({
 							data: { names: missingNames },
 							messageId: "missingDependencies",
-							node: lastDependency?.node || dependenciesArray,
+							node: lastDependency?.node ?? dependenciesArray,
 							suggest: [
 								{
 									desc: "Add missing dependencies to array",

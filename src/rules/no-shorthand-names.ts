@@ -75,12 +75,12 @@ function createMatcher(key: string, replacement: string): MatcherResult {
 		const match = key.match(REGEX_PATTERN_MATCHER);
 		if (match) {
 			return {
-				type: "pattern",
 				matcher: {
 					original: key,
 					pattern: new RegExp(`^${match[1]}$`, match[2]),
 					replacement,
 				},
+				type: "pattern",
 			};
 		}
 	}
@@ -88,7 +88,7 @@ function createMatcher(key: string, replacement: string): MatcherResult {
 	// Glob: contains * or ?
 	if (key.includes("*") || key.includes("?")) {
 		const regexPattern = key
-			.replaceAll(/[.+^${}()|[\]\\]/g, String.raw`\$&`) // Escape regex chars except * and ?
+			.replaceAll(/[.+^${}()|[\]\\]/g, String.raw`\$&`)
 			.replaceAll("*", "(.*)")
 			.replaceAll("?", "(.)");
 
@@ -96,20 +96,20 @@ function createMatcher(key: string, replacement: string): MatcherResult {
 		const regexReplacement = replacement.replaceAll("*", () => `$${++captureIndex}`);
 
 		return {
-			type: "pattern",
 			matcher: {
 				original: key,
 				pattern: new RegExp(`^${regexPattern}$`),
 				replacement: regexReplacement,
 			},
+			type: "pattern",
 		};
 	}
 
 	// Exact match
 	return {
-		type: "exact",
 		original: key,
 		replacement,
+		type: "exact",
 	};
 }
 
@@ -144,10 +144,7 @@ function matchWord(
 	return undefined;
 }
 
-function buildReplacementIdentifier(
-	identifier: string,
-	options: NormalizedOptions,
-): ReplacementResult | undefined {
+function buildReplacementIdentifier(identifier: string, options: NormalizedOptions): ReplacementResult | undefined {
 	const words = splitIdentifierIntoWords(identifier);
 	const matches: Array<ShorthandMatch> = [];
 	let hasMatch = false;
