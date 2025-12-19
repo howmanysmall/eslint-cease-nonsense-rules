@@ -16,130 +16,16 @@ const ruleTester = new RuleTester({
 
 describe("no-commented-code", () => {
 	ruleTester.run("no-commented-code", rule, {
-		valid: [
-			// Empty and whitespace comments
-			{
-				code: `
-        //
-
-        //
-
-        /* */
-
-        //
-        //  // nested comment
-        //
-
-        /**
-         * // this should be ignored
-         * if (something) { return true;}
-         */
-
-        /*jslint bitwise: false, browser: true, continue: false, devel: true, eqeq: false, evil: false, forin: false, newcap: false, nomen: false, plusplus: true, regexp: true, stupid: false, sub: false, undef: false, vars: false */
-
-        /*jshint bitwise: false, curly: true, eqeqeq: true, forin: true, immed: true, latedef: true, newcap: true, noarg: true, noempty: false, nonew: true, plusplus: false, regexp: false, undef: true, strict: true, trailing: true, expr: true, regexdash: true, browser: true, jquery: true, onevar: true, nomen: true */
-
-        /*global myGlobal: true */
-
-        // ====
-
-        // ----
-
-        // ++++
-
-        // some text with semicolon at the end;
-
-        // http://www.example.com/ = http://www.example.com/
-
-        // labelName : id
-
-        // foo(), bar();
-
-        // continue
-
-        // return blabla
-
-        // break something
-
-        // throw exception
-
-        // throw exception;
-
-        // labelName : id;
-
-        const a = 1; // TODO: $ReadOnlyArray
-        const b = 2; // TODO: Not in spec
-
-        //\t\t\t\tbreak;
-
-        // foo.bar
-
-        // a + b
-
-        // foo (see [123])
-
-        // IE
-
-        // shift
-
-        // reduce
-
-        //Object;
-
-        //+ 10;
-
-        // '\\r\\n'
-        const c = 1; // '\\n'
-
-        // "abc";
-
-        // 42;
-
-        //"gradientunscaled";
-
-        // some text with some code is ok
-        // if (condition) {
-        // }
-
-
-        /*
-         some text with some code is ok
-         if (condition) {
-         }
-        */
-
-        // }
-        `,
-			},
-			// FN since 2-step implementation
-			{
-				code: `
-            // return foo().bar()
-        `,
-			},
-			// FN since 2-step implementation
-			{
-				code: `
-            // throw foo().bar()
-        `,
-			},
-			// FN since 2-step implementation
-			{
-				code: `
-            // YUI().use('*'); // Comment following ';'
-        `,
-			},
-		],
 		invalid: [
 			{
 				code: "// if (something) {}",
 				errors: [
 					{
-						message: "Remove this commented out code.",
-						line: 1,
-						endLine: 1,
 						column: 1,
 						endColumn: 21,
+						endLine: 1,
+						line: 1,
+						message: "Remove this commented out code.",
 						suggestions: [{ desc: "Remove this commented out code", output: "" }],
 					},
 				],
@@ -151,11 +37,11 @@ describe("no-commented-code", () => {
 // });`,
 				errors: [
 					{
-						message: "Remove this commented out code.",
-						line: 1,
 						column: 1,
-						endLine: 4,
 						endColumn: 7,
+						endLine: 4,
+						line: 1,
+						message: "Remove this commented out code.",
 						suggestions: [{ desc: "Remove this commented out code", output: "" }],
 					},
 				],
@@ -171,11 +57,11 @@ foo(a, function(){
 });*/`,
 				errors: [
 					{
-						message: "Remove this commented out code.",
-						line: 1,
 						column: 1,
-						endLine: 8,
 						endColumn: 6,
+						endLine: 8,
+						line: 1,
+						message: "Remove this commented out code.",
 						suggestions: [{ desc: "Remove this commented out code", output: "" }],
 					},
 				],
@@ -301,6 +187,120 @@ let x = 0;`,
 						],
 					},
 				],
+			},
+		],
+		valid: [
+			// Empty and whitespace comments
+			{
+				code: `
+        //
+
+        //
+
+        /* */
+
+        //
+        //  // nested comment
+        //
+
+        /**
+         * // this should be ignored
+         * if (something) { return true;}
+         */
+
+        /*jslint bitwise: false, browser: true, continue: false, devel: true, eqeq: false, evil: false, forin: false, newcap: false, nomen: false, plusplus: true, regexp: true, stupid: false, sub: false, undef: false, vars: false */
+
+        /*jshint bitwise: false, curly: true, eqeqeq: true, forin: true, immed: true, latedef: true, newcap: true, noarg: true, noempty: false, nonew: true, plusplus: false, regexp: false, undef: true, strict: true, trailing: true, expr: true, regexdash: true, browser: true, jquery: true, onevar: true, nomen: true */
+
+        /*global myGlobal: true */
+
+        // ====
+
+        // ----
+
+        // ++++
+
+        // some text with semicolon at the end;
+
+        // http://www.example.com/ = http://www.example.com/
+
+        // labelName : id
+
+        // foo(), bar();
+
+        // continue
+
+        // return blabla
+
+        // break something
+
+        // throw exception
+
+        // throw exception;
+
+        // labelName : id;
+
+        const a = 1; // TODO: $ReadOnlyArray
+        const b = 2; // TODO: Not in spec
+
+        //\t\t\t\tbreak;
+
+        // foo.bar
+
+        // a + b
+
+        // foo (see [123])
+
+        // IE
+
+        // shift
+
+        // reduce
+
+        //Object;
+
+        //+ 10;
+
+        // '\\r\\n'
+        const c = 1; // '\\n'
+
+        // "abc";
+
+        // 42;
+
+        //"gradientunscaled";
+
+        // some text with some code is ok
+        // if (condition) {
+        // }
+
+
+        /*
+         some text with some code is ok
+         if (condition) {
+         }
+        */
+
+        // }
+        `,
+			},
+			// FN since 2-step implementation
+			{
+				code: `
+            // return foo().bar()
+        `,
+			},
+			// FN since 2-step implementation
+			{
+				code: `
+            // throw foo().bar()
+        `,
+			},
+			// FN since 2-step implementation
+			{
+				code: `
+            // YUI().use('*'); // Comment following ';'
+        `,
 			},
 		],
 	});

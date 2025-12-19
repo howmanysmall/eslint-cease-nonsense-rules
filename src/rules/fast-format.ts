@@ -1,6 +1,11 @@
 import type { Rule, SourceCode } from "eslint";
-import { formatWithOxfmtSync as formatWithOxfmt, generateDifferences, getExtension, showInvisibles } from '../utilities/format-utilities';
-import type { Difference } from '../utilities/format-utilities';
+import type { Difference } from "../utilities/format-utilities";
+import {
+	formatWithOxfmtSync as formatWithOxfmt,
+	generateDifferences,
+	getExtension,
+	showInvisibles,
+} from "../utilities/format-utilities";
 
 const INSERT = "INSERT";
 const DELETE = "DELETE";
@@ -139,9 +144,7 @@ export function createFastFormatRule(options: FastFormatOptions = {}): Rule.Rule
 			const { filename, sourceCode } = context;
 
 			// Optimization: Skip non-JS/TS files entirely
-			if (getExtension(filename) === undefined) {
-				return {};
-			}
+			if (getExtension(filename) === undefined) return {};
 
 			return {
 				Program() {

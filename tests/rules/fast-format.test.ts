@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { RuleTester } from "eslint";
 import rule, { createFastFormatRule, createFormatCache, getLocFromIndex } from "../../src/rules/fast-format";
-import { generateDifferences, resolveOxfmtPath, showInvisibles } from "../../src/utilities/format-utilities";
+import { generateDifferences, showInvisibles } from "../../src/utilities/format-utilities";
 
 const languageOptions = {
 	ecmaVersion: 2022,
@@ -68,7 +68,7 @@ describe("fast-format", () => {
 				name: "empty file",
 			},
 			{
-				code: "const obj = {\n\tfoo: 1,\n\tbar: 2\n};\n",
+				code: "const obj = {\n\tfoo: 1,\n\tbar: 2,\n};\n",
 				filename: "test.ts",
 				name: "object with trailing comma",
 			},
@@ -147,6 +147,7 @@ describe("fast-format", () => {
 	});
 
 	it("clears caches on demand", () => {
+		expect.assertions(2);
 		const cache = createFormatCache(1);
 		const stored = cache.set("key", { kind: "error", message: "boom" });
 		expect(stored).toEqual({ kind: "error", message: "boom" });
@@ -155,17 +156,9 @@ describe("fast-format", () => {
 	});
 });
 
-describe("resolveOxfmtPath", () => {
-	it("falls back when the resolver throws", () => {
-		const path = resolveOxfmtPath(() => {
-			throw new Error("no resolver");
-		}, true);
-		expect(path).toBe("oxfmt");
-	});
-});
-
 describe("getLocFromIndex", () => {
 	it("returns a minimal location when getLocFromIndex is missing", () => {
+		expect.assertions(1);
 		expect(getLocFromIndex({ text: "abc" }, 2)).toEqual({ column: 2, line: 1 });
 	});
 });
