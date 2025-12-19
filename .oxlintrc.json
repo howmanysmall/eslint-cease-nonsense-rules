@@ -27,7 +27,7 @@
 			"globals": {
 				"jest": "readonly",
 			},
-			"plugins": ["eslint", "import", "jest", "node", "oxc", "promise", "regex", "typescript", "unicorn"],
+			"plugins": ["eslint", "import", "jest", "node", "oxc", "promise", "typescript", "unicorn"],
 			"rules": {
 				"max-lines": "off",
 				"max-lines-per-function": "off",
@@ -43,6 +43,7 @@
 				"src/rules/use-exhaustive-dependencies.ts",
 				"src/rules/use-hook-at-top-level.ts",
 				"src/index.ts",
+				"src/rules/no-useless-use-spring.ts",
 			],
 			"rules": {
 				"@typescript-eslint/no-unsafe-argument": "off",
@@ -61,25 +62,8 @@
 			},
 		},
 	],
-	"plugins": ["eslint", "import", "jsdoc", "node", "oxc", "promise", "regex", "typescript", "unicorn"],
+	"plugins": ["eslint", "import", "jsdoc", "node", "oxc", "promise", "typescript", "unicorn"],
 	"rules": {
-		"@typescript-eslint/ban-ts-comment": "error",
-		"@typescript-eslint/no-duplicate-enum-values": "error",
-		"@typescript-eslint/no-empty-object-type": "error",
-		"@typescript-eslint/no-explicit-any": "error",
-		"@typescript-eslint/no-extra-non-null-assertion": "error",
-		"@typescript-eslint/no-misused-new": "error",
-		"@typescript-eslint/no-namespace": "error",
-		"@typescript-eslint/no-non-null-asserted-optional-chain": "error",
-		"@typescript-eslint/no-require-imports": "error",
-		"@typescript-eslint/no-this-alias": "error",
-		"@typescript-eslint/no-unnecessary-type-constraint": "error",
-		"@typescript-eslint/no-unsafe-declaration-merging": "error",
-		"@typescript-eslint/no-unsafe-function-type": "error",
-		"@typescript-eslint/no-wrapper-object-types": "error",
-		"@typescript-eslint/prefer-as-const": "error",
-		"@typescript-eslint/prefer-namespace-keyword": "error",
-		"@typescript-eslint/triple-slash-reference": "error",
 		"curly": "off",
 		// I love conflicts!
 		"default-case": "off",

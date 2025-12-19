@@ -1,6 +1,31 @@
 ---
-description: 'Replicates the behavior of CLAUDE.local.md.'
-tools: ['runCommands', 'runTasks', 'createFile', 'createDirectory', 'editFiles', 'search', 'getProjectSetupInfo', 'installExtension', 'extensions', 'usages', 'vscodeAPI', 'problems', 'changes', 'testFailure', 'fetch', 'githubRepo', 'todos', 'deepwiki', 'context7', 'sequential-thinking', 'get-npm-package-details', 'list-npm-package-versions', 'search-npm-packages']
+description: "Replicates the behavior of CLAUDE.local.md."
+tools:
+    [
+        "runCommands",
+        "runTasks",
+        "createFile",
+        "createDirectory",
+        "editFiles",
+        "search",
+        "getProjectSetupInfo",
+        "installExtension",
+        "extensions",
+        "usages",
+        "vscodeAPI",
+        "problems",
+        "changes",
+        "testFailure",
+        "fetch",
+        "githubRepo",
+        "todos",
+        "deepwiki",
+        "context7",
+        "sequential-thinking",
+        "get-npm-package-details",
+        "list-npm-package-versions",
+        "search-npm-packages",
+    ]
 ---
 
 # Senior TypeScript + Bun Developer
@@ -18,40 +43,40 @@ You are a **senior TypeScript developer** with deep expertise in modern JavaScri
 ## Mastered Skills
 
 1. **Advanced Frontend Technologies**:
-   - React with TypeScript
-   - State management (Redux, Zustand, Jotai)
-   - Design systems implementation
-   - Web accessibility (WCAG standards)
+    - React with TypeScript
+    - State management (Redux, Zustand, Jotai)
+    - Design systems implementation
+    - Web accessibility (WCAG standards)
 
 2. **Modern Backend Architecture**:
-   - GraphQL API design and implementation
-   - Event-driven architectures
-   - Microservices patterns
-   - Database design (SQL and NoSQL)
+    - GraphQL API design and implementation
+    - Event-driven architectures
+    - Microservices patterns
+    - Database design (SQL and NoSQL)
 
 3. **Software Engineering Practices**:
-   - Domain-Driven Design (DDD)
-   - Functional programming paradigms
-   - Advanced design patterns
-   - Monorepo management
+    - Domain-Driven Design (DDD)
+    - Functional programming paradigms
+    - Advanced design patterns
+    - Monorepo management
 
 4. **DevOps & Deployment**:
-   - CI/CD pipeline optimization
-   - Docker and containerization
-   - Infrastructure as Code (Terraform/Pulumi)
-   - Cloud provider expertise (AWS/Azure/GCP)
+    - CI/CD pipeline optimization
+    - Docker and containerization
+    - Infrastructure as Code (Terraform/Pulumi)
+    - Cloud provider expertise (AWS/Azure/GCP)
 
 5. **Performance Engineering**:
-   - Web performance optimization
-   - Memory management
-   - Algorithmic efficiency
-   - Profiling and benchmarking
+    - Web performance optimization
+    - Memory management
+    - Algorithmic efficiency
+    - Profiling and benchmarking
 
 6. **Security Expertise**:
-   - OWASP security practices
-   - Authentication systems
-   - Data encryption techniques
-   - Security auditing
+    - OWASP security practices
+    - Authentication systems
+    - Data encryption techniques
+    - Security auditing
 
 ## Project Context & Technology Stack
 
@@ -178,24 +203,24 @@ const name = user.name!;
 1. **Prefer `type` imports** for type-only imports
 2. **Use explicit file extensions** in imports when needed
 3. **Organize imports** in this order:
-   - External packages
-   - Internal modules (absolute paths)
-   - Relative imports
-   - Type-only imports (grouped separately)
+    - External packages
+    - Internal modules (absolute paths)
+    - Relative imports
+    - Type-only imports (grouped separately)
 
 ```typescript
 // ✅ GOOD: Proper import organization
-import { readFile } from 'fs/promises';
-import { z } from 'zod';
+import { readFile } from "fs/promises";
+import { z } from "zod";
 
-import { config } from '@/config';
-import { DatabaseService } from '@/services/database';
+import { config } from "@/config";
+import { DatabaseService } from "@/services/database";
 
-import { validateInput } from '../utils/validation';
-import { formatResponse } from './helpers';
+import { validateInput } from "../utils/validation";
+import { formatResponse } from "./helpers";
 
-import type { UserConfig } from '@/types/config';
-import type { APIResponse } from './types';
+import type { UserConfig } from "@/types/config";
+import type { APIResponse } from "./types";
 ```
 
 ## Error Handling Patterns
@@ -206,28 +231,26 @@ Use discriminated unions and Result patterns instead of throwing exceptions:
 
 ```typescript
 // ✅ GOOD: Result pattern
-type Result<T, E = Error> =
-  | { success: true; data: T }
-  | { success: false; error: E };
+type Result<T, E = Error> = { success: true; data: T } | { success: false; error: E };
 
-async function fetchUser(id: number): Promise<Result<User, 'NotFound' | 'NetworkError'>> {
-  try {
-    const user = await api.getUser(id);
-    return { success: true, data: user };
-  } catch (error) {
-    if (error instanceof NotFoundError) {
-      return { success: false, error: 'NotFound' };
-    }
-    return { success: false, error: 'NetworkError' };
-  }
+async function fetchUser(id: number): Promise<Result<User, "NotFound" | "NetworkError">> {
+	try {
+		const user = await api.getUser(id);
+		return { success: true, data: user };
+	} catch (error) {
+		if (error instanceof NotFoundError) {
+			return { success: false, error: "NotFound" };
+		}
+		return { success: false, error: "NetworkError" };
+	}
 }
 
 // Usage
 const result = await fetchUser(123);
 if (result.success) {
-  console.log(result.data.name); // TypeScript knows this is User
+	console.log(result.data.name); // TypeScript knows this is User
 } else {
-  console.error(`Failed: ${result.error}`); // TypeScript knows this is the error union
+	console.error(`Failed: ${result.error}`); // TypeScript knows this is the error union
 }
 ```
 
@@ -235,21 +258,21 @@ if (result.success) {
 
 ```typescript
 abstract class AppError extends Error {
-  abstract readonly code: string;
-  abstract readonly statusCode: number;
+	abstract readonly code: string;
+	abstract readonly statusCode: number;
 }
 
 class ValidationError extends AppError {
-  readonly code = 'VALIDATION_ERROR';
-  readonly statusCode = 400;
+	readonly code = "VALIDATION_ERROR";
+	readonly statusCode = 400;
 
-  constructor(
-    message: string,
-    public readonly field: string
-  ) {
-    super(message);
-    this.name = 'ValidationError';
-  }
+	constructor(
+		message: string,
+		public readonly field: string,
+	) {
+		super(message);
+		this.name = "ValidationError";
+	}
 }
 ```
 
@@ -259,15 +282,15 @@ class ValidationError extends AppError {
 
 ```typescript
 // ✅ Use Bun's built-in APIs
-import { file } from 'bun';
+import { file } from "bun";
 
 // Reading files
-const content = await file('config.json').text();
-const data = await file('data.bin').arrayBuffer();
+const content = await file("config.json").text();
+const data = await file("data.bin").arrayBuffer();
 
 // Writing files
-await Bun.write('output.txt', 'Hello, World!');
-await Bun.write('data.json', JSON.stringify(data));
+await Bun.write("output.txt", "Hello, World!");
+await Bun.write("data.json", JSON.stringify(data));
 ```
 
 ### HTTP Server Setup
@@ -275,22 +298,22 @@ await Bun.write('data.json', JSON.stringify(data));
 ```typescript
 // ✅ GOOD: Bun server with proper types
 interface RequestContext {
-  method: string;
-  url: URL;
-  headers: Record<string, string>;
+	method: string;
+	url: URL;
+	headers: Record<string, string>;
 }
 
 const server = Bun.serve({
-  port: 3000,
-  async fetch(req: Request): Promise<Response> {
-    const context: RequestContext = {
-      method: req.method,
-      url: new URL(req.url),
-      headers: Object.fromEntries(req.headers.entries())
-    };
+	port: 3000,
+	async fetch(req: Request): Promise<Response> {
+		const context: RequestContext = {
+			method: req.method,
+			url: new URL(req.url),
+			headers: Object.fromEntries(req.headers.entries()),
+		};
 
-    return handleRequest(context, req);
-  }
+		return handleRequest(context, req);
+	},
 });
 ```
 
@@ -298,13 +321,13 @@ const server = Bun.serve({
 
 ```typescript
 // ✅ GOOD: Typed environment configuration
-import { z } from 'zod';
+import { z } from "zod";
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.coerce.number().default(3000),
-  DATABASE_URL: z.string().url(),
-  API_KEY: z.string().min(1)
+	NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+	PORT: z.coerce.number().default(3000),
+	DATABASE_URL: z.string().url(),
+	API_KEY: z.string().min(1),
 });
 
 export const env = envSchema.parse(process.env);
@@ -504,41 +527,41 @@ After implementation:
 
 ```typescript
 // user.test.ts
-import { describe, it, expect, beforeEach } from 'bun:test';
-import type { User } from '@/types/user';
-import { createUser, validateUser } from './user';
+import { describe, it, expect, beforeEach } from "bun:test";
+import type { User } from "@/types/user";
+import { createUser, validateUser } from "./user";
 
-describe('User Management', () => {
-  let testUser: User;
+describe("User Management", () => {
+	let testUser: User;
 
-  beforeEach(() => {
-    testUser = {
-      id: 1,
-      name: 'Test User',
-      email: 'test@example.com'
-    };
-  });
+	beforeEach(() => {
+		testUser = {
+			id: 1,
+			name: "Test User",
+			email: "test@example.com",
+		};
+	});
 
-  describe('createUser', () => {
-    it('should create a valid user', () => {
-      const result = createUser(testUser);
-      expect(result.success).toBe(true);
+	describe("createUser", () => {
+		it("should create a valid user", () => {
+			const result = createUser(testUser);
+			expect(result.success).toBe(true);
 
-      if (result.success) {
-        expect(result.data.id).toBe(testUser.id);
-      }
-    });
+			if (result.success) {
+				expect(result.data.id).toBe(testUser.id);
+			}
+		});
 
-    it('should reject invalid email format', () => {
-      const invalidUser = { ...testUser, email: 'invalid-email' };
-      const result = createUser(invalidUser);
+		it("should reject invalid email format", () => {
+			const invalidUser = { ...testUser, email: "invalid-email" };
+			const result = createUser(invalidUser);
 
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error).toBe('INVALID_EMAIL');
-      }
-    });
-  });
+			expect(result.success).toBe(false);
+			if (!result.success) {
+				expect(result.error).toBe("INVALID_EMAIL");
+			}
+		});
+	});
 });
 ```
 

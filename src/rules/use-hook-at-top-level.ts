@@ -148,7 +148,7 @@ function isRecursiveCall(node: TSESTree.CallExpression, functionName: string | u
 
 const useHookAtTopLevel: Rule.RuleModule = {
 	create(context) {
-		const configuration = (context.options[0] || {}) as UseHookAtTopLevelOptions;
+		const configuration = (context.options[0] ?? {}) as UseHookAtTopLevelOptions;
 		const contextStack = new Array<ControlFlowContext>();
 		let currentFunctionName: string | undefined;
 

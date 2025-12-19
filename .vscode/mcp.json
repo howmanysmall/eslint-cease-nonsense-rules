@@ -4,19 +4,28 @@
 			"description": "The personal access token for the GitHub MCP.",
 			"id": "github-token",
 			"password": true,
-			"type": "promptString",
-		},
+			"type": "promptString"
+		}
 	],
 	"servers": {
+		"codex-subagent": {
+			"args": ["codex-as-mcp@latest"],
+			"command": "uvx",
+			"type": "stdio"
+		},
 		"context7": {
 			"args": ["x", "--bun", "@upstash/context7-mcp"],
 			"command": "bun",
 			"env": {},
-			"type": "stdio",
+			"type": "stdio"
+		},
+		"gh-grep": {
+			"type": "http",
+			"url": "https://mcp.grep.app"
 		},
 		"github": {
 			"type": "http",
-			"url": "https://api.githubcopilot.com/mcp/",
+			"url": "https://api.githubcopilot.com/mcp/"
 		},
 		// "github-legacy": {
 		// 	"args": ["x", "--bun", "-y", "@modelcontextprotocol/server-github"],
@@ -28,11 +37,7 @@
 		// },
 		"package-registry": {
 			"args": ["x", "--bun", "package-registry-mcp"],
-			"command": "bun",
-		},
-		"sequential-thinking": {
-			"args": ["x", "--bun", "@modelcontextprotocol/server-sequential-thinking"],
-			"command": "bun",
-		},
-	},
+			"command": "bun"
+		}
+	}
 }

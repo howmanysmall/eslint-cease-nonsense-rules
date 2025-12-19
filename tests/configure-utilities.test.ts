@@ -3,8 +3,10 @@ import {
 	createComplexityConfiguration,
 	createEffectFunctionOptions,
 	createHookConfiguration,
+	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
 	createNoShorthandOptions,
+	createNoUselessUseSpringOptions,
 	createPairConfiguration,
 	createReactKeysOptions,
 	createRequirePairedCallsOptions,
@@ -12,6 +14,7 @@ import {
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
 } from "../src/configure-utilities";
+import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../src/rules/no-useless-use-spring";
 
 describe("configure-utilities", () => {
 	describe("createPairConfiguration", () => {
@@ -79,6 +82,28 @@ describe("configure-utilities", () => {
 		it("should override defaults", () => {
 			const configuration = createNoInstanceMethodsOptions({ checkPublic: true });
 			expect(configuration.checkPublic).toBe(true);
+		});
+	});
+
+	describe("createNoUselessUseSpringOptions", () => {
+		it("should create options with defaults", () => {
+			const configuration = createNoUselessUseSpringOptions();
+			expect(configuration).toEqual({
+				springHooks: ["useSpring"],
+				staticGlobalFactories: DEFAULT_STATIC_GLOBAL_FACTORIES,
+				treatEmptyDepsAsViolation: true,
+			});
+		});
+
+		it("should override defaults", () => {
+			const configuration = createNoUselessUseSpringOptions({
+				springHooks: ["useMotion"],
+				staticGlobalFactories: ["CustomFactory"],
+				treatEmptyDepsAsViolation: false,
+			});
+			expect(configuration.springHooks).toEqual(["useMotion"]);
+			expect(configuration.staticGlobalFactories).toEqual(["CustomFactory"]);
+			expect(configuration.treatEmptyDepsAsViolation).toBe(false);
 		});
 	});
 
@@ -164,6 +189,29 @@ describe("configure-utilities", () => {
 		});
 	});
 
+	describe("createNoGodComponentsOptions", () => {
+		it("should create options with defaults", () => {
+			const configuration = createNoGodComponentsOptions();
+			expect(configuration).toEqual({
+				enforceTargetLines: true,
+				ignoreComponents: [],
+				maxDestructuredProps: 5,
+				maxLines: 200,
+				maxStateHooks: 5,
+				maxTsxNesting: 3,
+				stateHooks: ["useState", "useReducer", "useBinding"],
+				targetLines: 120,
+			});
+		});
+
+		it("should override defaults", () => {
+			const configuration = createNoGodComponentsOptions({ maxLines: 300, ignoreComponents: ["Big"] });
+			expect(configuration.maxLines).toBe(300);
+			expect(configuration.ignoreComponents).toEqual(["Big"]);
+			expect(configuration.targetLines).toBe(120);
+		});
+	});
+
 	describe("createUseExhaustiveDependenciesOptions", () => {
 		it("should create options with defaults", () => {
 			const configuration = createUseExhaustiveDependenciesOptions();
@@ -193,10 +241,12 @@ describe("configure-utilities", () => {
 		it("should override defaults", () => {
 			const configuration = createUseHookAtTopLevelOptions({
 				ignoreHooks: ["useLegacyHook"],
+				// @ts-expect-error Testing purposes
 				importSources: { react: ["useEffect"] },
 				onlyHooks: ["useEffect"],
 			});
 			expect(configuration.ignoreHooks).toEqual(["useLegacyHook"]);
+			// @ts-expect-error Testing purposes
 			expect(configuration.importSources).toEqual({ react: ["useEffect"] });
 			expect(configuration.onlyHooks).toEqual(["useEffect"]);
 		});

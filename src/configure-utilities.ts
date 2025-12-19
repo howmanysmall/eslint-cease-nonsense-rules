@@ -1,6 +1,9 @@
+import type { BanInstancesOptions } from "./rules/ban-instances";
 import type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
 import type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
 import type { NoShorthandOptions } from "./rules/no-shorthand-names";
+import type { NoGodComponentsOptions } from "./rules/no-god-components";
+import { DEFAULT_STATIC_GLOBAL_FACTORIES, type NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
 import type { EffectFunctionOptions, HookConfiguration } from "./rules/require-named-effect-functions";
 import type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
 import type { ReactKeysOptions } from "./rules/require-react-component-keys";
@@ -32,6 +35,15 @@ export const defaultRobloxProfilePair: PairConfiguration = {
 	requireSync: true,
 	yieldingFunctions: ["task.wait", "wait", "*.WaitForChild"],
 };
+
+/**
+ * Creates options for ban-instances rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createBanInstancesOptions(options: Partial<BanInstancesOptions> = {}): BanInstancesOptions {
+	return { bannedInstances: [], ...options };
+}
 
 /**
  * Creates a complexity configuration for enforce-ianitor-check-type rule
@@ -129,6 +141,25 @@ export function createReactKeysOptions(options: Partial<ReactKeysOptions> = {}):
 }
 
 /**
+ * Creates options for no-god-components rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNoGodComponentsOptions(options: Partial<NoGodComponentsOptions> = {}): NoGodComponentsOptions {
+	return {
+		enforceTargetLines: true,
+		ignoreComponents: [],
+		maxDestructuredProps: 5,
+		maxLines: 200,
+		maxStateHooks: 5,
+		maxTsxNesting: 3,
+		stateHooks: ["useState", "useReducer", "useBinding"],
+		targetLines: 120,
+		...options,
+	};
+}
+
+/**
  * Creates a use-exhaustive-dependencies options for use-exhaustive-dependencies rule
  * @param options - Partial configuration options
  * @returns The full options
@@ -156,6 +187,22 @@ export function createUseHookAtTopLevelOptions(
 		ignoreHooks: [],
 		importSources: {},
 		onlyHooks: [],
+		...options,
+	};
+}
+
+/**
+ * Creates options for no-useless-use-spring rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNoUselessUseSpringOptions(
+	options: Partial<NoUselessUseSpringOptions> = {},
+): NoUselessUseSpringOptions {
+	return {
+		springHooks: ["useSpring"],
+		staticGlobalFactories: DEFAULT_STATIC_GLOBAL_FACTORIES,
+		treatEmptyDepsAsViolation: true,
 		...options,
 	};
 }
