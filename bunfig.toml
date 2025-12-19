@@ -5,3 +5,5 @@ root = "./tests"
 
 [install]
 auto = "force"
+[install.scopes]
+"@jsr" = "https://npm.jsr.io"
