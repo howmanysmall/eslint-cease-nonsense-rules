@@ -19,9 +19,8 @@ const DEFAULT_BINDING_PATTERNS: ReadonlyArray<string> = ["binding"];
  * @returns The parameter name or undefined if not a simple identifier
  */
 function getParameterName(param: TSESTree.Parameter): string | undefined {
-	if (param.type === AST_NODE_TYPES.Identifier) {
-		return param.name;
-	}
+	if (param.type === AST_NODE_TYPES.Identifier) return param.name;
+
 	// Handle default parameter: (x = defaultValue) => x
 	if (param.type === AST_NODE_TYPES.AssignmentPattern && param.left.type === AST_NODE_TYPES.Identifier) {
 		return param.left.name;
@@ -37,7 +36,7 @@ function getParameterName(param: TSESTree.Parameter): string | undefined {
  */
 function isBlockReturningIdentity(body: TSESTree.BlockStatement, paramName: string): boolean {
 	if (body.body.length !== 1) return false;
-	const statement = body.body[0];
+	const [statement] = body.body;
 	if (statement?.type !== AST_NODE_TYPES.ReturnStatement) return false;
 	if (!statement.argument) return false;
 	if (statement.argument.type !== AST_NODE_TYPES.Identifier) return false;
@@ -59,7 +58,7 @@ function isIdentityCallback(callback: TSESTree.Expression): boolean {
 	// Arrow function
 	if (callback.type === AST_NODE_TYPES.ArrowFunctionExpression) {
 		if (callback.params.length !== 1) return false;
-		const param = callback.params[0];
+		const [param] = callback.params;
 		if (param === undefined) return false;
 		const paramName = getParameterName(param);
 		if (paramName === undefined || paramName === "") return false;
@@ -79,7 +78,7 @@ function isIdentityCallback(callback: TSESTree.Expression): boolean {
 	// Function expression
 	if (callback.type === AST_NODE_TYPES.FunctionExpression) {
 		if (callback.params.length !== 1) return false;
-		const param = callback.params[0];
+		const [param] = callback.params;
 		if (param === undefined) return false;
 		const paramName = getParameterName(param);
 		if (paramName === undefined || paramName === "") return false;
@@ -148,8 +147,7 @@ function isJoinBindingsCall(node: TSESTree.CallExpression): boolean {
 function isBindingInitialization(variable: TSESLint.Scope.Variable): boolean {
 	for (const def of variable.defs) {
 		if (def.type !== DefinitionType.Variable) continue;
-		const node = def.node;
-		const init = node.init;
+		const { init } = def.node;
 		if (!init || init.type !== AST_NODE_TYPES.CallExpression) continue;
 
 		const hookName = getHookName(init);
@@ -213,7 +211,7 @@ function isLikelyBinding(
 
 const noIdentityMap: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options> = {
 	create(context) {
-		const rawOptions = context.options[0];
+		const [rawOptions] = context.options;
 		const patterns = rawOptions?.bindingPatterns ?? DEFAULT_BINDING_PATTERNS;
 
 		return {
@@ -230,7 +228,7 @@ const noIdentityMap: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options> = {
 
 				// Must have exactly one argument
 				if (node.arguments.length !== 1) return;
-				const callback = node.arguments[0];
+				const [callback] = node.arguments;
 				if (!callback || callback.type === AST_NODE_TYPES.SpreadElement) return;
 
 				// Check if callback is identity function
@@ -240,12 +238,12 @@ const noIdentityMap: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options> = {
 				const isBinding = isLikelyBinding(context, callee, patterns);
 
 				context.report({
-					messageId: isBinding ? "identityBindingMap" : "identityArrayMap",
-					node,
 					fix(fixer) {
 						const objectText = context.sourceCode.getText(callee.object);
 						return fixer.replaceText(node, objectText);
 					},
+					messageId: isBinding ? "identityBindingMap" : "identityArrayMap",
+					node,
 				});
 			},
 		};

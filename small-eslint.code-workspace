@@ -69,7 +69,7 @@
 		"oxc.lint.run": "onType",
 		"oxc.typeAware": true,
 
-		"typescript.experimental.useTsgo": false,
+		"typescript.experimental.useTsgo": true,
 		"typescript.tsserver.experimental.enableProjectDiagnostics": false,
 	},
 }

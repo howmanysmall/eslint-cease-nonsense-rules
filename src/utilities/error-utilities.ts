@@ -1,24 +1,24 @@
-import Type from "typebox";
+import Typebox from "typebox";
 import { Compile } from "typebox/compile";
 
 export const isLiteralErrorLike = Compile(
-	Type.Object({
-		message: Type.String(),
-		name: Type.String(),
+	Typebox.Object({
+		message: Typebox.String(),
+		name: Typebox.String(),
 	}),
 );
-export type ErrorLike = Type.Static<typeof isLiteralErrorLike>;
+export type ErrorLike = Typebox.Static<typeof isLiteralErrorLike>;
 
 export function isErrorLike(value: unknown): value is ErrorLike {
 	return value instanceof Error || isLiteralErrorLike.Check(value);
 }
 
 const isErrnoProperties = Compile(
-	Type.Object({
-		code: Type.Optional(Type.String()),
-		errno: Type.Optional(Type.Number()),
-		path: Type.Optional(Type.String()),
-		syscall: Type.Optional(Type.String()),
+	Typebox.Object({
+		code: Typebox.Optional(Typebox.String()),
+		errno: Typebox.Optional(Typebox.Number()),
+		path: Typebox.Optional(Typebox.String()),
+		syscall: Typebox.Optional(Typebox.String()),
 	}),
 );
 

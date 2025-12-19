@@ -23,5 +23,3 @@ await Bun.build({
 });
 
 await Bun.$`bun x --bun tsgo --emitDeclarationOnly --declaration --outDir dist`;
-
-export default false;

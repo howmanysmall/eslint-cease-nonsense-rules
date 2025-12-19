@@ -1,10 +1,11 @@
-import { AST_NODE_TYPES, type TSESTree } from "@typescript-eslint/types";
+import type { TSESTree } from "@typescript-eslint/types";
+import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
 import type { Writable } from "type-fest";
-import Type from "typebox";
+import Typebox from "typebox";
 import { Compile } from "typebox/compile";
 
-const isStringArray = Compile(Type.Readonly(Type.Array(Type.String())));
+const isStringArray = Compile(Typebox.Readonly(Typebox.Array(Typebox.String())));
 
 /**
  * Configuration for a single opener/closer pair
@@ -26,15 +27,15 @@ export interface PairConfiguration {
 	readonly yieldingFunctions?: ReadonlyArray<string>;
 }
 const isPairConfiguration = Compile(
-	Type.Readonly(
-		Type.Object({
-			alternatives: Type.Optional(isStringArray),
-			closer: Type.Union([Type.String(), isStringArray]),
-			opener: Type.String(),
-			openerAlternatives: Type.Optional(isStringArray),
-			platform: Type.Optional(Type.Literal("roblox")),
-			requireSync: Type.Optional(Type.Boolean()),
-			yieldingFunctions: Type.Optional(isStringArray),
+	Typebox.Readonly(
+		Typebox.Object({
+			alternatives: Typebox.Optional(isStringArray),
+			closer: Typebox.Union([Typebox.String(), isStringArray]),
+			opener: Typebox.String(),
+			openerAlternatives: Typebox.Optional(isStringArray),
+			platform: Typebox.Optional(Typebox.Literal("roblox")),
+			requireSync: Typebox.Optional(Typebox.Boolean()),
+			yieldingFunctions: Typebox.Optional(isStringArray),
 		}),
 	),
 );
@@ -54,13 +55,13 @@ export interface RequirePairedCallsOptions {
 }
 
 const isRuleOptions = Compile(
-	Type.Partial(
-		Type.Readonly(
-			Type.Object({
-				allowConditionalClosers: Type.Optional(Type.Boolean()),
-				allowMultipleOpeners: Type.Optional(Type.Boolean()),
-				maxNestingDepth: Type.Optional(Type.Number()),
-				pairs: Type.Readonly(Type.Array(isPairConfiguration)),
+	Typebox.Partial(
+		Typebox.Readonly(
+			Typebox.Object({
+				allowConditionalClosers: Typebox.Optional(Typebox.Boolean()),
+				allowMultipleOpeners: Typebox.Optional(Typebox.Boolean()),
+				maxNestingDepth: Typebox.Optional(Typebox.Number()),
+				pairs: Typebox.Readonly(Typebox.Array(isPairConfiguration)),
 			}),
 		),
 	),
@@ -225,7 +226,7 @@ function cloneEntry(value: OpenerStackEntry): OpenerStackEntry {
 const rule: Rule.RuleModule = {
 	create(context): Rule.RuleListener {
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- ESLint context.options is typed as any[]
-		const rawOptions = context.options[0];
+		const [rawOptions] = context.options;
 		const baseOptions = isRuleOptions.Check(rawOptions) ? rawOptions : {};
 
 		const options: Writable<RequirePairedCallsOptions> = {
@@ -429,7 +430,7 @@ const rule: Rule.RuleModule = {
 				// Check for openers added in branches that weren't closed
 				for (const branchStack of branches) {
 					for (const entry of branchStack) {
-						const wasInOriginal = originalStack.some((o) => o.index === entry.index);
+						const wasInOriginal = originalStack.some(({ index }) => index === entry.index);
 						if (!wasInOriginal) {
 							// This opener was added in a branch and not closed
 							const validClosers = getValidClosers(entry.config);
@@ -492,7 +493,7 @@ const rule: Rule.RuleModule = {
 		function onIfConsequentExit(node: unknown): void {
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const consequentNode = node as TSESTree.Statement;
-			const parent = consequentNode.parent;
+			const { parent } = consequentNode;
 
 			if (parent?.type === AST_NODE_TYPES.IfStatement) {
 				const branches = branchStacks.get(parent) ?? [];
@@ -510,7 +511,7 @@ const rule: Rule.RuleModule = {
 		function onIfAlternateExit(node: unknown): void {
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const alternateNode = node as TSESTree.Statement;
-			const parent = alternateNode.parent;
+			const { parent } = alternateNode;
 
 			if (parent?.type === AST_NODE_TYPES.IfStatement) {
 				const branches = branchStacks.get(parent) ?? [];

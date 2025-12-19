@@ -1,6 +1,6 @@
-import * as pls from "ts-case-convert";
+import { objectToCamel } from "ts-case-convert";
 
-const yeha = pls.objectToCamel({
+const yeha = objectToCamel({
 	key_one: "value one",
 	key_two: {
 		nested_key_four: [{ array_key_five: "value five" }, { array_key_six: "value six" }],
@@ -8,21 +8,21 @@ const yeha = pls.objectToCamel({
 	},
 });
 
-type CamelCase<S extends string> = S extends `${infer P1}_${infer P2}${infer P3}`
+type CamelCase<TString extends string> = TString extends `${infer P1}_${infer P2}${infer P3}`
 	? `${P1}${Uppercase<P2>}${CamelCase<P3>}`
-	: S;
+	: TString;
 
-export type ToCamelCase<T> =
-	T extends Array<infer U>
-		? Array<ToCamelCase<U>>
-		: T extends object
+export type ToCamelCase<TObject> =
+	TObject extends Array<infer ItemType>
+		? Array<ToCamelCase<ItemType>>
+		: TObject extends object
 			? {
-					[K in keyof T as K extends string
-						? K extends `_${string}` // omit keys that start with underscore (e.g. _links)
+					[Key in keyof TObject as Key extends string
+						? Key extends `_${string}`
 							? never
-							: CamelCase<K>
-						: K]: ToCamelCase<T[K]>;
+							: CamelCase<Key>
+						: Key]: ToCamelCase<TObject[Key]>;
 				}
-			: T;
+			: TObject;
 
 type __ = ToCamelCase<typeof yeha>;

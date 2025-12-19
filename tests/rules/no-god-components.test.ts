@@ -18,7 +18,7 @@ const ruleTester = new RuleTester({
 
 describe("no-god-components", () => {
 	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
-	// and this test file intentionally passes the rule as-is for runtime validation.
+	// And this test file intentionally passes the rule as-is for runtime validation.
 	ruleTester.run("no-god-components", rule, {
 		valid: [
 			{

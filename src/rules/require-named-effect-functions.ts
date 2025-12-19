@@ -1,6 +1,6 @@
 import { TSESTree } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
-import Type from "typebox";
+import Typebox from "typebox";
 import { Compile } from "typebox/compile";
 
 export interface HookConfiguration {
@@ -14,23 +14,23 @@ const DEFAULT_HOOKS: ReadonlyArray<HookConfiguration> = [
 	{ allowAsync: false, name: "useInsertionEffect" },
 ] as const;
 
-const isEnvironmentMode = Type.Union([Type.Literal("roblox-ts"), Type.Literal("standard")]);
-export type EnvironmentMode = Type.Static<typeof isEnvironmentMode>;
+const isEnvironmentMode = Typebox.Union([Typebox.Literal("roblox-ts"), Typebox.Literal("standard")]);
+export type EnvironmentMode = Typebox.Static<typeof isEnvironmentMode>;
 
 export interface EffectFunctionOptions {
 	readonly environment: EnvironmentMode;
 	readonly hooks: ReadonlyArray<HookConfiguration>;
 }
-const isHookConfiguration = Type.Object({
-	allowAsync: Type.Boolean(),
-	name: Type.String(),
+const isHookConfiguration = Typebox.Object({
+	allowAsync: Typebox.Boolean(),
+	name: Typebox.String(),
 });
 
 const isRuleOptions = Compile(
-	Type.Object(
+	Typebox.Object(
 		{
 			environment: isEnvironmentMode,
-			hooks: Type.Array(isHookConfiguration),
+			hooks: Typebox.Array(isHookConfiguration),
 		},
 		{ additionalProperties: true },
 	),
@@ -68,16 +68,22 @@ interface CallExpression {
 
 function getHookName(callExpression: CallExpression): string | undefined {
 	const { callee } = callExpression;
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier && typeof callee.name === "string" && callee.name.length > 0)
+	if (
+		callee.type === TSESTree.AST_NODE_TYPES.Identifier &&
+		typeof callee.name === "string" &&
+		callee.name.length > 0
+	) {
 		return callee.name;
+	}
 
 	if (
 		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 		callee.property?.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		typeof callee.property.name === "string" &&
 		callee.property.name.length > 0
-	)
+	) {
 		return callee.property.name;
+	}
 
 	return undefined;
 }
@@ -119,7 +125,7 @@ function resolveIdentifierToFunction(
 			if (typeof definition !== "object" || definition === null) continue;
 
 			const castDefinition = definition as { node?: unknown };
-			const node = castDefinition.node;
+			const { node } = castDefinition;
 			if (typeof node !== "object" || node === null) continue;
 
 			const castNode = node as { type?: string; init?: unknown; async?: boolean };
@@ -191,7 +197,7 @@ function isCallbackHookResult(identifier: TSESTree.Identifier, context: Rule.Rul
 			if (typeof definition !== "object" || definition === null) continue;
 
 			const castDefinition = definition as { node?: unknown };
-			const node = castDefinition.node;
+			const { node } = castDefinition;
 			if (typeof node !== "object" || node === null) continue;
 
 			const castNode = node as { type?: string; init?: unknown };

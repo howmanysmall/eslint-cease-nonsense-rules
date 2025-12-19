@@ -1,5 +1,6 @@
 import { inspect } from "node:util";
 import type { TLocalizedValidationError } from "typebox/error";
+// oxlint-disable-next-line no-named-as-default
 import Value from "typebox/value";
 
 function stringifyType(value: ReadonlyArray<string> | string): string {

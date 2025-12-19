@@ -4,7 +4,8 @@ import arkenv from "arkenv";
 import { type } from "arktype";
 import { stringifyINI, stringifyJSON5, stringifyTOML } from "confbox";
 import { XMLBuilder } from "fast-xml-parser";
-import { type ObjectToCamel, objectToCamel } from "ts-case-convert";
+import type { ObjectToCamel } from "ts-case-convert";
+import { objectToCamel } from "ts-case-convert";
 
 const environment = arkenv(
 	{
@@ -23,14 +24,14 @@ const xmlBuilder = new XMLBuilder();
 
 const isBoolean = type("boolean");
 
-type DeepReadonly<T> =
-	T extends Array<infer U>
-		? ReadonlyArray<DeepReadonly<U>>
-		: T extends object
+type DeepReadonly<TObject> =
+	TObject extends Array<infer ItemType>
+		? ReadonlyArray<DeepReadonly<ItemType>>
+		: TObject extends object
 			? {
-					readonly [K in keyof T]: DeepReadonly<T[K]>;
+					readonly [Key in keyof TObject]: DeepReadonly<TObject[Key]>;
 				}
-			: T;
+			: TObject;
 
 type GetGitHubData<TFn extends (...args: Array<never>) => Promise<{ data: unknown }>> =
 	Awaited<ReturnType<TFn>> extends { data: infer TData }
@@ -278,6 +279,7 @@ export async function searchCodeAsync(
 		order: searchCodeQuery.order,
 		page: searchCodeQuery.page,
 		per_page: searchCodeQuery.perPage,
+		// oxlint-disable-next-line id-length
 		q: searchCodeQuery.query,
 		sort: searchCodeQuery.sort,
 	});
@@ -339,6 +341,7 @@ export async function searchRepositoriesAsync(
 		order: searchRepositoriesQuery.order,
 		page: searchRepositoriesQuery.page,
 		per_page: searchRepositoriesQuery.perPage,
+		// oxlint-disable-next-line id-length
 		q: searchRepositoriesQuery.query,
 		sort: searchRepositoriesQuery.sort,
 	});

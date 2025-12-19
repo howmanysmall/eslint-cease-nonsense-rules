@@ -95,7 +95,7 @@ function unwrapExpression(expression: TSESTree.Expression): TSESTree.Expression 
 function findVariable(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	identifier: TSESTree.Identifier,
-	// eslint's type definitions for Scope differ from @typescript-eslint's; cast for compatibility
+	// Eslint's type definitions for Scope differ from @typescript-eslint's; cast for compatibility
 ): TSESLint.Scope.Variable | undefined {
 	let scope = context.sourceCode.getScope(identifier) as TSESLint.Scope.Scope | undefined;
 	while (scope) {
@@ -185,7 +185,7 @@ function isStaticObjectExpression(
 		if (property.type !== AST_NODE_TYPES.Property) return false;
 		if (property.kind !== "init") return false;
 		if (property.computed && !isStaticExpressionInner(property.key, seen, options)) return false;
-		const value = property.value;
+		const { value } = property;
 		if (!isNonPatternExpression(value)) return false;
 		if (!isStaticExpression(context, value, seen, options)) return false;
 	}
@@ -322,7 +322,7 @@ function isStaticExpression(
 	seen.add(unwrapped);
 
 	// eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
-	// oxlint:disable-next-line @typescript-eslint/switch-exhaustiveness-check
+	// Oxlint:disable-next-line @typescript-eslint/switch-exhaustiveness-check
 	switch (unwrapped.type) {
 		case AST_NODE_TYPES.Literal:
 			return true;
@@ -442,7 +442,7 @@ function isSpringHookCall(node: TSESTree.CallExpression, options: NormalizedOpti
 
 const noUselessUseSpring: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options> = {
 	create(context) {
-		const rawOptions = context.options[0];
+		const [rawOptions] = context.options;
 		const normalized: NormalizedOptions = {
 			...DEFAULT_OPTION_VALUES,
 			...rawOptions,
@@ -457,7 +457,7 @@ const noUselessUseSpring: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options> =
 				if (!isSpringHookCall(node, normalized)) return;
 				if (node.arguments.length === 0) return;
 
-				const configArgument = node.arguments[0];
+				const [configArgument] = node.arguments;
 				if (!configArgument) return;
 				if (configArgument.type === AST_NODE_TYPES.SpreadElement) return;
 

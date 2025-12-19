@@ -18,7 +18,7 @@ const ruleTester = new RuleTester({
 
 describe("require-react-component-keys with custom configurations", () => {
 	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
-	// and this test file intentionally passes the rule as-is for runtime validation.
+	// And this test file intentionally passes the rule as-is for runtime validation.
 	ruleTester.run("require-react-component-keys - custom iterationMethods", rule, {
 		invalid: [
 			// Custom iteration method in list - keys required in callback
@@ -90,7 +90,7 @@ function DefaultIteration(items) {
 	});
 
 	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
-	// and this test file intentionally passes the rule as-is for runtime validation.
+	// And this test file intentionally passes the rule as-is for runtime validation.
 	ruleTester.run("require-react-component-keys - custom memoizationHooks", rule, {
 		invalid: [
 			// Default hooks with custom configuration - should error
