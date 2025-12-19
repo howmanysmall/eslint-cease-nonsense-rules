@@ -76,7 +76,7 @@ const isUser = Ianitor.strictInterface({
 					languageOptions: {
 						parser,
 					},
-					options: [{ baseThreshold: 20 }], // Increase threshold to make this pass
+					options: [{ baseThreshold: 20 }],
 				},
 				// Ianitor.Static<typeof ...> pattern
 				{
