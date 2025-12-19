@@ -1,6 +1,6 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
-import Type from "typebox";
+import Typebox from "typebox";
 import { Compile } from "typebox/compile";
 
 interface SequenceDescriptor {
@@ -33,9 +33,9 @@ function findDescriptor(sequenceName: SequenceDescriptor["sequenceName"]): Seque
 }
 
 const isNumericLiteral = Compile(
-	Type.Object({
-		type: Type.Literal(AST_NODE_TYPES.Literal),
-		value: Type.Number(),
+	Typebox.Object({
+		type: Typebox.Literal(AST_NODE_TYPES.Literal),
+		value: Typebox.Number(),
 	}),
 );
 

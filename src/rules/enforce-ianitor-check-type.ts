@@ -1,5 +1,6 @@
 import { TSESTree } from "@typescript-eslint/types";
-import { ESLintUtils, type TSESLint } from "@typescript-eslint/utils";
+import type { TSESLint } from "@typescript-eslint/utils";
+import { ESLintUtils } from "@typescript-eslint/utils";
 
 export interface ComplexityConfiguration {
 	readonly baseThreshold: number;
@@ -38,9 +39,9 @@ function hasTypeAnnotation(node: { type: string; id?: unknown; returnType?: unkn
 		typeof node.id === "object" &&
 		hasTypeAnnotationProperty(node.id)
 	)
-		return !!node.id.typeAnnotation;
+		return Boolean(node.id.typeAnnotation);
 
-	if (SHOULD_NOT_NOT_RETURN_TYPE.has(node.type)) return !!node.returnType;
+	if (SHOULD_NOT_NOT_RETURN_TYPE.has(node.type)) return Boolean(node.returnType);
 	return false;
 }
 
@@ -71,8 +72,9 @@ function extractIanitorStaticVariable(typeAnnotation: TSESTree.TypeNode): string
 		currentType.typeName.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		currentType.typeName.name === "Readonly" &&
 		currentType.typeArguments?.params[0]
-	)
-		currentType = currentType.typeArguments.params[0];
+	) {
+		[currentType] = currentType.typeArguments.params;
+	}
 
 	if (currentType.type !== TSESTree.AST_NODE_TYPES.TSTypeReference) return undefined;
 
@@ -87,8 +89,9 @@ function extractIanitorStaticVariable(typeAnnotation: TSESTree.TypeNode): string
 		typeName.right.name === "Static" &&
 		firstParam?.type === TSESTree.AST_NODE_TYPES.TSTypeQuery &&
 		firstParam.exprName.type === TSESTree.AST_NODE_TYPES.Identifier
-	)
+	) {
 		return firstParam.exprName.name;
+	}
 
 	return undefined;
 }
@@ -101,8 +104,9 @@ function hasIanitorStaticType(typeAnnotation: TSESTree.TypeNode): boolean {
 		currentType.typeName.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		currentType.typeName.name === "Readonly" &&
 		currentType.typeArguments?.params[0]
-	)
-		currentType = currentType.typeArguments.params[0];
+	) {
+		[currentType] = currentType.typeArguments.params;
+	}
 
 	if (currentType.type !== TSESTree.AST_NODE_TYPES.TSTypeReference) return false;
 
@@ -125,12 +129,13 @@ function calculateIanitorComplexity(node: {
 	};
 	readonly arguments?: ReadonlyArray<{ type?: string; properties?: Array<unknown> }>;
 }): number {
-	const callee = node.callee;
+	const { callee } = node;
 	if (
 		callee?.type !== TSESTree.AST_NODE_TYPES.MemberExpression ||
 		callee.property?.type !== TSESTree.AST_NODE_TYPES.Identifier
-	)
+	) {
 		return 0;
+	}
 
 	const method = callee.property.name;
 	switch (method) {

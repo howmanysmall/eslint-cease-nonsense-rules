@@ -1,3 +1,4 @@
+import type { SpawnSyncReturns } from "node:child_process";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -14,7 +15,7 @@ export interface Difference {
 const require = createRequire(import.meta.url);
 
 export function resolveOxfmtPath(
-	// kept for backward compatibility signature-wise in tests, though ignored now
+	// Kept for backward compatibility signature-wise in tests, though ignored now
 	_pathResolver?: (path: string) => unknown,
 	_usePathResolver?: boolean,
 ): string {
@@ -23,7 +24,8 @@ export function resolveOxfmtPath(
 		try {
 			// Check if we are mocking a failure case
 			if (_pathResolver !== undefined) {
-				_pathResolver(""); // Trigger the mock throw if it's designed to throw
+				// Trigger the mock throw if it's designed to throw
+				_pathResolver("");
 			}
 		} catch {
 			return "oxfmt";
@@ -80,13 +82,13 @@ export function formatWithOxfmtSync(source: string, filePath: string): string {
 		const oxfmtBin = resolveOxfmtPath();
 		const isNative = oxfmtBin.endsWith("oxfmt-native");
 
-		let result;
+		let result: SpawnSyncReturns<string>;
 		if (isNative) {
 			result = spawnSync(oxfmtBin, [tempFile], {
-				input: source,
-				encoding: "utf8",
-				stdio: ["pipe", "pipe", "pipe"],
 				cwd: process.cwd(),
+				encoding: "utf8",
+				input: source,
+				stdio: ["pipe", "pipe", "pipe"],
 			});
 		} else {
 			// Node fallback
@@ -99,13 +101,11 @@ export function formatWithOxfmtSync(source: string, filePath: string): string {
 
 		if (result.error) throw new Error(`Failed to spawn oxfmt: ${result.error.message}`);
 		if (result.status !== 0) {
-			throw new Error(`Oxfmt failed: ${result.stderr || "Unknown error"}`);
+			throw new Error(`Oxfmt failed: ${result.stderr ?? "Unknown error"}`);
 		}
 
 		// Native binary prints to stdout
-		if (isNative) {
-			return result.stdout;
-		}
+		if (isNative) return result.stdout;
 
 		// Node fallback writes to file
 		return readFileSync(tempFile, "utf8");

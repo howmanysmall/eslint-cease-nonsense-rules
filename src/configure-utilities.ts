@@ -3,7 +3,8 @@ import type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type
 import type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
 import type { NoShorthandOptions } from "./rules/no-shorthand-names";
 import type { NoGodComponentsOptions } from "./rules/no-god-components";
-import { DEFAULT_STATIC_GLOBAL_FACTORIES, type NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
+import { DEFAULT_STATIC_GLOBAL_FACTORIES } from './rules/no-useless-use-spring';
+import type { NoUselessUseSpringOptions } from './rules/no-useless-use-spring';
 import type { EffectFunctionOptions, HookConfiguration } from "./rules/require-named-effect-functions";
 import type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
 import type { ReactKeysOptions } from "./rules/require-react-component-keys";

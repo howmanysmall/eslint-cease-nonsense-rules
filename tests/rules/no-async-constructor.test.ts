@@ -20,7 +20,7 @@ describe("no-async-constructor", () => {
 	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
 	ruleTester.run("no-async-constructor", rule, {
 		invalid: [
-			// await expression in constructor
+			// Await expression in constructor
 			{
 				code: `
 class BadAwait {
@@ -71,7 +71,7 @@ class BadFinallyOnAsync {
 				errors: [{ messageId: "promiseChainInConstructor" }],
 			},
 
-			// async IIFE with arrow function
+			// Async IIFE with arrow function
 			{
 				code: `
 class BadAsyncIIFE {
@@ -85,7 +85,7 @@ class BadAsyncIIFE {
 				errors: [{ messageId: "asyncIifeInConstructor" }, { messageId: "awaitInConstructor" }],
 			},
 
-			// async IIFE with function keyword
+			// Async IIFE with function keyword
 			{
 				code: `
 class BadAsyncIIFEFunction {
@@ -99,7 +99,7 @@ class BadAsyncIIFEFunction {
 				errors: [{ messageId: "asyncIifeInConstructor" }, { messageId: "awaitInConstructor" }],
 			},
 
-			// unhandled async method call (ExpressionStatement)
+			// Unhandled async method call (ExpressionStatement)
 			{
 				code: `
 class BadUnhandled {
@@ -112,7 +112,7 @@ class BadUnhandled {
 				errors: [{ messageId: "unhandledAsyncCall" }],
 			},
 
-			// orphaned promise in local variable
+			// Orphaned promise in local variable
 			{
 				code: `
 class BadOrphaned {
@@ -125,7 +125,7 @@ class BadOrphaned {
 				errors: [{ messageId: "orphanedPromise" }],
 			},
 
-			// multiple unhandled calls
+			// Multiple unhandled calls
 			{
 				code: `
 class BadMultiple {
@@ -153,7 +153,7 @@ class BadPromiseResolve {
 				errors: [{ messageId: "promiseChainInConstructor" }],
 			},
 
-			// nested .then() chains
+			// Nested .then() chains
 			{
 				code: `
 class BadNestedThen {
@@ -166,7 +166,7 @@ class BadNestedThen {
 				errors: [{ messageId: "promiseChainInConstructor" }, { messageId: "promiseChainInConstructor" }],
 			},
 
-			// await with complex expression
+			// Await with complex expression
 			{
 				code: `
 class BadAwaitComplex {
@@ -178,7 +178,7 @@ class BadAwaitComplex {
 				errors: [{ messageId: "awaitInConstructor" }, { messageId: "promiseChainInConstructor" }],
 			},
 
-			// async method call inside condition
+			// Async method call inside condition
 			{
 				code: `
 class BadConditional {
@@ -193,7 +193,7 @@ class BadConditional {
 				errors: [{ messageId: "unhandledAsyncCall" }],
 			},
 
-			// async method call inside loop
+			// Async method call inside loop
 			{
 				code: `
 class BadLoop {
@@ -209,7 +209,7 @@ class BadLoop {
 				errors: [{ messageId: "unhandledAsyncCall" }],
 			},
 
-			// multiple orphaned promises
+			// Multiple orphaned promises
 			{
 				code: `
 class BadMultipleOrphaned {
@@ -225,7 +225,7 @@ class BadMultipleOrphaned {
 			},
 		],
 		valid: [
-			// static factory pattern
+			// Static factory pattern
 			{
 				code: `
 class GoodFactory {
@@ -238,7 +238,7 @@ class GoodFactory {
 `,
 			},
 
-			// storing promise on this for later consumption
+			// Storing promise on this for later consumption
 			{
 				code: `
 class GoodStoredPromise {
@@ -251,7 +251,7 @@ class GoodStoredPromise {
 `,
 			},
 
-			// init method pattern (async work outside constructor)
+			// Init method pattern (async work outside constructor)
 			{
 				code: `
 class GoodInitMethod {
@@ -263,7 +263,7 @@ class GoodInitMethod {
 `,
 			},
 
-			// storing async callback (not invoking)
+			// Storing async callback (not invoking)
 			{
 				code: `
 class GoodStoredCallback {
@@ -278,7 +278,7 @@ class GoodStoredCallback {
 `,
 			},
 
-			// non-async method call is fine
+			// Non-async method call is fine
 			{
 				code: `
 class GoodSyncMethod {
@@ -290,7 +290,7 @@ class GoodSyncMethod {
 `,
 			},
 
-			// regular sync constructor
+			// Regular sync constructor
 			{
 				code: `
 class GoodSyncConstructor {
@@ -302,7 +302,7 @@ class GoodSyncConstructor {
 `,
 			},
 
-			// calling external sync function
+			// Calling external sync function
 			{
 				code: `
 class GoodExternalSync {
@@ -313,7 +313,7 @@ class GoodExternalSync {
 `,
 			},
 
-			// empty constructor
+			// Empty constructor
 			{
 				code: `
 class GoodEmpty {
@@ -322,7 +322,7 @@ class GoodEmpty {
 `,
 			},
 
-			// constructor with parameters only
+			// Constructor with parameters only
 			{
 				code: `
 class GoodParams {
@@ -331,7 +331,7 @@ class GoodParams {
 `,
 			},
 
-			// class without constructor
+			// Class without constructor
 			{
 				code: `
 class GoodNoConstructor {
@@ -343,7 +343,7 @@ class GoodNoConstructor {
 `,
 			},
 
-			// calling method that is NOT async
+			// Calling method that is NOT async
 			{
 				code: `
 class GoodNonAsyncMethod {
@@ -357,7 +357,7 @@ class GoodNonAsyncMethod {
 `,
 			},
 
-			// async method defined but not called in constructor
+			// Async method defined but not called in constructor
 			{
 				code: `
 class GoodAsyncNotCalled {
@@ -370,7 +370,7 @@ class GoodAsyncNotCalled {
 `,
 			},
 
-			// storing multiple promises on this
+			// Storing multiple promises on this
 			{
 				code: `
 class GoodMultipleStored {
@@ -386,7 +386,7 @@ class GoodMultipleStored {
 `,
 			},
 
-			// assignment to this with non-async method
+			// Assignment to this with non-async method
 			{
 				code: `
 class GoodAssignSync {
@@ -401,7 +401,7 @@ class GoodAssignSync {
 `,
 			},
 
-			// computed property method (not tracked)
+			// Computed property method (not tracked)
 			{
 				code: `
 class GoodComputedMethod {
@@ -413,7 +413,7 @@ class GoodComputedMethod {
 `,
 			},
 
-			// getter/setter (not async methods)
+			// Getter/setter (not async methods)
 			{
 				code: `
 class GoodGetterSetter {
@@ -427,7 +427,7 @@ class GoodGetterSetter {
 `,
 			},
 
-			// static async method (not an instance method)
+			// Static async method (not an instance method)
 			{
 				code: `
 class GoodStaticAsync {
@@ -440,7 +440,7 @@ class GoodStaticAsync {
 `,
 			},
 
-			// arrow function property (not a method definition)
+			// Arrow function property (not a method definition)
 			{
 				code: `
 class GoodArrowProperty {
