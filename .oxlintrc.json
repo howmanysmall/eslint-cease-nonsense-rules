@@ -27,7 +27,7 @@
 			"globals": {
 				"jest": "readonly",
 			},
-			"plugins": ["eslint", "import", "jest", "node", "oxc", "promise", "regex", "typescript", "unicorn"],
+			"plugins": ["eslint", "import", "jest", "node", "oxc", "promise", "typescript", "unicorn"],
 			"rules": {
 				"max-lines": "off",
 				"max-lines-per-function": "off",
@@ -62,7 +62,7 @@
 			},
 		},
 	],
-	"plugins": ["eslint", "import", "jsdoc", "node", "oxc", "promise", "regex", "typescript", "unicorn"],
+	"plugins": ["eslint", "import", "jsdoc", "node", "oxc", "promise", "typescript", "unicorn"],
 	"rules": {
 		"@typescript-eslint/ban-ts-comment": "error",
 		"@typescript-eslint/no-duplicate-enum-values": "error",

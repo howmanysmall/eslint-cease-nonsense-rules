@@ -138,7 +138,7 @@ function calculateIanitorComplexity(node: {
 		case "strictInterface": {
 			const properties = node.arguments?.[0];
 			return properties?.type === TSESTree.AST_NODE_TYPES.ObjectExpression
-				? 10 + (properties.properties?.length || 0) * 3
+				? 10 + (properties.properties?.length ?? 0) * 3
 				: 0;
 		}
 
@@ -154,7 +154,7 @@ function calculateIanitorComplexity(node: {
 
 		case "union":
 		case "intersection":
-			return (node.arguments?.length || 0) * 2;
+			return (node.arguments?.length ?? 0) * 2;
 
 		case "string":
 		case "number":
@@ -373,7 +373,7 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 
 				if (complexity >= config.interfacePenalty) {
 					context.report({
-						data: { name: name || "unknown" },
+						data: { name: name ?? "unknown" },
 						messageId: "complexInterfaceNeedsCheck",
 						node,
 					});
