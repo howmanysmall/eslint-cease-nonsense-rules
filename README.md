@@ -31,35 +31,35 @@ Add the plugin to your ESLint configuration:
 import ceaseNonsense from "@pobammer-ts/eslint-cease-nonsense-rules";
 
 export default [
-  {
-    plugins: {
-      "cease-nonsense": ceaseNonsense,
-    },
-    rules: {
-      // Enable all rules (recommended)
-      "cease-nonsense/ban-instances": "error",
-      "cease-nonsense/ban-react-fc": "error",
-      "cease-nonsense/enforce-ianitor-check-type": "error",
-      "cease-nonsense/fast-format": "error",
-      "cease-nonsense/no-async-constructor": "error",
-      "cease-nonsense/no-color3-constructor": "error",
-      "cease-nonsense/no-commented-code": "error",
-      "cease-nonsense/no-god-components": "error",
-      "cease-nonsense/no-identity-map": "error",
-      "cease-nonsense/no-instance-methods-without-this": "error",
-      "cease-nonsense/no-print": "error",
-      "cease-nonsense/no-shorthand-names": "error",
-      "cease-nonsense/no-useless-use-spring": "error",
-      "cease-nonsense/no-warn": "error",
-      "cease-nonsense/prefer-sequence-overloads": "error",
-      "cease-nonsense/prefer-udim2-shorthand": "error",
-      "cease-nonsense/require-named-effect-functions": "error",
-      "cease-nonsense/require-paired-calls": "error",
-      "cease-nonsense/require-react-component-keys": "error",
-      "cease-nonsense/use-exhaustive-dependencies": "error",
-      "cease-nonsense/use-hook-at-top-level": "error",
-    },
-  },
+	{
+		plugins: {
+			"cease-nonsense": ceaseNonsense,
+		},
+		rules: {
+			// Enable all rules (recommended)
+			"cease-nonsense/ban-instances": "error",
+			"cease-nonsense/ban-react-fc": "error",
+			"cease-nonsense/enforce-ianitor-check-type": "error",
+			"cease-nonsense/fast-format": "error",
+			"cease-nonsense/no-async-constructor": "error",
+			"cease-nonsense/no-color3-constructor": "error",
+			"cease-nonsense/no-commented-code": "error",
+			"cease-nonsense/no-god-components": "error",
+			"cease-nonsense/no-identity-map": "error",
+			"cease-nonsense/no-instance-methods-without-this": "error",
+			"cease-nonsense/no-print": "error",
+			"cease-nonsense/no-shorthand-names": "error",
+			"cease-nonsense/no-useless-use-spring": "error",
+			"cease-nonsense/no-warn": "error",
+			"cease-nonsense/prefer-sequence-overloads": "error",
+			"cease-nonsense/prefer-udim2-shorthand": "error",
+			"cease-nonsense/require-named-effect-functions": "error",
+			"cease-nonsense/require-paired-calls": "error",
+			"cease-nonsense/require-react-component-keys": "error",
+			"cease-nonsense/use-exhaustive-dependencies": "error",
+			"cease-nonsense/use-hook-at-top-level": "error",
+		},
+	},
 ];
 ```
 
@@ -98,12 +98,12 @@ Calculates structural complexity of types and requires Ianitor validators when c
 ```typescript
 // Complex type without runtime validation
 type UserConfig = {
-  id: number;
-  name: string;
-  settings: {
-    theme: string;
-    notifications: boolean;
-  };
+	id: number;
+	name: string;
+	settings: {
+		theme: string;
+		notifications: boolean;
+	};
 };
 
 const config = getUserConfig(); // No runtime check!
@@ -113,12 +113,12 @@ const config = getUserConfig(); // No runtime check!
 
 ```typescript
 const userConfigValidator = Ianitor.interface({
-  id: Ianitor.number(),
-  name: Ianitor.string(),
-  settings: Ianitor.interface({
-    theme: Ianitor.string(),
-    notifications: Ianitor.boolean(),
-  }),
+	id: Ianitor.number(),
+	name: Ianitor.string(),
+	settings: Ianitor.interface({
+		theme: Ianitor.string(),
+		notifications: Ianitor.boolean(),
+	}),
 });
 
 type UserConfig = Ianitor.Static<typeof userConfigValidator>;
@@ -265,15 +265,15 @@ Enforce named effect functions for better debuggability. Prevent inline arrow fu
 ```typescript
 // Arrow function
 useEffect(() => {
-  doThing();
+	doThing();
 }, [dep]);
 
 // Anonymous function expression
 useEffect(
-  function () {
-    doThing();
-  },
-  [dep],
+	function () {
+		doThing();
+	},
+	[dep],
 );
 ```
 
@@ -282,16 +282,16 @@ useEffect(
 ```typescript
 // Preferred: reference a named function
 function onDepChange() {
-  doThing();
+	doThing();
 }
 useEffect(onDepChange, [dep]);
 
 // Allowed in `standard` mode
 useEffect(
-  function onDepChange() {
-    doThing();
-  },
-  [dep],
+	function onDepChange() {
+		doThing();
+	},
+	[dep],
 );
 ```
 
@@ -322,11 +322,11 @@ Enforces exhaustive and correct dependency specification in React hooks to preve
 
 ```typescript
 function UserProfile({ userId }) {
-  const [user, setUser] = useState(null);
+	const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    fetchUser(userId).then(setUser);
-  }, []); // Missing userId dependency!
+	useEffect(() => {
+		fetchUser(userId).then(setUser);
+	}, []); // Missing userId dependency!
 }
 ```
 
@@ -334,11 +334,11 @@ function UserProfile({ userId }) {
 
 ```typescript
 function UserProfile({ userId }) {
-  const [user, setUser] = useState(null);
+	const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    fetchUser(userId).then(setUser);
-  }, [userId]);
+	useEffect(() => {
+		fetchUser(userId).then(setUser);
+	}, [userId]);
 }
 ```
 
@@ -397,12 +397,12 @@ Enforces that React hooks are only called at the top level of components or cust
 
 ```typescript
 function UserProfile({ userId }) {
-  if (userId) {
-    useEffect(() => {
-      // Hook in conditional!
-      fetchUser(userId);
-    }, [userId]);
-  }
+	if (userId) {
+		useEffect(() => {
+			// Hook in conditional!
+			fetchUser(userId);
+		}, [userId]);
+	}
 }
 ```
 
@@ -410,11 +410,11 @@ function UserProfile({ userId }) {
 
 ```typescript
 function UserProfile({ userId }) {
-  useEffect(() => {
-    if (userId) {
-      fetchUser(userId);
-    }
-  }, [userId]);
+	useEffect(() => {
+		if (userId) {
+			fetchUser(userId);
+		}
+	}, [userId]);
 }
 ```
 
@@ -519,24 +519,24 @@ Enforces that paired function calls (opener/closer) are properly balanced across
 ```typescript
 // Missing closer on early return
 function test() {
-  debug.profilebegin("task");
-  if (error) return; // Never closed on this path
-  debug.profileend();
+	debug.profilebegin("task");
+	if (error) return; // Never closed on this path
+	debug.profileend();
 }
 
 // Wrong LIFO order
 function test() {
-  debug.profilebegin("outer");
-  debug.profilebegin("inner");
-  debug.profileend(); // closes inner
-  // outer is never closed
+	debug.profilebegin("outer");
+	debug.profilebegin("inner");
+	debug.profileend(); // closes inner
+	// outer is never closed
 }
 
 // Async operation with requireSync
 async function test() {
-  debug.profilebegin("task");
-  await fetch("/api");
-  debug.profileend();
+	debug.profilebegin("task");
+	await fetch("/api");
+	debug.profileend();
 }
 ```
 
@@ -545,27 +545,27 @@ async function test() {
 ```typescript
 // Simple pairing
 function test() {
-  debug.profilebegin("task");
-  doWork();
-  debug.profileend();
+	debug.profilebegin("task");
+	doWork();
+	debug.profileend();
 }
 
 // Proper LIFO nesting
 function test() {
-  debug.profilebegin("outer");
-  debug.profilebegin("inner");
-  debug.profileend();
-  debug.profileend();
+	debug.profilebegin("outer");
+	debug.profilebegin("inner");
+	debug.profileend();
+	debug.profileend();
 }
 
 // Try-finally ensures closer on all paths
 function test() {
-  debug.profilebegin("task");
-  try {
-    riskyOperation();
-  } finally {
-    debug.profileend();
-  }
+	debug.profilebegin("task");
+	try {
+		riskyOperation();
+	} finally {
+		debug.profileend();
+	}
 }
 ```
 
@@ -675,15 +675,23 @@ Constructors return immediately, so async work causes race conditions, unhandled
 
 ```typescript
 class UserService {
-  constructor() {
-    await this.initialize(); // Direct await
-    this.loadData().then((data) => (this.data = data)); // Promise chain
-    (async () => { await this.setup(); })(); // Async IIFE
-  }
+	constructor() {
+		await this.initialize(); // Direct await
+		this.loadData().then((data) => (this.data = data)); // Promise chain
+		(async () => {
+			await this.setup();
+		})(); // Async IIFE
+	}
 
-  async initialize() { /* ... */ }
-  async loadData() { /* ... */ }
-  async setup() { /* ... */ }
+	async initialize() {
+		/* ... */
+	}
+	async loadData() {
+		/* ... */
+	}
+	async setup() {
+		/* ... */
+	}
 }
 ```
 
@@ -691,20 +699,22 @@ class UserService {
 
 ```typescript
 class UserService {
-  private initPromise: Promise<void>;
+	private initPromise: Promise<void>;
 
-  constructor() {
-    this.initPromise = this.initialize();
-  }
+	constructor() {
+		this.initPromise = this.initialize();
+	}
 
-  async initialize() { /* ... */ }
+	async initialize() {
+		/* ... */
+	}
 
-  // Factory pattern
-  static async create(): Promise<UserService> {
-    const service = new UserService();
-    await service.initPromise;
-    return service;
-  }
+	// Factory pattern
+	static async create(): Promise<UserService> {
+		const service = new UserService();
+		await service.initPromise;
+		return service;
+	}
 }
 ```
 
@@ -722,14 +732,14 @@ Detects and reports commented-out code.
 
 ```typescript
 function calculate(x: number) {
-  // const result = x * 2;
-  // return result;
+	// const result = x * 2;
+	// return result;
 
-  /* if (x > 10) {
+	/* if (x > 10) {
     return x;
   } */
 
-  return x + 1;
+	return x + 1;
 }
 ```
 
@@ -737,9 +747,9 @@ function calculate(x: number) {
 
 ```typescript
 function calculate(x: number) {
-  // TODO: Consider multiplying by 2 instead
-  // Note: This is a simplified version
-  return x + 1;
+	// TODO: Consider multiplying by 2 instead
+	// Note: This is a simplified version
+	return x + 1;
 }
 ```
 
@@ -895,23 +905,17 @@ Prefer the optimized `ColorSequence` and `NumberSequence` constructor overloads 
 
 ```typescript
 new ColorSequence([
-  new ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),
-  new ColorSequenceKeypoint(1, Color3.fromRGB(255, 100, 200)),
+	new ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),
+	new ColorSequenceKeypoint(1, Color3.fromRGB(255, 100, 200)),
 ]);
 
-new NumberSequence([
-  new NumberSequenceKeypoint(0, 0),
-  new NumberSequenceKeypoint(1, 100)
-]);
+new NumberSequence([new NumberSequenceKeypoint(0, 0), new NumberSequenceKeypoint(1, 100)]);
 ```
 
 **✅ Good**
 
 ```typescript
-new ColorSequence(
-  Color3.fromRGB(100, 200, 255),
-  Color3.fromRGB(255, 100, 200)
-);
+new ColorSequence(Color3.fromRGB(100, 200, 255), Color3.fromRGB(255, 100, 200));
 
 new ColorSequence(Color3.fromRGB(255, 255, 255));
 
@@ -946,21 +950,21 @@ In roblox-ts, instance methods create metatable objects with significant perform
 type OnChange = (currentValue: number, previousValue: number) => void;
 
 class MyClass {
-  private readonly onChanges = new Array<OnChange>();
-  private value = 0;
+	private readonly onChanges = new Array<OnChange>();
+	private value = 0;
 
-  public increment(): void {
-    const previousValue = this.value;
-    const value = previousValue + 1;
-    this.value = value;
-    this.notifyChanges(value, previousValue); // Doesn't use this
-  }
+	public increment(): void {
+		const previousValue = this.value;
+		const value = previousValue + 1;
+		this.value = value;
+		this.notifyChanges(value, previousValue); // Doesn't use this
+	}
 
-  private notifyChanges(value: number, previousValue: number): void {
-    for (const onChange of this.onChanges) {
-      onChange(value, previousValue);
-    }
-  }
+	private notifyChanges(value: number, previousValue: number): void {
+		for (const onChange of this.onChanges) {
+			onChange(value, previousValue);
+		}
+	}
 }
 ```
 
@@ -969,26 +973,22 @@ class MyClass {
 ```typescript
 type OnChange = (currentValue: number, previousValue: number) => void;
 
-function notifyChanges(
-  value: number,
-  previousValue: number,
-  onChanges: ReadonlyArray<OnChange>
-): void {
-  for (const onChange of onChanges) {
-    onChange(value, previousValue);
-  }
+function notifyChanges(value: number, previousValue: number, onChanges: ReadonlyArray<OnChange>): void {
+	for (const onChange of onChanges) {
+		onChange(value, previousValue);
+	}
 }
 
 class MyClass {
-  private readonly onChanges = new Array<OnChange>();
-  private value = 0;
+	private readonly onChanges = new Array<OnChange>();
+	private value = 0;
 
-  public increment(): void {
-    const previousValue = this.value;
-    const value = previousValue + 1;
-    this.value = value;
-    notifyChanges(value, previousValue, this.onChanges);
-  }
+	public increment(): void {
+		const previousValue = this.value;
+		const value = previousValue + 1;
+		this.value = value;
+		notifyChanges(value, previousValue, this.onChanges);
+	}
 }
 ```
 
