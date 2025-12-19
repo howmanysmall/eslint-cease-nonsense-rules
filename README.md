@@ -36,6 +36,7 @@ export default [
       "cease-nonsense/require-named-effect-functions": "error",
       "cease-nonsense/require-paired-calls": "error",
       "cease-nonsense/require-react-component-keys": "error",
+      "cease-nonsense/no-god-components": "error",
       "cease-nonsense/no-useless-use-spring": "error",
       "cease-nonsense/use-exhaustive-dependencies": "error",
       "cease-nonsense/use-hook-at-top-level": "error",
@@ -113,6 +114,35 @@ const config = userConfigValidator.check(getUserConfig());
 Bans React.FC and similar component type annotations. Use explicit function declarations instead.
 
 React.FC (Function Component) and related types break debug information in React DevTools, making profiling exponentially harder. They also encourage poor patterns and add unnecessary complexity.
+
+#### `no-god-components`
+
+Flags React components that are too large or doing too much, pushing you toward extracting hooks/components/utilities.
+
+Checks (defaults):
+
+- Component body line count: target `120`, hard max `200`
+- TSX nesting depth ≤ `3`
+- Stateful hooks ≤ `5` (counts `useState`, `useReducer`, `useBinding` by default)
+- Destructured props in parameters ≤ `5`
+- Runtime `null` literals are always banned
+
+**Configuration:**
+
+```typescript
+{
+  "cease-nonsense/no-god-components": ["error", {
+    targetLines: 120,
+    maxLines: 200,
+    maxTsxNesting: 3,
+    maxStateHooks: 5,
+    stateHooks: ["useState", "useReducer", "useBinding"],
+    maxDestructuredProps: 5,
+    enforceTargetLines: true,
+    ignoreComponents: ["LegacyComponent"]
+  }]
+}
+```
 
 **❌ Bad:**
 

@@ -3,6 +3,7 @@ import {
 	createComplexityConfiguration,
 	createEffectFunctionOptions,
 	createHookConfiguration,
+	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
 	createNoShorthandOptions,
 	createNoUselessUseSpringOptions,
@@ -185,6 +186,29 @@ describe("configure-utilities", () => {
 		it("should override defaults", () => {
 			const configuration = createReactKeysOptions({ allowRootKeys: true });
 			expect(configuration.allowRootKeys).toBe(true);
+		});
+	});
+
+	describe("createNoGodComponentsOptions", () => {
+		it("should create options with defaults", () => {
+			const configuration = createNoGodComponentsOptions();
+			expect(configuration).toEqual({
+				enforceTargetLines: true,
+				ignoreComponents: [],
+				maxDestructuredProps: 5,
+				maxLines: 200,
+				maxStateHooks: 5,
+				maxTsxNesting: 3,
+				stateHooks: ["useState", "useReducer", "useBinding"],
+				targetLines: 120,
+			});
+		});
+
+		it("should override defaults", () => {
+			const configuration = createNoGodComponentsOptions({ maxLines: 300, ignoreComponents: ["Big"] });
+			expect(configuration.maxLines).toBe(300);
+			expect(configuration.ignoreComponents).toEqual(["Big"]);
+			expect(configuration.targetLines).toBe(120);
 		});
 	});
 

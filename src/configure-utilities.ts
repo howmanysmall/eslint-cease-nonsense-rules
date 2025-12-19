@@ -2,6 +2,7 @@ import type { BanInstancesOptions } from "./rules/ban-instances";
 import type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
 import type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
 import type { NoShorthandOptions } from "./rules/no-shorthand-names";
+import type { NoGodComponentsOptions } from "./rules/no-god-components";
 import { DEFAULT_STATIC_GLOBAL_FACTORIES, type NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
 import type { EffectFunctionOptions, HookConfiguration } from "./rules/require-named-effect-functions";
 import type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
@@ -135,6 +136,27 @@ export function createReactKeysOptions(options: Partial<ReactKeysOptions> = {}):
 		ignoreCallExpressions: [],
 		iterationMethods: ["map", "forEach", "filter"],
 		memoizationHooks: ["useMemo", "useCallback"],
+		...options,
+	};
+}
+
+/**
+ * Creates options for no-god-components rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNoGodComponentsOptions(
+	options: Partial<NoGodComponentsOptions> = {},
+): NoGodComponentsOptions {
+	return {
+		enforceTargetLines: true,
+		ignoreComponents: [],
+		maxDestructuredProps: 5,
+		maxLines: 200,
+		maxStateHooks: 5,
+		maxTsxNesting: 3,
+		stateHooks: ["useState", "useReducer", "useBinding"],
+		targetLines: 120,
 		...options,
 	};
 }
