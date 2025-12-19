@@ -24,21 +24,25 @@ export default [
 		},
 		rules: {
 			// Enable all rules (recommended)
+			"cease-nonsense/ban-instances": "error",
 			"cease-nonsense/ban-react-fc": "error",
 			"cease-nonsense/enforce-ianitor-check-type": "error",
+			"cease-nonsense/fast-format": "error",
+			"cease-nonsense/no-async-constructor": "error",
 			"cease-nonsense/no-color3-constructor": "error",
+			"cease-nonsense/no-commented-code": "error",
+			"cease-nonsense/no-god-components": "error",
+			"cease-nonsense/no-identity-map": "error",
 			"cease-nonsense/no-instance-methods-without-this": "error",
 			"cease-nonsense/no-print": "error",
 			"cease-nonsense/no-shorthand-names": "error",
+			"cease-nonsense/no-useless-use-spring": "error",
 			"cease-nonsense/no-warn": "error",
 			"cease-nonsense/prefer-sequence-overloads": "error",
 			"cease-nonsense/prefer-udim2-shorthand": "error",
 			"cease-nonsense/require-named-effect-functions": "error",
 			"cease-nonsense/require-paired-calls": "error",
 			"cease-nonsense/require-react-component-keys": "error",
-			"cease-nonsense/no-god-components": "error",
-			"cease-nonsense/no-identity-map": "error",
-			"cease-nonsense/no-useless-use-spring": "error",
 			"cease-nonsense/use-exhaustive-dependencies": "error",
 			"cease-nonsense/use-hook-at-top-level": "error",
 		},
@@ -648,8 +652,8 @@ function test() {
 - `openerAlternatives` (optional, string[]) - Additional opener names that share the same closer. Every name in this array is treated exactly like `opener` (same stack entry, same diagnostics). Handy for APIs like Iris where `Iris.End` closes windows, collapsing headers, etc.
 
 - `closer` (required, string | string[]) - Function name(s) that close the paired operation. Can be:
-    - Single string: `"debug.profileend"` - only this function can close
-    - Array of strings: `["lock.release", "lock.free"]` - ANY of these functions can close (alternatives within closer)
+  - Single string: `"debug.profileend"` - only this function can close
+  - Array of strings: `["lock.release", "lock.free"]` - ANY of these functions can close (alternatives within closer)
 
 - Multiple pair configs can share the same closer. The rule will always pop the most recent opener whose configuration allows that closer, so you can keep separate telemetry per widget/button/etc. while still reusing a single `End()` call.
 
@@ -658,30 +662,30 @@ function test() {
 - `requireSync` (optional, boolean, default: `false`) - When `true`, disallows `await` or `yield` expressions between opener and closer. Reports error if async operations occur within the paired scope.
 
 - `platform` (optional, `"roblox"`) - Enables Roblox-specific behavior:
-    - Auto-detects yielding function calls (configured via `yieldingFunctions`)
-    - When a yielding function is called, ALL open profiles are automatically closed
-    - Subsequent closer calls after yielding will report errors (already closed)
+  - Auto-detects yielding function calls (configured via `yieldingFunctions`)
+  - When a yielding function is called, ALL open profiles are automatically closed
+  - Subsequent closer calls after yielding will report errors (already closed)
 
 - `yieldingFunctions` (optional, string[], only with `platform: "roblox"`) - Custom patterns for Roblox yielding functions. Supports wildcards:
-    - Exact match: `"task.wait"` matches only `task.wait()`
-    - Wildcard method: `"*.WaitForChild"` matches `instance.WaitForChild()`, `player.WaitForChild()`, etc.
-    - Default: `["task.wait", "wait", "*.WaitForChild"]`
+  - Exact match: `"task.wait"` matches only `task.wait()`
+  - Wildcard method: `"*.WaitForChild"` matches `instance.WaitForChild()`, `player.WaitForChild()`, etc.
+  - Default: `["task.wait", "wait", "*.WaitForChild"]`
 
 **Top-Level Options:**
 
 - `pairs` (required, array) - Array of pair configurations to enforce. Rule checks all configured pairs simultaneously.
 
 - `allowConditionalClosers` (optional, boolean, default: `false`) - Controls whether closers must be called on ALL execution paths:
-    - `false` (strict): Requires closer on every path (if/else both branches, all switch cases, etc.)
-    - `true` (permissive): Allows closers in some but not all branches
+  - `false` (strict): Requires closer on every path (if/else both branches, all switch cases, etc.)
+  - `true` (permissive): Allows closers in some but not all branches
 
 - `allowMultipleOpeners` (optional, boolean, default: `true`) - Controls consecutive opener calls:
-    - `true`: Allows multiple opener calls before closers (nesting)
-    - `false`: Reports error if opener is called again before closer
+  - `true`: Allows multiple opener calls before closers (nesting)
+  - `false`: Reports error if opener is called again before closer
 
 - `maxNestingDepth` (optional, number, default: `0`) - Maximum nesting depth for paired calls:
-    - `0`: Unlimited nesting
-    - `> 0`: Reports error if nesting exceeds this depth
+  - `0`: Unlimited nesting
+  - `> 0`: Reports error if nesting exceeds this depth
 
 **Default configuration (Roblox profiling):**
 
@@ -758,6 +762,165 @@ function test() {
 - Any begin/end API pattern
 
 ### Code Quality
+
+#### `ban-instances`
+
+Bans specified Roblox Instance classes in `new Instance()` calls and JSX elements. Configure which classes to ban with optional custom messages.
+
+**❌ Bad:**
+
+```typescript
+// With config: { bannedInstances: ["Part", "Script"] }
+const part = new Instance("Part");
+const script = new Instance("Script");
+
+// JSX (lowercase = Roblox Instance)
+<part Size={new Vector3(1, 1, 1)} />
+```
+
+**✅ Good:**
+
+```typescript
+const meshPart = new Instance("MeshPart");
+<meshpart Size={new Vector3(1, 1, 1)} />
+```
+
+**Configuration:**
+
+```typescript
+{
+  // Array format (default message)
+  "cease-nonsense/ban-instances": ["error", {
+    "bannedInstances": ["Part", "Script", "LocalScript"]
+  }]
+
+  // Object format (custom messages)
+  "cease-nonsense/ban-instances": ["error", {
+    "bannedInstances": {
+      "Part": "Use MeshPart instead for better performance",
+      "Script": "Scripts should not be created at runtime"
+    }
+  }]
+}
+```
+
+#### `fast-format`
+
+##### ✨ Has auto-fix
+
+Enforces oxfmt code formatting. Reports INSERT, DELETE, and REPLACE operations for formatting differences.
+
+This rule uses an LRU cache to avoid re-formatting unchanged files.
+
+#### `no-async-constructor`
+
+Disallows asynchronous operations inside class constructors. Constructors return immediately, so async work causes race conditions, unhandled rejections, and incomplete object states.
+
+**Detected violations:**
+
+- `await` expressions
+- Promise chains (`.then()`, `.catch()`, `.finally()`)
+- Async IIFEs (`(async () => {})()`)
+- Unhandled async method calls (`this.asyncMethod()`)
+- Orphaned promises (`const p = this.asyncMethod()`)
+
+**❌ Bad:**
+
+```typescript
+class UserService {
+	constructor() {
+		// Direct await
+		await this.initialize();
+
+		// Promise chain
+		this.loadData().then((data) => (this.data = data));
+
+		// Async IIFE
+		(async () => {
+			await this.setup();
+		})();
+
+		// Unhandled async method call
+		this.fetchUser();
+
+		// Orphaned promise
+		const promise = this.loadConfig();
+	}
+
+	async initialize() {
+		/* ... */
+	}
+	async loadData() {
+		/* ... */
+	}
+	async setup() {
+		/* ... */
+	}
+	async fetchUser() {
+		/* ... */
+	}
+	async loadConfig() {
+		/* ... */
+	}
+}
+```
+
+**✅ Good:**
+
+```typescript
+class UserService {
+	private initPromise: Promise<void>;
+
+	constructor() {
+		// Store promise for external handling
+		this.initPromise = this.initialize();
+	}
+
+	async initialize() {
+		/* ... */
+	}
+
+	// Factory pattern
+	static async create(): Promise<UserService> {
+		const service = new UserService();
+		await service.initPromise;
+		return service;
+	}
+}
+```
+
+#### `no-commented-code`
+
+##### 💡 Has suggestions
+
+Detects and reports commented-out code. Groups adjacent line comments and block comments for analysis.
+
+Uses heuristic detection combined with actual parsing to minimize false positives.
+
+**❌ Bad:**
+
+```typescript
+function calculate(x: number) {
+	// const result = x * 2;
+	// return result;
+
+	/* if (x > 10) {
+    return x;
+  } */
+
+	return x + 1;
+}
+```
+
+**✅ Good:**
+
+```typescript
+function calculate(x: number) {
+	// TODO: Consider multiplying by 2 instead
+	// Note: This is a simplified version
+	return x + 1;
+}
+```
 
 #### `no-color3-constructor`
 
