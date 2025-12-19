@@ -37,6 +37,7 @@ export default [
       "cease-nonsense/require-paired-calls": "error",
       "cease-nonsense/require-react-component-keys": "error",
       "cease-nonsense/no-god-components": "error",
+      "cease-nonsense/no-identity-map": "error",
       "cease-nonsense/no-useless-use-spring": "error",
       "cease-nonsense/use-exhaustive-dependencies": "error",
       "cease-nonsense/use-hook-at-top-level": "error",
@@ -883,6 +884,57 @@ class MyClass {
     "checkPrivate": true,       // Check private methods (default: true)
     "checkProtected": true,     // Check protected methods (default: true)
     "checkPublic": true         // Check public methods (default: true)
+  }]
+}
+```
+
+#### `no-identity-map`
+
+Bans pointless identity `.map()` calls that return the parameter unchanged. These are wasteful operations that do nothing.
+
+##### ✨ Has auto-fix
+
+**❌ Bad:**
+
+```typescript
+// Bindings - pointless identity map
+const result = scaleBinding.map((value) => value);
+const transparency = shadowTransparencyBinding.map((trans: number) => {
+  return trans;
+});
+
+// Arrays - pointless shallow copy via identity map
+const copied = items.map((item) => item);
+const data = array.map((x: number) => x);
+```
+
+**✅ Good:**
+
+```typescript
+// Bindings - use directly
+const result = scaleBinding;
+const transparency = shadowTransparencyBinding;
+
+// Arrays - use table.clone or spread for intentional copies
+const copied = table.clone(items);
+const copied2 = [...items];
+
+// Actual transformations are fine
+const doubled = items.map((x) => x * 2);
+const names = users.map((user) => user.name);
+```
+
+**Context-aware messages:**
+
+- For Bindings (detected via name containing "binding", `useBinding()`, `joinBindings()`, or chained `.map()`): Suggests using the original binding directly
+- For Arrays: Suggests using `table.clone(array)` or `[...array]` instead
+
+**Configuration:**
+
+```typescript
+{
+  "cease-nonsense/no-identity-map": ["error", {
+    "bindingPatterns": ["binding"]  // Case-insensitive name patterns for Binding detection
   }]
 }
 ```
