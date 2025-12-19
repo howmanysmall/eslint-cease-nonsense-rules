@@ -1,6 +1,6 @@
 import { describe } from "bun:test";
+import rule from "@rules/require-paired-calls";
 import { RuleTester } from "eslint";
-import rule from "../../src/rules/require-paired-calls";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

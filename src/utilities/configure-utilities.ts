@@ -1,15 +1,15 @@
-import type { BanInstancesOptions } from "./rules/ban-instances";
-import type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
-import type { NoGodComponentsOptions } from "./rules/no-god-components";
-import type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
-import type { NoShorthandOptions } from "./rules/no-shorthand-names";
-import type { NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
-import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "./rules/no-useless-use-spring";
-import type { EffectFunctionOptions, HookConfiguration } from "./rules/require-named-effect-functions";
-import type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
-import type { ReactKeysOptions } from "./rules/require-react-component-keys";
-import type { UseExhaustiveDependenciesOptions } from "./rules/use-exhaustive-dependencies";
-import type { UseHookAtTopLevelOptions } from "./rules/use-hook-at-top-level";
+import type { BanInstancesOptions } from "@rules/ban-instances";
+import type { ComplexityConfiguration } from "@rules/enforce-ianitor-check-type";
+import type { NoGodComponentsOptions } from "@rules/no-god-components";
+import type { NoInstanceMethodsOptions } from "@rules/no-instance-methods-without-this";
+import type { NoShorthandOptions } from "@rules/no-shorthand-names";
+import type { NoUselessUseSpringOptions } from "@rules/no-useless-use-spring";
+import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "@rules/no-useless-use-spring";
+import type { EffectFunctionOptions, HookConfiguration } from "@rules/require-named-effect-functions";
+import type { PairConfiguration, RequirePairedCallsOptions } from "@rules/require-paired-calls";
+import type { ReactKeysOptions } from "@rules/require-react-component-keys";
+import type { UseExhaustiveDependenciesOptions } from "@rules/use-exhaustive-dependencies";
+import type { UseHookAtTopLevelOptions } from "@rules/use-hook-at-top-level";
 
 /**
  * Creates a pair configuration for require-paired-calls rule

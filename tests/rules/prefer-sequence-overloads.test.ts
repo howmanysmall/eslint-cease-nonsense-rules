@@ -1,6 +1,6 @@
 import { describe } from "bun:test";
+import rule from "@rules/prefer-sequence-overloads";
 import { RuleTester } from "eslint";
-import rule from "../../src/rules/prefer-sequence-overloads";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

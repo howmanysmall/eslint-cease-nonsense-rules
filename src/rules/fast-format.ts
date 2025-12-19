@@ -1,11 +1,11 @@
-import type { Rule, SourceCode } from "eslint";
-import type { Difference } from "../utilities/format-utilities";
+import type { Difference } from "@utilities/format-utilities";
 import {
 	formatWithOxfmtSync as formatWithOxfmt,
 	generateDifferences,
 	getExtension,
 	showInvisibles,
-} from "../utilities/format-utilities";
+} from "@utilities/format-utilities";
+import type { Rule, SourceCode } from "eslint";
 
 const INSERT = "INSERT";
 const DELETE = "DELETE";

@@ -1,7 +1,7 @@
 import { describe } from "bun:test";
+import rule from "@rules/no-identity-map";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-import rule from "../../src/rules/no-identity-map";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

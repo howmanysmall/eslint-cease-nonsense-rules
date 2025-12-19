@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
+import rule, { createFastFormatRule, createFormatCache, getLocFromIndex } from "@rules/fast-format";
+import { generateDifferences, showInvisibles } from "@utilities/format-utilities";
 import { RuleTester } from "eslint";
-import rule, { createFastFormatRule, createFormatCache, getLocFromIndex } from "../../src/rules/fast-format";
-import { generateDifferences, showInvisibles } from "../../src/utilities/format-utilities";
 
 const languageOptions = {
 	ecmaVersion: 2022,

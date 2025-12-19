@@ -1,8 +1,8 @@
-import { createCamelCaseDetector } from "./camel-case-detector";
-import { createContainsDetector } from "./contains-detector";
-import type { Detector } from "./detector";
-import { createEndWithDetector } from "./end-with-detector";
-import { createKeywordsDetector } from "./keywords-detector";
+import { createCamelCaseDetector } from "@recognizers/camel-case-detector";
+import { createContainsDetector } from "@recognizers/contains-detector";
+import type { Detector } from "@recognizers/detector";
+import { createEndWithDetector } from "@recognizers/end-with-detector";
+import { createKeywordsDetector } from "@recognizers/keywords-detector";
 
 const JS_KEYWORDS = [
 	"public",
@@ -63,7 +63,7 @@ const LINE_ENDINGS = ["}", ";", "{"] as const;
  *
  * @returns Array of configured detectors
  */
-function createJavaScriptDetectors(): ReadonlyArray<Detector> {
+export function createJavaScriptDetectors(): ReadonlyArray<Detector> {
 	return [
 		createEndWithDetector(0.95, LINE_ENDINGS),
 		createKeywordsDetector(0.7, OPERATORS),
@@ -72,5 +72,3 @@ function createJavaScriptDetectors(): ReadonlyArray<Detector> {
 		createCamelCaseDetector(0.5),
 	];
 }
-
-export { createJavaScriptDetectors };

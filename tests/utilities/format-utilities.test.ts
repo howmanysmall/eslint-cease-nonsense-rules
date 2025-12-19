@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { __testing } from "../../src/utilities/format-utilities";
+import { __testing } from "@utilities/format-utilities";
 
 describe("format-utilities", () => {
 	it("should load the same configuration", () => {
