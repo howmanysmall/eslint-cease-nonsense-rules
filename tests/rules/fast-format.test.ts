@@ -157,12 +157,9 @@ describe("fast-format", () => {
 
 describe("resolveOxfmtPath", () => {
 	it("falls back when the resolver throws", () => {
-		const path = resolveOxfmtPath(
-			() => {
-				throw new Error("no resolver");
-			},
-			true,
-		);
+		const path = resolveOxfmtPath(() => {
+			throw new Error("no resolver");
+		}, true);
 		expect(path).toBe("oxfmt");
 	});
 });

@@ -1,5 +1,5 @@
 import { TSESTree } from "@typescript-eslint/types";
-import type { TSESLint } from "@typescript-eslint/utils";
+import { ESLintUtils, type TSESLint } from "@typescript-eslint/utils";
 
 export interface ComplexityConfiguration {
 	readonly baseThreshold: number;
@@ -27,11 +27,8 @@ const SHOULD_NOT_NOT_RETURN_TYPE = new Set<string>([
 	TSESTree.AST_NODE_TYPES.FunctionExpression,
 ]);
 
-type MessageIds = "complexInterfaceNeedsCheck" | "missingIanitorCheckType";
-type Options = [Partial<ComplexityConfiguration>];
-
-interface RuleDocs extends TSESLint.RuleMetaDataDocs {
-	readonly recommended?: boolean;
+function hasTypeAnnotationProperty(node: object): node is { typeAnnotation: unknown } {
+	return "typeAnnotation" in node;
 }
 
 function hasTypeAnnotation(node: { type: string; id?: unknown; returnType?: unknown }): boolean {
@@ -39,7 +36,7 @@ function hasTypeAnnotation(node: { type: string; id?: unknown; returnType?: unkn
 		node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
 		node.id &&
 		typeof node.id === "object" &&
-		"typeAnnotation" in node.id
+		hasTypeAnnotationProperty(node.id)
 	)
 		return !!node.id.typeAnnotation;
 
@@ -141,7 +138,7 @@ function calculateIanitorComplexity(node: {
 		case "strictInterface": {
 			const properties = node.arguments?.[0];
 			return properties?.type === TSESTree.AST_NODE_TYPES.ObjectExpression
-				? 10 + (properties.properties?.length || 0) * 3
+				? 10 + (properties.properties?.length ?? 0) * 3
 				: 0;
 		}
 
@@ -157,7 +154,7 @@ function calculateIanitorComplexity(node: {
 
 		case "union":
 		case "intersection":
-			return (node.arguments?.length || 0) * 2;
+			return (node.arguments?.length ?? 0) * 2;
 
 		case "string":
 		case "number":
@@ -169,7 +166,14 @@ function calculateIanitorComplexity(node: {
 	}
 }
 
-const enforceIanitorCheckType: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocs> = {
+type MessageIds = "complexInterfaceNeedsCheck" | "missingIanitorCheckType";
+type Options = [Partial<ComplexityConfiguration>];
+
+const createRule = ESLintUtils.RuleCreator(
+	(name) => `https://github.com/howmanysmall/eslint-cease-nonsense-rules/blob/main/docs/rules/${name}.md`,
+);
+
+const enforceIanitorCheckType = createRule<Options, MessageIds>({
 	create(context) {
 		const [rawOptions] = context.options;
 		const config: ComplexityConfiguration = { ...DEFAULT_CONFIGURATION, ...rawOptions };
@@ -345,36 +349,36 @@ const enforceIanitorCheckType: TSESLint.RuleModuleWithMetaDocs<MessageIds, Optio
 			return score;
 		}
 
-			const variableDeclaratorsToCheck = new Map<TSESTree.VariableDeclarator, { complexity: number }>();
+		const variableDeclaratorsToCheck = new Map<TSESTree.VariableDeclarator, { complexity: number }>();
 
-			return {
-				"Program:exit"() {
-					for (const [node, data] of variableDeclaratorsToCheck.entries()) {
-						if (node.id.type === TSESTree.AST_NODE_TYPES.Identifier && ianitorStaticVariables.has(node.id.name))
-							continue;
+		return {
+			"Program:exit"(): void {
+				for (const [node, data] of variableDeclaratorsToCheck.entries()) {
+					if (node.id.type === TSESTree.AST_NODE_TYPES.Identifier && ianitorStaticVariables.has(node.id.name))
+						continue;
 
-						context.report({
-							data: { score: data.complexity.toFixed(1) },
+					context.report({
+						data: { score: data.complexity.toFixed(1) },
 						messageId: "missingIanitorCheckType",
 						node: node.id,
 					});
 				}
 			},
 
-				TSInterfaceDeclaration(node: TSESTree.TSInterfaceDeclaration) {
-					const complexity = calculateStructuralComplexity(node);
-					const name = getTypeName(node);
+			TSInterfaceDeclaration(node): void {
+				const complexity = calculateStructuralComplexity(node);
+				const name = getTypeName(node);
 
 				if (complexity >= config.interfacePenalty) {
 					context.report({
-						data: { name: name || "unknown" },
+						data: { name: name ?? "unknown" },
 						messageId: "complexInterfaceNeedsCheck",
 						node,
 					});
 				}
 			},
 
-			TSTypeAliasDeclaration(node: TSESTree.TSTypeAliasDeclaration) {
+			TSTypeAliasDeclaration(node): void {
 				const variableName = extractIanitorStaticVariable(node.typeAnnotation);
 				if (variableName) ianitorStaticVariables.add(variableName);
 				if (hasIanitorStaticType(node.typeAnnotation)) return;
@@ -389,10 +393,10 @@ const enforceIanitorCheckType: TSESLint.RuleModuleWithMetaDocs<MessageIds, Optio
 				});
 			},
 
-				VariableDeclarator(node: TSESTree.VariableDeclarator) {
-					if (!node.init || node.init.type !== TSESTree.AST_NODE_TYPES.CallExpression) return;
-					if (!isIanitorValidator(node.init)) return;
-					if (hasTypeAnnotation(node)) return;
+			VariableDeclarator(node): void {
+				if (!node.init || node.init.type !== TSESTree.AST_NODE_TYPES.CallExpression) return;
+				if (!isIanitorValidator(node.init)) return;
+				if (hasTypeAnnotation(node)) return;
 
 				const complexity = calculateIanitorComplexity(node.init);
 				if (complexity < config.baseThreshold) return;
@@ -401,11 +405,10 @@ const enforceIanitorCheckType: TSESLint.RuleModuleWithMetaDocs<MessageIds, Optio
 			},
 		};
 	},
-	defaultOptions: [{}],
+	defaultOptions: [DEFAULT_CONFIGURATION],
 	meta: {
 		docs: {
 			description: "Enforce Ianitor.Check<T> type annotations on complex TypeScript types",
-			recommended: false,
 		},
 		messages: {
 			complexInterfaceNeedsCheck:
@@ -428,6 +431,7 @@ const enforceIanitorCheckType: TSESLint.RuleModuleWithMetaDocs<MessageIds, Optio
 		],
 		type: "problem",
 	},
-};
+	name: "enforce-ianitor-check-type",
+});
 
-export default enforceIanitorCheckType;
+export default enforceIanitorCheckType as unknown as TSESLint.AnyRuleModuleWithMetaDocs;

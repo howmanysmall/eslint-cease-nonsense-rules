@@ -18,34 +18,35 @@ Add to your ESLint config:
 import ceaseNonsense from "@pobammer-ts/eslint-cease-nonsense-rules";
 
 export default [
-  {
-    plugins: {
-      "cease-nonsense": ceaseNonsense,
-    },
-    rules: {
-      // Enable all rules (recommended)
-      "cease-nonsense/ban-react-fc": "error",
-      "cease-nonsense/enforce-ianitor-check-type": "error",
-      "cease-nonsense/no-color3-constructor": "error",
-      "cease-nonsense/no-instance-methods-without-this": "error",
-      "cease-nonsense/no-print": "error",
-      "cease-nonsense/no-shorthand-names": "error",
-      "cease-nonsense/no-warn": "error",
-      "cease-nonsense/prefer-sequence-overloads": "error",
-      "cease-nonsense/prefer-udim2-shorthand": "error",
-      "cease-nonsense/require-named-effect-functions": "error",
-      "cease-nonsense/require-paired-calls": "error",
-      "cease-nonsense/require-react-component-keys": "error",
-      "cease-nonsense/use-exhaustive-dependencies": "error",
-      "cease-nonsense/use-hook-at-top-level": "error",
-    },
-  },
+	{
+		plugins: {
+			"cease-nonsense": ceaseNonsense,
+		},
+		rules: {
+			// Enable all rules (recommended)
+			"cease-nonsense/ban-react-fc": "error",
+			"cease-nonsense/enforce-ianitor-check-type": "error",
+			"cease-nonsense/no-color3-constructor": "error",
+			"cease-nonsense/no-instance-methods-without-this": "error",
+			"cease-nonsense/no-print": "error",
+			"cease-nonsense/no-shorthand-names": "error",
+			"cease-nonsense/no-warn": "error",
+			"cease-nonsense/prefer-sequence-overloads": "error",
+			"cease-nonsense/prefer-udim2-shorthand": "error",
+			"cease-nonsense/require-named-effect-functions": "error",
+			"cease-nonsense/require-paired-calls": "error",
+			"cease-nonsense/require-react-component-keys": "error",
+			"cease-nonsense/no-god-components": "error",
+			"cease-nonsense/no-identity-map": "error",
+			"cease-nonsense/no-useless-use-spring": "error",
+			"cease-nonsense/use-exhaustive-dependencies": "error",
+			"cease-nonsense/use-hook-at-top-level": "error",
+		},
+	},
 ];
 
 // Or just include the preset
-export default [
-  ceaseNonsense.configs.recommended,
-];
+export default [ceaseNonsense.configs.recommended];
 ```
 
 ## Rules
@@ -63,12 +64,12 @@ Calculates structural complexity of types and requires Ianitor validators when c
 ```typescript
 // Complex type without runtime validation
 type UserConfig = {
-  id: number;
-  name: string;
-  settings: {
-    theme: string;
-    notifications: boolean;
-  };
+	id: number;
+	name: string;
+	settings: {
+		theme: string;
+		notifications: boolean;
+	};
 };
 
 const config = getUserConfig(); // No runtime check!
@@ -78,12 +79,12 @@ const config = getUserConfig(); // No runtime check!
 
 ```typescript
 const userConfigValidator = Ianitor.interface({
-  id: Ianitor.number(),
-  name: Ianitor.string(),
-  settings: Ianitor.interface({
-    theme: Ianitor.string(),
-    notifications: Ianitor.boolean(),
-  }),
+	id: Ianitor.number(),
+	name: Ianitor.string(),
+	settings: Ianitor.interface({
+		theme: Ianitor.string(),
+		notifications: Ianitor.boolean(),
+	}),
 });
 
 type UserConfig = Ianitor.Static<typeof userConfigValidator>;
@@ -112,6 +113,35 @@ const config = userConfigValidator.check(getUserConfig());
 Bans React.FC and similar component type annotations. Use explicit function declarations instead.
 
 React.FC (Function Component) and related types break debug information in React DevTools, making profiling exponentially harder. They also encourage poor patterns and add unnecessary complexity.
+
+#### `no-god-components`
+
+Flags React components that are too large or doing too much, pushing you toward extracting hooks/components/utilities.
+
+Checks (defaults):
+
+- Component body line count: target `120`, hard max `200`
+- TSX nesting depth ≤ `3`
+- Stateful hooks ≤ `5` (counts `useState`, `useReducer`, `useBinding` by default)
+- Destructured props in parameters ≤ `5`
+- Runtime `null` literals are always banned
+
+**Configuration:**
+
+```typescript
+{
+  "cease-nonsense/no-god-components": ["error", {
+    targetLines: 120,
+    maxLines: 200,
+    maxTsxNesting: 3,
+    maxStateHooks: 5,
+    stateHooks: ["useState", "useReducer", "useBinding"],
+    maxDestructuredProps: 5,
+    enforceTargetLines: true,
+    ignoreComponents: ["LegacyComponent"]
+  }]
+}
+```
 
 **❌ Bad:**
 
@@ -181,13 +211,16 @@ Default hooks checked: `useEffect`, `useLayoutEffect`, `useInsertionEffect`.
 ```typescript
 // Arrow function
 useEffect(() => {
-  doThing();
+	doThing();
 }, [dep]);
 
 // Anonymous function expression
-useEffect(function () {
-  doThing();
-}, [dep]);
+useEffect(
+	function () {
+		doThing();
+	},
+	[dep],
+);
 ```
 
 **✅ Good:**
@@ -195,14 +228,17 @@ useEffect(function () {
 ```typescript
 // Preferred: reference a named function
 function onDepChange() {
-  doThing();
+	doThing();
 }
 useEffect(onDepChange, [dep]);
 
 // Allowed in `standard` mode
-useEffect(function onDepChange() {
-  doThing();
-}, [dep]);
+useEffect(
+	function onDepChange() {
+		doThing();
+	},
+	[dep],
+);
 ```
 
 **Configuration:**
@@ -249,11 +285,38 @@ Enforces exhaustive and correct dependency specification in React hooks to preve
 
 ```typescript
 function UserProfile({ userId }) {
-  const [user, setUser] = useState(null);
+	const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    fetchUser(userId).then(setUser);
-  }, []); // Missing userId dependency!
+	useEffect(() => {
+		fetchUser(userId).then(setUser);
+	}, []); // Missing userId dependency!
+}
+```
+
+#### `no-useless-use-spring`
+
+Flags `useSpring`-style hooks that never change (static config plus non-updating deps). Defaults: `springHooks: ["useSpring"]`, `treatEmptyDepsAsViolation: true`.
+
+**❌ Bad:**
+
+```typescript
+const spring = useSpring({ opacity: 1 }, []);
+```
+
+**✅ Good:**
+
+```typescript
+const spring = useSpring({ opacity: isOpen ? 1 : 0 }, [isOpen]);
+```
+
+**Configuration:**
+
+```typescript
+{
+  "cease-nonsense/no-useless-use-spring": ["error", {
+    "springHooks": ["useSpring", "useMotion"],
+    "treatEmptyDepsAsViolation": true
+  }]
 }
 ```
 
@@ -261,11 +324,11 @@ function UserProfile({ userId }) {
 
 ```typescript
 function UserProfile({ userId }) {
-  const [user, setUser] = useState(null);
+	const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    fetchUser(userId).then(setUser);
-  }, [userId]);
+	useEffect(() => {
+		fetchUser(userId).then(setUser);
+	}, [userId]);
 }
 ```
 
@@ -296,11 +359,12 @@ Enforces that React hooks are only called at the top level of components or cust
 
 ```typescript
 function UserProfile({ userId }) {
-  if (userId) {
-    useEffect(() => {  // Hook in conditional!
-      fetchUser(userId);
-    }, [userId]);
-  }
+	if (userId) {
+		useEffect(() => {
+			// Hook in conditional!
+			fetchUser(userId);
+		}, [userId]);
+	}
 }
 ```
 
@@ -308,11 +372,11 @@ function UserProfile({ userId }) {
 
 ```typescript
 function UserProfile({ userId }) {
-  useEffect(() => {
-    if (userId) {
-      fetchUser(userId);
-    }
-  }, [userId]);
+	useEffect(() => {
+		if (userId) {
+			fetchUser(userId);
+		}
+	}, [userId]);
 }
 ```
 
@@ -323,13 +387,13 @@ function UserProfile({ userId }) {
   "cease-nonsense/use-hook-at-top-level": ["error", {
     // Strategy 1: Ignore hooks by name
     "ignoreHooks": ["useEntity", "useComponent"],
-    
+
     // Strategy 2: Control by import source (handles naming conflicts)
     "importSources": {
       "react": true,           // Check hooks from React
       "my-ecs-library": false  // Ignore ECS hooks
     },
-    
+
     // Strategy 3: Whitelist mode (only check these hooks)
     "onlyHooks": ["useState", "useEffect", "useContext"]
   }]
@@ -341,28 +405,28 @@ function UserProfile({ userId }) {
 ```typescript
 // Ignore ECS hooks: { "ignoreHooks": ["useEntity"] }
 function Component() {
-  if (condition) {
-    useEntity(0);  // ✅ Ignored
-  }
-  useState(0);     // ❌ Error - still checked
+	if (condition) {
+		useEntity(0); // ✅ Ignored
+	}
+	useState(0); // ❌ Error - still checked
 }
 
 // Handle naming conflicts: { "importSources": { "react": true, "my-ecs": false } }
-import { useState } from 'react';
-import { useState as useEcsState } from 'my-ecs';
+import { useState } from "react";
+import { useState as useEcsState } from "my-ecs";
 function Component() {
-  if (condition) {
-    useState(0);      // ❌ Error - React hook checked
-    useEcsState(0);   // ✅ Ignored - ECS hook ignored
-  }
+	if (condition) {
+		useState(0); // ❌ Error - React hook checked
+		useEcsState(0); // ✅ Ignored - ECS hook ignored
+	}
 }
 
 // Whitelist: { "onlyHooks": ["useState"] }
 function Component() {
-  if (condition) {
-    useState(0);   // ❌ Error - in whitelist
-    useEffect(f);  // ✅ Ignored - not in whitelist
-  }
+	if (condition) {
+		useState(0); // ❌ Error - in whitelist
+		useEffect(f); // ✅ Ignored - not in whitelist
+	}
 }
 ```
 
@@ -419,67 +483,67 @@ Enforces that paired function calls (opener/closer) are properly balanced across
 ```typescript
 // Missing closer on early return
 function test() {
-  debug.profilebegin("task");
-  if (error) return; // profilebegin never closed on this path
-  debug.profileend();
+	debug.profilebegin("task");
+	if (error) return; // profilebegin never closed on this path
+	debug.profileend();
 }
 
 // Unpaired closer (no matching opener)
 function test() {
-  doWork();
-  debug.profileend(); // No matching profilebegin
+	doWork();
+	debug.profileend(); // No matching profilebegin
 }
 
 // Wrong LIFO order
 function test() {
-  debug.profilebegin("outer");
-  debug.profilebegin("inner");
-  debug.profileend(); // closes inner
-  // outer is never closed
+	debug.profilebegin("outer");
+	debug.profilebegin("inner");
+	debug.profileend(); // closes inner
+	// outer is never closed
 }
 
 // Async operation with requireSync: true
 async function test() {
-  debug.profilebegin("task");
-  await fetch("/api"); // Cannot await between profilebegin/end
-  debug.profileend();
+	debug.profilebegin("task");
+	await fetch("/api"); // Cannot await between profilebegin/end
+	debug.profileend();
 }
 
 // Roblox yielding function auto-closes
 function test() {
-  debug.profilebegin("task");
-  task.wait(1); // Auto-closes all profiles
-  debug.profileend(); // This will error - already closed
+	debug.profilebegin("task");
+	task.wait(1); // Auto-closes all profiles
+	debug.profileend(); // This will error - already closed
 }
 
 // Conditional branch missing closer
 function test() {
-  debug.profilebegin("task");
-  if (condition) {
-    debug.profileend();
-  } else {
-    return; // Missing closer on this path
-  }
+	debug.profilebegin("task");
+	if (condition) {
+		debug.profileend();
+	} else {
+		return; // Missing closer on this path
+	}
 }
 
 // Break/continue skip closer
 function test() {
-  debug.profilebegin("loop");
-  for (const item of items) {
-    if (item.stop) break; // Skips closer
-  }
-  debug.profileend();
+	debug.profilebegin("loop");
+	for (const item of items) {
+		if (item.stop) break; // Skips closer
+	}
+	debug.profileend();
 }
 
 // Contextual error: empty stack
 function test() {
-  Iris.End(); // Error: Unexpected call to 'Iris.End' - no matching opener on stack
+	Iris.End(); // Error: Unexpected call to 'Iris.End' - no matching opener on stack
 }
 
 // Contextual error: wrong closer
 function test() {
-  Iris.CollapsingHeader(["Units"]);
-  debug.profileend(); // Error: Unexpected call to 'debug.profileend' - expected one of: Iris.End
+	Iris.CollapsingHeader(["Units"]);
+	debug.profileend(); // Error: Unexpected call to 'debug.profileend' - expected one of: Iris.End
 }
 ```
 
@@ -488,67 +552,67 @@ function test() {
 ```typescript
 // Simple pairing
 function test() {
-  debug.profilebegin("task");
-  doWork();
-  debug.profileend();
+	debug.profilebegin("task");
+	doWork();
+	debug.profileend();
 }
 
 // Proper LIFO nesting
 function test() {
-  debug.profilebegin("outer");
-  debug.profilebegin("inner");
-  debug.profileend(); // closes inner
-  debug.profileend(); // closes outer
+	debug.profilebegin("outer");
+	debug.profilebegin("inner");
+	debug.profileend(); // closes inner
+	debug.profileend(); // closes outer
 }
 
 // Try-finally ensures closer on all paths
 function test() {
-  debug.profilebegin("task");
-  try {
-    riskyOperation();
-  } finally {
-    debug.profileend();
-  }
+	debug.profilebegin("task");
+	try {
+		riskyOperation();
+	} finally {
+		debug.profileend();
+	}
 }
 
 // Try-catch with alternative closers
 function test() {
-  db.transaction();
-  try {
-    db.users.insert({ name: "test" });
-    db.commit(); // Normal closer
-  } catch (err) {
-    db.rollback(); // Alternative closer
-    throw err;
-  }
+	db.transaction();
+	try {
+		db.users.insert({ name: "test" });
+		db.commit(); // Normal closer
+	} catch (err) {
+		db.rollback(); // Alternative closer
+		throw err;
+	}
 }
 
 // Closer in all branches
 function test() {
-  debug.profilebegin("task");
-  if (condition) {
-    debug.profileend();
-  } else {
-    debug.profileend();
-  }
+	debug.profilebegin("task");
+	if (condition) {
+		debug.profileend();
+	} else {
+		debug.profileend();
+	}
 }
 
 // Pairs inside loop iterations (not across)
 function test() {
-  for (const item of items) {
-    debug.profilebegin("item");
-    process(item);
-    debug.profileend();
-  }
+	for (const item of items) {
+		debug.profilebegin("item");
+		process(item);
+		debug.profileend();
+	}
 }
 
 // Multiple closers with requireAll
 function test() {
-  resource.init();
-  resource.setup();
-  // Both cleanup1 and cleanup2 must be called
-  resource.cleanup1();
-  resource.cleanup2();
+	resource.init();
+	resource.setup();
+	// Both cleanup1 and cleanup2 must be called
+	resource.cleanup1();
+	resource.cleanup2();
 }
 ```
 
@@ -584,8 +648,8 @@ function test() {
 - `openerAlternatives` (optional, string[]) - Additional opener names that share the same closer. Every name in this array is treated exactly like `opener` (same stack entry, same diagnostics). Handy for APIs like Iris where `Iris.End` closes windows, collapsing headers, etc.
 
 - `closer` (required, string | string[]) - Function name(s) that close the paired operation. Can be:
-  - Single string: `"debug.profileend"` - only this function can close
-  - Array of strings: `["lock.release", "lock.free"]` - ANY of these functions can close (alternatives within closer)
+    - Single string: `"debug.profileend"` - only this function can close
+    - Array of strings: `["lock.release", "lock.free"]` - ANY of these functions can close (alternatives within closer)
 
 - Multiple pair configs can share the same closer. The rule will always pop the most recent opener whose configuration allows that closer, so you can keep separate telemetry per widget/button/etc. while still reusing a single `End()` call.
 
@@ -594,30 +658,30 @@ function test() {
 - `requireSync` (optional, boolean, default: `false`) - When `true`, disallows `await` or `yield` expressions between opener and closer. Reports error if async operations occur within the paired scope.
 
 - `platform` (optional, `"roblox"`) - Enables Roblox-specific behavior:
-  - Auto-detects yielding function calls (configured via `yieldingFunctions`)
-  - When a yielding function is called, ALL open profiles are automatically closed
-  - Subsequent closer calls after yielding will report errors (already closed)
+    - Auto-detects yielding function calls (configured via `yieldingFunctions`)
+    - When a yielding function is called, ALL open profiles are automatically closed
+    - Subsequent closer calls after yielding will report errors (already closed)
 
 - `yieldingFunctions` (optional, string[], only with `platform: "roblox"`) - Custom patterns for Roblox yielding functions. Supports wildcards:
-  - Exact match: `"task.wait"` matches only `task.wait()`
-  - Wildcard method: `"*.WaitForChild"` matches `instance.WaitForChild()`, `player.WaitForChild()`, etc.
-  - Default: `["task.wait", "wait", "*.WaitForChild"]`
+    - Exact match: `"task.wait"` matches only `task.wait()`
+    - Wildcard method: `"*.WaitForChild"` matches `instance.WaitForChild()`, `player.WaitForChild()`, etc.
+    - Default: `["task.wait", "wait", "*.WaitForChild"]`
 
 **Top-Level Options:**
 
 - `pairs` (required, array) - Array of pair configurations to enforce. Rule checks all configured pairs simultaneously.
 
 - `allowConditionalClosers` (optional, boolean, default: `false`) - Controls whether closers must be called on ALL execution paths:
-  - `false` (strict): Requires closer on every path (if/else both branches, all switch cases, etc.)
-  - `true` (permissive): Allows closers in some but not all branches
+    - `false` (strict): Requires closer on every path (if/else both branches, all switch cases, etc.)
+    - `true` (permissive): Allows closers in some but not all branches
 
 - `allowMultipleOpeners` (optional, boolean, default: `true`) - Controls consecutive opener calls:
-  - `true`: Allows multiple opener calls before closers (nesting)
-  - `false`: Reports error if opener is called again before closer
+    - `true`: Allows multiple opener calls before closers (nesting)
+    - `false`: Reports error if opener is called again before closer
 
 - `maxNestingDepth` (optional, number, default: `0`) - Maximum nesting depth for paired calls:
-  - `0`: Unlimited nesting
-  - `> 0`: Reports error if nesting exceeds this depth
+    - `0`: Unlimited nesting
+    - `> 0`: Reports error if nesting exceeds this depth
 
 **Default configuration (Roblox profiling):**
 
@@ -743,14 +807,11 @@ Prefer the optimized `ColorSequence` and `NumberSequence` constructor overloads 
 
 ```typescript
 new ColorSequence([
-  new ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),
-  new ColorSequenceKeypoint(1, Color3.fromRGB(255, 100, 200)),
+	new ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),
+	new ColorSequenceKeypoint(1, Color3.fromRGB(255, 100, 200)),
 ]);
 
-new NumberSequence([
-  new NumberSequenceKeypoint(0, 0),
-  new NumberSequenceKeypoint(1, 100),
-]);
+new NumberSequence([new NumberSequenceKeypoint(0, 0), new NumberSequenceKeypoint(1, 100)]);
 ```
 
 **✅ Good:**
@@ -779,19 +840,19 @@ In roblox-ts, instance methods create metatable objects with significant perform
 type OnChange = (currentValue: number, previousValue: number) => void;
 
 class MyClass {
-  private readonly onChanges = new Array<OnChange>();
-  private value = 0;
+	private readonly onChanges = new Array<OnChange>();
+	private value = 0;
 
-  public increment(): void {
-    const previousValue = this.value;
-    const value = previousValue + 1;
-    this.value = value;
-    this.notifyChanges(value, previousValue); // ← Bad: method doesn't use this
-  }
+	public increment(): void {
+		const previousValue = this.value;
+		const value = previousValue + 1;
+		this.value = value;
+		this.notifyChanges(value, previousValue); // ← Bad: method doesn't use this
+	}
 
-  private notifyChanges(value: number, previousValue: number): void {
-    for (const onChange of this.onChanges) onChange(value, previousValue);
-  }
+	private notifyChanges(value: number, previousValue: number): void {
+		for (const onChange of this.onChanges) onChange(value, previousValue);
+	}
 }
 ```
 
@@ -801,19 +862,19 @@ class MyClass {
 type OnChange = (currentValue: number, previousValue: number) => void;
 
 function notifyChanges(value: number, previousValue: number, onChanges: ReadonlyArray<OnChange>): void {
-  for (const onChange of onChanges) onChange(value, previousValue);
+	for (const onChange of onChanges) onChange(value, previousValue);
 }
 
 class MyClass {
-  private readonly onChanges = new Array<OnChange>();
-  private value = 0;
+	private readonly onChanges = new Array<OnChange>();
+	private value = 0;
 
-  public increment(): void {
-    const previousValue = this.value;
-    const value = previousValue + 1;
-    this.value = value;
-    notifyChanges(value, previousValue, this.onChanges); // ← Standalone function call
-  }
+	public increment(): void {
+		const previousValue = this.value;
+		const value = previousValue + 1;
+		this.value = value;
+		notifyChanges(value, previousValue, this.onChanges); // ← Standalone function call
+	}
 }
 ```
 
@@ -825,6 +886,57 @@ class MyClass {
     "checkPrivate": true,       // Check private methods (default: true)
     "checkProtected": true,     // Check protected methods (default: true)
     "checkPublic": true         // Check public methods (default: true)
+  }]
+}
+```
+
+#### `no-identity-map`
+
+Bans pointless identity `.map()` calls that return the parameter unchanged. These are wasteful operations that do nothing.
+
+##### ✨ Has auto-fix
+
+**❌ Bad:**
+
+```typescript
+// Bindings - pointless identity map
+const result = scaleBinding.map((value) => value);
+const transparency = shadowTransparencyBinding.map((trans: number) => {
+	return trans;
+});
+
+// Arrays - pointless shallow copy via identity map
+const copied = items.map((item) => item);
+const data = array.map((x: number) => x);
+```
+
+**✅ Good:**
+
+```typescript
+// Bindings - use directly
+const result = scaleBinding;
+const transparency = shadowTransparencyBinding;
+
+// Arrays - use table.clone or spread for intentional copies
+const copied = table.clone(items);
+const copied2 = [...items];
+
+// Actual transformations are fine
+const doubled = items.map((x) => x * 2);
+const names = users.map((user) => user.name);
+```
+
+**Context-aware messages:**
+
+- For Bindings (detected via name containing "binding", `useBinding()`, `joinBindings()`, or chained `.map()`): Suggests using the original binding directly
+- For Arrays: Suggests using `table.clone(array)` or `[...array]` instead
+
+**Configuration:**
+
+```typescript
+{
+  "cease-nonsense/no-identity-map": ["error", {
+    "bindingPatterns": ["binding"]  // Case-insensitive name patterns for Binding detection
   }]
 }
 ```
