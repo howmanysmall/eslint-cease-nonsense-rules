@@ -193,9 +193,8 @@ function isNonIIFEFunction(node: TSESTree.Node, parent: TSESTree.Node | undefine
 	}
 
 	// If the parent is a CallExpression and this function is the callee, it's an IIFE
-	if (parent?.type === AST_NODE_TYPES.CallExpression && parent.callee === node) {
-		return false; // It's an IIFE, DO traverse into it
-	}
+	// It's an IIFE, DO traverse into it
+	if (parent?.type === AST_NODE_TYPES.CallExpression && parent.callee === node) return false;
 
 	// Otherwise it's a callback or stored function, DON'T traverse into it
 	return true;
