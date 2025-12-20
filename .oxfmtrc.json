@@ -6,7 +6,7 @@
 	"embeddedLanguageFormatting": "auto",
 	"endOfLine": "lf",
 	"experimentalSortImports": null,
-	"ignorePatterns": ["dist/**", "node_modules/**", "**/*.{jsonc,json}", "package.json", "**/*.md"],
+	"ignorePatterns": ["dist/**", "node_modules/**", "**/*.{jsonc,json,md,yaml,yml}", "package.json"],
 	"jsxSingleQuote": false,
 	"objectWrap": "preserve",
 	"printWidth": 120,
