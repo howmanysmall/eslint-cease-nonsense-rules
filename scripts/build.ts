@@ -25,7 +25,7 @@ const scriptPath = import.meta.path;
 const SCRIPT_NAME = basename(scriptPath, extname(scriptPath));
 
 const DIST_DIR = "./dist";
-const ENTRY_POINTS = ["./src/index.ts", "./src/utilities/oxfmt-worker.ts"];
+const ENTRY_POINTS = ["./src/index.ts", "./src/oxfmt-worker.ts"];
 const EXTERNAL_PACKAGES = [
 	"@typescript-eslint/utils",
 	"@typescript-eslint/parser",
@@ -122,7 +122,7 @@ async function runBuildAsync(options: BuildOptions): Promise<BuildResult> {
 		await Bun.$`bun x --bun tsgo --emitDeclarationOnly --declaration --outDir dist`.quiet();
 		if (options.verbose) console.success("Type declarations generated");
 
-		const criticalFiles = ["dist/index.js", "dist/utilities/oxfmt-worker.js"];
+		const criticalFiles = ["dist/index.js", "dist/oxfmt-worker.js"];
 		for (const file of criticalFiles) {
 			if (!existsSync(file)) {
 				console.error(`Critical file missing: ${picocolors.red(file)}`);

@@ -4,7 +4,7 @@ import { regex } from "arkregex";
 
 import type { FormatOptions } from "oxfmt";
 
-import { formatSync, terminateWorker } from "./oxfmt-sync";
+import { formatSync, terminateWorker } from "../oxfmt-sync";
 
 export interface Difference {
 	readonly operation: "INSERT" | "DELETE" | "REPLACE";
@@ -91,6 +91,10 @@ export function showInvisibles(text: string): string {
 	return result.replaceAll(WHITESPACE_REGEXP, toSymbol);
 }
 
-export const __testing = { loadOxfmtConfig };
+function resetConfigCache(): void {
+	cachedConfig = undefined;
+}
+
+export const __testing = { loadOxfmtConfig, resetConfigCache };
 
 export { terminateWorker };
