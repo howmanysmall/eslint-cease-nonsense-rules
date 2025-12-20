@@ -103,20 +103,20 @@ export function generateDifferences(original: string, formatted: string): Readon
 			if (next !== undefined && next[0] === 1) {
 				const [, nextText] = next;
 				differences.push({
-					operation: "REPLACE",
-					offset: adjustedOffset,
 					deleteText: text,
 					insertText: nextText,
+					offset: adjustedOffset,
+					operation: "REPLACE",
 				});
 				index += 2;
 			} else {
-				differences.push({ operation: "DELETE", offset: adjustedOffset, deleteText: text });
+				differences.push({ deleteText: text, offset: adjustedOffset, operation: "DELETE" });
 				index++;
 			}
 			offset += text.length;
 		} else {
 			// INSERT - record at current offset
-			differences.push({ operation: "INSERT", offset, insertText: text });
+			differences.push({ insertText: text, offset, operation: "INSERT" });
 			index++;
 		}
 	}
