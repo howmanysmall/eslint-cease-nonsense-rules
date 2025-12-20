@@ -1,5 +1,5 @@
-import type { Detector } from "@recognizers/detector";
-import { recognize } from "@recognizers/detector";
+import type { Detector } from "./detector";
+import { recognize } from "./detector";
 
 export const PROBABILITY_THRESHOLD = 0.9;
 

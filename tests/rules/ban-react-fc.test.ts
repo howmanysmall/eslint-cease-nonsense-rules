@@ -1,7 +1,7 @@
 import { describe } from "bun:test";
-import rule from "@rules/ban-react-fc";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
+import rule from "../../src/rules/ban-react-fc";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

@@ -1,4 +1,4 @@
-import type { Detector } from "@recognizers/detector";
+import type { Detector } from "./detector";
 
 /**
  * Creates a detector for camelCase patterns.

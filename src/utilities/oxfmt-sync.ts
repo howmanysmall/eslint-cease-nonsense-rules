@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { MessageChannel, receiveMessageOnPort, Worker } from "node:worker_threads";
 
 import type { FormatOptions } from "oxfmt";
@@ -13,11 +15,24 @@ interface OxfmtWorkerState {
 
 let workerState: OxfmtWorkerState | undefined;
 
+function resolveWorkerPath(): URL {
+	// Try .js first (production/dist), then .ts (development/source)
+	const jsPath = new URL("./oxfmt-worker.js", import.meta.url);
+	if (existsSync(fileURLToPath(jsPath))) return jsPath;
+
+	const tsPath = new URL("./oxfmt-worker.ts", import.meta.url);
+	if (existsSync(fileURLToPath(tsPath))) return tsPath;
+
+	throw new Error(
+		`Oxfmt worker not found at ${fileURLToPath(jsPath)} or ${fileURLToPath(tsPath)}. Did you run 'bun run build'?`,
+	);
+}
+
 function getWorker(): OxfmtWorkerState {
 	if (workerState !== undefined) return workerState;
 
 	const controlBuffer = new SharedArrayBuffer(4);
-	const workerPath = new URL("./oxfmt-worker.ts", import.meta.url);
+	const workerPath = resolveWorkerPath();
 
 	const { port1: responsePort, port2: requestPort } = new MessageChannel();
 

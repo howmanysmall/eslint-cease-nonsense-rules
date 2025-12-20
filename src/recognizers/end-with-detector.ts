@@ -1,5 +1,5 @@
-import type { Detector } from "@recognizers/detector";
 import { regex } from "arkregex";
+import type { Detector } from "./detector";
 
 // oxlint-disable-next-line prefer-string-raw
 const WHITESPACE_REGEX = regex("\\s");

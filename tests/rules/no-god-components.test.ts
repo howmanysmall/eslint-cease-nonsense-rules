@@ -1,7 +1,7 @@
 import { describe } from "bun:test";
-import rule from "@rules/no-god-components";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
+import rule from "../../src/rules/no-god-components";
 
 const ruleTester = new RuleTester({
 	languageOptions: {
