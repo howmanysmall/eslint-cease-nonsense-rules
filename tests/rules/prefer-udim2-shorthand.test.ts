@@ -1,6 +1,6 @@
 import { describe } from "bun:test";
-import rule from "@rules/prefer-udim2-shorthand";
 import { RuleTester } from "eslint";
+import rule from "../../src/rules/prefer-udim2-shorthand";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

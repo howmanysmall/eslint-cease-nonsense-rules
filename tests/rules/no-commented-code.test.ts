@@ -1,6 +1,6 @@
 import { describe } from "bun:test";
-import rule from "@rules/no-commented-code";
 import { RuleTester } from "eslint";
+import rule from "../../src/rules/no-commented-code";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

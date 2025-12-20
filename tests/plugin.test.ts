@@ -1,5 +1,5 @@
 import { expect, it } from "bun:test";
-import plugin from "@/";
+import plugin from "../src";
 
 // Minimal smoke test that our plugin shape is valid
 

@@ -1,13 +1,5 @@
 {
-	"compilerOptions": {
-		"paths": {
-			"@/*": ["./src/*"],
-			"@lint-types/*": ["./src/types/*"],
-			"@recognizers/*": ["./src/recognizers/*"],
-			"@rules/*": ["./src/rules/*"],
-			"@utilities/*": ["./src/utilities/*"],
-		},
-	},
+	"compilerOptions": {},
 	"extends": "./tsconfig.base.json",
-	"include": ["src/**/*.ts", "tests/**/*.ts"],
+	"include": ["src/**/*.ts"]
 }

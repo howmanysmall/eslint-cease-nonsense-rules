@@ -1,7 +1,7 @@
 import { describe } from "bun:test";
-import rule from "@rules/no-instance-methods-without-this";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
+import rule from "../../src/rules/no-instance-methods-without-this";
 
 const ruleTester = new RuleTester({
 	languageOptions: {
