@@ -7,7 +7,7 @@ import type { Detector } from "./detector";
  * @param probability - Base probability (0-1)
  * @returns Detector instance
  */
-function createCamelCaseDetector(probability: number): Detector {
+export function createCamelCaseDetector(probability: number): Detector {
 	return {
 		probability,
 		scan(line: string): number {
@@ -25,5 +25,3 @@ function createCamelCaseDetector(probability: number): Detector {
 		},
 	};
 }
-
-export { createCamelCaseDetector };

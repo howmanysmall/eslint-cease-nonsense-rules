@@ -3,16 +3,17 @@ import type { Rule } from "eslint";
 import banInstances from "./rules/ban-instances";
 import banReactFC from "./rules/ban-react-fc";
 import enforceIanitorCheckType from "./rules/enforce-ianitor-check-type";
+import fastFormat from "./rules/fast-format";
 import noAsyncConstructor from "./rules/no-async-constructor";
 import noColor3Constructor from "./rules/no-color3-constructor";
 import noCommentedCode from "./rules/no-commented-code";
+import noGodComponents from "./rules/no-god-components";
+import noIdentityMap from "./rules/no-identity-map";
 import noInstanceMethodsWithoutThis from "./rules/no-instance-methods-without-this";
 import noPrint from "./rules/no-print";
 import noShorthandNames from "./rules/no-shorthand-names";
 import noUselessUseSpring from "./rules/no-useless-use-spring";
 import noWarn from "./rules/no-warn";
-import noGodComponents from "./rules/no-god-components";
-import noIdentityMap from "./rules/no-identity-map";
 import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
 import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
 import requireNamedEffectFunctions from "./rules/require-named-effect-functions";
@@ -23,6 +24,17 @@ import useHookAtTopLevel from "./rules/use-hook-at-top-level";
 
 type AnyRuleModule = Rule.RuleModule | TSESLint.AnyRuleModuleWithMetaDocs;
 
+export type { BanInstancesOptions } from "./rules/ban-instances";
+export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
+export type { NoGodComponentsOptions } from "./rules/no-god-components";
+export type { NoIdentityMapOptions } from "./rules/no-identity-map";
+export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
+export type { NoShorthandOptions } from "./rules/no-shorthand-names";
+export type { NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
+export type { EffectFunctionOptions, EnvironmentMode, HookConfiguration } from "./rules/require-named-effect-functions";
+export type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
+export type { ReactKeysOptions } from "./rules/require-react-component-keys";
+export type { HookEntry, UseExhaustiveDependenciesOptions } from "./rules/use-exhaustive-dependencies";
 export {
 	createBanInstancesOptions,
 	createComplexityConfiguration,
@@ -30,26 +42,15 @@ export {
 	createHookConfiguration,
 	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
-	createNoUselessUseSpringOptions,
 	createNoShorthandOptions,
+	createNoUselessUseSpringOptions,
 	createPairConfiguration,
 	createReactKeysOptions,
 	createRequirePairedCallsOptions,
 	createUseExhaustiveDependenciesOptions,
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
-} from "./configure-utilities";
-export type { BanInstancesOptions } from "./rules/ban-instances";
-export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
-export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
-export type { NoShorthandOptions } from "./rules/no-shorthand-names";
-export type { NoGodComponentsOptions } from "./rules/no-god-components";
-export type { NoIdentityMapOptions } from "./rules/no-identity-map";
-export type { NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
-export type { EffectFunctionOptions, EnvironmentMode, HookConfiguration } from "./rules/require-named-effect-functions";
-export type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
-export type { ReactKeysOptions } from "./rules/require-react-component-keys";
-export type { HookEntry, UseExhaustiveDependenciesOptions } from "./rules/use-exhaustive-dependencies";
+} from "./utilities/configure-utilities";
 
 /**
  * ESLint plugin entry for eslint-cease-nonsense-rules.
@@ -60,6 +61,7 @@ const rules: Readonly<Record<string, AnyRuleModule>> = {
 	"ban-instances": banInstances,
 	"ban-react-fc": banReactFC,
 	"enforce-ianitor-check-type": enforceIanitorCheckType,
+	"fast-format": fastFormat,
 	"no-async-constructor": noAsyncConstructor,
 	"no-color3-constructor": noColor3Constructor,
 	"no-commented-code": noCommentedCode,
@@ -97,18 +99,17 @@ const rules: Readonly<Record<string, AnyRuleModule>> = {
  */
 const recommended = {
 	plugins: {
-		"cease-nonsense": {
-			rules,
-		},
+		"cease-nonsense": { rules },
 	},
 	rules: {
 		"cease-nonsense/ban-react-fc": "error",
 		"cease-nonsense/enforce-ianitor-check-type": "error",
+		"cease-nonsense/fast-format": "error",
 		"cease-nonsense/no-async-constructor": "error",
 		"cease-nonsense/no-color3-constructor": "error",
-		"cease-nonsense/no-instance-methods-without-this": "error",
 		"cease-nonsense/no-god-components": "error",
 		"cease-nonsense/no-identity-map": "error",
+		"cease-nonsense/no-instance-methods-without-this": "error",
 		"cease-nonsense/no-print": "error",
 		"cease-nonsense/no-shorthand-names": "error",
 		"cease-nonsense/no-warn": "error",
@@ -125,9 +126,7 @@ type PluginConfig = typeof recommended;
 
 interface Plugin {
 	readonly rules: Readonly<Record<string, AnyRuleModule>>;
-	readonly configs: {
-		readonly recommended: PluginConfig;
-	};
+	readonly configs: { readonly recommended: PluginConfig };
 }
 
 const plugin: Plugin = {

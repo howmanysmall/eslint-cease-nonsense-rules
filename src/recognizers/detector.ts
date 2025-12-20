@@ -2,7 +2,7 @@
  * A detector scans lines and returns match counts.
  * Recognition probability: 1 - (1 - p)^matches
  */
-interface Detector {
+export interface Detector {
 	readonly probability: number;
 	readonly scan: (line: string) => number;
 }
@@ -14,11 +14,8 @@ interface Detector {
  * @param line - The line to analyze
  * @returns Probability between 0 and 1
  */
-function recognize(detector: Detector, line: string): number {
+export function recognize(detector: Detector, line: string): number {
 	const matches = detector.scan(line);
 	if (matches === 0) return 0;
 	return 1 - (1 - detector.probability) ** matches;
 }
-
-export { recognize };
-export type { Detector };

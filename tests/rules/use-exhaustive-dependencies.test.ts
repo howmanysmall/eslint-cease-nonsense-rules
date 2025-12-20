@@ -654,7 +654,7 @@ function Component() {
 }
 `,
 
-			// useState setter is stable
+			// UseState setter is stable
 			`
 function Component() {
     const [state, setState] = useState(0);
@@ -664,7 +664,7 @@ function Component() {
 }
 `,
 
-			// useState with state in deps
+			// UseState with state in deps
 			`
 function Component() {
     const [state, setState] = useState(0);
@@ -675,7 +675,7 @@ function Component() {
 }
 `,
 
-			// useReducer dispatch is stable
+			// UseReducer dispatch is stable
 			`
 function Component() {
     const [state, dispatch] = useReducer(reducer, initial);
@@ -685,7 +685,7 @@ function Component() {
 }
 `,
 
-			// useRef is stable
+			// UseRef is stable
 			`
 function Component() {
     const ref = useRef(null);
@@ -746,7 +746,7 @@ function Component() {
 }
 `,
 
-			// useCallback with correct dependencies
+			// UseCallback with correct dependencies
 			`
 function Component() {
     const a = 1;
@@ -756,7 +756,7 @@ function Component() {
 }
 `,
 
-			// useMemo with correct dependencies
+			// UseMemo with correct dependencies
 			`
 function Component() {
     const a = 1;
@@ -766,7 +766,7 @@ function Component() {
 }
 `,
 
-			// useLayoutEffect with correct dependencies
+			// UseLayoutEffect with correct dependencies
 			`
 function Component() {
     const a = 1;
@@ -776,7 +776,7 @@ function Component() {
 }
 `,
 
-			// useImperativeHandle with correct dependencies
+			// UseImperativeHandle with correct dependencies
 			`
 function Component(ref) {
     const value = 1;
@@ -846,7 +846,7 @@ function Component() {
 }
 `,
 
-			// useTransition startTransition is stable
+			// UseTransition startTransition is stable
 			`
 function Component() {
     const [isPending, startTransition] = useTransition();

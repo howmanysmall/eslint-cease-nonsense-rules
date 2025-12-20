@@ -1,6 +1,6 @@
 import { TSESTree } from "@typescript-eslint/types";
 import type { Rule, Scope } from "eslint";
-import Type from "typebox";
+import Typebox from "typebox";
 import { Compile } from "typebox/compile";
 
 const FUNCTION_DECLARATIONS = new Set<TSESTree.AST_NODE_TYPES>([
@@ -246,7 +246,7 @@ function isStableArrayIndex(
 		return false;
 	}
 
-	const elements = node.id.elements;
+	const { elements } = node.id;
 	let index = 0;
 	for (const element of elements) {
 		if (element.type === TSESTree.AST_NODE_TYPES.Identifier && element.name === identifierName) {
@@ -293,7 +293,7 @@ function isStableValue(
 		if (STABLE_VALUE_TYPES.has(type)) return true;
 
 		if (type === "Variable" && node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator) {
-			const parent = (node as TSESTree.VariableDeclarator).parent;
+			const { parent } = node as TSESTree.VariableDeclarator;
 			if (!parent || parent.type !== TSESTree.AST_NODE_TYPES.VariableDeclaration || parent.kind !== "const")
 				continue;
 
@@ -361,7 +361,7 @@ function findTopmostMemberExpression(node: TSESTree.Node): TSESTree.Node {
 
 	while (parent) {
 		// Stop if this member expression is being called as a method
-		// e.g., items.map(fn) - we want "items", not "items.map"
+		// E.g., items.map(fn) - we want "items", not "items.map"
 		if (parent.type === TSESTree.AST_NODE_TYPES.CallExpression && parent.callee === current) {
 			if (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) return current.object;
 			break;
@@ -371,10 +371,10 @@ function findTopmostMemberExpression(node: TSESTree.Node): TSESTree.Node {
 		const isChainParent = parent.type === TSESTree.AST_NODE_TYPES.ChainExpression;
 		const isNonNullParent = parent.type === TSESTree.AST_NODE_TYPES.TSNonNullExpression;
 
-		if (!isMemberParent && !isChainParent && !isNonNullParent) break;
+		if (!(isMemberParent || isChainParent || isNonNullParent)) break;
 
 		current = parent;
-		parent = parent.parent;
+		({ parent } = parent);
 	}
 
 	return current;
@@ -397,28 +397,30 @@ const TS_RUNTIME_EXPRESSIONS = new Set<TSESTree.AST_NODE_TYPES>([
 ]);
 
 function isComputedPropertyIdentifier(identifier: TSESTree.Identifier): boolean {
-	const parent = identifier.parent;
+	const { parent } = identifier;
 	return parent?.type === TSESTree.AST_NODE_TYPES.Property && parent.computed && parent.key === identifier;
 }
 
 function isInTypePosition(identifier: TSESTree.Identifier): boolean {
+	// oxlint-disable-next-line prefer-destructuring - you cannot
 	let parent: TSESTree.Node | undefined = identifier.parent;
 
 	while (parent) {
 		// Skip TS runtime expressions - they're not type-only positions
 		if (TS_RUNTIME_EXPRESSIONS.has(parent.type)) {
-			parent = parent.parent;
+			({ parent } = parent);
 			continue;
 		}
 		if (parent.type.startsWith("TS")) return true;
 		if (IS_CEASE_BOUNDARY.has(parent.type)) return false;
-		parent = parent.parent;
+		({ parent } = parent);
 	}
 
 	return false;
 }
 
 function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree.Node): boolean {
+	// oxlint-disable-next-line prefer-destructuring - you cannot
 	let parent: TSESTree.Node | undefined = closureNode.parent;
 
 	while (parent) {
@@ -441,7 +443,7 @@ function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree
 			});
 		}
 
-		parent = parent.parent;
+		({ parent } = parent);
 	}
 
 	return false;
@@ -606,8 +608,8 @@ function isUnstableValue(node: TSESTree.Node | undefined): boolean {
 	return node ? UNSTABLE_VALUES.has(node.type) : false;
 }
 
-const isNumberArray = Compile(Type.Array(Type.Number(), { minItems: 1, readOnly: true }));
-const isStringArray = Compile(Type.Array(Type.String(), { minItems: 1, readOnly: true }));
+const isNumberArray = Compile(Typebox.Array(Typebox.Number(), { minItems: 1, readOnly: true }));
+const isStringArray = Compile(Typebox.Array(Typebox.String(), { minItems: 1, readOnly: true }));
 
 function convertStableResult(
 	stableResult: boolean | number | ReadonlyArray<number> | ReadonlyArray<string>,
@@ -688,7 +690,7 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 
 				const dependenciesArgument = parameters[dependenciesIndex];
 				if (!dependenciesArgument && options.reportMissingDependenciesArray) {
-					// const _scope = getScope(closureFunction);
+					// Const _scope = getScope(closureFunction);
 					const captures = collectCaptures(closureFunction, context.sourceCode);
 
 					const requiredCaptures = captures.filter(
@@ -729,7 +731,7 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 
 				const dependenciesArray = dependenciesArgument;
 
-				// const _scope = getScope(closureFunction);
+				// Const _scope = getScope(closureFunction);
 				const captures = collectCaptures(closureFunction, context.sourceCode);
 
 				const dependencies = parseDependencies(dependenciesArray, context.sourceCode);

@@ -46,7 +46,7 @@ useEffect(() => {
 `,
 				errors: [{ messageId: "arrowFunction" }],
 			},
-			// useLayoutEffect with arrow function
+			// UseLayoutEffect with arrow function
 			{
 				code: `
 useLayoutEffect(() => {
@@ -55,7 +55,7 @@ useLayoutEffect(() => {
 `,
 				errors: [{ messageId: "arrowFunction" }],
 			},
-			// useInsertionEffect with arrow function
+			// UseInsertionEffect with arrow function
 			{
 				code: `
 useInsertionEffect(() => {
@@ -189,7 +189,7 @@ useEffect(effect, []);
 `,
 				errors: [{ messageId: "identifierReferencesAsyncArrow" }],
 			},
-			// useCallback result referenced via identifier
+			// UseCallback result referenced via identifier
 			{
 				code: `
 const incorrectUsage = useCallback(() => {
@@ -199,7 +199,7 @@ useEffect(incorrectUsage, [someProperty]);
 `,
 				errors: [{ messageId: "identifierReferencesCallback" }],
 			},
-			// async useCallback result referenced via identifier
+			// Async useCallback result referenced via identifier
 			{
 				code: `
 const asyncCallback = useCallback(async () => {
@@ -209,7 +209,7 @@ useEffect(asyncCallback, [dep]);
 `,
 				errors: [{ messageId: "identifierReferencesCallback" }],
 			},
-			// useMemo result referenced via identifier
+			// UseMemo result referenced via identifier
 			{
 				code: `
 const memoizedCallback = useMemo(() => () => {
@@ -250,7 +250,7 @@ function myEffect() {
 useEffect(myEffect, []);
 `,
 			},
-			// useLayoutEffect with named function reference
+			// UseLayoutEffect with named function reference
 			{
 				code: `
 function layoutHandler() {
@@ -259,7 +259,7 @@ function layoutHandler() {
 useLayoutEffect(layoutHandler, []);
 `,
 			},
-			// useInsertionEffect with named function reference
+			// UseInsertionEffect with named function reference
 			{
 				code: `
 function insertionHandler() {

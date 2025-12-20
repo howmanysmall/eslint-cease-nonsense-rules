@@ -17,80 +17,8 @@ const ruleTester = new RuleTester({
 });
 
 describe("no-god-components", () => {
-	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
-	// and this test file intentionally passes the rule as-is for runtime validation.
 	ruleTester.run("no-god-components", rule, {
-			valid: [
-				{
-					code: `
-function Small({ a, b }) {
-    const [count, setCount] = useState(0);
-    if (count > 0) setCount(count - 1);
-    return <div><span>{a}{b}</span></div>;
-}
-`,
-					languageOptions: {
-						parser,
-						parserOptions: {
-							ecmaFeatures: { jsx: true },
-						},
-					},
-				},
-				{
-					code: `
-function TypeNull() {
-    type N = null;
-    return <div />;
-}
-`,
-					languageOptions: {
-						parser,
-						parserOptions: {
-							ecmaFeatures: { jsx: true },
-						},
-					},
-				},
-				{
-					code: `
-function Ignored() {
-    const value = null;
-    return <div>{value}</div>;
-}
-`,
-					options: [
-						{
-							ignoreComponents: ["Ignored"],
-							maxLines: 1000,
-							targetLines: 1000,
-							enforceTargetLines: false,
-							maxStateHooks: 1000,
-							maxTsxNesting: 1000,
-							maxDestructuredProps: 1000,
-						},
-					],
-					languageOptions: {
-						parser,
-						parserOptions: {
-							ecmaFeatures: { jsx: true },
-						},
-					},
-				},
-				{
-					code: `
-function helper() {
-    const value = null;
-    return value;
-}
-`,
-					languageOptions: {
-						parser,
-						parserOptions: {
-							ecmaFeatures: { jsx: true },
-						},
-					},
-				},
-			],
-			invalid: [
+		invalid: [
 			{
 				code: `
 function Big() {
@@ -100,7 +28,6 @@ function Big() {
     return <div />;
 }
 `,
-				options: [{ maxLines: 5, targetLines: 5, enforceTargetLines: false }],
 				errors: [{ messageId: "exceedsMaxLines" }],
 				languageOptions: {
 					parser,
@@ -108,6 +35,7 @@ function Big() {
 						ecmaFeatures: { jsx: true },
 					},
 				},
+				options: [{ enforceTargetLines: false, maxLines: 5, targetLines: 5 }],
 			},
 			{
 				code: `
@@ -117,7 +45,6 @@ function OverTarget() {
     return <div />;
 }
 `,
-				options: [{ targetLines: 3, maxLines: 10, enforceTargetLines: true }],
 				errors: [{ messageId: "exceedsTargetLines" }],
 				languageOptions: {
 					parser,
@@ -125,6 +52,7 @@ function OverTarget() {
 						ecmaFeatures: { jsx: true },
 					},
 				},
+				options: [{ enforceTargetLines: true, maxLines: 10, targetLines: 3 }],
 			},
 			{
 				code: `
@@ -138,15 +66,6 @@ function Deep() {
     );
 }
 `,
-				options: [
-					{
-						maxTsxNesting: 2,
-						maxLines: 1000,
-						targetLines: 1000,
-						enforceTargetLines: false,
-						maxStateHooks: 1000,
-					},
-				],
 				errors: [{ messageId: "tsxNestingTooDeep" }],
 				languageOptions: {
 					parser,
@@ -154,6 +73,15 @@ function Deep() {
 						ecmaFeatures: { jsx: true },
 					},
 				},
+				options: [
+					{
+						enforceTargetLines: false,
+						maxLines: 1000,
+						maxStateHooks: 1000,
+						maxTsxNesting: 2,
+						targetLines: 1000,
+					},
+				],
 			},
 			{
 				code: `
@@ -163,16 +91,249 @@ function Statey() {
     return <div />;
 }
 `,
+				errors: [{ messageId: "tooManyStateHooks" }],
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
 				options: [
 					{
+						enforceTargetLines: false,
+						maxLines: 1000,
 						maxStateHooks: 1,
 						stateHooks: ["useState"],
-						maxLines: 1000,
 						targetLines: 1000,
-						enforceTargetLines: false,
 					},
 				],
+			},
+			{
+				code: `
+function Propsy({ a, b, c }) {
+    return <div />;
+}
+`,
+				errors: [{ messageId: "tooManyProps" }],
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+				options: [
+					{
+						enforceTargetLines: false,
+						maxDestructuredProps: 2,
+						maxLines: 1000,
+						targetLines: 1000,
+					},
+				],
+			},
+			{
+				code: `
+function Nullish() {
+    const value = null;
+    return <div>{value}</div>;
+}
+`,
+				errors: [{ messageId: "nullLiteral" }],
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+				options: [
+					{
+						enforceTargetLines: false,
+						maxLines: 1000,
+						maxStateHooks: 1000,
+						maxTsxNesting: 1000,
+						targetLines: 1000,
+					},
+				],
+			},
+			{
+				code: `
+const MemberState = () => {
+    const [a, setA] = React.useState(0);
+    const [b, setB] = React.useState(0);
+    return <div />;
+};
+`,
 				errors: [{ messageId: "tooManyStateHooks" }],
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+				options: [
+					{
+						enforceTargetLines: false,
+						maxDestructuredProps: 1000,
+						maxLines: 1000,
+						maxStateHooks: 1,
+						maxTsxNesting: 1000,
+						stateHooks: ["useState"],
+						targetLines: 1000,
+					},
+				],
+			},
+			{
+				code: `
+const BadMemo = memo(() => {
+    const [a, setA] = useState(0);
+    const [b, setB] = useState(0);
+    return <div />;
+});
+`,
+				errors: [{ messageId: "tooManyStateHooks" }],
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+				options: [
+					{
+						enforceTargetLines: false,
+						maxDestructuredProps: 1000,
+						maxLines: 1000,
+						maxStateHooks: 1,
+						maxTsxNesting: 1000,
+						stateHooks: ["useState"],
+						targetLines: 1000,
+					},
+				],
+			},
+			{
+				code: `
+const ReactBad = React.memo(function ReactBad() {
+    const value = null;
+    return <div>{value}</div>;
+});
+`,
+				errors: [{ messageId: "nullLiteral" }],
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+				options: [
+					{
+						enforceTargetLines: false,
+						maxDestructuredProps: 1000,
+						maxLines: 1000,
+						maxStateHooks: 1000,
+						maxTsxNesting: 1000,
+						targetLines: 1000,
+					},
+				],
+			},
+			{
+				code: `
+export default memo(function DefaultBad() {
+    const a = 1;
+    const b = 2;
+    const c = 3;
+    return <div />;
+});
+`,
+				errors: [{ messageId: "exceedsMaxLines" }],
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+				options: [{ enforceTargetLines: false, maxLines: 3, targetLines: 3 }],
+			},
+			{
+				code: `
+const Components = {
+    BigProp: function () {
+        const value = null;
+        return <div>{value}</div>;
+    },
+};
+`,
+				errors: [{ messageId: "nullLiteral" }],
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+				options: [
+					{
+						enforceTargetLines: false,
+						maxDestructuredProps: 1000,
+						maxLines: 1000,
+						maxStateHooks: 1000,
+						maxTsxNesting: 1000,
+						targetLines: 1000,
+					},
+				],
+			},
+			{
+				code: `
+class View {
+    BigClassMethod() {
+        const value = null;
+        return <div>{value}</div>;
+    }
+}
+`,
+				errors: [{ messageId: "nullLiteral" }],
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+				options: [
+					{
+						enforceTargetLines: false,
+						maxDestructuredProps: 1000,
+						maxLines: 1000,
+						maxStateHooks: 1000,
+						maxTsxNesting: 1000,
+						targetLines: 1000,
+					},
+				],
+			},
+			{
+				code: `
+let Assigned;
+Assigned = memo(function Assigned() {
+    const a = 1;
+    const b = 2;
+    const c = 3;
+    return <div />;
+});
+`,
+				errors: [{ messageId: "exceedsMaxLines" }],
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+				options: [{ enforceTargetLines: false, maxLines: 3, targetLines: 3 }],
+			},
+		],
+		valid: [
+			{
+				code: `
+function Small({ a, b }) {
+    const [count, setCount] = useState(0);
+    if (count > 0) setCount(count - 1);
+    return <div><span>{a}{b}</span></div>;
+}
+`,
 				languageOptions: {
 					parser,
 					parserOptions: {
@@ -182,19 +343,11 @@ function Statey() {
 			},
 			{
 				code: `
-function Propsy({ a, b, c }) {
+function TypeNull() {
+    type N = null;
     return <div />;
 }
 `,
-				options: [
-					{
-						maxDestructuredProps: 2,
-						maxLines: 1000,
-						targetLines: 1000,
-						enforceTargetLines: false,
-					},
-				],
-				errors: [{ messageId: "tooManyProps" }],
 				languageOptions: {
 					parser,
 					parserOptions: {
@@ -202,200 +355,45 @@ function Propsy({ a, b, c }) {
 					},
 				},
 			},
-				{
-					code: `
-function Nullish() {
+			{
+				code: `
+function Ignored() {
     const value = null;
     return <div>{value}</div>;
 }
 `,
-				options: [
-					{
-						maxLines: 1000,
-						targetLines: 1000,
-						enforceTargetLines: false,
-						maxStateHooks: 1000,
-						maxTsxNesting: 1000,
-					},
-				],
-				errors: [{ messageId: "nullLiteral" }],
 				languageOptions: {
 					parser,
 					parserOptions: {
 						ecmaFeatures: { jsx: true },
 					},
-					},
 				},
-				{
-					code: `
-const MemberState = () => {
-    const [a, setA] = React.useState(0);
-    const [b, setB] = React.useState(0);
-    return <div />;
-};
-`,
-					options: [
-						{
-							maxStateHooks: 1,
-							stateHooks: ["useState"],
-							maxLines: 1000,
-							targetLines: 1000,
-							enforceTargetLines: false,
-							maxTsxNesting: 1000,
-							maxDestructuredProps: 1000,
-						},
-					],
-					errors: [{ messageId: "tooManyStateHooks" }],
-					languageOptions: {
-						parser,
-						parserOptions: {
-							ecmaFeatures: { jsx: true },
-						},
+				options: [
+					{
+						enforceTargetLines: false,
+						ignoreComponents: ["Ignored"],
+						maxDestructuredProps: 1000,
+						maxLines: 1000,
+						maxStateHooks: 1000,
+						maxTsxNesting: 1000,
+						targetLines: 1000,
 					},
-				},
-				{
-					code: `
-const BadMemo = memo(() => {
-    const [a, setA] = useState(0);
-    const [b, setB] = useState(0);
-    return <div />;
-});
-`,
-					options: [
-						{
-							maxStateHooks: 1,
-							stateHooks: ["useState"],
-							maxLines: 1000,
-							targetLines: 1000,
-							enforceTargetLines: false,
-							maxTsxNesting: 1000,
-							maxDestructuredProps: 1000,
-						},
-					],
-					errors: [{ messageId: "tooManyStateHooks" }],
-					languageOptions: {
-						parser,
-						parserOptions: {
-							ecmaFeatures: { jsx: true },
-						},
-					},
-				},
-				{
-					code: `
-const ReactBad = React.memo(function ReactBad() {
+				],
+			},
+			{
+				code: `
+function helper() {
     const value = null;
-    return <div>{value}</div>;
-});
-`,
-					options: [
-						{
-							maxLines: 1000,
-							targetLines: 1000,
-							enforceTargetLines: false,
-							maxStateHooks: 1000,
-							maxTsxNesting: 1000,
-							maxDestructuredProps: 1000,
-						},
-					],
-					errors: [{ messageId: "nullLiteral" }],
-					languageOptions: {
-						parser,
-						parserOptions: {
-							ecmaFeatures: { jsx: true },
-						},
-					},
-				},
-				{
-					code: `
-export default memo(function DefaultBad() {
-    const a = 1;
-    const b = 2;
-    const c = 3;
-    return <div />;
-});
-`,
-					options: [{ maxLines: 3, targetLines: 3, enforceTargetLines: false }],
-					errors: [{ messageId: "exceedsMaxLines" }],
-					languageOptions: {
-						parser,
-						parserOptions: {
-							ecmaFeatures: { jsx: true },
-						},
-					},
-				},
-				{
-					code: `
-const Components = {
-    BigProp: function () {
-        const value = null;
-        return <div>{value}</div>;
-    },
-};
-`,
-					options: [
-						{
-							maxLines: 1000,
-							targetLines: 1000,
-							enforceTargetLines: false,
-							maxStateHooks: 1000,
-							maxTsxNesting: 1000,
-							maxDestructuredProps: 1000,
-						},
-					],
-					errors: [{ messageId: "nullLiteral" }],
-					languageOptions: {
-						parser,
-						parserOptions: {
-							ecmaFeatures: { jsx: true },
-						},
-					},
-				},
-				{
-					code: `
-class View {
-    BigClassMethod() {
-        const value = null;
-        return <div>{value}</div>;
-    }
+    return value;
 }
 `,
-					options: [
-						{
-							maxLines: 1000,
-							targetLines: 1000,
-							enforceTargetLines: false,
-							maxStateHooks: 1000,
-							maxTsxNesting: 1000,
-							maxDestructuredProps: 1000,
-						},
-					],
-					errors: [{ messageId: "nullLiteral" }],
-					languageOptions: {
-						parser,
-						parserOptions: {
-							ecmaFeatures: { jsx: true },
-						},
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
 					},
 				},
-				{
-					code: `
-let Assigned;
-Assigned = memo(function Assigned() {
-    const a = 1;
-    const b = 2;
-    const c = 3;
-    return <div />;
-});
-`,
-					options: [{ maxLines: 3, targetLines: 3, enforceTargetLines: false }],
-					errors: [{ messageId: "exceedsMaxLines" }],
-					languageOptions: {
-						parser,
-						parserOptions: {
-							ecmaFeatures: { jsx: true },
-						},
-					},
-				},
-			],
-		});
+			},
+		],
 	});
+});

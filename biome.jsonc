@@ -138,120 +138,66 @@
 			"**/*.ts"
 		],
 		"rules": {
+			// a11y: oxlint has jsx_a11y but biome coverage is better
 			"a11y": { "recommended": true },
+
+			// complexity: most covered by oxlint, keep unique biome rules
 			"complexity": {
-				"noAdjacentSpacesInRegex": "error",
-				"noBannedTypes": "error",
-				"noExtraBooleanCast": "error",
 				"noForEach": "error",
-				"noStaticOnlyClass": "error",
-				"noUselessCatch": "error",
 				"noUselessSwitchCase": "off",
-				"noUselessThisAlias": "error",
-				"noUselessTypeConstraint": "error",
-				"recommended": true,
+				"recommended": false,
 				"useArrowFunction": "off",
 				"useDateNow": "error",
-				"useFlatMap": "error"
+				"useFlatMap": "error",
+				"useOptionalChain": "error",
+				"useSimplifiedLogicExpression": "error"
 			},
+
+			// correctness: almost entirely covered by oxlint
 			"correctness": {
-				"noConstAssign": "error",
-				"noEmptyCharacterClassInRegex": "error",
-				"noEmptyPattern": "error",
-				"noGlobalObjectCalls": "error",
-				"noInvalidBuiltinInstantiation": "error",
-				"noInvalidConstructorSuper": "error",
-				"noPrecisionLoss": "error",
-				"noSelfAssign": "error",
-				"noSetterReturn": "error",
-				"noSwitchDeclarations": "error",
-				"noUndeclaredVariables": "error",
-				"noUnreachable": "error",
-				"noUnreachableSuper": "error",
-				"noUnsafeFinally": "error",
-				"noUnsafeOptionalChaining": "error",
 				"noUnusedImports": "off",
-				"noUnusedLabels": "error",
 				"noUnusedPrivateClassMembers": "off",
-				"noUnusedVariables": "error",
-				"recommended": true,
-				"useIsNan": "error",
-				"useValidForDirection": "error",
-				"useValidTypeof": "error",
-				"useYield": "error"
+				"noUnusedVariables": "off",
+				"recommended": false
 			},
+
+			// nursery: experimental rules
 			"nursery": { "recommended": true },
+
+			// performance: some unique to biome
 			"performance": {
-				"recommended": true,
+				"noAccumulatingSpread": "error",
+				"noDelete": "error",
+				"recommended": false,
 				"useTopLevelRegex": "error"
 			},
+
+			// security: biome has better coverage
 			"security": {
 				"noDangerouslySetInnerHtml": "off",
 				"recommended": true
 			},
+
+			// style: keep unique biome rules
 			"style": {
 				"noEnum": "off",
-				"noInferrableTypes": "error",
-				"noNamespace": "error",
-				"noNegationElse": "error",
 				"noNonNullAssertion": "off",
-				"noParameterAssign": "error",
-				"noUnusedTemplateLiteral": "error",
-				"noUselessElse": "error",
-				"recommended": true,
+				"recommended": false,
 				"useArrayLiterals": "off",
-				"useAsConstAssertion": "error",
 				"useBlockStatements": "off",
 				"useConsistentMemberAccessibility": "off",
 				"useDefaultParameterLast": "error",
-				"useEnumInitializers": "error",
-				"useExplicitLengthCheck": "error",
 				"useFilenamingConvention": {
 					"level": "error",
 					"options": { "filenameCases": ["kebab-case"], "requireAscii": true }
-				},
-				"useForOf": "error",
-				"useNodejsImportProtocol": "error",
-				"useNumberNamespace": "error",
-				"useSelfClosingElements": "error",
-				"useSingleVarDeclarator": "error",
-				"useThrowNewError": "error"
+				}
 			},
+
+			// suspicious: almost entirely covered by oxlint
 			"suspicious": {
-				"noAssignInExpressions": "error",
-				"noAsyncPromiseExecutor": "error",
-				"noCatchAssign": "error",
-				"noClassAssign": "error",
-				"noCompareNegZero": "error",
 				"noConstEnum": "off",
-				"noControlCharactersInRegex": "error",
-				"noDebugger": "error",
-				"noDuplicateCase": "error",
-				"noDuplicateClassMembers": "error",
-				"noDuplicateObjectKeys": "error",
-				"noDuplicateParameters": "error",
 				"noEmptyBlockStatements": "error",
-				"noExplicitAny": "error",
-				"noExtraNonNullAssertion": "error",
-				"noFallthroughSwitchClause": "error",
-				"noFunctionAssign": "error",
-				"noGlobalAssign": "error",
-				"noImportAssign": "error",
-				"noMisleadingCharacterClass": "error",
-				"noMisleadingInstantiator": "error",
-				"noPrototypeBuiltins": "error",
-				"noRedeclare": "error",
-				"noShadowRestrictedNames": "error",
-				"noSparseArray": "error",
-				"noThenProperty": "error",
-				"noUnsafeDeclarationMerging": "error",
-				"noUnsafeNegation": "error",
-				"noWith": "error",
-				"recommended": true,
-				"useErrorMessage": "error",
-				"useGetterReturn": "error",
-				"useIsArray": "error",
-				"useNumberToFixedDigitsArgument": "error"
+				"recommended": false
 			}
 		}
 	},

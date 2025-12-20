@@ -47,7 +47,7 @@ function isNode(value: unknown): value is TSESTree.Node {
 }
 
 // Widen node to allow safe enumeration without producing implicit any values
-function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & { readonly [key: string]: unknown } {
+function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & Readonly<Record<string, unknown>> {
 	return true;
 }
 
@@ -59,6 +59,8 @@ function traverseForThis(currentNode: TSESTree.Node, visited: WeakSet<TSESTree.N
 	if (!hasDynamicProperties(currentNode)) return false;
 
 	for (const key in currentNode) {
+		if (!Object.hasOwn(currentNode, key)) continue;
+
 		const childValue = currentNode[key];
 		if (childValue === null || childValue === undefined) continue;
 
@@ -74,7 +76,7 @@ function traverseForThis(currentNode: TSESTree.Node, visited: WeakSet<TSESTree.N
 }
 
 function methodUsesThis(node: TSESTree.MethodDefinition): boolean {
-	const value = node.value;
+	const { value } = node;
 	if (value === undefined || value.type !== AST_NODE_TYPES.FunctionExpression) return false;
 	return traverseForThis(value, new WeakSet());
 }
@@ -85,7 +87,7 @@ const noInstanceMethodsWithoutThis: TSESLint.RuleModuleWithMetaDocs<
 	RuleDocsWithRecommended
 > = {
 	create(context) {
-		const rawOptions = context.options[0];
+		const [rawOptions] = context.options;
 		const options = normalizeOptions(rawOptions);
 
 		return {

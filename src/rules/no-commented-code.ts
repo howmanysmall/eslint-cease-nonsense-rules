@@ -62,7 +62,7 @@ function groupComments(
 			if (size > 0) {
 				groups[groupsSize++] = {
 					comments: currentLineComments,
-					value: currentLineComments.map((c) => c.value).join("\n"),
+					value: currentLineComments.map(({ value }) => value).join("\n"),
 				};
 				currentLineComments = [];
 				size = 0;
@@ -161,7 +161,7 @@ function toParsedStatements(body: ReadonlyArray<unknown>): ReadonlyArray<ParsedS
 function isExpressionExclusion(statement: ParsedStatement, codeText: string): boolean {
 	if (statement.type !== "ExpressionStatement") return false;
 
-	const expression = statement.expression;
+	const { expression } = statement;
 	if (!expression) return false;
 
 	if (expression.type === "Identifier") return true;
@@ -253,7 +253,7 @@ const noCommentedCode: Rule.RuleModule = {
 						const firstComment = group.comments.at(0);
 						const lastComment = group.comments.at(-1);
 
-						if (!firstComment || !lastComment) continue;
+						if (!(firstComment && lastComment)) continue;
 
 						context.report({
 							loc: {

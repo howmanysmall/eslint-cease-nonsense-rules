@@ -63,7 +63,7 @@ const LINE_ENDINGS = ["}", ";", "{"] as const;
  *
  * @returns Array of configured detectors
  */
-function createJavaScriptDetectors(): ReadonlyArray<Detector> {
+export function createJavaScriptDetectors(): ReadonlyArray<Detector> {
 	return [
 		createEndWithDetector(0.95, LINE_ENDINGS),
 		createKeywordsDetector(0.7, OPERATORS),
@@ -72,5 +72,3 @@ function createJavaScriptDetectors(): ReadonlyArray<Detector> {
 		createCamelCaseDetector(0.5),
 	];
 }
-
-export { createJavaScriptDetectors };

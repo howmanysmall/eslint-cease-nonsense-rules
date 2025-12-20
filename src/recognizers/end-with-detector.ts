@@ -1,6 +1,8 @@
+import { regex } from "arkregex";
 import type { Detector } from "./detector";
 
-const WHITESPACE_REGEX = /\s/;
+// oxlint-disable-next-line prefer-string-raw
+const WHITESPACE_REGEX = regex("\\s");
 
 /**
  * Creates a detector for lines ending with specific characters.
@@ -10,24 +12,19 @@ const WHITESPACE_REGEX = /\s/;
  * @param endings - Characters to match at line end
  * @returns Detector instance
  */
-function createEndWithDetector(probability: number, endings: ReadonlyArray<string>): Detector {
+export function createEndWithDetector(probability: number, endings: ReadonlyArray<string>): Detector {
 	const endingsSet = new Set(endings);
 
 	return {
 		probability,
 		scan(line: string): number {
 			for (let index = line.length - 1; index >= 0; index -= 1) {
-				const char = line.charAt(index);
-
-				if (endingsSet.has(char)) return 1;
-
-				// Skip whitespace and comment markers
-				if (!WHITESPACE_REGEX.test(char) && char !== "*" && char !== "/") return 0;
+				const character = line.charAt(index);
+				if (endingsSet.has(character)) return 1;
+				if (!WHITESPACE_REGEX.test(character) && character !== "*" && character !== "/") return 0;
 			}
 
 			return 0;
 		},
 	};
 }
-
-export { createEndWithDetector };

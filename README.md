@@ -1,8 +1,19 @@
 # eslint-cease-nonsense-rules
 
-A bunch of lints to prevent idiot mistakes I encounter with frequency.
+An ESLint plugin that catches common mistakes before they reach production. This collection of rules helps prevent patterns that lead to bugs, performance issues, and maintainability problems.
 
-**NOTE** I did not write this junk, an LLM did because I do not care.
+## Table of Contents
+
+- [Installation](#installation)
+- [Usage](#usage)
+- [Rules](#rules)
+  - [Type Safety](#type-safety)
+  - [React](#react)
+  - [Logging](#logging)
+  - [Resource Management](#resource-management)
+  - [Code Quality](#code-quality)
+  - [Performance](#performance)
+- [License](#license)
 
 ## Installation
 
@@ -12,43 +23,50 @@ bun add -D @pobammer-ts/eslint-cease-nonsense-rules
 
 ## Usage
 
-Add to your ESLint config:
+### Basic Setup
+
+Add the plugin to your ESLint configuration:
 
 ```typescript
 import ceaseNonsense from "@pobammer-ts/eslint-cease-nonsense-rules";
 
 export default [
-  {
-    plugins: {
-      "cease-nonsense": ceaseNonsense,
-    },
-    rules: {
-      // Enable all rules (recommended)
-      "cease-nonsense/ban-react-fc": "error",
-      "cease-nonsense/enforce-ianitor-check-type": "error",
-      "cease-nonsense/no-color3-constructor": "error",
-      "cease-nonsense/no-instance-methods-without-this": "error",
-      "cease-nonsense/no-print": "error",
-      "cease-nonsense/no-shorthand-names": "error",
-      "cease-nonsense/no-warn": "error",
-      "cease-nonsense/prefer-sequence-overloads": "error",
-      "cease-nonsense/prefer-udim2-shorthand": "error",
-      "cease-nonsense/require-named-effect-functions": "error",
-      "cease-nonsense/require-paired-calls": "error",
-      "cease-nonsense/require-react-component-keys": "error",
-      "cease-nonsense/no-god-components": "error",
-      "cease-nonsense/no-identity-map": "error",
-      "cease-nonsense/no-useless-use-spring": "error",
-      "cease-nonsense/use-exhaustive-dependencies": "error",
-      "cease-nonsense/use-hook-at-top-level": "error",
-    },
-  },
+	{
+		plugins: {
+			"cease-nonsense": ceaseNonsense,
+		},
+		rules: {
+			// Enable all rules (recommended)
+			"cease-nonsense/ban-instances": "error",
+			"cease-nonsense/ban-react-fc": "error",
+			"cease-nonsense/enforce-ianitor-check-type": "error",
+			"cease-nonsense/fast-format": "error",
+			"cease-nonsense/no-async-constructor": "error",
+			"cease-nonsense/no-color3-constructor": "error",
+			"cease-nonsense/no-commented-code": "error",
+			"cease-nonsense/no-god-components": "error",
+			"cease-nonsense/no-identity-map": "error",
+			"cease-nonsense/no-instance-methods-without-this": "error",
+			"cease-nonsense/no-print": "error",
+			"cease-nonsense/no-shorthand-names": "error",
+			"cease-nonsense/no-useless-use-spring": "error",
+			"cease-nonsense/no-warn": "error",
+			"cease-nonsense/prefer-sequence-overloads": "error",
+			"cease-nonsense/prefer-udim2-shorthand": "error",
+			"cease-nonsense/require-named-effect-functions": "error",
+			"cease-nonsense/require-paired-calls": "error",
+			"cease-nonsense/require-react-component-keys": "error",
+			"cease-nonsense/use-exhaustive-dependencies": "error",
+			"cease-nonsense/use-hook-at-top-level": "error",
+		},
+	},
 ];
+```
 
-// Or just include the preset
-export default [
-  ceaseNonsense.configs.recommended,
-];
+### Using the Preset
+
+```typescript
+export default [ceaseNonsense.configs.recommended];
 ```
 
 ## Rules
@@ -57,44 +75,11 @@ export default [
 
 #### `enforce-ianitor-check-type`
 
-Enforces `Ianitor.Check<T>` type annotations on complex TypeScript types to ensure runtime validation. You don't really need this.
+Enforces `Ianitor.Check<T>` type annotations on complex TypeScript types to ensure runtime validation.
 
 Calculates structural complexity of types and requires Ianitor validators when complexity exceeds thresholds.
 
-**❌ Bad:**
-
-```typescript
-// Complex type without runtime validation
-type UserConfig = {
-  id: number;
-  name: string;
-  settings: {
-    theme: string;
-    notifications: boolean;
-  };
-};
-
-const config = getUserConfig(); // No runtime check!
-```
-
-**✅ Good:**
-
-```typescript
-const userConfigValidator = Ianitor.interface({
-  id: Ianitor.number(),
-  name: Ianitor.string(),
-  settings: Ianitor.interface({
-    theme: Ianitor.string(),
-    notifications: Ianitor.boolean(),
-  }),
-});
-
-type UserConfig = Ianitor.Static<typeof userConfigValidator>;
-
-const config = userConfigValidator.check(getUserConfig());
-```
-
-**Configuration:**
+**Configuration**
 
 ```typescript
 {
@@ -108,44 +93,48 @@ const config = userConfigValidator.check(getUserConfig());
 }
 ```
 
+**❌ Bad**
+
+```typescript
+// Complex type without runtime validation
+type UserConfig = {
+	id: number;
+	name: string;
+	settings: {
+		theme: string;
+		notifications: boolean;
+	};
+};
+
+const config = getUserConfig(); // No runtime check!
+```
+
+**✅ Good**
+
+```typescript
+const userConfigValidator = Ianitor.interface({
+	id: Ianitor.number(),
+	name: Ianitor.string(),
+	settings: Ianitor.interface({
+		theme: Ianitor.string(),
+		notifications: Ianitor.boolean(),
+	}),
+});
+
+type UserConfig = Ianitor.Static<typeof userConfigValidator>;
+
+const config = userConfigValidator.check(getUserConfig());
+```
+
 ### React
 
 #### `ban-react-fc`
 
 Bans React.FC and similar component type annotations. Use explicit function declarations instead.
 
-React.FC (Function Component) and related types break debug information in React DevTools, making profiling exponentially harder. They also encourage poor patterns and add unnecessary complexity.
+React.FC types break debug information in React DevTools and encourage poor patterns.
 
-#### `no-god-components`
-
-Flags React components that are too large or doing too much, pushing you toward extracting hooks/components/utilities.
-
-Checks (defaults):
-
-- Component body line count: target `120`, hard max `200`
-- TSX nesting depth ≤ `3`
-- Stateful hooks ≤ `5` (counts `useState`, `useReducer`, `useBinding` by default)
-- Destructured props in parameters ≤ `5`
-- Runtime `null` literals are always banned
-
-**Configuration:**
-
-```typescript
-{
-  "cease-nonsense/no-god-components": ["error", {
-    targetLines: 120,
-    maxLines: 200,
-    maxTsxNesting: 3,
-    maxStateHooks: 5,
-    stateHooks: ["useState", "useReducer", "useBinding"],
-    maxDestructuredProps: 5,
-    enforceTargetLines: true,
-    ignoreComponents: ["LegacyComponent"]
-  }]
-}
-```
-
-**❌ Bad:**
+**❌ Bad**
 
 ```typescript
 export const MyComponent: React.FC<Props> = ({ children }) => {
@@ -159,7 +148,7 @@ const Modal: React.FunctionComponent = () => <div>Modal</div>;
 const Input: VFC = () => <input />;
 ```
 
-**✅ Good:**
+**✅ Good**
 
 ```typescript
 export function MyComponent({ children }: Props) {
@@ -179,11 +168,51 @@ function Input() {
 }
 ```
 
+#### `no-god-components`
+
+Flags React components that are too large or doing too much, encouraging better separation of concerns.
+
+**Default thresholds**
+
+- Component body line count: target `120`, hard max `200`
+- TSX nesting depth ≤ `3`
+- Stateful hooks ≤ `5`
+- Destructured props in parameters ≤ `5`
+- Runtime `null` literals are always banned
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-god-components": ["error", {
+    targetLines: 120,
+    maxLines: 200,
+    maxTsxNesting: 3,
+    maxStateHooks: 5,
+    stateHooks: ["useState", "useReducer", "useBinding"],
+    maxDestructuredProps: 5,
+    enforceTargetLines: true,
+    ignoreComponents: ["LegacyComponent"]
+  }]
+}
+```
+
 #### `require-react-component-keys`
 
 Enforces key props on all React elements except top-level returns from components.
 
-**❌ Bad:**
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/require-react-component-keys": ["error", {
+    "allowRootKeys": false,                    // Allow keys on root returns
+    "ignoreCallExpressions": ["ReactTree.mount"] // Functions to ignore
+  }]
+}
+```
+
+**❌ Bad**
 
 ```typescript
 function UserList({ users }) {
@@ -197,58 +226,7 @@ function UserList({ users }) {
 }
 ```
 
-#### `require-named-effect-functions`
-
-Enforce named effect functions for better debuggability. Prevent inline arrow functions in `useEffect` and similar hooks.
-
-Behavior by environment (option `environment`):
-
-- `roblox-ts` (default): only identifiers allowed (e.g., `useEffect(onTick, [...])`). Inline function expressions or arrows are reported.
-- `standard`: identifiers and named function expressions are allowed; arrows are still reported.
-
-Default hooks checked: `useEffect`, `useLayoutEffect`, `useInsertionEffect`.
-
-**❌ Bad:**
-
-```typescript
-// Arrow function
-useEffect(() => {
-  doThing();
-}, [dep]);
-
-// Anonymous function expression
-useEffect(function () {
-  doThing();
-}, [dep]);
-```
-
-**✅ Good:**
-
-```typescript
-// Preferred: reference a named function
-function onDepChange() {
-  doThing();
-}
-useEffect(onDepChange, [dep]);
-
-// Allowed in `standard` mode
-useEffect(function onDepChange() {
-  doThing();
-}, [dep]);
-```
-
-**Configuration:**
-
-```typescript
-{
-  "cease-nonsense/require-named-effect-functions": ["error", {
-    "environment": "roblox-ts", // or "standard"
-    "hooks": ["useEffect", "useLayoutEffect", "useInsertionEffect"]
-  }]
-}
-```
-
-**✅ Good:**
+**✅ Good**
 
 ```typescript
 function UserList({ users }) {
@@ -262,73 +240,66 @@ function UserList({ users }) {
 }
 ```
 
-**Configuration:**
+#### `require-named-effect-functions`
+
+Enforce named effect functions for better debuggability. Prevent inline arrow functions in `useEffect` and similar hooks.
+
+**Behavior by environment**
+
+- `roblox-ts` (default): Only identifiers allowed (e.g., `useEffect(onTick, [...])`)
+- `standard`: Identifiers and named function expressions allowed
+
+**Configuration**
 
 ```typescript
 {
-  "cease-nonsense/require-react-component-keys": ["error", {
-    "allowRootKeys": false,                    // Allow keys on root returns
-    "ignoreCallExpressions": ["ReactTree.mount"] // Functions to ignore
+  "cease-nonsense/require-named-effect-functions": ["error", {
+    "environment": "roblox-ts", // or "standard"
+    "hooks": ["useEffect", "useLayoutEffect", "useInsertionEffect"]
   }]
 }
+```
+
+**❌ Bad**
+
+```typescript
+// Arrow function
+useEffect(() => {
+	doThing();
+}, [dep]);
+
+// Anonymous function expression
+useEffect(
+	function () {
+		doThing();
+	},
+	[dep],
+);
+```
+
+**✅ Good**
+
+```typescript
+// Preferred: reference a named function
+function onDepChange() {
+	doThing();
+}
+useEffect(onDepChange, [dep]);
+
+// Allowed in `standard` mode
+useEffect(
+	function onDepChange() {
+		doThing();
+	},
+	[dep],
+);
 ```
 
 #### `use-exhaustive-dependencies`
 
 Enforces exhaustive and correct dependency specification in React hooks to prevent stale closures and unnecessary re-renders.
 
-**❌ Bad:**
-
-```typescript
-function UserProfile({ userId }) {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    fetchUser(userId).then(setUser);
-  }, []); // Missing userId dependency!
-}
-```
-
-#### `no-useless-use-spring`
-
-Flags `useSpring`-style hooks that never change (static config plus non-updating deps). Defaults: `springHooks: ["useSpring"]`, `treatEmptyDepsAsViolation: true`.
-
-**❌ Bad:**
-
-```typescript
-const spring = useSpring({ opacity: 1 }, []);
-```
-
-**✅ Good:**
-
-```typescript
-const spring = useSpring({ opacity: isOpen ? 1 : 0 }, [isOpen]);
-```
-
-**Configuration:**
-
-```typescript
-{
-  "cease-nonsense/no-useless-use-spring": ["error", {
-    "springHooks": ["useSpring", "useMotion"],
-    "treatEmptyDepsAsViolation": true
-  }]
-}
-```
-
-**✅ Good:**
-
-```typescript
-function UserProfile({ userId }) {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    fetchUser(userId).then(setUser);
-  }, [userId]);
-}
-```
-
-**Configuration:**
+**Configuration**
 
 ```typescript
 {
@@ -347,81 +318,103 @@ function UserProfile({ userId }) {
 }
 ```
 
+**❌ Bad**
+
+```typescript
+function UserProfile({ userId }) {
+	const [user, setUser] = useState(null);
+
+	useEffect(() => {
+		fetchUser(userId).then(setUser);
+	}, []); // Missing userId dependency!
+}
+```
+
+**✅ Good**
+
+```typescript
+function UserProfile({ userId }) {
+	const [user, setUser] = useState(null);
+
+	useEffect(() => {
+		fetchUser(userId).then(setUser);
+	}, [userId]);
+}
+```
+
+#### `no-useless-use-spring`
+
+Flags `useSpring`-style hooks that never change (static config plus non-updating deps).
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-useless-use-spring": ["error", {
+    "springHooks": ["useSpring", "useMotion"],
+    "treatEmptyDepsAsViolation": true
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+const spring = useSpring({ opacity: 1 }, []);
+```
+
+**✅ Good**
+
+```typescript
+const spring = useSpring({ opacity: isOpen ? 1 : 0 }, [isOpen]);
+```
+
 #### `use-hook-at-top-level`
 
 Enforces that React hooks are only called at the top level of components or custom hooks, never conditionally or in nested functions.
 
-**❌ Bad:**
-
-```typescript
-function UserProfile({ userId }) {
-  if (userId) {
-    useEffect(() => {  // Hook in conditional!
-      fetchUser(userId);
-    }, [userId]);
-  }
-}
-```
-
-**✅ Good:**
-
-```typescript
-function UserProfile({ userId }) {
-  useEffect(() => {
-    if (userId) {
-      fetchUser(userId);
-    }
-  }, [userId]);
-}
-```
-
-**Configuration:**
+**Configuration**
 
 ```typescript
 {
   "cease-nonsense/use-hook-at-top-level": ["error", {
     // Strategy 1: Ignore hooks by name
     "ignoreHooks": ["useEntity", "useComponent"],
-    
-    // Strategy 2: Control by import source (handles naming conflicts)
+
+    // Strategy 2: Control by import source
     "importSources": {
       "react": true,           // Check hooks from React
       "my-ecs-library": false  // Ignore ECS hooks
     },
-    
-    // Strategy 3: Whitelist mode (only check these hooks)
+
+    // Strategy 3: Whitelist mode
     "onlyHooks": ["useState", "useEffect", "useContext"]
   }]
 }
 ```
 
-**Examples:**
+**❌ Bad**
 
 ```typescript
-// Ignore ECS hooks: { "ignoreHooks": ["useEntity"] }
-function Component() {
-  if (condition) {
-    useEntity(0);  // ✅ Ignored
-  }
-  useState(0);     // ❌ Error - still checked
+function UserProfile({ userId }) {
+	if (userId) {
+		useEffect(() => {
+			// Hook in conditional!
+			fetchUser(userId);
+		}, [userId]);
+	}
 }
+```
 
-// Handle naming conflicts: { "importSources": { "react": true, "my-ecs": false } }
-import { useState } from 'react';
-import { useState as useEcsState } from 'my-ecs';
-function Component() {
-  if (condition) {
-    useState(0);      // ❌ Error - React hook checked
-    useEcsState(0);   // ✅ Ignored - ECS hook ignored
-  }
-}
+**✅ Good**
 
-// Whitelist: { "onlyHooks": ["useState"] }
-function Component() {
-  if (condition) {
-    useState(0);   // ❌ Error - in whitelist
-    useEffect(f);  // ✅ Ignored - not in whitelist
-  }
+```typescript
+function UserProfile({ userId }) {
+	useEffect(() => {
+		if (userId) {
+			fetchUser(userId);
+		}
+	}, [userId]);
 }
 ```
 
@@ -431,13 +424,13 @@ function Component() {
 
 Bans use of `print()` function calls. Use `Log` instead.
 
-**❌ Bad:**
+**❌ Bad**
 
 ```typescript
 print("Debug message");
 ```
 
-**✅ Good:**
+**✅ Good**
 
 ```typescript
 Log.info("Debug message");
@@ -447,13 +440,13 @@ Log.info("Debug message");
 
 Bans use of `warn()` function calls. Use `Log` instead.
 
-**❌ Bad:**
+**❌ Bad**
 
 ```typescript
 warn("Warning message");
 ```
 
-**✅ Good:**
+**✅ Good**
 
 ```typescript
 Log.warn("Warning message");
@@ -463,222 +456,49 @@ Log.warn("Warning message");
 
 #### `require-paired-calls`
 
-Enforces that paired function calls (opener/closer) are properly balanced across all execution paths with LIFO ordering. Prevents resource leaks, unbalanced operations, and control flow errors.
+Enforces that paired function calls (opener/closer) are properly balanced across all execution paths with LIFO ordering.
 
-**Key features:**
-
-- Control flow analysis across all paths (if/else, switch, try/catch, loops)
-- Early exit detection (return, throw, break, continue)
-- LIFO validation for nested pairs
-- Async operation detection (await/yield) with `requireSync`
-- Roblox-specific auto-close detection for yielding functions
-
-**❌ Bad:**
-
-```typescript
-// Missing closer on early return
-function test() {
-  debug.profilebegin("task");
-  if (error) return; // profilebegin never closed on this path
-  debug.profileend();
-}
-
-// Unpaired closer (no matching opener)
-function test() {
-  doWork();
-  debug.profileend(); // No matching profilebegin
-}
-
-// Wrong LIFO order
-function test() {
-  debug.profilebegin("outer");
-  debug.profilebegin("inner");
-  debug.profileend(); // closes inner
-  // outer is never closed
-}
-
-// Async operation with requireSync: true
-async function test() {
-  debug.profilebegin("task");
-  await fetch("/api"); // Cannot await between profilebegin/end
-  debug.profileend();
-}
-
-// Roblox yielding function auto-closes
-function test() {
-  debug.profilebegin("task");
-  task.wait(1); // Auto-closes all profiles
-  debug.profileend(); // This will error - already closed
-}
-
-// Conditional branch missing closer
-function test() {
-  debug.profilebegin("task");
-  if (condition) {
-    debug.profileend();
-  } else {
-    return; // Missing closer on this path
-  }
-}
-
-// Break/continue skip closer
-function test() {
-  debug.profilebegin("loop");
-  for (const item of items) {
-    if (item.stop) break; // Skips closer
-  }
-  debug.profileend();
-}
-
-// Contextual error: empty stack
-function test() {
-  Iris.End(); // Error: Unexpected call to 'Iris.End' - no matching opener on stack
-}
-
-// Contextual error: wrong closer
-function test() {
-  Iris.CollapsingHeader(["Units"]);
-  debug.profileend(); // Error: Unexpected call to 'debug.profileend' - expected one of: Iris.End
-}
-```
-
-**✅ Good:**
-
-```typescript
-// Simple pairing
-function test() {
-  debug.profilebegin("task");
-  doWork();
-  debug.profileend();
-}
-
-// Proper LIFO nesting
-function test() {
-  debug.profilebegin("outer");
-  debug.profilebegin("inner");
-  debug.profileend(); // closes inner
-  debug.profileend(); // closes outer
-}
-
-// Try-finally ensures closer on all paths
-function test() {
-  debug.profilebegin("task");
-  try {
-    riskyOperation();
-  } finally {
-    debug.profileend();
-  }
-}
-
-// Try-catch with alternative closers
-function test() {
-  db.transaction();
-  try {
-    db.users.insert({ name: "test" });
-    db.commit(); // Normal closer
-  } catch (err) {
-    db.rollback(); // Alternative closer
-    throw err;
-  }
-}
-
-// Closer in all branches
-function test() {
-  debug.profilebegin("task");
-  if (condition) {
-    debug.profileend();
-  } else {
-    debug.profileend();
-  }
-}
-
-// Pairs inside loop iterations (not across)
-function test() {
-  for (const item of items) {
-    debug.profilebegin("item");
-    process(item);
-    debug.profileend();
-  }
-}
-
-// Multiple closers with requireAll
-function test() {
-  resource.init();
-  resource.setup();
-  // Both cleanup1 and cleanup2 must be called
-  resource.cleanup1();
-  resource.cleanup2();
-}
-```
-
-**Configuration:**
+**Configuration**
 
 ```typescript
 {
   "cease-nonsense/require-paired-calls": ["error", {
     "pairs": [{
-      "opener": "debug.profilebegin",        // Opener function name
-      "closer": "debug.profileend",          // Closer function name(s)
-      "alternatives": ["db.rollback"],       // Alternative closers (any one)
-      "requireSync": true,                   // Disallow await/yield
-      "platform": "roblox",                  // Platform-specific behavior
-      "yieldingFunctions": [                 // Custom yielding patterns
+      "opener": "debug.profilebegin",
+      "closer": "debug.profileend",
+      "alternatives": ["db.rollback"],
+      "requireSync": true,
+      "platform": "roblox",
+      "yieldingFunctions": [
         "task.wait",
-        "*.WaitForChild"                     // Supports wildcards
+        "*.WaitForChild"
       ]
     }],
-    "allowConditionalClosers": false,        // Allow closers in some branches
-    "allowMultipleOpeners": true,            // Allow consecutive openers
-    "maxNestingDepth": 0                     // Nesting limit (0 = unlimited)
+    "allowConditionalClosers": false,
+    "allowMultipleOpeners": true,
+    "maxNestingDepth": 0
   }]
 }
 ```
 
-**Configuration Options:**
+**Pair configuration options**
 
-**Pair Configuration** (per-pair settings in the `pairs` array):
+- `opener` (required): Function name that starts the paired operation
+- `openerAlternatives` (optional): Additional opener names sharing the same closer
+- `closer` (required): Function name(s) that close the operation
+- `alternatives` (optional): Alternative closers for error paths
+- `requireSync` (optional): Disallow `await`/`yield` between opener and closer
+- `platform` (optional): Enables `"roblox"`-specific behavior
+- `yieldingFunctions` (optional): Custom patterns for Roblox yielding functions (supports wildcards)
 
-- `opener` (required, string) - Function name that starts the paired operation (e.g., `"debug.profilebegin"`). Must be an exact function name including member access (e.g., `"obj.method"`).
+**Top-level options**
 
-- `openerAlternatives` (optional, string[]) - Additional opener names that share the same closer. Every name in this array is treated exactly like `opener` (same stack entry, same diagnostics). Handy for APIs like Iris where `Iris.End` closes windows, collapsing headers, etc.
+- `pairs` (required): Array of pair configurations
+- `allowConditionalClosers` (optional): Allow closers in some but not all branches
+- `allowMultipleOpeners` (optional): Allow consecutive opener calls
+- `maxNestingDepth` (optional): Maximum nesting depth (0 = unlimited)
 
-- `closer` (required, string | string[]) - Function name(s) that close the paired operation. Can be:
-  - Single string: `"debug.profileend"` - only this function can close
-  - Array of strings: `["lock.release", "lock.free"]` - ANY of these functions can close (alternatives within closer)
-
-- Multiple pair configs can share the same closer. The rule will always pop the most recent opener whose configuration allows that closer, so you can keep separate telemetry per widget/button/etc. while still reusing a single `End()` call.
-
-- `alternatives` (optional, string[]) - Alternative closer function names used for error paths. When present, ANY ONE of the `closer` or `alternatives` satisfies the requirement. Example: `"closer": "db.commit", "alternatives": ["db.rollback"]` means either commit OR rollback closes the transaction.
-
-- `requireSync` (optional, boolean, default: `false`) - When `true`, disallows `await` or `yield` expressions between opener and closer. Reports error if async operations occur within the paired scope.
-
-- `platform` (optional, `"roblox"`) - Enables Roblox-specific behavior:
-  - Auto-detects yielding function calls (configured via `yieldingFunctions`)
-  - When a yielding function is called, ALL open profiles are automatically closed
-  - Subsequent closer calls after yielding will report errors (already closed)
-
-- `yieldingFunctions` (optional, string[], only with `platform: "roblox"`) - Custom patterns for Roblox yielding functions. Supports wildcards:
-  - Exact match: `"task.wait"` matches only `task.wait()`
-  - Wildcard method: `"*.WaitForChild"` matches `instance.WaitForChild()`, `player.WaitForChild()`, etc.
-  - Default: `["task.wait", "wait", "*.WaitForChild"]`
-
-**Top-Level Options:**
-
-- `pairs` (required, array) - Array of pair configurations to enforce. Rule checks all configured pairs simultaneously.
-
-- `allowConditionalClosers` (optional, boolean, default: `false`) - Controls whether closers must be called on ALL execution paths:
-  - `false` (strict): Requires closer on every path (if/else both branches, all switch cases, etc.)
-  - `true` (permissive): Allows closers in some but not all branches
-
-- `allowMultipleOpeners` (optional, boolean, default: `true`) - Controls consecutive opener calls:
-  - `true`: Allows multiple opener calls before closers (nesting)
-  - `false`: Reports error if opener is called again before closer
-
-- `maxNestingDepth` (optional, number, default: `0`) - Maximum nesting depth for paired calls:
-  - `0`: Unlimited nesting
-  - `> 0`: Reports error if nesting exceeds this depth
-
-**Default configuration (Roblox profiling):**
+**Default configuration (Roblox profiling)**
 
 ```typescript
 {
@@ -694,7 +514,62 @@ function test() {
 }
 ```
 
-**Real-world examples:**
+**❌ Bad**
+
+```typescript
+// Missing closer on early return
+function test() {
+	debug.profilebegin("task");
+	if (error) return; // Never closed on this path
+	debug.profileend();
+}
+
+// Wrong LIFO order
+function test() {
+	debug.profilebegin("outer");
+	debug.profilebegin("inner");
+	debug.profileend(); // closes inner
+	// outer is never closed
+}
+
+// Async operation with requireSync
+async function test() {
+	debug.profilebegin("task");
+	await fetch("/api");
+	debug.profileend();
+}
+```
+
+**✅ Good**
+
+```typescript
+// Simple pairing
+function test() {
+	debug.profilebegin("task");
+	doWork();
+	debug.profileend();
+}
+
+// Proper LIFO nesting
+function test() {
+	debug.profilebegin("outer");
+	debug.profilebegin("inner");
+	debug.profileend();
+	debug.profileend();
+}
+
+// Try-finally ensures closer on all paths
+function test() {
+	debug.profilebegin("task");
+	try {
+		riskyOperation();
+	} finally {
+		debug.profileend();
+	}
+}
+```
+
+**Real-world examples**
 
 ```typescript
 // Database transactions
@@ -714,60 +589,278 @@ function test() {
   }]
 }
 
-// Roblox Iris widgets all using Iris.End
+// Roblox Iris widgets
 {
   "pairs": [{
     "opener": "Iris.CollapsingHeader",
     "openerAlternatives": ["Iris.Window", "Iris.TreeNode", "Iris.Table"],
     "closer": "Iris.End",
     "platform": "roblox",
-    "requireSync": true,
-    "yieldingFunctions": ["task.wait", "wait", "*.WaitForChild", "*.*Async"]
+    "requireSync": true
   }]
-}
-
-// Multiple pairs
-{
-  "pairs": [
-    { "opener": "debug.profilebegin", "closer": "debug.profileend" },
-    { "opener": "db.transaction", "closer": "db.commit", "alternatives": ["db.rollback"] },
-    { "opener": "file.open", "closer": "file.close" }
-  ]
-}
-
-// Strict nesting
-{
-  "pairs": [{ "opener": "begin", "closer": "end" }],
-  "maxNestingDepth": 2,
-  "allowMultipleOpeners": false
 }
 ```
 
-**Use cases:**
-
-- Roblox/Luau profiling (debug.profilebegin/end)
-- Database transactions (transaction/commit/rollback)
-- Resource locks (acquire/release)
-- File handles (open/close)
-- Network connections (connect/disconnect)
-- Any begin/end API pattern
-
 ### Code Quality
+
+#### `ban-instances`
+
+Bans specified Roblox Instance classes in `new Instance()` calls and JSX elements.
+
+**Configuration**
+
+```typescript
+// Array format (default message)
+{
+  "cease-nonsense/ban-instances": ["error", {
+    "bannedInstances": ["Part", "Script", "LocalScript"]
+  }]
+}
+
+// Object format (custom messages)
+{
+  "cease-nonsense/ban-instances": ["error", {
+    "bannedInstances": {
+      "Part": "Use MeshPart instead for better performance",
+      "Script": "Scripts should not be created at runtime"
+    }
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+// With config: { bannedInstances: ["Part", "Script"] }
+const part = new Instance("Part");
+const script = new Instance("Script");
+
+// JSX (lowercase = Roblox Instance)
+<part Size={new Vector3(1, 1, 1)} />
+```
+
+**✅ Good**
+
+```typescript
+const meshPart = new Instance("MeshPart");
+<meshpart Size={new Vector3(1, 1, 1)} />
+```
+
+#### `fast-format`
+
+Enforces oxfmt code formatting. Reports INSERT, DELETE, and REPLACE operations for formatting differences.
+
+**Features**
+
+- ✨ Has auto-fix
+- Uses an LRU cache to avoid re-formatting unchanged files
+
+#### `no-async-constructor`
+
+Disallows asynchronous operations inside class constructors.
+
+**Why**
+
+Constructors return immediately, so async work causes race conditions, unhandled rejections, and incomplete object states.
+
+**Detected violations**
+
+- `await` expressions
+- Promise chains (`.then()`, `.catch()`, `.finally()`)
+- Async IIFEs (`(async () => {})()`)
+- Unhandled async method calls (`this.asyncMethod()`)
+- Orphaned promises (`const p = this.asyncMethod()`)
+
+**❌ Bad**
+
+```typescript
+class UserService {
+	constructor() {
+		await this.initialize(); // Direct await
+		this.loadData().then((data) => (this.data = data)); // Promise chain
+		(async () => {
+			await this.setup();
+		})(); // Async IIFE
+	}
+
+	async initialize() {
+		/* ... */
+	}
+	async loadData() {
+		/* ... */
+	}
+	async setup() {
+		/* ... */
+	}
+}
+```
+
+**✅ Good**
+
+```typescript
+class UserService {
+	private initPromise: Promise<void>;
+
+	constructor() {
+		this.initPromise = this.initialize();
+	}
+
+	async initialize() {
+		/* ... */
+	}
+
+	// Factory pattern
+	static async create(): Promise<UserService> {
+		const service = new UserService();
+		await service.initPromise;
+		return service;
+	}
+}
+```
+
+#### `no-commented-code`
+
+Detects and reports commented-out code.
+
+**Features**
+
+- 💡 Has suggestions
+- Groups adjacent line comments and block comments
+- Uses heuristic detection combined with parsing to minimize false positives
+
+**❌ Bad**
+
+```typescript
+function calculate(x: number) {
+	// const result = x * 2;
+	// return result;
+
+	/* if (x > 10) {
+    return x;
+  } */
+
+	return x + 1;
+}
+```
+
+**✅ Good**
+
+```typescript
+function calculate(x: number) {
+	// TODO: Consider multiplying by 2 instead
+	// Note: This is a simplified version
+	return x + 1;
+}
+```
+
+#### `no-identity-map`
+
+Bans pointless identity `.map()` calls that return the parameter unchanged.
+
+**Features**
+
+- ✨ Has auto-fix
+- Context-aware messages for Bindings vs Arrays
+
+**❌ Bad**
+
+```typescript
+// Bindings
+const result = scaleBinding.map((value) => value);
+
+// Arrays - pointless shallow copy
+const copied = items.map((item) => item);
+```
+
+**✅ Good**
+
+```typescript
+// Bindings - use directly
+const result = scaleBinding;
+
+// Arrays - use table.clone or spread
+const copied = table.clone(items);
+const copied2 = [...items];
+
+// Actual transformations are fine
+const doubled = items.map((x) => x * 2);
+```
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-identity-map": ["error", {
+    "bindingPatterns": ["binding"]  // Case-insensitive patterns
+  }]
+}
+```
+
+#### `no-shorthand-names`
+
+Bans shorthand variable names in favor of descriptive full names.
+
+**Default mappings**
+
+- `plr` → `player` (or `localPlayer` for `Players.LocalPlayer`)
+- `args` → `parameters`
+- `dt` → `deltaTime`
+- `char` → `character`
+- `btn` → `button`
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-shorthand-names": ["error", {
+    "shorthands": {
+      "plr": "player",
+      "args": "parameters",
+      "dt": "deltaTime",
+      "char": "character",
+      "btn": "button"
+    },
+    "allowPropertyAccess": ["char"]  // Allow as property
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+const plr = getPlayer();
+const args = [1, 2, 3];
+const dt = 0.016;
+```
+
+**✅ Good**
+
+```typescript
+const player = getPlayer();
+const localPlayer = Players.LocalPlayer;
+const parameters = [1, 2, 3];
+const deltaTime = 0.016;
+const model = entity.char; // Property access is allowed
+```
+
+### Performance
 
 #### `no-color3-constructor`
 
-Bans `new Color3(...)` except for `new Color3()` or `new Color3(0, 0, 0)`. Use `Color3.fromRGB()` instead for better performance.
+Bans `new Color3(...)` except for `new Color3()` or `new Color3(0, 0, 0)`. Use `Color3.fromRGB()` instead.
 
-##### ✨ Has auto-fix
+**Features**
 
-**❌ Bad:**
+- ✨ Has auto-fix
+
+**❌ Bad**
 
 ```typescript
 const red = new Color3(255, 0, 0);
 const blue = new Color3(0.5, 0.5, 1);
 ```
 
-**✅ Good:**
+**✅ Good**
 
 ```typescript
 const red = Color3.fromRGB(255, 0, 0);
@@ -777,16 +870,21 @@ const black = new Color3(0, 0, 0); // Allowed
 
 #### `prefer-udim2-shorthand`
 
-Prefer `UDim2.fromScale()` or `UDim2.fromOffset()` when all offsets or all scales are zero. Leaves `new UDim2(0, 0, 0, 0)` alone. Includes auto-fix.
+Prefer `UDim2.fromScale()` or `UDim2.fromOffset()` when all offsets or all scales are zero.
 
-**❌ Bad:**
+**Features**
+
+- ✨ Has auto-fix
+- Leaves `new UDim2(0, 0, 0, 0)` alone
+
+**❌ Bad**
 
 ```typescript
 new UDim2(1, 0, 1, 0);
 new UDim2(0, 100, 0, 50);
 ```
 
-**✅ Good:**
+**✅ Good**
 
 ```typescript
 UDim2.fromScale(1, 1);
@@ -796,23 +894,25 @@ new UDim2(0, 0, 0, 0); // Allowed
 
 #### `prefer-sequence-overloads`
 
-Prefer the optimized `ColorSequence` and `NumberSequence` constructor overloads instead of building an array of `*SequenceKeypoint`s for the 0/1 endpoints. Includes auto-fix.
+Prefer the optimized `ColorSequence` and `NumberSequence` constructor overloads instead of building an array of `*SequenceKeypoint`s.
 
-**❌ Bad:**
+**Features**
+
+- ✨ Has auto-fix
+- Automatically collapses identical 0/1 endpoints
+
+**❌ Bad**
 
 ```typescript
 new ColorSequence([
-  new ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),
-  new ColorSequenceKeypoint(1, Color3.fromRGB(255, 100, 200)),
+	new ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),
+	new ColorSequenceKeypoint(1, Color3.fromRGB(255, 100, 200)),
 ]);
 
-new NumberSequence([
-  new NumberSequenceKeypoint(0, 0),
-  new NumberSequenceKeypoint(1, 100),
-]);
+new NumberSequence([new NumberSequenceKeypoint(0, 0), new NumberSequenceKeypoint(1, 100)]);
 ```
 
-**✅ Good:**
+**✅ Good**
 
 ```typescript
 new ColorSequence(Color3.fromRGB(100, 200, 255), Color3.fromRGB(255, 100, 200));
@@ -824,167 +924,74 @@ new NumberSequence(0, 100);
 new NumberSequence(42);
 ```
 
-Automatically collapses identical 0/1 endpoints to the single-argument overload.
-
 #### `no-instance-methods-without-this`
 
-Detects instance methods that don't use `this` and should be converted to standalone functions for better performance in roblox-ts.
+Detects instance methods that don't use `this` and should be converted to standalone functions.
 
-In roblox-ts, instance methods create metatable objects with significant performance overhead. Methods that don't use `this` can be moved outside the class and called as standalone functions, eliminating this overhead entirely.
+**Why**
 
-**❌ Bad:**
+In roblox-ts, instance methods create metatable objects with significant performance overhead. Methods that don't use `this` can be moved outside the class.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-instance-methods-without-this": ["error", {
+    "checkPrivate": true,   // Default: true
+    "checkProtected": true, // Default: true
+    "checkPublic": true     // Default: true
+  }]
+}
+```
+
+**❌ Bad**
 
 ```typescript
 type OnChange = (currentValue: number, previousValue: number) => void;
 
 class MyClass {
-  private readonly onChanges = new Array<OnChange>();
-  private value = 0;
+	private readonly onChanges = new Array<OnChange>();
+	private value = 0;
 
-  public increment(): void {
-    const previousValue = this.value;
-    const value = previousValue + 1;
-    this.value = value;
-    this.notifyChanges(value, previousValue); // ← Bad: method doesn't use this
-  }
+	public increment(): void {
+		const previousValue = this.value;
+		const value = previousValue + 1;
+		this.value = value;
+		this.notifyChanges(value, previousValue); // Doesn't use this
+	}
 
-  private notifyChanges(value: number, previousValue: number): void {
-    for (const onChange of this.onChanges) onChange(value, previousValue);
-  }
+	private notifyChanges(value: number, previousValue: number): void {
+		for (const onChange of this.onChanges) {
+			onChange(value, previousValue);
+		}
+	}
 }
 ```
 
-**✅ Good:**
+**✅ Good**
 
 ```typescript
 type OnChange = (currentValue: number, previousValue: number) => void;
 
 function notifyChanges(value: number, previousValue: number, onChanges: ReadonlyArray<OnChange>): void {
-  for (const onChange of onChanges) onChange(value, previousValue);
+	for (const onChange of onChanges) {
+		onChange(value, previousValue);
+	}
 }
 
 class MyClass {
-  private readonly onChanges = new Array<OnChange>();
-  private value = 0;
+	private readonly onChanges = new Array<OnChange>();
+	private value = 0;
 
-  public increment(): void {
-    const previousValue = this.value;
-    const value = previousValue + 1;
-    this.value = value;
-    notifyChanges(value, previousValue, this.onChanges); // ← Standalone function call
-  }
-}
-```
-
-**Configuration:**
-
-```typescript
-{
-  "cease-nonsense/no-instance-methods-without-this": ["error", {
-    "checkPrivate": true,       // Check private methods (default: true)
-    "checkProtected": true,     // Check protected methods (default: true)
-    "checkPublic": true         // Check public methods (default: true)
-  }]
-}
-```
-
-#### `no-identity-map`
-
-Bans pointless identity `.map()` calls that return the parameter unchanged. These are wasteful operations that do nothing.
-
-##### ✨ Has auto-fix
-
-**❌ Bad:**
-
-```typescript
-// Bindings - pointless identity map
-const result = scaleBinding.map((value) => value);
-const transparency = shadowTransparencyBinding.map((trans: number) => {
-  return trans;
-});
-
-// Arrays - pointless shallow copy via identity map
-const copied = items.map((item) => item);
-const data = array.map((x: number) => x);
-```
-
-**✅ Good:**
-
-```typescript
-// Bindings - use directly
-const result = scaleBinding;
-const transparency = shadowTransparencyBinding;
-
-// Arrays - use table.clone or spread for intentional copies
-const copied = table.clone(items);
-const copied2 = [...items];
-
-// Actual transformations are fine
-const doubled = items.map((x) => x * 2);
-const names = users.map((user) => user.name);
-```
-
-**Context-aware messages:**
-
-- For Bindings (detected via name containing "binding", `useBinding()`, `joinBindings()`, or chained `.map()`): Suggests using the original binding directly
-- For Arrays: Suggests using `table.clone(array)` or `[...array]` instead
-
-**Configuration:**
-
-```typescript
-{
-  "cease-nonsense/no-identity-map": ["error", {
-    "bindingPatterns": ["binding"]  // Case-insensitive name patterns for Binding detection
-  }]
-}
-```
-
-#### `no-shorthand-names`
-
-Bans shorthand variable names in favor of descriptive full names.
-
-**Default mappings:**
-
-- `plr` → `player` (or `localPlayer` for `Players.LocalPlayer`)
-- `args` → `parameters`
-- `dt` → `deltaTime`
-- `char` → `character`
-
-**❌ Bad:**
-
-```typescript
-const plr = getPlayer();
-const args = [1, 2, 3];
-const dt = 0.016;
-```
-
-**✅ Good:**
-
-```typescript
-const player = getPlayer();
-const localPlayer = Players.LocalPlayer;
-const parameters = [1, 2, 3];
-const deltaTime = 0.016;
-const model = entity.char; // Property access is allowed
-```
-
-**Configuration:**
-
-```typescript
-{
-  "cease-nonsense/no-shorthand-names": ["error", {
-    "shorthands": {
-      "plr": "player",
-      "args": "parameters",
-      "dt": "deltaTime",
-      "char": "character",
-      "btn": "button"  // Add custom mappings
-    },
-    "allowPropertyAccess": ["char"]  // Allow as property
-  }]
+	public increment(): void {
+		const previousValue = this.value;
+		const value = previousValue + 1;
+		this.value = value;
+		notifyChanges(value, previousValue, this.onChanges);
+	}
 }
 ```
 
 ## License
 
-Do whatever you want with this code. I don't care. I know it says MIT but that is genuinely just a formality.
+MIT License - feel free to use this code however you want.
