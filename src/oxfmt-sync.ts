@@ -18,14 +18,14 @@ let workerState: OxfmtWorkerState | undefined;
 function resolveWorkerPath(): URL {
 	// Try .js first (production/dist), then .ts (development/source)
 	const jsPath = new URL("./oxfmt-worker.js", import.meta.url);
-	if (existsSync(fileURLToPath(jsPath))) return jsPath;
+	const jsFilePath = fileURLToPath(jsPath);
+	if (existsSync(jsFilePath)) return jsPath;
 
 	const tsPath = new URL("./oxfmt-worker.ts", import.meta.url);
-	if (existsSync(fileURLToPath(tsPath))) return tsPath;
+	const tsFilePath = fileURLToPath(tsPath);
+	if (existsSync(tsFilePath)) return tsPath;
 
-	throw new Error(
-		`Oxfmt worker not found at ${fileURLToPath(jsPath)} or ${fileURLToPath(tsPath)}. Did you run 'bun run build'?`,
-	);
+	throw new Error(`Oxfmt worker not found at ${jsFilePath} or ${tsFilePath}. Did you run 'bun run build'?`);
 }
 
 function getWorker(): OxfmtWorkerState {

@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from "bun:test";
-import { formatSync, terminateWorker } from "../../src/utilities/oxfmt-sync";
+import { formatSync, terminateWorker } from "../../src/oxfmt-sync";
 
 describe("oxfmt-sync", () => {
 	afterAll(() => {

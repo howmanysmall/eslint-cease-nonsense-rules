@@ -86,7 +86,7 @@
 			},
 		},
 		{
-			"files": ["src/utilities/oxfmt-sync.ts", "src/utilities/oxfmt-worker.ts"],
+			"files": ["src/oxfmt-sync.ts", "src/oxfmt-worker.ts"],
 			"rules": {
 				"unicorn/require-post-message-target-origin": "off",
 			},
