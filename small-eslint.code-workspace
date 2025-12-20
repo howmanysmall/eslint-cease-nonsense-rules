@@ -45,13 +45,14 @@
 		"editor.acceptSuggestionOnCommitCharacter": true,
 		"editor.acceptSuggestionOnEnter": "on",
 		"editor.codeActionsOnSave": {
-			"source.addMissingImports": "explicit",
-			"source.addMissingImports.ts": "explicit",
-			"source.fixAll.biome": "explicit",
-			"source.fixAll.eslint": "explicit",
-			"source.fixAll.oxc": "explicit",
+			"source.addMissingImports": "always",
+			"source.addMissingImports.ts": "always",
+			"source.biome": "always",
+			"source.fixAll.biome": "always",
+			"source.fixAll.oxc": "always",
 			"source.organizeImports": "never",
-			"source.removeUnusedImports": "explicit",
+			"source.organizeImports.biome": "always",
+			"source.removeUnusedImports": "always",
 		},
 		"editor.defaultFormatter": "biomejs.biome",
 		"editor.formatOnSave": true,
@@ -65,11 +66,10 @@
 
 		"oxc.enable": true,
 		"oxc.fixKind": "safe_fix",
-		"oxc.fmt.experimental": true,
 		"oxc.lint.run": "onType",
 		"oxc.typeAware": true,
 
 		"typescript.experimental.useTsgo": true,
-		"typescript.tsserver.experimental.enableProjectDiagnostics": false,
+		"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	},
 }
