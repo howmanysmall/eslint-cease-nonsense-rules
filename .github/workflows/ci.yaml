@@ -1,41 +1,41 @@
 name: ci
 
 on:
-    push:
-        branches:
-            - main
-        paths:
-            - "src/**/*.ts"
-    pull_request:
-        paths:
-            - "src/**/*.ts"
+  push:
+    branches:
+      - main
+    paths:
+      - "src/**/*.ts"
+  pull_request:
+    paths:
+      - "src/**/*.ts"
 
 jobs:
-    build-and-test:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            - name: Setup Bun
-              uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: latest
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-            - name: Install
-              run: bun install --no-cache
+      - name: Install
+        run: bun install --no-cache
 
-            - name: Setup oxlint-tsgolint
-              run: bun add -D oxlint-tsgolint@latest
+      - name: Setup oxlint-tsgolint
+        run: bun add -D oxlint-tsgolint@latest
 
-            - name: Lint
-              run: bun run lint
+      - name: Lint
+        run: bun run lint
 
-            - name: Typecheck
-              run: bun run typecheck
+      - name: Typecheck
+        run: bun run typecheck
 
-            - name: Test
-              run: bun test
+      - name: Test
+        run: bun test
 
-            - name: Build
-              run: bun run build
+      - name: Build
+        run: bun run build --no-sourcemap
