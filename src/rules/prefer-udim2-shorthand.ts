@@ -54,7 +54,7 @@ function reconstructText(node: Record<PropertyKey, unknown>): string | undefined
 		if (typeof operator !== "string" || !OPERATORS.has(operator)) return undefined;
 
 		const { left, right } = node;
-		if (!isRecord(left) || !isRecord(right)) return undefined;
+		if (!(isRecord(left) && isRecord(right))) return undefined;
 
 		const leftText = reconstructText(left);
 		const rightText = reconstructText(right);
@@ -127,7 +127,7 @@ function collectArguments(_context: RuleContext, parameters: ReadonlyArray<unkno
 
 	for (let index = 0; index < 4; index++) {
 		const parameter = parameters[index];
-		if (!isRecord(parameter) || !hasTypeProperty(parameter)) return undefined;
+		if (!(isRecord(parameter) && hasTypeProperty(parameter))) return undefined;
 
 		if (parameter.type === TSESTree.AST_NODE_TYPES.SpreadElement) return undefined;
 

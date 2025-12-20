@@ -338,7 +338,7 @@ function isStaticExpression(
 
 		case AST_NODE_TYPES.BinaryExpression:
 		case AST_NODE_TYPES.LogicalExpression:
-			if (!isNonPrivateExpression(unwrapped.left) || !isNonPrivateExpression(unwrapped.right)) return false;
+			if (!(isNonPrivateExpression(unwrapped.left) && isNonPrivateExpression(unwrapped.right))) return false;
 			return (
 				isStaticExpression(context, unwrapped.left, seen, options) &&
 				isStaticExpression(context, unwrapped.right, seen, options)

@@ -253,7 +253,7 @@ const noCommentedCode: Rule.RuleModule = {
 						const firstComment = group.comments.at(0);
 						const lastComment = group.comments.at(-1);
 
-						if (!firstComment || !lastComment) continue;
+						if (!(firstComment && lastComment)) continue;
 
 						context.report({
 							loc: {

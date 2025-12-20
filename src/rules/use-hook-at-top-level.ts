@@ -257,7 +257,7 @@ const useHookAtTopLevel: Rule.RuleModule = {
 
 				const current = getCurrentContext();
 				if (!current) return;
-				if (!current.isComponentOrHook && !current.inNestedFunction) return;
+				if (!(current.isComponentOrHook || current.inNestedFunction)) return;
 				if (isInFinallyBlock(callNode)) return;
 
 				if (isRecursiveCall(callNode, currentFunctionName)) {
