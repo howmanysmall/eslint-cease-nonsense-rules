@@ -383,7 +383,7 @@ function isTernaryJSXChild(node: TSESTree.JSXElement | TSESTree.JSXFragment): bo
 		current = current.parent;
 	}
 
-	if (!foundTernary || !current) return false;
+	if (!(foundTernary && current)) return false;
 
 	// Must be inside JSXExpressionContainer
 	if (current.type !== TSESTree.AST_NODE_TYPES.JSXExpressionContainer) return false;

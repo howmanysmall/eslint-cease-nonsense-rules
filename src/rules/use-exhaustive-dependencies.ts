@@ -371,7 +371,7 @@ function findTopmostMemberExpression(node: TSESTree.Node): TSESTree.Node {
 		const isChainParent = parent.type === TSESTree.AST_NODE_TYPES.ChainExpression;
 		const isNonNullParent = parent.type === TSESTree.AST_NODE_TYPES.TSNonNullExpression;
 
-		if (!isMemberParent && !isChainParent && !isNonNullParent) break;
+		if (!(isMemberParent || isChainParent || isNonNullParent)) break;
 
 		current = parent;
 		({ parent } = parent);
