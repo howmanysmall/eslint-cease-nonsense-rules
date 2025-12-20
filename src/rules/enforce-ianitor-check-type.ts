@@ -1,5 +1,6 @@
 import { TSESTree } from "@typescript-eslint/types";
-import { ESLintUtils, type TSESLint } from "@typescript-eslint/utils";
+import type { TSESLint } from "@typescript-eslint/utils";
+import { ESLintUtils } from "@typescript-eslint/utils";
 
 export interface ComplexityConfiguration {
 	readonly baseThreshold: number;
@@ -38,9 +39,9 @@ function hasTypeAnnotation(node: { type: string; id?: unknown; returnType?: unkn
 		typeof node.id === "object" &&
 		hasTypeAnnotationProperty(node.id)
 	)
-		return !!node.id.typeAnnotation;
+		return Boolean(node.id.typeAnnotation);
 
-	if (SHOULD_NOT_NOT_RETURN_TYPE.has(node.type)) return !!node.returnType;
+	if (SHOULD_NOT_NOT_RETURN_TYPE.has(node.type)) return Boolean(node.returnType);
 	return false;
 }
 
@@ -71,8 +72,9 @@ function extractIanitorStaticVariable(typeAnnotation: TSESTree.TypeNode): string
 		currentType.typeName.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		currentType.typeName.name === "Readonly" &&
 		currentType.typeArguments?.params[0]
-	)
-		currentType = currentType.typeArguments.params[0];
+	) {
+		[currentType] = currentType.typeArguments.params;
+	}
 
 	if (currentType.type !== TSESTree.AST_NODE_TYPES.TSTypeReference) return undefined;
 
@@ -87,8 +89,9 @@ function extractIanitorStaticVariable(typeAnnotation: TSESTree.TypeNode): string
 		typeName.right.name === "Static" &&
 		firstParam?.type === TSESTree.AST_NODE_TYPES.TSTypeQuery &&
 		firstParam.exprName.type === TSESTree.AST_NODE_TYPES.Identifier
-	)
+	) {
 		return firstParam.exprName.name;
+	}
 
 	return undefined;
 }
@@ -101,8 +104,9 @@ function hasIanitorStaticType(typeAnnotation: TSESTree.TypeNode): boolean {
 		currentType.typeName.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		currentType.typeName.name === "Readonly" &&
 		currentType.typeArguments?.params[0]
-	)
-		currentType = currentType.typeArguments.params[0];
+	) {
+		[currentType] = currentType.typeArguments.params;
+	}
 
 	if (currentType.type !== TSESTree.AST_NODE_TYPES.TSTypeReference) return false;
 
@@ -125,12 +129,13 @@ function calculateIanitorComplexity(node: {
 	};
 	readonly arguments?: ReadonlyArray<{ type?: string; properties?: Array<unknown> }>;
 }): number {
-	const callee = node.callee;
+	const { callee } = node;
 	if (
 		callee?.type !== TSESTree.AST_NODE_TYPES.MemberExpression ||
 		callee.property?.type !== TSESTree.AST_NODE_TYPES.Identifier
-	)
+	) {
 		return 0;
+	}
 
 	const method = callee.property.name;
 	switch (method) {
@@ -175,7 +180,8 @@ const createRule = ESLintUtils.RuleCreator(
 
 const enforceIanitorCheckType = createRule<Options, MessageIds>({
 	create(context) {
-		const config: ComplexityConfiguration = { ...DEFAULT_CONFIGURATION, ...context.options[0] };
+		const [rawOptions] = context.options;
+		const config: ComplexityConfiguration = { ...DEFAULT_CONFIGURATION, ...rawOptions };
 		const cache: ComplexityCache = {
 			nodeCache: new WeakMap(),
 			visitedNodes: new WeakSet(),
@@ -320,9 +326,8 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 
 				case TSESTree.AST_NODE_TYPES.TSFunctionType:
 				case TSESTree.AST_NODE_TYPES.TSMethodSignature: {
-					const func = node as TSESTree.TSFunctionType | TSESTree.TSMethodSignature;
 					score = 2;
-					for (const param of func.params) {
+					for (const param of node.params) {
 						const typeAnnotation = "typeAnnotation" in param ? param.typeAnnotation : undefined;
 						if (typeAnnotation)
 							score = addScore(
@@ -330,10 +335,10 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 								calculateStructuralComplexity(typeAnnotation.typeAnnotation, nextDepth),
 							);
 					}
-					if (func.returnType)
+					if (node.returnType)
 						score = addScore(
 							score,
-							calculateStructuralComplexity(func.returnType.typeAnnotation, nextDepth),
+							calculateStructuralComplexity(node.returnType.typeAnnotation, nextDepth),
 						);
 					break;
 				}
@@ -349,13 +354,11 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 			return score;
 		}
 
-		const variableDeclaratorsToCheck = new Map<unknown, { complexity: number }>();
+		const variableDeclaratorsToCheck = new Map<TSESTree.VariableDeclarator, { complexity: number }>();
 
 		return {
 			"Program:exit"(): void {
-				for (const [nodeKey, data] of variableDeclaratorsToCheck.entries()) {
-					const node = nodeKey as TSESTree.VariableDeclarator;
-
+				for (const [node, data] of variableDeclaratorsToCheck.entries()) {
 					if (node.id.type === TSESTree.AST_NODE_TYPES.Identifier && ianitorStaticVariables.has(node.id.name))
 						continue;
 
@@ -403,7 +406,7 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 				const complexity = calculateIanitorComplexity(node.init);
 				if (complexity < config.baseThreshold) return;
 
-				variableDeclaratorsToCheck.set(node as unknown, { complexity });
+				variableDeclaratorsToCheck.set(node, { complexity });
 			},
 		};
 	},

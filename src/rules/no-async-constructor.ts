@@ -18,7 +18,7 @@ function isNode(value: unknown): value is TSESTree.Node {
 	return typeof value === "object" && value !== null && "type" in value;
 }
 
-function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & { readonly [key: string]: unknown } {
+function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & Readonly<Record<string, unknown>> {
 	return true;
 }
 
@@ -248,21 +248,24 @@ function findConstructorViolations(
 		if (!hasDynamicProperties(current)) return;
 
 		for (const key in current) {
-			const childValue = current[key];
-			if (childValue === undefined) continue;
+			if (Object.hasOwn(current, key)) {
+				const childValue = current[key];
+				if (childValue === undefined) continue;
 
-			if (Array.isArray(childValue)) {
-				for (const item of childValue) {
-					if (!isNode(item)) continue;
-					parentMap.set(item, current);
-					traverse(item);
+				if (Array.isArray(childValue)) {
+					for (const item of childValue) {
+						// oxlint-disable-next-line max-depth
+						if (!isNode(item)) continue;
+						parentMap.set(item, current);
+						traverse(item);
+					}
+					continue;
 				}
-				continue;
-			}
 
-			if (!isNode(childValue)) continue;
-			parentMap.set(childValue, current);
-			traverse(childValue);
+				if (!isNode(childValue)) continue;
+				parentMap.set(childValue, current);
+				traverse(childValue);
+			}
 		}
 	}
 

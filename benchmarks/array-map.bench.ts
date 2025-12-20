@@ -52,13 +52,9 @@ for (let index = 0; index < SIZE; index += 1) values[index] = nextValue();
 const Array_prototype_map = Array.prototype.map;
 
 barplot(() => {
-	bench("Array.prototype.map", () => {
-		return values.map((value) => ({ value }));
-	});
-	bench("Array_prototype_map", () => {
-		// oxlint-disable-next-line no-unsafe-return
-		return Array_prototype_map.call(values, (value: unknown) => ({ value }));
-	});
+	bench("Array.prototype.map", () => values.map((value) => ({ value })));
+	// oxlint-disable-next-line no-unsafe-return
+	bench("Array_prototype_map", () => Array_prototype_map.call(values, (value: unknown) => ({ value })));
 	bench("Raw Map (numeric + preallocate)", () => {
 		const array = new Array<{ readonly value: unknown }>(values.length);
 		for (let index = 0; index < values.length; index += 1) array[index] = { value: values[index] };

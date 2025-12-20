@@ -1,8 +1,10 @@
+import { regex } from "arkregex";
 import type { Detector } from "./detector";
 
-const WHITESPACE_GLOBAL_REGEX = /\s+/g;
-
-const ESCAPE = /[-/\\^$*+?.()|[\]{}]/g;
+// oxlint-disable-next-line prefer-string-raw
+const WHITESPACE_GLOBAL_REGEX = regex("\\s+", "g");
+// oxlint-disable-next-line prefer-string-raw
+const ESCAPE = regex("[-/\\^$*+?.()|[\\]{}]", "g");
 
 function escapeForRegex(value: string): string {
 	return value.replaceAll(ESCAPE, String.raw`\$&`);
@@ -16,7 +18,7 @@ function escapeForRegex(value: string): string {
  * @param patterns - Patterns to detect (strings are escaped, RegExp used as-is)
  * @returns Detector instance
  */
-function createContainsDetector(probability: number, patterns: ReadonlyArray<string | RegExp>): Detector {
+export function createContainsDetector(probability: number, patterns: ReadonlyArray<string | RegExp>): Detector {
 	const compiledPatterns = patterns.map((pattern) =>
 		typeof pattern === "string" ? new RegExp(escapeForRegex(pattern), "g") : new RegExp(pattern.source, "g"),
 	);
@@ -37,5 +39,3 @@ function createContainsDetector(probability: number, patterns: ReadonlyArray<str
 		},
 	};
 }
-
-export { createContainsDetector };

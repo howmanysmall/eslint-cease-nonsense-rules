@@ -18,7 +18,7 @@ const ruleTester = new RuleTester({
 
 describe("require-react-component-keys", () => {
 	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
-	// and this test file intentionally passes the rule as-is for runtime validation.
+	// And this test file intentionally passes the rule as-is for runtime validation.
 	ruleTester.run("require-react-component-keys", rule, {
 		invalid: [
 			// Elements in fragment
@@ -239,7 +239,7 @@ function CallMapped(items) {
 					},
 				},
 			},
-			// useCallback missing key
+			// UseCallback missing key
 			{
 				code: `
 function Bad10() {
@@ -256,7 +256,7 @@ function Bad10() {
 					},
 				},
 			},
-			// useMemo missing key
+			// UseMemo missing key
 			{
 				code: `
 function Bad11() {
@@ -336,7 +336,7 @@ function Bad9() {
 					},
 				},
 			},
-			// forwardRef children still need keys
+			// ForwardRef children still need keys
 			{
 				code: `
 const Component = React.forwardRef((props, ref) => (
@@ -354,7 +354,7 @@ const Component = React.forwardRef((props, ref) => (
 					},
 				},
 			},
-			// memo children still need keys
+			// Memo children still need keys
 			{
 				code: `
 const Component = React.memo(() => (
@@ -371,7 +371,7 @@ const Component = React.memo(() => (
 					},
 				},
 			},
-			// forwardRef root element should not have key
+			// ForwardRef root element should not have key
 			{
 				code: `
 const Component = React.forwardRef((props, ref) => (
@@ -741,7 +741,7 @@ function HealthBarWithAssertion() {
 					},
 				},
 			},
-			// useCallback with keyed elements
+			// UseCallback with keyed elements
 			{
 				code: `
 function Component() {
@@ -757,7 +757,7 @@ function Component() {
 					},
 				},
 			},
-			// useMemo with keyed elements
+			// UseMemo with keyed elements
 			{
 				code: `
 function Component() {
@@ -888,7 +888,7 @@ const Component = React.forwardRef((props, ref) => {
 					},
 				},
 			},
-			// forwardRef without React namespace
+			// ForwardRef without React namespace
 			{
 				code: `
 const Component = forwardRef((props, ref) => <span ref={ref} />);
@@ -914,7 +914,7 @@ const Component = React.memo(() => {
 					},
 				},
 			},
-			// memo without React namespace
+			// Memo without React namespace
 			{
 				code: `
 const Component = memo(() => <span />);
@@ -926,7 +926,7 @@ const Component = memo(() => <span />);
 					},
 				},
 			},
-			// forwardRef with wrapper and children
+			// ForwardRef with wrapper and children
 			{
 				code: `
 const Component = React.forwardRef((props, ref) => (
@@ -942,7 +942,7 @@ const Component = React.forwardRef((props, ref) => (
 					},
 				},
 			},
-			// memo with wrapper and children
+			// Memo with wrapper and children
 			{
 				code: `
 const Component = React.memo(() => (

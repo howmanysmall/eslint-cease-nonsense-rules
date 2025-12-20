@@ -1,12 +1,12 @@
 import { TSESTree } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
-import Type from "typebox";
+import Typebox from "typebox";
 import { Compile } from "typebox/compile";
 
 const isNumericLiteralNode = Compile(
-	Type.Object({
-		type: Type.Literal(TSESTree.AST_NODE_TYPES.Literal),
-		value: Type.Number(),
+	Typebox.Object({
+		type: Typebox.Literal(TSESTree.AST_NODE_TYPES.Literal),
+		value: Typebox.Number(),
 	}),
 );
 

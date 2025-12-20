@@ -1,6 +1,6 @@
 import { TSESTree } from "@typescript-eslint/types";
 import type { TSESLint } from "@typescript-eslint/utils";
-import Type from "typebox";
+import Typebox from "typebox";
 import { Compile } from "typebox/compile";
 
 /**
@@ -26,11 +26,14 @@ export interface BanInstancesOptions {
 type Options = [BanInstancesOptions?];
 type MessageIds = "bannedInstance" | "bannedInstanceCustom";
 
-const isArrayConfig = Compile(Type.Array(Type.String()));
-const isObjectConfig = Compile(Type.Record(Type.String(), Type.String()));
+const isArrayConfig = Compile(Typebox.Array(Typebox.String()));
+const isObjectConfig = Compile(Typebox.Record(Typebox.String(), Typebox.String()));
 const isOptionsObject = Compile(
-	Type.Object({
-		bannedInstances: Type.Union([Type.Array(Type.String()), Type.Record(Type.String(), Type.String())]),
+	Typebox.Object({
+		bannedInstances: Typebox.Union([
+			Typebox.Array(Typebox.String()),
+			Typebox.Record(Typebox.String(), Typebox.String()),
+		]),
 	}),
 );
 
@@ -51,14 +54,14 @@ function normalizeConfig(options: unknown): NormalizedConfig {
 	if (isArrayConfig.Check(bannedInstances)) {
 		const map = new Map<string, BannedClassEntry>();
 		for (const className of bannedInstances)
-			map.set(className.toLowerCase(), { originalName: className, message: undefined });
+			map.set(className.toLowerCase(), { message: undefined, originalName: className });
 		return { bannedClasses: map };
 	}
 
 	if (isObjectConfig.Check(bannedInstances)) {
 		const map = new Map<string, BannedClassEntry>();
 		for (const [className, message] of Object.entries(bannedInstances))
-			map.set(className.toLowerCase(), { originalName: className, message });
+			map.set(className.toLowerCase(), { message, originalName: className });
 		return { bannedClasses: map };
 	}
 

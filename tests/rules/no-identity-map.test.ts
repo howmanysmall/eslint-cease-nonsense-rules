@@ -12,6 +12,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("no-identity-map", () => {
+	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
 	ruleTester.run("no-identity-map", rule, {
 		invalid: [
 			// ==========================================

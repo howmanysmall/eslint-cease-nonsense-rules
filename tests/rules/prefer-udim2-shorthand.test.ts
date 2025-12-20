@@ -12,7 +12,7 @@ const ruleTester = new RuleTester({
 describe("prefer-udim2-shorthand", () => {
 	ruleTester.run("prefer-udim2-shorthand", rule, {
 		invalid: [
-			// fromScale pattern tests
+			// FromScale pattern tests
 			{
 				code: "new UDim2(1, 0, 1, 0);",
 				errors: [{ messageId: "preferFromScale" }],
@@ -34,7 +34,7 @@ describe("prefer-udim2-shorthand", () => {
 				output: "func(UDim2.fromScale(1, 2));",
 			},
 
-			// fromOffset pattern tests
+			// FromOffset pattern tests
 			{
 				code: "new UDim2(0, 1, 0, 1);",
 				errors: [{ messageId: "preferFromOffset" }],

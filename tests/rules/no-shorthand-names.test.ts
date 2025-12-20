@@ -129,7 +129,7 @@ describe("no-shorthand-names", () => {
 			{
 				code: "const someVal = '';",
 				errors: [{ messageId: "useReplacement" }],
-				options: [{ shorthands: { "/invalid": "fixed", "some": "other" } }],
+				options: [{ shorthands: { "/invalid": "fixed", some: "other" } }],
 			},
 		],
 		valid: [
@@ -156,7 +156,7 @@ describe("no-shorthand-names", () => {
 			{
 				// Contains full form "properties", not shorthand "props"
 				code: "const nativeProperties = {};",
-				options: [{ shorthands: { props: "properties", Props: "Properties" } }],
+				options: [{ shorthands: { Props: "Properties", props: "properties" } }],
 			},
 			{
 				// "plr" is NOT at a word boundary in "platform"
@@ -170,7 +170,7 @@ describe("no-shorthand-names", () => {
 			{
 				// Case sensitive - PROPS !== props or Props
 				code: "const PROPS = {};",
-				options: [{ shorthands: { props: "properties", Props: "Properties" } }],
+				options: [{ shorthands: { Props: "Properties", props: "properties" } }],
 			},
 			// Glob pattern valid cases - pattern doesn't match
 			{

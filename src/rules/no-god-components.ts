@@ -37,7 +37,8 @@ function isComponentName(name: string): boolean {
 function isReactComponentHOC(callExpr: TSESTree.CallExpression): boolean {
 	const { callee } = callExpr;
 
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return callee.name === "forwardRef" || callee.name === "memo";
+	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier)
+		return callee.name === "forwardRef" || callee.name === "memo";
 
 	if (
 		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
@@ -53,8 +54,9 @@ function isReactComponentHOC(callExpr: TSESTree.CallExpression): boolean {
 function getComponentNameFromFunction(
 	node: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
 ): string | undefined {
-	if (node.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration && node.id && isComponentName(node.id.name))
+	if (node.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration && node.id && isComponentName(node.id.name)) {
 		return node.id.name;
+	}
 
 	if (
 		node.type === TSESTree.AST_NODE_TYPES.FunctionExpression ||
@@ -67,22 +69,25 @@ function getComponentNameFromFunction(
 			parent.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
 			parent.id.type === TSESTree.AST_NODE_TYPES.Identifier &&
 			isComponentName(parent.id.name)
-		)
+		) {
 			return parent.id.name;
+		}
 
 		if (
 			parent.type === TSESTree.AST_NODE_TYPES.Property &&
 			parent.key.type === TSESTree.AST_NODE_TYPES.Identifier &&
 			isComponentName(parent.key.name)
-		)
+		) {
 			return parent.key.name;
+		}
 
 		if (
 			parent.type === TSESTree.AST_NODE_TYPES.MethodDefinition &&
 			parent.key.type === TSESTree.AST_NODE_TYPES.Identifier &&
 			isComponentName(parent.key.name)
-		)
+		) {
 			return parent.key.name;
+		}
 	}
 
 	return undefined;
@@ -96,28 +101,28 @@ function getComponentNameFromCallParent(callExpr: TSESTree.CallExpression): stri
 		parent.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
 		parent.id.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		isComponentName(parent.id.name)
-	)
+	) {
 		return parent.id.name;
+	}
 
 	if (
 		parent.type === TSESTree.AST_NODE_TYPES.AssignmentExpression &&
 		parent.left.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		isComponentName(parent.left.name)
-	)
-		return parent.left.name;
-
-	if (
-		parent.type === TSESTree.AST_NODE_TYPES.ExportDefaultDeclaration &&
-		callExpr.arguments.length > 0
 	) {
-		const firstArg = callExpr.arguments[0];
+		return parent.left.name;
+	}
+
+	if (parent.type === TSESTree.AST_NODE_TYPES.ExportDefaultDeclaration && callExpr.arguments.length > 0) {
+		const [firstArg] = callExpr.arguments;
 		if (
 			firstArg &&
 			firstArg.type === TSESTree.AST_NODE_TYPES.FunctionExpression &&
 			firstArg.id &&
 			isComponentName(firstArg.id.name)
-		)
+		) {
 			return firstArg.id.name;
+		}
 	}
 
 	return undefined;
@@ -131,8 +136,9 @@ function getHookName(callExpression: TSESTree.CallExpression): string | undefine
 	if (
 		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-	)
+	) {
 		return callee.property.name;
+	}
 
 	return undefined;
 }
@@ -140,7 +146,7 @@ function getHookName(callExpression: TSESTree.CallExpression): string | undefine
 function countDestructuredProps(
 	node: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
 ): number | undefined {
-	const firstParam = node.params[0];
+	const [firstParam] = node.params;
 	if (!firstParam) return undefined;
 
 	let pattern: TSESTree.ObjectPattern | undefined;
@@ -148,21 +154,20 @@ function countDestructuredProps(
 	if (
 		firstParam.type === TSESTree.AST_NODE_TYPES.AssignmentPattern &&
 		firstParam.left.type === TSESTree.AST_NODE_TYPES.ObjectPattern
-	)
+	) {
 		pattern = firstParam.left;
+	}
 
 	if (!pattern) return undefined;
 
 	let count = 0;
-	for (const prop of pattern.properties) {
-		if (prop.type === TSESTree.AST_NODE_TYPES.Property) count += 1;
-	}
+	for (const { type } of pattern.properties) if (type === TSESTree.AST_NODE_TYPES.Property) count += 1;
 
 	return count;
 }
 
 function isTypeOnlyNullLiteral(node: TSESTree.Literal): boolean {
-	const parent = node.parent;
+	const { parent } = node;
 	if (parent === null || parent === undefined) return false;
 
 	if (typeof parent.type === "string" && parent.type.startsWith("TS") && !RUNTIME_TS_WRAPPERS.has(parent.type))
@@ -213,7 +218,11 @@ function analyzeComponentBody(
 		function getVisitorKeysForNodeType(nodeType: string): ReadonlyArray<string> {
 			// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
 			const visitorKeysUnknown: unknown = (sourceCode as unknown as { visitorKeys?: unknown }).visitorKeys;
-			if (visitorKeysUnknown === null || visitorKeysUnknown === undefined || typeof visitorKeysUnknown !== "object")
+			if (
+				visitorKeysUnknown === null ||
+				visitorKeysUnknown === undefined ||
+				typeof visitorKeysUnknown !== "object"
+			)
 				return [];
 
 			// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
@@ -276,10 +285,8 @@ function parseOptions(options: unknown): Required<NoGodComponentsOptions> {
 		maxDestructuredProps:
 			typeof cast.maxDestructuredProps === "number" ? cast.maxDestructuredProps : defaults.maxDestructuredProps,
 		maxLines: typeof cast.maxLines === "number" ? cast.maxLines : defaults.maxLines,
-		maxStateHooks:
-			typeof cast.maxStateHooks === "number" ? cast.maxStateHooks : defaults.maxStateHooks,
-		maxTsxNesting:
-			typeof cast.maxTsxNesting === "number" ? cast.maxTsxNesting : defaults.maxTsxNesting,
+		maxStateHooks: typeof cast.maxStateHooks === "number" ? cast.maxStateHooks : defaults.maxStateHooks,
+		maxTsxNesting: typeof cast.maxTsxNesting === "number" ? cast.maxTsxNesting : defaults.maxTsxNesting,
 		stateHooks: Array.isArray(cast.stateHooks) ? cast.stateHooks : defaults.stateHooks,
 		targetLines: typeof cast.targetLines === "number" ? cast.targetLines : defaults.targetLines,
 	};
@@ -291,7 +298,7 @@ const noGodComponents: Rule.RuleModule = {
 		const ignoreSet = new Set(configuration.ignoreComponents);
 		const stateHooks = new Set(configuration.stateHooks);
 		const checked = new WeakSet<TSESTree.Node>();
-		const sourceCode = context.sourceCode;
+		const { sourceCode } = context;
 
 		function checkComponent(
 			node: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
@@ -368,14 +375,6 @@ const noGodComponents: Rule.RuleModule = {
 		}
 
 		return {
-			FunctionDeclaration(node) {
-				// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
-				maybeCheckFunction(node as unknown as TSESTree.FunctionDeclaration);
-			},
-			FunctionExpression(node) {
-				// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
-				maybeCheckFunction(node as unknown as TSESTree.FunctionExpression);
-			},
 			ArrowFunctionExpression(node) {
 				// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
 				maybeCheckFunction(node as unknown as TSESTree.ArrowFunctionExpression);
@@ -384,19 +383,28 @@ const noGodComponents: Rule.RuleModule = {
 				// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
 				const callExpr = node as unknown as TSESTree.CallExpression;
 				if (!isReactComponentHOC(callExpr)) return;
-				const firstArg = callExpr.arguments[0];
+				const [firstArg] = callExpr.arguments;
 				if (
 					!firstArg ||
 					(firstArg.type !== TSESTree.AST_NODE_TYPES.FunctionExpression &&
 						firstArg.type !== TSESTree.AST_NODE_TYPES.ArrowFunctionExpression)
-				)
+				) {
 					return;
+				}
 
 				const nameFromParent = getComponentNameFromCallParent(callExpr);
 				const nameFromArg = getComponentNameFromFunction(firstArg);
 				const name = nameFromParent ?? nameFromArg;
 				if (typeof name !== "string" || name.length === 0) return;
 				checkComponent(firstArg, name);
+			},
+			FunctionDeclaration(node) {
+				// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
+				maybeCheckFunction(node as unknown as TSESTree.FunctionDeclaration);
+			},
+			FunctionExpression(node) {
+				// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
+				maybeCheckFunction(node as unknown as TSESTree.FunctionExpression);
 			},
 		};
 	},
@@ -407,17 +415,17 @@ const noGodComponents: Rule.RuleModule = {
 			recommended: false,
 		},
 		messages: {
-			exceedsTargetLines:
-				"Component '{{name}}' is {{lines}} lines; target is {{target}} (max {{max}}). Consider extracting hooks/components.",
 			exceedsMaxLines:
 				"Component '{{name}}' is {{lines}} lines; max allowed is {{max}}. Split into smaller components/hooks.",
-			tsxNestingTooDeep:
-				"Component '{{name}}' has TSX nesting depth {{depth}}; max allowed is {{max}}. Extract child components.",
-			tooManyStateHooks:
-				"Component '{{name}}' has {{count}} state hooks ({{hooks}}); max allowed is {{max}}. Extract cohesive state into a custom hook.",
+			exceedsTargetLines:
+				"Component '{{name}}' is {{lines}} lines; target is {{target}} (max {{max}}). Consider extracting hooks/components.",
+			nullLiteral: "Avoid `null` in components; use `undefined` instead.",
 			tooManyProps:
 				"Component '{{name}}' destructures {{count}} props; max allowed is {{max}}. Group props or split the component.",
-			nullLiteral: "Avoid `null` in components; use `undefined` instead.",
+			tooManyStateHooks:
+				"Component '{{name}}' has {{count}} state hooks ({{hooks}}); max allowed is {{max}}. Extract cohesive state into a custom hook.",
+			tsxNestingTooDeep:
+				"Component '{{name}}' has TSX nesting depth {{depth}}; max allowed is {{max}}. Extract child components.",
 		},
 		schema: [
 			{

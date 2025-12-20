@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../../src/rules/no-useless-use-spring";
 import {
 	createComplexityConfiguration,
 	createEffectFunctionOptions,
@@ -13,12 +14,12 @@ import {
 	createUseExhaustiveDependenciesOptions,
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
-} from "../src/configure-utilities";
-import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../src/rules/no-useless-use-spring";
+} from "../../src/utilities/configure-utilities";
 
 describe("configure-utilities", () => {
 	describe("createPairConfiguration", () => {
 		it("should create a pair configuration with minimal options", () => {
+			expect.assertions(1);
 			const configuration = createPairConfiguration("debug.profilebegin", "debug.profileend");
 			expect(configuration).toEqual({
 				closer: "debug.profileend",
@@ -27,6 +28,7 @@ describe("configure-utilities", () => {
 		});
 
 		it("should override defaults with provided options", () => {
+			expect.assertions(4);
 			const configuration = createPairConfiguration("start", ["end1", "end2"], {
 				platform: "roblox",
 				requireSync: true,
@@ -40,6 +42,7 @@ describe("configure-utilities", () => {
 
 	describe("defaultRobloxProfilePair", () => {
 		it("should have correct default values", () => {
+			expect.assertions(1);
 			expect(defaultRobloxProfilePair).toEqual({
 				closer: "debug.profileend",
 				opener: "debug.profilebegin",
@@ -52,6 +55,7 @@ describe("configure-utilities", () => {
 
 	describe("createComplexityConfiguration", () => {
 		it("should create complexity configuration with defaults", () => {
+			expect.assertions(1);
 			const configuration = createComplexityConfiguration();
 			expect(configuration).toEqual({
 				baseThreshold: 10,
@@ -63,6 +67,7 @@ describe("configure-utilities", () => {
 		});
 
 		it("should override defaults", () => {
+			expect.assertions(2);
 			const configuration = createComplexityConfiguration({ baseThreshold: 5 });
 			expect(configuration.baseThreshold).toBe(5);
 			expect(configuration.errorThreshold).toBe(25);
@@ -71,6 +76,7 @@ describe("configure-utilities", () => {
 
 	describe("createNoInstanceMethodsOptions", () => {
 		it("should create options with defaults", () => {
+			expect.assertions(1);
 			const configuration = createNoInstanceMethodsOptions();
 			expect(configuration).toEqual({
 				checkPrivate: false,
@@ -80,6 +86,7 @@ describe("configure-utilities", () => {
 		});
 
 		it("should override defaults", () => {
+			expect.assertions(1);
 			const configuration = createNoInstanceMethodsOptions({ checkPublic: true });
 			expect(configuration.checkPublic).toBe(true);
 		});
@@ -87,6 +94,7 @@ describe("configure-utilities", () => {
 
 	describe("createNoUselessUseSpringOptions", () => {
 		it("should create options with defaults", () => {
+			expect.assertions(1);
 			const configuration = createNoUselessUseSpringOptions();
 			expect(configuration).toEqual({
 				springHooks: ["useSpring"],
@@ -96,6 +104,7 @@ describe("configure-utilities", () => {
 		});
 
 		it("should override defaults", () => {
+			expect.assertions(3);
 			const configuration = createNoUselessUseSpringOptions({
 				springHooks: ["useMotion"],
 				staticGlobalFactories: ["CustomFactory"],
@@ -109,6 +118,7 @@ describe("configure-utilities", () => {
 
 	describe("createNoShorthandOptions", () => {
 		it("should create options with defaults", () => {
+			expect.assertions(1);
 			const configuration = createNoShorthandOptions();
 			expect(configuration).toEqual({
 				allowPropertyAccess: [],
@@ -117,6 +127,7 @@ describe("configure-utilities", () => {
 		});
 
 		it("should override defaults", () => {
+			expect.assertions(1);
 			const configuration = createNoShorthandOptions({ shorthands: { plr: "player" } });
 			expect(configuration.shorthands).toEqual({ plr: "player" });
 		});
@@ -124,6 +135,7 @@ describe("configure-utilities", () => {
 
 	describe("createEffectFunctionOptions", () => {
 		it("should create options with defaults", () => {
+			expect.assertions(1);
 			const configuration = createEffectFunctionOptions();
 			expect(configuration).toEqual({
 				environment: "standard",
@@ -132,6 +144,7 @@ describe("configure-utilities", () => {
 		});
 
 		it("should override defaults", () => {
+			expect.assertions(1);
 			const configuration = createEffectFunctionOptions({ environment: "roblox-ts" });
 			expect(configuration.environment).toBe("roblox-ts");
 		});
@@ -139,6 +152,7 @@ describe("configure-utilities", () => {
 
 	describe("createHookConfiguration", () => {
 		it("should create hook configuration with defaults", () => {
+			expect.assertions(1);
 			const configuration = createHookConfiguration("useEffect");
 			expect(configuration).toEqual({
 				allowAsync: false,
@@ -147,6 +161,7 @@ describe("configure-utilities", () => {
 		});
 
 		it("should override defaults", () => {
+			expect.assertions(2);
 			const configuration = createHookConfiguration("useCustom", { allowAsync: true });
 			expect(configuration.name).toBe("useCustom");
 			expect(configuration.allowAsync).toBe(true);
@@ -155,6 +170,7 @@ describe("configure-utilities", () => {
 
 	describe("createRequirePairedCallsOptions", () => {
 		it("should create options with defaults", () => {
+			expect.assertions(1);
 			const configuration = createRequirePairedCallsOptions();
 			expect(configuration).toEqual({
 				allowConditionalClosers: false,
@@ -165,6 +181,7 @@ describe("configure-utilities", () => {
 		});
 
 		it("should override defaults", () => {
+			expect.assertions(1);
 			const configuration = createRequirePairedCallsOptions({
 				maxNestingDepth: 3,
 			});
@@ -174,6 +191,7 @@ describe("configure-utilities", () => {
 
 	describe("createReactKeysOptions", () => {
 		it("should create options with defaults", () => {
+			expect.assertions(1);
 			const configuration = createReactKeysOptions();
 			expect(configuration).toEqual({
 				allowRootKeys: false,
@@ -184,6 +202,7 @@ describe("configure-utilities", () => {
 		});
 
 		it("should override defaults", () => {
+			expect.assertions(1);
 			const configuration = createReactKeysOptions({ allowRootKeys: true });
 			expect(configuration.allowRootKeys).toBe(true);
 		});
@@ -191,6 +210,7 @@ describe("configure-utilities", () => {
 
 	describe("createNoGodComponentsOptions", () => {
 		it("should create options with defaults", () => {
+			expect.assertions(1);
 			const configuration = createNoGodComponentsOptions();
 			expect(configuration).toEqual({
 				enforceTargetLines: true,
@@ -205,7 +225,8 @@ describe("configure-utilities", () => {
 		});
 
 		it("should override defaults", () => {
-			const configuration = createNoGodComponentsOptions({ maxLines: 300, ignoreComponents: ["Big"] });
+			expect.assertions(3);
+			const configuration = createNoGodComponentsOptions({ ignoreComponents: ["Big"], maxLines: 300 });
 			expect(configuration.maxLines).toBe(300);
 			expect(configuration.ignoreComponents).toEqual(["Big"]);
 			expect(configuration.targetLines).toBe(120);
@@ -214,6 +235,7 @@ describe("configure-utilities", () => {
 
 	describe("createUseExhaustiveDependenciesOptions", () => {
 		it("should create options with defaults", () => {
+			expect.assertions(1);
 			const configuration = createUseExhaustiveDependenciesOptions();
 			expect(configuration).toEqual({
 				hooks: [],
@@ -223,6 +245,7 @@ describe("configure-utilities", () => {
 		});
 
 		it("should override defaults", () => {
+			expect.assertions(1);
 			const configuration = createUseExhaustiveDependenciesOptions({ reportMissingDependenciesArray: true });
 			expect(configuration.reportMissingDependenciesArray).toBe(true);
 		});
@@ -230,6 +253,7 @@ describe("configure-utilities", () => {
 
 	describe("createUseHookAtTopLevelOptions", () => {
 		it("should create options with defaults", () => {
+			expect.assertions(1);
 			const configuration = createUseHookAtTopLevelOptions();
 			expect(configuration).toEqual({
 				ignoreHooks: [],
@@ -239,6 +263,7 @@ describe("configure-utilities", () => {
 		});
 
 		it("should override defaults", () => {
+			expect.assertions(3);
 			const configuration = createUseHookAtTopLevelOptions({
 				ignoreHooks: ["useLegacyHook"],
 				// @ts-expect-error Testing purposes

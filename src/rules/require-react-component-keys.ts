@@ -124,8 +124,9 @@ function isIterationOrMemoCallback(
 			callee.object.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
 			callee.object.object.name === "Array" &&
 			callExpr.arguments.length >= 2
-		)
+		) {
 			return true;
+		}
 
 		if (
 			methodName === "call" &&
@@ -133,8 +134,9 @@ function isIterationOrMemoCallback(
 			callee.object.object.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 			callee.object.object.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
 			iterationMethods.has(callee.object.object.property.name)
-		)
+		) {
 			return true;
+		}
 	}
 
 	return false;
@@ -148,15 +150,16 @@ function findEnclosingCallExpression(node: TSESTree.Node): TSESTree.CallExpressi
 		if (parent.type === TSESTree.AST_NODE_TYPES.CallExpression) {
 			for (const argument of parent.arguments) {
 				if (argument === current) return parent;
-				if (argument.type === TSESTree.AST_NODE_TYPES.SpreadElement && argument.argument === current)
+				if (argument.type === TSESTree.AST_NODE_TYPES.SpreadElement && argument.argument === current) {
 					return parent;
+				}
 			}
 			return undefined;
 		}
 
 		if (ARGUMENT_WRAPPER_TYPES.has(parent.type)) {
 			current = parent;
-			parent = parent.parent;
+			({ parent } = parent);
 			continue;
 		}
 
@@ -267,15 +270,17 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 		let currentNode: TSESTree.Node | undefined = ascendPastWrappers(parent.parent);
 
 		// Ascend through control flow statements (if, switch, try, loops, etc.)
-		while (currentNode && CONTROL_FLOW_TYPES.has(currentNode.type))
+		while (currentNode && CONTROL_FLOW_TYPES.has(currentNode.type)) {
 			currentNode = ascendPastWrappers(currentNode.parent);
+		}
 
 		if (!currentNode) return false;
 
 		if (IS_FUNCTION_EXPRESSION.has(currentNode.type)) {
 			const functionParent = ascendPastWrappers(currentNode.parent);
-			if (functionParent?.type === TSESTree.AST_NODE_TYPES.CallExpression)
+			if (functionParent?.type === TSESTree.AST_NODE_TYPES.CallExpression) {
 				return isReactComponentHOC(functionParent);
+			}
 			return true;
 		}
 
@@ -295,11 +300,12 @@ function isIgnoredCallExpression(
 	node: TSESTree.JSXElement | TSESTree.JSXFragment,
 	ignoreList: ReadonlyArray<string>,
 ): boolean {
+	// oxlint-disable-next-line prefer-destructuring - not possible
 	let parent: TSESTree.Node | undefined = node.parent;
 	if (!parent) return false;
 
 	if (parent.type === TSESTree.AST_NODE_TYPES.JSXExpressionContainer) {
-		parent = parent.parent;
+		({ parent } = parent);
 		if (!parent) return false;
 	}
 
@@ -315,13 +321,14 @@ function isIgnoredCallExpression(
 				callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 				callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
 				callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-			)
+			) {
 				return ignoreList.includes(`${callee.object.name}.${callee.property.name}`);
+			}
 
 			return false;
 		}
 
-		parent = parent.parent;
+		({ parent } = parent);
 	}
 
 	return false;
@@ -335,13 +342,14 @@ function isJSXPropValue(node: TSESTree.JSXElement | TSESTree.JSXFragment): boole
 		parent &&
 		(parent.type === TSESTree.AST_NODE_TYPES.ConditionalExpression ||
 			parent.type === TSESTree.AST_NODE_TYPES.LogicalExpression)
-	)
-		parent = parent.parent;
+	) {
+		({ parent } = parent);
+	}
 
 	if (!parent) return false;
 
 	if (parent.type === TSESTree.AST_NODE_TYPES.JSXExpressionContainer) {
-		parent = parent.parent;
+		({ parent } = parent);
 		if (!parent) return false;
 	}
 
@@ -375,7 +383,7 @@ function isTernaryJSXChild(node: TSESTree.JSXElement | TSESTree.JSXFragment): bo
 		current = current.parent;
 	}
 
-	if (!foundTernary || !current) return false;
+	if (!(foundTernary && current)) return false;
 
 	// Must be inside JSXExpressionContainer
 	if (current.type !== TSESTree.AST_NODE_TYPES.JSXExpressionContainer) return false;

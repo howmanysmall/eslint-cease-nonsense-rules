@@ -5,12 +5,12 @@ set -euo pipefail
 function run-check() {
 	local name="$1"
 	local cmd="$2"
-	echo "🔍 Running $name..."
-	if ! $cmd; then
-		echo "❌ $name failed - blocking Claude"
+	echo "🔍 Running ${name}..."
+	if ! ${cmd}; then
+		echo "❌ ${name} failed - blocking Claude"
 		exit 2
 	fi
-	echo "✅ $name passed"
+	echo "✅ ${name} passed"
 }
 
 run-check "Format (auto-fix)" "bun run format"
