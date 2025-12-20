@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { regex } from "arkregex";
+import { parseJSONC } from "confbox";
 
 import type { FormatOptions } from "oxfmt";
 
@@ -21,7 +22,7 @@ function loadOxfmtConfig(): FormatOptions {
 	try {
 		const configPath = resolve(process.cwd(), ".oxfmtrc.json");
 		const configText = readFileSync(configPath, "utf8");
-		const parsed: unknown = JSON.parse(configText);
+		const parsed: unknown = parseJSONC(configText);
 
 		if (typeof parsed !== "object" || parsed === null) {
 			cachedConfig = {};
