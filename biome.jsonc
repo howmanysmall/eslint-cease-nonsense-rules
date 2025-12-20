@@ -7,9 +7,9 @@
 				"recommended": true,
 				"useSortedAttributes": "on",
 				"useSortedKeys": "on",
-				"useSortedProperties": "on",
-			},
-		},
+				"useSortedProperties": "on"
+			}
+		}
 	},
 
 	"css": {
@@ -19,11 +19,11 @@
 			"indentStyle": "tab",
 			"indentWidth": 4,
 			"lineWidth": 120,
-			"quoteStyle": "double",
+			"quoteStyle": "double"
 		},
 		"globals": [],
 		"linter": { "enabled": true },
-		"parser": {},
+		"parser": {}
 	},
 
 	"formatter": {
@@ -40,13 +40,13 @@
 			"!**/garbage/**",
 			"!**/include/**",
 			"!**/node_modules/**",
-			"!**/*.ts",
+			"!**/*.ts"
 		],
 		"indentStyle": "tab",
 		"indentWidth": 4,
 		"lineEnding": "lf",
 		"lineWidth": 120,
-		"useEditorconfig": false,
+		"useEditorconfig": false
 	},
 
 	"graphql": {
@@ -57,9 +57,9 @@
 			"indentStyle": "tab",
 			"indentWidth": 4,
 			"lineWidth": 120,
-			"quoteStyle": "double",
+			"quoteStyle": "double"
 		},
-		"linter": { "enabled": true },
+		"linter": { "enabled": true }
 	},
 	"grit": {
 		"assist": { "enabled": true },
@@ -67,9 +67,9 @@
 			"enabled": true,
 			"indentStyle": "tab",
 			"indentWidth": 4,
-			"lineWidth": 120,
+			"lineWidth": 120
 		},
-		"linter": { "enabled": true },
+		"linter": { "enabled": true }
 	},
 
 	"html": {
@@ -83,8 +83,8 @@
 			"lineEnding": "lf",
 			"lineWidth": 120,
 			"selfCloseVoidElements": "always",
-			"whitespaceSensitivity": "strict",
-		},
+			"whitespaceSensitivity": "strict"
+		}
 	},
 
 	"javascript": {
@@ -103,10 +103,10 @@
 			"quoteProperties": "asNeeded",
 			"quoteStyle": "double",
 			"semicolons": "always",
-			"trailingCommas": "all",
+			"trailingCommas": "all"
 		},
 		"globals": ["Bun"],
-		"linter": { "enabled": true },
+		"linter": { "enabled": true }
 	},
 
 	"json": {
@@ -118,10 +118,10 @@
 			"indentStyle": "tab",
 			"indentWidth": 4,
 			"lineWidth": 120,
-			"trailingCommas": "none",
+			"trailingCommas": "none"
 		},
 		"linter": { "enabled": true },
-		"parser": {},
+		"parser": {}
 	},
 
 	"linter": {
@@ -135,7 +135,7 @@
 			"!**/node_modules/**",
 			"src/**",
 			".husky/**",
-			"**/*.ts",
+			"**/*.ts"
 		],
 		"rules": {
 			"a11y": { "recommended": true },
@@ -152,7 +152,7 @@
 				"recommended": true,
 				"useArrowFunction": "off",
 				"useDateNow": "error",
-				"useFlatMap": "error",
+				"useFlatMap": "error"
 			},
 			"correctness": {
 				"noConstAssign": "error",
@@ -178,16 +178,28 @@
 				"useIsNan": "error",
 				"useValidForDirection": "error",
 				"useValidTypeof": "error",
-				"useYield": "error",
+				"useYield": "error"
 			},
-			"nursery": { "recommended": true },
+			"nursery": {
+				"recommended": true
+			},
 			"performance": {
+				"noAccumulatingSpread": "error",
+				"noAwaitInLoops": "error",
+				"noDelete": "error",
+				"noDynamicNamespaceImportAccess": "error",
+				"noImgElement": "error",
+				"noNamespaceImport": "error",
+				"noReExportAll": "error",
+				"noUnwantedPolyfillio": "error",
 				"recommended": true,
-				"useTopLevelRegex": "error",
+				"useGoogleFontPreconnect": "error",
+				"useSolidForComponent": "error",
+				"useTopLevelRegex": "error"
 			},
 			"security": {
 				"noDangerouslySetInnerHtml": "off",
-				"recommended": true,
+				"recommended": true
 			},
 			"style": {
 				"noEnum": "off",
@@ -208,14 +220,14 @@
 				"useExplicitLengthCheck": "error",
 				"useFilenamingConvention": {
 					"level": "error",
-					"options": { "filenameCases": ["kebab-case"], "requireAscii": true },
+					"options": { "filenameCases": ["kebab-case"], "requireAscii": true }
 				},
 				"useForOf": "error",
 				"useNodejsImportProtocol": "error",
 				"useNumberNamespace": "error",
 				"useSelfClosingElements": "error",
 				"useSingleVarDeclarator": "error",
-				"useThrowNewError": "error",
+				"useThrowNewError": "error"
 			},
 			"suspicious": {
 				"noAssignInExpressions": "error",
@@ -251,9 +263,9 @@
 				"useErrorMessage": "error",
 				"useGetterReturn": "error",
 				"useIsArray": "error",
-				"useNumberToFixedDigitsArgument": "error",
-			},
-		},
+				"useNumberToFixedDigitsArgument": "error"
+			}
+		}
 	},
 
 	"overrides": [
@@ -266,7 +278,7 @@
 				"tsconfig.app.json",
 				"tsconfig.node.json",
 				"*.code-snippets",
-				"**/.oxlintrc.json",
+				"**/.oxlintrc.json"
 			],
 			"json": {
 				"formatter": {
@@ -274,14 +286,14 @@
 					"indentStyle": "tab",
 					"indentWidth": 4,
 					"lineWidth": 120,
-					"trailingCommas": "all",
+					"trailingCommas": "all"
 				},
 				"linter": { "enabled": true },
 				"parser": {
 					"allowComments": true,
-					"allowTrailingCommas": true,
-				},
-			},
+					"allowTrailingCommas": true
+				}
+			}
 		},
 
 		{
@@ -292,14 +304,14 @@
 					"indentStyle": "tab",
 					"indentWidth": 4,
 					"lineWidth": 120,
-					"trailingCommas": "none",
+					"trailingCommas": "none"
 				},
 				"linter": { "enabled": true },
 				"parser": {
 					"allowComments": false,
-					"allowTrailingCommas": false,
-				},
-			},
+					"allowTrailingCommas": false
+				}
+			}
 		},
 
 		{
@@ -307,20 +319,20 @@
 			"linter": {
 				"rules": {
 					"style": {
-						"noEnum": "off",
+						"noEnum": "off"
 					},
 					"suspicious": {
-						"noConstEnum": "off",
-					},
-				},
-			},
-		},
+						"noConstEnum": "off"
+					}
+				}
+			}
+		}
 	],
 
 	"vcs": {
 		"clientKind": "git",
 		"defaultBranch": "main",
 		"enabled": true,
-		"useIgnoreFile": true,
-	},
+		"useIgnoreFile": true
+	}
 }
