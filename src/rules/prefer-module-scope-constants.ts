@@ -1,34 +1,24 @@
-import type { Rule, Scope } from "eslint";
-import type { VariableDeclarator } from "estree";
+import { ScopeType } from "@typescript-eslint/scope-manager";
+import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 
-// Pattern for SCREAMING_SNAKE_CASE: starts with uppercase, contains only uppercase, digits, and underscores
+type MessageIds = "mustUseConst" | "mustBeModuleScope";
+
 const SCREAMING_SNAKE_CASE = /^[A-Z][A-Z0-9_]*$/;
 
-/**
- * Checks if the scope is at module/global level (top scope).
- * Handles both ES modules and CommonJS.
- * @param scope - The scope to check
- * @returns True if the scope is at module/global level
- */
-function isTopScope(scope: Scope.Scope): boolean {
+function isTopScope(scope: TSESLint.Scope.Scope): boolean {
 	const { type } = scope;
+	if (type === ScopeType.module || type === ScopeType.global) return true;
 
-	if (type === "module" || type === "global") {
-		return true;
-	}
-
-	// CommonJS wraps files in a function scope, but this is still conceptually "module scope"
-	if (scope.upper?.type === "global") {
-		const block = scope.upper.block as { sourceType?: string };
-		if (block.sourceType === "commonjs") {
-			return true;
-		}
+	if (scope.upper?.type === ScopeType.global) {
+		const { block } = scope.upper;
+		if (block.type === AST_NODE_TYPES.Program && block.sourceType === "script") return true;
 	}
 
 	return false;
 }
 
-const preferModuleScopeConstants: Rule.RuleModule = {
+const preferModuleScopeConstants: TSESLint.RuleModuleWithMetaDocs<MessageIds> = {
 	create(context) {
 		let inConstDeclaration = false;
 
@@ -39,42 +29,39 @@ const preferModuleScopeConstants: Rule.RuleModule = {
 			"VariableDeclaration:exit"() {
 				inConstDeclaration = false;
 			},
-			VariableDeclarator(node: VariableDeclarator) {
+			VariableDeclarator(node: TSESTree.VariableDeclarator) {
 				const { id } = node;
+				if (id.type !== AST_NODE_TYPES.Identifier || !SCREAMING_SNAKE_CASE.test(id.name)) return;
 
-				// Skip destructuring patterns - only check simple identifiers
-				if (id.type !== "Identifier") return;
-
-				// Skip if not SCREAMING_SNAKE_CASE
-				if (!SCREAMING_SNAKE_CASE.test(id.name)) return;
-
-				// Check if it's a const declaration
 				if (!inConstDeclaration) {
 					context.report({
-						message:
-							"You must use `const` when defining screaming snake case variables. If this is not a constant, use camelcase instead.",
+						messageId: "mustUseConst",
 						node,
 					});
 					return;
 				}
 
-				// Check if at module scope
 				const scope = context.sourceCode.getScope(node);
-				if (!isTopScope(scope)) {
-					context.report({
-						message:
-							"You must place screaming snake case at module scope. If this is not meant to be a module-scoped variable, use camelcase instead.",
-						node,
-					});
-				}
+				if (isTopScope(scope)) return;
+
+				context.report({
+					messageId: "mustBeModuleScope",
+					node,
+				});
 			},
 		};
 	},
+	defaultOptions: [],
 	meta: {
 		docs: {
 			description:
 				"Prefer that screaming snake case variables always be defined using `const`, and always appear at module scope.",
-			recommended: true,
+		},
+		messages: {
+			mustBeModuleScope:
+				"You must place screaming snake case at module scope. If this is not meant to be a module-scoped variable, use camelcase instead.",
+			mustUseConst:
+				"You must use `const` when defining screaming snake case variables. If this is not a constant, use camelcase instead.",
 		},
 		schema: [],
 		type: "suggestion",
