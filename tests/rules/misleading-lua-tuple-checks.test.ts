@@ -1,7 +1,7 @@
 import { describe } from "bun:test";
+import path from "node:path";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-import path from "node:path";
 import rule from "../../src/rules/misleading-lua-tuple-checks";
 
 const fixturesDir = path.join(__dirname, "../fixtures");
@@ -42,10 +42,7 @@ const result = getEitherTuple();
 if (result) {
 	console.log("success");
 }`,
-				errors: [
-					{ messageId: "lua-tuple-declaration" },
-					{ messageId: "misleading-lua-tuple-check" },
-				],
+				errors: [{ messageId: "lua-tuple-declaration" }, { messageId: "misleading-lua-tuple-check" }],
 				output: `${TYPE_DECLARATIONS}
 const [result] = getEitherTuple();
 if (result[0]) {
@@ -84,10 +81,7 @@ const result = pcall(() => [2]);
 if (result) {
 	console.log("success");
 }`,
-				errors: [
-					{ messageId: "lua-tuple-declaration" },
-					{ messageId: "misleading-lua-tuple-check" },
-				],
+				errors: [{ messageId: "lua-tuple-declaration" }, { messageId: "misleading-lua-tuple-check" }],
 				output: `${TYPE_DECLARATIONS}
 const [success] = pcall(() => [1]);
 const [result] = pcall(() => [2]);
@@ -101,10 +95,7 @@ const result = pcall(() => [true]);
 while (result) {
 	break;
 }`,
-				errors: [
-					{ messageId: "lua-tuple-declaration" },
-					{ messageId: "misleading-lua-tuple-check" },
-				],
+				errors: [{ messageId: "lua-tuple-declaration" }, { messageId: "misleading-lua-tuple-check" }],
 				output: `${TYPE_DECLARATIONS}
 const [result] = pcall(() => [true]);
 while (result[0]) {
@@ -117,10 +108,7 @@ const result = pcall(() => [true]);
 do {
 	break;
 } while (result);`,
-				errors: [
-					{ messageId: "lua-tuple-declaration" },
-					{ messageId: "misleading-lua-tuple-check" },
-				],
+				errors: [{ messageId: "lua-tuple-declaration" }, { messageId: "misleading-lua-tuple-check" }],
 				output: `${TYPE_DECLARATIONS}
 const [result] = pcall(() => [true]);
 do {
@@ -133,10 +121,7 @@ const result = pcall(() => [true]);
 for (; result; ) {
 	break;
 }`,
-				errors: [
-					{ messageId: "lua-tuple-declaration" },
-					{ messageId: "misleading-lua-tuple-check" },
-				],
+				errors: [{ messageId: "lua-tuple-declaration" }, { messageId: "misleading-lua-tuple-check" }],
 				output: `${TYPE_DECLARATIONS}
 const [result] = pcall(() => [true]);
 for (; result[0]; ) {
@@ -147,10 +132,7 @@ for (; result[0]; ) {
 				code: `${TYPE_DECLARATIONS}
 const result = pcall(() => [1]);
 const value = result ? "yes" : "no";`,
-				errors: [
-					{ messageId: "lua-tuple-declaration" },
-					{ messageId: "misleading-lua-tuple-check" },
-				],
+				errors: [{ messageId: "lua-tuple-declaration" }, { messageId: "misleading-lua-tuple-check" }],
 				output: `${TYPE_DECLARATIONS}
 const [result] = pcall(() => [1]);
 const value = result[0] ? "yes" : "no";`,
@@ -159,10 +141,7 @@ const value = result[0] ? "yes" : "no";`,
 				code: `${TYPE_DECLARATIONS}
 const result = pcall(() => [1]);
 const check = result && true;`,
-				errors: [
-					{ messageId: "lua-tuple-declaration" },
-					{ messageId: "misleading-lua-tuple-check" },
-				],
+				errors: [{ messageId: "lua-tuple-declaration" }, { messageId: "misleading-lua-tuple-check" }],
 				output: `${TYPE_DECLARATIONS}
 const [result] = pcall(() => [1]);
 const check = result[0] && true;`,
@@ -203,10 +182,7 @@ const result = pcall(() => [1]);
 if (!result) {
 	console.log("failed");
 }`,
-				errors: [
-					{ messageId: "lua-tuple-declaration" },
-					{ messageId: "misleading-lua-tuple-check" },
-				],
+				errors: [{ messageId: "lua-tuple-declaration" }, { messageId: "misleading-lua-tuple-check" }],
 				output: `${TYPE_DECLARATIONS}
 const [result] = pcall(() => [1]);
 if (!result[0]) {
@@ -246,10 +222,7 @@ function process<T extends LuaTuple<[boolean, string]>>(tuple: T) {
 		return result;
 	}
 }`,
-				errors: [
-					{ messageId: "lua-tuple-declaration" },
-					{ messageId: "misleading-lua-tuple-check" },
-				],
+				errors: [{ messageId: "lua-tuple-declaration" }, { messageId: "misleading-lua-tuple-check" }],
 				output: `${TYPE_DECLARATIONS}
 function process<T extends LuaTuple<[boolean, string]>>(tuple: T) {
 	const [result] = tuple;
