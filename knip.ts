@@ -13,6 +13,7 @@ const config: KnipConfig = {
 		"@typescript/native-preview",
 		"lint-staged",
 		"@mitata/counters",
+		"oxfmt",
 	],
 	"lint-staged": true,
 	oxlint: true,
