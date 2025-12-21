@@ -9,6 +9,13 @@ const ruleTester = new RuleTester({
 	},
 });
 
+const scriptRuleTester = new RuleTester({
+	languageOptions: {
+		ecmaVersion: 2022,
+		sourceType: "script",
+	},
+});
+
 const moduleScopeErrors = [
 	{
 		message:
@@ -64,6 +71,20 @@ describe("prefer-module-scope-constants", () => {
 
 			// CommonJS usage
 			{ code: "const MY_VALUE = true; module.exports = () => { console.log(MY_VALUE); };" },
+		],
+	});
+
+	// Script mode tests (CommonJS)
+	scriptRuleTester.run("prefer-module-scope-constants (script)", rule, {
+		invalid: [
+			// Deeply nested in script mode - not at module scope
+			{ code: "function foo() { function bar() { const FOO = true; } }", errors: moduleScopeErrors },
+		],
+		valid: [
+			// Script mode top-level const is valid
+			{ code: "const FOO = true;" },
+			// First-level function in script mode (CJS wrapper pattern)
+			{ code: "function foo() { const FOO = true; }" },
 		],
 	});
 });

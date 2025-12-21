@@ -30,6 +30,8 @@ describe("prefer-class-properties", () => {
 				errors: assignErrors,
 				options: ["always"],
 			},
+			// MemberExpression on literal (covers line 29)
+			{ code: "class Foo { constructor() { this.foo = 'bar'.length; } }", errors: assignErrors, options: ["always"] },
 			{ code: "class Foo { constructor() { this.foo = []; } }", errors: assignErrors, options: ["always"] },
 			{ code: "class Foo { constructor() { this.foo = {}; } }", errors: assignErrors, options: ["always"] },
 			{

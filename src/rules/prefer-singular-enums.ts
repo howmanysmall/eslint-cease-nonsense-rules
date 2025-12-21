@@ -1,48 +1,136 @@
+// oxlint-disable prefer-string-raw
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import { regex } from "arkregex";
 
 type MessageIds = "notSingular";
 
-// Irregular plural words that don't follow standard patterns
-const IRREGULAR_PLURALS = new Set([
-	"Children",
-	"Dice",
-	"Feet",
-	"Geese",
-	"Men",
-	"Mice",
-	"People",
-	"Teeth",
-	"Women",
+// Irregular plurals, using lowercase for matching against tokens
+const IRREGULAR_PLURALS = new Set<string>([
+	"children",
+	"dice",
+	"feet",
+	"geese",
+	"men",
+	"mice",
+	"people",
+	"teeth",
+	"women",
+	// Latin/Greek plurals commonly seen in programming nomenclature
+	"criteria",
+	"data",
+	"media",
+	"phenomena",
+	"indices",
+	"matrices",
+	"vertices",
+	"axes",
+	"alumni",
+	"cacti",
+	"fungi",
+	"octopi",
 ]);
 
-/**
- * Checks if a word is likely plural.
- *
- * Handles:
- * - Irregular plurals (Feet, People, Children, etc.)
- * - Regular -s suffix (excluding -ss, -us, -is endings which are often singular)
- * @param name - The word to check
- * @returns True if the word appears to be plural
- */
-function isPlural(name: string): boolean {
-	// Check irregular plurals
-	if (IRREGULAR_PLURALS.has(name)) {
+const SINGULAR_EXCEPTIONS = new Set<string>([
+	"news",
+	"status",
+	"alias",
+	"analysis",
+	"basis",
+	"thesis",
+	"crisis",
+	"axis",
+	"class",
+	"glass",
+	"series",
+	"species",
+	"business",
+]);
+
+// Common programming plurals we want to catch aggressively
+const PROGRAMMING_PLURALS = new Set<string>([
+	"args",
+	"params",
+	"parameters",
+	"options",
+	"settings",
+	"props",
+	"components",
+	"hooks",
+	"types",
+	"enums",
+	"services",
+	"controllers",
+	"models",
+	"repositories",
+	"dto",
+	"dtos",
+	"vo",
+	"vos",
+	"keys",
+	"values",
+	"entries",
+	"items",
+	"orders",
+	"pages",
+]);
+
+const SINGULAR_ENUM_REGEX = regex("[A-Z]+(?![a-z])|[A-Z]?[a-z]+|\\d+", "g");
+
+function tokenizeIdentifier(name: string): ReadonlyArray<string> {
+	const parts = name.split("_");
+	const tokens = new Array<string>();
+	for (const part of parts) {
+		const matches = part.match(SINGULAR_ENUM_REGEX);
+		if (matches) tokens.push(...matches);
+	}
+	return tokens;
+}
+
+const INTEGER_REGEXP = regex("^\\d+$");
+
+interface AlphaToken {
+	readonly original: string;
+	readonly lower: string;
+}
+
+function getLastAlphaToken(name: string): AlphaToken | undefined {
+	const tokens = tokenizeIdentifier(name);
+	for (let index = tokens.length - 1; index >= 0; index -= 1) {
+		const token = tokens[index];
+		if (token === undefined || INTEGER_REGEXP.test(token)) continue;
+		return { lower: token.toLowerCase(), original: token };
+	}
+	return undefined;
+}
+
+const ACRONYM_REGEXP = regex("^[A-Z]{2,}[sS]$");
+function isAcronymPlural(original: string): boolean {
+	return ACRONYM_REGEXP.test(original);
+}
+
+const ES_VOWELS_REGEXP = regex("((ch|sh|x|z|ss|o)es|xes|zes|ches|shes|sses|oes)$");
+function isPluralWord(lower: string, original: string): boolean {
+	if (IRREGULAR_PLURALS.has(lower) || PROGRAMMING_PLURALS.has(lower)) return true;
+	if (SINGULAR_EXCEPTIONS.has(lower)) return false;
+
+	if (
+		isAcronymPlural(original) ||
+		lower.endsWith("ies") ||
+		lower.endsWith("ves") ||
+		ES_VOWELS_REGEXP.test(lower) ||
+		lower.endsWith("es")
+	) {
 		return true;
 	}
 
-	// Regular plurals end in 's' but not:
-	// - 'ss' (class, mass, etc.)
-	// - 'us' (status, radius, alias, etc.)
-	// - 'is' (analysis, axis, etc.)
-	// - 'es' after certain consonants needs more context, but we keep it simple
-	if (name.endsWith("s")) {
-		if (name.endsWith("ss")) return false;
-		if (name.endsWith("us")) return false;
-		if (name.endsWith("is")) return false;
-		return true;
-	}
-
+	if (lower.endsWith("s")) return !(lower.endsWith("ss") || lower.endsWith("us") || lower.endsWith("is"));
 	return false;
+}
+
+function isPlural(name: string): boolean {
+	if (ACRONYM_REGEXP.test(name)) return true;
+	const last = getLastAlphaToken(name);
+	return last ? isPluralWord(last.lower, last.original) : false;
 }
 
 const preferSingularEnums: TSESLint.RuleModuleWithMetaDocs<MessageIds> = {
@@ -50,14 +138,12 @@ const preferSingularEnums: TSESLint.RuleModuleWithMetaDocs<MessageIds> = {
 		return {
 			TSEnumDeclaration(node: TSESTree.TSEnumDeclaration) {
 				const { name } = node.id;
-
-				if (isPlural(name)) {
-					context.report({
-						data: { name },
-						message: `Enum '{{ name }}' should be singular.`,
-						node,
-					});
-				}
+				if (!isPlural(name)) return;
+				context.report({
+					data: { name },
+					messageId: "notSingular",
+					node,
+				});
 			},
 		};
 	},

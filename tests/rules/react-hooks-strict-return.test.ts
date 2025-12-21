@@ -20,6 +20,9 @@ describe("react-hooks-strict-return", () => {
 			// Variable reference to 3+ element array
 			{ code: "function useFoo() { const bar = [1, 2, 3]; return bar; }", errors },
 
+			// Variable from outer scope (covers line 29 - scope chain traversal)
+			{ code: "const bar = [1, 2, 3]; function useFoo() { return bar; }", errors },
+
 			// Arrow function with 3+ element array
 			{ code: "const useFoo = () => { const bar = [1, 2, 3]; return bar; }", errors },
 
@@ -32,6 +35,9 @@ describe("react-hooks-strict-return", () => {
 
 			// Spread combining to 3+ elements
 			{ code: "function useFoo() { const bar = [1, 2]; const baz = [3]; return [...bar, ...baz]; }", errors },
+
+			// Inline array spread (covers lines 82-83)
+			{ code: "function useFoo() { return [...[1, 2, 3, 4]]; }", errors },
 
 			// Hook with other hooks inside
 			{ code: "function useFoo() { useEffect(() => {}); return [1, 2, 3, 4]; }", errors },
@@ -62,6 +68,12 @@ describe("react-hooks-strict-return", () => {
 			{ code: "function useFoo() { return 1 }" },
 			{ code: "function useFoo() {}" },
 			{ code: "function useFoo() { return 'bar'; }" },
+
+			// Unknown variable return (covers line 31 - undefined return path)
+			{ code: "function useFoo(bar) { return bar; }" },
+
+			// Undeclared global reference (covers getVariableByName returning undefined)
+			{ code: "function useFoo() { return undeclaredGlobal; }" },
 
 			// Hook + non-hook in same file
 			{ code: "function useFoo() { return 'bar'; } function baz() { return [1, 2, 3, 4] }" },
