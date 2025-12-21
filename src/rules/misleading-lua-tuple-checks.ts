@@ -123,21 +123,24 @@ function isInForOfLeft(node: TSESTree.Node): boolean {
 	return false;
 }
 
-function getParserServices(context: TSESLint.RuleContext<MessageIds, []>): ParserServicesWithTypeInformation {
+function getParserServices(
+	context: TSESLint.RuleContext<MessageIds, []>,
+): ParserServicesWithTypeInformation | undefined {
 	const services = context.sourceCode.parserServices;
 	if (services === undefined || services.program === undefined || services.esTreeNodeToTSNodeMap === undefined) {
-		throw new Error(
-			"You have used a rule which requires parserServices to be generated. " +
-				"You must therefore provide a value for the 'parserOptions.project' property for @typescript-eslint/parser.",
-		);
+		return undefined;
 	}
 	return services as ParserServicesWithTypeInformation;
 }
 
 const misleadingLuaTupleChecks: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], RuleDocsWithRecommended> = {
 	create(context) {
+		const maybeServices = getParserServices(context);
+		// Skip non-TypeScript files (e.g., .json, .js without project)
+		if (maybeServices === undefined) return {};
+
+		const parserServices = maybeServices;
 		const { sourceCode } = context;
-		const parserServices = getParserServices(context);
 		const checker: TypeChecker = parserServices.program.getTypeChecker();
 
 		// Multi-level caching
