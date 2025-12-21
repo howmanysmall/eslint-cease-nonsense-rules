@@ -148,9 +148,9 @@
 
     "@octokit/types": ["@octokit/types@16.0.0", "", { "dependencies": { "@octokit/openapi-types": "^27.0.0" } }, "sha512-sKq+9r1Mm4efXW1FCk7hFSeJo4QKreL/tTbR0rz/qx/r1Oa2VV83LTA/H/MuCOX7uCIJmQVRKBcbmWoySjAnSg=="],
 
-    "@opencode-ai/plugin": ["@opencode-ai/plugin@1.0.171", "", { "dependencies": { "@opencode-ai/sdk": "1.0.171", "zod": "4.1.8" } }, "sha512-p+jA0xzgbUumKEJfGD4JvgesKJnmMxJCQXvoqi/qHMhMsDgmilXhoLjEbP1KiwLbBdN923awtALChSMU9IJz9Q=="],
+    "@opencode-ai/plugin": ["@opencode-ai/plugin@1.0.180", "", { "dependencies": { "@opencode-ai/sdk": "1.0.180", "zod": "4.1.8" } }, "sha512-u31txsEXmf6EpMRKYcY5S8ltwxLckXqvdxTICFaopFoT/vw7b1mPOxsm2II4QbmPa4uWnDNDt7HH8fh7PTF07w=="],
 
-    "@opencode-ai/sdk": ["@opencode-ai/sdk@1.0.171", "", {}, "sha512-3R2J09dNoWEQFIWf1W5EB1NusPdouOOHc0DaAAooyAA8+dD6LrKP/TtRhXfw+oS4DZEvgSRp6kc9HEGNwgK4sA=="],
+    "@opencode-ai/sdk": ["@opencode-ai/sdk@1.0.180", "", {}, "sha512-r3bocI5SR72FDORMC6O+oD9sKtEqUFgAboH14uwwJNF07xENxi8H1Bc9bmeYKdcJm4MVIURMLGBhUnOUhDMsuQ=="],
 
     "@oxc-parser/binding-android-arm64": ["@oxc-parser/binding-android-arm64@0.104.0", "", { "os": "android", "cpu": "arm64" }, "sha512-2a4tk6mtkPbGwT4Zi8pjOqMkmkrvc/Pussmas+uXoiCVv7sn7P7Jn93ATu/HK49dxIwvrvQCZ3BcS0KhAvKxlQ=="],
 
@@ -576,7 +576,7 @@
 
     "type-fest": ["type-fest@5.3.1", "", { "dependencies": { "tagged-tag": "^1.0.0" } }, "sha512-VCn+LMHbd4t6sF3wfU/+HKT63C9OoyrSIf4b+vtWHpt2U7/4InZG467YDNMFMR70DdHjAdpPWmw2lzRdg0Xqqg=="],
 
-    "typebox": ["typebox@1.0.64", "", {}, "sha512-U6quDhQMzQRzBX8jvlE5mZlUnlMRTaZrG/QMAhOYVJ0D0rhq1iOXBQVSzBX0JgAh55jXQ7fWIv24i+lVimXcDw=="],
+    "typebox": ["typebox@1.0.65", "", {}, "sha512-3WaZ4QmfAxmelhi0dwusYDoZ+DLDoVrsc3aORzgtk1I8JfIf4wn+F8i1TtrnU2jJKM/hZgjJGfzXrwS4B31zZw=="],
 
     "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
