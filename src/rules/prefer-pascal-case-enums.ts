@@ -1,27 +1,17 @@
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { regex } from "arkregex";
+import { toPascalCase } from "../utilities/casing-utilities";
 
 type MessageIds = "notPascalCase";
-
-const PASCAL_CASE = regex("^[A-Z][a-z0-9]+(?:[A-Z][a-z0-9]+)*$");
 
 // oxlint-disable-next-line prefer-string-raw
 const STARTS_WITH_DIGIT = regex("^\\d");
 
-function isPascalCase(identifier: string): boolean {
-	return PASCAL_CASE.test(identifier);
-}
-
 function getIdentifierName(node: TSESTree.TSEnumMember["id"] | TSESTree.Identifier): string | undefined {
 	if (node.type === AST_NODE_TYPES.Identifier) return node.name;
-
-	if (node.type === AST_NODE_TYPES.Literal && typeof node.value === "string") {
-		if (STARTS_WITH_DIGIT.test(node.value)) return undefined;
-		return node.value;
-	}
-
-	return undefined;
+	if (node.type !== AST_NODE_TYPES.Literal || typeof node.value !== "string") return undefined;
+	return STARTS_WITH_DIGIT.test(node.value) ? undefined : node.value;
 }
 
 const preferPascalCaseEnums: TSESLint.RuleModuleWithMetaDocs<MessageIds> = {
@@ -37,12 +27,12 @@ const preferPascalCaseEnums: TSESLint.RuleModuleWithMetaDocs<MessageIds> = {
 		return {
 			TSEnumDeclaration(node) {
 				const { name } = node.id;
-				if (isPascalCase(name)) return;
+				if (toPascalCase(name) === name) return;
 				report(node.id, name);
 			},
 			TSEnumMember(node) {
 				const name = getIdentifierName(node.id);
-				if (name === undefined || isPascalCase(name)) return;
+				if (name === undefined || toPascalCase(name) === name) return;
 				report(node.id, name);
 			},
 		};

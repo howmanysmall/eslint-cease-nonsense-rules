@@ -341,6 +341,95 @@ function Small({ a, b }) {
 					},
 				},
 			},
+			// Export default HOC with named function expression (covers getComponentNameFromCallParent export default case)
+			{
+				code: `
+export default memo(function DefaultMemo() {
+    return <div />;
+});
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// HOC call with non-function argument (covers CallExpression early-return)
+			{
+				code: `
+function Wrapper() {
+    const Component = () => <div />;
+    memo(Component);
+    return <div />;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Assignment pattern destructuring (covers countDestructuredProps assignment pattern)
+			{
+				code: `
+function DefaultProps({ a, b } = {}) {
+    return <div>{a}{b}</div>;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Member-expression hook + computed hook access (covers getHookName member/undefined branches)
+			{
+				code: `
+function Hooks() {
+    React.useState(0);
+    React["useState"](0);
+    return <div />;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Non-React member call should not be treated as a React HOC (covers isReactComponentHOC fallback)
+			{
+				code: `
+function NotReact() {
+    obj.memo(() => <div />);
+    return <div />;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Direct HOC call expression without assignment (covers getComponentNameFromCallParent undefined path)
+			{
+				code: `
+memo(function DirectMemo() {
+    return <div />;
+});
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
 			{
 				code: `
 function TypeNull() {

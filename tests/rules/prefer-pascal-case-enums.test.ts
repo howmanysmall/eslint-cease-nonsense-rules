@@ -24,7 +24,10 @@ describe("prefer-pascal-case-enums", () => {
 			// All lowercase
 			{ code: "enum sortorder {MostRecent, LeastRecent, Newest, Oldest}", errors: [errorWithName("sortorder")] },
 			// Snake case
-			{ code: "enum sort_order {MostRecent, LeastRecent, Newest, Oldest}", errors: [errorWithName("sort_order")] },
+			{
+				code: "enum sort_order {MostRecent, LeastRecent, Newest, Oldest}",
+				errors: [errorWithName("sort_order")],
+			},
 			// CamelCase
 			{ code: "enum sortOrder {MostRecent, LeastRecent, Newest, Oldest}", errors: [errorWithName("sortOrder")] },
 			// Both name and member invalid
@@ -46,6 +49,19 @@ describe("prefer-pascal-case-enums", () => {
 		valid: [
 			// Proper PascalCase
 			{ code: "enum SortOrder {MostRecent, LeastRecent, Newest, Oldest}" },
+
+			// Single letter enum members (valid per Shopify rule)
+			{ code: "enum Grade {A, B, C, D, E, F}" },
+			{ code: "enum Axis {X, Y, Z}" },
+			{ code: "enum Tier {S, A, B, C}" },
+
+			// Acronym-style PascalCase (valid per change-case)
+			{ code: "enum Space {CFrame, Vector3, UDim2}" },
+			{ code: "enum Upgrade {UPlus, Standard}" },
+			{ code: "enum Font {GothamSSm, SourceSans}" },
+
+			// Single letter enum name
+			{ code: "enum X {Foo, Bar}" },
 		],
 	});
 });

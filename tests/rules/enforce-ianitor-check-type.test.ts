@@ -79,6 +79,22 @@ const isUser = Ianitor.strictInterface({
 					},
 					options: [{ baseThreshold: 20 }],
 				},
+				// Computed member call (covers calculateIanitorComplexity early-return)
+				{
+					code: "const validator = Ianitor['string']();",
+					languageOptions: {
+						parser,
+					},
+					options: [{ baseThreshold: 20 }],
+				},
+				// Interface() without object expression argument (covers interface case fallback)
+				{
+					code: "const validator = Ianitor.interface();",
+					languageOptions: {
+						parser,
+					},
+					options: [{ baseThreshold: 20 }],
+				},
 				// Ianitor.Static<typeof ...> pattern
 				{
 					code: `

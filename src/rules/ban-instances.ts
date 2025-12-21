@@ -50,22 +50,19 @@ function normalizeConfig(options: unknown): NormalizedConfig {
 	if (!isOptionsObject.Check(options)) return { bannedClasses: new Map() };
 
 	const { bannedInstances } = options;
+	const bannedClasses = new Map<string, BannedClassEntry>();
 
 	if (isArrayConfig.Check(bannedInstances)) {
-		const map = new Map<string, BannedClassEntry>();
-		for (const className of bannedInstances)
-			map.set(className.toLowerCase(), { message: undefined, originalName: className });
-		return { bannedClasses: map };
+		for (const className of bannedInstances) {
+			bannedClasses.set(className.toLowerCase(), { message: undefined, originalName: className });
+		}
+	} else if (isObjectConfig.Check(bannedInstances)) {
+		for (const [className, message] of Object.entries(bannedInstances)) {
+			bannedClasses.set(className.toLowerCase(), { message, originalName: className });
+		}
 	}
 
-	if (isObjectConfig.Check(bannedInstances)) {
-		const map = new Map<string, BannedClassEntry>();
-		for (const [className, message] of Object.entries(bannedInstances))
-			map.set(className.toLowerCase(), { message, originalName: className });
-		return { bannedClasses: map };
-	}
-
-	return { bannedClasses: new Map() };
+	return { bannedClasses: bannedClasses };
 }
 
 interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {

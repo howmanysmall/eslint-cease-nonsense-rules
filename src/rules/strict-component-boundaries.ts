@@ -1,4 +1,5 @@
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import { toPascalCase } from "../utilities/casing-utilities";
 
 type MessageIds = "noReachingIntoComponent";
 
@@ -7,10 +8,8 @@ interface Options {
 	readonly maxDepth?: number;
 }
 
-const PASCAL_CASE = /^[A-Z][a-zA-Z0-9]*$/;
 function isPascalCase(segment: string): boolean {
-	if (segment.includes(".")) return false;
-	return PASCAL_CASE.test(segment);
+	return segment.includes(".") ? false : toPascalCase(segment) === segment;
 }
 
 function isInComponent(filename: string): boolean {
@@ -23,16 +22,20 @@ function parseImportSegments(importSource: string): ReadonlyArray<string> {
 	return importSource.split("/").filter((segment) => segment !== "." && segment !== "..");
 }
 
+function toRegExp(pattern: string): RegExp {
+	return new RegExp(pattern, "i");
+}
+
 const strictComponentBoundaries: TSESLint.RuleModuleWithMetaDocs<MessageIds, [Options?]> = {
 	create(context) {
 		const [{ allow = [], maxDepth = 1 } = {}] = context.options;
-		const allowPatterns = allow.map((pattern) => new RegExp(pattern, "i"));
+		// oxlint-disable-next-line no-array-callback-reference
+		const allowPatterns = allow.map(toRegExp);
 
 		return {
 			ImportDeclaration(node: TSESTree.ImportDeclaration): void {
 				const importSource = node.source.value;
-				if (typeof importSource !== "string") return;
-				if (!importSource.startsWith(".")) return;
+				if (typeof importSource !== "string" || !importSource.startsWith(".")) return;
 				if (allowPatterns.some((regexp) => regexp.test(importSource))) return;
 
 				const segments = parseImportSegments(importSource);
@@ -45,7 +48,7 @@ const strictComponentBoundaries: TSESLint.RuleModuleWithMetaDocs<MessageIds, [Op
 				if (firstPascalIndex === -1) return;
 
 				const filename = context.filename ?? "";
-				if (!filename) return;
+				if (filename === "") return;
 				const inComponent = isInComponent(filename);
 
 				if (inComponent) {

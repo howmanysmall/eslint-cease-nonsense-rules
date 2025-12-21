@@ -95,12 +95,14 @@ interface AlphaToken {
 
 function getLastAlphaToken(name: string): AlphaToken | undefined {
 	const tokens = tokenizeIdentifier(name);
+	let alphaToken: AlphaToken | undefined;
 	for (let index = tokens.length - 1; index >= 0; index -= 1) {
 		const token = tokens[index];
 		if (token === undefined || INTEGER_REGEXP.test(token)) continue;
-		return { lower: token.toLowerCase(), original: token };
+		alphaToken = { lower: token.toLowerCase(), original: token };
+		break;
 	}
-	return undefined;
+	return alphaToken;
 }
 
 const ACRONYM_REGEXP = regex("^[A-Z]{2,}[sS]$");
