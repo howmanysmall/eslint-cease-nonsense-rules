@@ -15,18 +15,23 @@ interface OxfmtWorkerState {
 
 let workerState: OxfmtWorkerState | undefined;
 
-function resolveWorkerPath(): URL {
+export function __testingResolveWorkerPath(baseUrl: string | URL, exists: (path: string) => boolean): URL {
 	// Try .js first (production/dist), then .ts (development/source)
-	const jsPath = new URL("./oxfmt-worker.js", import.meta.url);
+	const jsPath = new URL("./oxfmt-worker.js", baseUrl);
 	const jsFilePath = fileURLToPath(jsPath);
-	if (existsSync(jsFilePath)) return jsPath;
+	if (exists(jsFilePath)) return jsPath;
 
-	const tsPath = new URL("./oxfmt-worker.ts", import.meta.url);
+	const tsPath = new URL("./oxfmt-worker.ts", baseUrl);
 	const tsFilePath = fileURLToPath(tsPath);
-	if (existsSync(tsFilePath)) return tsPath;
+	if (exists(tsFilePath)) return tsPath;
 
 	throw new Error(`Oxfmt worker not found at ${jsFilePath} or ${tsFilePath}. Did you run 'bun run build'?`);
 }
+
+function resolveWorkerPath(): URL {
+	return __testingResolveWorkerPath(import.meta.url, existsSync);
+}
+
 
 function getWorker(): OxfmtWorkerState {
 	if (workerState !== undefined) return workerState;

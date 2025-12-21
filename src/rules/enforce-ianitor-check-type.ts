@@ -23,34 +23,14 @@ const DEFAULT_CONFIGURATION: ComplexityConfiguration = {
 	warnThreshold: 15,
 };
 
-const SHOULD_NOT_NOT_RETURN_TYPE = new Set<string>([
-	TSESTree.AST_NODE_TYPES.FunctionDeclaration,
-	TSESTree.AST_NODE_TYPES.FunctionExpression,
-]);
-
 function hasTypeAnnotationProperty(node: object): node is { typeAnnotation: unknown } {
 	return "typeAnnotation" in node;
 }
 
-function hasTypeAnnotation(node: { type: string; id?: unknown; returnType?: unknown }): boolean {
-	if (
-		node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
-		node.id &&
-		typeof node.id === "object" &&
-		hasTypeAnnotationProperty(node.id)
-	) {
-		return Boolean(node.id.typeAnnotation);
-	}
-
-	if (SHOULD_NOT_NOT_RETURN_TYPE.has(node.type)) return Boolean(node.returnType);
-	return false;
-}
-
-function getTypeName(node: TSESTree.Node): string | undefined {
-	return node.type === TSESTree.AST_NODE_TYPES.TSInterfaceDeclaration ||
-		node.type === TSESTree.AST_NODE_TYPES.TSTypeAliasDeclaration
-		? node.id.name
-		: undefined;
+function hasTypeAnnotation(node: TSESTree.VariableDeclarator): boolean {
+	if (node.id.type !== TSESTree.AST_NODE_TYPES.Identifier) return false;
+	if (typeof node.id !== "object" || !hasTypeAnnotationProperty(node.id)) return false;
+	return Boolean(node.id.typeAnnotation);
 }
 
 function isIanitorValidator(node: {
@@ -80,18 +60,21 @@ function extractIanitorStaticVariable(typeAnnotation: TSESTree.TypeNode): string
 	if (currentType.type !== TSESTree.AST_NODE_TYPES.TSTypeReference) return undefined;
 
 	const { typeName, typeArguments } = currentType;
-	const firstParam = typeArguments?.params[0];
 
 	if (
 		typeName.type === TSESTree.AST_NODE_TYPES.TSQualifiedName &&
 		typeName.left.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		typeName.left.name === "Ianitor" &&
 		typeName.right.type === TSESTree.AST_NODE_TYPES.Identifier &&
-		typeName.right.name === "Static" &&
-		firstParam?.type === TSESTree.AST_NODE_TYPES.TSTypeQuery &&
-		firstParam.exprName.type === TSESTree.AST_NODE_TYPES.Identifier
+		typeName.right.name === "Static"
 	) {
-		return firstParam.exprName.name;
+		const first = typeArguments?.params[0];
+		const name =
+			first?.type === TSESTree.AST_NODE_TYPES.TSTypeQuery &&
+			first.exprName.type === TSESTree.AST_NODE_TYPES.Identifier
+				? first.exprName.name
+				: undefined;
+		return name;
 	}
 
 	return undefined;
@@ -244,11 +227,12 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 					score = addScore(score, body.length * 2);
 					for (const member of body) {
 						const typeAnnotation = "typeAnnotation" in member ? member.typeAnnotation : undefined;
-						if (typeAnnotation)
+						if (typeAnnotation !== undefined) {
 							score = addScore(
 								score,
 								calculateStructuralComplexity(typeAnnotation.typeAnnotation, nextDepth),
 							);
+						}
 					}
 					break;
 				}
@@ -258,11 +242,12 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 					score = 2 + members.length * 0.5;
 					for (const member of members) {
 						const typeAnnotation = "typeAnnotation" in member ? member.typeAnnotation : undefined;
-						if (typeAnnotation)
+						if (typeAnnotation !== undefined) {
 							score = addScore(
 								score,
 								calculateStructuralComplexity(typeAnnotation.typeAnnotation, nextDepth),
 							);
+						}
 					}
 					break;
 				}
@@ -289,9 +274,10 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 					const { elementTypes } = node;
 					score = 1;
 					for (const element of elementTypes) {
-						const elementType = element.type;
-						if (elementType !== "TSRestType" && elementType !== "TSOptionalType")
+						const { type } = element;
+						if (type !== "TSRestType" && type !== "TSOptionalType") {
 							score = addScore(score, calculateStructuralComplexity(element, nextDepth));
+						}
 					}
 					score = addScore(score, 1.5 * elementTypes.length);
 					break;
@@ -300,9 +286,10 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 				case TSESTree.AST_NODE_TYPES.TSTypeReference: {
 					score = 2;
 					const { typeArguments } = node;
-					if (typeArguments) {
-						for (const param of typeArguments.params)
-							score = addScore(score, calculateStructuralComplexity(param, nextDepth) + 2);
+					if (typeArguments !== undefined) {
+						for (const parameter of typeArguments.params) {
+							score = addScore(score, calculateStructuralComplexity(parameter, nextDepth) + 2);
+						}
 					}
 					break;
 				}
@@ -318,29 +305,33 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 
 				case TSESTree.AST_NODE_TYPES.TSMappedType: {
 					score = 5;
-					if (node.constraint)
+					if ("constraint" in node) {
 						score = addScore(score, calculateStructuralComplexity(node.constraint, nextDepth));
-					if (node.typeAnnotation)
+					}
+					if (node.typeAnnotation !== undefined) {
 						score = addScore(score, calculateStructuralComplexity(node.typeAnnotation, nextDepth));
+					}
 					break;
 				}
 
 				case TSESTree.AST_NODE_TYPES.TSFunctionType:
 				case TSESTree.AST_NODE_TYPES.TSMethodSignature: {
 					score = 2;
-					for (const param of node.params) {
-						const typeAnnotation = "typeAnnotation" in param ? param.typeAnnotation : undefined;
-						if (typeAnnotation)
+					for (const parameter of node.params) {
+						const typeAnnotation = "typeAnnotation" in parameter ? parameter.typeAnnotation : undefined;
+						if (typeAnnotation !== undefined) {
 							score = addScore(
 								score,
 								calculateStructuralComplexity(typeAnnotation.typeAnnotation, nextDepth),
 							);
+						}
 					}
-					if (node.returnType)
+					if (node.returnType !== undefined) {
 						score = addScore(
 							score,
 							calculateStructuralComplexity(node.returnType.typeAnnotation, nextDepth),
 						);
+					}
 					break;
 				}
 
@@ -360,8 +351,12 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 		return {
 			"Program:exit"(): void {
 				for (const [node, data] of variableDeclaratorsToCheck.entries()) {
-					if (node.id.type === TSESTree.AST_NODE_TYPES.Identifier && ianitorStaticVariables.has(node.id.name))
+					if (
+						node.id.type === TSESTree.AST_NODE_TYPES.Identifier &&
+						ianitorStaticVariables.has(node.id.name)
+					) {
 						continue;
+					}
 
 					context.report({
 						data: { score: data.complexity.toFixed(1) },
@@ -373,11 +368,11 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 
 			TSInterfaceDeclaration(node): void {
 				const complexity = calculateStructuralComplexity(node);
-				const name = getTypeName(node);
+				const { name } = node.id;
 
 				if (complexity >= config.interfacePenalty) {
 					context.report({
-						data: { name: name ?? "unknown" },
+						data: { name },
 						messageId: "complexInterfaceNeedsCheck",
 						node,
 					});
@@ -386,7 +381,7 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 
 			TSTypeAliasDeclaration(node): void {
 				const variableName = extractIanitorStaticVariable(node.typeAnnotation);
-				if (variableName) ianitorStaticVariables.add(variableName);
+				if (variableName !== undefined) ianitorStaticVariables.add(variableName);
 				if (hasIanitorStaticType(node.typeAnnotation)) return;
 
 				const complexity = calculateStructuralComplexity(node.typeAnnotation);

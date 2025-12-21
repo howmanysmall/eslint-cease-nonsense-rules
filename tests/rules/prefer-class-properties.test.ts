@@ -9,10 +9,11 @@ const ruleTester = new RuleTester({
 	},
 });
 
-const classPropErrors = [{ type: "PropertyDefinition", message: "Unexpected class property." }];
-const assignErrors = [{ type: "AssignmentExpression", message: "Unexpected assignment of literal instance member." }];
+const classPropErrors = [{ message: "Unexpected class property.", type: "PropertyDefinition" }];
+const assignErrors = [{ message: "Unexpected assignment of literal instance member.", type: "AssignmentExpression" }];
 
 describe("prefer-class-properties", () => {
+	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
 	ruleTester.run("prefer-class-properties", rule, {
 		invalid: [
 			// 'never' mode - class properties are not allowed
@@ -22,8 +23,17 @@ describe("prefer-class-properties", () => {
 
 			// 'always' mode - constructor assignments of literals are not allowed
 			{ code: "class Foo { constructor() { this.foo = 123; } }", errors: assignErrors, options: ["always"] },
+			{
+				code: "const Foo = class { constructor() { this.foo = 123; } };",
+				errors: assignErrors,
+				options: ["always"],
+			},
 			{ code: "class Foo { constructor() { this.foo = false; } }", errors: assignErrors, options: ["always"] },
-			{ code: "class Foo { constructor() { this.foo = /something/; } }", errors: assignErrors, options: ["always"] },
+			{
+				code: "class Foo { constructor() { this.foo = /something/; } }",
+				errors: assignErrors,
+				options: ["always"],
+			},
 			{ code: "class Foo { constructor() { this.foo = '123'; } }", errors: assignErrors, options: ["always"] },
 			{
 				code: "class Foo { constructor() { this.foo = '123'.toUpperCase(); } }",
@@ -31,7 +41,11 @@ describe("prefer-class-properties", () => {
 				options: ["always"],
 			},
 			// MemberExpression on literal (covers line 29)
-			{ code: "class Foo { constructor() { this.foo = 'bar'.length; } }", errors: assignErrors, options: ["always"] },
+			{
+				code: "class Foo { constructor() { this.foo = 'bar'.length; } }",
+				errors: assignErrors,
+				options: ["always"],
+			},
 			{ code: "class Foo { constructor() { this.foo = []; } }", errors: assignErrors, options: ["always"] },
 			{ code: "class Foo { constructor() { this.foo = {}; } }", errors: assignErrors, options: ["always"] },
 			{

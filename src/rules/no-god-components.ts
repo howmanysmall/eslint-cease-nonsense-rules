@@ -20,16 +20,6 @@ const FUNCTION_BOUNDARIES = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.ArrowFunctionExpression,
 ]);
 
-const RUNTIME_TS_WRAPPERS = new Set<string>([
-	"ParenthesizedExpression",
-	"TSAsExpression",
-	"TSSatisfiesExpression",
-	"TSTypeAssertion",
-	"TSNonNullExpression",
-	"TSInstantiationExpression",
-	"ChainExpression",
-]);
-
 function isComponentName(name: string): boolean {
 	return COMPONENT_NAME_PATTERN.test(name);
 }
@@ -37,16 +27,18 @@ function isComponentName(name: string): boolean {
 function isReactComponentHOC(callExpr: TSESTree.CallExpression): boolean {
 	const { callee } = callExpr;
 
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier)
+	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
 		return callee.name === "forwardRef" || callee.name === "memo";
+	}
 
 	if (
 		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 		callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		callee.object.name === "React" &&
 		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-	)
+	) {
 		return callee.property.name === "forwardRef" || callee.property.name === "memo";
+	}
 
 	return false;
 }
@@ -113,6 +105,7 @@ function getComponentNameFromCallParent(callExpr: TSESTree.CallExpression): stri
 		return parent.left.name;
 	}
 
+	let nameFromExportDefault: string | undefined;
 	if (parent.type === TSESTree.AST_NODE_TYPES.ExportDefaultDeclaration && callExpr.arguments.length > 0) {
 		const [firstArg] = callExpr.arguments;
 		if (
@@ -121,11 +114,11 @@ function getComponentNameFromCallParent(callExpr: TSESTree.CallExpression): stri
 			firstArg.id &&
 			isComponentName(firstArg.id.name)
 		) {
-			return firstArg.id.name;
+			nameFromExportDefault = firstArg.id.name;
 		}
 	}
 
-	return undefined;
+	return nameFromExportDefault;
 }
 
 function getHookName(callExpression: TSESTree.CallExpression): string | undefined {
@@ -170,12 +163,7 @@ function isTypeOnlyNullLiteral(node: TSESTree.Literal): boolean {
 	const { parent } = node;
 	if (parent === null || parent === undefined) return false;
 
-	if (typeof parent.type === "string" && parent.type.startsWith("TS") && !RUNTIME_TS_WRAPPERS.has(parent.type))
-		return true;
-
-	if (parent.type === TSESTree.AST_NODE_TYPES.TSLiteralType) return true;
-
-	return false;
+	return parent.type === TSESTree.AST_NODE_TYPES.TSLiteralType;
 }
 
 interface BodyAnalysis {
@@ -216,43 +204,27 @@ function analyzeComponentBody(
 		}
 
 		function getVisitorKeysForNodeType(nodeType: string): ReadonlyArray<string> {
-			// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
-			const visitorKeysUnknown: unknown = (sourceCode as unknown as { visitorKeys?: unknown }).visitorKeys;
-			if (
-				visitorKeysUnknown === null ||
-				visitorKeysUnknown === undefined ||
-				typeof visitorKeysUnknown !== "object"
-			)
-				return [];
-
-			// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
-			const visitorKeysRecord = visitorKeysUnknown as Record<string, unknown>;
-			const keysUnknown = visitorKeysRecord[nodeType];
-			if (!Array.isArray(keysUnknown)) return [];
-
 			const keys = new Array<string>();
+			const keysUnknown = sourceCode.visitorKeys[nodeType];
+			if (!Array.isArray(keysUnknown)) return keys;
 			for (const key of keysUnknown) if (typeof key === "string") keys.push(key);
 			return keys;
 		}
 
 		const keys = getVisitorKeysForNodeType(current.type);
-		// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
 		const currentRecord = current as unknown as Record<string, unknown>;
 
 		for (const key of keys) {
 			const value = currentRecord[key];
 			if (Array.isArray(value)) {
 				for (const item of value) {
-					if (typeof item === "object" && item !== null && "type" in item) {
-						// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
-						visit(item as TSESTree.Node, nextDepth);
-					}
+					if (typeof item !== "object" || item === null) continue;
+					if ("type" in item) visit(item as TSESTree.Node, nextDepth);
 				}
 				continue;
 			}
 
 			if (typeof value === "object" && value !== null && "type" in value) {
-				// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
 				visit(value as TSESTree.Node, nextDepth);
 			}
 		}
@@ -399,11 +371,9 @@ const noGodComponents: Rule.RuleModule = {
 				checkComponent(firstArg, name);
 			},
 			FunctionDeclaration(node) {
-				// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
 				maybeCheckFunction(node as unknown as TSESTree.FunctionDeclaration);
 			},
 			FunctionExpression(node) {
-				// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
 				maybeCheckFunction(node as unknown as TSESTree.FunctionExpression);
 			},
 		};
