@@ -4,6 +4,7 @@ import banInstances from "./rules/ban-instances";
 import banReactFC from "./rules/ban-react-fc";
 import enforceIanitorCheckType from "./rules/enforce-ianitor-check-type";
 import fastFormat from "./rules/fast-format";
+import misleadingLuaTupleChecks from "./rules/misleading-lua-tuple-checks";
 import noAsyncConstructor from "./rules/no-async-constructor";
 import noColor3Constructor from "./rules/no-color3-constructor";
 import noCommentedCode from "./rules/no-commented-code";
@@ -62,6 +63,7 @@ const rules: Readonly<Record<string, AnyRuleModule>> = {
 	"ban-react-fc": banReactFC,
 	"enforce-ianitor-check-type": enforceIanitorCheckType,
 	"fast-format": fastFormat,
+	"misleading-lua-tuple-checks": misleadingLuaTupleChecks,
 	"no-async-constructor": noAsyncConstructor,
 	"no-color3-constructor": noColor3Constructor,
 	"no-commented-code": noCommentedCode,
@@ -105,6 +107,7 @@ const recommended = {
 		"cease-nonsense/ban-react-fc": "error",
 		"cease-nonsense/enforce-ianitor-check-type": "error",
 		"cease-nonsense/fast-format": "error",
+		"cease-nonsense/misleading-lua-tuple-checks": "error",
 		"cease-nonsense/no-async-constructor": "error",
 		"cease-nonsense/no-color3-constructor": "error",
 		"cease-nonsense/no-god-components": "error",
