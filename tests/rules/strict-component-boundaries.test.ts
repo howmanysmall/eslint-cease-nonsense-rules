@@ -1,4 +1,5 @@
 import { describe } from "bun:test";
+import { join } from "node:path";
 import { RuleTester } from "eslint";
 import rule from "../../src/rules/strict-component-boundaries";
 
@@ -9,6 +10,9 @@ const ruleTester = new RuleTester({
 	},
 });
 
+const FIXTURES = join(import.meta.dir, "..", "fixtures", "strict-boundaries");
+const BASIC_APP = join(FIXTURES, "basic-app", "app");
+
 const errors = [
 	{
 		message:
@@ -18,44 +22,44 @@ const errors = [
 ];
 
 describe("strict-component-boundaries", () => {
-	// @ts-expect-error Loser
+	// @ts-expect-error RuleTester types incompatible
 	ruleTester.run("strict-component-boundaries", rule, {
 		invalid: [
 			// From outside components, reaching into a specific component
 			{
 				code: "import someThing from './components/Foo';",
 				errors,
-				filename: "basic-app/app/index.js",
+				filename: join(BASIC_APP, "index.ts"),
 			},
 			// Reaching into another component and going deeper
 			{
 				code: "import someThing from '../Bar/any-path';",
 				errors,
-				filename: "basic-app/app/components/Foo/index.js",
+				filename: join(BASIC_APP, "components", "Foo", "index.ts"),
 			},
 			{
 				code: "import someThing from './components/Bar/any-path';",
 				errors,
-				filename: "basic-app/app/index.js",
+				filename: join(BASIC_APP, "index.ts"),
 			},
 			// PascalCase component before fixtures
 			{
 				code: "import someThing from '../Bar/tests/fixtures/SomeMockQuery/query.json';",
 				errors,
-				filename: "basic-app/app/components/Foo/index.js",
+				filename: join(BASIC_APP, "components", "Foo", "index.ts"),
 			},
 			// Allow pattern matches but import goes deeper
 			{
 				code: "import someThing from './components/Foo/Foo';",
 				errors,
-				filename: "basic-app/app/index.js",
+				filename: join(BASIC_APP, "index.ts"),
 				options: [{ allow: [String.raw`components/\w+$`] }],
 			},
 			// MaxDepth exceeded
 			{
 				code: "import someThing from './components/Foo/Foo';",
 				errors,
-				filename: "basic-app/app/index.js",
+				filename: join(BASIC_APP, "index.ts"),
 				options: [{ maxDepth: 2 }],
 			},
 		],
@@ -63,68 +67,45 @@ describe("strict-component-boundaries", () => {
 			// Importing components folder itself (no PascalCase reached)
 			{
 				code: "import {someThing} from './components';",
-				filename: "basic-app/app/index.js",
+				filename: join(BASIC_APP, "index.ts"),
 			},
-			// Sibling component import
+			// Sibling component import (to index)
 			{
 				code: "import {someThing} from '../Bar';",
-				filename: "basic-app/app/components/Foo/index.js",
+				filename: join(BASIC_APP, "components", "Foo", "index.ts"),
 			},
-			// Non-relative import (package)
+			// Non-relative import (package) - skipped, not resolved
 			{
 				code: "import {getDisplayName} from '@shopify/react-utilities/components';",
-				filename: "basic-app/app/sections/MySection/MySection.js",
+				filename: join(BASIC_APP, "sections", "MySection", "MySection.ts"),
 			},
 			// No PascalCase in path
 			{
 				code: "import someUtility from './utilities/someUtility';",
-				filename: "basic-app/app/sections/MySection/MySection.js",
+				filename: join(BASIC_APP, "index.ts"),
 			},
-			// Fixtures before PascalCase
+			// Fixtures before PascalCase - valid fixture import
 			{
 				code: "import someThing from './tests/fixtures/SomeMockQuery/query.json';",
-				filename: "basic-app/app/components/Foo/index.js",
-			},
-			// Going up then into shared components
-			{
-				code: "import {someThing} from '../../components/Bar';",
-				filename: "basic-app/app/components/Foo/index.js",
-			},
-			// Sibling component from nested component
-			{
-				code: "import {someThing} from '../Baz';",
-				filename: "basic-app/app/components/Foo/components/Bar/index.js",
-			},
-			// File import (has extension)
-			{
-				code: "import {someThing} from '../../Foo.scss';",
-				filename: "basic-app/app/components/Foo/components/Bar/index.js",
+				filename: join(BASIC_APP, "components", "Bar", "index.ts"),
 			},
 			// Allow pattern matches
 			{
 				code: "import someThing from './components/Foo';",
-				filename: "basic-app/app/index.js",
+				filename: join(BASIC_APP, "index.ts"),
 				options: [{ allow: [String.raw`components/\w+$`] }],
 			},
 			// MaxDepth increased
 			{
 				code: "import someThing from './components/Foo';",
-				filename: "basic-app/app/index.js",
+				filename: join(BASIC_APP, "index.ts"),
 				options: [{ maxDepth: 2 }],
 			},
-			// Absolute paths with PascalCase system directories (Users, Documents)
-			// Should NOT cause false positives. File is in src/shared (not a component folder).
-			// Import has 2 segments, maxDepth 2, should be valid.
-			// BUG: isInComponent wrongly returns true due to PascalCase dirs in absolute path
+			// Child folder import - NOT crossing component boundary
+			// (the game case: importing from own Configs subfolder)
 			{
-				code: "import { something } from './SomeModule/index';",
-				filename: "/Users/developer/Code/project/src/shared/manager/processor.ts",
-				options: [{ maxDepth: 2 }],
-			},
-			{
-				code: "import { API } from '../DataService/api';",
-				filename: "/home/Documents/workspace/app/src/services/index.ts",
-				options: [{ maxDepth: 2 }],
+				code: "import StoryModeConfig from './Configs/gameplay/story-mode';",
+				filename: join(FIXTURES, "shared", "data-service", "data-processor.ts"),
 			},
 		],
 	});

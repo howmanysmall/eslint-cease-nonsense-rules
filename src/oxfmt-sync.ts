@@ -2,8 +2,7 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { MessageChannel, receiveMessageOnPort, Worker } from "node:worker_threads";
 
-import type { FormatOptions } from "oxfmt";
-import type { FormatRequest, FormatResponse } from "./oxfmt-worker";
+import type { FormatOptions, FormatRequest, FormatResponse } from "./oxfmt-worker";
 
 const FORMAT_TIMEOUT = 30_000;
 
@@ -31,7 +30,6 @@ export function __testingResolveWorkerPath(baseUrl: string | URL, exists: (path:
 function resolveWorkerPath(): URL {
 	return __testingResolveWorkerPath(import.meta.url, existsSync);
 }
-
 
 function getWorker(): OxfmtWorkerState {
 	if (workerState !== undefined) return workerState;

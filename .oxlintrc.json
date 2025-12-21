@@ -86,6 +86,13 @@
 			},
 		},
 		{
+			"files": ["tests/fixtures/**/*.ts"],
+			"rules": {
+				"import/no-anonymous-default-export": "off",
+				"unicorn/filename-case": "off",
+			},
+		},
+		{
 			"files": ["src/oxfmt-sync.ts", "src/oxfmt-worker.ts"],
 			"rules": {
 				"unicorn/require-post-message-target-origin": "off",
