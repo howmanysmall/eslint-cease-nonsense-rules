@@ -1,6 +1,7 @@
 import { workerData } from "node:worker_threads";
 import type { FormatOptions } from "oxfmt";
-import { format } from "oxfmt";
+
+export type { FormatOptions } from "oxfmt";
 
 export interface FormatRequest {
 	readonly controlBuffer: SharedArrayBuffer;
@@ -16,6 +17,21 @@ export interface FormatResponse {
 
 interface WorkerData {
 	readonly requestPort: MessagePort;
+}
+
+// oxlint-disable-next-line consistent-type-imports
+type FormatFunction = typeof import("oxfmt").format;
+
+const OXFMT_NOT_INSTALLED_ERROR = "oxfmt is not installed. Install it with: bun add -D oxfmt (or npm install -D oxfmt)";
+
+let oxfmtFormat: FormatFunction | undefined;
+let loadError: string | undefined;
+
+try {
+	const oxfmt = await import("oxfmt");
+	oxfmtFormat = oxfmt.format;
+} catch {
+	loadError = OXFMT_NOT_INSTALLED_ERROR;
 }
 
 function isWorkerData(value: unknown): value is WorkerData {
@@ -37,7 +53,12 @@ port.on("message", (request: FormatRequest) => {
 	void (async (): Promise<void> => {
 		const control = new Int32Array(request.controlBuffer);
 		try {
-			const result = await format(request.fileName, request.sourceText, request.options);
+			if (oxfmtFormat === undefined) {
+				port.postMessage({ error: loadError ?? OXFMT_NOT_INSTALLED_ERROR } satisfies FormatResponse);
+				return;
+			}
+
+			const result = await oxfmtFormat(request.fileName, request.sourceText, request.options);
 			if (result.errors.length > 0) {
 				const errorMessages = result.errors.map(({ message }) => message).join("; ");
 				port.postMessage({ error: `Oxfmt error: ${errorMessages}` } satisfies FormatResponse);
@@ -45,8 +66,9 @@ port.on("message", (request: FormatRequest) => {
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			port.postMessage({ error: `Oxfmt error: ${message}` } satisfies FormatResponse);
+		} finally {
+			Atomics.store(control, 0, 1);
+			Atomics.notify(control, 0);
 		}
-		Atomics.store(control, 0, 1);
-		Atomics.notify(control, 0);
 	})();
 });

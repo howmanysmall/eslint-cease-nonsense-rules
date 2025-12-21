@@ -1,3 +1,4 @@
+// biome-ignore-all assist/source/useSortedKeys: so annoying
 {
 	"$schema": "https://opencode.ai/config.json",
 	"agent": {
@@ -23,7 +24,6 @@
 			"model": "anthropic/claude-opus-4-5",
 			"permission": {
 				"bash": {
-					"*": "ask",
 					"bat *": "allow",
 					"cat *": "allow",
 					"cd *": "allow",
@@ -39,7 +39,9 @@
 					"lsd *": "allow",
 					"rg *": "allow",
 					"sd *": "allow",
-					"sed *": "allow"
+					"sed *": "allow",
+					"bun test*": "allow",
+					"*": "ask"
 				},
 				"doom_loop": "ask",
 				"edit": "allow",
@@ -53,7 +55,6 @@
 			"model": "anthropic/claude-haiku-4-5",
 			"permission": {
 				"bash": {
-					"*": "ask",
 					"bat *": "allow",
 					"cat *": "allow",
 					"cd *": "allow",
@@ -69,7 +70,9 @@
 					"lsd *": "allow",
 					"rg *": "allow",
 					"sd *": "allow",
-					"sed *": "allow"
+					"sed *": "allow",
+					"bun test*": "allow",
+					"*": "ask"
 				},
 				"doom_loop": "ask",
 				"edit": "allow",
@@ -83,7 +86,6 @@
 			"model": "anthropic/claude-sonnet-4-5",
 			"permission": {
 				"bash": {
-					"*": "ask",
 					"bat *": "allow",
 					"cat *": "allow",
 					"cd *": "allow",
@@ -99,7 +101,9 @@
 					"lsd *": "allow",
 					"rg *": "allow",
 					"sd *": "allow",
-					"sed *": "allow"
+					"sed *": "allow",
+					"bun test*": "allow",
+					"*": "ask"
 				},
 				"doom_loop": "ask",
 				"edit": "allow",
@@ -115,7 +119,6 @@
 			"model": "anthropic/claude-sonnet-4-5",
 			"permission": {
 				"bash": {
-					"*": "ask",
 					"bat *": "allow",
 					"cat *": "allow",
 					"cd *": "allow",
@@ -131,7 +134,9 @@
 					"lsd *": "allow",
 					"rg *": "allow",
 					"sd *": "allow",
-					"sed *": "allow"
+					"sed *": "allow",
+					"bun test*": "allow",
+					"*": "ask"
 				},
 				"doom_loop": "ask",
 				"edit": "allow",
@@ -146,7 +151,6 @@
 			"model": "anthropic/claude-opus-4-5",
 			"permission": {
 				"bash": {
-					"*": "ask",
 					"bat *": "allow",
 					"cat *": "allow",
 					"cd *": "allow",
@@ -162,7 +166,9 @@
 					"lsd *": "allow",
 					"rg *": "allow",
 					"sd *": "allow",
-					"sed *": "allow"
+					"sed *": "allow",
+					"bun test*": "allow",
+					"*": "ask"
 				},
 				"doom_loop": "ask",
 				"edit": "deny",

@@ -1,5 +1,7 @@
+import { basename, extname, relative } from "node:path";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { toPascalCase } from "../utilities/casing-utilities";
+import { resolveRelativeImport } from "../utilities/resolve-import";
 
 type MessageIds = "noReachingIntoComponent";
 
@@ -8,45 +10,33 @@ interface Options {
 	readonly maxDepth?: number;
 }
 
-function isPascalCase(segment: string): boolean {
-	return segment.includes(".") ? false : toPascalCase(segment) === segment;
-}
-
-// Common source root markers to find project-relative paths
-const SOURCE_ROOT_MARKERS = new Set(["src", "lib", "app", "source", "packages", "sources"]);
-
-function getProjectRelativeParts(filename: string): ReadonlyArray<string> {
-	const parts = filename.split("/");
-	// Remove filename from path
-	parts.pop();
-
-	// Find the last occurrence of a source root marker
-	let sourceRootIndex = -1;
-	for (let index = parts.length - 1; index >= 0; index -= 1) {
-		const part = parts[index];
-		if (part !== undefined && SOURCE_ROOT_MARKERS.has(part)) {
-			sourceRootIndex = index;
-			break;
-		}
-	}
-
-	// If found, return parts after the source root; otherwise use all parts.
-	// This filters out system paths like /Users/, /home/, /Documents/
-	if (sourceRootIndex === -1) return parts;
-	return parts.slice(sourceRootIndex + 1);
-}
-
-function isInComponent(filename: string): boolean {
-	const parts = getProjectRelativeParts(filename);
-	return parts.some((part) => isPascalCase(part));
-}
-
-function parseImportSegments(importSource: string): ReadonlyArray<string> {
-	return importSource.split("/").filter((segment) => segment !== "." && segment !== "..");
-}
-
 function toRegExp(pattern: string): RegExp {
 	return new RegExp(pattern, "i");
+}
+
+function pathSegmentsFromSource(source: string): ReadonlyArray<string> {
+	return source.split("/").filter((part) => !part.startsWith("."));
+}
+
+function hasAnotherComponentInPath(pathParts: ReadonlyArray<string>): boolean {
+	return pathParts.some((part) => part === toPascalCase(part) && !part.includes("."));
+}
+
+function hasDirectoryInPath(pathParts: ReadonlyArray<string>, directory: string): boolean {
+	return pathParts.includes(directory);
+}
+
+function isIndexFile(filePath: string): boolean {
+	return basename(filePath, extname(filePath)) === "index";
+}
+
+function isValidFixtureImport(pathParts: ReadonlyArray<string>): boolean {
+	if (!hasDirectoryInPath(pathParts, "fixtures")) return false;
+
+	const fixtureIndex = pathParts.indexOf("fixtures");
+	const partsBeforeFixture = pathParts.slice(0, fixtureIndex);
+
+	return !hasAnotherComponentInPath(partsBeforeFixture);
 }
 
 const strictComponentBoundaries: TSESLint.RuleModuleWithMetaDocs<MessageIds, [Options?]> = {
@@ -61,28 +51,37 @@ const strictComponentBoundaries: TSESLint.RuleModuleWithMetaDocs<MessageIds, [Op
 				if (typeof importSource !== "string" || !importSource.startsWith(".")) return;
 				if (allowPatterns.some((regexp) => regexp.test(importSource))) return;
 
-				const segments = parseImportSegments(importSource);
-				if (segments.length === 0) return;
-
-				const fixturesIndex = segments.indexOf("fixtures");
-				const firstPascalIndex = segments.findIndex((segment) => isPascalCase(segment));
-
-				if (fixturesIndex !== -1 && (firstPascalIndex === -1 || fixturesIndex < firstPascalIndex)) return;
-				if (firstPascalIndex === -1) return;
-
 				const filename = context.filename ?? "";
 				if (filename === "") return;
-				const inComponent = isInComponent(filename);
 
-				if (inComponent) {
-					const segmentsAfterPascal = segments.slice(firstPascalIndex + 1);
-					if (segmentsAfterPascal.length > 0) {
-						context.report({
-							messageId: "noReachingIntoComponent",
-							node,
-						});
-					}
-				} else if (segments.length > maxDepth) {
+				// Resolve the import to an absolute path
+				const resolved = resolveRelativeImport(importSource, filename);
+				if (!resolved.found) return;
+
+				// Compute relative path from source file to resolved target
+				const pathDifference = relative(filename, resolved.path);
+				const pathParts = pathSegmentsFromSource(pathDifference);
+
+				// Check 1: PascalCase component in path
+				if (
+					hasAnotherComponentInPath(pathParts) &&
+					pathParts.length > maxDepth &&
+					!isIndexFile(pathDifference) &&
+					!isValidFixtureImport(pathParts)
+				) {
+					context.report({
+						messageId: "noReachingIntoComponent",
+						node,
+					});
+					return;
+				}
+
+				// Check 2: "components" directory in path
+				if (
+					hasDirectoryInPath(pathParts, "components") &&
+					pathParts.length > maxDepth + 1 &&
+					!isValidFixtureImport(pathParts)
+				) {
 					context.report({
 						messageId: "noReachingIntoComponent",
 						node,
