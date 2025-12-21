@@ -202,7 +202,7 @@ const misleadingLuaTupleChecks: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], 
 
 			// LuaTuple in for-of with iterable functions
 			ForOfStatement(node: TSESTree.ForOfStatement): void {
-				const { left, right } = node;
+				const { left } = node;
 
 				// Only check if left is an Identifier (not destructuring)
 				if (left.type === AST_NODE_TYPES.VariableDeclaration) {
@@ -210,37 +210,17 @@ const misleadingLuaTupleChecks: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], 
 					if (declarator === undefined) return;
 					if (declarator.id.type !== AST_NODE_TYPES.Identifier) return;
 
-					// Check if iterating over something that yields LuaTuple
-					// We need to check the element type of the iterable
-					// Try to get the iterator element type
-					// For arrays/iterables, TypeScript has iteration types
-					const iteratorType = checker.getTypeAtLocation(parserServices.esTreeNodeToTSNodeMap.get(right));
+					// Check the type of the iteration variable directly.
+					// TypeScript infers the element type for us - more reliable than
+					// Accessing internal typeArguments property.
+					const leftType = checker.getTypeAtLocation(parserServices.esTreeNodeToTSNodeMap.get(declarator.id));
 
-					// Check if this is an array of LuaTuples
-					if (iteratorType.isUnionOrIntersection()) {
-						for (const subType of iteratorType.types) {
-							if (isLuaTuple(subType, typeCache)) {
-								context.report({
-									fix: createDestructuringFix(declarator, sourceCode),
-									messageId: "lua-tuple-declaration",
-									node: declarator,
-								});
-								return;
-							}
-						}
-					}
-
-					// For direct iteration, check type arguments
-					const { typeArguments } = iteratorType as { typeArguments?: ReadonlyArray<Type> };
-					if (typeArguments !== undefined && typeArguments.length > 0) {
-						const [elementType] = typeArguments;
-						if (elementType !== undefined && isLuaTuple(elementType, typeCache)) {
-							context.report({
-								fix: createDestructuringFix(declarator, sourceCode),
-								messageId: "lua-tuple-declaration",
-								node: declarator,
-							});
-						}
+					if (isLuaTuple(leftType, typeCache)) {
+						context.report({
+							fix: createDestructuringFix(declarator, sourceCode),
+							messageId: "lua-tuple-declaration",
+							node: declarator,
+						});
 					}
 				}
 			},
