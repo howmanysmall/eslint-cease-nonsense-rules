@@ -38,8 +38,9 @@ function hasTypeAnnotation(node: { type: string; id?: unknown; returnType?: unkn
 		node.id &&
 		typeof node.id === "object" &&
 		hasTypeAnnotationProperty(node.id)
-	)
+	) {
 		return Boolean(node.id.typeAnnotation);
+	}
 
 	if (SHOULD_NOT_NOT_RETURN_TYPE.has(node.type)) return Boolean(node.returnType);
 	return false;

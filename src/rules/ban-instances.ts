@@ -102,8 +102,6 @@ const banInstances: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDoc
 		}
 
 		return {
-			// Handle: <classname> JSX elements (lowercase = Roblox Instance)
-			// Capitalized JSX elements like <Part> are custom React components
 			JSXOpeningElement(node: TSESTree.JSXOpeningElement) {
 				const { name } = node;
 
@@ -112,16 +110,14 @@ const banInstances: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDoc
 				const elementName = name.name;
 				const firstChar = elementName.charAt(0);
 
-				// Only lowercase JSX elements are Roblox Instances
 				if (firstChar !== firstChar.toLowerCase()) return;
 
-				// Lookup by lowercase (config keys are stored lowercase)
 				const entry = config.bannedClasses.get(elementName.toLowerCase());
 				if (!entry) return;
 
 				reportBannedClass(node, entry);
 			},
-			// Handle: new Instance("ClassName")
+
 			NewExpression(node: TSESTree.NewExpression) {
 				if (node.callee.type !== TSESTree.AST_NODE_TYPES.Identifier) return;
 				if (node.callee.name !== "Instance") return;
@@ -130,7 +126,6 @@ const banInstances: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDoc
 				if (!firstArgument || firstArgument.type !== TSESTree.AST_NODE_TYPES.Literal) return;
 				if (typeof firstArgument.value !== "string") return;
 
-				// Lookup by lowercase (config keys are stored lowercase)
 				const entry = config.bannedClasses.get(firstArgument.value.toLowerCase());
 				if (!entry) return;
 
