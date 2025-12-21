@@ -8,6 +8,7 @@ An ESLint plugin that catches common mistakes before they reach production. This
 - [Usage](#usage)
 - [Rules](#rules)
   - [Type Safety](#type-safety)
+  - [Roblox-TS](#roblox-ts)
   - [React](#react)
   - [Logging](#logging)
   - [Resource Management](#resource-management)
@@ -41,6 +42,7 @@ export default [
 			"cease-nonsense/ban-react-fc": "error",
 			"cease-nonsense/enforce-ianitor-check-type": "error",
 			"cease-nonsense/fast-format": "error",
+			"cease-nonsense/misleading-lua-tuple-checks": "error",
 			"cease-nonsense/no-async-constructor": "error",
 			"cease-nonsense/no-color3-constructor": "error",
 			"cease-nonsense/no-commented-code": "error",
@@ -124,6 +126,66 @@ const userConfigValidator = Ianitor.interface({
 type UserConfig = Ianitor.Static<typeof userConfigValidator>;
 
 const config = userConfigValidator.check(getUserConfig());
+```
+
+### Roblox-TS
+
+#### `misleading-lua-tuple-checks`
+
+Detects misleading LuaTuple usage in conditional and logical expressions. LuaTuple (array) is always truthy in JavaScript, which can lead to bugs when checking the first element.
+
+**Features**
+
+- ✨ Has auto-fix
+- Requires TypeScript type information (parserOptions.project)
+- Multi-level caching for optimal performance
+
+**Detected patterns**
+
+- LuaTuple in if/while/for/do-while conditions
+- LuaTuple in ternary expressions
+- LuaTuple in logical expressions (&&, ||)
+- LuaTuple in unary negation (!)
+- LuaTuple variable declarations without destructuring
+- LuaTuple assignments without destructuring
+
+**❌ Bad**
+
+```typescript
+// LuaTuple in condition - always truthy!
+const result = pcall(() => doSomething());
+if (result) {
+	// This always runs because arrays are truthy
+	console.log("success");
+}
+
+// Assigning LuaTuple to a variable without destructuring
+const tuple = getLuaTuple();
+
+// Using LuaTuple in logical expressions
+const check = pcall(() => {}) && true;
+```
+
+**✅ Good**
+
+```typescript
+// Destructure to get the success boolean
+const [success, value] = pcall(() => doSomething());
+if (success) {
+	console.log("success", value);
+}
+
+// Or use index access in conditions
+if (pcall(() => doSomething())[0]) {
+	console.log("success");
+}
+
+// Proper destructuring
+const [result] = getLuaTuple();
+
+// Destructured values in logical expressions
+const [success] = pcall(() => {});
+const check = success && true;
 ```
 
 ### React

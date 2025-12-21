@@ -1,24 +1,14 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import type { TSESTree } from "@typescript-eslint/utils";
-import { ESLintUtils } from "@typescript-eslint/utils";
+import type { ParserServicesWithTypeInformation, TSESLint, TSESTree } from "@typescript-eslint/utils";
 import type { ReportFixFunction, RuleFixer, SourceCode } from "@typescript-eslint/utils/ts-eslint";
-import type { Type } from "typescript";
+import type { Type, TypeChecker } from "typescript";
 
 type MessageIds = "misleading-lua-tuple-check" | "lua-tuple-declaration";
 
-const createRule = ESLintUtils.RuleCreator((name) => `https://github.com/howmanysmall/eslint-cease-nonsense-rules#${name}`);
+interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
+	readonly recommended?: boolean;
+}
 
-/**
- * Checks if a TypeScript type is a LuaTuple.
- *
- * Uses multi-level caching for performance:
- * 1. Fast-path: Check aliasSymbol.escapedName === "LuaTuple"
- * 2. Only resolve constraints for type parameters (rare case)
- *
- * @param type - The TypeScript type to check
- * @param typeCache - WeakMap cache for type results
- * @returns True if the type is a LuaTuple
- */
 function isLuaTuple(type: Type, typeCache: WeakMap<Type, boolean>): boolean {
 	const cached = typeCache.get(type);
 	if (cached !== undefined) return cached;
@@ -44,10 +34,9 @@ function isLuaTuple(type: Type, typeCache: WeakMap<Type, boolean>): boolean {
 	// Handle union types: check if any constituent is a LuaTuple
 	if (type.isUnion()) {
 		for (const subType of type.types) {
-			if (isLuaTuple(subType, typeCache)) {
-				typeCache.set(type, true);
-				return true;
-			}
+			if (!isLuaTuple(subType, typeCache)) continue;
+			typeCache.set(type, true);
+			return true;
 		}
 	}
 
@@ -55,15 +44,6 @@ function isLuaTuple(type: Type, typeCache: WeakMap<Type, boolean>): boolean {
 	return false;
 }
 
-/**
- * Gets the type of an ESTree node.
- *
- * @param node - The ESTree node
- * @param nodeCache - WeakMap cache for node results
- * @param typeCache - WeakMap cache for type results
- * @param getTypeAtLocation - Function to get TS type from ESTree node
- * @returns True if the node's type is a LuaTuple
- */
 function isNodeLuaTuple(
 	node: TSESTree.Node,
 	nodeCache: WeakMap<TSESTree.Node, boolean>,
@@ -79,13 +59,6 @@ function isNodeLuaTuple(
 	return result;
 }
 
-/**
- * Creates a fixer function that wraps an identifier in array destructuring.
- *
- * @param node - The VariableDeclarator or AssignmentExpression node
- * @param sourceCode - The ESLint source code object
- * @returns A fixer function
- */
 function createDestructuringFix(
 	node: TSESTree.VariableDeclarator | TSESTree.AssignmentExpression,
 	sourceCode: SourceCode,
@@ -95,9 +68,8 @@ function createDestructuringFix(
 			// Const result = foo() → const [result] = foo()
 			// Const result: Type = foo() → const [result]: Type = foo()
 			const { id } = node;
-			if (id.type !== AST_NODE_TYPES.Identifier) {
-				return null;
-			}
+			// oxlint-disable-next-line no-null
+			if (id.type !== AST_NODE_TYPES.Identifier) return null;
 
 			const idText = sourceCode.getText(id);
 			const { typeAnnotation } = id;
@@ -114,22 +86,14 @@ function createDestructuringFix(
 
 		// AssignmentExpression: result = foo() → [result] = foo()
 		const { left } = node;
-		if (left.type !== AST_NODE_TYPES.Identifier) {
-			return null;
-		}
+		// oxlint-disable-next-line no-null
+		if (left.type !== AST_NODE_TYPES.Identifier) return null;
 
 		const leftText = sourceCode.getText(left);
 		return fixer.replaceText(left, `[${leftText}]`);
 	};
 }
 
-/**
- * Creates a fixer function that adds [0] to access the first element.
- *
- * @param node - The expression node to fix
- * @param sourceCode - The ESLint source code object
- * @returns A fixer function
- */
 function createIndexAccessFix(node: TSESTree.Expression, sourceCode: SourceCode): ReportFixFunction {
 	return (fixer: RuleFixer) => {
 		const text = sourceCode.getText(node);
@@ -145,19 +109,12 @@ function createIndexAccessFix(node: TSESTree.Expression, sourceCode: SourceCode)
 		return fixer.replaceText(node, `${text}[0]`);
 	};
 }
-
-/**
- * Checks if a node is inside a for-of statement's left side.
- *
- * @param node - The node to check
- * @returns True if inside for-of left
- */
 function isInForOfLeft(node: TSESTree.Node): boolean {
 	let current: TSESTree.Node | undefined = node;
 	while (current !== undefined) {
-		// eslint-disable-next-line prefer-destructuring -- Cannot destructure; parent is reassigned to current
-		const parent: TSESTree.Node | undefined = current.parent;
-		if (parent === undefined) break;
+		// oxlint-disable-next-line prefer-destructuring -- Cannot destructure; parent is reassigned to current
+		const parent: TSESTree.Node | undefined | null = current.parent;
+		if (parent === undefined || parent === null) break;
 
 		if (parent.type === AST_NODE_TYPES.ForOfStatement && parent.left === current) return true;
 
@@ -166,11 +123,22 @@ function isInForOfLeft(node: TSESTree.Node): boolean {
 	return false;
 }
 
-export default createRule<[], MessageIds>({
+function getParserServices(context: TSESLint.RuleContext<MessageIds, []>): ParserServicesWithTypeInformation {
+	const services = context.sourceCode.parserServices;
+	if (services === undefined || services.program === undefined || services.esTreeNodeToTSNodeMap === undefined) {
+		throw new Error(
+			"You have used a rule which requires parserServices to be generated. " +
+				"You must therefore provide a value for the 'parserOptions.project' property for @typescript-eslint/parser.",
+		);
+	}
+	return services as ParserServicesWithTypeInformation;
+}
+
+const misleadingLuaTupleChecks: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], RuleDocsWithRecommended> = {
 	create(context) {
 		const { sourceCode } = context;
-		const parserServices = ESLintUtils.getParserServices(context);
-		const checker = parserServices.program.getTypeChecker();
+		const parserServices = getParserServices(context);
+		const checker: TypeChecker = parserServices.program.getTypeChecker();
 
 		// Multi-level caching
 		const nodeCache = new WeakMap<TSESTree.Node, boolean>();
@@ -183,6 +151,16 @@ export default createRule<[], MessageIds>({
 		}
 
 		return {
+			// LuaTuple assignments without destructuring
+			'AssignmentExpression[operator="="][left.type="Identifier"]'(node: TSESTree.AssignmentExpression): void {
+				if (isNodeLuaTuple(node.right, nodeCache, typeCache, getTypeAtLocation)) {
+					context.report({
+						fix: createDestructuringFix(node, sourceCode),
+						messageId: "lua-tuple-declaration",
+						node,
+					});
+				}
+			},
 			// LuaTuple in conditional expressions (if, while, for, ternary)
 			"ConditionalExpression, DoWhileStatement, IfStatement, ForStatement, WhileStatement"(
 				node:
@@ -214,6 +192,51 @@ export default createRule<[], MessageIds>({
 						messageId: "misleading-lua-tuple-check",
 						node: testNode,
 					});
+				}
+			},
+
+			// LuaTuple in for-of with iterable functions
+			ForOfStatement(node: TSESTree.ForOfStatement): void {
+				const { left, right } = node;
+
+				// Only check if left is an Identifier (not destructuring)
+				if (left.type === AST_NODE_TYPES.VariableDeclaration) {
+					const [declarator] = left.declarations;
+					if (declarator === undefined) return;
+					if (declarator.id.type !== AST_NODE_TYPES.Identifier) return;
+
+					// Check if iterating over something that yields LuaTuple
+					// We need to check the element type of the iterable
+					// Try to get the iterator element type
+					// For arrays/iterables, TypeScript has iteration types
+					const iteratorType = checker.getTypeAtLocation(parserServices.esTreeNodeToTSNodeMap.get(right));
+
+					// Check if this is an array of LuaTuples
+					if (iteratorType.isUnionOrIntersection()) {
+						for (const subType of iteratorType.types) {
+							if (isLuaTuple(subType, typeCache)) {
+								context.report({
+									fix: createDestructuringFix(declarator, sourceCode),
+									messageId: "lua-tuple-declaration",
+									node: declarator,
+								});
+								return;
+							}
+						}
+					}
+
+					// For direct iteration, check type arguments
+					const { typeArguments } = iteratorType as { typeArguments?: ReadonlyArray<Type> };
+					if (typeArguments !== undefined && typeArguments.length > 0) {
+						const [elementType] = typeArguments;
+						if (elementType !== undefined && isLuaTuple(elementType, typeCache)) {
+							context.report({
+								fix: createDestructuringFix(declarator, sourceCode),
+								messageId: "lua-tuple-declaration",
+								node: declarator,
+							});
+						}
+					}
 				}
 			},
 
@@ -265,64 +288,6 @@ export default createRule<[], MessageIds>({
 					});
 				}
 			},
-
-			// LuaTuple assignments without destructuring
-			'AssignmentExpression[operator="="][left.type="Identifier"]'(node: TSESTree.AssignmentExpression): void {
-				if (isNodeLuaTuple(node.right, nodeCache, typeCache, getTypeAtLocation)) {
-					context.report({
-						fix: createDestructuringFix(node, sourceCode),
-						messageId: "lua-tuple-declaration",
-						node,
-					});
-				}
-			},
-
-			// LuaTuple in for-of with iterable functions
-			ForOfStatement(node: TSESTree.ForOfStatement): void {
-				const { left, right } = node;
-
-				// Only check if left is an Identifier (not destructuring)
-				if (left.type === AST_NODE_TYPES.VariableDeclaration) {
-					const [declarator] = left.declarations;
-					if (declarator === undefined) return;
-					if (declarator.id.type !== AST_NODE_TYPES.Identifier) return;
-
-					// Check if iterating over something that yields LuaTuple
-					// We need to check the element type of the iterable
-					// Try to get the iterator element type
-					// For arrays/iterables, TypeScript has iteration types
-					const iteratorType = checker.getTypeAtLocation(
-						parserServices.esTreeNodeToTSNodeMap.get(right),
-					);
-
-					// Check if this is an array of LuaTuples
-					if (iteratorType.isUnionOrIntersection()) {
-						for (const subType of iteratorType.types) {
-							if (isLuaTuple(subType, typeCache)) {
-								context.report({
-									fix: createDestructuringFix(declarator, sourceCode),
-									messageId: "lua-tuple-declaration",
-									node: declarator,
-								});
-								return;
-							}
-						}
-					}
-
-					// For direct iteration, check type arguments
-					const { typeArguments } = iteratorType as { typeArguments?: ReadonlyArray<Type> };
-					if (typeArguments !== undefined && typeArguments.length > 0) {
-						const [elementType] = typeArguments;
-						if (elementType !== undefined && isLuaTuple(elementType, typeCache)) {
-							context.report({
-								fix: createDestructuringFix(declarator, sourceCode),
-								messageId: "lua-tuple-declaration",
-								node: declarator,
-							});
-						}
-					}
-				}
-			},
 		};
 	},
 	defaultOptions: [],
@@ -331,6 +296,7 @@ export default createRule<[], MessageIds>({
 			description:
 				"Detects misleading LuaTuple usage in conditional and logical expressions. " +
 				"LuaTuple (array) is always truthy, which can lead to bugs when checking the first element.",
+			recommended: true,
 		},
 		fixable: "code",
 		messages: {
@@ -340,5 +306,6 @@ export default createRule<[], MessageIds>({
 		schema: [],
 		type: "problem",
 	},
-	name: "misleading-lua-tuple-checks",
-});
+};
+
+export default misleadingLuaTupleChecks;
