@@ -6,9 +6,23 @@ on:
       - main
     paths:
       - "src/**/*.ts"
+      - "tests/**/*.ts"
+      - "package.json"
+      - "bun.lock"
+      - "knip.ts"
+      - "tsconfig*.json"
+      - ".oxlintrc.json"
+      - "biome.jsonc"
   pull_request:
     paths:
       - "src/**/*.ts"
+      - "tests/**/*.ts"
+      - "package.json"
+      - "bun.lock"
+      - "knip.ts"
+      - "tsconfig*.json"
+      - ".oxlintrc.json"
+      - "biome.jsonc"
 
 jobs:
   build-and-test:
@@ -22,14 +36,28 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
       - name: Install
-        run: bun install --no-cache
+        run: bun install
 
       - name: Setup oxlint-tsgolint
         run: bun add -D oxlint-tsgolint@latest
 
       - name: Lint
         run: bun run lint
+
+      - name: Biome CI
+        run: bun run biome:ci
+
+      - name: Knip
+        run: bun run knip
 
       - name: Typecheck
         run: bun run typecheck

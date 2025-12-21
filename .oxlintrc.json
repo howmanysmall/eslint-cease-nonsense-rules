@@ -86,6 +86,13 @@
 			},
 		},
 		{
+			"files": ["tests/fixtures/**/*.ts"],
+			"rules": {
+				"import/no-anonymous-default-export": "off",
+				"unicorn/filename-case": "off",
+			},
+		},
+		{
 			"files": ["src/oxfmt-sync.ts", "src/oxfmt-worker.ts"],
 			"rules": {
 				"unicorn/require-post-message-target-origin": "off",
@@ -100,6 +107,7 @@
 				"src/rules/use-hook-at-top-level.ts",
 				"src/index.ts",
 				"src/rules/no-useless-use-spring.ts",
+				"scripts/analyze-profile.ts",
 			],
 			"rules": {
 				"@typescript-eslint/no-unsafe-argument": "off",

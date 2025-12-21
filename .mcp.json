@@ -8,6 +8,10 @@
 		"package-registry": {
 			"args": ["x", "--bun", "package-registry-mcp"],
 			"command": "bun"
+		},
+		"uniprof": {
+			"args": ["x", "uniprof", "mcp", "run"],
+			"command": "bun"
 		}
 	}
 }

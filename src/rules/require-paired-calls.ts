@@ -122,7 +122,7 @@ interface ControlFlowContext {
 	readonly currentFunction: TSESTree.Node | undefined;
 }
 
-export const DEFAULT_ROBLOX_YIELDING_FUNCTIONS = ["task.wait", "wait", "*.WaitForChild", "*.*Async"] as const;
+const DEFAULT_ROBLOX_YIELDING_FUNCTIONS = ["task.wait", "wait", "*.WaitForChild", "*.*Async"] as const;
 
 function getCallName(node: TSESTree.CallExpression): string | undefined {
 	const { callee } = node;
