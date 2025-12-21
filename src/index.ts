@@ -14,11 +14,18 @@ import noPrint from "./rules/no-print";
 import noShorthandNames from "./rules/no-shorthand-names";
 import noUselessUseSpring from "./rules/no-useless-use-spring";
 import noWarn from "./rules/no-warn";
+import preferClassProperties from "./rules/prefer-class-properties";
+import preferEarlyReturn from "./rules/prefer-early-return";
+import preferModuleScopeConstants from "./rules/prefer-module-scope-constants";
+import preferPascalCaseEnums from "./rules/prefer-pascal-case-enums";
 import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
+import preferSingularEnums from "./rules/prefer-singular-enums";
 import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
+import reactHooksStrictReturn from "./rules/react-hooks-strict-return";
 import requireNamedEffectFunctions from "./rules/require-named-effect-functions";
 import requirePairedCalls from "./rules/require-paired-calls";
 import requireReactComponentKeys from "./rules/require-react-component-keys";
+import strictComponentBoundaries from "./rules/strict-component-boundaries";
 import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
 import useHookAtTopLevel from "./rules/use-hook-at-top-level";
 
@@ -72,11 +79,18 @@ const rules: Readonly<Record<string, AnyRuleModule>> = {
 	"no-shorthand-names": noShorthandNames,
 	"no-useless-use-spring": noUselessUseSpring,
 	"no-warn": noWarn,
+	"prefer-class-properties": preferClassProperties,
+	"prefer-early-return": preferEarlyReturn,
+	"prefer-module-scope-constants": preferModuleScopeConstants,
+	"prefer-pascal-case-enums": preferPascalCaseEnums,
 	"prefer-sequence-overloads": preferSequenceOverloads,
+	"prefer-singular-enums": preferSingularEnums,
 	"prefer-udim2-shorthand": preferUDim2Shorthand,
+	"react-hooks-strict-return": reactHooksStrictReturn,
 	"require-named-effect-functions": requireNamedEffectFunctions,
 	"require-paired-calls": requirePairedCalls,
 	"require-react-component-keys": requireReactComponentKeys,
+	"strict-component-boundaries": strictComponentBoundaries,
 	"use-exhaustive-dependencies": useExhaustiveDependencies,
 	"use-hook-at-top-level": useHookAtTopLevel,
 } as const;
