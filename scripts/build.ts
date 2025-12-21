@@ -88,6 +88,8 @@ const EXTERNAL_PACKAGES = [
 	"eslint",
 	"typescript",
 	"oxfmt",
+	"oxc-resolver",
+	"oxc-parser",
 ];
 
 interface BuildOptions {
