@@ -31,13 +31,17 @@ function isLuaTuple(type: Type, typeCache: WeakMap<Type, boolean>): boolean {
 		}
 	}
 
-	// Handle union types: check if any constituent is a LuaTuple
+	// Handle union types: only treat as LuaTuple if ALL constituents are LuaTuples
+	// A union like `LuaTuple<[T]> | string` cannot be destructured, so it's not a LuaTuple
 	if (type.isUnion()) {
 		for (const subType of type.types) {
-			if (!isLuaTuple(subType, typeCache)) continue;
-			typeCache.set(type, true);
-			return true;
+			if (!isLuaTuple(subType, typeCache)) {
+				typeCache.set(type, false);
+				return false;
+			}
 		}
+		typeCache.set(type, true);
+		return true;
 	}
 
 	typeCache.set(type, false);
@@ -71,17 +75,16 @@ function createDestructuringFix(
 			// oxlint-disable-next-line no-null
 			if (id.type !== AST_NODE_TYPES.Identifier) return null;
 
-			const idText = sourceCode.getText(id);
 			const { typeAnnotation } = id;
 
 			if (typeAnnotation !== undefined) {
 				// Has type annotation - preserve it
 				const typeText = sourceCode.getText(typeAnnotation);
-				return fixer.replaceText(id, `[${idText}]${typeText}`);
+				return fixer.replaceText(id, `[${id.name}]${typeText}`);
 			}
 
 			// No type annotation
-			return fixer.replaceText(id, `[${idText}]`);
+			return fixer.replaceText(id, `[${id.name}]`);
 		}
 
 		// AssignmentExpression: result = foo() → [result] = foo()
@@ -89,8 +92,7 @@ function createDestructuringFix(
 		// oxlint-disable-next-line no-null
 		if (left.type !== AST_NODE_TYPES.Identifier) return null;
 
-		const leftText = sourceCode.getText(left);
-		return fixer.replaceText(left, `[${leftText}]`);
+		return fixer.replaceText(left, `[${left.name}]`);
 	};
 }
 
