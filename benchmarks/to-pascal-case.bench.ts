@@ -3,6 +3,7 @@
 // oxlint-disable prefer-string-raw
 import { regex } from "arkregex";
 import { barplot, bench, do_not_optimize, run } from "mitata";
+import { toPascal } from "ts-case-convert";
 import { toPascalCase } from "../src/utilities/casing-utilities";
 
 const RUNS = 1000;
@@ -83,6 +84,11 @@ barplot(() => {
 	bench("classic", () => {
 		for (let index = 0; index < RUNS; index += 1) {
 			do_not_optimize(values.map((value) => toPascalCase(value)));
+		}
+	});
+	bench("ts-case-convert", () => {
+		for (let index = 0; index < RUNS; index += 1) {
+			do_not_optimize(values.map((value) => toPascal(value)));
 		}
 	});
 });

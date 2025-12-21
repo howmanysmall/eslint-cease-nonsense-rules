@@ -28,22 +28,17 @@ export interface UseExhaustiveDependenciesOptions {
 	readonly reportUnnecessaryDependencies?: boolean;
 }
 
-export interface HookConfig {
+interface HookConfig {
 	readonly closureIndex: number;
 	readonly dependenciesIndex: number;
 }
 
-export type StableResult = boolean | ReadonlySet<number> | ReadonlySet<string>;
+type StableResult = boolean | ReadonlySet<number> | ReadonlySet<string>;
 
 const testingMetrics = {
 	moduleLevelStableConst: 0,
 	outerScopeSkip: 0,
 };
-
-function resetTestingMetrics(): void {
-	testingMetrics.moduleLevelStableConst = 0;
-	testingMetrics.outerScopeSkip = 0;
-}
 
 interface VariableDefinitionLike {
 	readonly node: TSESTree.Node | Rule.Node;
@@ -979,17 +974,6 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 		],
 		type: "problem",
 	},
-};
-
-export const __testing = {
-	collectCaptures,
-	convertStableResult,
-	isDeclaredInComponentBody,
-	isInTypePosition,
-	isStableArrayIndex,
-	isStableValue,
-	metrics: testingMetrics,
-	resetMetrics: resetTestingMetrics,
 };
 
 export default useExhaustiveDependencies;
