@@ -18,6 +18,7 @@ const errors = [
 ];
 
 describe("strict-component-boundaries", () => {
+	// @ts-expect-error Loser
 	ruleTester.run("strict-component-boundaries", rule, {
 		invalid: [
 			// From outside components, reaching into a specific component
