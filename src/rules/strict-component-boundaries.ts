@@ -18,6 +18,10 @@ function pathSegmentsFromSource(source: string): ReadonlyArray<string> {
 	return source.split("/").filter((part) => !part.startsWith("."));
 }
 
+function countParentTraversals(pathDiff: string): number {
+	return pathDiff.split("/").filter((part) => part === "..").length;
+}
+
 function hasAnotherComponentInPath(pathParts: ReadonlyArray<string>): boolean {
 	return pathParts.some((part) => part === toPascalCase(part) && !part.includes("."));
 }
@@ -61,9 +65,17 @@ const strictComponentBoundaries: TSESLint.RuleModuleWithMetaDocs<MessageIds, [Op
 				// Compute relative path from source file to resolved target
 				const pathDifference = relative(filename, resolved.path);
 				const pathParts = pathSegmentsFromSource(pathDifference);
+				const traversals = countParentTraversals(pathDifference);
 
 				// Check 1: PascalCase component in path
+				// Skip when only descending (1 traversal) into non-component directories
+				// (e.g., ./Configs/gameplay/story-mode is OK)
+				// But still apply when going through "components" directory
+				const isDescendingOnly = traversals <= 1;
+				const hasComponentsDir = hasDirectoryInPath(pathParts, "components");
+
 				if (
+					(!isDescendingOnly || hasComponentsDir) &&
 					hasAnotherComponentInPath(pathParts) &&
 					pathParts.length > maxDepth &&
 					!isIndexFile(pathDifference) &&
