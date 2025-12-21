@@ -4,6 +4,6 @@ coverageThreshold = 0.9
 root = "./tests"
 
 [install]
-auto = "force"
+auto = "auto"
 [install.scopes]
 "@jsr" = "https://npm.jsr.io"
