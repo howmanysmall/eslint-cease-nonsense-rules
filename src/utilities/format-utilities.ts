@@ -6,7 +6,7 @@ import fastDiff from "fast-diff";
 
 import type { FormatOptions } from "oxfmt";
 
-import { formatSync, terminateWorker } from "../oxfmt-sync";
+import { formatSync } from "../oxfmt-sync";
 
 export interface Difference {
 	readonly operation: "INSERT" | "DELETE" | "REPLACE";
@@ -148,5 +148,3 @@ function resetConfigCache(): void {
 }
 
 export const __testing = { loadOxfmtConfig, resetConfigCache };
-
-export { terminateWorker };
