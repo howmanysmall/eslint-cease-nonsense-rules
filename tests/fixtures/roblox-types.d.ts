@@ -3,9 +3,7 @@
  * LuaTuple is a Roblox-TS type that represents Lua's multiple return values.
  */
 
-/**
- * @deprecated
- */
+/** @deprecated nobody gaf */
 export declare const __unused: unique symbol;
 
 /**
