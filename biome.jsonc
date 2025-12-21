@@ -186,6 +186,10 @@
 				"useArrayLiterals": "off",
 				"useBlockStatements": "off",
 				"useConsistentMemberAccessibility": "off",
+				"useConst": {
+					"fix": "safe",
+					"level": "error"
+				},
 				"useDefaultParameterLast": "error",
 				"useFilenamingConvention": {
 					"level": "error",
@@ -203,6 +207,16 @@
 	},
 
 	"overrides": [
+		{
+			"includes": ["tests/fixtures/**/*.ts"],
+			"linter": {
+				"rules": {
+					"style": {
+						"useFilenamingConvention": "off"
+					}
+				}
+			}
+		},
 		{
 			"includes": [
 				".vscode/**",
