@@ -3,10 +3,8 @@ import { resolve } from "node:path";
 import { regex } from "arkregex";
 import { parseJSONC } from "confbox";
 import fastDiff from "fast-diff";
-
-import type { FormatOptions } from "oxfmt";
-
-import { formatSync, terminateWorker } from "../oxfmt-sync";
+import { formatSync } from "../oxfmt-sync";
+import type { FormatOptions } from "../oxfmt-worker";
 
 export interface Difference {
 	readonly operation: "INSERT" | "DELETE" | "REPLACE";
@@ -41,15 +39,47 @@ function loadOxfmtConfig(): FormatOptions {
 	}
 }
 
+const enum CharacterType {
+	Period = 0x2e,
+	LowerC = 0x63,
+	LowerJ = 0x6a,
+	LowerM = 0x6d,
+	LowerS = 0x73,
+	LowerT = 0x74,
+	LowerX = 0x78,
+}
+
 export function getExtension(filePath: string): string | undefined {
-	if (filePath.endsWith(".tsx")) return ".tsx";
-	if (filePath.endsWith(".ts")) return ".ts";
-	if (filePath.endsWith(".jsx")) return ".jsx";
-	if (filePath.endsWith(".js")) return ".js";
-	if (filePath.endsWith(".mts")) return ".mts";
-	if (filePath.endsWith(".mjs")) return ".mjs";
-	if (filePath.endsWith(".cts")) return ".cts";
-	if (filePath.endsWith(".cjs")) return ".cjs";
+	const { length } = filePath;
+
+	// Check for .ts or .js (3-char extensions) — most common case
+	if (length >= 3 && filePath.codePointAt(length - 3) === CharacterType.Period) {
+		const character1 = filePath.codePointAt(length - 2);
+		const character2 = filePath.codePointAt(length - 1);
+		if (character1 === CharacterType.LowerT && character2 === CharacterType.LowerS) return ".ts";
+		if (character1 === CharacterType.LowerJ && character2 === CharacterType.LowerS) return ".js";
+	}
+
+	// Check for 4-char extensions: .tsx, .jsx, .mts, .mjs, .cts, .cjs
+	if (length >= 4 && filePath.codePointAt(length - 4) === CharacterType.Period) {
+		const character1 = filePath.codePointAt(length - 3);
+		const character2 = filePath.codePointAt(length - 2);
+		const character3 = filePath.codePointAt(length - 1);
+
+		if (character3 === CharacterType.LowerX) {
+			if (character1 === CharacterType.LowerT && character2 === CharacterType.LowerS) return ".tsx";
+			if (character1 === CharacterType.LowerJ && character2 === CharacterType.LowerS) return ".jsx";
+		} else if (character3 === CharacterType.LowerS) {
+			if (character2 === CharacterType.LowerT) {
+				if (character1 === CharacterType.LowerM) return ".mts";
+				if (character1 === CharacterType.LowerC) return ".cts";
+			} else if (character2 === CharacterType.LowerJ) {
+				if (character1 === CharacterType.LowerM) return ".mjs";
+				if (character1 === CharacterType.LowerC) return ".cjs";
+			}
+		}
+	}
+
 	return undefined;
 }
 
@@ -65,7 +95,8 @@ export function generateDifferences(original: string, formatted: string): Readon
 	if (original === formatted) return [];
 
 	const diffs = fastDiff(original, formatted);
-	const differences: Array<Difference> = [];
+	const differences = new Array<Difference>();
+	let size = 0;
 	let offset = 0;
 	let index = 0;
 
@@ -78,22 +109,22 @@ export function generateDifferences(original: string, formatted: string): Readon
 		if (type === 0) {
 			// EQUAL - advance offset, no diff
 			offset += text.length;
-			index++;
+			index += 1;
 		} else if (type === -1) {
 			// DELETE - calculate adjusted offset to report deletion at earliest position
 			let adjustedOffset = offset;
 
 			// If previous EQUAL ends with same chars as DELETE, shift offset back
-			const prev = diffs[index - 1];
-			if (prev !== undefined && prev[0] === 0) {
-				const [, prevText] = prev;
+			const previous = diffs[index - 1];
+			if (previous !== undefined && previous[0] === 0) {
+				const [, prevText] = previous;
 				let shiftCount = 0;
 				while (
 					shiftCount < prevText.length &&
 					shiftCount < text.length &&
 					prevText[prevText.length - 1 - shiftCount] === text[shiftCount]
 				) {
-					shiftCount++;
+					shiftCount += 1;
 				}
 				adjustedOffset -= shiftCount;
 			}
@@ -102,22 +133,22 @@ export function generateDifferences(original: string, formatted: string): Readon
 			const next = diffs[index + 1];
 			if (next !== undefined && next[0] === 1) {
 				const [, nextText] = next;
-				differences.push({
+				differences[size++] = {
 					deleteText: text,
 					insertText: nextText,
 					offset: adjustedOffset,
 					operation: "REPLACE",
-				});
+				};
 				index += 2;
 			} else {
-				differences.push({ deleteText: text, offset: adjustedOffset, operation: "DELETE" });
-				index++;
+				differences[size++] = { deleteText: text, offset: adjustedOffset, operation: "DELETE" };
+				index += 1;
 			}
 			offset += text.length;
 		} else {
 			// INSERT - record at current offset
-			differences.push({ insertText: text, offset, operation: "INSERT" });
-			index++;
+			differences[size++] = { insertText: text, offset, operation: "INSERT" };
+			index += 1;
 		}
 	}
 
@@ -126,10 +157,10 @@ export function generateDifferences(original: string, formatted: string): Readon
 
 const MAX_LENGTH = 60;
 const SYMBOLS: Record<string, string> = {
-	" ": "·",
-	"\n": "␊",
-	"\r": "␍",
-	"\t": "→",
+	" ": "\u{00B7}",
+	"\n": "\u{240A}",
+	"\r": "\u{240D}",
+	"\t": "\u{2192}",
 };
 
 const WHITESPACE_REGEXP = regex("[\r\n\t ]", "g");
@@ -148,5 +179,3 @@ function resetConfigCache(): void {
 }
 
 export const __testing = { loadOxfmtConfig, resetConfigCache };
-
-export { terminateWorker };
