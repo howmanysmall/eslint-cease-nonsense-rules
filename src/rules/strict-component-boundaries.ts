@@ -12,9 +12,32 @@ function isPascalCase(segment: string): boolean {
 	return segment.includes(".") ? false : toPascalCase(segment) === segment;
 }
 
-function isInComponent(filename: string): boolean {
+// Common source root markers to find project-relative paths
+const SOURCE_ROOT_MARKERS = new Set(["src", "lib", "app", "source", "packages", "sources"]);
+
+function getProjectRelativeParts(filename: string): ReadonlyArray<string> {
 	const parts = filename.split("/");
+	// Remove filename from path
 	parts.pop();
+
+	// Find the last occurrence of a source root marker
+	let sourceRootIndex = -1;
+	for (let index = parts.length - 1; index >= 0; index -= 1) {
+		const part = parts[index];
+		if (part !== undefined && SOURCE_ROOT_MARKERS.has(part)) {
+			sourceRootIndex = index;
+			break;
+		}
+	}
+
+	// If found, return parts after the source root; otherwise use all parts.
+	// This filters out system paths like /Users/, /home/, /Documents/
+	if (sourceRootIndex === -1) return parts;
+	return parts.slice(sourceRootIndex + 1);
+}
+
+function isInComponent(filename: string): boolean {
+	const parts = getProjectRelativeParts(filename);
 	return parts.some((part) => isPascalCase(part));
 }
 

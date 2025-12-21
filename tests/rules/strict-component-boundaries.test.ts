@@ -111,6 +111,20 @@ describe("strict-component-boundaries", () => {
 				filename: "basic-app/app/index.js",
 				options: [{ maxDepth: 2 }],
 			},
+			// Absolute paths with PascalCase system directories (Users, Documents)
+			// Should NOT cause false positives. File is in src/shared (not a component folder).
+			// Import has 2 segments, maxDepth 2, should be valid.
+			// BUG: isInComponent wrongly returns true due to PascalCase dirs in absolute path
+			{
+				code: "import { something } from './SomeModule/index';",
+				filename: "/Users/developer/Code/project/src/shared/manager/processor.ts",
+				options: [{ maxDepth: 2 }],
+			},
+			{
+				code: "import { API } from '../DataService/api';",
+				filename: "/home/Documents/workspace/app/src/services/index.ts",
+				options: [{ maxDepth: 2 }],
+			},
 		],
 	});
 });
