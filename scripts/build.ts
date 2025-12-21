@@ -87,6 +87,9 @@ const EXTERNAL_PACKAGES = [
 	"@typescript-eslint/types",
 	"eslint",
 	"typescript",
+	"oxfmt",
+	"oxc-resolver",
+	"oxc-parser",
 ];
 
 interface BuildOptions {
@@ -108,22 +111,21 @@ interface BuildResult {
 
 function formatBuildMessage(buildRelatedMessage: BuildRelatedMessage): string {
 	const parts = new Array<string>();
+	let size = 0;
 
 	if (buildRelatedMessage.position) {
 		const { file, line, column, lineText, length } = buildRelatedMessage.position;
 		const relativePath = file.replace(`${cwd()}/`, "");
 
-		parts.push(
-			`${cyan(relativePath)}:${yellow(String(line))}:${yellow(String(column))}`,
-			`${gray(String(line))} | ${lineText}`,
-		);
+		parts[size++] = `${cyan(relativePath)}:${yellow(String(line))}:${yellow(String(column))}`;
+		parts[size++] = `${gray(String(line))} | ${lineText}`;
 
 		const padding = " ".repeat(String(line).length + 3 + column - 1);
 		const underline = "^".repeat(Math.max(1, length ?? 1));
-		parts.push(`${padding}${red(underline)}`);
+		parts[size++] = `${padding}${red(underline)}`;
 	}
 
-	parts.push(`${red("error:")} ${buildRelatedMessage.message}`);
+	parts[size] = `${red("error:")} ${buildRelatedMessage.message}`;
 	return parts.join("\n");
 }
 

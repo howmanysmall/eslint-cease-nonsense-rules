@@ -1,7 +1,7 @@
 import type { Detector } from "./detector";
 import { recognize } from "./detector";
 
-export const PROBABILITY_THRESHOLD = 0.9;
+const PROBABILITY_THRESHOLD = 0.9;
 
 /**
  * Calculate combined probability that a line contains code.
@@ -11,7 +11,7 @@ export const PROBABILITY_THRESHOLD = 0.9;
  * @param line - The line to analyze
  * @returns Combined probability between 0 and 1
  */
-export function computeProbability(detectors: ReadonlyArray<Detector>, line: string): number {
+function computeProbability(detectors: ReadonlyArray<Detector>, line: string): number {
 	let probability = 0;
 
 	for (const detector of detectors) {
@@ -29,7 +29,7 @@ export function computeProbability(detectors: ReadonlyArray<Detector>, line: str
  * @param line - The line to check
  * @returns True if probability >= threshold
  */
-export function isLikelyCode(detectors: ReadonlyArray<Detector>, line: string): boolean {
+function isLikelyCode(detectors: ReadonlyArray<Detector>, line: string): boolean {
 	return computeProbability(detectors, line) >= PROBABILITY_THRESHOLD;
 }
 

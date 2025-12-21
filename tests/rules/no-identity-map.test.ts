@@ -12,14 +12,9 @@ const ruleTester = new RuleTester({
 });
 
 describe("no-identity-map", () => {
-	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
+	//@ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
 	ruleTester.run("no-identity-map", rule, {
 		invalid: [
-			// ==========================================
-			// Binding identity maps (identityBindingMap)
-			// ==========================================
-
-			// Variable name contains "binding"
 			{
 				code: "scaleBinding.map(v => v)",
 				errors: [{ messageId: "identityBindingMap" }],
@@ -36,7 +31,6 @@ describe("no-identity-map", () => {
 				output: "myBinding",
 			},
 
-			// From useBinding hook
 			{
 				code: `
 const [binding] = useBinding(0);
@@ -48,7 +42,6 @@ const [binding] = useBinding(0);
 binding;
 `,
 			},
-			// From React.useBinding (member expression hook call)
 			{
 				code: `
 const [b] = React.useBinding(0);
@@ -60,7 +53,6 @@ const [b] = React.useBinding(0);
 b;
 `,
 			},
-			// Variable initialized from .map() result
 			{
 				code: `
 const mapped = source.map(x => x + 1);
@@ -73,7 +65,6 @@ mapped;
 `,
 			},
 
-			// From React.joinBindings
 			{
 				code: "React.joinBindings({ a, b }).map(v => v)",
 				errors: [{ messageId: "identityBindingMap" }],
@@ -85,22 +76,38 @@ mapped;
 				output: "joinBindings({ a })",
 			},
 
-			// Chained .map() calls
 			{
 				code: "binding.map(x => x + 1).map(y => y)",
 				errors: [{ messageId: "identityBindingMap" }],
 				output: "binding.map(x => x + 1)",
 			},
 
-			// ==========================================
-			// Array identity maps (identityArrayMap)
-			// ==========================================
-
-			// Simple arrow expression
 			{
 				code: "items.map(v => v)",
 				errors: [{ messageId: "identityArrayMap" }],
 				output: "items",
+			},
+			{
+				code: `
+	const [x] = foo(0);
+	x.map(v => v);
+	`,
+				errors: [{ messageId: "identityArrayMap" }],
+				output: `
+	const [x] = foo(0);
+	x;
+	`,
+			},
+			{
+				code: `
+	const x = foo["useBinding"](0);
+	x.map(v => v);
+	`,
+				errors: [{ messageId: "identityArrayMap" }],
+				output: `
+	const x = foo["useBinding"](0);
+	x;
+	`,
 			},
 			{
 				code: "array.map((v) => v)",
@@ -108,7 +115,6 @@ mapped;
 				output: "array",
 			},
 
-			// With type annotation
 			{
 				code: "data.map((v: number) => v)",
 				errors: [{ messageId: "identityArrayMap" }],
@@ -120,7 +126,6 @@ mapped;
 				output: "items",
 			},
 
-			// Block body
 			{
 				code: "list.map(v => { return v; })",
 				errors: [{ messageId: "identityArrayMap" }],
@@ -132,7 +137,6 @@ mapped;
 				output: "arr",
 			},
 
-			// Function expression
 			{
 				code: "data.map(function(v) { return v; })",
 				errors: [{ messageId: "identityArrayMap" }],
@@ -144,14 +148,12 @@ mapped;
 				output: "items",
 			},
 
-			// Default parameter (still identity if returns the param)
 			{
 				code: "arr.map((x = 0) => x)",
 				errors: [{ messageId: "identityArrayMap" }],
 				output: "arr",
 			},
 
-			// Variable from joinBindings stored in variable
 			{
 				code: `
 const joined = joinBindings({ a, b });
@@ -164,7 +166,6 @@ joined;
 `,
 			},
 
-			// In JSX context (from user examples)
 			{
 				code: `
 <frame
@@ -207,91 +208,56 @@ joined;
 			},
 		],
 		valid: [
-			// ==========================================
-			// Actual transformations (not identity)
-			// ==========================================
-
-			// Arithmetic operations
 			"binding.map(v => v + 1)",
 			"binding.map(v => v * 2)",
 			"array.map(x => x - 1)",
 
-			// Method calls
 			"binding.map(v => v.toString())",
 			"items.map(item => item.toUpperCase())",
 
-			// Property access
 			"binding.map(v => v.x)",
 			"items.map(item => item.name)",
 
-			// Object creation
 			"items.map(v => ({ ...v }))",
 			"binding.map(v => ({ value: v }))",
 
-			// Array creation
 			"binding.map(v => [v])",
 
-			// Function calls
 			"binding.map(v => String(v))",
 			"items.map(v => transform(v))",
 
-			// ==========================================
-			// Not identity functions
-			// ==========================================
-
-			// Multiple parameters (even if only first is used)
 			"binding.map((v, i) => v)",
 			"array.map((item, index) => item)",
 			"array.map(function(v, i) { return v; })",
 
-			// Destructuring
 			"binding.map(({ x }) => x)",
 			"items.map(([first]) => first)",
 			"array.map(function({ x }) { return x; })",
 
-			// Rest parameter
 			"array.map((...args) => args[0])",
 
-			// Block body with side effects
 			"binding.map(v => { console.log(v); return v; })",
 			"items.map(v => { doSomething(); return v; })",
 
-			// Block body with multiple statements
 			"binding.map(v => { const x = v; return x; })",
 
-			// No return statement
 			"items.map(v => { v; })",
 
-			// Empty block
 			"array.map(v => {})",
 
-			// ==========================================
-			// Not .map() calls
-			// ==========================================
-
-			// Different method names
 			"binding.filter(v => v)",
 			"binding.forEach(v => v)",
 			"binding.find(v => v)",
 			"binding.reduce(v => v)",
 
-			// Standalone function named map
 			"map(v => v)",
 
-			// Computed property (dynamic method name)
 			`binding["map"](v => v)`,
 
-			// ==========================================
-			// Other valid patterns
-			// ==========================================
-
-			// No arguments
 			"array.map()",
 
-			// Multiple arguments
 			"array.map(v => v, thisArg)",
 
-			// Spread argument
 			"array.map(...callbacks)",
 		],
 	});

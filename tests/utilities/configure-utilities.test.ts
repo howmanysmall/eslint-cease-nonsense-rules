@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../../src/rules/no-useless-use-spring";
 import {
+	createBanInstancesOptions,
 	createComplexityConfiguration,
 	createEffectFunctionOptions,
 	createHookConfiguration,
@@ -17,6 +18,20 @@ import {
 } from "../../src/utilities/configure-utilities";
 
 describe("configure-utilities", () => {
+	describe("createBanInstancesOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createBanInstancesOptions();
+			expect(configuration).toEqual({ bannedInstances: [] });
+		});
+
+		it("should override defaults", () => {
+			expect.assertions(1);
+			const configuration = createBanInstancesOptions({ bannedInstances: ["Part"] });
+			expect(configuration).toEqual({ bannedInstances: ["Part"] });
+		});
+	});
+
 	describe("createPairConfiguration", () => {
 		it("should create a pair configuration with minimal options", () => {
 			expect.assertions(1);

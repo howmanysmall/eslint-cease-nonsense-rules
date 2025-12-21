@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from "bun:test";
-import { formatSync, terminateWorker } from "../../src/oxfmt-sync";
+import { __testingResolveWorkerPath, formatSync, terminateWorker } from "../../src/oxfmt-sync";
 
 describe("oxfmt-sync", () => {
 	afterAll(() => {
@@ -41,5 +41,10 @@ describe("oxfmt-sync", () => {
 		expect.assertions(1);
 		const result = formatSync("test.ts", "const x = 1", { semi: false, useTabs: true });
 		expect(result).toBe("const x = 1\n");
+	});
+
+	it("throws if it cannot resolve the worker path", () => {
+		expect.assertions(1);
+		expect(() => __testingResolveWorkerPath(new URL("file:///tmp/oxfmt-sync.test.ts"), () => false)).toThrow();
 	});
 });

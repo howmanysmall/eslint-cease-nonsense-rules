@@ -4,40 +4,36 @@
 			"description": "The personal access token for the GitHub MCP.",
 			"id": "github-token",
 			"password": true,
-			"type": "promptString"
-		}
+			"type": "promptString",
+		},
 	],
 	"servers": {
 		"codex-subagent": {
 			"args": ["codex-as-mcp@latest"],
 			"command": "uvx",
-			"type": "stdio"
+			"type": "stdio",
 		},
 		"context7": {
 			"args": ["x", "--bun", "@upstash/context7-mcp"],
 			"command": "bun",
 			"env": {},
-			"type": "stdio"
+			"type": "stdio",
 		},
 		"gh-grep": {
 			"type": "http",
-			"url": "https://mcp.grep.app"
+			"url": "https://mcp.grep.app",
 		},
 		"github": {
 			"type": "http",
-			"url": "https://api.githubcopilot.com/mcp/"
+			"url": "https://api.githubcopilot.com/mcp/",
 		},
-		// "github-legacy": {
-		// 	"args": ["x", "--bun", "-y", "@modelcontextprotocol/server-github"],
-		// 	"command": "bun",
-		// 	"env": {
-		// 		"GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github-token}",
-		// 	},
-		// 	"type": "stdio",
-		// },
 		"package-registry": {
 			"args": ["x", "--bun", "package-registry-mcp"],
-			"command": "bun"
-		}
-	}
+			"command": "bun",
+		},
+		"uniprof": {
+			"args": ["x", "uniprof", "mcp", "run"],
+			"command": "bun",
+		},
+	},
 }

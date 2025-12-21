@@ -65,7 +65,7 @@ function isComponentOrHook(
 		node.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression
 	) {
 		const { parent } = node;
-		if (!parent) return false;
+		if (parent === undefined) return false;
 
 		if (
 			parent.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
@@ -118,23 +118,27 @@ const FUNCTION_BOUNDARIES = new Set<TSESTree.AST_NODE_TYPES>([
 function isInFinallyBlock(node: TSESTree.Node): boolean {
 	let current: TSESTree.Node | undefined = node.parent;
 	const maxDepth = 20;
+	let inFinallyBlock = false;
 
 	for (let depth = 0; depth < maxDepth && current; depth += 1) {
-		if (FUNCTION_BOUNDARIES.has(current.type)) return false;
+		if (FUNCTION_BOUNDARIES.has(current.type)) break;
 
 		if (current.type === TSESTree.AST_NODE_TYPES.TryStatement) {
 			let checkNode: TSESTree.Node | undefined = node;
 			while (checkNode && checkNode !== current) {
-				if (checkNode === current.finalizer) return true;
+				if (checkNode === current.finalizer) {
+					inFinallyBlock = true;
+					break;
+				}
 				checkNode = checkNode.parent;
 			}
-			return false;
+			break;
 		}
 
 		current = current.parent;
 	}
 
-	return false;
+	return inFinallyBlock;
 }
 
 function isRecursiveCall(node: TSESTree.CallExpression, functionName: string | undefined): boolean {
@@ -171,7 +175,6 @@ const useHookAtTopLevel: Rule.RuleModule = {
 		function shouldIgnoreHook(hookName: string, node: TSESTree.CallExpression): boolean {
 			const { onlyHooks, ignoreHooks, importSources } = configuration;
 			if (onlyHooks && onlyHooks.length > 0) return !onlyHooks.includes(hookName);
-
 			if (ignoreHooks?.includes(hookName)) return true;
 
 			if (importSources && Object.keys(importSources).length > 0) {
@@ -204,8 +207,9 @@ const useHookAtTopLevel: Rule.RuleModule = {
 			const depth = current ? current.functionDepth + 1 : 0;
 
 			const isComponentOrHookFlag = isComponentOrHook(functionNode);
-			if (functionNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration && functionNode.id)
+			if (functionNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration && functionNode.id) {
 				currentFunctionName = functionNode.id.name;
+			}
 
 			if (current?.isComponentOrHook) {
 				pushContext({
@@ -366,7 +370,6 @@ const useHookAtTopLevel: Rule.RuleModule = {
 
 					const { imported } = specifier;
 					if (imported.type !== TSESTree.AST_NODE_TYPES.Identifier) continue;
-
 					if (isReactHook(imported.name)) importSourceMap.set(specifier.local.name, source);
 				}
 			},

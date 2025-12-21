@@ -14,6 +14,8 @@ An ESLint plugin that catches common mistakes before they reach production. This
   - [Resource Management](#resource-management)
   - [Code Quality](#code-quality)
   - [Performance](#performance)
+  - [Module Boundaries](#module-boundaries)
+  - [TypeScript](#typescript)
 - [License](#license)
 
 ## Installation
@@ -53,11 +55,18 @@ export default [
 			"cease-nonsense/no-shorthand-names": "error",
 			"cease-nonsense/no-useless-use-spring": "error",
 			"cease-nonsense/no-warn": "error",
+			"cease-nonsense/prefer-class-properties": "error",
+			"cease-nonsense/prefer-early-return": "error",
+			"cease-nonsense/prefer-module-scope-constants": "error",
+			"cease-nonsense/prefer-pascal-case-enums": "error",
 			"cease-nonsense/prefer-sequence-overloads": "error",
+			"cease-nonsense/prefer-singular-enums": "error",
 			"cease-nonsense/prefer-udim2-shorthand": "error",
+			"cease-nonsense/react-hooks-strict-return": "error",
 			"cease-nonsense/require-named-effect-functions": "error",
 			"cease-nonsense/require-paired-calls": "error",
 			"cease-nonsense/require-react-component-keys": "error",
+			"cease-nonsense/strict-component-boundaries": "error",
 			"cease-nonsense/use-exhaustive-dependencies": "error",
 			"cease-nonsense/use-hook-at-top-level": "error",
 		},
@@ -477,6 +486,35 @@ function UserProfile({ userId }) {
 			fetchUser(userId);
 		}
 	}, [userId]);
+}
+```
+
+#### `react-hooks-strict-return`
+
+React hooks must return a tuple of ≤2 elements or a single object. Prevents unwieldy hook return types.
+
+**❌ Bad**
+
+```typescript
+function useMyHook() {
+	return [a, b, c]; // 3+ elements
+}
+
+function useData() {
+	const items = [1, 2, 3];
+	return items; // Variable reference to 3+ element array
+}
+```
+
+**✅ Good**
+
+```typescript
+function useMyHook() {
+	return [state, setState]; // 2 elements max
+}
+
+function useData() {
+	return { a, b, c }; // Objects are fine regardless of size
 }
 ```
 
@@ -905,6 +943,85 @@ const deltaTime = 0.016;
 const model = entity.char; // Property access is allowed
 ```
 
+#### `prefer-class-properties`
+
+Prefer class properties over assignment of literals in constructors.
+
+**Options:** `['always' | 'never']` (default: `'always'`)
+
+**❌ Bad**
+
+```typescript
+class Foo {
+	constructor() {
+		this.bar = "literal"; // Assignment in constructor
+		this.obj = { key: "value" };
+	}
+}
+```
+
+**✅ Good**
+
+```typescript
+class Foo {
+	bar = "literal"; // Class property
+	obj = { key: "value" };
+}
+```
+
+#### `prefer-early-return`
+
+Prefer early returns over full-body conditional wrapping in function declarations.
+
+**Options:** `{ maximumStatements: number }` (default: `1`)
+
+**❌ Bad**
+
+```typescript
+function foo() {
+	if (condition) {
+		doA();
+		doB();
+		doC();
+	}
+}
+```
+
+**✅ Good**
+
+```typescript
+function foo() {
+	if (!condition) return;
+	doA();
+	doB();
+	doC();
+}
+```
+
+#### `prefer-module-scope-constants`
+
+SCREAMING_SNAKE_CASE variables must be `const` at module scope.
+
+**❌ Bad**
+
+```typescript
+let FOO = 1; // Not const
+function bar() {
+	const BAZ = 2; // Not module scope
+}
+```
+
+**✅ Good**
+
+```typescript
+const FOO = 1; // Const at module scope
+
+// Destructuring patterns are allowed anywhere
+function bar() {
+	const { FOO } = config;
+}
+```
+
 ### Performance
 
 #### `no-color3-constructor`
@@ -1051,6 +1168,116 @@ class MyClass {
 		this.value = value;
 		notifyChanges(value, previousValue, this.onChanges);
 	}
+}
+```
+
+### Module Boundaries
+
+#### `strict-component-boundaries`
+
+Prevent reaching into sibling component folders for nested modules.
+
+**Options:** `{ allow: string[], maxDepth: number }` (default: `maxDepth: 1`)
+
+**❌ Bad**
+
+```typescript
+// Reaching into another component's internals
+import { helper } from "../OtherComponent/utils/helper";
+import { thing } from "./components/Foo/internal";
+```
+
+**✅ Good**
+
+```typescript
+// Import from shared location
+import { helper } from "../../shared/helper";
+
+// Index import from component
+import { OtherComponent } from "../OtherComponent";
+
+// Direct component import (within maxDepth)
+import { Foo } from "./components/Foo";
+```
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/strict-component-boundaries": ["error", {
+    "allow": ["components/\\w+$"],  // Regex patterns to allow
+    "maxDepth": 2                    // Maximum import depth
+  }]
+}
+```
+
+### TypeScript
+
+#### `prefer-pascal-case-enums`
+
+Enum names and members must be PascalCase.
+
+**❌ Bad**
+
+```typescript
+enum my_enum {
+	foo_bar,
+}
+enum MyEnum {
+	FOO_BAR,
+}
+enum COLORS {
+	red,
+}
+```
+
+**✅ Good**
+
+```typescript
+enum MyEnum {
+	FooBar,
+}
+enum Color {
+	Red,
+	Blue,
+}
+```
+
+#### `prefer-singular-enums`
+
+Enum names should be singular, not plural.
+
+**❌ Bad**
+
+```typescript
+enum Colors {
+	Red,
+	Blue,
+}
+enum Commands {
+	Up,
+	Down,
+}
+enum Feet {
+	Left,
+	Right,
+} // Irregular plural
+```
+
+**✅ Good**
+
+```typescript
+enum Color {
+	Red,
+	Blue,
+}
+enum Command {
+	Up,
+	Down,
+}
+enum Foot {
+	Left,
+	Right,
 }
 ```
 

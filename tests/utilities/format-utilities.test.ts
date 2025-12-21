@@ -87,34 +87,34 @@ describe("format-utilities", () => {
 
 		it("detects INSERT operation", () => {
 			const result = generateDifferences("helloworld", "hello world");
-			expect(result).toEqual([{ operation: "INSERT", offset: 5, insertText: " " }]);
+			expect(result).toEqual([{ insertText: " ", offset: 5, operation: "INSERT" }]);
 		});
 
 		it("detects DELETE operation", () => {
 			const result = generateDifferences("hello  world", "hello world");
-			expect(result).toEqual([{ operation: "DELETE", offset: 5, deleteText: " " }]);
+			expect(result).toEqual([{ deleteText: " ", offset: 5, operation: "DELETE" }]);
 		});
 
 		it("detects REPLACE operation (DELETE + INSERT merged)", () => {
 			const result = generateDifferences("hello\tworld", "hello world");
-			expect(result).toEqual([{ operation: "REPLACE", offset: 5, deleteText: "\t", insertText: " " }]);
+			expect(result).toEqual([{ deleteText: "\t", insertText: " ", offset: 5, operation: "REPLACE" }]);
 		});
 
 		it("handles multiple operations", () => {
 			const result = generateDifferences("a  b  c", "a b c");
 			expect(result).toHaveLength(2);
-			expect(result[0]).toMatchObject({ operation: "DELETE", offset: 1 });
-			expect(result[1]).toMatchObject({ operation: "DELETE", offset: 4 });
+			expect(result[0]).toMatchObject({ offset: 1, operation: "DELETE" });
+			expect(result[1]).toMatchObject({ offset: 4, operation: "DELETE" });
 		});
 
 		it("handles beginning of string changes", () => {
 			const result = generateDifferences("  hello", "hello");
-			expect(result).toEqual([{ operation: "DELETE", offset: 0, deleteText: "  " }]);
+			expect(result).toEqual([{ deleteText: "  ", offset: 0, operation: "DELETE" }]);
 		});
 
 		it("handles end of string changes", () => {
 			const result = generateDifferences("hello", "hello\n");
-			expect(result).toEqual([{ operation: "INSERT", offset: 5, insertText: "\n" }]);
+			expect(result).toEqual([{ insertText: "\n", offset: 5, operation: "INSERT" }]);
 		});
 	});
 });

@@ -1,3 +1,4 @@
+// biome-ignore-all assist/source/useSortedKeys: so annoying
 {
 	"$schema": "https://opencode.ai/config.json",
 	"agent": {
@@ -12,10 +13,10 @@
 				"doom_loop": "deny",
 				"edit": "deny",
 				"external_directory": "deny",
-				"webfetch": "allow",
+				"webfetch": "allow"
 			},
 			"prompt": "# Q&A Assistant\n\nYou answer questions about code, architecture, debugging strategies, and technical concepts. You do NOT execute code or make edits—just provide knowledge.\n\n## Response Style\n\n- **Concise first** - lead with the direct answer, expand only if needed\n- **Code snippets** - show minimal examples when helpful, not full implementations\n- **No hedging** - if you know it, say it; if you don't, say that\n- **Cite sources** - mention docs/specs when relevant\n\n## What You Handle\n\n- Explain how X works\n- Debug strategy suggestions (without running anything)\n- API/library usage questions\n- Architecture tradeoffs\n- \"Why is this happening?\" conceptual debugging\n- Best practices and patterns\n- Compare/contrast approaches\n\n## What You Decline\n\n- \"Write me X\" (that's for coding agents)\n- \"Run this and tell me what happens\"\n- Tasks requiring file system access\n\nIf user needs execution or edits, tell them to switch agents.\n\n## Format\n\n- Short answers for short questions\n- Use headers only for multi-part responses\n- Code blocks with language tags\n- Lists only when comparing multiple items\n",
-			"temperature": 0.3,
+			"temperature": 0.3
 		},
 		"build": {
 			"description": "Used after creating a plan or just whenever.",
@@ -23,121 +24,234 @@
 			"model": "anthropic/claude-opus-4-5",
 			"permission": {
 				"bash": {
-					"*": "ask",
+					"bat *": "allow",
+					"cat *": "allow",
+					"cd *": "allow",
+					"delta *": "allow",
+					"diff *": "allow",
+					"du *": "allow",
+					"dust *": "allow",
+					"exa *": "allow",
+					"fd *": "allow",
+					"find *": "allow",
+					"grep *": "allow",
+					"ls *": "allow",
+					"lsd *": "allow",
+					"rg *": "allow",
+					"sd *": "allow",
+					"sed *": "allow",
+					"bun test*": "allow",
+					"*": "ask"
 				},
 				"doom_loop": "ask",
 				"edit": "allow",
 				"external_directory": "ask",
-				"webfetch": "ask",
-			},
+				"webfetch": "ask"
+			}
 		},
 		"build-fast": {
 			"description": "Used after creating a plan or just whenever. Please just use the more intelligent build model if you need better results.",
 			"mode": "all",
 			"model": "anthropic/claude-haiku-4-5",
 			"permission": {
-				"bash": { "*": "ask" },
+				"bash": {
+					"bat *": "allow",
+					"cat *": "allow",
+					"cd *": "allow",
+					"delta *": "allow",
+					"diff *": "allow",
+					"du *": "allow",
+					"dust *": "allow",
+					"exa *": "allow",
+					"fd *": "allow",
+					"find *": "allow",
+					"grep *": "allow",
+					"ls *": "allow",
+					"lsd *": "allow",
+					"rg *": "allow",
+					"sd *": "allow",
+					"sed *": "allow",
+					"bun test*": "allow",
+					"*": "ask"
+				},
 				"doom_loop": "ask",
 				"edit": "allow",
 				"external_directory": "ask",
-				"webfetch": "ask",
-			},
+				"webfetch": "ask"
+			}
 		},
 		"build-standard": {
 			"description": "Used after creating a plan or just whenever. Please just use the more intelligent build model.",
 			"mode": "all",
 			"model": "anthropic/claude-sonnet-4-5",
 			"permission": {
-				"bash": { "*": "ask" },
+				"bash": {
+					"bat *": "allow",
+					"cat *": "allow",
+					"cd *": "allow",
+					"delta *": "allow",
+					"diff *": "allow",
+					"du *": "allow",
+					"dust *": "allow",
+					"exa *": "allow",
+					"fd *": "allow",
+					"find *": "allow",
+					"grep *": "allow",
+					"ls *": "allow",
+					"lsd *": "allow",
+					"rg *": "allow",
+					"sd *": "allow",
+					"sed *": "allow",
+					"bun test*": "allow",
+					"*": "ask"
+				},
 				"doom_loop": "ask",
 				"edit": "allow",
 				"external_directory": "ask",
-				"webfetch": "ask",
+				"webfetch": "ask"
+			}
+		},
+		"git-recovery-specialist": {
+			"color": "#F97316",
+			"description": "Diagnose and recover from Git disasters: lost commits, bad rebases, merge conflicts, detached HEAD, reflog archaeology, and repo corruption. Use when git status looks wrong or you need to undo something.",
+			"disable": false,
+			"mode": "all",
+			"model": "anthropic/claude-sonnet-4-5",
+			"permission": {
+				"bash": {
+					"bat *": "allow",
+					"cat *": "allow",
+					"cd *": "allow",
+					"delta *": "allow",
+					"diff *": "allow",
+					"du *": "allow",
+					"dust *": "allow",
+					"exa *": "allow",
+					"fd *": "allow",
+					"find *": "allow",
+					"grep *": "allow",
+					"ls *": "allow",
+					"lsd *": "allow",
+					"rg *": "allow",
+					"sd *": "allow",
+					"sed *": "allow",
+					"bun test*": "allow",
+					"*": "ask"
+				},
+				"doom_loop": "ask",
+				"edit": "allow",
+				"external_directory": "ask",
+				"webfetch": "deny"
 			},
+			"prompt": "# Git Emergency Response System Prompt\n\nYou are a Git recovery specialist. Your job: unfuck repos fast and safe.\n\n## Core Mental Model\n\nGit is a content-addressable filesystem with three trees:\n\n- **Working directory** - actual files\n- **Index/staging** - next commit snapshot  \n- **HEAD** - current commit pointer\n\nEverything is a DAG of commits. Branches are just pointers. Tags are immutable pointers. Reflog tracks pointer movements for ~90 days.\n\n**Nothing is truly lost until garbage collected.** If it was committed or stashed, it's recoverable via reflog or fsck.\n\n## Diagnostic Framework\n\nWhen user describes problem, immediately determine:\n\n1. **Scope** - single file, branch, or whole repo?\n2. **Data state** - was work committed? staged? only in working dir?\n3. **Recency** - did this just happen or days ago?\n4. **Destructive ops** - did they run `reset --hard`, `clean -fd`, `push --force`?\n5. **Remote state** - is remote ahead, behind, diverged?\n\nAsk these if unclear. Don't guess.\n\n## Recovery Patterns\n\n### Lost commits/branches\n\n```bash\ngit reflog                          # find the SHA\ngit reflog show <branch>            # branch-specific history\ngit fsck --lost-found               # orphaned commits\ngit cherry-pick <sha>               # recover specific commit\ngit branch recover-branch <sha>     # recreate branch at SHA\n```\n\n### Undo operations\n\n| Undo what | Command |\n|-----------|---------|\n| Last commit (keep changes) | `git reset --soft HEAD~1` |\n| Last commit (unstage) | `git reset HEAD~1` |\n| Last commit (nuke) | `git reset --hard HEAD~1` |\n| Staged file | `git restore --staged <file>` |\n| Working dir changes | `git restore <file>` |\n| A pushed commit | `git revert <sha>` |\n| A bad merge | `git reset --hard ORIG_HEAD` |\n| A bad rebase | `git reset --hard ORIG_HEAD` or reflog |\n\n### Merge/rebase hell\n\n```bash\n# Abort in progress\ngit merge --abort\ngit rebase --abort\ngit cherry-pick --abort\n\n# Mid-conflict resolution\ngit checkout --ours <file>          # keep current branch version\ngit checkout --theirs <file>        # keep incoming version\ngit restore --staged <file>         # re-trigger conflict markers\n\n# Rebase onto correct base\ngit rebase --onto <newbase> <oldbase> <branch>\n```\n\n### Detached HEAD\n\n```bash\ngit branch temp-save                # save current position\ngit checkout <branch>               # go back to branch\ngit merge temp-save                 # merge if needed\n```\n\n### Remote sync issues\n\n```bash\ngit fetch --all --prune             # sync remote state\ngit remote -v                       # verify remotes\ngit branch -vv                      # show tracking relationships\ngit push --force-with-lease         # safer force push (fails if remote changed)\n```\n\n### Nuclear options (last resort)\n\n```bash\ngit reflog expire --expire=now --all && git gc --prune=now  # actually delete\ngit clone <url> fresh-copy          # start fresh, cherry-pick what you need\n```\n\n## Safety Rules\n\n1. **Before any destructive op** - `git stash` or `git branch backup-$(date +%s)`\n2. **Never `--force` push shared branches** - use `--force-with-lease`\n3. **When in doubt, `git status` and `git log --oneline -10`**\n4. **Reflog is your friend** - check it before panicking\n5. **Working dir only? It's gone.** - uncommitted, unstaged changes can't be recovered by git\n\n## Response Protocol\n\n1. Diagnose first, command second\n2. Explain *why* the command works (builds user's mental model)\n3. Provide the safe version, mention the dangerous version only if needed\n4. For complex recovery: give step-by-step, one command at a time\n5. Always verify success: suggest `git log`, `git status`, `git diff` to confirm\n\n## Common \"Oh Shit\" Scenarios\n\n- \"I committed to wrong branch\" → cherry-pick to correct, reset wrong branch\n- \"I need to split a commit\" → `git reset HEAD~1` then commit pieces\n- \"I pushed secrets\" → BFG Repo-Cleaner or `git filter-branch`, rotate secrets immediately\n- \"My repo is corrupted\" → `git fsck`, potentially re-clone and transplant\n- \"I rebased and now everything's duplicated\" → find pre-rebase SHA in reflog, reset\n- \"Merge made a mess\" → `reset --hard ORIG_HEAD` if just happened, otherwise revert merge commit with `-m 1`\n\n## Plumbing Commands (Power User)\n\n```bash\ngit cat-file -p <sha>               # inspect any object\ngit rev-parse HEAD                  # resolve ref to SHA\ngit update-ref refs/heads/branch <sha>  # manually move branch pointer\ngit symbolic-ref HEAD refs/heads/main   # fix HEAD pointer\n```\n",
+			"temperature": 0
 		},
 		"plan": {
 			"description": "Used to generate a plan.",
 			"model": "anthropic/claude-opus-4-5",
 			"permission": {
-				"bash": "ask",
+				"bash": {
+					"bat *": "allow",
+					"cat *": "allow",
+					"cd *": "allow",
+					"delta *": "allow",
+					"diff *": "allow",
+					"du *": "allow",
+					"dust *": "allow",
+					"exa *": "allow",
+					"fd *": "allow",
+					"find *": "allow",
+					"grep *": "allow",
+					"ls *": "allow",
+					"lsd *": "allow",
+					"rg *": "allow",
+					"sd *": "allow",
+					"sed *": "allow",
+					"bun test*": "allow",
+					"*": "ask"
+				},
 				"doom_loop": "ask",
 				"edit": "deny",
 				"external_directory": "ask",
-				"webfetch": "ask",
+				"webfetch": "ask"
 			},
 			"tools": {
 				"edit": false,
-				"write": false,
-			},
-		},
-	},
-	"autoupdate": "notify",
-	"command": {},
-	"experimental": {
-		"batch_tool": true,
-		"chatMaxRetries": 5,
+				"write": false
+			}
+		}
 	},
 	"formatter": {
 		"biome": { "disabled": true },
-		"gofmt": { "disabled": true },
 		"oxfmt": {
 			"command": ["bun", "run", "format", "$FILE"],
 			"disabled": false,
 			"environment": {},
-			"extensions": [".ts", ".tsx", ".js", ".jsx"],
-		},
-		"uv format": { "disabled": true },
-		"zig": { "disabled": true },
+			"extensions": [".ts", ".tsx"]
+		}
 	},
 	"instructions": ["./AGENTS.md"],
 	"keybinds": {
-		"model_list": "ctrl+m",
+		"model_list": "ctrl+m"
 	},
 	"layout": "stretch",
-	"lsp": {
-		"oxc": {
-			"command": ["bun", "x", "--bun", "oxc_language_server"],
-			"disabled": false,
-			"extensions": [".ts", ".tsx", ".js", ".jsx"],
-			"initialization": {},
-		},
-		"oxfmt": {
-			"command": ["bun", "x", "oxfmt", "--lsp"],
-			"disabled": false,
-			"extensions": [".ts", ".tsx", ".js", ".jsx"],
-			"initialization": {},
-		},
-	},
+	"lsp": {},
 	"mcp": {
+		"codex-subagent": {
+			"command": ["uvx", "codex-as-mcp@latest"],
+			"enabled": false,
+			"environment": {},
+			"type": "local"
+		},
 		"context7": {
 			"command": ["bun", "x", "--bun", "@upstash/context7-mcp"],
 			"enabled": true,
 			"environment": {},
-			"type": "local",
+			"type": "local"
 		},
 		"gh-grep": {
 			"enabled": true,
 			"type": "remote",
-			"url": "https://mcp.grep.app",
+			"url": "https://mcp.grep.app"
 		},
 		"package-registry": {
 			"command": ["bun", "x", "--bun", "package-registry-mcp"],
 			"enabled": true,
-			"type": "local",
+			"type": "local"
 		},
+		"uniprof": {
+			"command": ["bun", "x", "uniprof", "mcp", "run"],
+			"enabled": true,
+			"type": "local"
+		}
 	},
 	"permission": {
-		"bash": "ask",
+		"bash": {
+			"*": "ask",
+			"bat *": "allow",
+			"cat *": "allow",
+			"cd *": "allow",
+			"delta *": "allow",
+			"diff *": "allow",
+			"du *": "allow",
+			"dust *": "allow",
+			"exa *": "allow",
+			"fd *": "allow",
+			"find *": "allow",
+			"grep *": "allow",
+			"ls *": "allow",
+			"lsd *": "allow",
+			"rg *": "allow",
+			"sd *": "allow",
+			"sed *": "allow"
+		},
 		"doom_loop": "ask",
 		"edit": "ask",
 		"external_directory": "ask",
-		"webfetch": "ask",
+		"webfetch": "ask"
 	},
 	"share": "manual",
-	"tools": {
-		"simple-github*": true,
-	},
+	"tools": {},
 	"tui": {},
-	"username": "HowManySmall",
-	"watcher": {},
+	"username": "HowManySmall"
 }

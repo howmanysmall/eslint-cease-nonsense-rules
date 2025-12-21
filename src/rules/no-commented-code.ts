@@ -8,8 +8,8 @@ import { createJavaScriptDetectors } from "../recognizers/javascript-footprint";
 const EXCLUDED_STATEMENTS = new Set(["BreakStatement", "LabeledStatement", "ContinueStatement"]);
 
 interface CommentWithLocation extends Comment {
-	loc: NonNullable<Comment["loc"]>;
-	range: [number, number];
+	readonly loc: NonNullable<Comment["loc"]>;
+	readonly range: [number, number];
 }
 
 interface CommentGroup {
@@ -189,14 +189,18 @@ function isExclusion(statements: ReadonlyArray<ParsedStatement>, codeText: strin
 }
 
 const ALLOWED_PARSE_ERROR_PATTERNS = [/A 'return' statement can only be used within a function body/] as const;
-
-function hasOnlyAllowedErrors(errors: ReadonlyArray<{ message: string }>): boolean {
+type Errors = ReadonlyArray<{ readonly message: string }>;
+function hasOnlyAllowedErrors(errors: Errors): boolean {
 	return errors.every((error) => ALLOWED_PARSE_ERROR_PATTERNS.some((pattern) => pattern.test(error.message)));
 }
 
+interface Body {
+	readonly body: ReadonlyArray<unknown>;
+}
+
 interface ParseResult {
-	readonly errors: ReadonlyArray<{ message: string }>;
-	readonly program: { readonly body: ReadonlyArray<unknown> };
+	readonly errors: Errors;
+	readonly program: Body;
 }
 
 function isValidParseResult(result: ParseResult): boolean {
@@ -223,15 +227,11 @@ function tryParse(value: string, filename: string): ParseResult | undefined {
 function containsCode(value: string, filename: string): boolean {
 	if (!couldBeJsCode(value)) return false;
 
-	try {
-		const result = tryParse(value, filename);
-		if (!result) return false;
+	const result = tryParse(value, filename);
+	if (!result) return false;
 
-		const statements = toParsedStatements(result.program.body);
-		return !isExclusion(statements, value);
-	} catch {
-		return false;
-	}
+	const statements = toParsedStatements(result.program.body);
+	return !isExclusion(statements, value);
 }
 
 const noCommentedCode: Rule.RuleModule = {

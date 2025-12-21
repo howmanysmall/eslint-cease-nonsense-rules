@@ -27,97 +27,80 @@ const OPERATORS = new Set(["+", "-", "*", "/", "%"]);
 
 function reconstructText(node: Record<PropertyKey, unknown>): string | undefined {
 	const nodeType = node.type;
+	let text: string | undefined;
 
 	if (nodeType === TSESTree.AST_NODE_TYPES.Literal) {
 		const { value } = node;
-		return isNumber(value) ? String(value) : undefined;
+		text = isNumber(value) ? String(value) : undefined;
 	}
 
 	if (nodeType === TSESTree.AST_NODE_TYPES.Identifier) {
 		const { name } = node;
-		return typeof name === "string" ? name : undefined;
+		text = typeof name === "string" ? name : undefined;
 	}
 
 	if (nodeType === TSESTree.AST_NODE_TYPES.UnaryExpression) {
 		const { operator } = node;
-		if (typeof operator !== "string") return undefined;
-
-		const { argument } = node;
-		if (!isRecord(argument)) return undefined;
-
-		const text = reconstructText(argument);
-		return text === undefined ? undefined : `${operator}${text}`;
+		if (typeof operator === "string") {
+			const { argument } = node;
+			if (isRecord(argument)) {
+				const argumentText = reconstructText(argument);
+				if (argumentText !== undefined) text = `${operator}${argumentText}`;
+			}
+		}
 	}
 
 	if (nodeType === TSESTree.AST_NODE_TYPES.BinaryExpression) {
 		const { operator } = node;
-		if (typeof operator !== "string" || !OPERATORS.has(operator)) return undefined;
-
-		const { left, right } = node;
-		if (!(isRecord(left) && isRecord(right))) return undefined;
-
-		const leftText = reconstructText(left);
-		const rightText = reconstructText(right);
-		return leftText === undefined || rightText === undefined ? undefined : `${leftText} ${operator} ${rightText}`;
+		if (typeof operator === "string" && OPERATORS.has(operator)) {
+			const { left, right } = node;
+			if (isRecord(left) && isRecord(right)) {
+				const leftText = reconstructText(left);
+				const rightText = reconstructText(right);
+				if (leftText !== undefined && rightText !== undefined) text = `${leftText} ${operator} ${rightText}`;
+			}
+		}
 	}
 
-	return undefined;
+	return text;
 }
 
 function evaluateExpression(node: unknown): number | undefined {
 	if (!isRecord(node)) return undefined;
 
 	const nodeType = node.type;
+	let value: number | undefined;
 
 	if (nodeType === TSESTree.AST_NODE_TYPES.Literal) {
-		const { value } = node;
-		return isNumber(value) ? value : undefined;
+		const { value: literalValue } = node;
+		value = isNumber(literalValue) ? literalValue : undefined;
 	}
 
 	if (nodeType === TSESTree.AST_NODE_TYPES.UnaryExpression) {
 		const { argument, operator } = node;
-
-		if (typeof argument === "object" && argument !== null) {
-			const value = evaluateExpression(argument);
-			if (value === undefined) return undefined;
-			if (operator === "-") return -value;
-			if (operator === "+") return value;
+		if (isRecord(argument)) {
+			const argumentValue = evaluateExpression(argument);
+			if (operator === "-" && argumentValue !== undefined) value = -argumentValue;
+			if (operator === "+" && argumentValue !== undefined) value = argumentValue;
 		}
-		return undefined;
 	}
 
 	if (nodeType === TSESTree.AST_NODE_TYPES.BinaryExpression) {
 		const { right, left, operator } = node;
-
-		if (typeof left === "object" && left !== null && typeof right === "object" && right !== null) {
+		if (isRecord(left) && isRecord(right) && typeof operator === "string" && OPERATORS.has(operator)) {
 			const leftValue = evaluateExpression(left);
 			const rightValue = evaluateExpression(right);
-			if (leftValue === undefined || rightValue === undefined) return undefined;
-
-			switch (operator) {
-				case "+":
-					return leftValue + rightValue;
-
-				case "-":
-					return leftValue - rightValue;
-
-				case "*":
-					return leftValue * rightValue;
-
-				case "/":
-					return rightValue === 0 ? undefined : leftValue / rightValue;
-
-				case "%":
-					return rightValue === 0 ? undefined : leftValue % rightValue;
-
-				default:
-					return undefined;
+			if (leftValue !== undefined && rightValue !== undefined) {
+				if (operator === "+") value = leftValue + rightValue;
+				if (operator === "-") value = leftValue - rightValue;
+				if (operator === "*") value = leftValue * rightValue;
+				if (operator === "/") value = rightValue === 0 ? undefined : leftValue / rightValue;
+				if (operator === "%") value = rightValue === 0 ? undefined : leftValue % rightValue;
 			}
 		}
-		return undefined;
 	}
 
-	return undefined;
+	return value;
 }
 
 function collectArguments(_context: RuleContext, parameters: ReadonlyArray<unknown>): ArgumentsCollection | undefined {

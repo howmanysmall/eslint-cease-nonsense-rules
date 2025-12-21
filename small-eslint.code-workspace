@@ -59,8 +59,7 @@
 		"editor.formatOnSaveMode": "file",
 
 		"files.associations": {
-			".oxfmtrc.json": "jsonc",
-			".oxlintrc.json": "jsonc",
+			".ox*rc.json": "jsonc",
 			"*.code-workspace": "jsonc",
 		},
 
@@ -68,6 +67,7 @@
 		"oxc.fixKind": "safe_fix",
 		"oxc.lint.run": "onType",
 		"oxc.typeAware": true,
+		"oxc.unusedDisableDirectives": "deny",
 
 		"typescript.experimental.useTsgo": true,
 		"typescript.tsserver.experimental.enableProjectDiagnostics": true,
