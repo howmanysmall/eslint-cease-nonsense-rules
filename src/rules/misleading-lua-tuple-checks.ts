@@ -13,6 +13,19 @@ function isLuaTuple(type: Type, typeCache: WeakMap<Type, boolean>): boolean {
 	const cached = typeCache.get(type);
 	if (cached !== undefined) return cached;
 
+	// Handle union types FIRST - critical for LuaTuple | undefined.
+	// A union like `LuaTuple<[T]> | undefined` should NOT be treated as LuaTuple.
+	if (type.isUnion()) {
+		for (const subType of type.types) {
+			if (!isLuaTuple(subType, typeCache)) {
+				typeCache.set(type, false);
+				return false;
+			}
+		}
+		typeCache.set(type, true);
+		return true;
+	}
+
 	// Fast-path: Check if the type alias symbol is "LuaTuple"
 	const { aliasSymbol } = type;
 	if (aliasSymbol !== undefined) {
@@ -29,19 +42,6 @@ function isLuaTuple(type: Type, typeCache: WeakMap<Type, boolean>): boolean {
 			typeCache.set(type, result);
 			return result;
 		}
-	}
-
-	// Handle union types: only treat as LuaTuple if ALL constituents are LuaTuples
-	// A union like `LuaTuple<[T]> | string` cannot be destructured, so it's not a LuaTuple
-	if (type.isUnion()) {
-		for (const subType of type.types) {
-			if (!isLuaTuple(subType, typeCache)) {
-				typeCache.set(type, false);
-				return false;
-			}
-		}
-		typeCache.set(type, true);
-		return true;
 	}
 
 	typeCache.set(type, false);
