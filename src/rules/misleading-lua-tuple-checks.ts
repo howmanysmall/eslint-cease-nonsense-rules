@@ -1,7 +1,22 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import type { ParserServicesWithTypeInformation, TSESLint, TSESTree } from "@typescript-eslint/utils";
 import type { ReportFixFunction, RuleFixer, SourceCode } from "@typescript-eslint/utils/ts-eslint";
-import type { Type, TypeChecker } from "typescript";
+import type { Expression, Node, Symbol as TsSymbol, Type, TypeChecker } from "typescript";
+import {
+	forEachChild,
+	IndexKind,
+	isCallExpression,
+	isExpression,
+	isIdentifier,
+	isNonNullExpression,
+	isParameter,
+	isParenthesizedExpression,
+	isPropertyDeclaration,
+	isPropertySignature,
+	isVariableDeclaration,
+	SyntaxKind,
+	TypeFlags,
+} from "typescript";
 
 type MessageIds = "misleading-lua-tuple-check" | "lua-tuple-declaration";
 
@@ -9,12 +24,29 @@ interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
 	readonly recommended?: boolean;
 }
 
+function isTypePossiblyNil(type: Type): boolean {
+	if ((type.flags & (TypeFlags.Undefined | TypeFlags.Null)) !== 0) return true;
+	if (!type.isUnion()) return false;
+	for (const subType of type.types) {
+		if (isTypePossiblyNil(subType)) return true;
+	}
+	return false;
+}
+
+function typeNodeContainsNil(node: Node): boolean {
+	if (node.kind === SyntaxKind.UndefinedKeyword || node.kind === SyntaxKind.NullKeyword) return true;
+
+	let found = false;
+	forEachChild(node, (child) => {
+		if (!found && typeNodeContainsNil(child)) found = true;
+	});
+	return found;
+}
+
 function isLuaTuple(type: Type, checker: TypeChecker, typeCache: WeakMap<Type, boolean>): boolean {
 	const cached = typeCache.get(type);
 	if (cached !== undefined) return cached;
 
-	// Handle union types FIRST - critical for LuaTuple | undefined.
-	// A union like `LuaTuple<[T]> | undefined` should NOT be treated as LuaTuple.
 	if (type.isUnion()) {
 		for (const subType of type.types) {
 			if (!isLuaTuple(subType, checker, typeCache)) {
@@ -26,15 +58,12 @@ function isLuaTuple(type: Type, checker: TypeChecker, typeCache: WeakMap<Type, b
 		return true;
 	}
 
-	// Check for __LuaTuple brand property (most robust, cross-platform).
-	// LuaTuple is defined as: T & { readonly __LuaTuple?: never }
 	const luaTupleProperty = checker.getPropertyOfType(type, "__LuaTuple");
 	if (luaTupleProperty !== undefined) {
 		typeCache.set(type, true);
 		return true;
 	}
 
-	// Fallback: Check if the type alias symbol is "LuaTuple"
 	const { aliasSymbol } = type;
 	if (aliasSymbol !== undefined) {
 		const isLua = aliasSymbol.escapedName.toString() === "LuaTuple";
@@ -42,7 +71,6 @@ function isLuaTuple(type: Type, checker: TypeChecker, typeCache: WeakMap<Type, b
 		return isLua;
 	}
 
-	// Handle type parameters: resolve constraints
 	if (type.isTypeParameter()) {
 		const constraint = type.getConstraint();
 		if (constraint !== undefined) {
@@ -54,6 +82,89 @@ function isLuaTuple(type: Type, checker: TypeChecker, typeCache: WeakMap<Type, b
 
 	typeCache.set(type, false);
 	return false;
+}
+
+function isTsSymbolPossiblyNil(
+	symbol: TsSymbol,
+	checker: TypeChecker,
+	exprCache: WeakMap<Node, boolean>,
+	symbolCache: WeakMap<TsSymbol, boolean>,
+): boolean {
+	const cached = symbolCache.get(symbol);
+	if (cached !== undefined) return cached;
+
+	symbolCache.set(symbol, false);
+
+	const declarations = symbol.getDeclarations();
+	if (declarations === undefined) return false;
+
+	for (const decl of declarations) {
+		if (
+			(isVariableDeclaration(decl) ||
+				isParameter(decl) ||
+				isPropertyDeclaration(decl) ||
+				isPropertySignature(decl)) &&
+			decl.type !== undefined &&
+			typeNodeContainsNil(decl.type)
+		) {
+			symbolCache.set(symbol, true);
+			return true;
+		}
+
+		if (
+			(isVariableDeclaration(decl) || isParameter(decl) || isPropertyDeclaration(decl)) &&
+			decl.initializer !== undefined &&
+			isTsExpressionPossiblyNil(decl.initializer, checker, exprCache, symbolCache)
+		) {
+			symbolCache.set(symbol, true);
+			return true;
+		}
+	}
+
+	symbolCache.set(symbol, false);
+	return false;
+}
+
+function isTsExpressionPossiblyNil(
+	expr: Expression,
+	checker: TypeChecker,
+	exprCache: WeakMap<Node, boolean>,
+	symbolCache: WeakMap<TsSymbol, boolean>,
+): boolean {
+	const cached = exprCache.get(expr);
+	if (cached !== undefined) return cached;
+
+	if (isParenthesizedExpression(expr)) {
+		const res = isTsExpressionPossiblyNil(expr.expression, checker, exprCache, symbolCache);
+		exprCache.set(expr, res);
+		return res;
+	}
+
+	if (isNonNullExpression(expr)) {
+		exprCache.set(expr, false);
+		return false;
+	}
+
+	const exprType = checker.getTypeAtLocation(expr);
+	if (isTypePossiblyNil(exprType)) {
+		exprCache.set(expr, true);
+		return true;
+	}
+
+	let res = false;
+	if (isCallExpression(expr)) {
+		const signature = checker.getResolvedSignature(expr);
+		const typeNode = signature?.declaration?.type;
+		if (typeNode !== undefined && typeNodeContainsNil(typeNode)) res = true;
+	} else if (isIdentifier(expr)) {
+		const symbol = checker.getSymbolAtLocation(expr);
+		if (symbol !== undefined) {
+			res = isTsSymbolPossiblyNil(symbol, checker, exprCache, symbolCache);
+		}
+	}
+
+	exprCache.set(expr, res);
+	return res;
 }
 
 function isNodeLuaTuple(
@@ -72,14 +183,25 @@ function isNodeLuaTuple(
 	return result;
 }
 
+function isNodePossiblyNil(
+	node: TSESTree.Expression,
+	parserServices: ParserServicesWithTypeInformation,
+	checker: TypeChecker,
+	exprCache: WeakMap<Node, boolean>,
+	symbolCache: WeakMap<TsSymbol, boolean>,
+): boolean {
+	const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
+	if (!isExpression(tsNode)) return false;
+
+	return isTsExpressionPossiblyNil(tsNode, checker, exprCache, symbolCache);
+}
+
 function createDestructuringFix(
 	node: TSESTree.VariableDeclarator | TSESTree.AssignmentExpression,
 	sourceCode: SourceCode,
 ): ReportFixFunction {
 	return (fixer: RuleFixer) => {
 		if (node.type === AST_NODE_TYPES.VariableDeclarator) {
-			// Const result = foo() → const [result] = foo()
-			// Const result: Type = foo() → const [result]: Type = foo()
 			const { id } = node;
 			// oxlint-disable-next-line no-null
 			if (id.type !== AST_NODE_TYPES.Identifier) return null;
@@ -87,16 +209,13 @@ function createDestructuringFix(
 			const { typeAnnotation } = id;
 
 			if (typeAnnotation !== undefined) {
-				// Has type annotation - preserve it
 				const typeText = sourceCode.getText(typeAnnotation);
 				return fixer.replaceText(id, `[${id.name}]${typeText}`);
 			}
 
-			// No type annotation
 			return fixer.replaceText(id, `[${id.name}]`);
 		}
 
-		// AssignmentExpression: result = foo() → [result] = foo()
 		const { left } = node;
 		// oxlint-disable-next-line no-null
 		if (left.type !== AST_NODE_TYPES.Identifier) return null;
@@ -108,7 +227,6 @@ function createDestructuringFix(
 function createIndexAccessFix(node: TSESTree.Expression, sourceCode: SourceCode): ReportFixFunction {
 	return (fixer: RuleFixer) => {
 		const text = sourceCode.getText(node);
-		// Wrap in parentheses if needed for operator precedence
 		const needsParens =
 			node.type === AST_NODE_TYPES.AssignmentExpression ||
 			node.type === AST_NODE_TYPES.ConditionalExpression ||
@@ -123,7 +241,7 @@ function createIndexAccessFix(node: TSESTree.Expression, sourceCode: SourceCode)
 function isInForOfLeft(node: TSESTree.Node): boolean {
 	let current: TSESTree.Node | undefined = node;
 	while (current !== undefined) {
-		// oxlint-disable-next-line prefer-destructuring -- Cannot destructure; parent is reassigned to current
+		// oxlint-disable-next-line prefer-destructuring
 		const parent: TSESTree.Node | undefined | null = current.parent;
 		if (parent === undefined || parent === null) break;
 
@@ -147,27 +265,28 @@ function getParserServices(
 const misleadingLuaTupleChecks: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], RuleDocsWithRecommended> = {
 	create(context) {
 		const maybeServices = getParserServices(context);
-		// Skip non-TypeScript files (e.g., .json, .js without project)
 		if (maybeServices === undefined) return {};
 
 		const parserServices = maybeServices;
 		const { sourceCode } = context;
 		const checker: TypeChecker = parserServices.program.getTypeChecker();
 
-		// Multi-level caching
 		const nodeCache = new WeakMap<TSESTree.Node, boolean>();
 		const typeCache = new WeakMap<Type, boolean>();
+		const tsExprNilCache = new WeakMap<Node, boolean>();
+		const tsSymbolNilCache = new WeakMap<TsSymbol, boolean>();
 
-		// Helper to get type at location
 		function getTypeAtLocation(node: TSESTree.Node): Type {
 			const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
 			return checker.getTypeAtLocation(tsNode);
 		}
 
 		return {
-			// LuaTuple assignments without destructuring
 			'AssignmentExpression[operator="="][left.type="Identifier"]'(node: TSESTree.AssignmentExpression): void {
-				if (isNodeLuaTuple(node.right, nodeCache, typeCache, checker, getTypeAtLocation)) {
+				if (
+					isNodeLuaTuple(node.right, nodeCache, typeCache, checker, getTypeAtLocation) &&
+					!isNodePossiblyNil(node.right, parserServices, checker, tsExprNilCache, tsSymbolNilCache)
+				) {
 					context.report({
 						fix: createDestructuringFix(node, sourceCode),
 						messageId: "lua-tuple-declaration",
@@ -175,7 +294,6 @@ const misleadingLuaTupleChecks: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], 
 					});
 				}
 			},
-			// LuaTuple in conditional expressions (if, while, for, ternary)
 			"ConditionalExpression, DoWhileStatement, IfStatement, ForStatement, WhileStatement"(
 				node:
 					| TSESTree.ConditionalExpression
@@ -200,7 +318,10 @@ const misleadingLuaTupleChecks: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], 
 
 				if (testNode === null || testNode === undefined) return;
 
-				if (isNodeLuaTuple(testNode, nodeCache, typeCache, checker, getTypeAtLocation)) {
+				if (
+					isNodeLuaTuple(testNode, nodeCache, typeCache, checker, getTypeAtLocation) &&
+					!isNodePossiblyNil(testNode, parserServices, checker, tsExprNilCache, tsSymbolNilCache)
+				) {
 					context.report({
 						fix: createIndexAccessFix(testNode, sourceCode),
 						messageId: "misleading-lua-tuple-check",
@@ -209,22 +330,21 @@ const misleadingLuaTupleChecks: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], 
 				}
 			},
 
-			// LuaTuple in for-of with iterable functions
 			ForOfStatement(node: TSESTree.ForOfStatement): void {
-				const { left } = node;
+				const { left, right } = node;
 
-				// Only check if left is an Identifier (not destructuring)
 				if (left.type === AST_NODE_TYPES.VariableDeclaration) {
 					const [declarator] = left.declarations;
 					if (declarator === undefined) return;
 					if (declarator.id.type !== AST_NODE_TYPES.Identifier) return;
 
-					// Check the type of the iteration variable directly.
-					// TypeScript infers the element type for us - more reliable than
-					// Accessing internal typeArguments property.
-					const leftType = checker.getTypeAtLocation(parserServices.esTreeNodeToTSNodeMap.get(declarator.id));
-
-					if (isLuaTuple(leftType, checker, typeCache)) {
+					const rightType = getTypeAtLocation(right);
+					const elementType = checker.getIndexTypeOfType(rightType, IndexKind.Number);
+					if (
+						elementType !== undefined &&
+						isLuaTuple(elementType, checker, typeCache) &&
+						!isTypePossiblyNil(elementType)
+					) {
 						context.report({
 							fix: createDestructuringFix(declarator, sourceCode),
 							messageId: "lua-tuple-declaration",
@@ -234,10 +354,11 @@ const misleadingLuaTupleChecks: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], 
 				}
 			},
 
-			// LuaTuple in logical expressions (&&, ||)
 			LogicalExpression(node: TSESTree.LogicalExpression): void {
-				// Check left operand
-				if (isNodeLuaTuple(node.left, nodeCache, typeCache, checker, getTypeAtLocation)) {
+				if (
+					isNodeLuaTuple(node.left, nodeCache, typeCache, checker, getTypeAtLocation) &&
+					!isNodePossiblyNil(node.left, parserServices, checker, tsExprNilCache, tsSymbolNilCache)
+				) {
 					context.report({
 						fix: createIndexAccessFix(node.left, sourceCode),
 						messageId: "misleading-lua-tuple-check",
@@ -245,8 +366,10 @@ const misleadingLuaTupleChecks: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], 
 					});
 				}
 
-				// Check right operand
-				if (isNodeLuaTuple(node.right, nodeCache, typeCache, checker, getTypeAtLocation)) {
+				if (
+					isNodeLuaTuple(node.right, nodeCache, typeCache, checker, getTypeAtLocation) &&
+					!isNodePossiblyNil(node.right, parserServices, checker, tsExprNilCache, tsSymbolNilCache)
+				) {
 					context.report({
 						fix: createIndexAccessFix(node.right, sourceCode),
 						messageId: "misleading-lua-tuple-check",
@@ -255,9 +378,11 @@ const misleadingLuaTupleChecks: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], 
 				}
 			},
 
-			// LuaTuple in unary negation (!)
 			'UnaryExpression[operator="!"]'(node: TSESTree.UnaryExpression): void {
-				if (isNodeLuaTuple(node.argument, nodeCache, typeCache, checker, getTypeAtLocation)) {
+				if (
+					isNodeLuaTuple(node.argument, nodeCache, typeCache, checker, getTypeAtLocation) &&
+					!isNodePossiblyNil(node.argument, parserServices, checker, tsExprNilCache, tsSymbolNilCache)
+				) {
 					context.report({
 						fix: createIndexAccessFix(node.argument, sourceCode),
 						messageId: "misleading-lua-tuple-check",
@@ -266,15 +391,16 @@ const misleadingLuaTupleChecks: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], 
 				}
 			},
 
-			// LuaTuple variable declarations without destructuring
 			'VariableDeclarator[id.type="Identifier"]'(node: TSESTree.VariableDeclarator): void {
-				// Skip if already in for-of (handled separately)
 				if (isInForOfLeft(node)) return;
 
 				const { init } = node;
 				if (init === null || init === undefined) return;
 
-				if (isNodeLuaTuple(init, nodeCache, typeCache, checker, getTypeAtLocation)) {
+				if (
+					isNodeLuaTuple(init, nodeCache, typeCache, checker, getTypeAtLocation) &&
+					!isNodePossiblyNil(init, parserServices, checker, tsExprNilCache, tsSymbolNilCache)
+				) {
 					context.report({
 						fix: createDestructuringFix(node, sourceCode),
 						messageId: "lua-tuple-declaration",
