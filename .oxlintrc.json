@@ -182,6 +182,7 @@
 				"max": 7,
 			},
 		],
+		"max-statements": "off",
 		"new-cap": "off",
 		"no-array-constructor": "off",
 		"no-async-promise-executor": "error",
