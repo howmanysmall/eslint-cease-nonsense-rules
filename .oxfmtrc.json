@@ -7,6 +7,7 @@
 	"endOfLine": "lf",
 	"experimentalSortImports": null,
 	"ignorePatterns": ["dist/**", "node_modules/**", "**/*.{jsonc,json,md,yaml,yml}", "package.json"],
+	"insertFinalNewline": true,
 	"jsxSingleQuote": false,
 	"objectWrap": "preserve",
 	"printWidth": 120,
