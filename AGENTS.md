@@ -1,1 +1,1 @@
-CLAUDE.local.md
+./CLAUDE.local.md

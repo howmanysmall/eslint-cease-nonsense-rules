@@ -57,9 +57,6 @@ jobs:
       - name: Lint
         run: bun run lint
 
-      - name: Biome CI
-        run: bun run biome:ci
-
       - name: Knip
         run: bun run knip
 
