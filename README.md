@@ -838,13 +838,18 @@ const doubled = items.map((x) => x * 2);
 
 Bans shorthand variable names in favor of descriptive full names.
 
+**Features**
+
+- Matches shorthands within compound identifiers (e.g., `plrData` → `playerData`)
+- Supports glob patterns (`*`, `?`) for flexible matching
+- Supports regex patterns (`/pattern/flags`) for advanced matching
+
 **Default mappings**
 
 - `plr` → `player` (or `localPlayer` for `Players.LocalPlayer`)
 - `args` → `parameters`
 - `dt` → `deltaTime`
 - `char` → `character`
-- `btn` → `button`
 
 **Configuration**
 
@@ -855,13 +860,44 @@ Bans shorthand variable names in favor of descriptive full names.
       "plr": "player",
       "args": "parameters",
       "dt": "deltaTime",
-      "char": "character",
-      "btn": "button"
+      "char": "character"
     },
     "allowPropertyAccess": ["char"]  // Allow as property
   }]
 }
 ```
+
+**Pattern syntax**
+
+Glob patterns use `*` (any characters) and `?` (single character):
+
+```typescript
+{
+  "shorthands": {
+    "str*": "string*",         // strValue → stringValue
+    "*Props": "*Properties",   // DataProps → DataProperties
+    "*Btn*": "*Button*"        // myBtnClick → myButtonClick
+  }
+}
+```
+
+Regex patterns use `/pattern/flags` syntax:
+
+```typescript
+{
+  "shorthands": {
+    "/^str(.*)$/": "string$1",  // strName → stringName
+    "/^props$/i": "properties"  // Props or props → properties
+  }
+}
+```
+
+**Compound identifier matching**
+
+Identifiers are split at camelCase/PascalCase boundaries, and each word is checked independently:
+
+- `propsData` with `{ "props": "properties" }` → `propertiesData`
+- `UnitBoxBadgeInfoProps` with `{ "Props": "Properties" }` → `UnitBoxBadgeInfoProperties`
 
 **❌ Bad**
 
