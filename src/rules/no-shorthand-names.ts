@@ -26,6 +26,7 @@ interface ShorthandMatcher {
 	readonly pattern: RegExp;
 	readonly replacement: string;
 	readonly original: string;
+	readonly replacementPatterns: ReadonlyArray<RegExp>;
 }
 
 interface NormalizedOptions {
@@ -70,23 +71,72 @@ const WORD_BOUNDARY_REGEX = /(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a
 // oxlint-disable-next-line no-template-curly-in-string
 const FUNT_PATTERN = regex("[.+^${}()|[\\]\\\\]", "g");
 
+// Module-level split cache with bounded size
+const SPLIT_CACHE = new Map<string, ReadonlyArray<string>>();
+const MAX_SPLIT_CACHE_SIZE = 1024;
+
 function splitIdentifierIntoWords(identifier: string): ReadonlyArray<string> {
-	return identifier.split(WORD_BOUNDARY_REGEX);
+	const cached = SPLIT_CACHE.get(identifier);
+	if (cached !== undefined) return cached;
+
+	const words = identifier.split(WORD_BOUNDARY_REGEX);
+
+	// Prevent unbounded growth - simple eviction of oldest entry
+	if (SPLIT_CACHE.size >= MAX_SPLIT_CACHE_SIZE) {
+		const firstKey = SPLIT_CACHE.keys().next().value;
+		if (firstKey !== undefined) SPLIT_CACHE.delete(firstKey);
+	}
+
+	SPLIT_CACHE.set(identifier, words);
+	return words;
 }
 
 type MatcherResult =
 	| { type: "exact"; original: string; replacement: string }
 	| { type: "pattern"; matcher: ShorthandMatcher };
 
+function countCaptureGroups(replacement: string): number {
+	const matches = replacement.match(/\$(\d+)/g);
+	if (matches === null) return 0;
+	let maxGroup = 0;
+	for (const dollarRef of matches) {
+		const groupNum = Number.parseInt(dollarRef.slice(1), 10);
+		if (groupNum > maxGroup) maxGroup = groupNum;
+	}
+	return maxGroup;
+}
+
+// Pre-computed replacement patterns cache (module-level, shared across instances)
+const REPLACEMENT_PATTERN_CACHE = new Map<number, RegExp>();
+function getReplacementPattern(index: number): RegExp {
+	let pattern = REPLACEMENT_PATTERN_CACHE.get(index);
+	if (pattern === undefined) {
+		pattern = new RegExp(`\\$${index}`, "g");
+		REPLACEMENT_PATTERN_CACHE.set(index, pattern);
+	}
+	return pattern;
+}
+
+function buildReplacementPatterns(replacement: string): ReadonlyArray<RegExp> {
+	const count = countCaptureGroups(replacement);
+	if (count === 0) return [];
+	const patterns = new Array<RegExp>(count);
+	for (let index = 1; index <= count; index += 1) {
+		patterns[index - 1] = getReplacementPattern(index);
+	}
+	return patterns;
+}
+
 function createMatcher(key: string, replacement: string): MatcherResult {
 	if (key.startsWith("/")) {
-		const match = REGEX_PATTERN_MATCHER.exec(key);
-		if (match) {
+		const match = key.match(REGEX_PATTERN_MATCHER);
+		if (match?.groups) {
 			return {
 				matcher: {
 					original: key,
 					pattern: new RegExp(`^${match.groups.first}$`, match.groups.second),
 					replacement,
+					replacementPatterns: buildReplacementPatterns(replacement),
 				},
 				type: "pattern",
 			};
@@ -107,6 +157,7 @@ function createMatcher(key: string, replacement: string): MatcherResult {
 				original: key,
 				pattern: new RegExp(`^${regexPattern}$`),
 				replacement: regexReplacement,
+				replacementPatterns: buildReplacementPatterns(regexReplacement),
 			},
 			type: "pattern",
 		};
@@ -139,8 +190,11 @@ function matchWord(
 		const match = word.match(matcher.pattern);
 		if (match) {
 			let replaced = matcher.replacement;
-			for (let index = 1; index < match.length; index += 1) {
-				replaced = replaced.replaceAll(new RegExp(`\\$${index}`, "g"), match[index] ?? "");
+			// Use pre-computed replacement patterns instead of creating new RegExp in loop
+			let captureIndex = 1;
+			for (const replacementPattern of matcher.replacementPatterns) {
+				replaced = replaced.replaceAll(replacementPattern, match[captureIndex] ?? "");
+				captureIndex += 1;
 			}
 			return {
 				matchedWord: word,
@@ -162,25 +216,6 @@ function isWordIgnored(
 		if (matcher.pattern.test(word)) return true;
 	}
 	return false;
-}
-
-function buildReplacementIdentifier(identifier: string, options: NormalizedOptions): ReplacementResult | undefined {
-	const words = splitIdentifierIntoWords(identifier);
-	const matches = new Array<ShorthandMatch>();
-	let hasMatch = false;
-
-	const newWords = words.map((word) => {
-		const match = matchWord(word, options.matchers, options.exactMatchers);
-		if (match) {
-			hasMatch = true;
-			matches.push(match);
-			return match.replacement;
-		}
-		return word;
-	});
-
-	if (!hasMatch) return undefined;
-	return { matches, replaced: newWords.join("") };
 }
 
 function normalizeOptions(rawOptions: NoShorthandOptions | undefined): NormalizedOptions {
@@ -220,45 +255,93 @@ function normalizeOptions(rawOptions: NoShorthandOptions | undefined): Normalize
 	};
 }
 
+// Import parent types to skip (O(1) lookup)
+const IMPORT_PARENT_TYPES = new Set(["ImportSpecifier", "ImportDefaultSpecifier", "ImportNamespaceSpecifier"]);
+
 const noShorthandNames: Rule.RuleModule = {
 	create(context) {
 		const validatedOptions = isRuleOptions.Check(context.options[0]) ? context.options[0] : undefined;
 		const normalized = normalizeOptions(validatedOptions);
-		const { allowPropertyAccess, ignoreMatchers, ignoreExact, selector } = normalized;
+		const { allowPropertyAccess, ignoreMatchers, ignoreExact, selector, matchers, exactMatchers } = normalized;
+
+		// Full identifier result cache - biggest optimization
+		const identifierResultCache = new Map<string, ReplacementResult | undefined>();
+		const ignoredWordCache = new Map<string, boolean>();
+
+		function cachedIsWordIgnored(word: string): boolean {
+			const cached = ignoredWordCache.get(word);
+			if (cached !== undefined) return cached;
+			const result = isWordIgnored(word, ignoreMatchers, ignoreExact);
+			ignoredWordCache.set(word, result);
+			return result;
+		}
+
+		function getIdentifierResult(identifier: string): ReplacementResult | undefined {
+			// Check full identifier cache first
+			if (identifierResultCache.has(identifier)) return identifierResultCache.get(identifier);
+
+			const words = splitIdentifierIntoWords(identifier);
+			const matches = new Array<ShorthandMatch>();
+			let hasMatch = false;
+
+			for (const word of words) {
+				const match = matchWord(word, matchers, exactMatchers);
+				if (match) {
+					hasMatch = true;
+					matches.push(match);
+				}
+			}
+
+			if (!hasMatch) {
+				identifierResultCache.set(identifier, undefined);
+				return undefined;
+			}
+
+			// Build replaced string only when needed
+			let replaced = "";
+			let matchIndex = 0;
+			for (const word of words) {
+				const currentMatch = matches[matchIndex];
+				if (currentMatch !== undefined && currentMatch.matchedWord === word) {
+					replaced += currentMatch.replacement;
+					matchIndex += 1;
+				} else {
+					replaced += word;
+				}
+			}
+
+			const result: ReplacementResult = { matches, replaced };
+			identifierResultCache.set(identifier, result);
+			return result;
+		}
 
 		return {
 			[selector](node: Rule.Node & { name: string; parent?: unknown }) {
+				const { parent } = node;
+
+				// Skip import specifiers FIRST - before any computation
+				if (parent !== undefined && isRecord(parent)) {
+					const parentType = parent.type as string;
+					if (IMPORT_PARENT_TYPES.has(parentType)) return;
+				}
+
 				const identifierName = node.name;
-				const result = buildReplacementIdentifier(identifierName, normalized);
+				const result = getIdentifierResult(identifierName);
 				if (result === undefined) return;
 
 				const { replaced, matches } = result;
-				const { parent } = node;
 
-				// Skip import specifiers - user doesn't control external package naming
-				if (parent !== undefined && isRecord(parent)) {
-					const parentType = parent.type as string;
-					// Import { InstanceProps } or { InstanceProps as X } from "pkg"
-					if (parentType === "ImportSpecifier") {
-						return;
-					}
-					// Import InstanceProps from "pkg" (default import)
-					if (parentType === "ImportDefaultSpecifier") {
-						return;
-					}
-					// Import * as Props from "pkg" (namespace import)
-					if (parentType === "ImportNamespaceSpecifier") {
-						return;
-					}
-				}
-
-				// Check if full identifier name is ignored (for external package exports)
-				if (isWordIgnored(identifierName, ignoreMatchers, ignoreExact)) return;
+				// Check if full identifier name is ignored
+				if (cachedIsWordIgnored(identifierName)) return;
 
 				// Check if ALL matched words are ignored
-				const allIgnored = matches.every((match) =>
-					isWordIgnored(match.matchedWord, ignoreMatchers, ignoreExact),
-				);
+				let allIgnored = true;
+				for (const match of matches) {
+					if (!cachedIsWordIgnored(match.matchedWord)) {
+						allIgnored = false;
+						break;
+					}
+				}
 				if (allIgnored) return;
 
 				// Check allowPropertyAccess in member/qualified name context
@@ -269,11 +352,15 @@ const noShorthandNames: Rule.RuleModule = {
 						(parentType === "TSQualifiedName" && parent.right === node);
 
 					if (isPropertyAccess) {
-						// Check full identifier name OR all matched words
-						const allWordsAllowed = matches.every((match) => allowPropertyAccess.has(match.matchedWord));
-						if (allowPropertyAccess.has(identifierName) || allWordsAllowed) {
-							return;
+						if (allowPropertyAccess.has(identifierName)) return;
+						let allWordsAllowed = true;
+						for (const match of matches) {
+							if (!allowPropertyAccess.has(match.matchedWord)) {
+								allWordsAllowed = false;
+								break;
+							}
 						}
+						if (allWordsAllowed) return;
 					}
 				}
 
