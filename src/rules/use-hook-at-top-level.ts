@@ -103,8 +103,9 @@ function isHookCall(node: TSESTree.CallExpression): boolean {
 	if (
 		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-	)
+	) {
 		return isReactHook(callee.property.name);
+	}
 
 	return false;
 }
@@ -145,9 +146,7 @@ function isRecursiveCall(node: TSESTree.CallExpression, functionName: string | u
 	if (!functionName) return false;
 
 	const { callee } = node;
-	if (callee.type === "Identifier") return callee.name === functionName;
-
-	return false;
+	return callee.type === "Identifier" && callee.name === functionName;
 }
 
 const useHookAtTopLevel: Rule.RuleModule = {

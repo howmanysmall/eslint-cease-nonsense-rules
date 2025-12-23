@@ -1,6 +1,6 @@
 import type { TSESTree } from "@typescript-eslint/types";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import type { Rule } from "eslint";
+import type { TSESLint } from "@typescript-eslint/utils";
 import type { Writable } from "type-fest";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
@@ -162,19 +162,19 @@ function formatOpenerList(openers: ReadonlyArray<string>): string {
 	return openers.join("' or '");
 }
 
-function isLoopLikeStatement(node: TSESTree.Node | undefined): node is LoopLikeStatement {
+function isLoopLikeStatement(node?: TSESTree.Node): node is LoopLikeStatement {
 	if (!node) return false;
 
 	return LOOP_NODE_TYPES.has(node.type);
 }
 
-function isSwitchStatement(node: TSESTree.Node | undefined): node is TSESTree.SwitchStatement {
+function isSwitchStatement(node?: TSESTree.Node): node is TSESTree.SwitchStatement {
 	return node?.type === AST_NODE_TYPES.SwitchStatement;
 }
 
 function findLabeledStatementBody(
 	label: TSESTree.Identifier,
-	startingNode: TSESTree.Node | undefined,
+	startingNode?: TSESTree.Node,
 ): TSESTree.Statement | undefined {
 	let current: TSESTree.Node | undefined = startingNode;
 
@@ -223,9 +223,30 @@ function cloneEntry(value: OpenerStackEntry): OpenerStackEntry {
 	return { ...value, loopAncestors: [...value.loopAncestors] };
 }
 
-const rule: Rule.RuleModule = {
-	create(context): Rule.RuleListener {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- ESLint context.options is typed as any[]
+const messages = {
+	asyncViolation: "Cannot use {{asyncType}} between '{{opener}}' and '{{closer}}' (requireSync: true)",
+	conditionalOpener: "Conditional opener '{{opener}}' at {{location}} may not have matching closer on all paths",
+	maxNestingExceeded: "Maximum nesting depth of {{max}} exceeded for paired calls",
+	multipleOpeners:
+		"Multiple consecutive calls to '{{opener}}' without matching closers (allowMultipleOpeners: false)",
+	robloxYieldViolation:
+		"Yielding function '{{yieldingFunction}}' auto-closes all profiles - subsequent '{{closer}}' will error",
+	unexpectedCloser: "Unexpected call to '{{closer}}' - expected one of: {{expected}}",
+	unpairedCloser: "Unexpected call to '{{closer}}' - no matching opener on stack",
+	unpairedOpener: "Unpaired call to '{{opener}}' - missing '{{closer}}' on {{paths}}",
+	wrongOrder:
+		"Closer '{{closer}}' called out of order - expected to close '{{expected}}' but '{{actual}}' is still open",
+} as const;
+
+type MessageIds = keyof typeof messages;
+type Options = [Partial<RequirePairedCallsOptions>?];
+
+interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
+	recommended?: boolean;
+}
+
+const rule: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRecommended> = {
+	create(context): TSESLint.RuleListener {
 		const [rawOptions] = context.options;
 		const baseOptions = isRuleOptions.Check(rawOptions) ? rawOptions : {};
 
@@ -266,10 +287,13 @@ const rule: Rule.RuleModule = {
 			if (closerToOpenersCache.has(closer)) return closerToOpenersCache.get(closer) ?? [];
 
 			const names = new Array<string>();
+			let size = 0;
 			for (const pair of options.pairs) {
 				if (!getValidClosers(pair).includes(closer)) continue;
 
-				for (const openerName of getAllOpeners(pair)) if (!names.includes(openerName)) names.push(openerName);
+				for (const openerName of getAllOpeners(pair)) {
+					if (!names.includes(openerName)) names[size++] = openerName;
+				}
 			}
 
 			closerToOpenersCache.set(closer, names);
@@ -280,12 +304,13 @@ const rule: Rule.RuleModule = {
 			if (openerToClosersCache.has(opener)) return openerToClosersCache.get(opener) ?? [];
 
 			const closers = new Array<string>();
+			let size = 0;
 			for (const pair of options.pairs) {
 				const allOpeners = getAllOpeners(pair);
 				if (!allOpeners.includes(opener)) continue;
 
 				const validClosers = getValidClosers(pair);
-				for (const closer of validClosers) if (!closers.includes(closer)) closers.push(closer);
+				for (const closer of validClosers) if (!closers.includes(closer)) closers[size++] = closer;
 			}
 
 			openerToClosersCache.set(opener, closers);
@@ -332,14 +357,10 @@ const rule: Rule.RuleModule = {
 			stackSnapshots.set(node, cloneStack());
 		}
 
-		function findPairConfig(functionName: string, isOpener: boolean): PairConfiguration | undefined {
-			return options.pairs.find((pair) => {
-				if (isOpener) return getAllOpeners(pair).includes(functionName);
-
-				// Check if it matches closer or alternatives
-				const validClosers = getValidClosers(pair);
-				return validClosers.includes(functionName);
-			});
+		function findPairConfiguration(functionName: string, isOpener: boolean): PairConfiguration | undefined {
+			return options.pairs.find((pair) =>
+				(isOpener ? getAllOpeners(pair) : getValidClosers(pair)).includes(functionName),
+			);
 		}
 
 		function isRobloxYieldingFunction(functionName: string, configuration: PairConfiguration): boolean {
@@ -348,7 +369,6 @@ const rule: Rule.RuleModule = {
 			const yieldingFunctions = configuration.yieldingFunctions ?? DEFAULT_ROBLOX_YIELDING_FUNCTIONS;
 			return yieldingFunctions.some((pattern) => {
 				if (pattern.startsWith("*.")) {
-					// Match any method call with this name
 					const methodName = pattern.slice(2);
 					return functionName.endsWith(`.${methodName}`);
 				}
@@ -357,7 +377,6 @@ const rule: Rule.RuleModule = {
 		}
 
 		function onFunctionEnter(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor functions receive unknown, we know the type from selector
 			const functionNode = node as
 				| TSESTree.FunctionDeclaration
 				| TSESTree.FunctionExpression
@@ -410,14 +429,12 @@ const rule: Rule.RuleModule = {
 		}
 
 		function onIfStatementEnter(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const ifNode = node as TSESTree.IfStatement;
 			pushContext({ inConditional: true });
 			saveSnapshot(ifNode);
 		}
 
 		function onIfStatementExit(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const ifNode = node as TSESTree.IfStatement;
 			popContext();
 
@@ -427,12 +444,10 @@ const rule: Rule.RuleModule = {
 			if (originalStack && branches && branches.length > 0) {
 				const hasCompleteElse = ifNode.alternate !== undefined && ifNode.alternate !== null;
 
-				// Check for openers added in branches that weren't closed
 				for (const branchStack of branches) {
 					for (const entry of branchStack) {
 						const wasInOriginal = originalStack.some(({ index }) => index === entry.index);
 						if (!wasInOriginal) {
-							// This opener was added in a branch and not closed
 							const validClosers = getValidClosers(entry.config);
 							const closer =
 								validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
@@ -491,7 +506,6 @@ const rule: Rule.RuleModule = {
 		}
 
 		function onIfConsequentExit(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const consequentNode = node as TSESTree.Statement;
 			const { parent } = consequentNode;
 
@@ -509,7 +523,6 @@ const rule: Rule.RuleModule = {
 		}
 
 		function onIfAlternateExit(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const alternateNode = node as TSESTree.Statement;
 			const { parent } = alternateNode;
 
@@ -521,13 +534,11 @@ const rule: Rule.RuleModule = {
 		}
 
 		function onTryStatementEnter(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const tryNode = node as TSESTree.TryStatement;
 			saveSnapshot(tryNode);
 		}
 
 		function onTryStatementExit(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const tryNode = node as TSESTree.TryStatement;
 			const originalStack = stackSnapshots.get(tryNode);
 			const branches = branchStacks.get(tryNode);
@@ -582,7 +593,6 @@ const rule: Rule.RuleModule = {
 		}
 
 		function onTryBlockExit(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const blockNode = node as TSESTree.BlockStatement;
 			const { parent } = blockNode;
 
@@ -606,7 +616,6 @@ const rule: Rule.RuleModule = {
 		}
 
 		function onCatchClauseExit(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const catchNode = node as TSESTree.CatchClause;
 			const { parent } = catchNode;
 
@@ -634,14 +643,12 @@ const rule: Rule.RuleModule = {
 		}
 
 		function onSwitchStatementEnter(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const switchNode = node as TSESTree.SwitchStatement;
 			pushContext({ inConditional: true });
 			saveSnapshot(switchNode);
 		}
 
 		function onSwitchStatementExit(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const switchNode = node as TSESTree.SwitchStatement;
 			popContext();
 
@@ -695,7 +702,6 @@ const rule: Rule.RuleModule = {
 		}
 
 		function onSwitchCaseExit(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const caseNode = node as TSESTree.SwitchCase;
 			const { parent } = caseNode;
 
@@ -713,7 +719,6 @@ const rule: Rule.RuleModule = {
 		}
 
 		function onLoopEnter(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const loopNode = node as LoopLikeStatement;
 			loopStack.push(loopNode);
 			pushContext({ inLoop: true });
@@ -725,7 +730,6 @@ const rule: Rule.RuleModule = {
 		}
 
 		function onEarlyExit(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const statementNode = node as TSESTree.ReturnStatement | TSESTree.ThrowStatement;
 			updateContext({ hasEarlyExit: true });
 
@@ -752,7 +756,6 @@ const rule: Rule.RuleModule = {
 		}
 
 		function onBreakContinue(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const statementNode = node as TSESTree.BreakStatement | TSESTree.ContinueStatement;
 			if (openerStack.length === 0) return;
 
@@ -785,18 +788,17 @@ const rule: Rule.RuleModule = {
 		}
 
 		function onCallExpression(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const callNode = node as TSESTree.CallExpression;
 			const callName = getCallName(callNode);
 			if (callName === undefined || callName === "") return;
 
-			const openerConfig = findPairConfig(callName, true);
+			const openerConfig = findPairConfiguration(callName, true);
 			if (openerConfig) {
 				handleOpener(callNode, callName, openerConfig);
 				return;
 			}
 
-			if (findPairConfig(callName, false)) {
+			if (findPairConfiguration(callName, false)) {
 				handleCloser(callNode, callName);
 				return;
 			}
@@ -805,7 +807,6 @@ const rule: Rule.RuleModule = {
 				if (!isRobloxYieldingFunction(callName, entry.config)) continue;
 
 				handleRobloxYield(callNode, callName, entry);
-				// Roblox auto-closes ALL profiles
 				openerStack.length = 0;
 				yieldingAutoClosed = true;
 				return;
@@ -855,45 +856,42 @@ const rule: Rule.RuleModule = {
 					return;
 				}
 
-				// Contextual error messages based on stack state
 				if (openerStack.length === 0) {
-					// Stack is empty - no opener to close
 					context.report({
 						data: { closer },
 						messageId: "unpairedCloser",
 						node,
 					});
-				} else {
-					// Stack has openers, but this closer doesn't match any
-					// Show what closer was expected for the top opener
-					const topEntry = openerStack.at(-1);
-					if (topEntry) {
-						const expectedClosers = getExpectedClosersForOpener(topEntry.opener);
-						const closerDescription = formatOpenerList(expectedClosers);
-
-						context.report({
-							data: {
-								closer,
-								expected: closerDescription,
-							},
-							messageId: "unexpectedCloser",
-							node,
-						});
-					} else {
-						// Fallback to old behavior if somehow no top entry
-						const openerCandidates = getConfiguredOpenersForCloser(closer);
-						const openerDescription = formatOpenerList(openerCandidates);
-
-						context.report({
-							data: {
-								closer,
-								opener: openerDescription,
-							},
-							messageId: "unpairedCloser",
-							node,
-						});
-					}
+					return;
 				}
+
+				const topEntry = openerStack.at(-1);
+				if (topEntry) {
+					const expectedClosers = getExpectedClosersForOpener(topEntry.opener);
+					const closerDescription = formatOpenerList(expectedClosers);
+
+					context.report({
+						data: {
+							closer,
+							expected: closerDescription,
+						},
+						messageId: "unexpectedCloser",
+						node,
+					});
+				} else {
+					const openerCandidates = getConfiguredOpenersForCloser(closer);
+					const openerDescription = formatOpenerList(openerCandidates);
+
+					context.report({
+						data: {
+							closer,
+							opener: openerDescription,
+						},
+						messageId: "unpairedCloser",
+						node,
+					});
+				}
+
 				return;
 			}
 
@@ -934,7 +932,6 @@ const rule: Rule.RuleModule = {
 		}
 
 		function onAsyncYield(node: unknown): void {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
 			const asyncNode = node as TSESTree.AwaitExpression | TSESTree.YieldExpression;
 			for (const { opener, config } of openerStack) {
 				if (config.requireSync !== true) continue;
@@ -967,11 +964,9 @@ const rule: Rule.RuleModule = {
 			"DoWhileStatement:exit": onLoopExit,
 			ForInStatement: onLoopEnter,
 			"ForInStatement:exit": onLoopExit,
-			ForOfStatement: (node) => {
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ESLint visitor type from selector
-				const forOfNode = node as TSESTree.ForOfStatement;
-				if (forOfNode.await) onAsyncYield(forOfNode);
-				onLoopEnter(forOfNode);
+			ForOfStatement: (node: TSESTree.ForOfStatement) => {
+				if (node.await) onAsyncYield(node);
+				onLoopEnter(node);
 			},
 			"ForOfStatement:exit": onLoopExit,
 
@@ -1005,6 +1000,7 @@ const rule: Rule.RuleModule = {
 			YieldExpression: onAsyncYield,
 		};
 	},
+	defaultOptions: [],
 	meta: {
 		docs: {
 			description: "Enforces balanced opener/closer function calls across all execution paths",
@@ -1012,21 +1008,7 @@ const rule: Rule.RuleModule = {
 			url: "https://github.com/howmanysmall/eslint-idiot-lint/tree/main/docs/rules/require-paired-calls.md",
 		},
 		fixable: "code",
-		messages: {
-			asyncViolation: "Cannot use {{asyncType}} between '{{opener}}' and '{{closer}}' (requireSync: true)",
-			conditionalOpener:
-				"Conditional opener '{{opener}}' at {{location}} may not have matching closer on all paths",
-			maxNestingExceeded: "Maximum nesting depth of {{max}} exceeded for paired calls",
-			multipleOpeners:
-				"Multiple consecutive calls to '{{opener}}' without matching closers (allowMultipleOpeners: false)",
-			robloxYieldViolation:
-				"Yielding function '{{yieldingFunction}}' auto-closes all profiles - subsequent '{{closer}}' will error",
-			unexpectedCloser: "Unexpected call to '{{closer}}' - expected one of: {{expected}}",
-			unpairedCloser: "Unexpected call to '{{closer}}' - no matching opener on stack",
-			unpairedOpener: "Unpaired call to '{{opener}}' - missing '{{closer}}' on {{paths}}",
-			wrongOrder:
-				"Closer '{{closer}}' called out of order - expected to close '{{expected}}' but '{{actual}}' is still open",
-		},
+		messages,
 		schema: [
 			{
 				additionalProperties: false,
