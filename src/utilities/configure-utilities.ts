@@ -84,7 +84,7 @@ export function createNoInstanceMethodsOptions(
  * @returns The full options
  */
 export function createNoShorthandOptions(options: Partial<NoShorthandOptions> = {}): NoShorthandOptions {
-	return { allowPropertyAccess: [], shorthands: {}, ...options };
+	return { allowPropertyAccess: [], ignoreShorthands: [], shorthands: {}, ...options };
 }
 
 /**

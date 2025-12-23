@@ -196,7 +196,10 @@
 	},
 	"layout": "stretch",
 	"lsp": {
-		"eslint": { "disabled": true }
+		"eslint": {
+			"disabled": true,
+			"command": ["echo", "$FILE"]
+		}
 	},
 	"mcp": {
 		"codex-subagent": {
@@ -223,7 +226,7 @@
 		},
 		"uniprof": {
 			"command": ["bun", "x", "uniprof", "mcp", "run"],
-			"enabled": true,
+			"enabled": false,
 			"type": "local"
 		}
 	},

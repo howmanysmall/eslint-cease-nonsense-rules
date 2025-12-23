@@ -843,6 +843,7 @@ Bans shorthand variable names in favor of descriptive full names.
 - Matches shorthands within compound identifiers (e.g., `plrData` → `playerData`)
 - Supports glob patterns (`*`, `?`) for flexible matching
 - Supports regex patterns (`/pattern/flags`) for advanced matching
+- Automatically ignores import specifiers (external packages control their naming)
 
 **Default mappings**
 
@@ -858,14 +859,19 @@ Bans shorthand variable names in favor of descriptive full names.
   "cease-nonsense/no-shorthand-names": ["error", {
     "shorthands": {
       "plr": "player",
-      "args": "parameters",
-      "dt": "deltaTime",
-      "char": "character"
+      "*Props": "*Properties"
     },
-    "allowPropertyAccess": ["char"]  // Allow as property
+    "allowPropertyAccess": ["char", "Props"],  // Allow as property/qualified name
+    "ignoreShorthands": ["PropsWithoutRef"]    // Ignore completely
   }]
 }
 ```
+
+**Options**
+
+- `shorthands`: Map of shorthand patterns to replacements (exact, glob `*`/`?`, or regex `/pattern/flags`)
+- `allowPropertyAccess`: Words allowed in property access (`obj.prop`) or type qualified names (`React.Props`)
+- `ignoreShorthands`: Words to ignore completely, regardless of context (supports same pattern syntax)
 
 **Pattern syntax**
 
