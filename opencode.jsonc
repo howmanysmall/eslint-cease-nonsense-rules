@@ -195,7 +195,9 @@
 		"model_list": "ctrl+m"
 	},
 	"layout": "stretch",
-	"lsp": {},
+	"lsp": {
+		"eslint": { "disabled": true }
+	},
 	"mcp": {
 		"codex-subagent": {
 			"command": ["uvx", "codex-as-mcp@latest"],
