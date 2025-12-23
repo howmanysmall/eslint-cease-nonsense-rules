@@ -212,9 +212,7 @@ function isWordIgnored(
 	ignoreExact: ReadonlySet<string>,
 ): boolean {
 	if (ignoreExact.has(word)) return true;
-	for (const matcher of ignoreMatchers) {
-		if (matcher.pattern.test(word)) return true;
-	}
+	for (const matcher of ignoreMatchers) if (matcher.pattern.test(word)) return true;
 	return false;
 }
 
