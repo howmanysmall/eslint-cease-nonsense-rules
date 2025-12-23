@@ -130,7 +130,13 @@
 	"plugins": ["eslint", "import", "jsdoc", "node", "oxc", "promise", "typescript", "unicorn"],
 	"rules": {
 		"arrow-body-style": ["error", "as-needed"],
-		"curly": "off",
+		"curly": [
+			"off",
+			{
+				"consistent": false,
+				"curlyType": "multi",
+			},
+		],
 		"default-case": "off",
 		"eqeqeq": "error",
 		"eslint/max-lines-per-function": [

@@ -188,6 +188,76 @@ describe("no-shorthand-names", () => {
 				code: "const myButtonClick = () => {};",
 				options: [{ shorthands: { "*Btn*": "*Button*" } }],
 			},
+			// IgnoreShorthands - exact match
+			{
+				code: "const PropsWithoutRef = {};",
+				options: [{ ignoreShorthands: ["Props"], shorthands: { "*Props": "*Properties" } }],
+			},
+			// IgnoreShorthands - glob pattern
+			{
+				code: "const InstanceProps = {};",
+				options: [{ ignoreShorthands: ["*Props"], shorthands: { "*Props": "*Properties" } }],
+			},
+			// IgnoreShorthands - regex pattern
+			{
+				code: "const DataProps = {};",
+				options: [{ ignoreShorthands: ["/^.*Props$/"], shorthands: { "*Props": "*Properties" } }],
+			},
+			// IgnoreShorthands - full identifier name (external package exports)
+			{
+				code: "type X = InferProps<T>;",
+				options: [{ ignoreShorthands: ["InferProps"], shorthands: { "*Props": "*Properties" } }],
+			},
+			// IgnoreShorthands - full identifier name in type annotation
+			{
+				code: "const x: InstanceProps = {};",
+				options: [{ ignoreShorthands: ["InstanceProps"], shorthands: { "*Props": "*Properties" } }],
+			},
+			// IgnoreShorthands - full identifier name with generic
+			{
+				code: "type Config = ComponentProps<Button>;",
+				options: [{ ignoreShorthands: ["ComponentProps"], shorthands: { "*Props": "*Properties" } }],
+			},
+			// AllowPropertyAccess with TSQualifiedName (type-level)
+			{
+				code: "type X = React.PropsWithoutRef<P>;",
+				options: [{ allowPropertyAccess: ["PropsWithoutRef"], shorthands: { "*Props": "*Properties" } }],
+			},
+			// AllowPropertyAccess with matched word (not pattern key)
+			{
+				code: "const x = obj.InstanceProps;",
+				options: [{ allowPropertyAccess: ["InstanceProps"], shorthands: { "*Props": "*Properties" } }],
+			},
+			// AllowPropertyAccess with glob pattern matching word
+			{
+				code: "const x = container.DataProps;",
+				options: [{ allowPropertyAccess: ["DataProps"], shorthands: { "*Props": "*Properties" } }],
+			},
+			// Import specifiers - external packages shouldn't be flagged
+			{
+				code: 'import { InstanceProps } from "@rbxts/react";',
+				options: [{ shorthands: { "*Props": "*Properties" } }],
+			},
+			// Import type specifiers
+			{
+				code: 'import type { InstanceProps } from "@rbxts/react";',
+				options: [{ shorthands: { "*Props": "*Properties" } }],
+			},
+			// Default imports
+			{
+				code: 'import InstanceProps from "@rbxts/react";',
+				options: [{ shorthands: { "*Props": "*Properties" } }],
+			},
+			// Namespace imports
+			{
+				code: 'import * as Props from "@rbxts/react";',
+				options: [{ shorthands: { Props: "Properties" } }],
+			},
+			// Multiple import specifiers
+			{
+				code: 'import { InstanceProps, DataProps } from "@rbxts/react";',
+				options: [{ shorthands: { "*Props": "*Properties" } }],
+			},
 		],
 	});
 });

@@ -137,6 +137,7 @@ describe("configure-utilities", () => {
 			const configuration = createNoShorthandOptions();
 			expect(configuration).toEqual({
 				allowPropertyAccess: [],
+				ignoreShorthands: [],
 				shorthands: {},
 			});
 		});
@@ -145,6 +146,12 @@ describe("configure-utilities", () => {
 			expect.assertions(1);
 			const configuration = createNoShorthandOptions({ shorthands: { plr: "player" } });
 			expect(configuration.shorthands).toEqual({ plr: "player" });
+		});
+
+		it("should accept ignoreShorthands", () => {
+			expect.assertions(1);
+			const configuration = createNoShorthandOptions({ ignoreShorthands: ["Props", "*Ref"] });
+			expect(configuration.ignoreShorthands).toEqual(["Props", "*Ref"]);
 		});
 	});
 

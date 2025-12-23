@@ -6,12 +6,14 @@ import { Compile } from "typebox/compile";
 
 export interface NoShorthandOptions {
 	readonly allowPropertyAccess?: ReadonlyArray<string>;
+	readonly ignoreShorthands?: ReadonlyArray<string>;
 	readonly shorthands?: Record<string, string>;
 }
 
 const isRuleOptions = Compile(
 	Typebox.Object({
 		allowPropertyAccess: Typebox.Optional(Typebox.Array(Typebox.String())),
+		ignoreShorthands: Typebox.Optional(Typebox.Array(Typebox.String())),
 		shorthands: Typebox.Optional(Typebox.Record(Typebox.String(), Typebox.String())),
 	}),
 );
@@ -30,11 +32,14 @@ interface NormalizedOptions {
 	readonly matchers: ReadonlyArray<ShorthandMatcher>;
 	readonly exactMatchers: Map<string, string>;
 	readonly allowPropertyAccess: ReadonlySet<string>;
+	readonly ignoreMatchers: ReadonlyArray<ShorthandMatcher>;
+	readonly ignoreExact: ReadonlySet<string>;
 	readonly selector: string;
 }
 
 const DEFAULT_OPTIONS: Required<NoShorthandOptions> = {
 	allowPropertyAccess: ["char"],
+	ignoreShorthands: [],
 	shorthands: {
 		args: "parameters",
 		char: "character",
@@ -43,11 +48,11 @@ const DEFAULT_OPTIONS: Required<NoShorthandOptions> = {
 	},
 };
 
-// oxlint-disable-next-line prefer-string-raw
 const REGEX_PATTERN_MATCHER = regex("^/(?<first>.+)/(?<second>[gimsuy]*)$");
 
 interface ShorthandMatch {
 	readonly shorthand: string;
+	readonly matchedWord: string;
 	readonly replacement: string;
 }
 
@@ -62,6 +67,8 @@ interface ReplacementResult {
 // 3. Letter-Digit: (?<=[a-zA-Z])(?=\d)
 // 4. Digit-Letter: (?<=\d)(?=[a-zA-Z])
 const WORD_BOUNDARY_REGEX = /(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])/;
+// oxlint-disable-next-line no-template-curly-in-string
+const FUNT_PATTERN = regex("[.+^${}()|[\\]\\\\]", "g");
 
 function splitIdentifierIntoWords(identifier: string): ReadonlyArray<string> {
 	return identifier.split(WORD_BOUNDARY_REGEX);
@@ -88,7 +95,7 @@ function createMatcher(key: string, replacement: string): MatcherResult {
 
 	if (key.includes("*") || key.includes("?")) {
 		const regexPattern = key
-			.replaceAll(/[.+^${}()|[\]\\]/g, String.raw`\$&`)
+			.replaceAll(FUNT_PATTERN, String.raw`\$&`)
 			.replaceAll("*", "(.*)")
 			.replaceAll("?", "(.)");
 
@@ -121,6 +128,7 @@ function matchWord(
 	const exactReplacement = exactMatchers.get(word);
 	if (exactReplacement !== undefined) {
 		return {
+			matchedWord: word,
 			replacement: exactReplacement,
 			shorthand: word,
 		};
@@ -135,12 +143,25 @@ function matchWord(
 				replaced = replaced.replaceAll(new RegExp(`\\$${index}`, "g"), match[index] ?? "");
 			}
 			return {
+				matchedWord: word,
 				replacement: replaced,
 				shorthand: matcher.original,
 			};
 		}
 	}
 	return undefined;
+}
+
+function isWordIgnored(
+	word: string,
+	ignoreMatchers: ReadonlyArray<ShorthandMatcher>,
+	ignoreExact: ReadonlySet<string>,
+): boolean {
+	if (ignoreExact.has(word)) return true;
+	for (const matcher of ignoreMatchers) {
+		if (matcher.pattern.test(word)) return true;
+	}
+	return false;
 }
 
 function buildReplacementIdentifier(identifier: string, options: NormalizedOptions): ReplacementResult | undefined {
@@ -179,9 +200,21 @@ function normalizeOptions(rawOptions: NoShorthandOptions | undefined): Normalize
 
 	const allowPropertyAccessSource = rawOptions?.allowPropertyAccess ?? DEFAULT_OPTIONS.allowPropertyAccess;
 
+	// Process ignoreShorthands
+	const ignoreMatchers = new Array<ShorthandMatcher>();
+	const ignoreExact = new Set<string>();
+
+	for (const pattern of rawOptions?.ignoreShorthands ?? []) {
+		const result = createMatcher(pattern, "");
+		if (result.type === "exact") ignoreExact.add(result.original);
+		else ignoreMatchers.push(result.matcher);
+	}
+
 	return {
 		allowPropertyAccess: new Set(allowPropertyAccessSource),
 		exactMatchers,
+		ignoreExact,
+		ignoreMatchers,
 		matchers,
 		selector: "Identifier",
 	};
@@ -191,7 +224,7 @@ const noShorthandNames: Rule.RuleModule = {
 	create(context) {
 		const validatedOptions = isRuleOptions.Check(context.options[0]) ? context.options[0] : undefined;
 		const normalized = normalizeOptions(validatedOptions);
-		const { allowPropertyAccess, selector } = normalized;
+		const { allowPropertyAccess, ignoreMatchers, ignoreExact, selector } = normalized;
 
 		return {
 			[selector](node: Rule.Node & { name: string; parent?: unknown }) {
@@ -202,17 +235,46 @@ const noShorthandNames: Rule.RuleModule = {
 				const { replaced, matches } = result;
 				const { parent } = node;
 
-				const [match] = matches;
-				if (
-					matches.length === 1 &&
-					match !== undefined &&
-					allowPropertyAccess.has(match.shorthand) &&
-					parent !== undefined &&
-					isRecord(parent) &&
-					parent.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-					parent.property === node
-				) {
-					return;
+				// Skip import specifiers - user doesn't control external package naming
+				if (parent !== undefined && isRecord(parent)) {
+					const parentType = parent.type as string;
+					// Import { InstanceProps } or { InstanceProps as X } from "pkg"
+					if (parentType === "ImportSpecifier") {
+						return;
+					}
+					// Import InstanceProps from "pkg" (default import)
+					if (parentType === "ImportDefaultSpecifier") {
+						return;
+					}
+					// Import * as Props from "pkg" (namespace import)
+					if (parentType === "ImportNamespaceSpecifier") {
+						return;
+					}
+				}
+
+				// Check if full identifier name is ignored (for external package exports)
+				if (isWordIgnored(identifierName, ignoreMatchers, ignoreExact)) return;
+
+				// Check if ALL matched words are ignored
+				const allIgnored = matches.every((match) =>
+					isWordIgnored(match.matchedWord, ignoreMatchers, ignoreExact),
+				);
+				if (allIgnored) return;
+
+				// Check allowPropertyAccess in member/qualified name context
+				if (parent !== undefined && isRecord(parent)) {
+					const parentType = parent.type as string;
+					const isPropertyAccess =
+						(parentType === "MemberExpression" && parent.property === node) ||
+						(parentType === "TSQualifiedName" && parent.right === node);
+
+					if (isPropertyAccess) {
+						// Check full identifier name OR all matched words
+						const allWordsAllowed = matches.every((match) => allowPropertyAccess.has(match.matchedWord));
+						if (allowPropertyAccess.has(identifierName) || allWordsAllowed) {
+							return;
+						}
+					}
 				}
 
 				if (
@@ -265,7 +327,12 @@ const noShorthandNames: Rule.RuleModule = {
 				additionalProperties: false,
 				properties: {
 					allowPropertyAccess: {
-						description: "Shorthand names that are allowed as property access",
+						description: "Shorthand names allowed as property access or qualified names",
+						items: { type: "string" },
+						type: "array",
+					},
+					ignoreShorthands: {
+						description: "Shorthand patterns to ignore completely (supports exact, glob, regex)",
 						items: { type: "string" },
 						type: "array",
 					},
