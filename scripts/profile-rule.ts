@@ -24,7 +24,8 @@ import useHookAtTopLevel from "../src/rules/use-hook-at-top-level";
 const RULES_TO_PROFILE: Record<string, Rule.RuleModule> = {
 	"no-commented-code": noCommentedCode,
 	"no-shorthand-names": noShorthandNames,
-	"require-paired-calls": requirePairedCalls,
+	// @ts-expect-error -- Shut up
+	"require-paired-calls": requirePairedCalls as Rule.RuleModule,
 	"use-exhaustive-dependencies": useExhaustiveDependencies,
 	"use-hook-at-top-level": useHookAtTopLevel,
 };

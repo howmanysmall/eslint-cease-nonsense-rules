@@ -838,13 +838,19 @@ const doubled = items.map((x) => x * 2);
 
 Bans shorthand variable names in favor of descriptive full names.
 
+**Features**
+
+- Matches shorthands within compound identifiers (e.g., `plrData` → `playerData`)
+- Supports glob patterns (`*`, `?`) for flexible matching
+- Supports regex patterns (`/pattern/flags`) for advanced matching
+- Automatically ignores import specifiers (external packages control their naming)
+
 **Default mappings**
 
 - `plr` → `player` (or `localPlayer` for `Players.LocalPlayer`)
 - `args` → `parameters`
 - `dt` → `deltaTime`
 - `char` → `character`
-- `btn` → `button`
 
 **Configuration**
 
@@ -853,15 +859,51 @@ Bans shorthand variable names in favor of descriptive full names.
   "cease-nonsense/no-shorthand-names": ["error", {
     "shorthands": {
       "plr": "player",
-      "args": "parameters",
-      "dt": "deltaTime",
-      "char": "character",
-      "btn": "button"
+      "*Props": "*Properties"
     },
-    "allowPropertyAccess": ["char"]  // Allow as property
+    "allowPropertyAccess": ["char", "Props"],  // Allow as property/qualified name
+    "ignoreShorthands": ["PropsWithoutRef"]    // Ignore completely
   }]
 }
 ```
+
+**Options**
+
+- `shorthands`: Map of shorthand patterns to replacements (exact, glob `*`/`?`, or regex `/pattern/flags`)
+- `allowPropertyAccess`: Words allowed in property access (`obj.prop`) or type qualified names (`React.Props`)
+- `ignoreShorthands`: Words to ignore completely, regardless of context (supports same pattern syntax)
+
+**Pattern syntax**
+
+Glob patterns use `*` (any characters) and `?` (single character):
+
+```typescript
+{
+  "shorthands": {
+    "str*": "string*",         // strValue → stringValue
+    "*Props": "*Properties",   // DataProps → DataProperties
+    "*Btn*": "*Button*"        // myBtnClick → myButtonClick
+  }
+}
+```
+
+Regex patterns use `/pattern/flags` syntax:
+
+```typescript
+{
+  "shorthands": {
+    "/^str(.*)$/": "string$1",  // strName → stringName
+    "/^props$/i": "properties"  // Props or props → properties
+  }
+}
+```
+
+**Compound identifier matching**
+
+Identifiers are split at camelCase/PascalCase boundaries, and each word is checked independently:
+
+- `propsData` with `{ "props": "properties" }` → `propertiesData`
+- `UnitBoxBadgeInfoProps` with `{ "Props": "Properties" }` → `UnitBoxBadgeInfoProperties`
 
 **❌ Bad**
 

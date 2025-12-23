@@ -195,7 +195,12 @@
 		"model_list": "ctrl+m"
 	},
 	"layout": "stretch",
-	"lsp": {},
+	"lsp": {
+		"eslint": {
+			"disabled": true,
+			"command": ["echo", "$FILE"]
+		}
+	},
 	"mcp": {
 		"codex-subagent": {
 			"command": ["uvx", "codex-as-mcp@latest"],
@@ -221,7 +226,7 @@
 		},
 		"uniprof": {
 			"command": ["bun", "x", "uniprof", "mcp", "run"],
-			"enabled": true,
+			"enabled": false,
 			"type": "local"
 		}
 	},

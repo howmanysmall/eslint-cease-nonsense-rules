@@ -289,8 +289,9 @@ function isStableValue(
 
 		if (type === "Variable" && node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator) {
 			const { parent } = node as TSESTree.VariableDeclarator;
-			if (!parent || parent.type !== TSESTree.AST_NODE_TYPES.VariableDeclaration || parent.kind !== "const")
+			if (!parent || parent.type !== TSESTree.AST_NODE_TYPES.VariableDeclaration || parent.kind !== "const") {
 				continue;
+			}
 
 			const init = node.init as TSESTree.Expression | Rule.Node | undefined | null;
 			if (init && isStableHookValue(init, node, identifierName, stableHooks)) return true;
