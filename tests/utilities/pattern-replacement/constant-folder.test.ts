@@ -20,7 +20,7 @@ describe("normalizeZero", () => {
 
 describe("evaluateConstant", () => {
 	it("should return undefined for non-constant expressions", () => {
-		const identifier = { type: "Identifier", name: "foo" };
+		const identifier = { name: "foo", type: "Identifier" };
 		expect(evaluateConstant(identifier as never)).toBeUndefined();
 	});
 
@@ -31,36 +31,36 @@ describe("evaluateConstant", () => {
 
 	it("should evaluate negative literals", () => {
 		const negLiteral = {
-			type: "UnaryExpression",
-			operator: "-",
 			argument: { type: "Literal", value: 5 },
+			operator: "-",
+			type: "UnaryExpression",
 		};
 		expect(evaluateConstant(negLiteral as never)).toBe(-5);
 	});
 
 	it("should evaluate positive unary operator", () => {
 		const posLiteral = {
-			type: "UnaryExpression",
-			operator: "+",
 			argument: { type: "Literal", value: 5 },
+			operator: "+",
+			type: "UnaryExpression",
 		};
 		expect(evaluateConstant(posLiteral as never)).toBe(5);
 	});
 
 	it("should reject unsupported unary operators", () => {
 		const notExpr = {
-			type: "UnaryExpression",
-			operator: "!",
 			argument: { type: "Literal", value: 5 },
+			operator: "!",
+			type: "UnaryExpression",
 		};
 		expect(evaluateConstant(notExpr as never)).toBeUndefined();
 	});
 
 	it("should normalize -0 in literals", () => {
 		const negZero = {
-			type: "UnaryExpression",
-			operator: "-",
 			argument: { type: "Literal", value: 0 },
+			operator: "-",
+			type: "UnaryExpression",
 		};
 		expect(evaluateConstant(negZero as never)).toBe(0);
 		expect(Object.is(evaluateConstant(negZero as never), -0)).toBe(false);
@@ -68,86 +68,86 @@ describe("evaluateConstant", () => {
 
 	it("should evaluate binary addition", () => {
 		const add = {
-			type: "BinaryExpression",
-			operator: "+",
 			left: { type: "Literal", value: 1 },
+			operator: "+",
 			right: { type: "Literal", value: 2 },
+			type: "BinaryExpression",
 		};
 		expect(evaluateConstant(add as never)).toBe(3);
 	});
 
 	it("should evaluate binary subtraction", () => {
 		const sub = {
-			type: "BinaryExpression",
-			operator: "-",
 			left: { type: "Literal", value: 5 },
+			operator: "-",
 			right: { type: "Literal", value: 3 },
+			type: "BinaryExpression",
 		};
 		expect(evaluateConstant(sub as never)).toBe(2);
 	});
 
 	it("should evaluate binary multiplication", () => {
 		const mul = {
-			type: "BinaryExpression",
-			operator: "*",
 			left: { type: "Literal", value: 4 },
+			operator: "*",
 			right: { type: "Literal", value: 3 },
+			type: "BinaryExpression",
 		};
 		expect(evaluateConstant(mul as never)).toBe(12);
 	});
 
 	it("should evaluate binary division", () => {
 		const div = {
-			type: "BinaryExpression",
-			operator: "/",
 			left: { type: "Literal", value: 10 },
+			operator: "/",
 			right: { type: "Literal", value: 2 },
+			type: "BinaryExpression",
 		};
 		expect(evaluateConstant(div as never)).toBe(5);
 	});
 
 	it("should reject unsupported binary operators", () => {
 		const mod = {
-			type: "BinaryExpression",
-			operator: "%",
 			left: { type: "Literal", value: 10 },
+			operator: "%",
 			right: { type: "Literal", value: 3 },
+			type: "BinaryExpression",
 		};
 		expect(evaluateConstant(mod as never)).toBeUndefined();
 	});
 
 	it("should reject NaN results", () => {
 		const divZero = {
-			type: "BinaryExpression",
-			operator: "/",
 			left: { type: "Literal", value: 0 },
+			operator: "/",
 			right: { type: "Literal", value: 0 },
+			type: "BinaryExpression",
 		};
 		expect(evaluateConstant(divZero as never)).toBeUndefined();
 	});
 
 	it("should reject Infinity results", () => {
 		const divByZero = {
-			type: "BinaryExpression",
-			operator: "/",
 			left: { type: "Literal", value: 1 },
+			operator: "/",
 			right: { type: "Literal", value: 0 },
+			type: "BinaryExpression",
 		};
 		expect(evaluateConstant(divByZero as never)).toBeUndefined();
 	});
 
 	it("should unwrap TSAsExpression", () => {
 		const asExpr = {
-			type: "TSAsExpression",
 			expression: { type: "Literal", value: 42 },
+			type: "TSAsExpression",
 		};
 		expect(evaluateConstant(asExpr as never)).toBe(42);
 	});
 
 	it("should unwrap TSNonNullExpression", () => {
 		const nonNull = {
-			type: "TSNonNullExpression",
 			expression: { type: "Literal", value: 42 },
+			type: "TSNonNullExpression",
 		};
 		expect(evaluateConstant(nonNull as never)).toBe(42);
 	});

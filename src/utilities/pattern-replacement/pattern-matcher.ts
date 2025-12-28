@@ -1,8 +1,10 @@
-import { AST_NODE_TYPES } from "@typescript-eslint/types";
+// oxlint-disable prefer-string-raw
 import type { TSESTree } from "@typescript-eslint/types";
+import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import type { SourceCode } from "@typescript-eslint/utils/ts-eslint";
+import { regex } from "arkregex";
 import { evaluateConstant, normalizeZero, unwrap } from "./constant-folder";
-import type { CapturedValue, ParsedArg, ParsedPattern, WhenCondition } from "./pattern-types";
+import type { CapturedValue, ParsedParameter, ParsedPattern, WhenCondition } from "./pattern-types";
 
 export type PatternIndex = ReadonlyMap<string, ReadonlyArray<ParsedPattern>>;
 
@@ -27,11 +29,8 @@ export function buildPatternIndex(patterns: ReadonlyArray<ParsedPattern>): Patte
 				: `staticMethod:${pattern.typeName}:${pattern.methodName}`;
 
 		const existing = index.get(key);
-		if (existing) {
-			existing.push(pattern);
-		} else {
-			index.set(key, [pattern]);
-		}
+		if (existing) existing.push(pattern);
+		else index.set(key, [pattern]);
 	}
 
 	return index;
@@ -51,16 +50,15 @@ export function resolveCallee(node: TSESTree.CallExpression | TSESTree.NewExpres
 	}
 
 	if (node.type === AST_NODE_TYPES.CallExpression) {
-		// Handle optional chaining: Type?.method()
 		const member = callee.type === AST_NODE_TYPES.ChainExpression ? unwrap(callee.expression) : callee;
 
 		if (member.type === AST_NODE_TYPES.MemberExpression && !member.computed) {
-			const obj = unwrap(member.object);
-			if (obj.type === AST_NODE_TYPES.Identifier && member.property.type === AST_NODE_TYPES.Identifier) {
+			const object = unwrap(member.object);
+			if (object.type === AST_NODE_TYPES.Identifier && member.property.type === AST_NODE_TYPES.Identifier) {
 				return {
 					kind: "staticMethod",
 					methodName: member.property.name,
-					typeName: obj.name,
+					typeName: object.name,
 				};
 			}
 		}
@@ -76,99 +74,85 @@ export function resolveCallee(node: TSESTree.CallExpression | TSESTree.NewExpres
  * @param sourceCode - ESLint source code object
  * @returns Captured value with metadata
  */
-export function captureArg(node: TSESTree.Expression, sourceCode: SourceCode): CapturedValue {
-	const expr = unwrap(node);
-	const sourceText = sourceCode.getText(expr);
-	const constValue = evaluateConstant(expr);
+export function captureParameter(node: TSESTree.Expression, sourceCode: SourceCode): CapturedValue {
+	const expression = unwrap(node);
+	const sourceText = sourceCode.getText(expression);
+	const constValue = evaluateConstant(expression);
 
-	let exprKey: string;
+	let expressionKey: string;
 	let isComplex = false;
 
-	if (expr.type === AST_NODE_TYPES.Literal && typeof expr.value === "number") {
-		exprKey = `literal:${normalizeZero(expr.value)}`;
-	} else if (expr.type === AST_NODE_TYPES.Identifier) {
-		if (expr.name === "undefined") {
-			exprKey = "undefined";
-		} else {
-			exprKey = `id:${expr.name}`;
-		}
+	if (expression.type === AST_NODE_TYPES.Literal && typeof expression.value === "number") {
+		expressionKey = `literal:${normalizeZero(expression.value)}`;
+	} else if (expression.type === AST_NODE_TYPES.Identifier) {
+		if (expression.name === "undefined") expressionKey = "undefined";
+		else expressionKey = `id:${expression.name}`;
 	} else if (constValue === undefined) {
-		exprKey = `complex:${sourceText}`;
+		expressionKey = `complex:${sourceText}`;
 		isComplex = true;
-	} else {
-		exprKey = `const:${constValue}`;
-	}
+	} else expressionKey = `const:${constValue}`;
 
-	if (constValue === undefined) {
-		return { exprKey, isComplex, node: expr, sourceText };
-	}
+	if (constValue === undefined) return { expressionKey: expressionKey, isComplex, node: expression, sourceText };
 
-	return { constValue, exprKey, isComplex, node: expr, sourceText };
+	return { constValue, expressionKey: expressionKey, isComplex, node: expression, sourceText };
 }
 
 /**
  * Match arguments against a pattern
  *
- * @param pattern - Pattern arguments to match against
- * @param args - Actual expression arguments
+ * @param patterns - Pattern arguments to match against
+ * @param parameters - Actual expression arguments
  * @param sourceCode - ESLint source code object
  * @returns Map of captures if match succeeds, undefined otherwise
  */
-export function matchArgs(
-	pattern: ReadonlyArray<ParsedArg>,
-	args: ReadonlyArray<TSESTree.Expression>,
+export function matchParameters(
+	patterns: ReadonlyArray<ParsedParameter>,
+	parameters: ReadonlyArray<TSESTree.Expression>,
 	sourceCode: SourceCode,
 ): Map<string, CapturedValue> | undefined {
 	const captures = new Map<string, CapturedValue>();
 
-	const optionalStart = pattern.findIndex((parsedArg) => parsedArg.kind === "optional");
-	const minArgs = optionalStart === -1 ? pattern.length : optionalStart;
+	const optionalStart = patterns.findIndex((parsedArg) => parsedArg.kind === "optional");
+	const minimumParameters = optionalStart === -1 ? patterns.length : optionalStart;
 
-	if (args.length < minArgs || args.length > pattern.length) {
-		return undefined;
-	}
+	if (parameters.length < minimumParameters || parameters.length > patterns.length) return undefined;
 
-	for (let index = 0; index < pattern.length; index++) {
-		const pat = pattern[index];
-		if (pat === undefined) continue;
-		const arg = args[index];
+	for (let index = 0; index < patterns.length; index += 1) {
+		const pattern = patterns[index];
+		if (pattern === undefined) continue;
+		const parameter = parameters[index];
 
-		const unwrappedArg = arg === undefined ? undefined : unwrap(arg);
+		const unwrappedParameter = parameter === undefined ? undefined : unwrap(parameter);
 		const isMissing =
-			arg === undefined ||
-			(unwrappedArg?.type === AST_NODE_TYPES.Identifier && unwrappedArg.name === "undefined");
+			parameter === undefined ||
+			(unwrappedParameter?.type === AST_NODE_TYPES.Identifier && unwrappedParameter.name === "undefined");
 
-		if (pat.kind === "literal") {
+		if (pattern.kind === "literal") {
 			if (isMissing) return undefined;
-			const captured = captureArg(arg, sourceCode);
-			if (captured.constValue !== pat.value) return undefined;
-		} else if (pat.kind === "optional") {
+			const captured = captureParameter(parameter, sourceCode);
+			if (captured.constValue !== pattern.value) return undefined;
+		} else if (pattern.kind === "optional") {
 			if (isMissing) continue;
-			const captured = captureArg(arg, sourceCode);
-			if (captured.constValue !== pat.value) return undefined;
-		} else if (pat.kind === "capture") {
+			const captured = captureParameter(parameter, sourceCode);
+			if (captured.constValue !== pattern.value) return undefined;
+		} else if (pattern.kind === "capture") {
 			if (isMissing) return undefined;
-			const captured = captureArg(arg, sourceCode);
-			const captureName: string = pat.name;
+			const captured = captureParameter(parameter, sourceCode);
+			const captureName: string = pattern.name;
 			const existing = captures.get(captureName);
-			if (existing !== undefined && existing.exprKey !== captured.exprKey) {
-				return undefined;
-			}
+			if (existing !== undefined && existing.expressionKey !== captured.expressionKey) return undefined;
 			captures.set(captureName, captured);
-		} else if (pat.kind === "wildcard" && isMissing) {
-			return undefined;
-		}
+		} else if (pattern.kind === "wildcard" && isMissing) return undefined;
 	}
 
 	return captures;
 }
 
-const CONDITION_PATTERN = /^([!<>=]+)\s*(.+)$/;
+const CONDITION_PATTERN = regex("^(?<operator>[!<>=]+)\\s*(?<target>.+)$");
 
 function parseCondition(condition: WhenCondition): [string, string] {
-	const match = condition.match(CONDITION_PATTERN);
-	if (!(match?.[1] && match[2])) return ["==", "0"];
-	return [match[1], match[2]];
+	const match = CONDITION_PATTERN.exec(condition);
+	return match ? [match.groups.operator, match.groups.target] : ["==", "0"];
 }
 
 /**
@@ -187,30 +171,36 @@ export function evaluateConditions(
 		if (captured?.constValue === undefined) return false;
 
 		const value = captured.constValue;
-		const [op, targetStr] = parseCondition(condition);
+		const [operator, targetStr] = parseCondition(condition);
 		const target = Number.parseFloat(targetStr);
 		if (!Number.isFinite(target)) return false;
 
 		let passes: boolean;
-		switch (op) {
+		switch (operator) {
 			case "!=":
 				passes = value !== target;
 				break;
+
 			case "==":
 				passes = value === target;
 				break;
+
 			case ">":
 				passes = value > target;
 				break;
+
 			case "<":
 				passes = value < target;
 				break;
+
 			case ">=":
 				passes = value >= target;
 				break;
+
 			case "<=":
 				passes = value <= target;
 				break;
+
 			default:
 				passes = false;
 		}
@@ -227,8 +217,6 @@ export function evaluateConditions(
  * @returns True if all captures are simple (not complex expressions)
  */
 export function canSafelySubstitute(captures: ReadonlyMap<string, CapturedValue>): boolean {
-	for (const captured of captures.values()) {
-		if (captured.isComplex) return false;
-	}
+	for (const [, captured] of captures) if (captured.isComplex) return false;
 	return true;
 }

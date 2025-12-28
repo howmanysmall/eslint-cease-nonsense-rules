@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import type { TSESTree } from "@typescript-eslint/types";
+import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import { generateReplacement, getReplacementIdentifier } from "../../src/utilities/pattern-replacement";
 import type { CapturedValue, ParsedReplacement } from "../../src/utilities/pattern-replacement/pattern-types";
 
@@ -16,9 +16,9 @@ describe("pattern-replacement utilities", () => {
 
 		it("should return function name for call replacement", () => {
 			const replacement: ParsedReplacement = {
-				args: [],
 				kind: "call",
 				name: "fromX",
+				parameters: [],
 			};
 			expect(getReplacementIdentifier(replacement)).toBe("fromX");
 		});
@@ -26,7 +26,7 @@ describe("pattern-replacement utilities", () => {
 		it("should return undefined for static access replacement", () => {
 			const replacement: ParsedReplacement = {
 				kind: "staticAccess",
-				prop: "zero",
+				property: "zero",
 				typeName: "Vector2",
 			};
 			expect(getReplacementIdentifier(replacement)).toBeUndefined();
@@ -46,7 +46,7 @@ describe("pattern-replacement utilities", () => {
 		it("should generate static access replacement", () => {
 			const replacement: ParsedReplacement = {
 				kind: "staticAccess",
-				prop: "zero",
+				property: "zero",
 				typeName: "Vector2",
 			};
 			const captures = new Map<string, CapturedValue>();
@@ -55,9 +55,9 @@ describe("pattern-replacement utilities", () => {
 
 		it("should generate call replacement with literal args", () => {
 			const replacement: ParsedReplacement = {
-				args: ["1", "2"],
 				kind: "call",
 				name: "fromValues",
+				parameters: ["1", "2"],
 			};
 			const captures = new Map<string, CapturedValue>();
 			expect(generateReplacement(replacement, captures)).toBe("fromValues(1, 2)");
@@ -65,9 +65,9 @@ describe("pattern-replacement utilities", () => {
 
 		it("should generate call replacement with captured args", () => {
 			const replacement: ParsedReplacement = {
-				args: ["$x", "$y"],
 				kind: "call",
 				name: "fromValues",
+				parameters: ["$x", "$y"],
 			};
 			const mockNode: TSESTree.Literal = {
 				loc: {
@@ -79,17 +79,20 @@ describe("pattern-replacement utilities", () => {
 				value: 5,
 			};
 			const captures = new Map<string, CapturedValue>([
-				["x", { constValue: 5, exprKey: "literal:5", isComplex: false, node: mockNode, sourceText: "5" }],
-				["y", { constValue: 10, exprKey: "literal:10", isComplex: false, node: mockNode, sourceText: "10" }],
+				["x", { constValue: 5, expressionKey: "literal:5", isComplex: false, node: mockNode, sourceText: "5" }],
+				[
+					"y",
+					{ constValue: 10, expressionKey: "literal:10", isComplex: false, node: mockNode, sourceText: "10" },
+				],
 			]);
 			expect(generateReplacement(replacement, captures)).toBe("fromValues(5, 10)");
 		});
 
 		it("should throw error for missing capture", () => {
 			const replacement: ParsedReplacement = {
-				args: ["$x"],
 				kind: "call",
 				name: "fromX",
+				parameters: ["$x"],
 			};
 			const captures = new Map<string, CapturedValue>();
 			expect(() => generateReplacement(replacement, captures)).toThrow("Missing capture: x");

@@ -10,8 +10,10 @@ export function getReplacementIdentifier(replacement: ParsedReplacement): string
 	switch (replacement.kind) {
 		case "identifier":
 			return replacement.name;
+
 		case "call":
 			return replacement.name;
+
 		case "staticAccess":
 			return undefined;
 	}
@@ -33,21 +35,19 @@ export function generateReplacement(
 			return replacement.name;
 
 		case "staticAccess":
-			return `${replacement.typeName}.${replacement.prop}`;
+			return `${replacement.typeName}.${replacement.property}`;
 
 		case "call": {
-			const args = replacement.args.map((arg) => {
-				if (arg.startsWith("$")) {
-					const captureName = arg.slice(1);
+			const parameters = replacement.parameters.map((argument) => {
+				if (argument.startsWith("$")) {
+					const captureName = argument.slice(1);
 					const captured = captures.get(captureName);
-					if (captured === undefined) {
-						throw new Error(`Missing capture: ${captureName}`);
-					}
+					if (captured === undefined) throw new Error(`Missing capture: ${captureName}`);
 					return captured.sourceText;
 				}
-				return arg;
+				return argument;
 			});
-			return `${replacement.name}(${args.join(", ")})`;
+			return `${replacement.name}(${parameters.join(", ")})`;
 		}
 
 		default:

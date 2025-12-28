@@ -22,6 +22,7 @@ export function unwrap(node: TSESTree.Expression): TSESTree.Expression {
 		case AST_NODE_TYPES.TSAsExpression:
 		case AST_NODE_TYPES.TSNonNullExpression:
 			return unwrap(node.expression);
+
 		default:
 			return node;
 	}
@@ -35,58 +36,58 @@ export function unwrap(node: TSESTree.Expression): TSESTree.Expression {
  * @returns The evaluated constant number, or undefined if not a constant
  */
 export function evaluateConstant(node: TSESTree.Expression): number | undefined {
-	const expr = unwrap(node);
+	const expression = unwrap(node);
 
-	// Numeric literal
-	if (expr.type === AST_NODE_TYPES.Literal && typeof expr.value === "number") {
-		return normalizeZero(expr.value);
+	if (expression.type === AST_NODE_TYPES.Literal && typeof expression.value === "number") {
+		return normalizeZero(expression.value);
 	}
 
-	// Unary expression (-x, +x)
-	if (expr.type === AST_NODE_TYPES.UnaryExpression) {
-		const arg = evaluateConstant(expr.argument);
-		if (arg === undefined) return undefined;
+	if (expression.type === AST_NODE_TYPES.UnaryExpression) {
+		const argument = evaluateConstant(expression.argument);
+		if (argument === undefined) return undefined;
 
-		switch (expr.operator) {
+		switch (expression.operator) {
 			case "-":
-				return normalizeZero(-arg);
+				return normalizeZero(-argument);
+
 			case "+":
-				return normalizeZero(Number(arg));
+				return normalizeZero(Number(argument));
+
 			default:
 				return undefined;
 		}
 	}
 
-	// Binary expression (a + b, a - b, a * b, a / b)
-	if (expr.type === AST_NODE_TYPES.BinaryExpression) {
-		// Private identifiers cannot be evaluated as constants
-		if (expr.left.type === AST_NODE_TYPES.PrivateIdentifier) return undefined;
+	if (expression.type === AST_NODE_TYPES.BinaryExpression) {
+		if (expression.left.type === AST_NODE_TYPES.PrivateIdentifier) return undefined;
 
-		const left = evaluateConstant(expr.left);
-		const right = evaluateConstant(expr.right);
+		const left = evaluateConstant(expression.left);
+		const right = evaluateConstant(expression.right);
 		if (left === undefined || right === undefined) return undefined;
 
 		let result: number;
-		switch (expr.operator) {
+		switch (expression.operator) {
 			case "+":
 				result = left + right;
 				break;
+
 			case "-":
 				result = left - right;
 				break;
+
 			case "*":
 				result = left * right;
 				break;
+
 			case "/":
 				result = left / right;
 				break;
+
 			default:
 				return undefined;
 		}
 
-		// Reject non-finite results (NaN, Infinity, -Infinity)
-		if (!Number.isFinite(result)) return undefined;
-		return normalizeZero(result);
+		return Number.isFinite(result) ? normalizeZero(result) : undefined;
 	}
 
 	return undefined;

@@ -2,7 +2,7 @@ import type { TSESTree } from "@typescript-eslint/types";
 import type { TSESLint } from "@typescript-eslint/utils";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
-
+import type { ParsedPattern, Pattern, PatternIndex } from "../utilities/pattern-replacement";
 import {
 	buildPatternIndex,
 	canSafelySubstitute,
@@ -13,7 +13,6 @@ import {
 	parsePattern,
 	resolveCallee,
 } from "../utilities/pattern-replacement";
-import type { ParsedPattern, Pattern, PatternIndex } from "../utilities/pattern-replacement";
 
 export interface PreferPatternReplacementsOptions {
 	readonly patterns: ReadonlyArray<Pattern>;
@@ -41,9 +40,7 @@ function parsePatterns(patterns: ReadonlyArray<Pattern>): ReadonlyArray<ParsedPa
 const preferPatternReplacements: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRecommended> = {
 	create(context) {
 		const validatedOptions = isRuleOptions.Check(context.options[0]) ? context.options[0] : undefined;
-		if (!validatedOptions || validatedOptions.patterns.length === 0) {
-			return {};
-		}
+		if (!validatedOptions || validatedOptions.patterns.length === 0) return {};
 
 		const parsedPatterns = parsePatterns(validatedOptions.patterns as ReadonlyArray<Pattern>);
 		const patternIndex: PatternIndex = buildPatternIndex(parsedPatterns);
@@ -72,15 +69,13 @@ const preferPatternReplacements: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 
 			for (const pattern of candidates) {
 				const captures = matchArgs(
-					pattern.args,
+					pattern.parameters,
 					node.arguments as ReadonlyArray<TSESTree.Expression>,
 					sourceCode,
 				);
-				if (!captures) continue;
-
-				if (!evaluateConditions(pattern.conditions, captures)) continue;
-
-				if (!canSafelySubstitute(captures)) continue;
+				if (!(captures && evaluateConditions(pattern.conditions, captures) && canSafelySubstitute(captures))) {
+					continue;
+				}
 
 				const replacementId = getReplacementIdentifier(pattern.replacement);
 				if (replacementId && hasNameConflict(node, replacementId)) continue;

@@ -43,8 +43,6 @@ export type { EffectFunctionOptions, EnvironmentMode, HookConfiguration } from "
 export type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
 export type { ReactKeysOptions } from "./rules/require-react-component-keys";
 export type { HookEntry, UseExhaustiveDependenciesOptions } from "./rules/use-exhaustive-dependencies";
-export type { Pattern, PreferPatternReplacementsOptions } from "./utilities/pattern-replacement";
-export { pattern } from "./utilities/pattern-replacement";
 export {
 	createBanInstancesOptions,
 	createComplexityConfiguration,
@@ -62,6 +60,8 @@ export {
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
 } from "./utilities/configure-utilities";
+export type { Pattern, PreferPatternReplacementsOptions } from "./utilities/pattern-replacement";
+export { pattern } from "./utilities/pattern-replacement";
 
 /**
  * ESLint plugin entry for eslint-cease-nonsense-rules.
