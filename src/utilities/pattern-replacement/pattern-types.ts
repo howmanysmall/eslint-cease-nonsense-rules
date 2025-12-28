@@ -50,12 +50,12 @@ export interface Pattern<Match extends string = string> {
 	readonly when?: { readonly [Key in ExtractCaptures<Match>]?: WhenCondition };
 }
 
-// Input type for pattern() helper (without brand)
-export interface PatternInput<Match extends string> {
-	readonly match: Match;
-	readonly replacement: string;
-	readonly when?: { readonly [Key in ExtractCaptures<Match>]?: WhenCondition };
-}
+// // Input type for pattern() helper (without brand)
+// Export interface PatternInput<Match extends string> {
+// 	Readonly match: Match;
+// 	Readonly replacement: string;
+// 	Readonly when?: { readonly [Key in ExtractCaptures<Match>]?: WhenCondition };
+// }
 
 // The ONLY way to create a valid Pattern
 export function pattern<const Match extends string, const WhenClause extends object = object>(configuration: {
@@ -102,12 +102,4 @@ export interface CapturedValue {
 	readonly isComplex: boolean;
 	readonly node: TSESTree.Expression;
 	readonly sourceText: string;
-}
-
-// Match result
-export interface MatchResult {
-	readonly captures: ReadonlyMap<string, CapturedValue>;
-	readonly originalText: string;
-	readonly pattern: ParsedPattern;
-	readonly replacementText: string;
 }
