@@ -10,6 +10,7 @@ import type { PairConfiguration, RequirePairedCallsOptions } from "../rules/requ
 import type { ReactKeysOptions } from "../rules/require-react-component-keys";
 import type { UseExhaustiveDependenciesOptions } from "../rules/use-exhaustive-dependencies";
 import type { UseHookAtTopLevelOptions } from "../rules/use-hook-at-top-level";
+import type { Pattern, PreferPatternReplacementsOptions } from "./pattern-replacement";
 
 /**
  * Creates a pair configuration for require-paired-calls rule
@@ -206,4 +207,15 @@ export function createNoUselessUseSpringOptions(
 		treatEmptyDepsAsViolation: true,
 		...options,
 	};
+}
+
+/**
+ * Creates options for prefer-pattern-replacements rule
+ * @param patterns - Array of pattern configurations
+ * @returns The full options
+ */
+export function createPreferPatternReplacementsOptions(
+	patterns: ReadonlyArray<Pattern> = [],
+): PreferPatternReplacementsOptions {
+	return { patterns };
 }
