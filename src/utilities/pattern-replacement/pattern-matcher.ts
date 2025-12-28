@@ -8,7 +8,7 @@ import type { CapturedValue, ParsedParameter, ParsedPattern, WhenCondition } fro
 
 export type PatternIndex = ReadonlyMap<string, ReadonlyArray<ParsedPattern>>;
 
-export type ResolvedCallee =
+type ResolvedCallee =
 	| { readonly kind: "constructor"; readonly typeName: string }
 	| { readonly kind: "staticMethod"; readonly typeName: string; readonly methodName: string }
 	| { readonly kind: "unknown" };

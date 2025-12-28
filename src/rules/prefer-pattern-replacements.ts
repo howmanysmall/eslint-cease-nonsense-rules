@@ -9,12 +9,12 @@ import {
 	evaluateConditions,
 	generateReplacement,
 	getReplacementIdentifier,
-	matchArgs,
+	matchParameters,
 	parsePattern,
 	resolveCallee,
 } from "../utilities/pattern-replacement";
 
-export interface PreferPatternReplacementsOptions {
+interface PreferPatternReplacementsOptions {
 	readonly patterns: ReadonlyArray<Pattern>;
 }
 
@@ -68,7 +68,7 @@ const preferPatternReplacements: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 			if (!candidates || candidates.length === 0) return;
 
 			for (const pattern of candidates) {
-				const captures = matchArgs(
+				const captures = matchParameters(
 					pattern.parameters,
 					node.arguments as ReadonlyArray<TSESTree.Expression>,
 					sourceCode,
