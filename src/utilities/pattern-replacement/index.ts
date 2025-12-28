@@ -1,24 +1,19 @@
 export { evaluateConstant, normalizeZero, unwrap } from "./constant-folder";
-
-export { parseArgs, parsePattern, parseReplacement } from "./pattern-parser";
+export type { PatternIndex, ResolvedCallee } from "./pattern-matcher";
 
 export {
 	buildPatternIndex,
 	canSafelySubstitute,
-	captureArg,
+	captureParameter as captureArg,
 	evaluateConditions,
-	matchArgs,
+	matchParameters as matchArgs,
 	resolveCallee,
 } from "./pattern-matcher";
-export type { PatternIndex, ResolvedCallee } from "./pattern-matcher";
-
-export { generateReplacement, getReplacementIdentifier } from "./replacement-generator";
-
-export { pattern } from "./pattern-types";
+export { parseParameters as parseArgs, parsePattern, parseReplacement } from "./pattern-parser";
 export type {
 	CapturedValue,
 	MatchResult,
-	ParsedArg,
+	ParsedParameter as ParsedArg,
 	ParsedPattern,
 	ParsedReplacement,
 	Pattern,
@@ -26,3 +21,6 @@ export type {
 	PreferPatternReplacementsOptions,
 	WhenCondition,
 } from "./pattern-types";
+
+export { pattern } from "./pattern-types";
+export { generateReplacement, getReplacementIdentifier } from "./replacement-generator";

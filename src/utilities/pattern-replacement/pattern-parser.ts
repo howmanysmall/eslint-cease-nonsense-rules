@@ -1,33 +1,35 @@
-import type { ParsedArg, ParsedPattern, ParsedReplacement, WhenCondition } from "./pattern-types";
+// oxlint-disable prefer-string-raw
 
-const CONSTRUCTOR_PATTERN = /^new\s+(\w+)\((.*)\)$/;
-const STATIC_METHOD_PATTERN = /^(\w+)\.(\w+)\((.*)\)$/;
-const STATIC_ACCESS_PATTERN = /^(\w+)\.(\w+)$/;
-const CALL_PATTERN = /^(\w+)\((.*)\)$/;
+import { regex } from "arkregex";
+import type { ParsedParameter, ParsedPattern, ParsedReplacement, WhenCondition } from "./pattern-types";
+
+const CONSTRUCTOR_PATTERN = regex("^new\\s+(?<typeName>\\w+)\\((?<argumentsString>.*)\\)$");
+const STATIC_METHOD_PATTERN = regex("^(?<typeName>\\w+)\\.(?<methodName>\\w+)\\((?<argumentsString>.*)\\)$");
+const STATIC_ACCESS_PATTERN = regex("^(?<typeName>\\w+)\\.(?<property>\\w+)$");
+const CALL_PATTERN = regex("^(?<name>\\w+)\\((?<argumentsString>.*)\\)$");
 
 /**
  * Parse argument string into ParsedArg array
- * @param argsString - Comma-separated argument string
+ * @param parametersString - Comma-separated argument string
  * @returns Array of parsed arguments
  */
-export function parseArgs(argsString: string): ReadonlyArray<ParsedArg> {
-	const trimmed = argsString.trim();
+export function parseParameters(parametersString: string): ReadonlyArray<ParsedParameter> {
+	const trimmed = parametersString.trim();
 	if (trimmed === "") return [];
 
-	const args = trimmed.split(",").map((arg) => arg.trim());
-	const result: Array<ParsedArg> = [];
+	const parameters = trimmed.split(",").map((parameter) => parameter.trim());
+	const result = new Array<ParsedParameter>();
+	let size = 0;
 
-	for (const arg of args) {
-		if (arg === "_") {
-			result.push({ kind: "wildcard" });
-		} else if (arg.startsWith("$")) {
-			result.push({ kind: "capture", name: arg.slice(1) });
-		} else if (arg.endsWith("?")) {
-			const value = Number.parseFloat(arg.slice(0, -1));
-			result.push({ kind: "optional", value });
+	for (const parameter of parameters) {
+		if (parameter === "_") result[size++] = { kind: "wildcard" };
+		else if (parameter.startsWith("$")) result[size++] = { kind: "capture", name: parameter.slice(1) };
+		else if (parameter.endsWith("?")) {
+			const value = Number.parseFloat(parameter.slice(0, -1));
+			result[size++] = { kind: "optional", value };
 		} else {
-			const value = Number.parseFloat(arg);
-			result.push({ kind: "literal", value });
+			const value = Number.parseFloat(parameter);
+			result[size++] = { kind: "literal", value };
 		}
 	}
 
@@ -40,34 +42,16 @@ export function parseArgs(argsString: string): ReadonlyArray<ParsedArg> {
  * @returns Parsed replacement structure
  */
 export function parseReplacement(replacement: string): ParsedReplacement {
-	// Check for static access: Type.prop
-	const staticMatch = replacement.match(STATIC_ACCESS_PATTERN);
-	if (staticMatch && !replacement.includes("(")) {
-		const [, typeName, prop] = staticMatch;
-		if (!(typeName && prop)) throw new Error(`Invalid static access: ${replacement}`);
+	const staticMatch = STATIC_ACCESS_PATTERN.exec(replacement);
+	if (staticMatch && !replacement.includes("(")) return { ...staticMatch.groups, kind: "staticAccess" };
 
-		return {
-			kind: "staticAccess",
-			prop,
-			typeName,
-		};
-	}
-
-	// Check for function call: name(args)
-	const callMatch = replacement.match(CALL_PATTERN);
+	const callMatch = CALL_PATTERN.exec(replacement);
 	if (callMatch) {
-		const [, name, argsStr] = callMatch;
-		if (!name || argsStr === undefined) throw new Error(`Invalid call: ${replacement}`);
-
-		const args = argsStr.trim() === "" ? [] : argsStr.split(",").map((a) => a.trim());
-		return {
-			args,
-			kind: "call",
-			name,
-		};
+		const { name, argumentsString } = callMatch.groups;
+		const parameters = argumentsString.trim() === "" ? [] : argumentsString.split(",").map((value) => value.trim());
+		return { kind: "call", name, parameters };
 	}
 
-	// Simple identifier
 	return { kind: "identifier", name: replacement };
 }
 
@@ -84,39 +68,30 @@ export function parsePattern(
 	when: Record<string, WhenCondition> | undefined,
 ): ParsedPattern {
 	const conditions = new Map<string, WhenCondition>();
-	if (when) {
-		for (const [key, value] of Object.entries(when)) {
-			conditions.set(key, value);
-		}
-	}
+	if (when) for (const [key, value] of Object.entries(when)) conditions.set(key, value);
 
-	// Try constructor pattern: new Type(args)
-	const constructorMatch = match.match(CONSTRUCTOR_PATTERN);
+	const constructorMatch = CONSTRUCTOR_PATTERN.exec(match);
 	if (constructorMatch) {
-		const [, typeName, argsStr] = constructorMatch;
-		if (!typeName || argsStr === undefined) throw new Error(`Invalid constructor: ${match}`);
-
+		const { typeName, argumentsString } = constructorMatch.groups;
 		return {
-			args: parseArgs(argsStr),
 			conditions,
 			original: match,
+			parameters: parseParameters(argumentsString),
 			replacement: parseReplacement(replacement),
 			type: "constructor",
 			typeName,
 		};
 	}
 
-	// Try static method pattern: Type.method(args)
-	const staticMethodMatch = match.match(STATIC_METHOD_PATTERN);
+	const staticMethodMatch = STATIC_METHOD_PATTERN.exec(match);
 	if (staticMethodMatch) {
-		const [, typeName, methodName, argsStr] = staticMethodMatch;
-		if (!(typeName && methodName) || argsStr === undefined) throw new Error(`Invalid static method: ${match}`);
+		const { typeName, methodName, argumentsString } = staticMethodMatch.groups;
 
 		return {
-			args: parseArgs(argsStr),
 			conditions,
 			methodName,
 			original: match,
+			parameters: parseParameters(argumentsString),
 			replacement: parseReplacement(replacement),
 			type: "staticMethod",
 			typeName,

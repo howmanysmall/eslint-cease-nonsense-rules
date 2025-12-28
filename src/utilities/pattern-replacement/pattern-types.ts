@@ -4,19 +4,19 @@ import type { TSESTree } from "@typescript-eslint/types";
 declare const PatternBrand: unique symbol;
 
 // Extract variable name from capture, stopping at delimiters
-type ExtractVarName<Str extends string> = Str extends `${infer Name},${infer Rest}`
+type ExtractVariableName<VariableString extends string> = VariableString extends `${infer Name},${infer Rest}`
 	? [Name, `,${Rest}`]
-	: Str extends `${infer Name})${infer Rest}`
+	: VariableString extends `${infer Name})${infer Rest}`
 		? [Name, `)${Rest}`]
-		: Str extends `${infer Name} ${infer Rest}`
+		: VariableString extends `${infer Name} ${infer Rest}`
 			? [Name, ` ${Rest}`]
-			: Str extends `${infer Name}?${infer Rest}`
+			: VariableString extends `${infer Name}?${infer Rest}`
 				? [Name, `?${Rest}`]
-				: [Str, ""];
+				: [VariableString, ""];
 
 // Extract capture variable names from match string at compile time
-type ExtractCaptures<Str extends string> = Str extends `${string}$${infer Rest}`
-	? ExtractVarName<Rest> extends [infer Name extends string, infer Remainder extends string]
+type ExtractCaptures<VariableString extends string> = VariableString extends `${string}$${infer Rest}`
+	? ExtractVariableName<Rest> extends [infer Name extends string, infer Remainder extends string]
 		? Name | ExtractCaptures<Remainder>
 		: never
 	: never;
@@ -51,19 +51,19 @@ export interface Pattern<Match extends string = string> {
 }
 
 // Input type for pattern() helper (without brand)
-export interface PatternInput<MatchStr extends string> {
-	readonly match: MatchStr;
+export interface PatternInput<Match extends string> {
+	readonly match: Match;
 	readonly replacement: string;
-	readonly when?: { readonly [Key in ExtractCaptures<MatchStr>]?: WhenCondition };
+	readonly when?: { readonly [Key in ExtractCaptures<Match>]?: WhenCondition };
 }
 
 // The ONLY way to create a valid Pattern
-export function pattern<const MatchStr extends string, const WhenClause extends object = object>(config: {
-	readonly match: MatchStr;
+export function pattern<const Match extends string, const WhenClause extends object = object>(configuration: {
+	readonly match: Match;
 	readonly replacement: string;
-	readonly when?: WhenClause & ValidateWhenClause<MatchStr, WhenClause>;
-}): Pattern<MatchStr> {
-	return config as unknown as Pattern<MatchStr>;
+	readonly when?: WhenClause & ValidateWhenClause<Match, WhenClause>;
+}): Pattern<Match> {
+	return configuration as unknown as Pattern<Match>;
 }
 
 // Rule options
@@ -72,7 +72,7 @@ export interface PreferPatternReplacementsOptions {
 }
 
 // Parsed argument types
-export type ParsedArg =
+export type ParsedParameter =
 	| { readonly kind: "literal"; readonly value: number }
 	| { readonly kind: "optional"; readonly value: number }
 	| { readonly kind: "capture"; readonly name: string }
@@ -81,33 +81,33 @@ export type ParsedArg =
 // Parsed replacement types
 export type ParsedReplacement =
 	| { readonly kind: "identifier"; readonly name: string }
-	| { readonly kind: "staticAccess"; readonly typeName: string; readonly prop: string }
-	| { readonly kind: "call"; readonly name: string; readonly args: ReadonlyArray<string> };
+	| { readonly kind: "staticAccess"; readonly typeName: string; readonly property: string }
+	| { readonly kind: "call"; readonly name: string; readonly parameters: ReadonlyArray<string> };
 
 // Parsed pattern structure
 export interface ParsedPattern {
+	readonly conditions: ReadonlyMap<string, WhenCondition>;
+	readonly methodName?: string;
+	readonly original: string;
+	readonly parameters: ReadonlyArray<ParsedParameter>;
+	readonly replacement: ParsedReplacement;
 	readonly type: "constructor" | "staticMethod";
 	readonly typeName: string;
-	readonly methodName?: string;
-	readonly args: ReadonlyArray<ParsedArg>;
-	readonly replacement: ParsedReplacement;
-	readonly conditions: ReadonlyMap<string, WhenCondition>;
-	readonly original: string;
 }
 
 // Captured value during matching
 export interface CapturedValue {
-	readonly exprKey: string;
 	readonly constValue?: number;
-	readonly sourceText: string;
+	readonly expressionKey: string;
 	readonly isComplex: boolean;
 	readonly node: TSESTree.Expression;
+	readonly sourceText: string;
 }
 
 // Match result
 export interface MatchResult {
-	readonly pattern: ParsedPattern;
 	readonly captures: ReadonlyMap<string, CapturedValue>;
 	readonly originalText: string;
+	readonly pattern: ParsedPattern;
 	readonly replacementText: string;
 }
