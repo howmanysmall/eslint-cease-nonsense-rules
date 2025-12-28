@@ -10,12 +10,14 @@ import {
 	createNoShorthandOptions,
 	createNoUselessUseSpringOptions,
 	createPairConfiguration,
+	createPreferPatternReplacementsOptions,
 	createReactKeysOptions,
 	createRequirePairedCallsOptions,
 	createUseExhaustiveDependenciesOptions,
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
 } from "../../src/utilities/configure-utilities";
+import { pattern } from "../../src/utilities/pattern-replacement";
 
 describe("configure-utilities", () => {
 	describe("createBanInstancesOptions", () => {
@@ -296,6 +298,25 @@ describe("configure-utilities", () => {
 			// @ts-expect-error Testing purposes
 			expect(configuration.importSources).toEqual({ react: ["useEffect"] });
 			expect(configuration.onlyHooks).toEqual(["useEffect"]);
+		});
+	});
+
+	describe("createPreferPatternReplacementsOptions", () => {
+		it("should create options with empty patterns by default", () => {
+			expect.assertions(1);
+			const configuration = createPreferPatternReplacementsOptions();
+			expect(configuration).toEqual({ patterns: [] });
+		});
+
+		it("should accept an array of patterns", () => {
+			expect.assertions(2);
+			const patterns = [
+				pattern({ match: "UDim2.fromScale(1, 1)", replacement: "oneScale" }),
+				pattern({ match: "new Vector2($x, $x)", replacement: "fromUniform($x)" }),
+			];
+			const configuration = createPreferPatternReplacementsOptions(patterns);
+			expect(configuration.patterns).toHaveLength(2);
+			expect(configuration.patterns[0]?.match).toBe("UDim2.fromScale(1, 1)");
 		});
 	});
 });

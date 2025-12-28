@@ -57,6 +57,7 @@ export default [
 			"cease-nonsense/prefer-early-return": "error",
 			"cease-nonsense/prefer-module-scope-constants": "error",
 			"cease-nonsense/prefer-pascal-case-enums": "error",
+			"cease-nonsense/prefer-pattern-replacements": "error",
 			"cease-nonsense/prefer-sequence-overloads": "error",
 			"cease-nonsense/prefer-singular-enums": "error",
 			"cease-nonsense/prefer-udim2-shorthand": "error",
@@ -921,6 +922,96 @@ const localPlayer = Players.LocalPlayer;
 const parameters = [1, 2, 3];
 const deltaTime = 0.016;
 const model = entity.char; // Property access is allowed
+```
+
+#### `prefer-pattern-replacements`
+
+Enforces replacement of verbose constructor/method patterns with simpler alternatives.
+
+**Features**
+
+- ✨ Has auto-fix
+- Type-safe `pattern()` API with compile-time capture validation
+- Supports captures (`$x`), optional args (`0?`), wildcards (`_`)
+- Constant expression evaluation (`1 - 1` matches `0`)
+- Same-variable matching (`$x, $x` requires identical arguments)
+- Scope-aware: skips fix if replacement would shadow local variable
+
+**Configuration**
+
+```typescript
+import { pattern } from "@pobammer-ts/eslint-cease-nonsense-rules";
+
+{
+  "cease-nonsense/prefer-pattern-replacements": ["error", {
+    "patterns": [
+      // Simple patterns
+      pattern({
+        match: "UDim2.fromScale(1, 1)",
+        replacement: "oneScale"
+      }),
+
+      // Captures and conditions
+      pattern({
+        match: "new Vector2($x, $x)",
+        replacement: "fromUniform($x)",
+        when: { x: "!= 0" }
+      }),
+
+      // Optional args (0? matches 0 or missing)
+      pattern({
+        match: "new Vector2($x, 0?)",
+        replacement: "fromX($x)"
+      }),
+
+      // Wildcards (match any value, don't capture)
+      pattern({
+        match: "new UDim2(_, 0, _, 0)",
+        replacement: "UDim2.fromScale"
+      })
+    ]
+  }]
+}
+```
+
+**Pattern syntax**
+
+- `$name` - Capture variable, stores value for replacement
+- `0?` - Optional: matches literal `0` or missing argument
+- `_` - Wildcard: matches any value, not captured
+- `when` clause - Conditions on captures (`== 0`, `!= 0`, `> 5`, etc.)
+
+**Replacement types**
+
+- Identifier: `oneScale`
+- Static access: `Vector2.one`
+- Call: `fromUniform($x)` or `Vector2.fromUniform($x, $y)`
+
+**❌ Bad**
+
+```typescript
+const scale = UDim2.fromScale(1, 1);
+const vec = new Vector2(5, 5);
+const offset = new Vector2(10, 0);
+```
+
+**✅ Good**
+
+```typescript
+const scale = oneScale;
+const vec = fromUniform(5);
+const offset = fromX(10);
+```
+
+**Scope awareness**
+
+The rule automatically skips fixes when the replacement would conflict with a local variable:
+
+```typescript
+function example() {
+  const oneScale = 5; // Local variable shadows replacement
+  const scale = UDim2.fromScale(1, 1); // No fix applied (would shadow)
+}
 ```
 
 #### `prefer-class-properties`
