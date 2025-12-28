@@ -18,6 +18,7 @@ import preferClassProperties from "./rules/prefer-class-properties";
 import preferEarlyReturn from "./rules/prefer-early-return";
 import preferModuleScopeConstants from "./rules/prefer-module-scope-constants";
 import preferPascalCaseEnums from "./rules/prefer-pascal-case-enums";
+import preferPatternReplacements from "./rules/prefer-pattern-replacements";
 import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
 import preferSingularEnums from "./rules/prefer-singular-enums";
 import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
@@ -52,12 +53,15 @@ export {
 	createNoShorthandOptions,
 	createNoUselessUseSpringOptions,
 	createPairConfiguration,
+	createPreferPatternReplacementsOptions,
 	createReactKeysOptions,
 	createRequirePairedCallsOptions,
 	createUseExhaustiveDependenciesOptions,
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
 } from "./utilities/configure-utilities";
+export type { Pattern, PreferPatternReplacementsOptions } from "./utilities/pattern-replacement";
+export { pattern } from "./utilities/pattern-replacement";
 
 /**
  * ESLint plugin entry for eslint-cease-nonsense-rules.
@@ -83,6 +87,7 @@ const rules: Readonly<Record<string, AnyRuleModule>> = {
 	"prefer-early-return": preferEarlyReturn,
 	"prefer-module-scope-constants": preferModuleScopeConstants,
 	"prefer-pascal-case-enums": preferPascalCaseEnums,
+	"prefer-pattern-replacements": preferPatternReplacements,
 	"prefer-sequence-overloads": preferSequenceOverloads,
 	"prefer-singular-enums": preferSingularEnums,
 	"prefer-udim2-shorthand": preferUDim2Shorthand,
