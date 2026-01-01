@@ -4,7 +4,7 @@ const config: KnipConfig = {
 	biome: true,
 	bumpp: true,
 	bun: true,
-	entry: ["src/index.ts", "scripts/*.ts", "benchmarks/**/*.bench.ts", ".opencode/**/*.ts", "tests/**/*.ts"],
+	entry: ["scripts/*.ts", "benchmarks/**/*.bench.ts", ".opencode/**/*.ts", "tests/**/*.ts"],
 	eslint: true,
 	ignore: ["dist/**", "src/types/reset.d.ts"],
 	ignoreDependencies: ["source-map", "lint-staged", "@mitata/counters", "oxfmt"],
