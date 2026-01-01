@@ -1,0 +1,275 @@
+# prefer-pattern-replacements
+
+Enforces replacement of verbose constructor/method patterns with simpler alternatives.
+
+## Rule Details
+
+This rule uses a type-safe pattern matching system to detect verbose constructor or method calls that have simpler equivalents. It supports captures, optional arguments, wildcards, and scope-aware fixes.
+
+## Features
+
+- ✨ Has auto-fix
+- Type-safe `pattern()` API with compile-time capture validation
+- Supports captures (`$x`), optional args (`0?`), wildcards (`_`)
+- Constant expression evaluation (`1 - 1` matches `0`)
+- Same-variable matching (`$x, $x` requires identical arguments)
+- Scope-aware: skips fix if replacement would shadow local variable
+
+## Options
+
+```typescript
+import { pattern } from "@pobammer-ts/eslint-cease-nonsense-rules";
+
+{
+  "cease-nonsense/prefer-pattern-replacements": ["error", {
+    "patterns": [
+      // Simple patterns
+      pattern({
+        match: "UDim2.fromScale(1, 1)",
+        replacement: "oneScale"
+      }),
+
+      // Captures and conditions
+      pattern({
+        match: "new Vector2($x, $x)",
+        replacement: "fromUniform($x)",
+        when: { x: "!= 0" }
+      }),
+
+      // Optional args (0? matches 0 or missing)
+      pattern({
+        match: "new Vector2($x, 0?)",
+        replacement: "fromX($x)"
+      }),
+
+      // Wildcards (match any value, don't capture)
+      pattern({
+        match: "new UDim2(_, 0, _, 0)",
+        replacement: "UDim2.fromScale"
+      })
+    ]
+  }]
+}
+```
+
+## Pattern Syntax
+
+### Captures: `$name`
+
+Capture a value to use in the replacement:
+
+```typescript
+pattern({
+	match: "new Vector2($x, $y)",
+	replacement: "Vector2.create($x, $y)",
+});
+
+// new Vector2(10, 20) → Vector2.create(10, 20)
+```
+
+### Optional Arguments: `0?`
+
+Match literal `0` or missing argument:
+
+```typescript
+pattern({
+	match: "new Vector2($x, 0?)",
+	replacement: "fromX($x)",
+});
+
+// new Vector2(5, 0) → fromX(5)
+// new Vector2(5) → fromX(5)
+```
+
+### Wildcards: `_`
+
+Match any value without capturing:
+
+```typescript
+pattern({
+	match: "new Color3(_, _, 0)",
+	replacement: "Color3.fromRGB",
+});
+
+// new Color3(255, 128, 0) → Color3.fromRGB (matched)
+// new Color3(255, 128, 64) → (no match)
+```
+
+### Conditions: `when`
+
+Add constraints on captured values:
+
+```typescript
+pattern({
+	match: "new Vector2($x, $x)",
+	replacement: "fromUniform($x)",
+	when: { x: "!= 0" },
+});
+
+// new Vector2(5, 5) → fromUniform(5)
+// new Vector2(0, 0) → (no match, when condition fails)
+```
+
+Supported operators: `==`, `!=`, `>`, `<`, `>=`, `<=`
+
+### Same-Variable Matching
+
+Using the same capture variable name requires identical values:
+
+```typescript
+pattern({
+	match: "new Vector2($x, $x)",
+	replacement: "fromUniform($x)",
+});
+
+// new Vector2(5, 5) → fromUniform(5) ✓
+// new Vector2(5, 10) → (no match, values differ) ✗
+```
+
+## Replacement Types
+
+### Identifier
+
+```typescript
+pattern({
+	match: "UDim2.fromScale(1, 1)",
+	replacement: "oneScale",
+});
+
+// UDim2.fromScale(1, 1) → oneScale
+```
+
+### Static Access
+
+```typescript
+pattern({
+	match: "new Vector2(1, 1)",
+	replacement: "Vector2.one",
+});
+
+// new Vector2(1, 1) → Vector2.one
+```
+
+### Call Expression
+
+```typescript
+pattern({
+	match: "new Vector2($x, $x)",
+	replacement: "fromUniform($x)",
+});
+
+// new Vector2(5, 5) → fromUniform(5)
+```
+
+```typescript
+pattern({
+	match: "new Vector2($x, $y)",
+	replacement: "Vector2.create($x, $y)",
+});
+
+// new Vector2(10, 20) → Vector2.create(10, 20)
+```
+
+## Examples
+
+### ❌ Incorrect
+
+```typescript
+const scale = UDim2.fromScale(1, 1);
+const vec = new Vector2(5, 5);
+const offset = new Vector2(10, 0);
+const color = new Color3(255, 0, 0);
+```
+
+### ✅ Correct
+
+```typescript
+const scale = oneScale;
+const vec = fromUniform(5);
+const offset = fromX(10);
+const color = Color3.fromRGB(255, 0, 0);
+```
+
+## Scope Awareness
+
+The rule automatically skips fixes when the replacement would conflict with a local variable:
+
+```typescript
+function example() {
+	const oneScale = 5; // Local variable shadows replacement
+	const scale = UDim2.fromScale(1, 1); // No fix applied (would shadow)
+}
+
+function other() {
+	const scale = UDim2.fromScale(1, 1); // Fix applied: oneScale
+}
+```
+
+## Common Patterns
+
+### Roblox UDim2
+
+```typescript
+pattern({
+	match: "UDim2.fromScale(1, 1)",
+	replacement: "oneScale",
+});
+
+pattern({
+	match: "UDim2.fromScale(0, 0)",
+	replacement: "zeroScale",
+});
+
+pattern({
+	match: "new UDim2($scaleX, 0, $scaleY, 0)",
+	replacement: "UDim2.fromScale($scaleX, $scaleY)",
+});
+```
+
+### Vector2/Vector3
+
+```typescript
+pattern({
+	match: "new Vector2($x, $x)",
+	replacement: "fromUniform($x)",
+	when: { x: "!= 0" },
+});
+
+pattern({
+	match: "new Vector2($x, 0?)",
+	replacement: "fromX($x)",
+});
+
+pattern({
+	match: "new Vector2(0?, $y)",
+	replacement: "fromY($y)",
+});
+```
+
+### Color3
+
+```typescript
+pattern({
+	match: "new Color3(1, 1, 1)",
+	replacement: "Color3.white",
+});
+
+pattern({
+	match: "new Color3(0, 0, 0)",
+	replacement: "Color3.black",
+});
+```
+
+## When Not To Use It
+
+If your codebase doesn't use patterns that have simpler alternatives, or if the verbose syntax is preferred for clarity, you can disable this rule or configure it with specific patterns.
+
+## Related Rules
+
+- [no-color3-constructor](./no-color3-constructor.md) - Bans Color3 constructor in favor of fromRGB
+- [prefer-udim2-shorthand](./prefer-udim2-shorthand.md) - Simplifies UDim2 constructors
+
+## Further Reading
+
+- [roblox-ts Best Practices](https://roblox-ts.com/)
+- [Pattern Matching in Programming](https://en.wikipedia.org/wiki/Pattern_matching)
