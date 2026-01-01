@@ -65,6 +65,7 @@ export default [
 			"cease-nonsense/require-named-effect-functions": "error",
 			"cease-nonsense/require-paired-calls": "error",
 			"cease-nonsense/require-react-component-keys": "error",
+			"cease-nonsense/require-react-display-names": "error",
 			"cease-nonsense/strict-component-boundaries": "error",
 			"cease-nonsense/use-exhaustive-dependencies": "error",
 			"cease-nonsense/use-hook-at-top-level": "error",
@@ -426,6 +427,63 @@ function UserProfile({ userId }) {
 		}
 	}, [userId]);
 }
+```
+
+#### `require-react-display-names`
+
+Require `displayName` property on exported `React.memo` components and `React.createContext` contexts for better debugging.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/require-react-display-names": ["error", {
+    "environment": "roblox-ts"  // or "standard" for regular React
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+import { memo } from "@rbxts/react";
+
+function CoolFrameNoMemo() {
+	return <frame />;
+}
+
+// Direct export without displayName
+export default memo(CoolFrameNoMemo);
+```
+
+```typescript
+import React from "@rbxts/react";
+
+// Missing displayName
+const ErrorBoundaryContext = React.createContext<unknown>(undefined);
+export default ErrorBoundaryContext;
+```
+
+**✅ Good**
+
+```typescript
+import { memo } from "@rbxts/react";
+
+function CoolFrameNoMemo() {
+	return <frame />;
+}
+
+export const CoolFrame = memo(CoolFrameNoMemo);
+CoolFrame.displayName = "CoolFrame";
+export default CoolFrame;
+```
+
+```typescript
+import React from "@rbxts/react";
+
+const ErrorBoundaryContext = React.createContext<unknown>(undefined);
+ErrorBoundaryContext.displayName = "ErrorBoundaryContext";
+export default ErrorBoundaryContext;
 ```
 
 #### `react-hooks-strict-return`

@@ -19,6 +19,7 @@ import preferModuleScopeConstants from "./rules/prefer-module-scope-constants";
 import preferPascalCaseEnums from "./rules/prefer-pascal-case-enums";
 import preferPatternReplacements from "./rules/prefer-pattern-replacements";
 import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
+import requireReactDisplayNames from "./rules/require-react-display-names";
 import preferSingularEnums from "./rules/prefer-singular-enums";
 import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
 import reactHooksStrictReturn from "./rules/react-hooks-strict-return";
@@ -41,6 +42,7 @@ export type { EffectFunctionOptions, EnvironmentMode, HookConfiguration } from "
 export type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
 export type { ReactKeysOptions } from "./rules/require-react-component-keys";
 export type { HookEntry, UseExhaustiveDependenciesOptions } from "./rules/use-exhaustive-dependencies";
+export type { RequireReactDisplayNamesOptions } from "./rules/require-react-display-names";
 export {
 	createBanInstancesOptions,
 	createComplexityConfiguration,
@@ -54,6 +56,7 @@ export {
 	createPreferPatternReplacementsOptions,
 	createReactKeysOptions,
 	createRequirePairedCallsOptions,
+	createRequireReactDisplayNamesOptions,
 	createUseExhaustiveDependenciesOptions,
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
@@ -93,6 +96,7 @@ const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"require-named-effect-functions": requireNamedEffectFunctions,
 	"require-paired-calls": requirePairedCalls,
 	"require-react-component-keys": requireReactComponentKeys,
+	"require-react-display-names": requireReactDisplayNames,
 	"strict-component-boundaries": strictComponentBoundaries,
 	"use-exhaustive-dependencies": useExhaustiveDependencies,
 	"use-hook-at-top-level": useHookAtTopLevel,
@@ -134,6 +138,7 @@ const recommended = {
 		"cease-nonsense/prefer-udim2-shorthand": "error",
 		"cease-nonsense/require-named-effect-functions": "error",
 		"cease-nonsense/require-react-component-keys": "error",
+		"cease-nonsense/require-react-display-names": "error",
 		"cease-nonsense/use-exhaustive-dependencies": "error",
 		"cease-nonsense/use-hook-at-top-level": "error",
 	},

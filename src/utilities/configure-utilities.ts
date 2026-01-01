@@ -8,6 +8,7 @@ import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../rules/no-useless-use-spring"
 import type { EffectFunctionOptions, HookConfiguration } from "../rules/require-named-effect-functions";
 import type { PairConfiguration, RequirePairedCallsOptions } from "../rules/require-paired-calls";
 import type { ReactKeysOptions } from "../rules/require-react-component-keys";
+import type { RequireReactDisplayNamesOptions } from "../rules/require-react-display-names";
 import type { UseExhaustiveDependenciesOptions } from "../rules/use-exhaustive-dependencies";
 import type { UseHookAtTopLevelOptions } from "../rules/use-hook-at-top-level";
 import type { Pattern, PreferPatternReplacementsOptions } from "./pattern-replacement";
@@ -218,4 +219,15 @@ export function createPreferPatternReplacementsOptions(
 	patterns: ReadonlyArray<Pattern> = [],
 ): PreferPatternReplacementsOptions {
 	return { patterns };
+}
+
+/**
+ * Creates options for require-react-display-names rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createRequireReactDisplayNamesOptions(
+	options: Partial<RequireReactDisplayNamesOptions> = {},
+): RequireReactDisplayNamesOptions {
+	return { environment: "roblox-ts", ...options };
 }
