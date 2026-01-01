@@ -128,7 +128,8 @@ export default createRule<Options, MessageIds>({
 			description: "Ban specified Roblox Instance classes in new Instance() calls and JSX elements.",
 		},
 		messages: {
-			bannedInstance: "Instance class '{{className}}' is banned.",
+			bannedInstance:
+				"Instance class '{{className}}' is banned by project configuration. This class may cause performance issues, is deprecated, or has a better alternative. Check project guidelines for the recommended replacement.",
 			bannedInstanceCustom: "{{customMessage}}",
 		},
 		schema: [

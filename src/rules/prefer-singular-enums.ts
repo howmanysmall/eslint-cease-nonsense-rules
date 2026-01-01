@@ -154,7 +154,8 @@ export default createRule({
 			description: "Prefer singular TypeScript enums.",
 		},
 		messages: {
-			notSingular: "Enum '{{ name }}' should be singular.",
+			notSingular:
+				"Enum '{{ name }}' uses plural naming. Enums define a type of which only ONE value is selected at a time, so singular naming is semantically correct. Use 'Status' not 'Statuses', 'Color' not 'Colors'. Rename the enum to its singular form.",
 		},
 		schema: [],
 		type: "suggestion",

@@ -467,8 +467,10 @@ export default createRule<Options, MessageIds>({
 			description: "Require keys on React components when used in lists or iteration.",
 		},
 		messages: {
-			missingKey: "All React elements except top-level returns require a key prop",
-			rootComponentWithKey: "Root component returns should not have key props",
+			missingKey:
+				"JSX element in list/callback lacks key prop. React Luau warns about missing keys in _G.__DEV__ mode. Add a unique `key` prop using a stable identifier (not array index).",
+			rootComponentWithKey:
+				"Root return has unnecessary key prop. The key gets overwritten by the parent anyway. Remove the `key` prop.",
 		},
 		schema: [
 			{

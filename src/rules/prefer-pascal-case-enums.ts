@@ -42,7 +42,8 @@ export default createRule({
 			description: "Enforce Pascal case when naming enums.",
 		},
 		messages: {
-			notPascalCase: "Enum '{{ identifier }}' should use Pascal case.",
+			notPascalCase:
+				"Enum '{{ identifier }}' uses non-standard casing. TypeScript convention requires PascalCase for enum names and members to distinguish them from variables (camelCase) and constants (UPPER_CASE). Rename to PascalCase: capitalize first letter of each word, no underscores.",
 		},
 		schema: [],
 		type: "suggestion",

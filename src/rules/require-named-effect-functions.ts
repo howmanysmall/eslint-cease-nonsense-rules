@@ -356,26 +356,28 @@ const requireNamedEffectFunctions: Rule.RuleModule = {
 			recommended: false,
 		},
 		messages: {
-			anonymousFunction: "Use a named function instead of an anonymous function for better debuggability",
-			arrowFunction: "Use a named function instead of an arrow function for better debuggability",
+			anonymousFunction:
+				"Anonymous function passed to {{hook}}. debug.info returns empty string for anonymous functions, making stack traces useless for debugging. Extract to: function effectName() { ... } then pass effectName.",
+			arrowFunction:
+				"Arrow function passed to {{hook}}. Arrow functions have no debug name and create new instances each render. Extract to: function effectName() { ... } then pass effectName.",
 			asyncAnonymousFunction:
-				"Async anonymous functions are not allowed in {{ hook }}. Use an async function declaration instead",
+				"Async anonymous function in {{hook}}. Two issues: (1) no debug name makes stack traces useless, (2) async effects require cancellation logic for unmount. Extract to: async function effectName() { ... } with cleanup.",
 			asyncArrowFunction:
-				"Async arrow functions are not allowed in {{ hook }}. Use an async function declaration instead",
+				"Async arrow function in {{hook}}. Two issues: (1) arrow functions have no debug name, (2) async effects require cancellation logic. Extract to: async function effectName() { ... } with cleanup.",
 			asyncFunctionDeclaration:
-				"Async function declarations are not allowed in {{ hook }}. Set allowAsync: true for this hook to enable",
+				"Async function declaration passed to {{hook}}. Async effects require cancellation logic to handle component unmount. Implement cleanup or set allowAsync: true if cancellation is handled.",
 			asyncFunctionExpression:
-				"Async function expressions are not allowed in {{ hook }}. Use an async function declaration instead",
+				"Async function expression in {{hook}}. Async effects require cancellation logic for unmount. Extract to a named async function declaration with cleanup, then pass the reference.",
 			functionExpression:
-				"Use a named function reference instead of a function expression for better debuggability",
+				"Function expression passed to {{hook}}. Function expressions create new instances each render, breaking referential equality. Extract to: function effectName() { ... } at module or component top-level.",
 			identifierReferencesArrow:
-				"{{ hook }} called with identifier that references an arrow function. Use a named function declaration instead",
+				"{{hook}} receives identifier pointing to arrow function. Arrow functions have no debug name and lack referential stability. Convert to: function effectName() { ... } then pass effectName.",
 			identifierReferencesAsyncArrow:
-				"{{ hook }} called with identifier that references an async arrow function. Set allowAsync: true for this hook to enable",
+				"{{hook}} receives identifier pointing to async arrow function. Two issues: (1) no debug name, (2) async effects require cancellation logic. Convert to: async function effectName() { ... } with cleanup.",
 			identifierReferencesAsyncFunction:
-				"{{ hook }} called with identifier that references an async function. Set allowAsync: true for this hook to enable",
+				"{{hook}} receives identifier pointing to async function. Async effects require cancellation logic for unmount. Implement cleanup or set allowAsync: true if cancellation is handled.",
 			identifierReferencesCallback:
-				"{{ hook }} called with identifier that references a useCallback/useMemo result. Use a named function declaration instead",
+				"{{hook}} receives identifier from useCallback/useMemo. These hooks return new references when dependencies change, causing unexpected effect re-runs. Use a stable function declaration: function effectName() { ... }",
 		},
 		schema: [
 			{
