@@ -19,13 +19,13 @@ import preferModuleScopeConstants from "./rules/prefer-module-scope-constants";
 import preferPascalCaseEnums from "./rules/prefer-pascal-case-enums";
 import preferPatternReplacements from "./rules/prefer-pattern-replacements";
 import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
-import requireReactDisplayNames from "./rules/require-react-display-names";
 import preferSingularEnums from "./rules/prefer-singular-enums";
 import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
 import reactHooksStrictReturn from "./rules/react-hooks-strict-return";
 import requireNamedEffectFunctions from "./rules/require-named-effect-functions";
 import requirePairedCalls from "./rules/require-paired-calls";
 import requireReactComponentKeys from "./rules/require-react-component-keys";
+import requireReactDisplayNames from "./rules/require-react-display-names";
 import strictComponentBoundaries from "./rules/strict-component-boundaries";
 import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
 import useHookAtTopLevel from "./rules/use-hook-at-top-level";
@@ -41,8 +41,8 @@ export type { NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
 export type { EffectFunctionOptions, EnvironmentMode, HookConfiguration } from "./rules/require-named-effect-functions";
 export type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
 export type { ReactKeysOptions } from "./rules/require-react-component-keys";
-export type { HookEntry, UseExhaustiveDependenciesOptions } from "./rules/use-exhaustive-dependencies";
 export type { RequireReactDisplayNamesOptions } from "./rules/require-react-display-names";
+export type { HookEntry, UseExhaustiveDependenciesOptions } from "./rules/use-exhaustive-dependencies";
 export {
 	createBanInstancesOptions,
 	createComplexityConfiguration,
