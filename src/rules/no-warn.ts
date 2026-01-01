@@ -1,9 +1,9 @@
-import type { Rule } from "eslint";
+import { createRule } from "../utilities/create-rule";
 
-const noWarn: Rule.RuleModule = {
+export default createRule({
 	create(context) {
 		return {
-			'CallExpression[callee.type="Identifier"][callee.name="warn"]'(node: Rule.Node) {
+			'CallExpression[callee.type="Identifier"][callee.name="warn"]'(node): void {
 				context.report({
 					messageId: "useLog",
 					node,
@@ -11,10 +11,10 @@ const noWarn: Rule.RuleModule = {
 			},
 		};
 	},
+	defaultOptions: [],
 	meta: {
 		docs: {
 			description: "Ban warn() function calls. Use Log instead.",
-			recommended: false,
 		},
 		messages: {
 			useLog: "Use Log instead of warn()",
@@ -22,6 +22,5 @@ const noWarn: Rule.RuleModule = {
 		schema: [],
 		type: "problem",
 	},
-};
-
-export default noWarn;
+	name: "no-warn",
+});

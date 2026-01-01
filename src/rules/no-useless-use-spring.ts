@@ -321,8 +321,6 @@ function isStaticExpression(
 	if (seen.has(unwrapped)) return true;
 	seen.add(unwrapped);
 
-	// eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
-	// Oxlint:disable-next-line @typescript-eslint/switch-exhaustiveness-check
 	switch (unwrapped.type) {
 		case AST_NODE_TYPES.Literal:
 			return true;

@@ -318,9 +318,7 @@ const requireNamedEffectFunctions: Rule.RuleModule = {
 				}
 
 				if (argumentNode.type === TSESTree.AST_NODE_TYPES.FunctionExpression) {
-					const functionExpressionNode = argumentNode as unknown as { id?: unknown; async?: boolean };
-					// oxlint-disable-next-line typescript-eslint/strict-boolean-expressions
-					const functionHasId = Boolean(functionExpressionNode.id);
+					const functionHasId = Boolean(argumentNode.id);
 
 					if (functionHasId && argumentNode.async) {
 						context.report({

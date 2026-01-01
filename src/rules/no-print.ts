@@ -1,9 +1,9 @@
-import type { Rule } from "eslint";
+import { createRule } from "../utilities/create-rule";
 
-const noPrint: Rule.RuleModule = {
+export default createRule({
 	create(context) {
 		return {
-			'CallExpression[callee.type="Identifier"][callee.name="print"]'(node: Rule.Node) {
+			'CallExpression[callee.type="Identifier"][callee.name="print"]'(node): void {
 				context.report({
 					messageId: "useLog",
 					node,
@@ -11,10 +11,10 @@ const noPrint: Rule.RuleModule = {
 			},
 		};
 	},
+	defaultOptions: [],
 	meta: {
 		docs: {
 			description: "Ban print() function calls. Use Log instead.",
-			recommended: false,
 		},
 		messages: {
 			useLog: "Use Log instead of print()",
@@ -22,6 +22,5 @@ const noPrint: Rule.RuleModule = {
 		schema: [],
 		type: "problem",
 	},
-};
-
-export default noPrint;
+	name: "no-print",
+});
