@@ -1,5 +1,4 @@
-import type { TSESLint } from "@typescript-eslint/utils";
-import type { Rule } from "eslint";
+import type { LooseRuleDefinition } from "@typescript-eslint/utils/ts-eslint";
 import banInstances from "./rules/ban-instances";
 import banReactFC from "./rules/ban-react-fc";
 import enforceIanitorCheckType from "./rules/enforce-ianitor-check-type";
@@ -29,8 +28,7 @@ import requireReactComponentKeys from "./rules/require-react-component-keys";
 import strictComponentBoundaries from "./rules/strict-component-boundaries";
 import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
 import useHookAtTopLevel from "./rules/use-hook-at-top-level";
-
-type AnyRuleModule = Rule.RuleModule | TSESLint.AnyRuleModuleWithMetaDocs;
+import type { ReadonlyRecord } from "./types/utility-types.d";
 
 export type { BanInstancesOptions } from "./rules/ban-instances";
 export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
@@ -68,7 +66,7 @@ export { pattern } from "./utilities/pattern-replacement";
  *
  * Exposes rule implementations and configuration presets for ESLint flat config.
  */
-const rules: Readonly<Record<string, AnyRuleModule>> = {
+const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"ban-instances": banInstances,
 	"ban-react-fc": banReactFC,
 	"enforce-ianitor-check-type": enforceIanitorCheckType,
@@ -144,7 +142,7 @@ const recommended = {
 type PluginConfig = typeof recommended;
 
 interface Plugin {
-	readonly rules: Readonly<Record<string, AnyRuleModule>>;
+	readonly rules: ReadonlyRecord<string, LooseRuleDefinition>;
 	readonly configs: { readonly recommended: PluginConfig };
 }
 

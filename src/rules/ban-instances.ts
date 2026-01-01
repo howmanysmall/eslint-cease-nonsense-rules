@@ -1,7 +1,8 @@
 import { TSESTree } from "@typescript-eslint/types";
-import type { TSESLint } from "@typescript-eslint/utils";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
+import type { ReadonlyRecord } from "../types/utility-types";
+import { createRule } from "../utilities/create-rule";
 
 /**
  * Configuration for banned Roblox Instance classes.
@@ -20,7 +21,7 @@ import { Compile } from "typebox/compile";
  * ```
  */
 export interface BanInstancesOptions {
-	readonly bannedInstances: ReadonlyArray<string> | Readonly<Record<string, string>>;
+	readonly bannedInstances: ReadonlyArray<string> | ReadonlyRecord<string, string>;
 }
 
 type Options = [BanInstancesOptions?];
@@ -62,19 +63,10 @@ function normalizeConfig(options: unknown): NormalizedConfig {
 		}
 	}
 
-	return { bannedClasses: bannedClasses };
+	return { bannedClasses };
 }
 
-interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
-	readonly recommended?: boolean;
-}
-
-const docs: RuleDocsWithRecommended = {
-	description: "Ban specified Roblox Instance classes in new Instance() calls and JSX elements.",
-	recommended: false,
-};
-
-const banInstances: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRecommended> = {
+export default createRule<Options, MessageIds>({
 	create(context) {
 		const config = normalizeConfig(context.options[0]);
 
@@ -99,7 +91,7 @@ const banInstances: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDoc
 		}
 
 		return {
-			JSXOpeningElement(node: TSESTree.JSXOpeningElement) {
+			JSXOpeningElement(node: TSESTree.JSXOpeningElement): void {
 				const { name } = node;
 
 				if (name.type !== TSESTree.AST_NODE_TYPES.JSXIdentifier) return;
@@ -115,7 +107,7 @@ const banInstances: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDoc
 				reportBannedClass(node, entry);
 			},
 
-			NewExpression(node: TSESTree.NewExpression) {
+			NewExpression(node: TSESTree.NewExpression): void {
 				if (node.callee.type !== TSESTree.AST_NODE_TYPES.Identifier) return;
 				if (node.callee.name !== "Instance") return;
 
@@ -132,7 +124,9 @@ const banInstances: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDoc
 	},
 	defaultOptions: [{ bannedInstances: [] }],
 	meta: {
-		docs,
+		docs: {
+			description: "Ban specified Roblox Instance classes in new Instance() calls and JSX elements.",
+		},
 		messages: {
 			bannedInstance: "Instance class '{{className}}' is banned.",
 			bannedInstanceCustom: "{{customMessage}}",
@@ -162,6 +156,5 @@ const banInstances: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDoc
 		],
 		type: "problem",
 	},
-};
-
-export default banInstances;
+	name: "ban-instances",
+});

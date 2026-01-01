@@ -1,0 +1,454 @@
+# no-god-components
+
+Flags React components that are too large or complex, encouraging better separation of concerns.
+
+## Rule Details
+
+This rule enforces component size and complexity limits inspired by the "Refactor God Component" checklist. It checks multiple metrics to identify components that should be split into smaller, more maintainable pieces.
+
+## Options
+
+```typescript
+{
+  "cease-nonsense/no-god-components": ["error", {
+    "targetLines": 120,
+    "maxLines": 200,
+    "maxTsxNesting": 3,
+    "maxStateHooks": 5,
+    "stateHooks": ["useState", "useReducer", "useBinding"],
+    "maxDestructuredProps": 5,
+    "enforceTargetLines": true,
+    "ignoreComponents": ["LegacyComponent"]
+  }]
+}
+```
+
+### Configuration Parameters
+
+- **targetLines** (default: `120`): Soft limit for component lines (warning level)
+- **maxLines** (default: `200`): Hard maximum lines for a component (error level)
+- **maxTsxNesting** (default: `3`): Maximum JSX/TSX nesting depth
+- **maxStateHooks** (default: `5`): Maximum number of stateful hooks
+- **stateHooks** (default: `["useState", "useReducer", "useBinding"]`): Hook names to count toward state complexity
+- **maxDestructuredProps** (default: `5`): Maximum destructured props in function parameters
+- **enforceTargetLines** (default: `true`): Whether to report when exceeding targetLines
+- **ignoreComponents** (default: `[]`): Component names to skip
+
+## Checks Performed
+
+### 1. Component Line Count
+
+**Target lines** (soft limit): Warns when component exceeds target size
+**Max lines** (hard limit): Errors when component exceeds maximum size
+
+```typescript
+// ❌ Bad (assuming targetLines: 120, maxLines: 200)
+function LargeComponent() {
+  // ... 150 lines of code
+  // Warning: exceeds target
+}
+
+function HugeComponent() {
+  // ... 250 lines of code
+  // Error: exceeds maximum
+}
+
+// ✅ Good
+function CompactComponent() {
+  // ... 80 lines of code
+}
+```
+
+### 2. TSX Nesting Depth
+
+Measures how deeply JSX elements are nested.
+
+```typescript
+// ❌ Bad (maxTsxNesting: 3)
+function DeepComponent() {
+	return (
+		<div>
+			{" "}
+			{/* depth 1 */}
+			<section>
+				{" "}
+				{/* depth 2 */}
+				<article>
+					{" "}
+					{/* depth 3 */}
+					<div>
+						{" "}
+						{/* depth 4 - exceeds limit! */}
+						<span>Content</span>
+					</div>
+				</article>
+			</section>
+		</div>
+	);
+}
+
+// ✅ Good
+function ShallowComponent() {
+	return (
+		<div>
+			{" "}
+			{/* depth 1 */}
+			<Header /> {/* depth 2 */}
+			<Content /> {/* depth 2 */}
+		</div>
+	);
+}
+```
+
+### 3. Stateful Hook Count
+
+Counts uses of stateful hooks like `useState`, `useReducer`, etc.
+
+```typescript
+// ❌ Bad (maxStateHooks: 5)
+function StatefulComponent() {
+	const [name, setName] = useState("");
+	const [email, setEmail] = useState("");
+	const [age, setAge] = useState(0);
+	const [address, setAddress] = useState("");
+	const [phone, setPhone] = useState("");
+	const [notes, setNotes] = useState(""); // 6th state hook!
+
+	return <div>...</div>;
+}
+
+// ✅ Good - group related state
+function BetterComponent() {
+	const [formData, setFormData] = useState({
+		name: "",
+		email: "",
+		age: 0,
+		address: "",
+		phone: "",
+		notes: "",
+	});
+
+	return <div>...</div>;
+}
+
+// ✅ Even better - extract to custom hook
+function useUserForm() {
+	const [formData, setFormData] = useState({
+		name: "",
+		email: "",
+		age: 0,
+		address: "",
+		phone: "",
+		notes: "",
+	});
+
+	return { formData, setFormData };
+}
+
+function CleanComponent() {
+	const { formData, setFormData } = useUserForm();
+	return <div>...</div>;
+}
+```
+
+### 4. Destructured Props
+
+Counts props destructured in the component parameter.
+
+```typescript
+// ❌ Bad (maxDestructuredProps: 5)
+function ManyPropsComponent({
+	title,
+	subtitle,
+	description,
+	imageUrl,
+	author,
+	date,
+	tags,
+}) {
+	return <div>...</div>;
+}
+
+// ✅ Good - group props into objects
+interface CardContentProps {
+	title: string;
+	subtitle: string;
+	description: string;
+}
+
+interface CardMetaProps {
+	author: string;
+	date: Date;
+	tags: string[];
+}
+
+function BetterComponent({ content, meta, imageUrl }: Props) {
+	return <div>...</div>;
+}
+```
+
+### 5. Null Literals (Always Banned)
+
+Runtime `null` literals are always flagged - use `undefined` instead.
+
+```typescript
+// ❌ Bad
+function Component() {
+	const [data, setData] = useState(null); // Error!
+	return null; // Error!
+}
+
+// ✅ Good
+function Component() {
+	const [data, setData] = useState(undefined);
+	return undefined;
+}
+```
+
+**Exception**: Type-only `null` is allowed:
+
+```typescript
+// ✅ Allowed - type annotation only
+type Data = string | null;
+const data: Data | null = fetchData();
+```
+
+## Examples
+
+### ❌ Incorrect
+
+```typescript
+// Too many destructured props
+function UserProfile({
+	id,
+	name,
+	email,
+	avatar,
+	bio,
+	createdAt,
+	updatedAt,
+}) {
+	const [editing, setEditing] = useState(false);
+	const [name, setName] = useState(name);
+	const [email, setEmail] = useState(email);
+	const [bio, setBio] = useState(bio);
+	const [avatar, setAvatar] = useState(avatar);
+	const [loading, setLoading] = useState(false);
+
+	return (
+		<div>
+			<div>
+				<div>
+					<div>
+						<div>
+							{" "}
+							{/* Deep nesting! */}
+							<span>{name}</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+// Returns null literal
+function ConditionalComponent({ show }: Props) {
+	if (!show) return null; // Error!
+	return <div>Content</div>;
+}
+```
+
+### ✅ Correct
+
+```typescript
+// Split into smaller components
+interface UserData {
+	id: number;
+	name: string;
+	email: string;
+	avatar: string;
+}
+
+interface UserMeta {
+	bio: string;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+function UserProfile({ user, meta }: Props) {
+	const editor = useUserEditor(user);
+
+	return (
+		<div>
+			<ProfileHeader user={user} editor={editor} />
+			<ProfileContent meta={meta} />
+		</div>
+	);
+}
+
+// Extract editing logic to custom hook
+function useUserEditor(user: UserData) {
+	const [editing, setEditing] = useState(false);
+	const [formData, setFormData] = useState(user);
+	const [loading, setLoading] = useState(false);
+
+	return { editing, setEditing, formData, setFormData, loading };
+}
+
+// Return undefined instead of null
+function ConditionalComponent({ show }: Props) {
+	if (!show) return undefined;
+	return <div>Content</div>;
+}
+```
+
+## Component Detection
+
+The rule detects components by:
+
+1. **Function names starting with uppercase**: `function UserCard() {}`
+2. **Variable assignments with uppercase**: `const Button = () => {}`
+3. **HOC wrappers**: `const Enhanced = memo(Component)`
+4. **Class methods**: `class Container { render() {} }`
+
+```typescript
+// All detected as components:
+function MyComponent() {}
+const AnotherComponent = () => {};
+const Wrapped = forwardRef(() => {});
+const Memoized = React.memo(() => {});
+```
+
+## When Not To Use It
+
+Consider disabling this rule if:
+
+- You're working with a legacy codebase that needs gradual refactoring
+- You have specific components (like layout containers) that legitimately need to be large
+- Your team has different component size standards
+
+For specific exceptions, use the `ignoreComponents` option:
+
+```typescript
+{
+  "cease-nonsense/no-god-components": ["error", {
+    "ignoreComponents": ["LegacyDashboard", "AdminPanel"]
+  }]
+}
+```
+
+## Refactoring Strategies
+
+### 1. Extract Child Components
+
+```typescript
+// Before:
+function UserDashboard() {
+	return (
+		<div>
+			<header>...</header>
+			<nav>...</nav>
+			<main>...</main>
+			<aside>...</aside>
+			<footer>...</footer>
+		</div>
+	);
+}
+
+// After:
+function UserDashboard() {
+	return (
+		<div>
+			<DashboardHeader />
+			<DashboardNav />
+			<DashboardMain />
+			<DashboardAside />
+			<DashboardFooter />
+		</div>
+	);
+}
+```
+
+### 2. Extract Custom Hooks
+
+```typescript
+// Before:
+function Form() {
+	const [name, setName] = useState("");
+	const [email, setEmail] = useState("");
+	const [loading, setLoading] = useState(false);
+	const [errors, setErrors] = useState({});
+
+	// ... validation logic
+	// ... submission logic
+
+	return <form>...</form>;
+}
+
+// After:
+function useFormState(initialData) {
+	const [data, setData] = useState(initialData);
+	const [loading, setLoading] = useState(false);
+	const [errors, setErrors] = useState({});
+
+	return { data, setData, loading, setErrors, errors };
+}
+
+function Form() {
+	const form = useFormState({ name: "", email: "" });
+	return <form>...</form>;
+}
+```
+
+### 3. Group Related Props
+
+```typescript
+// Before:
+interface Props {
+	userId: number;
+	userName: string;
+	userEmail: string;
+	userAvatar: string;
+	showHeader: boolean;
+	showFooter: boolean;
+	onSave: () => void;
+	onCancel: () => void;
+}
+
+// After:
+interface User {
+	id: number;
+	name: string;
+	email: string;
+	avatar: string;
+}
+
+interface DisplayOptions {
+	showHeader: boolean;
+	showFooter: boolean;
+}
+
+interface Callbacks {
+	onSave: () => void;
+	onCancel: () => void;
+}
+
+interface Props {
+	user: User;
+	display: DisplayOptions;
+	callbacks: Callbacks;
+}
+```
+
+## Related Rules
+
+- [react-hooks-strict-return](./react-hooks-strict-return.md) - Enforces hook return patterns
+- [require-named-effect-functions](./require-named-effect-functions.md) - Prevents inline effect functions
+- [use-exhaustive-dependencies](./use-exhaustive-dependencies.md) - Prevents stale closures
+
+## Further Reading
+
+- [React Component Composition](https://react.dev/learn/passing-props-to-a-component)
+- [Extracting Custom Hooks](https://react.dev/learn/reusing-logic-with-custom-hooks)
+- [Component Design Principles](https://kentcdodds.com/blog/colocation)

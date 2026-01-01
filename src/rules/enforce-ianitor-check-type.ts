@@ -1,5 +1,4 @@
 import { TSESTree } from "@typescript-eslint/types";
-import type { TSESLint } from "@typescript-eslint/utils";
 import { ESLintUtils } from "@typescript-eslint/utils";
 
 export interface ComplexityConfiguration {
@@ -435,4 +434,4 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 	name: "enforce-ianitor-check-type",
 });
 
-export default enforceIanitorCheckType as unknown as TSESLint.AnyRuleModuleWithMetaDocs;
+export default enforceIanitorCheckType;

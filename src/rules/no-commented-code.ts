@@ -248,29 +248,28 @@ const noCommentedCode: Rule.RuleModule = {
 					if (trimmedValue === "}") continue;
 
 					const balanced = injectMissingBraces(trimmedValue);
+					if (!containsCode(balanced, context.filename)) return;
 
-					if (containsCode(balanced, context.filename)) {
-						const firstComment = group.comments.at(0);
-						const lastComment = group.comments.at(-1);
+					const firstComment = group.comments.at(0);
+					const lastComment = group.comments.at(-1);
 
-						if (!(firstComment && lastComment)) continue;
+					if (!(firstComment && lastComment)) continue;
 
-						context.report({
-							loc: {
-								end: lastComment.loc.end,
-								start: firstComment.loc.start,
-							},
-							messageId: "commentedCode",
-							suggest: [
-								{
-									desc: "Remove this commented out code",
-									fix(fixer): Rule.Fix {
-										return fixer.removeRange([firstComment.range[0], lastComment.range[1]]);
-									},
+					context.report({
+						loc: {
+							end: lastComment.loc.end,
+							start: firstComment.loc.start,
+						},
+						messageId: "commentedCode",
+						suggest: [
+							{
+								desc: "Remove this commented out code",
+								fix(fixer): Rule.Fix {
+									return fixer.removeRange([firstComment.range[0], lastComment.range[1]]);
 								},
-							],
-						});
-					}
+							},
+						],
+					});
 				}
 			},
 		};

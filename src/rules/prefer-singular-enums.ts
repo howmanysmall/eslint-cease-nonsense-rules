@@ -1,8 +1,7 @@
 // oxlint-disable prefer-string-raw
-import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import type { TSESTree } from "@typescript-eslint/utils";
 import { regex } from "arkregex";
-
-type MessageIds = "notSingular";
+import { createRule } from "../utilities/create-rule";
 
 // Irregular plurals, using lowercase for matching against tokens
 const IRREGULAR_PLURALS = new Set<string>([
@@ -135,10 +134,10 @@ function isPlural(name: string): boolean {
 	return last ? isPluralWord(last.lower, last.original) : false;
 }
 
-const preferSingularEnums: TSESLint.RuleModuleWithMetaDocs<MessageIds> = {
+export default createRule({
 	create(context) {
 		return {
-			TSEnumDeclaration(node: TSESTree.TSEnumDeclaration) {
+			TSEnumDeclaration(node: TSESTree.TSEnumDeclaration): void {
 				const { name } = node.id;
 				if (!isPlural(name)) return;
 				context.report({
@@ -160,6 +159,5 @@ const preferSingularEnums: TSESLint.RuleModuleWithMetaDocs<MessageIds> = {
 		schema: [],
 		type: "suggestion",
 	},
-};
-
-export default preferSingularEnums;
+	name: "prefer-singular-enums",
+});

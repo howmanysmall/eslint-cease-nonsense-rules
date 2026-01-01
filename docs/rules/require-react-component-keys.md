@@ -1,0 +1,292 @@
+# require-react-component-keys
+
+Enforces `key` props on all React elements except top-level returns from components.
+
+## Rule Details
+
+React requires `key` props on elements in arrays to efficiently track changes. This rule enforces keys on all JSX elements except the root return of a component, preventing common React warning and performance issues.
+
+## Options
+
+```typescript
+{
+  "cease-nonsense/require-react-component-keys": ["error", {
+    "allowRootKeys": false,
+    "ignoreCallExpressions": ["ReactTree.mount"]
+  }]
+}
+```
+
+### Configuration Parameters
+
+- **allowRootKeys** (default: `false`): Allow `key` props on root returns from components
+- **ignoreCallExpressions** (default: `[]`): Function call expressions to ignore (useful for custom rendering APIs)
+
+## Examples
+
+### ❌ Incorrect
+
+```typescript
+function UserList({ users }) {
+	return (
+		<div>
+			{users.map((user) => (
+				<UserCard user={user} /> // Missing key!
+			))}
+		</div>
+	);
+}
+
+function ItemGrid({ items }) {
+	return (
+		<>
+			{items.map((item) => (
+				<div> // Missing key!
+					<span>{item.name}</span>
+				</div>
+			))}
+		</>
+	);
+}
+
+// Nested elements also need keys
+function NestedList({ groups }) {
+	return (
+		<div>
+			{groups.map((group) => (
+				<div key={group.id}>
+					{group.items.map((item) => (
+						<span>{item.name}</span> // Missing key!
+					))}
+				</div>
+			))}
+		</div>
+	);
+}
+```
+
+### ✅ Correct
+
+```typescript
+function UserList({ users }) {
+	return (
+		<div>
+			{users.map((user) => (
+				<UserCard key={user.id} user={user} />
+			))}
+		</div>
+	);
+}
+
+function ItemGrid({ items }) {
+	return (
+		<>
+			{items.map((item) => (
+				<div key={item.id}>
+					<span>{item.name}</span>
+				</div>
+			))}
+		</>
+	);
+}
+
+// All nested elements have keys
+function NestedList({ groups }) {
+	return (
+		<div>
+			{groups.map((group) => (
+				<div key={group.id}>
+					{group.items.map((item) => (
+						<span key={item.id}>{item.name}</span>
+					))}
+				</div>
+			))}
+		</div>
+	);
+}
+
+// Root return doesn't need key (unless in array)
+function Component() {
+	return <div>Content</div>;
+}
+```
+
+## Why Keys Matter
+
+### React Reconciliation
+
+React uses keys to:
+
+- Identify which items changed, added, or removed
+- Preserve component state across re-renders
+- Optimize DOM updates
+
+```typescript
+// Without keys: React may reuse wrong elements
+{
+	items.map((item) => <Item />); // ❌
+}
+
+// With keys: React knows which Item is which
+{
+	items.map((item) => <Item key={item.id} />); // ✅
+}
+```
+
+### State Preservation
+
+```typescript
+// Bad: state gets mixed up when items reorder
+function TodoList() {
+	return todos.map((todo) => <TodoItem todo={todo} />); // No key!
+}
+
+// Good: each TodoItem keeps its state
+function TodoList() {
+	return todos.map((todo) => <TodoItem key={todo.id} todo={todo} />);
+}
+```
+
+### Performance
+
+Keys help React avoid unnecessary DOM mutations:
+
+```typescript
+// Without keys: React might destroy and recreate all items
+{
+	items.map((item) => <ExpensiveComponent {...item} />);
+}
+
+// With keys: React only updates changed items
+{
+	items.map((item) => <ExpensiveComponent key={item.id} {...item} />);
+}
+```
+
+## Choosing Good Keys
+
+### Use Stable IDs
+
+```typescript
+// ✅ Good: stable database ID
+{
+	users.map((user) => <User key={user.id} {...user} />);
+}
+
+// ❌ Bad: array index (unstable on reorder)
+{
+	users.map((user, i) => <User key={i} {...user} />);
+}
+
+// ❌ Bad: random value (changes every render)
+{
+	users.map((user) => <User key={Math.random()} {...user} />);
+}
+```
+
+### Composite Keys
+
+When items don't have unique IDs, combine properties:
+
+```typescript
+// Use multiple properties
+{
+	items.map((item) => <Item key={`${item.category}-${item.name}`} {...item} />);
+}
+
+// Or parent + index
+{
+	groups.map((group) =>
+		group.items.map((item, i) => <Item key={`${group.id}-${i}`} {...item} />),
+	);
+}
+```
+
+### When Index is OK
+
+Only use index as key when:
+
+1. Items have no stable ID
+2. List never reorders
+3. List never filters
+4. Items don't have local state
+
+```typescript
+// OK: static list of configuration options
+const COLORS = ["red", "blue", "green"];
+{
+	COLORS.map((color, i) => <ColorOption key={i} color={color} />);
+}
+```
+
+## Root Returns
+
+Components' root returns don't need keys:
+
+```typescript
+// ✅ No key needed on root
+function MyComponent() {
+	return <div>Content</div>;
+}
+
+// ✅ Unless returning multiple elements
+function MultiComponent() {
+	return [<div key="first">First</div>, <div key="second">Second</div>];
+}
+```
+
+## Fragments
+
+Fragments can have keys when in arrays:
+
+```typescript
+{
+	items.map((item) => (
+		<Fragment key={item.id}>
+			<dt>{item.label}</dt>
+			<dd>{item.value}</dd>
+		</Fragment>
+	));
+}
+
+// Shorthand <> doesn't support keys
+{
+	items.map((item) => (
+		<>
+			// ❌ Can't add key
+			<dt>{item.label}</dt>
+			<dd>{item.value}</dd>
+		</>
+	));
+}
+```
+
+## Custom Rendering APIs
+
+Use `ignoreCallExpressions` for non-React rendering:
+
+```typescript
+{
+  "ignoreCallExpressions": ["ReactTree.mount", "CustomRenderer.render"]
+}
+```
+
+```typescript
+// Won't require keys (ignored)
+ReactTree.mount(<Component />);
+```
+
+## When Not To Use It
+
+If you're not using React or a React-like library that requires keys, this rule isn't applicable.
+
+## Related Rules
+
+- [no-god-components](./no-god-components.md) - Prevents overly complex components
+- [ban-react-fc](./ban-react-fc.md) - Enforces proper component patterns
+
+## Further Reading
+
+- [React Keys Documentation](https://react.dev/learn/rendering-lists#keeping-list-items-in-order-with-key)
+- [Why Keys Matter](https://react.dev/learn/preserving-and-resetting-state#option-2-resetting-state-with-a-key)
+- [Index as Key Anti-Pattern](https://robinpokorny.com/blog/index-as-a-key-is-an-anti-pattern/)
