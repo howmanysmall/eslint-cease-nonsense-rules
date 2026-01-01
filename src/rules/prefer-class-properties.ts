@@ -1,5 +1,6 @@
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "unexpectedClassProperty" | "unexpectedAssignment";
 type Options = ["always" | "never"];
@@ -64,7 +65,7 @@ function isConstructor(node: TSESTree.ClassElement): boolean {
 	);
 }
 
-const preferClassProperties: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options> = {
+export default createRule<Options, MessageIds>({
 	create(context) {
 		const option = context.options[0] ?? "always";
 
@@ -130,6 +131,5 @@ const preferClassProperties: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options
 		schema: [{ enum: ["always", "never"], type: "string" }],
 		type: "suggestion",
 	},
-};
-
-export default preferClassProperties;
+	name: "prefer-class-properties",
+}) as unknown as TSESLint.AnyRuleModuleWithMetaDocs;

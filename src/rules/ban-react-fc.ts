@@ -1,18 +1,14 @@
 import { TSESTree } from "@typescript-eslint/types";
-import type { TSESLint } from "@typescript-eslint/utils";
+import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "banReactFC";
 
-interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
-	readonly recommended?: boolean;
-}
-
 const BANNED_FC_NAMES = new Set(["FC", "FunctionComponent", "VFC", "VoidFunctionComponent"]);
 
-const banReactFC: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], RuleDocsWithRecommended> = {
+export default createRule<[], MessageIds>({
 	create(context) {
 		return {
-			VariableDeclarator(node: TSESTree.VariableDeclarator) {
+			VariableDeclarator(node: TSESTree.VariableDeclarator): void {
 				const { typeAnnotation } = node.id;
 				if (!typeAnnotation) return;
 
@@ -42,7 +38,6 @@ const banReactFC: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], RuleDocsWithRe
 		docs: {
 			description:
 				"Ban React.FC and similar component type annotations. Use explicit function declarations instead.",
-			recommended: true,
 		},
 		messages: {
 			banReactFC:
@@ -51,6 +46,5 @@ const banReactFC: TSESLint.RuleModuleWithMetaDocs<MessageIds, [], RuleDocsWithRe
 		schema: [],
 		type: "problem",
 	},
-};
-
-export default banReactFC;
+	name: "ban-react-fc",
+});
