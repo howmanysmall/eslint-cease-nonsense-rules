@@ -13,6 +13,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("prefer-pattern-replacements", () => {
+	// @ts-expect-error -- this thing is dumb.
 	ruleTester.run("prefer-pattern-replacements", rule, {
 		invalid: [
 			{
@@ -232,6 +233,51 @@ describe("prefer-pattern-replacements", () => {
 				],
 				output: "const x = Vector2.zero;",
 			},
+			{
+				code: "const x = new Vector2((0 as number), 0);",
+				errors: [{ messageId: "preferReplacement" }],
+				options: [{ patterns: [pattern({ match: "new Vector2(0, 0)", replacement: "Vector2.zero" })] }],
+				output: "const x = Vector2.zero;",
+			},
+			{
+				code: "const x = new Vector2(0!, 0);",
+				errors: [{ messageId: "preferReplacement" }],
+				options: [{ patterns: [pattern({ match: "new Vector2(0, 0)", replacement: "Vector2.zero" })] }],
+				output: "const x = Vector2.zero;",
+			},
+			{
+				code: "const x = new Vector2(1, 2);",
+				errors: [{ messageId: "preferReplacement" }],
+				options: [{ patterns: [pattern({ match: "new Vector2($x, $y)", replacement: "fromValues($x, 0)" })] }],
+				output: "const x = fromValues(1, 0);",
+			},
+			{
+				code: "const scale = 5; const x = UDim2.fromScale(1.2, 1.2);",
+				errors: [{ data: { conflict: "scale", replacement: "scale(1.2)" }, messageId: "skippedDueToConflict" }],
+				options: [{ patterns: [pattern({ match: "UDim2.fromScale($x, $x)", replacement: "scale($x)" })] }],
+			},
+			{
+				code: "const center = 5; const x = new Vector2(0.5, 0.5);",
+				errors: [
+					{
+						data: { original: "new Vector2(0.5, 0.5)", replacement: "fromEqual(0.5)" },
+						messageId: "preferReplacement",
+					},
+					{
+						data: { conflict: "center", replacement: "center" },
+						messageId: "skippedDueToConflict",
+					},
+				],
+				options: [
+					{
+						patterns: [
+							pattern({ match: "new Vector2(0.5, 0.5)", replacement: "center" }),
+							pattern({ match: "new Vector2($x, $x)", replacement: "fromEqual($x)" }),
+						],
+					},
+				],
+				output: "const center = 5; const x = fromEqual(0.5);",
+			},
 		],
 		valid: [
 			{
@@ -259,10 +305,6 @@ describe("prefer-pattern-replacements", () => {
 						],
 					},
 				],
-			},
-			{
-				code: "const scale = 5; const x = UDim2.fromScale(1.2, 1.2);",
-				options: [{ patterns: [pattern({ match: "UDim2.fromScale($x, $x)", replacement: "scale($x)" })] }],
 			},
 			{
 				code: "const x = new Vector2(getX(), getX());",
