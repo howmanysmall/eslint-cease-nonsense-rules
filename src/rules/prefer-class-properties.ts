@@ -1,4 +1,4 @@
-import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utilities/create-rule";
 
@@ -132,4 +132,4 @@ export default createRule<Options, MessageIds>({
 		type: "suggestion",
 	},
 	name: "prefer-class-properties",
-}) as unknown as TSESLint.AnyRuleModuleWithMetaDocs;
+});

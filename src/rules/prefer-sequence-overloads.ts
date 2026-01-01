@@ -1,7 +1,8 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import type { TSESTree } from "@typescript-eslint/utils";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
+import { createRule } from "../utilities/create-rule";
 
 interface SequenceDescriptor {
 	readonly sequenceName: "ColorSequence" | "NumberSequence";
@@ -63,26 +64,12 @@ function extractKeypoint(
 	};
 }
 
-interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
-	readonly recommended?: boolean;
-}
-
-const docs: RuleDocsWithRecommended = {
-	description:
-		"Prefer the optimized ColorSequence and NumberSequence constructor overloads over passing ColorSequenceKeypoint or NumberSequenceKeypoint arrays when only using endpoints 0 and 1.",
-	recommended: true,
-};
-
-const preferSequenceOverloads: TSESLint.RuleModuleWithMetaDocs<
-	"preferSingleOverload" | "preferTwoPointOverload",
-	[],
-	RuleDocsWithRecommended
-> = {
+export default createRule<[], "preferSingleOverload" | "preferTwoPointOverload">({
 	create(context) {
 		const { sourceCode } = context;
 
 		return {
-			NewExpression(node) {
+			NewExpression(node): void {
 				const { callee } = node;
 				if (!isSequenceIdentifier(callee)) return;
 
@@ -136,7 +123,10 @@ const preferSequenceOverloads: TSESLint.RuleModuleWithMetaDocs<
 	},
 	defaultOptions: [],
 	meta: {
-		docs,
+		docs: {
+			description:
+				"Prefer using single or two-point overloads for Roblox Sequence methods instead of all three overloads.",
+		},
 		fixable: "code",
 		messages: {
 			preferSingleOverload:
@@ -147,6 +137,5 @@ const preferSequenceOverloads: TSESLint.RuleModuleWithMetaDocs<
 		schema: [],
 		type: "problem",
 	},
-};
-
-export default preferSequenceOverloads;
+	name: "prefer-sequence-overloads",
+});

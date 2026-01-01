@@ -1,3 +1,5 @@
+// this shit is the lebron of never working correctly
+// truly a masterpiece
 {
 	"$schema": "https://biomejs.dev/schemas/latest/schema.json",
 	"assist": {
@@ -193,7 +195,10 @@
 				"useDefaultParameterLast": "error",
 				"useFilenamingConvention": {
 					"level": "error",
-					"options": { "filenameCases": ["kebab-case"], "requireAscii": true }
+					"options": {
+						"filenameCases": ["kebab-case"],
+						"requireAscii": true
+					}
 				}
 			},
 
@@ -223,10 +228,9 @@
 				".vscode/*.code-snippets",
 				"**/*.code-workspace",
 				"tsconfig.json",
-				"tsconfig.app.json",
-				"tsconfig.node.json",
+				"tsconfig*.json",
 				"*.code-snippets",
-				"**/.oxlintrc.json"
+				"**/.ox*rc.json"
 			],
 			"json": {
 				"formatter": {

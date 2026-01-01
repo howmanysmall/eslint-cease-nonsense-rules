@@ -1,6 +1,7 @@
 import { DefinitionType } from "@typescript-eslint/scope-manager";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "identityBindingMap" | "identityArrayMap";
 
@@ -133,12 +134,12 @@ function isLikelyBinding(
 	return object.type === AST_NODE_TYPES.CallExpression && isJoinBindingsCall(object);
 }
 
-const noIdentityMap: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options> = {
+export default createRule<Options, MessageIds>({
 	create(context) {
 		const [{ bindingPatterns = DEFAULT_BINDING_PATTERNS } = {}] = context.options;
 
 		return {
-			CallExpression(node) {
+			CallExpression(node): void {
 				const { callee } = node;
 
 				if (callee.type !== AST_NODE_TYPES.MemberExpression) return;
@@ -193,6 +194,5 @@ const noIdentityMap: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options> = {
 		],
 		type: "suggestion",
 	},
-};
-
-export default noIdentityMap;
+	name: "no-identity-map",
+});

@@ -1,7 +1,7 @@
 import { TSESTree } from "@typescript-eslint/types";
-import type { Rule } from "eslint";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
+import { createRule } from "../utilities/create-rule";
 
 const isNumericLiteralNode = Compile(
 	Typebox.Object({
@@ -35,10 +35,10 @@ function collectNumericComponents(parameters: ReadonlyArray<unknown>): NumericCo
 	return { allZero, components };
 }
 
-const noColor3Constructor: Rule.RuleModule = {
+export default createRule<[], "useFromRGB" | "onlyZeroArgs">({
 	create(context) {
 		return {
-			NewExpression(node) {
+			NewExpression(node): void {
 				if (node.callee.type !== TSESTree.AST_NODE_TYPES.Identifier || node.callee.name !== "Color3") return;
 
 				const parameters = node.arguments;
@@ -73,11 +73,11 @@ const noColor3Constructor: Rule.RuleModule = {
 			},
 		};
 	},
+	defaultOptions: [],
 	meta: {
 		docs: {
 			description:
 				"Ban new Color3(...) except new Color3() or new Color3(0, 0, 0). Use Color3.fromRGB() instead.",
-			recommended: true,
 		},
 		fixable: "code",
 		messages: {
@@ -89,6 +89,5 @@ const noColor3Constructor: Rule.RuleModule = {
 		schema: [],
 		type: "problem",
 	},
-};
-
-export default noColor3Constructor;
+	name: "no-color3-constructor",
+});

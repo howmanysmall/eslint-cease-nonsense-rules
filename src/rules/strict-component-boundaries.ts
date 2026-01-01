@@ -1,14 +1,8 @@
 import { basename, extname, relative } from "node:path";
-import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import type { TSESTree } from "@typescript-eslint/utils";
 import { toPascalCase } from "../utilities/casing-utilities";
+import { createRule } from "../utilities/create-rule";
 import { resolveRelativeImport } from "../utilities/resolve-import";
-
-type MessageIds = "noReachingIntoComponent";
-
-interface Options {
-	readonly allow?: ReadonlyArray<string>;
-	readonly maxDepth?: number;
-}
 
 function toRegExp(pattern: string): RegExp {
 	return new RegExp(pattern, "i");
@@ -43,7 +37,7 @@ function isValidFixtureImport(pathParts: ReadonlyArray<string>): boolean {
 	return !hasAnotherComponentInPath(partsBeforeFixture);
 }
 
-const strictComponentBoundaries: TSESLint.RuleModuleWithMetaDocs<MessageIds, [Options?]> = {
+export default createRule({
 	create(context) {
 		const [{ allow = [], maxDepth = 1 } = {}] = context.options;
 		// oxlint-disable-next-line no-array-callback-reference
@@ -121,6 +115,5 @@ const strictComponentBoundaries: TSESLint.RuleModuleWithMetaDocs<MessageIds, [Op
 		],
 		type: "problem",
 	},
-};
-
-export default strictComponentBoundaries;
+	name: "strict-component-boundaries",
+});

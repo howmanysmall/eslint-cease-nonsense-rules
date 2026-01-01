@@ -1,5 +1,6 @@
 import { TSESTree } from "@typescript-eslint/types";
 import type { TSESLint } from "@typescript-eslint/utils";
+import { createRule } from "../utilities/create-rule";
 
 export interface ReactKeysOptions {
 	readonly allowRootKeys?: boolean;
@@ -50,10 +51,6 @@ const ARGUMENT_WRAPPER_TYPES = new Set([
 
 type FunctionLike = TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression | TSESTree.FunctionDeclaration;
 
-interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
-	readonly recommended?: boolean;
-}
-
 function ascendPastWrappers(node: TSESTree.Node | undefined): TSESTree.Node | undefined {
 	let current = node;
 	while (current && WRAPPER_PARENT_TYPES.has(current.type)) current = current.parent;
@@ -61,25 +58,28 @@ function ascendPastWrappers(node: TSESTree.Node | undefined): TSESTree.Node | un
 }
 
 function hasKeyAttribute(node: TSESTree.JSXElement): boolean {
-	for (const attribute of node.openingElement.attributes)
+	for (const attribute of node.openingElement.attributes) {
 		if (attribute.type === TSESTree.AST_NODE_TYPES.JSXAttribute && attribute.name.name === "key") return true;
+	}
 
 	return false;
 }
 
-function isReactComponentHOC(callExpr: TSESTree.CallExpression): boolean {
+function isHigherOrderComponent(callExpr: TSESTree.CallExpression): boolean {
 	const { callee } = callExpr;
 
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier)
+	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
 		return callee.name === "forwardRef" || callee.name === "memo";
+	}
 
 	if (
 		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 		callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		callee.object.name === "React" &&
 		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-	)
+	) {
 		return callee.property.name === "forwardRef" || callee.property.name === "memo";
+	}
 
 	return false;
 }
@@ -92,8 +92,9 @@ function getEnclosingFunctionLike(node: TSESTree.Node): FunctionLike | undefined
 			current.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression ||
 			current.type === TSESTree.AST_NODE_TYPES.FunctionExpression ||
 			current.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration
-		)
+		) {
 			return current;
+		}
 
 		current = current.parent;
 	}
@@ -102,11 +103,11 @@ function getEnclosingFunctionLike(node: TSESTree.Node): FunctionLike | undefined
 }
 
 function isIterationOrMemoCallback(
-	callExpr: TSESTree.CallExpression,
+	callExpression: TSESTree.CallExpression,
 	iterationMethods: Set<string>,
 	memoizationHooks: Set<string>,
 ): boolean {
-	const { callee } = callExpr;
+	const { callee } = callExpression;
 
 	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier && memoizationHooks.has(callee.name)) return true;
 
@@ -114,22 +115,21 @@ function isIterationOrMemoCallback(
 		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
 	) {
-		const methodName = callee.property.name;
-
-		if (iterationMethods.has(methodName)) return true;
+		const { name } = callee.property;
+		if (iterationMethods.has(name)) return true;
 
 		if (
-			methodName === "from" &&
+			name === "from" &&
 			callee.object.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 			callee.object.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
 			callee.object.object.name === "Array" &&
-			callExpr.arguments.length >= 2
+			callExpression.arguments.length >= 2
 		) {
 			return true;
 		}
 
 		if (
-			methodName === "call" &&
+			name === "call" &&
 			callee.object.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 			callee.object.object.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 			callee.object.object.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
@@ -203,7 +203,7 @@ function referenceActsAsCallback(
 	const callExpression = findEnclosingCallExpression(reference.identifier);
 	if (!callExpression) return false;
 
-	if (isReactComponentHOC(callExpression)) return false;
+	if (isHigherOrderComponent(callExpression)) return false;
 
 	return isIterationOrMemoCallback(callExpression, iterationMethods, memoizationHooks);
 }
@@ -216,15 +216,16 @@ function isFunctionUsedAsCallback(
 ): boolean {
 	const inlineCall = findEnclosingCallExpression(functionLike);
 	if (inlineCall) {
-		if (isReactComponentHOC(inlineCall)) return false;
+		if (isHigherOrderComponent(inlineCall)) return false;
 		return isIterationOrMemoCallback(inlineCall, iterationMethods, memoizationHooks);
 	}
 
 	const variable = getVariableForFunction(context, functionLike);
 	if (!variable) return false;
 
-	for (const reference of variable.references)
+	for (const reference of variable.references) {
 		if (referenceActsAsCallback(reference, iterationMethods, memoizationHooks)) return true;
+	}
 
 	return false;
 }
@@ -269,7 +270,6 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 	if (parent.type === TSESTree.AST_NODE_TYPES.ReturnStatement) {
 		let currentNode: TSESTree.Node | undefined = ascendPastWrappers(parent.parent);
 
-		// Ascend through control flow statements (if, switch, try, loops, etc.)
 		while (currentNode && CONTROL_FLOW_TYPES.has(currentNode.type)) {
 			currentNode = ascendPastWrappers(currentNode.parent);
 		}
@@ -279,7 +279,7 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 		if (IS_FUNCTION_EXPRESSION.has(currentNode.type)) {
 			const functionParent = ascendPastWrappers(currentNode.parent);
 			if (functionParent?.type === TSESTree.AST_NODE_TYPES.CallExpression) {
-				return isReactComponentHOC(functionParent);
+				return isHigherOrderComponent(functionParent);
 			}
 			return true;
 		}
@@ -289,7 +289,9 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 
 	if (parent.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression) {
 		const functionParent = ascendPastWrappers(parent.parent);
-		if (functionParent?.type === TSESTree.AST_NODE_TYPES.CallExpression) return isReactComponentHOC(functionParent);
+		if (functionParent?.type === TSESTree.AST_NODE_TYPES.CallExpression) {
+			return isHigherOrderComponent(functionParent);
+		}
 		return true;
 	}
 
@@ -398,12 +400,7 @@ function isTernaryJSXChild(node: TSESTree.JSXElement | TSESTree.JSXFragment): bo
 	);
 }
 
-const docs: RuleDocsWithRecommended = {
-	description: "Enforce key props on all React elements except top-level returns",
-	recommended: true,
-};
-
-const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRecommended> = {
+export default createRule<Options, MessageIds>({
 	create(context) {
 		const options: Required<ReactKeysOptions> = {
 			...DEFAULT_OPTIONS,
@@ -455,18 +452,20 @@ const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 		}
 
 		return {
-			JSXElement(node) {
+			JSXElement(node): void {
 				checkElement(node);
 			},
 
-			JSXFragment(node) {
+			JSXFragment(node): void {
 				checkElement(node);
 			},
 		};
 	},
 	defaultOptions: [DEFAULT_OPTIONS],
 	meta: {
-		docs,
+		docs: {
+			description: "Require keys on React components when used in lists or iteration.",
+		},
 		messages: {
 			missingKey: "All React elements except top-level returns require a key prop",
 			rootComponentWithKey: "Root component returns should not have key props",
@@ -515,6 +514,5 @@ const requireReactComponentKeys: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 		],
 		type: "problem",
 	},
-};
-
-export default requireReactComponentKeys;
+	name: "require-react-component-keys",
+});
