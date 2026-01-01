@@ -1,5 +1,6 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import type { ReadonlyRecord } from "../types/utility-types";
 
 type MessageIds =
 	| "awaitInConstructor"
@@ -18,7 +19,7 @@ function isNode(value: unknown): value is TSESTree.Node {
 	return typeof value === "object" && value !== null && "type" in value;
 }
 
-function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & Readonly<Record<string, unknown>> {
+function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & ReadonlyRecord<string, unknown> {
 	return true;
 }
 

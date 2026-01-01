@@ -29,6 +29,7 @@ import requireReactComponentKeys from "./rules/require-react-component-keys";
 import strictComponentBoundaries from "./rules/strict-component-boundaries";
 import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
 import useHookAtTopLevel from "./rules/use-hook-at-top-level";
+import type { ReadonlyRecord } from "./types/utility-types.d";
 
 type AnyRuleModule = Rule.RuleModule | TSESLint.AnyRuleModuleWithMetaDocs;
 
@@ -68,7 +69,7 @@ export { pattern } from "./utilities/pattern-replacement";
  *
  * Exposes rule implementations and configuration presets for ESLint flat config.
  */
-const rules: Readonly<Record<string, AnyRuleModule>> = {
+const rules: ReadonlyRecord<string, AnyRuleModule> = {
 	"ban-instances": banInstances,
 	"ban-react-fc": banReactFC,
 	"enforce-ianitor-check-type": enforceIanitorCheckType,
@@ -144,7 +145,7 @@ const recommended = {
 type PluginConfig = typeof recommended;
 
 interface Plugin {
-	readonly rules: Readonly<Record<string, AnyRuleModule>>;
+	readonly rules: ReadonlyRecord<string, AnyRuleModule>;
 	readonly configs: { readonly recommended: PluginConfig };
 }
 
