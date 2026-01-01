@@ -57,6 +57,8 @@ export default createRule({
 			const candidates = patternIndex.get(key);
 			if (!candidates || candidates.length === 0) return;
 
+			const skippedConflicts: Array<{ replacement: string; conflict: string }> = [];
+
 			for (const pattern of candidates) {
 				const captures = matchParameters(
 					pattern.parameters,
@@ -68,7 +70,13 @@ export default createRule({
 				}
 
 				const replacementId = getReplacementIdentifier(pattern.replacement);
-				if (replacementId && hasNameConflict(node, replacementId)) continue;
+				if (replacementId && hasNameConflict(node, replacementId)) {
+					skippedConflicts.push({
+						conflict: replacementId,
+						replacement: generateReplacement(pattern.replacement, captures),
+					});
+					continue;
+				}
 
 				const originalText = sourceCode.getText(node);
 				const replacementText = generateReplacement(pattern.replacement, captures);
@@ -80,7 +88,23 @@ export default createRule({
 					node,
 				});
 
+				for (const { replacement, conflict } of skippedConflicts) {
+					context.report({
+						data: { conflict, replacement },
+						messageId: "skippedDueToConflict",
+						node,
+					});
+				}
+
 				return;
+			}
+
+			for (const { replacement, conflict } of skippedConflicts) {
+				context.report({
+					data: { conflict, replacement },
+					messageId: "skippedDueToConflict",
+					node,
+				});
 			}
 		}
 
@@ -97,6 +121,7 @@ export default createRule({
 		fixable: "code",
 		messages: {
 			preferReplacement: "Prefer '{{replacement}}' over '{{original}}'",
+			skippedDueToConflict: "Pattern '{{replacement}}' was skipped because '{{conflict}}' is already in scope.",
 		},
 		schema: [
 			{

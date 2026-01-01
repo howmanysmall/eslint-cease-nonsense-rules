@@ -59,7 +59,7 @@
 	"files": ["dist"],
 	"license": "MIT",
 	"lint-staged": {
-		"*": ["bun run lint:fix"]
+		"*": ["bun run lint:fix", "bun x --bun biome check . --fix"]
 	},
 	"main": "./dist/index.js",
 	"name": "@pobammer-ts/eslint-cease-nonsense-rules",

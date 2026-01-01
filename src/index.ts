@@ -25,6 +25,7 @@ import reactHooksStrictReturn from "./rules/react-hooks-strict-return";
 import requireNamedEffectFunctions from "./rules/require-named-effect-functions";
 import requirePairedCalls from "./rules/require-paired-calls";
 import requireReactComponentKeys from "./rules/require-react-component-keys";
+import requireReactDisplayNames from "./rules/require-react-display-names";
 import strictComponentBoundaries from "./rules/strict-component-boundaries";
 import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
 import useHookAtTopLevel from "./rules/use-hook-at-top-level";
@@ -40,6 +41,7 @@ export type { NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
 export type { EffectFunctionOptions, EnvironmentMode, HookConfiguration } from "./rules/require-named-effect-functions";
 export type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
 export type { ReactKeysOptions } from "./rules/require-react-component-keys";
+export type { RequireReactDisplayNamesOptions } from "./rules/require-react-display-names";
 export type { HookEntry, UseExhaustiveDependenciesOptions } from "./rules/use-exhaustive-dependencies";
 export {
 	createBanInstancesOptions,
@@ -54,6 +56,7 @@ export {
 	createPreferPatternReplacementsOptions,
 	createReactKeysOptions,
 	createRequirePairedCallsOptions,
+	createRequireReactDisplayNamesOptions,
 	createUseExhaustiveDependenciesOptions,
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
@@ -93,6 +96,7 @@ const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"require-named-effect-functions": requireNamedEffectFunctions,
 	"require-paired-calls": requirePairedCalls,
 	"require-react-component-keys": requireReactComponentKeys,
+	"require-react-display-names": requireReactDisplayNames,
 	"strict-component-boundaries": strictComponentBoundaries,
 	"use-exhaustive-dependencies": useExhaustiveDependencies,
 	"use-hook-at-top-level": useHookAtTopLevel,
@@ -134,6 +138,7 @@ const recommended = {
 		"cease-nonsense/prefer-udim2-shorthand": "error",
 		"cease-nonsense/require-named-effect-functions": "error",
 		"cease-nonsense/require-react-component-keys": "error",
+		"cease-nonsense/require-react-display-names": "error",
 		"cease-nonsense/use-exhaustive-dependencies": "error",
 		"cease-nonsense/use-hook-at-top-level": "error",
 	},
