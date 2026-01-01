@@ -40,7 +40,10 @@
 			"editor.formatOnSave": true,
 		},
 
-		"biome.suggestInstallingGlobally": false,
+		"biome.configurationPath": "./biome.jsonc",
+		"biome.enabled": true,
+		"biome.requireConfiguration": true,
+		"biome.suggestInstallingGlobally": true,
 
 		"editor.acceptSuggestionOnCommitCharacter": true,
 		"editor.acceptSuggestionOnEnter": "on",

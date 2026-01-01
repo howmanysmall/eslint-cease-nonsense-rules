@@ -1,6 +1,7 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import type { TSESTree } from "@typescript-eslint/utils";
 import type { ReadonlyRecord } from "../types/utility-types";
+import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "noInstanceMethodWithoutThis";
 
@@ -11,10 +12,6 @@ export interface NoInstanceMethodsOptions {
 }
 
 type NormalizedOptions = Readonly<Required<NoInstanceMethodsOptions>>;
-
-interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
-	readonly recommended?: boolean;
-}
 
 const DEFAULT_OPTIONS: NormalizedOptions = {
 	checkPrivate: true,
@@ -82,17 +79,13 @@ function methodUsesThis(node: TSESTree.MethodDefinition): boolean {
 	return traverseForThis(value, new WeakSet());
 }
 
-const noInstanceMethodsWithoutThis: TSESLint.RuleModuleWithMetaDocs<
-	MessageIds,
-	[NoInstanceMethodsOptions | undefined],
-	RuleDocsWithRecommended
-> = {
+export default createRule<[NoInstanceMethodsOptions | undefined], MessageIds>({
 	create(context) {
 		const [rawOptions] = context.options;
 		const options = normalizeOptions(rawOptions);
 
 		return {
-			MethodDefinition(node: TSESTree.MethodDefinition) {
+			MethodDefinition(node: TSESTree.MethodDefinition): void {
 				if (!shouldCheckMethod(node, options)) return;
 				if (methodUsesThis(node)) return;
 
@@ -111,7 +104,6 @@ const noInstanceMethodsWithoutThis: TSESLint.RuleModuleWithMetaDocs<
 		docs: {
 			description:
 				"Detect instance methods that do not use 'this' and suggest converting them to standalone functions for better performance in roblox-ts.",
-			recommended: true,
 		},
 		messages: {
 			noInstanceMethodWithoutThis:
@@ -142,6 +134,5 @@ const noInstanceMethodsWithoutThis: TSESLint.RuleModuleWithMetaDocs<
 		],
 		type: "problem",
 	},
-};
-
-export default noInstanceMethodsWithoutThis;
+	name: "no-instance-methods-without-this",
+});
