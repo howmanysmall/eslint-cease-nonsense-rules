@@ -13,6 +13,7 @@ import {
 	createPreferPatternReplacementsOptions,
 	createReactKeysOptions,
 	createRequirePairedCallsOptions,
+	createRequireReactDisplayNamesOptions,
 	createUseExhaustiveDependenciesOptions,
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
@@ -317,6 +318,20 @@ describe("configure-utilities", () => {
 			const configuration = createPreferPatternReplacementsOptions(patterns);
 			expect(configuration.patterns).toHaveLength(2);
 			expect(configuration.patterns[0]?.match).toBe("UDim2.fromScale(1, 1)");
+		});
+	});
+
+	describe("createRequireReactDisplayNamesOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createRequireReactDisplayNamesOptions();
+			expect(configuration).toEqual({ environment: "roblox-ts" });
+		});
+
+		it("should override defaults", () => {
+			expect.assertions(1);
+			const configuration = createRequireReactDisplayNamesOptions({ environment: "standard" });
+			expect(configuration.environment).toBe("standard");
 		});
 	});
 });
