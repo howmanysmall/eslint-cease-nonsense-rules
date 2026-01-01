@@ -153,7 +153,8 @@ export default createRule({
 			description: "Restrict the number of returned items from React hooks.",
 		},
 		messages: {
-			hooksStrictReturn: "React hooks must return a tuple of two or fewer values or a single object.",
+			hooksStrictReturn:
+				"Hook returns more than 2 tuple elements. Destructuring large tuples causes positional errors and breaks when adding values. Return an object with named properties instead: `return { value, setValue, isLoading };`",
 		},
 		schema: [],
 		type: "suggestion",

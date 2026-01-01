@@ -125,8 +125,10 @@ export default createRule<Options, MessageIds>({
 			description: "Prefer class properties to assignment of literals in constructors.",
 		},
 		messages: {
-			unexpectedAssignment: "Unexpected assignment of literal instance member.",
-			unexpectedClassProperty: "Unexpected class property.",
+			unexpectedAssignment:
+				"Constructor assigns a literal value to this.property. Literals are static and known at class definition time. Move to a class property declaration: propertyName = value; at class level. This clarifies intent and reduces constructor complexity.",
+			unexpectedClassProperty:
+				"Class property declarations are disabled by rule configuration (mode: 'never'). Move initialization into the constructor: this.propertyName = value; inside constructor().",
 		},
 		schema: [{ enum: ["always", "never"], type: "string" }],
 		type: "suggestion",
