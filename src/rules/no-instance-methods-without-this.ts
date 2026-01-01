@@ -1,5 +1,6 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import type { ReadonlyRecord } from "../types/utility-types";
 
 type MessageIds = "noInstanceMethodWithoutThis";
 
@@ -15,7 +16,7 @@ interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
 	readonly recommended?: boolean;
 }
 
-const DEFAULT_OPTIONS: Required<NoInstanceMethodsOptions> = {
+const DEFAULT_OPTIONS: NormalizedOptions = {
 	checkPrivate: true,
 	checkProtected: true,
 	checkPublic: true,
@@ -47,7 +48,7 @@ function isNode(value: unknown): value is TSESTree.Node {
 }
 
 // Widen node to allow safe enumeration without producing implicit any values
-function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & Readonly<Record<string, unknown>> {
+function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & ReadonlyRecord<string, unknown> {
 	return true;
 }
 

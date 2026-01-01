@@ -1,3 +1,4 @@
+import type { TSESLint } from "@typescript-eslint/utils";
 import { createRule } from "../utilities/create-rule";
 
 export default createRule({
@@ -23,4 +24,4 @@ export default createRule({
 		type: "problem",
 	},
 	name: "no-warn",
-});
+}) as unknown as TSESLint.AnyRuleModuleWithMetaDocs;

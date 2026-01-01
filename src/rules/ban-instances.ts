@@ -2,6 +2,7 @@ import { TSESTree } from "@typescript-eslint/types";
 import type { TSESLint } from "@typescript-eslint/utils";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
+import type { ReadonlyRecord } from "../types/utility-types";
 
 /**
  * Configuration for banned Roblox Instance classes.
@@ -20,7 +21,7 @@ import { Compile } from "typebox/compile";
  * ```
  */
 export interface BanInstancesOptions {
-	readonly bannedInstances: ReadonlyArray<string> | Readonly<Record<string, string>>;
+	readonly bannedInstances: ReadonlyArray<string> | ReadonlyRecord<string, string>;
 }
 
 type Options = [BanInstancesOptions?];
