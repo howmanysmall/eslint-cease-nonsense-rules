@@ -9,8 +9,20 @@ const ruleTester = new RuleTester({
 	},
 });
 
-const classPropErrors = [{ message: "Unexpected class property.", type: "PropertyDefinition" }];
-const assignErrors = [{ message: "Unexpected assignment of literal instance member.", type: "AssignmentExpression" }];
+const classPropErrors = [
+	{
+		message:
+			"Class property declarations are disabled by rule configuration (mode: 'never'). Move initialization into the constructor: this.propertyName = value; inside constructor().",
+		type: "PropertyDefinition",
+	},
+];
+const assignErrors = [
+	{
+		message:
+			"Constructor assigns a literal value to this.property. Literals are static and known at class definition time. Move to a class property declaration: propertyName = value; at class level. This clarifies intent and reduces constructor complexity.",
+		type: "AssignmentExpression",
+	},
+];
 
 describe("prefer-class-properties", () => {
 	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape

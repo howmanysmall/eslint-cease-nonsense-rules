@@ -25,7 +25,8 @@ describe("no-commented-code", () => {
 						endColumn: 21,
 						endLine: 1,
 						line: 1,
-						message: "Remove this commented out code.",
+						message:
+							"Commented-out code creates confusion about intent and clutters the codebase. Version control preserves history, making dead code comments unnecessary. Delete the commented code entirely. If needed later, retrieve it from git history.",
 						suggestions: [{ desc: "Remove this commented out code", output: "" }],
 					},
 				],
@@ -41,7 +42,8 @@ describe("no-commented-code", () => {
 						endColumn: 7,
 						endLine: 4,
 						line: 1,
-						message: "Remove this commented out code.",
+						message:
+							"Commented-out code creates confusion about intent and clutters the codebase. Version control preserves history, making dead code comments unnecessary. Delete the commented code entirely. If needed later, retrieve it from git history.",
 						suggestions: [{ desc: "Remove this commented out code", output: "" }],
 					},
 				],
@@ -61,7 +63,8 @@ foo(a, function(){
 						endColumn: 6,
 						endLine: 8,
 						line: 1,
-						message: "Remove this commented out code.",
+						message:
+							"Commented-out code creates confusion about intent and clutters the codebase. Version control preserves history, making dead code comments unnecessary. Delete the commented code entirely. If needed later, retrieve it from git history.",
 						suggestions: [{ desc: "Remove this commented out code", output: "" }],
 					},
 				],

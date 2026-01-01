@@ -281,7 +281,8 @@ const noCommentedCode: Rule.RuleModule = {
 		},
 		hasSuggestions: true,
 		messages: {
-			commentedCode: "Remove this commented out code.",
+			commentedCode:
+				"Commented-out code creates confusion about intent and clutters the codebase. Version control preserves history, making dead code comments unnecessary. Delete the commented code entirely. If needed later, retrieve it from git history.",
 		},
 		schema: [],
 		type: "suggestion",
