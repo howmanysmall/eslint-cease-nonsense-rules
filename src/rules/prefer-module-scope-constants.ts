@@ -1,6 +1,7 @@
 import { ScopeType } from "@typescript-eslint/scope-manager";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "mustUseConst" | "mustBeModuleScope";
 
@@ -18,18 +19,18 @@ function isTopScope(scope: TSESLint.Scope.Scope): boolean {
 	return false;
 }
 
-const preferModuleScopeConstants: TSESLint.RuleModuleWithMetaDocs<MessageIds> = {
+export default createRule<[], MessageIds>({
 	create(context) {
 		let inConstDeclaration = false;
 
 		return {
-			VariableDeclaration(node) {
+			VariableDeclaration(node): void {
 				inConstDeclaration = node.kind === "const";
 			},
-			"VariableDeclaration:exit"() {
+			"VariableDeclaration:exit"(): void {
 				inConstDeclaration = false;
 			},
-			VariableDeclarator(node: TSESTree.VariableDeclarator) {
+			VariableDeclarator(node: TSESTree.VariableDeclarator): void {
 				const { id } = node;
 				if (id.type !== AST_NODE_TYPES.Identifier || !SCREAMING_SNAKE_CASE.test(id.name)) return;
 
@@ -66,6 +67,5 @@ const preferModuleScopeConstants: TSESLint.RuleModuleWithMetaDocs<MessageIds> = 
 		schema: [],
 		type: "suggestion",
 	},
-};
-
-export default preferModuleScopeConstants;
+	name: "prefer-module-scope-constants",
+});
