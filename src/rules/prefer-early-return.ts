@@ -60,7 +60,8 @@ export default createRule<[Options?], MessageIds>({
 			description: "Prefer early returns over full-body conditional wrapping in function declarations.",
 		},
 		messages: {
-			preferEarlyReturn: "Prefer an early return to a conditionally-wrapped function body",
+			preferEarlyReturn:
+				"Function body is wrapped in a single conditional without an else branch. This increases nesting depth and cognitive load. Invert the condition and return early: if (!condition) return; then place the main logic at the top level.",
 		},
 		schema: [
 			{

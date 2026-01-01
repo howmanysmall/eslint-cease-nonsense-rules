@@ -405,7 +405,8 @@ const noShorthandNames: Rule.RuleModule = {
 			recommended: true,
 		},
 		messages: {
-			useReplacement: "Use '{{replacement}}' instead of '{{shorthand}}' shorthand",
+			useReplacement:
+				"'{{shorthand}}' is a shorthand abbreviation that reduces code readability. Abbreviated names force readers to mentally expand them and can mean different things in different contexts. Rename to '{{replacement}}' for clarity and self-documenting code.",
 		},
 		schema: [
 			{

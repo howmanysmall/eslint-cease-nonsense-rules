@@ -12,7 +12,9 @@ const ruleTester = new RuleTester({
 });
 
 function errorWithName(name: string): { message: string } {
-	return { message: `Enum '${name}' should use Pascal case.` };
+	return {
+		message: `Enum '${name}' uses non-standard casing. TypeScript convention requires PascalCase for enum names and members to distinguish them from variables (camelCase) and constants (UPPER_CASE). Rename to PascalCase: capitalize first letter of each word, no underscores.`,
+	};
 }
 
 describe("prefer-pascal-case-enums", () => {

@@ -17,7 +17,7 @@ export default createRule({
 			description: "Ban print() function calls. Use Log instead.",
 		},
 		messages: {
-			useLog: "Use Log instead of print()",
+			useLog: "print() is a raw output function lacking log levels, timestamps, and filtering. Production systems require structured logging for debugging and monitoring. Replace print(...) with something from the logging package.",
 		},
 		schema: [],
 		type: "problem",

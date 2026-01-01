@@ -17,7 +17,7 @@ export default createRule({
 			description: "Ban warn() function calls. Use Log instead.",
 		},
 		messages: {
-			useLog: "Use Log instead of warn()",
+			useLog: "warn() is a raw output function lacking log levels, timestamps, and filtering. Production systems require structured logging for debugging and monitoring. Replace warn(...) with something from the logging package.",
 		},
 		schema: [],
 		type: "problem",
