@@ -1,0 +1,152 @@
+# ban-instances
+
+Bans specified Roblox Instance classes in `new Instance()` calls and JSX elements.
+
+## Rule Details
+
+This rule prevents the creation of specific Roblox Instance classes that may be problematic, deprecated, or should be replaced with better alternatives. You can configure which Instance classes are banned and provide custom messages explaining why.
+
+## Options
+
+```typescript
+{
+  "cease-nonsense/ban-instances": ["error", {
+    "bannedInstances": ["Part", "Frame", "Script"]
+  }]
+}
+```
+
+### Configuration Formats
+
+**Array format** (uses default message):
+
+```typescript
+{
+  "bannedInstances": ["Part", "Frame", "Script", "LocalScript"]
+}
+```
+
+**Object format** (custom messages per class):
+
+```typescript
+{
+  "bannedInstances": {
+    "Part": "Use MeshPart instead for better performance",
+    "Script": "Scripts should not be created at runtime",
+    "Frame": "Use modern UI components instead"
+  }
+}
+```
+
+## Examples
+
+### ❌ Incorrect
+
+```typescript
+// With config: { bannedInstances: ["Part", "Script"] }
+
+// new Instance() constructor
+const part = new Instance("Part");
+const script = new Instance("Script");
+
+// JSX elements (lowercase = Roblox Instance)
+<part Size={new Vector3(1, 1, 1)} />
+<script Source="print('hello')" />
+<frame Size={UDim2.fromScale(1, 1)} />
+```
+
+### ✅ Correct
+
+```typescript
+// Using allowed alternatives
+const meshPart = new Instance("MeshPart");
+const folder = new Instance("Folder");
+
+// JSX with allowed Instances
+<meshpart Size={new Vector3(1, 1, 1)} />
+<folder />
+<textlabel Text="Hello" />
+```
+
+## When Not To Use It
+
+If you don't work with Roblox or don't need to restrict specific Instance classes, this rule isn't applicable. You can also disable it in specific files where you need to use banned Instances for legacy compatibility.
+
+## Common Use Cases
+
+### Performance Optimization
+
+```typescript
+{
+  "bannedInstances": {
+    "Part": "Use MeshPart instead - better performance and more features",
+    "UnionOperation": "Unions are expensive; use MeshParts with optimized meshes"
+  }
+}
+```
+
+### Security Concerns
+
+```typescript
+{
+  "bannedInstances": {
+    "Script": "Server scripts should not be created at runtime",
+    "LocalScript": "Client scripts should not be created at runtime - security risk",
+    "ModuleScript": "Module scripts should be statically required, not dynamically created"
+  }
+}
+```
+
+### API Migration
+
+```typescript
+{
+  "bannedInstances": {
+    "Frame": "Migrate to new UI library components",
+    "TextLabel": "Use Text component from UI library instead",
+    "ImageLabel": "Use Image component from UI library instead"
+  }
+}
+```
+
+## Edge Cases
+
+### JSX Detection
+
+The rule detects JSX elements that represent Roblox Instances by checking if the element name starts with a lowercase letter:
+
+```typescript
+// These are checked (lowercase = Roblox Instance)
+<part /> // ❌ Banned if "Part" is in config
+<frame /> // ❌ Banned if "Frame" is in config
+
+// These are NOT checked (uppercase = React components)
+<Part /> // ✅ Allowed - React component
+<Frame /> // ✅ Allowed - React component
+```
+
+### Case Sensitivity
+
+The rule performs case-insensitive matching:
+
+```typescript
+{
+  "bannedInstances": ["Part"]
+}
+
+// All of these are banned:
+new Instance("Part");
+new Instance("part");
+new Instance("PART");
+<part />
+```
+
+## Related Rules
+
+- [no-color3-constructor](./no-color3-constructor.md) - Bans inefficient Color3 constructors
+- [prefer-udim2-shorthand](./prefer-udim2-shorthand.md) - Enforces UDim2 shorthands
+
+## Further Reading
+
+- [Roblox Instance API](https://create.roblox.com/docs/reference/engine/classes/Instance)
+- [Roblox Performance Optimization](https://create.roblox.com/docs/scripting/performance-optimization)

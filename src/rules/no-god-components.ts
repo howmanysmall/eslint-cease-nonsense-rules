@@ -348,11 +348,9 @@ const noGodComponents: Rule.RuleModule = {
 
 		return {
 			ArrowFunctionExpression(node) {
-				// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
 				maybeCheckFunction(node as unknown as TSESTree.ArrowFunctionExpression);
 			},
 			CallExpression(node) {
-				// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
 				const callExpr = node as unknown as TSESTree.CallExpression;
 				if (!isReactComponentHOC(callExpr)) return;
 				const [firstArg] = callExpr.arguments;

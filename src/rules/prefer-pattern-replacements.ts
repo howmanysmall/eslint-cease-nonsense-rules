@@ -2,6 +2,7 @@ import type { TSESTree } from "@typescript-eslint/types";
 import type { TSESLint } from "@typescript-eslint/utils";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
+import { createRule } from "../utilities/create-rule";
 import type { ParsedPattern, Pattern, PatternIndex } from "../utilities/pattern-replacement";
 import {
 	buildPatternIndex,
@@ -13,17 +14,6 @@ import {
 	parsePattern,
 	resolveCallee,
 } from "../utilities/pattern-replacement";
-
-interface PreferPatternReplacementsOptions {
-	readonly patterns: ReadonlyArray<Pattern>;
-}
-
-type Options = [PreferPatternReplacementsOptions?];
-type MessageIds = "preferReplacement";
-
-interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
-	readonly recommended: boolean;
-}
 
 const isRuleOptions = Compile(
 	Typebox.Object({
@@ -37,7 +27,7 @@ function parsePatterns(patterns: ReadonlyArray<Pattern>): ReadonlyArray<ParsedPa
 	);
 }
 
-const preferPatternReplacements: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRecommended> = {
+export default createRule({
 	create(context) {
 		const validatedOptions = isRuleOptions.Check(context.options[0]) ? context.options[0] : undefined;
 		if (!validatedOptions || validatedOptions.patterns.length === 0) return {};
@@ -103,7 +93,6 @@ const preferPatternReplacements: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 	meta: {
 		docs: {
 			description: "Enforce using configured replacements for common constructor/method patterns",
-			recommended: false,
 		},
 		fixable: "code",
 		messages: {
@@ -123,6 +112,5 @@ const preferPatternReplacements: TSESLint.RuleModuleWithMetaDocs<MessageIds, Opt
 		],
 		type: "suggestion",
 	},
-};
-
-export default preferPatternReplacements;
+	name: "prefer-pattern-replacements",
+});

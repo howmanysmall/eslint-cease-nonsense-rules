@@ -1,7 +1,6 @@
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-
-type MessageIds = "hooksStrictReturn";
+import { createRule } from "../utilities/create-rule";
 
 const MAX_RETURN_ELEMENTS = 2;
 
@@ -96,7 +95,7 @@ function exceedsMaxReturnProperties(node: TSESTree.ReturnStatement, scope: TSESL
 	return countReturnElements(argument, scope) > MAX_RETURN_ELEMENTS;
 }
 
-const reactHooksStrictReturn: TSESLint.RuleModuleWithMetaDocs<MessageIds> = {
+export default createRule({
 	create(context) {
 		let hookDepth = 0;
 
@@ -159,6 +158,5 @@ const reactHooksStrictReturn: TSESLint.RuleModuleWithMetaDocs<MessageIds> = {
 		schema: [],
 		type: "suggestion",
 	},
-};
-
-export default reactHooksStrictReturn;
+	name: "react-hooks-strict-return",
+});

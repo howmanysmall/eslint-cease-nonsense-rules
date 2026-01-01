@@ -1,5 +1,6 @@
-import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "preferEarlyReturn";
 
@@ -33,7 +34,7 @@ function canSimplifyConditionalBody(body: TSESTree.BlockStatement, maxStatements
 	return isOffendingConsequent(statement.consequent, maxStatements);
 }
 
-const preferEarlyReturn: TSESLint.RuleModuleWithMetaDocs<MessageIds, [Options?]> = {
+export default createRule<[Options?], MessageIds>({
 	create(context) {
 		const options = context.options[0] ?? {};
 		const maxStatements = options.maximumStatements ?? DEFAULT_MAXIMUM_STATEMENTS;
@@ -72,6 +73,5 @@ const preferEarlyReturn: TSESLint.RuleModuleWithMetaDocs<MessageIds, [Options?]>
 		],
 		type: "suggestion",
 	},
-};
-
-export default preferEarlyReturn;
+	name: "prefer-early-return",
+});

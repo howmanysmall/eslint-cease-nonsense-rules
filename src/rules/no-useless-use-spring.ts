@@ -1,6 +1,7 @@
 import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "uselessSpring";
 
@@ -95,7 +96,6 @@ function unwrapExpression(expression: TSESTree.Expression): TSESTree.Expression 
 function findVariable(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	identifier: TSESTree.Identifier,
-	// Eslint's type definitions for Scope differ from @typescript-eslint's; cast for compatibility
 ): TSESLint.Scope.Variable | undefined {
 	let scope = context.sourceCode.getScope(identifier) as TSESLint.Scope.Scope | undefined;
 	while (scope) {
@@ -321,8 +321,6 @@ function isStaticExpression(
 	if (seen.has(unwrapped)) return true;
 	seen.add(unwrapped);
 
-	// eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
-	// Oxlint:disable-next-line @typescript-eslint/switch-exhaustiveness-check
 	switch (unwrapped.type) {
 		case AST_NODE_TYPES.Literal:
 			return true;
@@ -374,8 +372,9 @@ function isStaticExpression(
 				context !== undefined &&
 				isStaticCallCallee(context, unwrapped.callee, seen, options) &&
 				unwrapped.arguments.every(
-					(arg) =>
-						arg.type !== AST_NODE_TYPES.SpreadElement && isStaticExpression(context, arg, seen, options),
+					(argument) =>
+						argument.type !== AST_NODE_TYPES.SpreadElement &&
+						isStaticExpression(context, argument, seen, options),
 				)
 			);
 
@@ -384,15 +383,16 @@ function isStaticExpression(
 				context !== undefined &&
 				isStaticCallCallee(context, unwrapped.callee, seen, options) &&
 				(unwrapped.arguments ?? []).every(
-					(arg) =>
-						arg.type !== AST_NODE_TYPES.SpreadElement && isStaticExpression(context, arg, seen, options),
+					(argument) =>
+						argument.type !== AST_NODE_TYPES.SpreadElement &&
+						isStaticExpression(context, argument, seen, options),
 				)
 			);
 
 		case AST_NODE_TYPES.SequenceExpression:
 			return (
 				unwrapped.expressions.length > 0 &&
-				unwrapped.expressions.every((expr) => isStaticExpression(context, expr, seen, options))
+				unwrapped.expressions.every((expression) => isStaticExpression(context, expression, seen, options))
 			);
 
 		case AST_NODE_TYPES.AssignmentExpression:
@@ -440,7 +440,7 @@ function isSpringHookCall(node: TSESTree.CallExpression, options: NormalizedOpti
 	return false;
 }
 
-const noUselessUseSpring: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options> = {
+export default createRule({
 	create(context) {
 		const [rawOptions] = context.options;
 		const normalized: NormalizedOptions = {
@@ -453,7 +453,7 @@ const noUselessUseSpring: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options> =
 		};
 
 		return {
-			CallExpression(node) {
+			CallExpression(node): void {
 				if (!isSpringHookCall(node, normalized)) return;
 				if (node.arguments.length === 0) return;
 
@@ -512,6 +512,5 @@ const noUselessUseSpring: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options> =
 		],
 		type: "suggestion",
 	},
-};
-
-export default noUselessUseSpring;
+	name: "no-useless-use-spring",
+});

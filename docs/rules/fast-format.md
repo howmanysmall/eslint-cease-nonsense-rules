@@ -1,0 +1,224 @@
+# fast-format
+
+Enforces oxfmt code formatting with auto-fix support and intelligent caching.
+
+## Rule Details
+
+This rule integrates oxfmt (a fast code formatter) directly into ESLint, reporting formatting differences as INSERT, DELETE, and REPLACE operations. It includes an LRU cache to avoid re-formatting unchanged files, making it suitable for large codebases.
+
+## Options
+
+This rule has no configuration options. It uses oxfmt's default formatting rules.
+
+## Examples
+
+### ❌ Incorrect
+
+```typescript
+// Inconsistent spacing
+const x=1+2;
+
+// Missing semicolons
+const message = "hello"
+
+// Inconsistent quote style
+const name = 'John'
+const greeting = "Hello"
+
+// Poor indentation
+function example(){
+if(true){
+return 42
+}
+}
+
+// Inconsistent object formatting
+const obj = {a:1,b:2,c:3};
+```
+
+### ✅ Correct
+
+```typescript
+// Consistent spacing
+const x = 1 + 2;
+
+// Proper semicolons
+const message = "hello";
+
+// Consistent quote style
+const name = "John";
+const greeting = "Hello";
+
+// Proper indentation
+function example() {
+	if (true) {
+		return 42;
+	}
+}
+
+// Formatted object
+const obj = { a: 1, b: 2, c: 3 };
+```
+
+## Auto-Fix Behavior
+
+This rule provides automatic fixes for all formatting violations. When you run ESLint with `--fix`, all formatting issues will be corrected automatically.
+
+```bash
+# Fix all formatting issues
+bun run lint:fix
+eslint --fix src/
+```
+
+## Performance Features
+
+### LRU Cache
+
+The rule uses a Least Recently Used (LRU) cache to avoid reformatting unchanged files:
+
+- **Default capacity**: 32 files
+- **Cache keys**: Combination of filename and source content
+- **Cache behavior**: Automatically evicts oldest entries when capacity is reached
+
+### File Extension Detection
+
+The rule only runs on supported file extensions (`.js`, `.jsx`, `.ts`, `.tsx`, `.mjs`, `.cjs`) and skips other files entirely for better performance.
+
+## Error Handling
+
+If oxfmt encounters a parsing or formatting error, the rule reports it at line 1, column 0:
+
+```typescript
+// Syntax error in file
+const x = ;
+
+// ESLint output:
+// error  Oxfmt error: unexpected token  cease-nonsense/fast-format
+```
+
+## Integration with Other Tools
+
+### Prettier Comparison
+
+Unlike Prettier, oxfmt is specifically designed for JavaScript/TypeScript and is significantly faster:
+
+- ✅ **Faster**: 10-100x faster than Prettier
+- ✅ **Integrated**: Reports as ESLint violations
+- ✅ **Cached**: Avoids re-formatting unchanged files
+- ✅ **Auto-fix**: Works with ESLint's --fix flag
+
+### ESLint Formatting Rules
+
+This rule replaces many ESLint formatting rules:
+
+```typescript
+// You can disable these when using fast-format:
+rules: {
+  "indent": "off",
+  "quotes": "off",
+  "semi": "off",
+  "comma-spacing": "off",
+  "object-curly-spacing": "off",
+  // ... and many others
+}
+```
+
+## When Not To Use It
+
+Disable this rule if:
+
+- You use a different code formatter (e.g., Prettier)
+- You prefer to format code manually
+- Your project has specific formatting requirements not supported by oxfmt
+
+## Configuration Examples
+
+### Recommended Setup
+
+```typescript
+import ceaseNonsense from "@pobammer-ts/eslint-cease-nonsense-rules";
+
+export default [
+	{
+		plugins: {
+			"cease-nonsense": ceaseNonsense,
+		},
+		rules: {
+			"cease-nonsense/fast-format": "error",
+		},
+	},
+];
+```
+
+### With Pre-commit Hook
+
+```json
+{
+	"simple-git-hooks": {
+		"pre-commit": "bun run lint:fix"
+	},
+	"lint-staged": {
+		"*.{ts,tsx,js,jsx}": ["eslint --fix"]
+	}
+}
+```
+
+## Message Types
+
+The rule reports three types of formatting operations:
+
+### INSERT
+
+```typescript
+// Before:
+const x= 1;
+
+// After:
+const x = 1;
+
+// Message: Insert ` ` at position X
+```
+
+### DELETE
+
+```typescript
+// Before:
+const x =  1;
+
+// After:
+const x = 1;
+
+// Message: Delete ` ` at position X
+```
+
+### REPLACE
+
+```typescript
+// Before:
+const x='hello';
+
+// After:
+const x = "hello";
+
+// Message: Replace `'hello'` with `"hello"` at position X
+```
+
+## Troubleshooting
+
+### Cache Issues
+
+If you experience stale formatting results, the cache may need clearing. Restarting your ESLint process will clear the cache automatically.
+
+### Performance in Large Codebases
+
+For very large codebases (>1000 files), consider:
+
+- Using ESLint's cache: `eslint --cache`
+- Running only on changed files in CI
+- Adjusting the cache capacity if memory is a concern
+
+## Further Reading
+
+- [oxfmt Documentation](https://oxc-project.github.io/docs/guide/usage/linter/oxfmt.html)
+- [ESLint Formatters](https://eslint.org/docs/latest/use/formatters/)
+- [Code Formatting Best Practices](https://prettier.io/docs/en/rationale.html)
