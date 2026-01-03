@@ -46,7 +46,7 @@
 		],
 		"indentStyle": "tab",
 		"indentWidth": 4,
-		"lineEnding": "lf",
+		"lineEnding": "auto",
 		"lineWidth": 120,
 		"useEditorconfig": false
 	},
@@ -82,7 +82,7 @@
 			"indentScriptAndStyle": true,
 			"indentStyle": "tab",
 			"indentWidth": 4,
-			"lineEnding": "lf",
+			"lineEnding": "auto",
 			"lineWidth": 120,
 			"selfCloseVoidElements": "always",
 			"whitespaceSensitivity": "strict"
@@ -100,7 +100,7 @@
 			"indentStyle": "tab",
 			"indentWidth": 4,
 			"jsxQuoteStyle": "double",
-			"lineEnding": "lf",
+			"lineEnding": "auto",
 			"lineWidth": 120,
 			"quoteProperties": "asNeeded",
 			"quoteStyle": "double",
