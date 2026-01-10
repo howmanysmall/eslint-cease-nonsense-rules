@@ -7,15 +7,53 @@ import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "preferEnumItem" | "preferEnumItemNumber";
 
+interface EnumMatch {
+	readonly enumPath: string;
+	readonly memberName: string;
+}
+
 export interface PreferEnumItemOptions {
 	readonly fixNumericToValue?: boolean;
 }
 
 type Options = [PreferEnumItemOptions?];
 
+const ENUM_PREFIX = "Enum.";
+
+function getFullEnumPath(checker: ts.TypeChecker, type: ts.Type): string | undefined {
+	const symbol = type.getSymbol();
+	if (symbol === undefined) return undefined;
+
+	const fullName = checker.getFullyQualifiedName(symbol);
+	if (!fullName.startsWith(ENUM_PREFIX)) return undefined;
+
+	return fullName;
+}
+
+function getPropertyLiteralType(
+	checker: ts.TypeChecker,
+	type: ts.Type,
+	propertyName: string,
+): string | number | undefined {
+	const property = type.getProperty(propertyName);
+	if (property === undefined) return undefined;
+
+	const propertyType = checker.getTypeOfSymbol(property);
+	if (propertyType.isStringLiteral()) return propertyType.value;
+	if (propertyType.isNumberLiteral()) return propertyType.value;
+
+	return undefined;
+}
+
 function getUnionTypes(type: ts.Type): ReadonlyArray<ts.Type> {
 	if (type.isUnion()) return type.types;
 	return [type];
+}
+
+function createEnumMatch(enumPath: string): EnumMatch | undefined {
+	const memberName = enumPath.split(".").at(-1);
+	if (memberName === undefined) return undefined;
+	return { enumPath, memberName };
 }
 
 export default createRule<Options, MessageIds>({
@@ -26,7 +64,31 @@ export default createRule<Options, MessageIds>({
 
 		function getContextualType(node: TSESTree.Node): ts.Type | undefined {
 			const tsNode = services.esTreeNodeToTSNodeMap.get(node);
+			// TsNode from esTreeNodeToTSNodeMap is guaranteed to be an Expression when visiting Literal nodes
 			return checker.getContextualType(tsNode as ts.Expression);
+		}
+
+		function findEnumMatch(contextualType: ts.Type, literalValue: string | number): EnumMatch | undefined {
+			const unionTypes = getUnionTypes(contextualType);
+
+			for (const memberType of unionTypes) {
+				const enumPath = getFullEnumPath(checker, memberType);
+				if (enumPath === undefined) continue;
+
+				if (typeof literalValue === "string") {
+					const nameProperty = getPropertyLiteralType(checker, memberType, "Name");
+					if (nameProperty === literalValue) {
+						return createEnumMatch(enumPath);
+					}
+				} else {
+					const valueProperty = getPropertyLiteralType(checker, memberType, "Value");
+					if (valueProperty === literalValue) {
+						return createEnumMatch(enumPath);
+					}
+				}
+			}
+
+			return undefined;
 		}
 
 		return {
@@ -37,9 +99,8 @@ export default createRule<Options, MessageIds>({
 				const contextualType = getContextualType(node);
 				if (contextualType === undefined) return;
 
-				// Find enum match in contextual type (implementation pending)
-				const unionTypes = getUnionTypes(contextualType);
-				void unionTypes;
+				const enumMatch = findEnumMatch(contextualType, value);
+				void enumMatch;
 				void fixNumericToValue;
 			},
 		};
