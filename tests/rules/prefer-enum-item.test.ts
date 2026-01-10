@@ -1,10 +1,10 @@
 import { describe } from "bun:test";
-import path from "node:path";
+import { join } from "node:path";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 import rule from "../../src/rules/prefer-enum-item";
 
-const fixturesDir = path.join(__dirname, "../fixtures/prefer-enum-item");
+const fixturesDir = join(__dirname, "../fixtures/prefer-enum-item");
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -14,7 +14,7 @@ const ruleTester = new RuleTester({
 			ecmaFeatures: { jsx: true },
 			projectService: {
 				allowDefaultProject: ["*.ts", "*.tsx"],
-				defaultProject: path.join(fixturesDir, "tsconfig.json"),
+				defaultProject: join(fixturesDir, "tsconfig.json"),
 			},
 			tsconfigRootDir: fixturesDir,
 		},

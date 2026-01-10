@@ -100,9 +100,6 @@
 		"typecheck:safe": "bun x --bun tsc --noEmit"
 	},
 	"sideEffects": false,
-	"simple-git-hooks": {
-		"pre-commit": "bun run lint-staged"
-	},
 	"type": "module",
 	"types": "./dist/index.d.ts",
 	"version": "1.13.0"
