@@ -102,6 +102,16 @@ describe("prefer-enum-item", () => {
 	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
 	ruleTester.run("prefer-enum-item", rule, {
 		invalid: [
+			// JSX attribute with string literal
+			{
+				code: `${typeDeclarations}
+declare const Image: (props: ImageProps) => unknown;
+<Image ScaleType="Slice" />;`,
+				errors: [{ messageId: "preferEnumItem" }],
+				output: `${typeDeclarations}
+declare const Image: (props: ImageProps) => unknown;
+<Image ScaleType={Enum.ScaleType.Slice} />;`,
+			},
 			// String literal in object property
 			{
 				code: `${typeDeclarations}
@@ -187,6 +197,10 @@ setNonLiteral("anything");`,
 				code: `${typeDeclarations}
 const props: ImageProps = { ScaleType: Enum.ScaleType.Slice.Value };`,
 			},
+			// Variable without type annotation (exercises VariableDeclarator skip path)
+			{ code: `const x = "Slice";` },
+			// Variable with non-Enum type annotation
+			{ code: `const x: string = "Slice";` },
 		],
 	});
 });
