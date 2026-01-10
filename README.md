@@ -50,6 +50,7 @@ export default [
 			"cease-nonsense/no-identity-map": "error",
 			"cease-nonsense/no-instance-methods-without-this": "error",
 			"cease-nonsense/no-print": "error",
+			"cease-nonsense/prefer-enum-item": "error",
 			"cease-nonsense/no-shorthand-names": "error",
 			"cease-nonsense/no-useless-use-spring": "error",
 			"cease-nonsense/no-warn": "error",
@@ -135,6 +136,40 @@ const userConfigValidator = Ianitor.interface({
 type UserConfig = Ianitor.Static<typeof userConfigValidator>;
 
 const config = userConfigValidator.check(getUserConfig());
+```
+
+#### `prefer-enum-item`
+
+Enforce using EnumItem values instead of string or number literals when the type expects an EnumItem. Provides type safety and avoids magic values in roblox-ts code.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/prefer-enum-item": ["error", {
+    "fixNumericToValue": false  // When true, numbers fix to Enum.X.Y.Value
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+// Magic string
+<uiflexitem FlexMode="Fill" />
+
+// Magic number
+const props: ImageProps = { ScaleType: 1 };
+```
+
+**✅ Good**
+
+```typescript
+// Explicit enum
+<uiflexitem FlexMode={Enum.UIFlexMode.Fill} />
+
+// Explicit enum in object
+const props: ImageProps = { ScaleType: Enum.ScaleType.Slice };
 ```
 
 ### React

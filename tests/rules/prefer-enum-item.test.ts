@@ -1,8 +1,11 @@
-import { describe } from "bun:test";
+import { describe, setDefaultTimeout } from "bun:test";
 import { join } from "node:path";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 import rule from "../../src/rules/prefer-enum-item";
+
+// Type-aware tests have cold-start overhead from TypeScript project service initialization
+setDefaultTimeout(30_000);
 
 const fixturesDir = join(__dirname, "../fixtures/prefer-enum-item");
 
