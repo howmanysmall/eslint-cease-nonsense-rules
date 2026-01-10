@@ -11,7 +11,8 @@ In roblox-ts, EnumItem values can often be passed as their string name or numeri
 ```typescript
 {
   "cease-nonsense/prefer-enum-item": ["error", {
-    "fixNumericToValue": false
+    "fixNumericToValue": false,
+    "performanceMode": false
   }]
 }
 ```
@@ -19,6 +20,7 @@ In roblox-ts, EnumItem values can often be passed as their string name or numeri
 ### Configuration Parameters
 
 - **fixNumericToValue** (default: `false`): When `true`, numeric literals fix to `Enum.X.Y.Value` instead of `Enum.X.Y`. The `.Value` form preserves numeric runtime value for performance while being self-documenting.
+- **performanceMode** (default: `false`): When `true`, caches enum lookups to reduce repeated TypeScript API calls without changing behavior.
 
 ## Examples
 
