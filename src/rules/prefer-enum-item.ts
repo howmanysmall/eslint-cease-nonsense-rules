@@ -61,7 +61,6 @@ export default createRule<Options, MessageIds>({
 
 		function getContextualType(node: TSESTree.Node): ts.Type | undefined {
 			const tsNode = services.esTreeNodeToTSNodeMap.get(node);
-			// TsNode from esTreeNodeToTSNodeMap is guaranteed to be an Expression when visiting Literal nodes
 			return checker.getContextualType(tsNode as ts.Expression);
 		}
 
@@ -74,14 +73,10 @@ export default createRule<Options, MessageIds>({
 
 				if (typeof literalValue === "string") {
 					const nameProperty = getPropertyLiteralType(checker, memberType, "Name");
-					if (nameProperty === literalValue) {
-						return createEnumMatch(enumPath);
-					}
+					if (nameProperty === literalValue) return createEnumMatch(enumPath);
 				} else {
 					const valueProperty = getPropertyLiteralType(checker, memberType, "Value");
-					if (valueProperty === literalValue) {
-						return createEnumMatch(enumPath);
-					}
+					if (valueProperty === literalValue) return createEnumMatch(enumPath);
 				}
 			}
 
