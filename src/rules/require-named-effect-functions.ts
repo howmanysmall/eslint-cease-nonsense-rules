@@ -94,6 +94,71 @@ interface ResolvedFunction {
 	readonly isAsync: boolean;
 }
 
+function findVariableInScope(identifier: TSESTree.Identifier, scope: unknown): unknown {
+	let variable: unknown;
+	let currentScope: unknown = scope;
+
+	while (typeof currentScope === "object" && currentScope !== null) {
+		const current = currentScope as { set: Map<string, unknown>; upper?: unknown };
+		variable = current.set.get(identifier.name);
+		if (typeof variable === "object" && variable !== null) break;
+		currentScope = current.upper;
+	}
+
+	return variable;
+}
+
+function processFunctionDeclaration(node: unknown): ResolvedFunction {
+	const castNode = node as { async?: boolean };
+	return {
+		isAsync: Boolean(castNode.async),
+		node: node as TSESTree.FunctionDeclaration,
+		type: "function-declaration",
+	};
+}
+
+function processArrowFunction(init: unknown): ResolvedFunction {
+	const arrowNode = init as TSESTree.ArrowFunctionExpression;
+	return {
+		isAsync: Boolean((init as { async?: boolean }).async),
+		node: arrowNode,
+		type: "arrow",
+	};
+}
+
+function processFunctionExpression(init: unknown): ResolvedFunction {
+	const exprNode = init as TSESTree.FunctionExpression;
+	return {
+		isAsync: Boolean((init as { async?: boolean }).async),
+		node: exprNode,
+		type: "function-expression",
+	};
+}
+
+function checkVariableDeclaratorDef(node: unknown): ResolvedFunction | undefined {
+	const castNode = node as { type?: string; init?: unknown };
+	if (castNode.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator) return undefined;
+	if (typeof castNode.init !== "object" || castNode.init === null) return undefined;
+
+	const castInit = castNode.init as { type?: string };
+	if (castInit.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression) return processArrowFunction(castNode.init);
+	if (castInit.type === TSESTree.AST_NODE_TYPES.FunctionExpression) return processFunctionExpression(castNode.init);
+	return undefined;
+}
+
+function processSingleDefinition(definition: unknown): ResolvedFunction | undefined {
+	if (typeof definition !== "object" || definition === null) return undefined;
+
+	const castDef = definition as { node?: unknown };
+	const { node } = castDef;
+	if (typeof node !== "object" || node === null) return undefined;
+
+	const castNode = node as { type?: string };
+	if (castNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration) return processFunctionDeclaration(node);
+
+	return checkVariableDeclaratorDef(node);
+}
+
 function resolveIdentifierToFunction(
 	identifier: TSESTree.Identifier,
 	context: Rule.RuleContext,
@@ -106,61 +171,15 @@ function resolveIdentifierToFunction(
 		const setVal = scopeObj.set;
 		if (!(setVal instanceof Map)) return undefined;
 
-		let variable: unknown;
-		let currentScope: unknown = scope;
-
-		while (typeof currentScope === "object" && currentScope !== null) {
-			const current = currentScope as { set: Map<string, unknown>; upper?: unknown };
-			variable = current.set.get(identifier.name);
-			if (typeof variable === "object" && variable !== null) break;
-			currentScope = current.upper;
-		}
-
+		const variable = findVariableInScope(identifier, scope);
 		if (typeof variable !== "object" || variable === null) return undefined;
 
 		const castVariable = variable as { defs: Array<unknown> };
 		if (!Array.isArray(castVariable.defs) || castVariable.defs.length === 0) return undefined;
 
 		for (const definition of castVariable.defs) {
-			if (typeof definition !== "object" || definition === null) continue;
-
-			const castDefinition = definition as { node?: unknown };
-			const { node } = castDefinition;
-			if (typeof node !== "object" || node === null) continue;
-
-			const castNode = node as { type?: string; init?: unknown; async?: boolean };
-			if (castNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration) {
-				return {
-					isAsync: Boolean(castNode.async),
-					node: node as unknown as TSESTree.FunctionDeclaration,
-					type: "function-declaration",
-				};
-			}
-
-			if (
-				castNode.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
-				typeof castNode.init === "object" &&
-				castNode.init !== null
-			) {
-				const castInit = castNode.init as { type?: string; async?: boolean };
-				if (castInit.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression) {
-					const arrowNode = castNode.init as unknown as TSESTree.ArrowFunctionExpression;
-					return {
-						isAsync: Boolean(arrowNode.async),
-						node: arrowNode,
-						type: "arrow",
-					};
-				}
-
-				if (castInit.type === TSESTree.AST_NODE_TYPES.FunctionExpression) {
-					const castInitNode = castNode.init as unknown as TSESTree.FunctionExpression;
-					return {
-						isAsync: Boolean(castInitNode.async),
-						node: castInitNode,
-						type: "function-expression",
-					};
-				}
-			}
+			const result = processSingleDefinition(definition);
+			if (result !== undefined) return result;
 		}
 
 		return undefined;

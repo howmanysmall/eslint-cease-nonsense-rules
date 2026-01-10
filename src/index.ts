@@ -15,6 +15,7 @@ import noUselessUseSpring from "./rules/no-useless-use-spring";
 import noWarn from "./rules/no-warn";
 import preferClassProperties from "./rules/prefer-class-properties";
 import preferEarlyReturn from "./rules/prefer-early-return";
+import preferEnumItem from "./rules/prefer-enum-item";
 import preferModuleScopeConstants from "./rules/prefer-module-scope-constants";
 import preferPascalCaseEnums from "./rules/prefer-pascal-case-enums";
 import preferPatternReplacements from "./rules/prefer-pattern-replacements";
@@ -38,6 +39,7 @@ export type { NoIdentityMapOptions } from "./rules/no-identity-map";
 export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
 export type { NoShorthandOptions } from "./rules/no-shorthand-names";
 export type { NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
+export type { PreferEnumItemOptions } from "./rules/prefer-enum-item";
 export type { EffectFunctionOptions, EnvironmentMode, HookConfiguration } from "./rules/require-named-effect-functions";
 export type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
 export type { ReactKeysOptions } from "./rules/require-react-component-keys";
@@ -86,6 +88,7 @@ const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"no-warn": noWarn,
 	"prefer-class-properties": preferClassProperties,
 	"prefer-early-return": preferEarlyReturn,
+	"prefer-enum-item": preferEnumItem,
 	"prefer-module-scope-constants": preferModuleScopeConstants,
 	"prefer-pascal-case-enums": preferPascalCaseEnums,
 	"prefer-pattern-replacements": preferPatternReplacements,
