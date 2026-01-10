@@ -1,7 +1,8 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { isUnionType, unionConstituents } from "ts-api-utils";
-import type { Expression, Type, TypeChecker } from "typescript";
+import type { Expression, Type, TypeChecker, Node as TypeScriptNode, Symbol as TypeScriptSymbol } from "typescript";
+import { SymbolFlags } from "typescript";
 import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "preferEnumItem";
@@ -52,6 +53,11 @@ interface EnumLookup {
 	readonly numberMap: Map<number, string>;
 }
 
+interface EnumLiteralIndex {
+	readonly stringSet: Set<string>;
+	readonly numberSet: Set<number>;
+}
+
 export interface PreferEnumItemOptions {
 	readonly fixNumericToValue?: boolean;
 	readonly performanceMode?: boolean;
@@ -60,6 +66,7 @@ export interface PreferEnumItemOptions {
 type Options = [PreferEnumItemOptions?];
 
 const ENUM_PREFIX = "Enum.";
+const enumLiteralIndexCache = new WeakMap<TypeChecker, EnumLiteralIndex | false>();
 
 function getFullEnumPath(checker: TypeChecker, type: Type): string | undefined {
 	const symbol = type.getSymbol();
@@ -175,9 +182,70 @@ export default createRule<Options, MessageIds>({
 			return lookup;
 		}
 
+		function resolveAliasSymbol(symbol: TypeScriptSymbol): TypeScriptSymbol {
+			if ((symbol.flags & SymbolFlags.Alias) !== 0) return checker.getAliasedSymbol(symbol);
+			return symbol;
+		}
+
+		function buildEnumLiteralIndex(anchorNode: TypeScriptNode): EnumLiteralIndex | undefined {
+			const resolved = checker.resolveName("Enum", anchorNode, SymbolFlags.Namespace, false);
+			if (resolved === undefined) return undefined;
+
+			const enumSymbol = resolveAliasSymbol(resolved);
+			if ((enumSymbol.flags & SymbolFlags.Namespace) === 0) return undefined;
+
+			const stringSet = new Set<string>();
+			const numberSet = new Set<number>();
+			const stack: Array<TypeScriptSymbol> = [enumSymbol];
+			const visited = new Set<TypeScriptSymbol>();
+
+			while (stack.length > 0) {
+				const current = stack.pop();
+				if (current === undefined) continue;
+				if (visited.has(current)) continue;
+				visited.add(current);
+
+				const exports = checker.getExportsOfModule(current);
+				for (const exportSymbol of exports) {
+					const unaliased = resolveAliasSymbol(exportSymbol);
+					if ((unaliased.flags & SymbolFlags.Namespace) !== 0) {
+						stack.push(unaliased);
+						continue;
+					}
+
+					const type = checker.getTypeOfSymbol(unaliased);
+					const info = getEnumItemInfo(type);
+					if (info === undefined) continue;
+					if (info.nameLiteral !== undefined) stringSet.add(info.nameLiteral);
+					if (info.valueLiteral !== undefined) numberSet.add(info.valueLiteral);
+				}
+			}
+
+			if (stringSet.size === 0 && numberSet.size === 0) return undefined;
+			return { numberSet, stringSet };
+		}
+
+		function getEnumLiteralIndex(anchorNode: TypeScriptNode): EnumLiteralIndex | undefined {
+			const cached = enumLiteralIndexCache.get(checker);
+			if (cached !== undefined) return cached === false ? undefined : cached;
+			const built = buildEnumLiteralIndex(anchorNode);
+			enumLiteralIndexCache.set(checker, built ?? false);
+			return built;
+		}
+
 		function getContextualType(node: TSESTree.Node): Type | undefined {
 			const tsNode = services.esTreeNodeToTSNodeMap.get(node);
 			return checker.getContextualType(tsNode as Expression);
+		}
+
+		function shouldSkipLiteral(node: TSESTree.Literal, value: string | number): boolean {
+			if (!performanceMode) return false;
+			const tsNode = services.esTreeNodeToTSNodeMap.get(node);
+			if (tsNode === undefined) return false;
+			const index = getEnumLiteralIndex(tsNode);
+			if (index === undefined) return false;
+			if (typeof value === "string") return !index.stringSet.has(value);
+			return !index.numberSet.has(value);
 		}
 
 		function findEnumMatch(contextualType: Type, literalValue: string | number): EnumMatch | undefined {
@@ -215,6 +283,8 @@ export default createRule<Options, MessageIds>({
 				if (typeof value !== "string" && typeof value !== "number") return;
 
 				if (!canHaveContextualEnumType(node)) return;
+
+				if (shouldSkipLiteral(node, value)) return;
 
 				const contextualType = getContextualType(node);
 				if (contextualType === undefined) return;
