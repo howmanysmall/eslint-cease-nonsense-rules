@@ -43,6 +43,7 @@ interface EnumMatch {
 
 export interface PreferEnumItemOptions {
 	readonly fixNumericToValue?: boolean;
+	readonly performanceMode?: boolean;
 }
 
 type Options = [PreferEnumItemOptions?];
@@ -148,7 +149,7 @@ export default createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [{}],
+	defaultOptions: [{ fixNumericToValue: false, performanceMode: false }],
 	meta: {
 		docs: {
 			description: "Enforce using EnumItem values instead of string or number literals.",
@@ -165,6 +166,11 @@ export default createRule<Options, MessageIds>({
 					fixNumericToValue: {
 						default: false,
 						description: "When true, numeric literals fix to Enum.X.Y.Value instead of Enum.X.Y",
+						type: "boolean",
+					},
+					performanceMode: {
+						default: false,
+						description: "When true, uses caching to speed up enum lookups without changing behavior",
 						type: "boolean",
 					},
 				},

@@ -228,7 +228,7 @@ export function createPreferPatternReplacementsOptions(
  * @returns The full options
  */
 export function createPreferEnumItemOptions(options: Partial<PreferEnumItemOptions> = {}): PreferEnumItemOptions {
-	return { fixNumericToValue: false, ...options };
+	return { fixNumericToValue: false, performanceMode: false, ...options };
 }
 
 /**

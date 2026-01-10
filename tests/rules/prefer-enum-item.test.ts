@@ -136,6 +136,14 @@ setScaleType("Fit");`,
 				output: `${typeDeclarations}
 setScaleType(Enum.ScaleType.Fit);`,
 			},
+			{
+				code: `${typeDeclarations}
+setScaleType("Fit");`,
+				errors: [{ messageId: "preferEnumItem" }],
+				options: [{ performanceMode: true }],
+				output: `${typeDeclarations}
+setScaleType(Enum.ScaleType.Fit);`,
+			},
 			// Number literal in function call
 			{
 				code: `${typeDeclarations}
