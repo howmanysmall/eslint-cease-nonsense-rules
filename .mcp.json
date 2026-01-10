@@ -5,9 +5,10 @@
 			"command": "bun",
 			"type": "stdio"
 		},
-		"package-registry": {
-			"args": ["x", "--bun", "package-registry-mcp"],
-			"command": "bun"
+		"npm-registry": {
+			"args": ["run", "github.com/howmanysmall/npm-registry-mcp/src@main"],
+			"command": "go",
+			"type": "stdio"
 		},
 		"uniprof": {
 			"args": ["x", "uniprof", "mcp", "run"],
