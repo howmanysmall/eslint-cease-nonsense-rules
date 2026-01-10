@@ -65,50 +65,80 @@ function reconstructText(node: Record<PropertyKey, unknown>): string | undefined
 	return text;
 }
 
+function evaluateLiteral(node: Record<PropertyKey, unknown>): number | undefined {
+	const { value } = node;
+	return isNumber(value) ? value : undefined;
+}
+
+function evaluateUnary(node: Record<PropertyKey, unknown>): number | undefined {
+	const { argument, operator } = node;
+	if (!isRecord(argument)) return undefined;
+
+	const argumentValue = evaluateExpression(argument);
+	if (argumentValue === undefined) return undefined;
+	if (operator === "-") return -argumentValue;
+	if (operator === "+") return argumentValue;
+	return undefined;
+}
+
+function evaluateBinaryOperation(operator: string, left: number, right: number): number | undefined {
+	switch (operator) {
+		case "+":
+			return left + right;
+
+		case "-":
+			return left - right;
+
+		case "*":
+			return left * right;
+
+		case "/":
+			return right === 0 ? undefined : left / right;
+
+		case "%":
+			return right === 0 ? undefined : left % right;
+
+		default:
+			return undefined;
+	}
+}
+
+function evaluateBinary(node: Record<PropertyKey, unknown>): number | undefined {
+	const { right, left, operator } = node;
+	if (!(isRecord(left) && isRecord(right))) return undefined;
+	if (typeof operator !== "string" || !OPERATORS.has(operator)) return undefined;
+
+	const leftValue = evaluateExpression(left);
+	const rightValue = evaluateExpression(right);
+	if (leftValue === undefined || rightValue === undefined) return undefined;
+
+	return evaluateBinaryOperation(operator, leftValue, rightValue);
+}
+
 function evaluateExpression(node: unknown): number | undefined {
 	if (!isRecord(node)) return undefined;
 
-	const nodeType = node.type;
-	let value: number | undefined;
+	switch (node.type) {
+		case TSESTree.AST_NODE_TYPES.Literal:
+			return evaluateLiteral(node);
 
-	if (nodeType === TSESTree.AST_NODE_TYPES.Literal) {
-		const { value: literalValue } = node;
-		value = isNumber(literalValue) ? literalValue : undefined;
+		case TSESTree.AST_NODE_TYPES.UnaryExpression:
+			return evaluateUnary(node);
+
+		case TSESTree.AST_NODE_TYPES.BinaryExpression:
+			return evaluateBinary(node);
+
+		default:
+			return undefined;
 	}
-
-	if (nodeType === TSESTree.AST_NODE_TYPES.UnaryExpression) {
-		const { argument, operator } = node;
-		if (isRecord(argument)) {
-			const argumentValue = evaluateExpression(argument);
-			if (operator === "-" && argumentValue !== undefined) value = -argumentValue;
-			if (operator === "+" && argumentValue !== undefined) value = argumentValue;
-		}
-	}
-
-	if (nodeType === TSESTree.AST_NODE_TYPES.BinaryExpression) {
-		const { right, left, operator } = node;
-		if (isRecord(left) && isRecord(right) && typeof operator === "string" && OPERATORS.has(operator)) {
-			const leftValue = evaluateExpression(left);
-			const rightValue = evaluateExpression(right);
-			if (leftValue !== undefined && rightValue !== undefined) {
-				if (operator === "+") value = leftValue + rightValue;
-				if (operator === "-") value = leftValue - rightValue;
-				if (operator === "*") value = leftValue * rightValue;
-				if (operator === "/") value = rightValue === 0 ? undefined : leftValue / rightValue;
-				if (operator === "%") value = rightValue === 0 ? undefined : leftValue % rightValue;
-			}
-		}
-	}
-
-	return value;
 }
 
 function collectArguments(_context: RuleContext, parameters: ReadonlyArray<unknown>): ArgumentsCollection | undefined {
 	if (parameters.length !== 4) return undefined;
 
-	const texts: Array<string | undefined> = [undefined, undefined, undefined, undefined];
+	const texts = new Array<string | undefined>(4);
 
-	for (let index = 0; index < 4; index++) {
+	for (let index = 0; index < 4; index += 1) {
 		const parameter = parameters[index];
 		if (!(isRecord(parameter) && hasTypeProperty(parameter))) return undefined;
 
@@ -121,8 +151,14 @@ function collectArguments(_context: RuleContext, parameters: ReadonlyArray<unkno
 
 	const [scaleXText, offsetXText, scaleYText, offsetYText] = texts;
 
-	if (scaleXText === undefined || offsetXText === undefined || scaleYText === undefined || offsetYText === undefined)
+	if (
+		scaleXText === undefined ||
+		offsetXText === undefined ||
+		scaleYText === undefined ||
+		offsetYText === undefined
+	) {
 		return undefined;
+	}
 
 	return { offsetXText, offsetYText, scaleXText, scaleYText };
 }
