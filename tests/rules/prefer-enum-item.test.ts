@@ -144,6 +144,16 @@ setScaleType("Fit");`,
 				output: `${typeDeclarations}
 setScaleType(Enum.ScaleType.Fit);`,
 			},
+			{
+				code: `${typeDeclarations}
+setScaleType("Fit");
+setScaleType("Fit");`,
+				errors: [{ messageId: "preferEnumItem" }, { messageId: "preferEnumItem" }],
+				options: [{ performanceMode: true }],
+				output: `${typeDeclarations}
+setScaleType(Enum.ScaleType.Fit);
+setScaleType(Enum.ScaleType.Fit);`,
+			},
 			// Number literal in function call
 			{
 				code: `${typeDeclarations}
@@ -209,6 +219,10 @@ const props: ImageProps = { ScaleType: Enum.ScaleType.Slice.Value };`,
 			{ code: `const x = "Slice";` },
 			// Variable with non-Enum type annotation
 			{ code: `const x: string = "Slice";` },
+			{
+				code: `const x: string = "Slice";`,
+				options: [{ performanceMode: true }],
+			},
 		],
 	});
 });

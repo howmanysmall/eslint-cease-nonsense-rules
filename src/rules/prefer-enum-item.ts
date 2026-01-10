@@ -41,6 +41,17 @@ interface EnumMatch {
 	readonly enumPath: string;
 }
 
+interface EnumItemInfo {
+	readonly enumPath: string;
+	readonly nameLiteral?: string;
+	readonly valueLiteral?: number;
+}
+
+interface EnumLookup {
+	readonly stringMap: Map<string, string>;
+	readonly numberMap: Map<number, string>;
+}
+
 export interface PreferEnumItemOptions {
 	readonly fixNumericToValue?: boolean;
 	readonly performanceMode?: boolean;
@@ -80,15 +91,89 @@ function getUnionTypes(type: Type): ReadonlyArray<Type> {
 	return [type];
 }
 
-function createEnumMatch(enumPath: string): EnumMatch {
-	return { enumPath };
-}
+	function createEnumMatch(enumPath: string): EnumMatch {
+		return { enumPath };
+	}
 
 export default createRule<Options, MessageIds>({
 	create(context) {
-		const [{ fixNumericToValue = false } = {}] = context.options;
+		const [{ fixNumericToValue = false, performanceMode = false } = {}] = context.options;
 		const services = ESLintUtils.getParserServices(context);
 		const checker = services.program.getTypeChecker();
+		const unionTypesCache = new WeakMap<Type, ReadonlyArray<Type>>();
+		const enumPathCache = new WeakMap<Type, string | false>();
+		const enumItemInfoCache = new WeakMap<Type, EnumItemInfo | false>();
+		const enumLookupCache = new WeakMap<Type, EnumLookup | false>();
+
+		function getUnionTypesCached(type: Type): ReadonlyArray<Type> {
+			const cached = unionTypesCache.get(type);
+			if (cached !== undefined) return cached;
+			const resolved = isUnionType(type) ? unionConstituents(type) : [type];
+			unionTypesCache.set(type, resolved);
+			return resolved;
+		}
+
+		function getFullEnumPathCached(type: Type): string | undefined {
+			const cached = enumPathCache.get(type);
+			if (cached !== undefined) return cached === false ? undefined : cached;
+			const resolved = getFullEnumPath(checker, type);
+			enumPathCache.set(type, resolved ?? false);
+			return resolved;
+		}
+
+		function getEnumItemInfo(type: Type): EnumItemInfo | undefined {
+			const cached = enumItemInfoCache.get(type);
+			if (cached !== undefined) return cached === false ? undefined : cached;
+
+			const enumPath = getFullEnumPathCached(type);
+			if (enumPath === undefined) {
+				enumItemInfoCache.set(type, false);
+				return undefined;
+			}
+
+			const nameLiteral = getPropertyLiteralType(checker, type, "Name");
+			const valueLiteral = getPropertyLiteralType(checker, type, "Value");
+			const info: EnumItemInfo = {
+				enumPath,
+				nameLiteral: typeof nameLiteral === "string" ? nameLiteral : undefined,
+				valueLiteral: typeof valueLiteral === "number" ? valueLiteral : undefined,
+			};
+			enumItemInfoCache.set(type, info);
+			return info;
+		}
+
+		function getEnumLookup(type: Type): EnumLookup | undefined {
+			const cached = enumLookupCache.get(type);
+			if (cached !== undefined) return cached === false ? undefined : cached;
+
+			const unionTypes = getUnionTypesCached(type);
+			const stringMap = new Map<string, string>();
+			const numberMap = new Map<number, string>();
+			let hasAny = false;
+
+			for (const memberType of unionTypes) {
+				const info = getEnumItemInfo(memberType);
+				if (info === undefined) continue;
+				hasAny = true;
+
+				if (info.nameLiteral !== undefined && !stringMap.has(info.nameLiteral)) {
+					stringMap.set(info.nameLiteral, info.enumPath);
+				}
+
+				if (info.valueLiteral !== undefined && !numberMap.has(info.valueLiteral)) {
+					numberMap.set(info.valueLiteral, info.enumPath);
+				}
+			}
+
+			if (!hasAny) {
+				enumLookupCache.set(type, false);
+				return undefined;
+			}
+
+			const lookup: EnumLookup = { numberMap, stringMap };
+			enumLookupCache.set(type, lookup);
+			return lookup;
+		}
 
 		function getContextualType(node: TSESTree.Node): Type | undefined {
 			const tsNode = services.esTreeNodeToTSNodeMap.get(node);
@@ -96,6 +181,16 @@ export default createRule<Options, MessageIds>({
 		}
 
 		function findEnumMatch(contextualType: Type, literalValue: string | number): EnumMatch | undefined {
+			if (performanceMode) {
+				const lookup = getEnumLookup(contextualType);
+				if (lookup === undefined) return undefined;
+				const enumPath =
+					typeof literalValue === "string"
+						? lookup.stringMap.get(literalValue)
+						: lookup.numberMap.get(literalValue);
+				return enumPath === undefined ? undefined : createEnumMatch(enumPath);
+			}
+
 			const unionTypes = getUnionTypes(contextualType);
 
 			for (const memberType of unionTypes) {
