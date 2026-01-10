@@ -122,14 +122,22 @@
 		{
 			"files": ["benchmarks/**/*.bench.ts"],
 			"rules": {
+				"complexity": "off",
 				"no-console": "off",
 				"no-namespace": "off",
+			},
+		},
+		{
+			"files": ["scripts/**/*.ts"],
+			"rules": {
+				"complexity": "off",
 			},
 		},
 	],
 	"plugins": ["eslint", "import", "jsdoc", "node", "oxc", "promise", "typescript", "unicorn"],
 	"rules": {
 		"arrow-body-style": ["error", "as-needed"],
+		"complexity": "off",
 		"curly": [
 			"off",
 			{

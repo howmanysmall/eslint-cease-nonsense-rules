@@ -52,7 +52,6 @@ const enum CharacterType {
 export function getExtension(filePath: string): string | undefined {
 	const { length } = filePath;
 
-	// Check for .ts or .js (3-char extensions) — most common case
 	if (length >= 3 && filePath.codePointAt(length - 3) === CharacterType.Period) {
 		const character1 = filePath.codePointAt(length - 2);
 		const character2 = filePath.codePointAt(length - 1);
@@ -60,7 +59,6 @@ export function getExtension(filePath: string): string | undefined {
 		if (character1 === CharacterType.LowerJ && character2 === CharacterType.LowerS) return ".js";
 	}
 
-	// Check for 4-char extensions: .tsx, .jsx, .mts, .mjs, .cts, .cjs
 	if (length >= 4 && filePath.codePointAt(length - 4) === CharacterType.Period) {
 		const character1 = filePath.codePointAt(length - 3);
 		const character2 = filePath.codePointAt(length - 2);
@@ -107,14 +105,11 @@ export function generateDifferences(original: string, formatted: string): Readon
 		const [type, text] = diff;
 
 		if (type === 0) {
-			// EQUAL - advance offset, no diff
 			offset += text.length;
 			index += 1;
 		} else if (type === -1) {
-			// DELETE - calculate adjusted offset to report deletion at earliest position
 			let adjustedOffset = offset;
 
-			// If previous EQUAL ends with same chars as DELETE, shift offset back
 			const previous = diffs[index - 1];
 			if (previous !== undefined && previous[0] === 0) {
 				const [, prevText] = previous;
@@ -129,7 +124,6 @@ export function generateDifferences(original: string, formatted: string): Readon
 				adjustedOffset -= shiftCount;
 			}
 
-			// Check if next is INSERT to merge into REPLACE
 			const next = diffs[index + 1];
 			if (next !== undefined && next[0] === 1) {
 				const [, nextText] = next;
@@ -146,7 +140,6 @@ export function generateDifferences(original: string, formatted: string): Readon
 			}
 			offset += text.length;
 		} else {
-			// INSERT - record at current offset
 			differences[size++] = { insertText: text, offset, operation: "INSERT" };
 			index += 1;
 		}
