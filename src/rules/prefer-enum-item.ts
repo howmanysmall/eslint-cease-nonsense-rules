@@ -5,11 +5,10 @@ import type ts from "typescript";
 
 import { createRule } from "../utilities/create-rule";
 
-type MessageIds = "preferEnumItem" | "preferEnumItemNumber";
+type MessageIds = "preferEnumItem";
 
 interface EnumMatch {
 	readonly enumPath: string;
-	readonly memberName: string;
 }
 
 export interface PreferEnumItemOptions {
@@ -51,9 +50,9 @@ function getUnionTypes(type: ts.Type): ReadonlyArray<ts.Type> {
 }
 
 function createEnumMatch(enumPath: string): EnumMatch | undefined {
-	const memberName = enumPath.split(".").at(-1);
-	if (memberName === undefined) return undefined;
-	return { enumPath, memberName };
+	// Validate the path has at least one segment after "Enum."
+	if (enumPath.split(".").at(-1) === undefined) return undefined;
+	return { enumPath };
 }
 
 export default createRule<Options, MessageIds>({
@@ -99,9 +98,25 @@ export default createRule<Options, MessageIds>({
 				const contextualType = getContextualType(node);
 				if (contextualType === undefined) return;
 
-				const enumMatch = findEnumMatch(contextualType, value);
-				void enumMatch;
-				void fixNumericToValue;
+				const match = findEnumMatch(contextualType, value);
+				if (match === undefined) return;
+
+				const isString = typeof value === "string";
+				const displayValue = isString ? `"${value}"` : String(value);
+				const fixPath = fixNumericToValue && !isString ? `${match.enumPath}.Value` : match.enumPath;
+
+				context.report({
+					data: {
+						enumType: match.enumPath.split(".").slice(0, -1).join("."),
+						expected: fixPath,
+						value: displayValue,
+					},
+					fix(fixer) {
+						return fixer.replaceText(node, fixPath);
+					},
+					messageId: "preferEnumItem",
+					node,
+				});
 			},
 		};
 	},
@@ -114,8 +129,6 @@ export default createRule<Options, MessageIds>({
 		messages: {
 			preferEnumItem:
 				"Use `{{ expected }}` instead of `{{ value }}`. EnumItems provide type safety and avoid magic values.",
-			preferEnumItemNumber:
-				"Use an `{{ enumType }}` member instead of `{{ value }}`. Check the enum definition for the correct member.",
 		},
 		schema: [
 			{
