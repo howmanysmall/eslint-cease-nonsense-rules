@@ -1,11 +1,41 @@
 import type { TSESTree } from "@typescript-eslint/utils";
-import { ESLintUtils } from "@typescript-eslint/utils";
-
-import type ts from "typescript";
-
+import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
+import { isUnionType, unionConstituents } from "ts-api-utils";
+import type { Expression, Type, TypeChecker } from "typescript";
 import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "preferEnumItem";
+
+function isJSXAttributeValue(node: TSESTree.Literal): boolean {
+	const { parent } = node;
+	return parent !== undefined && parent.type === AST_NODE_TYPES.JSXAttribute && parent.value === node;
+}
+
+function canHaveContextualEnumType(node: TSESTree.Literal): boolean {
+	const { parent } = node;
+	if (parent === undefined) return false;
+
+	switch (parent.type) {
+		case AST_NODE_TYPES.CallExpression:
+		case AST_NODE_TYPES.NewExpression:
+			return parent.arguments.includes(node);
+
+		case AST_NODE_TYPES.Property:
+			return parent.value === node;
+
+		case AST_NODE_TYPES.JSXAttribute:
+			return parent.value === node;
+
+		case AST_NODE_TYPES.VariableDeclarator: {
+			if (parent.init !== node) return false;
+			const { id } = parent;
+			return id.type === AST_NODE_TYPES.Identifier && id.typeAnnotation !== undefined;
+		}
+
+		default:
+			return false;
+	}
+}
 
 interface EnumMatch {
 	readonly enumPath: string;
@@ -19,7 +49,7 @@ type Options = [PreferEnumItemOptions?];
 
 const ENUM_PREFIX = "Enum.";
 
-function getFullEnumPath(checker: ts.TypeChecker, type: ts.Type): string | undefined {
+function getFullEnumPath(checker: TypeChecker, type: Type): string | undefined {
 	const symbol = type.getSymbol();
 	if (symbol === undefined) return undefined;
 
@@ -30,9 +60,9 @@ function getFullEnumPath(checker: ts.TypeChecker, type: ts.Type): string | undef
 }
 
 function getPropertyLiteralType(
-	checker: ts.TypeChecker,
-	type: ts.Type,
-	propertyName: string,
+	checker: TypeChecker,
+	type: Type,
+	propertyName: "Name" | "Value",
 ): string | number | undefined {
 	const property = type.getProperty(propertyName);
 	if (property === undefined) return undefined;
@@ -44,8 +74,8 @@ function getPropertyLiteralType(
 	return undefined;
 }
 
-function getUnionTypes(type: ts.Type): ReadonlyArray<ts.Type> {
-	if (type.isUnion()) return type.types;
+function getUnionTypes(type: Type): ReadonlyArray<Type> {
+	if (isUnionType(type)) return unionConstituents(type);
 	return [type];
 }
 
@@ -59,12 +89,12 @@ export default createRule<Options, MessageIds>({
 		const services = ESLintUtils.getParserServices(context);
 		const checker = services.program.getTypeChecker();
 
-		function getContextualType(node: TSESTree.Node): ts.Type | undefined {
+		function getContextualType(node: TSESTree.Node): Type | undefined {
 			const tsNode = services.esTreeNodeToTSNodeMap.get(node);
-			return checker.getContextualType(tsNode as ts.Expression);
+			return checker.getContextualType(tsNode as Expression);
 		}
 
-		function findEnumMatch(contextualType: ts.Type, literalValue: string | number): EnumMatch | undefined {
+		function findEnumMatch(contextualType: Type, literalValue: string | number): EnumMatch | undefined {
 			const unionTypes = getUnionTypes(contextualType);
 
 			for (const memberType of unionTypes) {
@@ -88,6 +118,8 @@ export default createRule<Options, MessageIds>({
 				const { value } = node;
 				if (typeof value !== "string" && typeof value !== "number") return;
 
+				if (!canHaveContextualEnumType(node)) return;
+
 				const contextualType = getContextualType(node);
 				if (contextualType === undefined) return;
 
@@ -98,6 +130,9 @@ export default createRule<Options, MessageIds>({
 				const displayValue = isString ? `"${value}"` : String(value);
 				const fixPath = fixNumericToValue && !isString ? `${match.enumPath}.Value` : match.enumPath;
 
+				const needsJSXBraces = isJSXAttributeValue(node);
+				const fixText = needsJSXBraces ? `{${fixPath}}` : fixPath;
+
 				context.report({
 					data: {
 						enumType: match.enumPath.split(".").slice(0, -1).join("."),
@@ -105,7 +140,7 @@ export default createRule<Options, MessageIds>({
 						value: displayValue,
 					},
 					fix(fixer) {
-						return fixer.replaceText(node, fixPath);
+						return fixer.replaceText(node, fixText);
 					},
 					messageId: "preferEnumItem",
 					node,
