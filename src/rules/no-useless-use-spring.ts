@@ -311,6 +311,34 @@ function isStaticExpressionInner(
 	return isStaticExpression(undefined, node, seen, options);
 }
 
+function checkStaticBinaryOrLogical(
+	context: TSESLint.RuleContext<MessageIds, Options> | undefined,
+	expression: TSESTree.BinaryExpression | TSESTree.LogicalExpression,
+	seen: Set<TSESTree.Node>,
+	options: NormalizedOptions,
+): boolean {
+	if (!(isNonPrivateExpression(expression.left) && isNonPrivateExpression(expression.right))) return false;
+	return (
+		isStaticExpression(context, expression.left, seen, options) &&
+		isStaticExpression(context, expression.right, seen, options)
+	);
+}
+
+function checkStaticCallOrNewExpression(
+	context: TSESLint.RuleContext<MessageIds, Options> | undefined,
+	args: ReadonlyArray<TSESTree.CallExpressionArgument> | ReadonlyArray<TSESTree.NewExpressionArgument> | undefined,
+	callee: TSESTree.Expression,
+	seen: Set<TSESTree.Node>,
+	options: NormalizedOptions,
+): boolean {
+	if (context === undefined) return false;
+	if (!isStaticCallCallee(context, callee, seen, options)) return false;
+	return (args ?? []).every(
+		(argument) =>
+			argument.type !== AST_NODE_TYPES.SpreadElement && isStaticExpression(context, argument, seen, options),
+	);
+}
+
 function isStaticExpression(
 	context: TSESLint.RuleContext<MessageIds, Options> | undefined,
 	expression: TSESTree.Expression,
@@ -324,80 +352,46 @@ function isStaticExpression(
 	switch (unwrapped.type) {
 		case AST_NODE_TYPES.Literal:
 			return true;
-
 		case AST_NODE_TYPES.TemplateLiteral:
 			return unwrapped.expressions.length === 0;
-
 		case AST_NODE_TYPES.UnaryExpression:
 			return (
 				STATIC_UNARY_OPERATORS.has(unwrapped.operator) &&
 				isStaticExpression(context, unwrapped.argument, seen, options)
 			);
-
 		case AST_NODE_TYPES.BinaryExpression:
 		case AST_NODE_TYPES.LogicalExpression:
-			if (!(isNonPrivateExpression(unwrapped.left) && isNonPrivateExpression(unwrapped.right))) return false;
-			return (
-				isStaticExpression(context, unwrapped.left, seen, options) &&
-				isStaticExpression(context, unwrapped.right, seen, options)
-			);
-
+			return checkStaticBinaryOrLogical(context, unwrapped, seen, options);
 		case AST_NODE_TYPES.ConditionalExpression:
 			return (
 				isStaticExpression(context, unwrapped.test, seen, options) &&
 				isStaticExpression(context, unwrapped.consequent, seen, options) &&
 				isStaticExpression(context, unwrapped.alternate, seen, options)
 			);
-
 		case AST_NODE_TYPES.ArrayExpression:
 			return context !== undefined && isStaticArrayExpression(context, unwrapped, seen, options);
-
 		case AST_NODE_TYPES.ObjectExpression:
 			return context !== undefined && isStaticObjectExpression(context, unwrapped, seen, options);
-
 		case AST_NODE_TYPES.Identifier:
 			return context !== undefined && isStaticIdentifier(context, unwrapped, seen, options);
-
 		case AST_NODE_TYPES.MemberExpression:
 			return (
 				isStaticExpression(context, unwrapped.object, seen, options) &&
 				(!unwrapped.computed || isStaticMemberProperty(unwrapped.property, seen, options))
 			);
-
 		case AST_NODE_TYPES.ChainExpression:
 			return isStaticExpression(context, unwrapped.expression, seen, options);
-
 		case AST_NODE_TYPES.CallExpression:
-			return (
-				context !== undefined &&
-				isStaticCallCallee(context, unwrapped.callee, seen, options) &&
-				unwrapped.arguments.every(
-					(argument) =>
-						argument.type !== AST_NODE_TYPES.SpreadElement &&
-						isStaticExpression(context, argument, seen, options),
-				)
-			);
-
+			return checkStaticCallOrNewExpression(context, unwrapped.arguments, unwrapped.callee, seen, options);
 		case AST_NODE_TYPES.NewExpression:
-			return (
-				context !== undefined &&
-				isStaticCallCallee(context, unwrapped.callee, seen, options) &&
-				(unwrapped.arguments ?? []).every(
-					(argument) =>
-						argument.type !== AST_NODE_TYPES.SpreadElement &&
-						isStaticExpression(context, argument, seen, options),
-				)
-			);
-
+			return checkStaticCallOrNewExpression(context, unwrapped.arguments, unwrapped.callee, seen, options);
 		case AST_NODE_TYPES.SequenceExpression:
 			return (
 				unwrapped.expressions.length > 0 &&
-				unwrapped.expressions.every((expression) => isStaticExpression(context, expression, seen, options))
+				unwrapped.expressions.every((expr) => isStaticExpression(context, expr, seen, options))
 			);
-
 		case AST_NODE_TYPES.AssignmentExpression:
 			return isStaticExpression(context, unwrapped.right, seen, options);
-
 		default:
 			return false;
 	}
