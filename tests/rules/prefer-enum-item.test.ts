@@ -78,6 +78,21 @@ interface ImageProps {
 }
 
 declare function setScaleType(value: CastsToEnum<Enum.ScaleType>): void;
+
+// Enum with non-literal Name/Value types (for edge case coverage)
+declare namespace Enum {
+	namespace NonLiteralEnum {
+		interface Item extends EnumItem {
+			Name: string;  // Non-literal
+			Value: number; // Non-literal
+			EnumType: typeof Enum.NonLiteralEnum;
+		}
+		const Item: Item;
+	}
+	type NonLiteralEnum = NonLiteralEnum.Item;
+}
+
+declare function setNonLiteral(value: Enum.NonLiteralEnum | string | number): void;
 `;
 
 describe("prefer-enum-item", () => {
@@ -124,6 +139,23 @@ const x: Enum.ScaleType = "Stretch";`,
 				output: `${typeDeclarations}
 const x: Enum.ScaleType = Enum.ScaleType.Stretch;`,
 			},
+			// Single enum member type (non-union contextual type)
+			{
+				code: `${typeDeclarations}
+const specific: Enum.ScaleType.Slice = "Slice";`,
+				errors: [{ messageId: "preferEnumItem" }],
+				output: `${typeDeclarations}
+const specific: Enum.ScaleType.Slice = Enum.ScaleType.Slice;`,
+			},
+			// Number with fixNumericToValue option
+			{
+				code: `${typeDeclarations}
+const props: ImageProps = { ScaleType: 1 };`,
+				errors: [{ messageId: "preferEnumItem" }],
+				options: [{ fixNumericToValue: true }],
+				output: `${typeDeclarations}
+const props: ImageProps = { ScaleType: Enum.ScaleType.Slice.Value };`,
+			},
 		],
 		valid: [
 			// Correct enum usage
@@ -131,10 +163,22 @@ const x: Enum.ScaleType = Enum.ScaleType.Stretch;`,
 				code: `${typeDeclarations}
 const props: ImageProps = { ScaleType: Enum.ScaleType.Slice };`,
 			},
+			// String that doesn't match any enum Name (no error, just not recognized)
+			{
+				code: `${typeDeclarations}
+const props: ImageProps = { ScaleType: "InvalidName" };`,
+			},
 			// Non-enum string (no contextual enum type)
 			{ code: `const name: string = "Slice";` },
 			// Non-enum number
 			{ code: `const count: number = 1;` },
+			// Boolean literal (not string or number)
+			{ code: `const flag: boolean = true;` },
+			// Non-literal enum type (Name/Value are string/number, not specific literals)
+			{
+				code: `${typeDeclarations}
+setNonLiteral("anything");`,
+			},
 			// Enum.Value usage
 			{
 				code: `${typeDeclarations}

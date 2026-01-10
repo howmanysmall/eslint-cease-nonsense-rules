@@ -49,9 +49,7 @@ function getUnionTypes(type: ts.Type): ReadonlyArray<ts.Type> {
 	return [type];
 }
 
-function createEnumMatch(enumPath: string): EnumMatch | undefined {
-	// Validate the path has at least one segment after "Enum."
-	if (enumPath.split(".").at(-1) === undefined) return undefined;
+function createEnumMatch(enumPath: string): EnumMatch {
 	return { enumPath };
 }
 
