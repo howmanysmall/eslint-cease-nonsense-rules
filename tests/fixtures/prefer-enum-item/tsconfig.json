@@ -7,5 +7,5 @@
 		"strict": true,
 		"target": "ES2022"
 	},
-	"include": ["*.d.ts", "*.tsx"]
+	"include": ["*.d.ts", "*.ts", "*.tsx", "**/*.ts", "**/*.tsx"]
 }
