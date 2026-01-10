@@ -326,7 +326,7 @@ function checkStaticBinaryOrLogical(
 
 function checkStaticCallOrNewExpression(
 	context: TSESLint.RuleContext<MessageIds, Options> | undefined,
-	args: ReadonlyArray<TSESTree.CallExpressionArgument> | ReadonlyArray<TSESTree.NewExpressionArgument> | undefined,
+	args: ReadonlyArray<TSESTree.CallExpressionArgument> | undefined,
 	callee: TSESTree.Expression,
 	seen: Set<TSESTree.Node>,
 	options: NormalizedOptions,
