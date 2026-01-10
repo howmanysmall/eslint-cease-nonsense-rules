@@ -102,6 +102,16 @@ describe("prefer-enum-item", () => {
 	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
 	ruleTester.run("prefer-enum-item", rule, {
 		invalid: [
+			// JSX attribute with string literal
+			{
+				code: `${typeDeclarations}
+declare const Image: (props: ImageProps) => unknown;
+<Image ScaleType="Slice" />;`,
+				errors: [{ messageId: "preferEnumItem" }],
+				output: `${typeDeclarations}
+declare const Image: (props: ImageProps) => unknown;
+<Image ScaleType={Enum.ScaleType.Slice} />;`,
+			},
 			// String literal in object property
 			{
 				code: `${typeDeclarations}
@@ -124,6 +134,24 @@ const props: ImageProps = { ScaleType: Enum.ScaleType.Slice };`,
 setScaleType("Fit");`,
 				errors: [{ messageId: "preferEnumItem" }],
 				output: `${typeDeclarations}
+setScaleType(Enum.ScaleType.Fit);`,
+			},
+			{
+				code: `${typeDeclarations}
+setScaleType("Fit");`,
+				errors: [{ messageId: "preferEnumItem" }],
+				options: [{ performanceMode: true }],
+				output: `${typeDeclarations}
+setScaleType(Enum.ScaleType.Fit);`,
+			},
+			{
+				code: `${typeDeclarations}
+setScaleType("Fit");
+setScaleType("Fit");`,
+				errors: [{ messageId: "preferEnumItem" }, { messageId: "preferEnumItem" }],
+				options: [{ performanceMode: true }],
+				output: `${typeDeclarations}
+setScaleType(Enum.ScaleType.Fit);
 setScaleType(Enum.ScaleType.Fit);`,
 			},
 			// Number literal in function call
@@ -171,6 +199,20 @@ const props: ImageProps = { ScaleType: Enum.ScaleType.Slice };`,
 				code: `${typeDeclarations}
 const props: ImageProps = { ScaleType: "InvalidName" };`,
 			},
+			{
+				code: `${typeDeclarations}
+const props: ImageProps = { ScaleType: "InvalidName" };`,
+				options: [{ performanceMode: true }],
+			},
+			{
+				code: `${typeDeclarations}
+const props: ImageProps = { ScaleType: 999 };`,
+				options: [{ performanceMode: true }],
+			},
+			{
+				code: `const x: number = 999;`,
+				options: [{ performanceMode: true }],
+			},
 			// Non-enum string (no contextual enum type)
 			{ code: `const name: string = "Slice";` },
 			// Non-enum number
@@ -186,6 +228,14 @@ setNonLiteral("anything");`,
 			{
 				code: `${typeDeclarations}
 const props: ImageProps = { ScaleType: Enum.ScaleType.Slice.Value };`,
+			},
+			// Variable without type annotation (exercises VariableDeclarator skip path)
+			{ code: `const x = "Slice";` },
+			// Variable with non-Enum type annotation
+			{ code: `const x: string = "Slice";` },
+			{
+				code: `const x: string = "Slice";`,
+				options: [{ performanceMode: true }],
 			},
 		],
 	});

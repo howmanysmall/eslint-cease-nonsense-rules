@@ -307,7 +307,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createPreferEnumItemOptions();
-			expect(configuration).toEqual({ fixNumericToValue: false });
+			expect(configuration).toEqual({ fixNumericToValue: false, performanceMode: false });
 		});
 
 		it("should override defaults", () => {
