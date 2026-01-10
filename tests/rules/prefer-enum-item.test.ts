@@ -199,6 +199,20 @@ const props: ImageProps = { ScaleType: Enum.ScaleType.Slice };`,
 				code: `${typeDeclarations}
 const props: ImageProps = { ScaleType: "InvalidName" };`,
 			},
+			{
+				code: `${typeDeclarations}
+const props: ImageProps = { ScaleType: "InvalidName" };`,
+				options: [{ performanceMode: true }],
+			},
+			{
+				code: `${typeDeclarations}
+const props: ImageProps = { ScaleType: 999 };`,
+				options: [{ performanceMode: true }],
+			},
+			{
+				code: `const x: number = 999;`,
+				options: [{ performanceMode: true }],
+			},
 			// Non-enum string (no contextual enum type)
 			{ code: `const name: string = "Slice";` },
 			// Non-enum number
