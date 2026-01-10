@@ -135,8 +135,8 @@ export default createRule<Options, MessageIds>({
 			const valueLiteral = getPropertyLiteralType(checker, type, "Value");
 			const info: EnumItemInfo = {
 				enumPath,
-				nameLiteral: typeof nameLiteral === "string" ? nameLiteral : undefined,
-				valueLiteral: typeof valueLiteral === "number" ? valueLiteral : undefined,
+				...(typeof nameLiteral === "string" ? { nameLiteral } : {}),
+				...(typeof valueLiteral === "number" ? { valueLiteral } : {}),
 			};
 			enumItemInfoCache.set(type, info);
 			return info;
