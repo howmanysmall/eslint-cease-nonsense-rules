@@ -62,6 +62,7 @@ export default [
 			"cease-nonsense/prefer-singular-enums": "error",
 			"cease-nonsense/prefer-udim2-shorthand": "error",
 			"cease-nonsense/react-hooks-strict-return": "error",
+			"cease-nonsense/require-module-level-instantiation": "error",
 			"cease-nonsense/require-named-effect-functions": "error",
 			"cease-nonsense/require-paired-calls": "error",
 			"cease-nonsense/require-react-component-keys": "error",
@@ -1297,6 +1298,48 @@ class MyClass {
 		this.value = value;
 		notifyChanges(value, previousValue, this.onChanges);
 	}
+}
+```
+
+#### `require-module-level-instantiation`
+
+Require certain classes to be instantiated at module level rather than inside functions.
+
+Classes like Log should be instantiated once at module scope, not recreated on every function call.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/require-module-level-instantiation": ["error", {
+    "classes": {
+      "Log": "@rbxts/rbxts-sleitnick-log",
+      "Server": "@rbxts/net"
+    }
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+import Log from "@rbxts/rbxts-sleitnick-log";
+
+function useStoryModesState() {
+	const log = new Log(); // Recreated on every call!
+	log.Info("Create Match clicked");
+}
+```
+
+**✅ Good**
+
+```typescript
+import Log from "@rbxts/rbxts-sleitnick-log";
+
+const log = new Log(); // Module level - created once
+
+function useStoryModesState() {
+	log.Info("Create Match clicked");
 }
 ```
 
