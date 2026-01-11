@@ -1,69 +1,69 @@
 name: ci
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "src/**/*.ts"
-      - "tests/**/*.ts"
-      - "package.json"
-      - "bun.lock"
-      - "knip.ts"
-      - "tsconfig*.json"
-      - ".oxlintrc.json"
-      - "biome.jsonc"
-  pull_request:
-    paths:
-      - "src/**/*.ts"
-      - "tests/**/*.ts"
-      - "package.json"
-      - "bun.lock"
-      - "knip.ts"
-      - "tsconfig*.json"
-      - ".oxlintrc.json"
-      - "biome.jsonc"
+    push:
+        branches:
+            - main
+        paths:
+            - "src/**/*.ts"
+            - "tests/**/*.ts"
+            - "package.json"
+            - "bun.lock"
+            - "knip.ts"
+            - "tsconfig*.json"
+            - ".oxlintrc.json"
+            - "biome.jsonc"
+    pull_request:
+        paths:
+            - "src/**/*.ts"
+            - "tests/**/*.ts"
+            - "package.json"
+            - "bun.lock"
+            - "knip.ts"
+            - "tsconfig*.json"
+            - ".oxlintrc.json"
+            - "biome.jsonc"
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    build-and-test:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: latest
 
-      - name: Cache Bun dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
+            - name: Cache Bun dependencies
+              uses: actions/cache@v4
+              with:
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-bun-
 
-      - name: Install
-        run: bun install
+            - name: Install
+              run: bun install
 
-      - name: Setup oxlint-tsgolint
-        run: bun add -D oxlint-tsgolint@latest
+            - name: Setup oxlint-tsgolint
+              run: bun add -D oxlint-tsgolint@latest
 
-      - name: Lint
-        run: bun run lint
+            - name: Lint
+              run: bun run lint
 
-      - name: Biome CI
-        run: bun run biome:ci
+            - name: Biome CI
+              run: bun run biome:ci
 
-      - name: Knip
-        run: bun run knip
+            - name: Knip
+              run: bun run knip
 
-      - name: Typecheck
-        run: bun run typecheck
+            - name: Type Checking
+              run: bun run type-check
 
-      - name: Test
-        run: bun test
+            - name: Test
+              run: bun test
 
-      - name: Build
-        run: bun run build --no-sourcemap
+            - name: Build
+              run: bun run build

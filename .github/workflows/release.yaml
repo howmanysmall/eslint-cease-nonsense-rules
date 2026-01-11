@@ -80,8 +80,8 @@ jobs:
       - name: Lint
         run: bun run lint
 
-      - name: Typecheck
-        run: bun run typecheck
+      - name: Type Checking
+        run: bun run type-check
 
       - name: Test
         run: bun test

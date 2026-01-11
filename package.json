@@ -98,8 +98,8 @@
 		"prepublishOnly": "bun run build",
 		"release": "bumpp",
 		"test": "bun test",
-		"typecheck": "bun x --bun tsgo --noEmit",
-		"typecheck:safe": "bun x --bun tsc --noEmit"
+		"type-check": "bun x --bun tsgo --noEmit",
+		"type-check:safe": "bun x --bun tsc --noEmit"
 	},
 	"sideEffects": false,
 	"type": "module",
