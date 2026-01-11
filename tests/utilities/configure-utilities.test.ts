@@ -7,12 +7,14 @@ import {
 	createHookConfiguration,
 	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
+	createNoMemoChildrenOptions,
 	createNoShorthandOptions,
 	createNoUselessUseSpringOptions,
 	createPairConfiguration,
 	createPreferEnumItemOptions,
 	createPreferPatternReplacementsOptions,
 	createReactKeysOptions,
+	createRequireModuleLevelInstantiationOptions,
 	createRequirePairedCallsOptions,
 	createRequireReactDisplayNamesOptions,
 	createUseExhaustiveDependenciesOptions,
@@ -108,6 +110,27 @@ describe("configure-utilities", () => {
 			expect.assertions(1);
 			const configuration = createNoInstanceMethodsOptions({ checkPublic: true });
 			expect(configuration.checkPublic).toBe(true);
+		});
+	});
+
+	describe("createNoMemoChildrenOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createNoMemoChildrenOptions();
+			expect(configuration).toEqual({
+				allowedComponents: [],
+				environment: "roblox-ts",
+			});
+		});
+
+		it("should override defaults", () => {
+			expect.assertions(2);
+			const configuration = createNoMemoChildrenOptions({
+				allowedComponents: ["Modal"],
+				environment: "standard",
+			});
+			expect(configuration.allowedComponents).toEqual(["Modal"]);
+			expect(configuration.environment).toBe("standard");
 		});
 	});
 
@@ -347,6 +370,29 @@ describe("configure-utilities", () => {
 			expect.assertions(1);
 			const configuration = createRequireReactDisplayNamesOptions({ environment: "standard" });
 			expect(configuration.environment).toBe("standard");
+		});
+	});
+
+	describe("createRequireModuleLevelInstantiationOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createRequireModuleLevelInstantiationOptions();
+			expect(configuration).toEqual({ classes: {} });
+		});
+
+		it("should override defaults", () => {
+			expect.assertions(2);
+			const configuration = createRequireModuleLevelInstantiationOptions({
+				classes: {
+					Log: "@rbxts/rbxts-sleitnick-log",
+					Server: "@rbxts/net",
+				},
+			});
+			expect(configuration.classes).toEqual({
+				Log: "@rbxts/rbxts-sleitnick-log",
+				Server: "@rbxts/net",
+			});
+			expect(Object.keys(configuration.classes)).toHaveLength(2);
 		});
 	});
 });

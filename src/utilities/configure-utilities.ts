@@ -7,6 +7,7 @@ import type { NoShorthandOptions } from "../rules/no-shorthand-names";
 import type { NoUselessUseSpringOptions } from "../rules/no-useless-use-spring";
 import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../rules/no-useless-use-spring";
 import type { PreferEnumItemOptions } from "../rules/prefer-enum-item";
+import type { RequireModuleLevelInstantiationOptions } from "../rules/require-module-level-instantiation";
 import type { EffectFunctionOptions, HookConfiguration } from "../rules/require-named-effect-functions";
 import type { PairConfiguration, RequirePairedCallsOptions } from "../rules/require-paired-calls";
 import type { ReactKeysOptions } from "../rules/require-react-component-keys";
@@ -250,4 +251,15 @@ export function createRequireReactDisplayNamesOptions(
 	options: Partial<RequireReactDisplayNamesOptions> = {},
 ): RequireReactDisplayNamesOptions {
 	return { environment: "roblox-ts", ...options };
+}
+
+/**
+ * Creates options for require-module-level-instantiation rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createRequireModuleLevelInstantiationOptions(
+	options: Partial<RequireModuleLevelInstantiationOptions> = {},
+): RequireModuleLevelInstantiationOptions {
+	return { classes: {}, ...options };
 }

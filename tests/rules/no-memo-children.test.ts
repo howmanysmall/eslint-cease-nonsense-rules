@@ -35,8 +35,8 @@ describe("no-memo-children", () => {
 import { memo, ReactNode } from "@rbxts/react";
 
 interface PropsWithKids {
-	readonly id: string;
-	readonly children?: ReactNode;
+    readonly id: string;
+    readonly children?: ReactNode;
 }
 
 const MemoizedComponent = memo<PropsWithKids>((props) => null);`,
@@ -48,7 +48,7 @@ const MemoizedComponent = memo<PropsWithKids>((props) => null);`,
 import { memo, ReactNode } from "@rbxts/react";
 
 interface ChildProps {
-	readonly children?: ReactNode;
+    readonly children?: ReactNode;
 }
 
 function ComponentWithChildren(props: ChildProps) { return null; }
@@ -61,11 +61,11 @@ const MemoizedComponent = memo(ComponentWithChildren);`,
 import { memo, ReactNode } from "@rbxts/react";
 
 interface BaseWithChildren {
-	readonly children?: ReactNode;
+    readonly children?: ReactNode;
 }
 
 interface ExtendedProps extends BaseWithChildren {
-	readonly id: string;
+    readonly id: string;
 }
 
 const MemoizedComponent = memo<ExtendedProps>((props) => null);`,
@@ -77,15 +77,15 @@ const MemoizedComponent = memo<ExtendedProps>((props) => null);`,
 import { memo, ReactNode } from "@rbxts/react";
 
 interface GrandparentProps {
-	readonly children?: ReactNode;
+    readonly children?: ReactNode;
 }
 
 interface ParentProps extends GrandparentProps {
-	readonly parentId: string;
+    readonly parentId: string;
 }
 
 interface ChildProps extends ParentProps {
-	readonly childId: string;
+    readonly childId: string;
 }
 
 const MemoizedComponent = memo<ChildProps>((props) => null);`,
@@ -97,15 +97,15 @@ const MemoizedComponent = memo<ChildProps>((props) => null);`,
 import { memo, ReactNode } from "@rbxts/react";
 
 interface GrandparentProps {
-	readonly children?: ReactNode;
+    readonly children?: ReactNode;
 }
 
 interface ParentProps extends GrandparentProps {
-	readonly parentId: string;
+    readonly parentId: string;
 }
 
 interface ChildProps extends ParentProps {
-	readonly childId: string;
+    readonly childId: string;
 }
 
 function InheritedComponent(props: ChildProps) { return null; }
@@ -118,7 +118,7 @@ const MemoizedComponent = memo(InheritedComponent);`,
 import { memo, ReactNode } from "@rbxts/react";
 
 interface BaseProps {
-	readonly id: string;
+    readonly id: string;
 }
 
 type IntersectionWithChildren = BaseProps & { readonly children?: ReactNode };
@@ -132,11 +132,11 @@ const MemoizedComponent = memo<IntersectionWithChildren>((props) => null);`,
 import { memo, ReactNode } from "@rbxts/react";
 
 interface BaseProps {
-	readonly id: string;
+    readonly id: string;
 }
 
 interface BaseWithChildren {
-	readonly children?: ReactNode;
+    readonly children?: ReactNode;
 }
 
 type ComplexIntersection = BaseProps & BaseWithChildren & { readonly extra: number };
@@ -150,12 +150,12 @@ const MemoizedComponent = memo<ComplexIntersection>((props) => null);`,
 import { memo, ReactNode } from "@rbxts/react";
 
 interface BaseProps {
-	readonly id: string;
+    readonly id: string;
 }
 
 interface PropsWithKids {
-	readonly id: string;
-	readonly children?: ReactNode;
+    readonly id: string;
+    readonly children?: ReactNode;
 }
 
 type UnionWithChildren = BaseProps | PropsWithKids;
@@ -169,8 +169,8 @@ const MemoizedComponent = memo<UnionWithChildren>((props) => null);`,
 import { memo, ReactNode } from "@rbxts/react";
 
 interface GenericProps<T> {
-	readonly data: T;
-	readonly children?: ReactNode;
+    readonly data: T;
+    readonly children?: ReactNode;
 }
 
 const MemoizedComponent = memo<GenericProps<string>>((props) => null);`,
@@ -185,8 +185,8 @@ const MemoizedComponent = memo<GenericProps<string>>((props) => null);`,
 import { memo, ReactNode } from "@rbxts/react";
 
 interface RequiredChildrenProps {
-	id: string;
-	children: ReactNode;
+    id: string;
+    children: ReactNode;
 }
 
 const MemoizedComponent = memo<RequiredChildrenProps>((props) => null);`,
@@ -206,8 +206,8 @@ const MemoizedComponent = memo((props: { id: string; children?: ReactNode }) => 
 import { memo, ReactNode } from "@rbxts/react";
 
 interface PropsWithKids {
-	readonly id: string;
-	readonly children?: ReactNode;
+    readonly id: string;
+    readonly children?: ReactNode;
 }
 
 const MemoizedComponent = memo(function MyComponent(props: PropsWithKids) { return null; });`,
@@ -219,7 +219,7 @@ const MemoizedComponent = memo(function MyComponent(props: PropsWithKids) { retu
 import React from "@rbxts/react";
 
 interface PropsWithKids {
-	readonly children?: React.ReactNode;
+    readonly children?: React.ReactNode;
 }
 
 const MemoizedComponent = React.memo<PropsWithKids>((props) => null);`,
@@ -231,7 +231,7 @@ const MemoizedComponent = React.memo<PropsWithKids>((props) => null);`,
 import { memo as memoize, ReactNode } from "@rbxts/react";
 
 interface PropsWithKids {
-	readonly children?: ReactNode;
+    readonly children?: ReactNode;
 }
 
 const MemoizedComponent = memoize<PropsWithKids>((props) => null);`,
@@ -245,8 +245,8 @@ const MemoizedComponent = memoize<PropsWithKids>((props) => null);`,
 import { memo } from "@rbxts/react";
 
 interface NoChildrenProps {
-	readonly id: string;
-	readonly value: number;
+    readonly id: string;
+    readonly value: number;
 }
 
 const MemoizedComponent = memo<NoChildrenProps>((props) => null);`,
@@ -257,7 +257,7 @@ const MemoizedComponent = memo<NoChildrenProps>((props) => null);`,
 import { memo } from "@rbxts/react";
 
 interface SafeProps {
-	readonly id: string;
+    readonly id: string;
 }
 
 function ComponentWithoutChildren(props: SafeProps) { return null; }
@@ -269,8 +269,8 @@ const MemoizedComponent = memo(ComponentWithoutChildren);`,
 import { memo } from "@rbxts/react";
 
 interface BaseProps {
-	readonly id: string;
-	readonly name: string;
+    readonly id: string;
+    readonly name: string;
 }
 
 const MemoizedComponent = memo<BaseProps>((props) => null);`,
@@ -297,7 +297,7 @@ const MemoizedComponent = memo((props: { id: string; value: number }) => null);`
 import React from "@rbxts/react";
 
 interface SafeProps {
-	readonly id: string;
+    readonly id: string;
 }
 
 const MemoizedComponent = React.memo<SafeProps>((props) => null);`,
@@ -308,8 +308,8 @@ const MemoizedComponent = React.memo<SafeProps>((props) => null);`,
 import { memo, ReactNode } from "@rbxts/react";
 
 interface PropsWithKids {
-	readonly id: string;
-	readonly children?: ReactNode;
+    readonly id: string;
+    readonly children?: ReactNode;
 }
 
 const AllowedComponent = memo<PropsWithKids>((props) => null);`,
@@ -321,7 +321,7 @@ const AllowedComponent = memo<PropsWithKids>((props) => null);`,
 import { memo } from "react";
 
 interface SafeProps {
-	readonly id: string;
+    readonly id: string;
 }
 
 const MemoizedComponent = memo<SafeProps>((props) => null);`,
@@ -333,7 +333,7 @@ const MemoizedComponent = memo<SafeProps>((props) => null);`,
 function memo<T>(fn: T): T { return fn; }
 
 interface PropsWithKids {
-	readonly children?: unknown;
+    readonly children?: unknown;
 }
 
 const MemoizedComponent = memo<PropsWithKids>((props) => null);`,
@@ -344,7 +344,7 @@ const MemoizedComponent = memo<PropsWithKids>((props) => null);`,
 import { memo, ReactNode } from "@rbxts/react";
 
 interface NestedSlot {
-	readonly slot: { readonly children?: ReactNode };
+    readonly slot: { readonly children?: ReactNode };
 }
 
 const MemoizedComponent = memo<NestedSlot>((props) => null);`,
