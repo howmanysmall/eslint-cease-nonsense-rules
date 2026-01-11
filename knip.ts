@@ -6,7 +6,7 @@ const config: KnipConfig = {
 	bun: true,
 	entry: ["scripts/*.ts", "benchmarks/**/*.bench.ts", ".opencode/**/*.ts", "tests/**/*.ts"],
 	eslint: true,
-	ignore: ["dist/**", "src/types/reset.d.ts"],
+	ignore: ["dist/**", "src/types/reset.d.ts", "scripts/plugins/**/*.ts"],
 	ignoreDependencies: ["source-map", "lint-staged", "@mitata/counters", "oxfmt"],
 	"lint-staged": true,
 	oxlint: true,

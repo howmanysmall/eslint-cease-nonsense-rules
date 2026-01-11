@@ -2,9 +2,11 @@ import type { BanInstancesOptions } from "../rules/ban-instances";
 import type { ComplexityConfiguration } from "../rules/enforce-ianitor-check-type";
 import type { NoGodComponentsOptions } from "../rules/no-god-components";
 import type { NoInstanceMethodsOptions } from "../rules/no-instance-methods-without-this";
+import type { NoMemoChildrenOptions } from "../rules/no-memo-children";
 import type { NoShorthandOptions } from "../rules/no-shorthand-names";
 import type { NoUselessUseSpringOptions } from "../rules/no-useless-use-spring";
 import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../rules/no-useless-use-spring";
+import type { PreferEnumItemOptions } from "../rules/prefer-enum-item";
 import type { RequireModuleLevelInstantiationOptions } from "../rules/require-module-level-instantiation";
 import type { EffectFunctionOptions, HookConfiguration } from "../rules/require-named-effect-functions";
 import type { PairConfiguration, RequirePairedCallsOptions } from "../rules/require-paired-calls";
@@ -79,6 +81,15 @@ export function createNoInstanceMethodsOptions(
 		checkPublic: false,
 		...options,
 	};
+}
+
+/**
+ * Creates options for no-memo-children rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNoMemoChildrenOptions(options: Partial<NoMemoChildrenOptions> = {}): NoMemoChildrenOptions {
+	return { allowedComponents: [], environment: "roblox-ts", ...options };
 }
 
 /**
@@ -220,6 +231,15 @@ export function createPreferPatternReplacementsOptions(
 	patterns: ReadonlyArray<Pattern> = [],
 ): PreferPatternReplacementsOptions {
 	return { patterns };
+}
+
+/**
+ * Creates options for prefer-enum-item rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createPreferEnumItemOptions(options: Partial<PreferEnumItemOptions> = {}): PreferEnumItemOptions {
+	return { fixNumericToValue: false, performanceMode: false, ...options };
 }
 
 /**
