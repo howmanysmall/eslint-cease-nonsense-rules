@@ -493,45 +493,45 @@ const Component = () => {
 
 			// Hooks in object method that looks like component
 			`
-	const obj = {
-	    Component() {
-	        useState(0);
-	    }
-	};
-	`,
+    const obj = {
+        Component() {
+            useState(0);
+        }
+    };
+    `,
 			// Hooks in class method that looks like component
 			`
-	class Foo {
-	    Component() {
-	        useState(0);
-	    }
-	}
-	`,
+    class Foo {
+        Component() {
+            useState(0);
+        }
+    }
+    `,
 
 			// All React Lua hooks
 			`
-	function Component() {
-	    useState(0);
+    function Component() {
+        useState(0);
     useEffect(() => {});
-	    useBinding(0);
-	}
-	`,
+        useBinding(0);
+    }
+    `,
 
 			// Configuration: importSources - no matching import should fall back to checking the hook
 			{
 				code: `
-	function Component() {
-	    useState(0);
-	}
-	`,
+    function Component() {
+        useState(0);
+    }
+    `,
 				options: [{ importSources: { react: true } }],
 			},
 
 			// Configuration: ignoreHooks - should ignore specified hooks
 			{
 				code: `
-	function Component() {
-	    if (condition) {
+    function Component() {
+        if (condition) {
         useEntity(0);
         useComponent(0);
     }

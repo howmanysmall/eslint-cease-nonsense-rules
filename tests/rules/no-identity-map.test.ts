@@ -89,25 +89,25 @@ mapped;
 			},
 			{
 				code: `
-	const [x] = foo(0);
-	x.map(v => v);
-	`,
+    const [x] = foo(0);
+    x.map(v => v);
+    `,
 				errors: [{ messageId: "identityArrayMap" }],
 				output: `
-	const [x] = foo(0);
-	x;
-	`,
+    const [x] = foo(0);
+    x;
+    `,
 			},
 			{
 				code: `
-	const x = foo["useBinding"](0);
-	x.map(v => v);
-	`,
+    const x = foo["useBinding"](0);
+    x.map(v => v);
+    `,
 				errors: [{ messageId: "identityArrayMap" }],
 				output: `
-	const x = foo["useBinding"](0);
-	x;
-	`,
+    const x = foo["useBinding"](0);
+    x;
+    `,
 			},
 			{
 				code: "array.map((v) => v)",
@@ -169,9 +169,9 @@ joined;
 			{
 				code: `
 <frame
-	BackgroundTransparency={shadowTransparency.map((trans: number) => {
-		return trans;
-	})}
+    BackgroundTransparency={shadowTransparency.map((trans: number) => {
+        return trans;
+    })}
 />
 `,
 				errors: [{ messageId: "identityArrayMap" }],
@@ -182,16 +182,16 @@ joined;
 				},
 				output: `
 <frame
-	BackgroundTransparency={shadowTransparency}
+    BackgroundTransparency={shadowTransparency}
 />
 `,
 			},
 			{
 				code: `
 <component
-	gap={glowWidthBinding.map((value: number) => {
-		return value;
-	})}
+    gap={glowWidthBinding.map((value: number) => {
+        return value;
+    })}
 />
 `,
 				errors: [{ messageId: "identityBindingMap" }],
@@ -202,7 +202,7 @@ joined;
 				},
 				output: `
 <component
-	gap={glowWidthBinding}
+    gap={glowWidthBinding}
 />
 `,
 			},
