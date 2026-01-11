@@ -132,7 +132,7 @@ export function createRuleNameOptions(options: Partial<RuleNameOptions> = {}): R
 
 Before declaring done:
 
-- [ ] `bun run typecheck` passes
+- [ ] `bun run type-check` passes
 - [ ] `bun run lint` passes
 - [ ] `bun test` passes with 100% coverage for new rule
 - [ ] `bun run build` succeeds
