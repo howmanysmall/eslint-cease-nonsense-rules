@@ -71,7 +71,7 @@ function typeHasChildrenProperty(checker: TypeChecker, type: Type, visited = new
 	return false;
 }
 
-function getPropsTypeFromMemoCall(
+function getPropertiesTypeFromMemoCall(
 	services: ReturnType<typeof ESLintUtils.getParserServices>,
 	checker: TypeChecker,
 	node: TSESTree.CallExpression,
@@ -163,15 +163,12 @@ export default createRule<Options, MessageIds>({
 			CallExpression(node): void {
 				if (!isMemoCall(node, memoIdentifiers, reactNamespaces)) return;
 
-				// Check if this component is in the allowlist
 				const componentName = getComponentName(node);
 				if (componentName && allowedSet.has(componentName)) return;
 
-				// Get the props type
-				const propsType = getPropsTypeFromMemoCall(services, checker, node);
+				const propsType = getPropertiesTypeFromMemoCall(services, checker, node);
 				if (!propsType) return;
 
-				// Check if props type has children
 				if (typeHasChildrenProperty(checker, propsType)) {
 					context.report({
 						data: { componentName: componentName ?? "Component" },
