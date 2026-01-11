@@ -22,6 +22,7 @@ import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
 import preferSingularEnums from "./rules/prefer-singular-enums";
 import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
 import reactHooksStrictReturn from "./rules/react-hooks-strict-return";
+import requireModuleLevelInstantiation from "./rules/require-module-level-instantiation";
 import requireNamedEffectFunctions from "./rules/require-named-effect-functions";
 import requirePairedCalls from "./rules/require-paired-calls";
 import requireReactComponentKeys from "./rules/require-react-component-keys";
@@ -38,6 +39,7 @@ export type { NoIdentityMapOptions } from "./rules/no-identity-map";
 export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
 export type { NoShorthandOptions } from "./rules/no-shorthand-names";
 export type { NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
+export type { RequireModuleLevelInstantiationOptions } from "./rules/require-module-level-instantiation";
 export type { EffectFunctionOptions, EnvironmentMode, HookConfiguration } from "./rules/require-named-effect-functions";
 export type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
 export type { ReactKeysOptions } from "./rules/require-react-component-keys";
@@ -55,6 +57,7 @@ export {
 	createPairConfiguration,
 	createPreferPatternReplacementsOptions,
 	createReactKeysOptions,
+	createRequireModuleLevelInstantiationOptions,
 	createRequirePairedCallsOptions,
 	createRequireReactDisplayNamesOptions,
 	createUseExhaustiveDependenciesOptions,
@@ -93,6 +96,7 @@ const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"prefer-singular-enums": preferSingularEnums,
 	"prefer-udim2-shorthand": preferUDim2Shorthand,
 	"react-hooks-strict-return": reactHooksStrictReturn,
+	"require-module-level-instantiation": requireModuleLevelInstantiation,
 	"require-named-effect-functions": requireNamedEffectFunctions,
 	"require-paired-calls": requirePairedCalls,
 	"require-react-component-keys": requireReactComponentKeys,
