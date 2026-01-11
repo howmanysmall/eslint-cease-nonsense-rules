@@ -61,6 +61,7 @@ export {
 	createNoShorthandOptions,
 	createNoUselessUseSpringOptions,
 	createPairConfiguration,
+	createPreferEnumItemOptions,
 	createPreferPatternReplacementsOptions,
 	createReactKeysOptions,
 	createRequireModuleLevelInstantiationOptions,

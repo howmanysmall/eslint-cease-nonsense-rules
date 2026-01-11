@@ -39,35 +39,29 @@ interface TrackedImport {
 	readonly source: string;
 }
 
-interface NormalizedConfig {
+interface NormalizedConfiguration {
 	readonly trackedImports: ReadonlyMap<string, TrackedImport>;
 }
 
-function normalizeConfig(options: unknown): NormalizedConfig {
+function normalizeConfiguration(options: unknown): NormalizedConfiguration {
 	if (!isOptionsObject.Check(options)) return { trackedImports: new Map() };
 
 	const { classes } = options;
 	const trackedImports = new Map<string, TrackedImport>();
 
-	for (const [className, source] of Object.entries(classes)) {
-		trackedImports.set(className, { className, source });
-	}
-
+	for (const [className, source] of Object.entries(classes)) trackedImports.set(className, { className, source });
 	return { trackedImports };
 }
 
-function isTopScope(scope: TSESLint.Scope.Scope): boolean {
-	const { type } = scope;
+function isTopScope({ type }: TSESLint.Scope.Scope): boolean {
 	return type === ScopeType.module || type === ScopeType.global;
 }
 
 export default createRule<Options, MessageIds>({
 	create(context) {
-		const config = normalizeConfig(context.options[0]);
+		const { trackedImports } = normalizeConfiguration(context.options[0]);
+		if (trackedImports.size === 0) return {};
 
-		if (config.trackedImports.size === 0) return {};
-
-		// Map of local binding names to their tracked import info
 		const localBindings = new Map<string, TrackedImport>();
 
 		return {
@@ -75,11 +69,9 @@ export default createRule<Options, MessageIds>({
 				const source = node.source.value;
 
 				for (const specifier of node.specifiers) {
-					// Check if the import source matches any of our tracked classes
-					for (const [className, tracked] of config.trackedImports) {
+					for (const [className, tracked] of trackedImports) {
 						if (tracked.source !== source) continue;
 
-						// Default import: import Log from "..."
 						if (
 							specifier.type === AST_NODE_TYPES.ImportDefaultSpecifier &&
 							specifier.local.name === className
@@ -87,20 +79,14 @@ export default createRule<Options, MessageIds>({
 							localBindings.set(specifier.local.name, tracked);
 						}
 
-						// Named import: import { Log } from "..." or import { Log as Logger } from "..."
 						if (specifier.type === AST_NODE_TYPES.ImportSpecifier) {
 							const importedName =
 								specifier.imported.type === AST_NODE_TYPES.Identifier
 									? specifier.imported.name
 									: specifier.imported.value;
 
-							if (importedName === className) {
-								localBindings.set(specifier.local.name, tracked);
-							}
+							if (importedName === className) localBindings.set(specifier.local.name, tracked);
 						}
-
-						// Namespace import: import * as Lib from "..." - track if accessing Lib.ClassName
-						// We'll handle this in NewExpression by checking member expressions
 					}
 				}
 			},
@@ -109,25 +95,21 @@ export default createRule<Options, MessageIds>({
 				let trackedInfo: TrackedImport | undefined;
 				let calleeName: string | undefined;
 
-				// Direct identifier: new Log()
 				if (node.callee.type === AST_NODE_TYPES.Identifier) {
 					calleeName = node.callee.name;
 					trackedInfo = localBindings.get(calleeName);
 				}
 
-				// Member expression: new Lib.Log() for namespace imports
 				if (node.callee.type === AST_NODE_TYPES.MemberExpression) {
 					const { property } = node.callee;
 					if (property.type === AST_NODE_TYPES.Identifier) {
 						calleeName = property.name;
-						// Check if this class name is in our config (for namespace imports)
-						trackedInfo = config.trackedImports.get(calleeName);
+						trackedInfo = trackedImports.get(calleeName);
 					}
 				}
 
 				if (!(trackedInfo && calleeName)) return;
 
-				// Check if we're at module scope
 				const scope = context.sourceCode.getScope(node);
 				if (isTopScope(scope)) return;
 

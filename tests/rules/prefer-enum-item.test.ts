@@ -29,70 +29,70 @@ const ruleTester = new RuleTester({
 // Ambient declarations from types.d.ts aren't automatically resolved.
 const typeDeclarations = `
 interface EnumItem {
-	Name: string;
-	Value: number;
-	EnumType: unknown;
+    Name: string;
+    Value: number;
+    EnumType: unknown;
 }
 
 declare namespace Enum {
-	namespace ScaleType {
-		interface Stretch extends EnumItem {
-			Name: "Stretch";
-			Value: 0;
-			EnumType: typeof Enum.ScaleType;
-		}
-		const Stretch: Stretch;
+    namespace ScaleType {
+        interface Stretch extends EnumItem {
+            Name: "Stretch";
+            Value: 0;
+            EnumType: typeof Enum.ScaleType;
+        }
+        const Stretch: Stretch;
 
-		interface Slice extends EnumItem {
-			Name: "Slice";
-			Value: 1;
-			EnumType: typeof Enum.ScaleType;
-		}
-		const Slice: Slice;
+        interface Slice extends EnumItem {
+            Name: "Slice";
+            Value: 1;
+            EnumType: typeof Enum.ScaleType;
+        }
+        const Slice: Slice;
 
-		interface Tile extends EnumItem {
-			Name: "Tile";
-			Value: 2;
-			EnumType: typeof Enum.ScaleType;
-		}
-		const Tile: Tile;
+        interface Tile extends EnumItem {
+            Name: "Tile";
+            Value: 2;
+            EnumType: typeof Enum.ScaleType;
+        }
+        const Tile: Tile;
 
-		interface Fit extends EnumItem {
-			Name: "Fit";
-			Value: 3;
-			EnumType: typeof Enum.ScaleType;
-		}
-		const Fit: Fit;
+        interface Fit extends EnumItem {
+            Name: "Fit";
+            Value: 3;
+            EnumType: typeof Enum.ScaleType;
+        }
+        const Fit: Fit;
 
-		interface Crop extends EnumItem {
-			Name: "Crop";
-			Value: 4;
-			EnumType: typeof Enum.ScaleType;
-		}
-		const Crop: Crop;
-	}
-	type ScaleType = ScaleType.Stretch | ScaleType.Slice | ScaleType.Tile | ScaleType.Fit | ScaleType.Crop;
+        interface Crop extends EnumItem {
+            Name: "Crop";
+            Value: 4;
+            EnumType: typeof Enum.ScaleType;
+        }
+        const Crop: Crop;
+    }
+    type ScaleType = ScaleType.Stretch | ScaleType.Slice | ScaleType.Tile | ScaleType.Fit | ScaleType.Crop;
 }
 
 type CastsToEnum<TEnum extends EnumItem> = TEnum | TEnum["Name"] | TEnum["Value"];
 
 interface ImageProps {
-	ScaleType?: CastsToEnum<Enum.ScaleType>;
+    ScaleType?: CastsToEnum<Enum.ScaleType>;
 }
 
 declare function setScaleType(value: CastsToEnum<Enum.ScaleType>): void;
 
 // Enum with non-literal Name/Value types (for edge case coverage)
 declare namespace Enum {
-	namespace NonLiteralEnum {
-		interface Item extends EnumItem {
-			Name: string;  // Non-literal
-			Value: number; // Non-literal
-			EnumType: typeof Enum.NonLiteralEnum;
-		}
-		const Item: Item;
-	}
-	type NonLiteralEnum = NonLiteralEnum.Item;
+    namespace NonLiteralEnum {
+        interface Item extends EnumItem {
+            Name: string;  // Non-literal
+            Value: number; // Non-literal
+            EnumType: typeof Enum.NonLiteralEnum;
+        }
+        const Item: Item;
+    }
+    type NonLiteralEnum = NonLiteralEnum.Item;
 }
 
 declare function setNonLiteral(value: Enum.NonLiteralEnum | string | number): void;

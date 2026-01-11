@@ -26,7 +26,7 @@ describe("require-react-display-names", () => {
 import { memo } from "@rbxts/react";
 
 function ComponentNoMemo() {
-	return <div />;
+    return <div />;
 }
 
 export default memo(ComponentNoMemo);
@@ -40,7 +40,7 @@ export default memo(ComponentNoMemo);
 import React from "@rbxts/react";
 
 function ComponentNoMemo() {
-	return <div />;
+    return <div />;
 }
 
 export default React.memo(ComponentNoMemo);
@@ -74,7 +74,7 @@ export default React.createContext<number>(0);
 import { memo } from "@rbxts/react";
 
 function ChecklistClaimButtonNoMemo() {
-	return <div />;
+    return <div />;
 }
 
 const ChecklistClaimButton = memo(ChecklistClaimButtonNoMemo);
@@ -89,7 +89,7 @@ export default ChecklistClaimButton;
 import { memo } from "@rbxts/react";
 
 function ChecklistClaimButtonNoMemo() {
-	return <div />;
+    return <div />;
 }
 
 export const ChecklistClaimButton = memo(ChecklistClaimButtonNoMemo);
@@ -135,7 +135,7 @@ export { ThemeContext };
 import { memo } from "react";
 
 function Button() {
-	return <button />;
+    return <button />;
 }
 
 const MemoButton = memo(Button);
@@ -163,7 +163,7 @@ export default AppContext;
 import { memo } from "@rbxts/react";
 
 function Comp() {
-	return <div />;
+    return <div />;
 }
 
 const MemoComp = memo(Comp);
@@ -178,7 +178,7 @@ export { MemoComp as default };
 import * as React from "@rbxts/react";
 
 function Comp() {
-	return <div />;
+    return <div />;
 }
 
 const MemoComp = React.memo(Comp);
@@ -193,7 +193,7 @@ export default MemoComp;
 import * as React from "@rbxts/react";
 
 function Comp() {
-	return <div />;
+    return <div />;
 }
 
 export default React.memo(Comp);
@@ -208,7 +208,7 @@ export default React.memo(Comp);
 import { memo } from "@rbxts/react";
 
 function ChecklistClaimButtonNoMemo() {
-	return <div />;
+    return <div />;
 }
 
 export const ChecklistClaimButton = memo(ChecklistClaimButtonNoMemo);
@@ -234,13 +234,13 @@ export default ErrorBoundaryContext;
 import { memo } from "@rbxts/react";
 
 function Inner() {
-	return <div />;
+    return <div />;
 }
 
 const MemoInner = memo(Inner);
 
 function Container() {
-	return <MemoInner />;
+    return <MemoInner />;
 }
 
 export default Container;
@@ -255,8 +255,8 @@ import { createContext, useContext } from "@rbxts/react";
 const InternalContext = createContext<number>(0);
 
 function Component() {
-	const value = useContext(InternalContext);
-	return <div>{value}</div>;
+    const value = useContext(InternalContext);
+    return <div>{value}</div>;
 }
 
 export default Component;
@@ -269,7 +269,7 @@ export default Component;
 import { memo } from "some-other-package";
 
 function Comp() {
-	return <div />;
+    return <div />;
 }
 
 const MemoComp = memo(Comp);
@@ -283,7 +283,7 @@ export default MemoComp;
 import { memo } from "@rbxts/react";
 
 function Comp() {
-	return <div />;
+    return <div />;
 }
 
 const MemoComp = memo(Comp);
@@ -298,7 +298,7 @@ export default MemoComp;
 import { memo } from "react";
 
 function Comp() {
-	return <div />;
+    return <div />;
 }
 
 const MemoComp = memo(Comp);
@@ -323,7 +323,7 @@ ThemeContext.displayName = "ThemeContext";
 import React from "@rbxts/react";
 
 function MyComponent() {
-	return <div />;
+    return <div />;
 }
 
 export default MyComponent;
@@ -336,9 +336,9 @@ export default MyComponent;
 import React from "@rbxts/react";
 
 class MyComponent extends React.Component {
-	render() {
-		return <div />;
-	}
+    render() {
+        return <div />;
+    }
 }
 
 export default MyComponent;
@@ -361,7 +361,7 @@ export default MyComponent;
 import { memo as memoize } from "@rbxts/react";
 
 function Comp() {
-	return <div />;
+    return <div />;
 }
 
 export const MemoComp = memoize(Comp);
@@ -385,7 +385,7 @@ MyContext.displayName = "MyContext";
 import { memo } from "@rbxts/roact";
 
 function Comp() {
-	return <div />;
+    return <div />;
 }
 
 export const MemoComp = memo(Comp);
@@ -420,7 +420,7 @@ export default something;
 import { memo } from "@rbxts/react";
 
 function makeStuff() {
-	return { a: 1 };
+    return { a: 1 };
 }
 
 const { a } = makeStuff();
@@ -465,7 +465,7 @@ export default Comp;
 import { memo } from "@rbxts/react";
 
 function getMemo() {
-	return memo;
+    return memo;
 }
 
 const Comp = getMemo()(() => <div />);
@@ -479,9 +479,9 @@ export default Comp;
 import React from "@rbxts/react";
 
 function outer() {
-	const Ctx = React.createContext(0);
-	Ctx.displayName = "Ctx";
-	return Ctx;
+    const Ctx = React.createContext(0);
+    Ctx.displayName = "Ctx";
+    return Ctx;
 }
 
 export const MyContext = outer();

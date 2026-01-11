@@ -204,7 +204,6 @@ async function runBuildAsync(options: BuildOptions): Promise<BuildResult> {
 		}
 
 		if (options.verbose) console.success("Bun build completed");
-
 		if (options.verbose) console.start("Generating type declarations...");
 
 		const flags = [
@@ -330,7 +329,7 @@ function printBuildSummary(result: BuildResult, verbose: boolean): void {
 }
 
 try {
-	await cleanDistDirectoryAsync();
+	await cleanDistDirectoryAsync(false);
 } catch {
 	// I do not care.
 }

@@ -98,9 +98,9 @@ function getUnionTypes(type: Type): ReadonlyArray<Type> {
 	return [type];
 }
 
-	function createEnumMatch(enumPath: string): EnumMatch {
-		return { enumPath };
-	}
+function createEnumMatch(enumPath: string): EnumMatch {
+	return { enumPath };
+}
 
 export default createRule<Options, MessageIds>({
 	create(context) {
