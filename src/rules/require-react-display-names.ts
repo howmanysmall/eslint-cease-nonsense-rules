@@ -1,8 +1,8 @@
 import { TSESTree } from "@typescript-eslint/types";
 import type { Scope } from "@typescript-eslint/utils/ts-eslint";
+import { getReactSources, isReactImport } from "../constants/react-sources";
+import type { EnvironmentMode } from "../types/environment-mode";
 import { createRule } from "../utilities/create-rule";
-
-export type EnvironmentMode = "roblox-ts" | "standard";
 
 export interface RequireReactDisplayNamesOptions {
 	readonly environment?: EnvironmentMode;
@@ -15,23 +15,12 @@ const DEFAULT_OPTIONS: Required<RequireReactDisplayNamesOptions> = {
 	environment: "roblox-ts",
 };
 
-const REACT_SOURCES_ROBLOX = new Set(["@rbxts/react", "@rbxts/roact"]);
-const REACT_SOURCES_STANDARD = new Set(["react", "react-dom"]);
-
-function getReactSources(environment: EnvironmentMode): Set<string> {
-	return environment === "roblox-ts" ? REACT_SOURCES_ROBLOX : REACT_SOURCES_STANDARD;
-}
-
 interface TrackedVariable {
 	readonly hasDisplayName: boolean;
 	readonly isDefaultExported: boolean;
 	readonly kind: "context" | "memo";
 	readonly name: string;
 	readonly node: TSESTree.VariableDeclarator;
-}
-
-function isReactImport(node: TSESTree.ImportDeclaration, reactSources: Set<string>): boolean {
-	return reactSources.has(node.source.value);
 }
 
 function isMemoCall(

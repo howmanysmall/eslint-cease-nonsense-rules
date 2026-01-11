@@ -2,6 +2,7 @@ import type { BanInstancesOptions } from "../rules/ban-instances";
 import type { ComplexityConfiguration } from "../rules/enforce-ianitor-check-type";
 import type { NoGodComponentsOptions } from "../rules/no-god-components";
 import type { NoInstanceMethodsOptions } from "../rules/no-instance-methods-without-this";
+import type { NoMemoChildrenOptions } from "../rules/no-memo-children";
 import type { NoShorthandOptions } from "../rules/no-shorthand-names";
 import type { NoUselessUseSpringOptions } from "../rules/no-useless-use-spring";
 import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../rules/no-useless-use-spring";
@@ -79,6 +80,15 @@ export function createNoInstanceMethodsOptions(
 		checkPublic: false,
 		...options,
 	};
+}
+
+/**
+ * Creates options for no-memo-children rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNoMemoChildrenOptions(options: Partial<NoMemoChildrenOptions> = {}): NoMemoChildrenOptions {
+	return { allowedComponents: [], environment: "roblox-ts", ...options };
 }
 
 /**

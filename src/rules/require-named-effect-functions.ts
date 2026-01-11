@@ -2,6 +2,8 @@ import { TSESTree } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
+import type { EnvironmentMode } from "../types/environment-mode";
+import { isEnvironmentMode } from "../types/environment-mode";
 
 export interface HookConfiguration {
 	readonly allowAsync: boolean;
@@ -13,9 +15,6 @@ const DEFAULT_HOOKS: ReadonlyArray<HookConfiguration> = [
 	{ allowAsync: false, name: "useLayoutEffect" },
 	{ allowAsync: false, name: "useInsertionEffect" },
 ] as const;
-
-const isEnvironmentMode = Typebox.Union([Typebox.Literal("roblox-ts"), Typebox.Literal("standard")]);
-export type EnvironmentMode = Typebox.Static<typeof isEnvironmentMode>;
 
 export interface EffectFunctionOptions {
 	readonly environment: EnvironmentMode;

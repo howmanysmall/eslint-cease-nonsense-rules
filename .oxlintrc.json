@@ -18,7 +18,7 @@
 	"globals": {
 		"Bun": "readonly",
 	},
-	"ignorePatterns": ["dist", "do-not-sync-ever/**", "**/node_modules/**"],
+	"ignorePatterns": ["dist", "do-not-sync-ever/**", "**/node_modules/**", "tests/fixtures/**/*.d.ts"],
 	"jsPlugins": [],
 	"overrides": [
 		{
