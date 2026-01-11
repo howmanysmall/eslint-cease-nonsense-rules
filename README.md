@@ -148,7 +148,8 @@ Enforce using EnumItem values instead of string or number literals when the type
 ```typescript
 {
   "cease-nonsense/prefer-enum-item": ["error", {
-    "fixNumericToValue": false  // When true, numbers fix to Enum.X.Y.Value
+    "fixNumericToValue": false,  // When true, numbers fix to Enum.X.Y.Value
+    "performanceMode": false     // When true, cache enum lookups
   }]
 }
 ```

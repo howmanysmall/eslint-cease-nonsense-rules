@@ -117,21 +117,15 @@
 		"show_type_hints": true
 	},
 	"languages": {
-		// JSON
 		"JSON": {
 			"code_actions_on_format": {
 				"source.fixAll.biome": true,
 				"source.organizeImports.biome": true
 			},
 			"format_on_save": "on",
-			"formatter": {
-				"external": {
-					"arguments": ["x", "--bun", "biome", "format", "--stdin-file-path", "{buffer_path}"],
-					"command": "bun"
-				}
-			},
+			"formatter": { "language_server": { "name": "biome" } },
 			"hard_tabs": true,
-			"language_servers": ["biome"],
+			"language_servers": ["biome", "..."],
 			"tab_size": 4
 		},
 		"JSONC": {
@@ -140,32 +134,21 @@
 				"source.organizeImports.biome": true
 			},
 			"format_on_save": "on",
-			"formatter": {
-				"external": {
-					"arguments": ["x", "--bun", "biome", "format", "--stdin-file-path", "{buffer_path}"],
-					"command": "bun"
-				}
-			},
+			"formatter": { "language_server": { "name": "biome" } },
 			"hard_tabs": true,
-			"language_servers": ["biome"],
+			"language_servers": ["biome", "..."],
 			"tab_size": 4
 		},
-		// Markdown
+
 		"Markdown": {
 			"format_on_save": "on",
-			"formatter": {
-				"external": {
-					"arguments": ["--fix", "--stdin"],
-					"command": "markdownlint"
-				}
-			},
+			"formatter": [{ "language_server": { "name": "rumdl" } }],
 			"hard_tabs": true,
-			"language_servers": ["marksman"],
+			"language_servers": ["!marksman", "!markdownlint", "rumdl", "..."],
 			"show_whitespaces": "none",
 			"soft_wrap": "editor_width",
 			"tab_size": 4
 		},
-		// Shell Script (ShellCheck functionality via external tools)
 		"Shell Script": {
 			"format_on_save": "on",
 			"formatter": {
@@ -175,15 +158,14 @@
 				}
 			},
 			"hard_tabs": true,
-			"language_servers": ["bash-language-server"],
+			"language_servers": ["bash-language-server", "..."],
 			"tab_size": 4
 		},
-		// TOML
+
 		"TOML": {
 			"format_on_save": "on",
 			"formatter": "language_server",
 			"hard_tabs": true,
-			"language_servers": ["taplo"],
 			"tab_size": 4
 		},
 		"TSX": {
@@ -193,14 +175,17 @@
 				"source.organizeImports.biome": true
 			},
 			"format_on_save": "on",
-			"formatter": {
-				"external": {
-					"arguments": ["x", "--bun", "oxfmt", "--stdin-filepath", "{buffer_path}"],
-					"command": "bun"
-				}
-			},
+			"formatter": [
+				{
+					"external": {
+						"arguments": ["x", "--bun", "oxfmt", "--stdin-filepath", "{buffer_path}"],
+						"command": "bun"
+					}
+				},
+				{ "language_server": { "name": "biome" } }
+			],
 			"hard_tabs": true,
-			"language_servers": ["vtsls", "eslint", "biome", "oxlint"],
+			"language_servers": ["oxfmt", "!typescript-language-server", "!eslint", "tsgo", "!vtsls", "..."],
 			"tab_size": 4
 		},
 		"TypeScript": {
@@ -210,17 +195,20 @@
 				"source.organizeImports.biome": true
 			},
 			"format_on_save": "on",
-			"formatter": {
-				"external": {
-					"arguments": ["x", "--bun", "oxfmt", "--stdin-filepath", "{buffer_path}"],
-					"command": "bun"
-				}
-			},
+			"formatter": [
+				{
+					"external": {
+						"arguments": ["x", "--bun", "oxfmt", "--stdin-filepath", "{buffer_path}"],
+						"command": "bun"
+					}
+				},
+				{ "language_server": { "name": "biome" } }
+			],
 			"hard_tabs": true,
-			"language_servers": ["vtsls", "eslint", "biome", "oxlint"],
+			"language_servers": ["!oxfmt", "!typescript-language-server", "!eslint", "tsgo", "!vtsls", "..."],
 			"tab_size": 4
 		},
-		// YAML
+
 		"YAML": {
 			"format_on_save": "on",
 			"hard_tabs": false,
@@ -228,7 +216,6 @@
 		}
 	},
 	"lsp": {
-		// Bash Language Server (for shell scripts including Zsh)
 		"bash-language-server": {
 			"settings": {
 				"bashIde": {
@@ -236,7 +223,7 @@
 				}
 			}
 		},
-		// Biome Language Server
+
 		"biome": {
 			"binary": {
 				"arguments": ["x", "--bun", "biome", "lsp-proxy"],
@@ -250,7 +237,7 @@
 				}
 			}
 		},
-		// ESLint Language Server
+
 		"eslint": {
 			"settings": {
 				"codeActionOnSave": {
@@ -276,16 +263,28 @@
 				}
 			}
 		},
-		// Markdown Language Server
+
 		"marksman": {
 			"initialization_options": {}
+		},
+		"oxlint": {
+			"initialization_options": {
+				"settings": {
+					"configPath": "./.oxlintrc.json",
+					"disableNestedConfig": false,
+					"fixKind": "safe_fix",
+					"run": "onType",
+					"typeAware": true,
+					"unusedDisableDirectives": "deny"
+				}
+			}
 		},
 		"snippet-completion-server": {
 			"settings": {
 				"feature_paths": true
 			}
 		},
-		// TOML Language Server
+
 		"taplo": {
 			"initialization_options": {
 				"configuration": {
@@ -491,7 +490,7 @@
 		"quick_actions": true
 	},
 	"ui_font_family": "SF Pro",
-	// VSCode-like UI settings
+
 	"ui_font_features": {
 		"calt": true
 	},
