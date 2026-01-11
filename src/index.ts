@@ -9,12 +9,14 @@ import noCommentedCode from "./rules/no-commented-code";
 import noGodComponents from "./rules/no-god-components";
 import noIdentityMap from "./rules/no-identity-map";
 import noInstanceMethodsWithoutThis from "./rules/no-instance-methods-without-this";
+import noMemoChildren from "./rules/no-memo-children";
 import noPrint from "./rules/no-print";
 import noShorthandNames from "./rules/no-shorthand-names";
 import noUselessUseSpring from "./rules/no-useless-use-spring";
 import noWarn from "./rules/no-warn";
 import preferClassProperties from "./rules/prefer-class-properties";
 import preferEarlyReturn from "./rules/prefer-early-return";
+import preferEnumItem from "./rules/prefer-enum-item";
 import preferModuleScopeConstants from "./rules/prefer-module-scope-constants";
 import preferPascalCaseEnums from "./rules/prefer-pascal-case-enums";
 import preferPatternReplacements from "./rules/prefer-pattern-replacements";
@@ -37,14 +39,17 @@ export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type
 export type { NoGodComponentsOptions } from "./rules/no-god-components";
 export type { NoIdentityMapOptions } from "./rules/no-identity-map";
 export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
+export type { NoMemoChildrenOptions } from "./rules/no-memo-children";
 export type { NoShorthandOptions } from "./rules/no-shorthand-names";
 export type { NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
+export type { PreferEnumItemOptions } from "./rules/prefer-enum-item";
 export type { RequireModuleLevelInstantiationOptions } from "./rules/require-module-level-instantiation";
-export type { EffectFunctionOptions, EnvironmentMode, HookConfiguration } from "./rules/require-named-effect-functions";
+export type { EffectFunctionOptions, HookConfiguration } from "./rules/require-named-effect-functions";
 export type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
 export type { ReactKeysOptions } from "./rules/require-react-component-keys";
 export type { RequireReactDisplayNamesOptions } from "./rules/require-react-display-names";
 export type { HookEntry, UseExhaustiveDependenciesOptions } from "./rules/use-exhaustive-dependencies";
+export type { EnvironmentMode } from "./types/environment-mode";
 export {
 	createBanInstancesOptions,
 	createComplexityConfiguration,
@@ -52,6 +57,7 @@ export {
 	createHookConfiguration,
 	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
+	createNoMemoChildrenOptions,
 	createNoShorthandOptions,
 	createNoUselessUseSpringOptions,
 	createPairConfiguration,
@@ -83,12 +89,14 @@ const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"no-god-components": noGodComponents,
 	"no-identity-map": noIdentityMap,
 	"no-instance-methods-without-this": noInstanceMethodsWithoutThis,
+	"no-memo-children": noMemoChildren,
 	"no-print": noPrint,
 	"no-shorthand-names": noShorthandNames,
 	"no-useless-use-spring": noUselessUseSpring,
 	"no-warn": noWarn,
 	"prefer-class-properties": preferClassProperties,
 	"prefer-early-return": preferEarlyReturn,
+	"prefer-enum-item": preferEnumItem,
 	"prefer-module-scope-constants": preferModuleScopeConstants,
 	"prefer-pascal-case-enums": preferPascalCaseEnums,
 	"prefer-pattern-replacements": preferPatternReplacements,
@@ -135,6 +143,7 @@ const recommended = {
 		"cease-nonsense/no-god-components": "error",
 		"cease-nonsense/no-identity-map": "error",
 		"cease-nonsense/no-instance-methods-without-this": "error",
+		"cease-nonsense/no-memo-children": "error",
 		"cease-nonsense/no-print": "error",
 		"cease-nonsense/no-shorthand-names": "error",
 		"cease-nonsense/no-warn": "error",

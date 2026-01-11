@@ -4,6 +4,11 @@ import { toPascalCase } from "../utilities/casing-utilities";
 import { createRule } from "../utilities/create-rule";
 import { resolveRelativeImport } from "../utilities/resolve-import";
 
+interface Options {
+	readonly allow?: ReadonlyArray<string>;
+	readonly maxDepth?: number;
+}
+
 function toRegExp(pattern: string): RegExp {
 	return new RegExp(pattern, "i");
 }
@@ -37,7 +42,7 @@ function isValidFixtureImport(pathParts: ReadonlyArray<string>): boolean {
 	return !hasAnotherComponentInPath(partsBeforeFixture);
 }
 
-export default createRule({
+export default createRule<[Options], "noReachingIntoComponent">({
 	create(context) {
 		const [{ allow = [], maxDepth = 1 } = {}] = context.options;
 		// oxlint-disable-next-line no-array-callback-reference

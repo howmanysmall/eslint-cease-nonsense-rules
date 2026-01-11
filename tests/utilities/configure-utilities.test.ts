@@ -10,6 +10,7 @@ import {
 	createNoShorthandOptions,
 	createNoUselessUseSpringOptions,
 	createPairConfiguration,
+	createPreferEnumItemOptions,
 	createPreferPatternReplacementsOptions,
 	createReactKeysOptions,
 	createRequirePairedCallsOptions,
@@ -299,6 +300,20 @@ describe("configure-utilities", () => {
 			// @ts-expect-error Testing purposes
 			expect(configuration.importSources).toEqual({ react: ["useEffect"] });
 			expect(configuration.onlyHooks).toEqual(["useEffect"]);
+		});
+	});
+
+	describe("createPreferEnumItemOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createPreferEnumItemOptions();
+			expect(configuration).toEqual({ fixNumericToValue: false, performanceMode: false });
+		});
+
+		it("should override defaults", () => {
+			expect.assertions(1);
+			const configuration = createPreferEnumItemOptions({ fixNumericToValue: true });
+			expect(configuration.fixNumericToValue).toBe(true);
 		});
 	});
 
