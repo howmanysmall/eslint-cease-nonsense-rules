@@ -49,6 +49,7 @@ export default [
 			"cease-nonsense/no-god-components": "error",
 			"cease-nonsense/no-identity-map": "error",
 			"cease-nonsense/no-instance-methods-without-this": "error",
+			"cease-nonsense/no-memo-children": "error",
 			"cease-nonsense/no-print": "error",
 			"cease-nonsense/prefer-enum-item": "error",
 			"cease-nonsense/no-shorthand-names": "error",
@@ -212,6 +213,77 @@ function Modal() {
 function Input() {
   return <input />;
 }
+```
+
+#### `no-memo-children`
+
+Disallow `React.memo` on components that accept a `children` prop, since children typically change on every render and defeat memoization.
+
+**Why**
+
+`React.memo` performs a shallow comparison of props. When a component accepts `children`, the `children` prop is typically a new JSX element on every parent render. This causes the shallow comparison to fail every time, making `memo` useless while adding overhead.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-memo-children": ["error", {
+    "allowedComponents": ["Modal", "Drawer"],  // Allow specific components
+    "environment": "roblox-ts"                  // or "standard"
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+import { memo, ReactNode } from "@rbxts/react";
+
+interface CardProps {
+	readonly title: string;
+	readonly children?: ReactNode;
+}
+
+// memo is useless - children change every render
+const Card = memo<CardProps>(({ title, children }) => {
+	return (
+		<frame>
+			<textlabel Text={title} />
+			{children}
+		</frame>
+	);
+});
+```
+
+**✅ Good**
+
+```typescript
+import { memo, ReactNode } from "@rbxts/react";
+
+// Option 1: Remove memo if you need children
+interface CardProps {
+	readonly title: string;
+	readonly children?: ReactNode;
+}
+
+function Card({ title, children }: CardProps) {
+	return (
+		<frame>
+			<textlabel Text={title} />
+			{children}
+		</frame>
+	);
+}
+
+// Option 2: Use render prop instead of children
+interface ListProps<T> {
+	readonly items: ReadonlyArray<T>;
+	readonly renderItem: (item: T) => ReactNode;
+}
+
+const List = memo(<T,>({ items, renderItem }: ListProps<T>) => {
+	return <frame>{items.map(renderItem)}</frame>;
+});
 ```
 
 #### `no-god-components`
