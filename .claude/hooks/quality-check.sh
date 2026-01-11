@@ -15,7 +15,7 @@ function run-check() {
 
 run-check "Format (auto-fix)" "bun run format"
 run-check "Lint" "bun run lint"
-run-check "Type check" "bun run typecheck"
+run-check "Type check" "bun run type-check"
 run-check "Tests" "bun run test"
 
 echo "🎉 All quality checks passed - codebase is clean!"

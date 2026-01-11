@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { existsSync } from "node:fs";
-import fs from "node:fs/promises";
+import { readdir, rm, stat } from "node:fs/promises";
 import { basename, extname, resolve } from "node:path";
 import { cwd, exit, platform } from "node:process";
 import { Command } from "@jsr/cliffy__command";
@@ -9,7 +9,7 @@ import { type } from "arktype";
 import console from "consola";
 import { bold, cyan, gray, green, magenta, red, yellow } from "picocolors";
 import prettyBytes from "pretty-bytes";
-import prettyMs from "pretty-ms";
+import prettyMilliseconds from "pretty-ms";
 import buildMetadata from "./plugins/build-metadata";
 
 if (typeof Bun === "undefined") {
@@ -59,7 +59,7 @@ const isResolveMessageType = type({
 	specifier: "string",
 }).readonly();
 const isShellErrorType = type({
-	exitCode: "number.integer",
+	exitCode: "number % 1",
 	message: "string",
 	stderr: isBuffer,
 	stdout: isBuffer,
@@ -79,7 +79,7 @@ function isShellError(object: unknown): object is ShellError {
 	return !(isShellErrorType(object) instanceof type.errors);
 }
 
-const DIST_DIR = "./dist";
+const DIST_DIRECTORY = resolve(".", "dist");
 const ENTRY_POINTS = ["./src/index.ts", "./src/oxfmt-worker.ts"];
 const EXTERNAL_PACKAGES = [
 	"@typescript-eslint/utils",
@@ -129,27 +129,27 @@ function formatBuildMessage(buildRelatedMessage: BuildRelatedMessage): string {
 	return parts.join("\n");
 }
 
-async function cleanDistDirectory(verbose: boolean): Promise<void> {
-	if (existsSync(DIST_DIR)) {
-		if (verbose) console.info(`Removing ${cyan(DIST_DIR)}...`);
-		await fs.rm(DIST_DIR, { recursive: true });
+async function cleanDistDirectoryAsync(verbose: boolean): Promise<void> {
+	if (existsSync(DIST_DIRECTORY)) {
+		if (verbose) console.info(`Removing ${cyan(DIST_DIRECTORY)}...`);
+		await rm(DIST_DIRECTORY, { recursive: true });
 	}
 }
 
 async function getOutputFilesAsync(directory: string): Promise<ReadonlyArray<OutputFile>> {
-	const resolvedDir = resolve(directory);
+	const resolvedDirectory = resolve(directory);
 
 	async function walk(directory: string): Promise<ReadonlyArray<OutputFile>> {
-		const entries = await fs.readdir(directory, { withFileTypes: true });
+		const entries = await readdir(directory, { withFileTypes: true });
 		const results: ReadonlyArray<ReadonlyArray<OutputFile>> = await Promise.all(
 			entries.map(async (entry): Promise<ReadonlyArray<OutputFile>> => {
 				const fullPath = resolve(directory, entry.name);
 				if (entry.isDirectory()) return walk(fullPath);
 				if (entry.isFile()) {
-					const stats = await fs.stat(fullPath);
+					const stats = await stat(fullPath);
 					return [
 						{
-							path: fullPath.replace(`${resolvedDir}/`, ""),
+							path: fullPath.replace(`${resolvedDirectory}/`, ""),
 							size: stats.size,
 						},
 					];
@@ -171,7 +171,7 @@ async function runBuildAsync(options: BuildOptions): Promise<BuildResult> {
 	try {
 		if (options.clean) {
 			if (options.verbose) console.start("Cleaning dist directory...");
-			await cleanDistDirectory(options.verbose);
+			await cleanDistDirectoryAsync(options.verbose);
 			if (options.verbose) console.success("Cleaned dist directory");
 		}
 
@@ -187,7 +187,7 @@ async function runBuildAsync(options: BuildOptions): Promise<BuildResult> {
 			external: [...EXTERNAL_PACKAGES],
 			format: "esm",
 			minify: options.minify,
-			outdir: DIST_DIR,
+			outdir: DIST_DIRECTORY,
 			plugins: [buildMetadata],
 			sourcemap: options.sourcemap ? "external" : "none",
 			target: "node",
@@ -206,7 +206,55 @@ async function runBuildAsync(options: BuildOptions): Promise<BuildResult> {
 		if (options.verbose) console.success("Bun build completed");
 
 		if (options.verbose) console.start("Generating type declarations...");
-		await Bun.$`bun x --bun tsgo --emitDeclarationOnly --declaration --outDir dist`.quiet();
+
+		const flags = [
+			"--allowJs",
+			"false",
+			"--declaration",
+			"--emitDeclarationOnly",
+			"--esModuleInterop",
+			"false",
+			"--exactOptionalPropertyTypes",
+			"--forceConsistentCasingInFileNames",
+			"--isolatedModules",
+			"--lib",
+			"ES2023",
+			"--module",
+			"ES2022",
+			"--moduleDetection",
+			"force",
+			"--moduleResolution",
+			"Bundler",
+			"--noFallthroughCasesInSwitch",
+			"--noImplicitAny",
+			"--noImplicitOverride",
+			"--noImplicitReturns",
+			"--noImplicitThis",
+			"--noUncheckedIndexedAccess",
+			"--noUncheckedSideEffectImports",
+			"--noUnusedLocals",
+			"--noUnusedParameters",
+			"--outDir",
+			"dist",
+			"--resolveJsonModule",
+			"false",
+			"--rootDir",
+			"src",
+			"--skipLibCheck",
+			"--strict",
+			"--target",
+			"es2023",
+			"--types",
+			"bun,node",
+			"--useUnknownInCatchVariables",
+			"--verbatimModuleSyntax",
+		];
+
+		if (options.sourcemap) flags.push("--declarationMap", "--sourceMap");
+		else flags.push("--declarationMap", "false", "--sourceMap", "false");
+		if (options.verbose) console.log(`Calling bun x --bun tsc ${flags.join(" ")}`);
+
+		await Bun.$`bun x --bun tsgo ${flags}`.quiet();
 		if (options.verbose) console.success("Type declarations generated");
 
 		for (const file of CRITICAL_FILES) {
@@ -220,7 +268,7 @@ async function runBuildAsync(options: BuildOptions): Promise<BuildResult> {
 			}
 		}
 
-		const outputFiles = await getOutputFilesAsync(DIST_DIR);
+		const outputFiles = await getOutputFilesAsync(DIST_DIRECTORY);
 		const duration = (Bun.nanoseconds() - startTime) / 1_000_000;
 
 		return { duration, files: outputFiles, success: true };
@@ -251,13 +299,13 @@ async function runBuildAsync(options: BuildOptions): Promise<BuildResult> {
 
 function printBuildSummary(result: BuildResult, verbose: boolean): void {
 	if (!result.success) {
-		console.fail(red(`Build failed in ${prettyMs(result.duration)}`));
+		console.fail(red(`Build failed in ${prettyMilliseconds(result.duration)}`));
 		return;
 	}
 
-	const jsFiles = result.files.filter((file) => file.path.endsWith(".js"));
-	const dtsFiles = result.files.filter((file) => file.path.endsWith(".d.ts"));
-	const mapFiles = result.files.filter((file) => file.path.endsWith(".js.map"));
+	const jsFiles = result.files.filter(({ path }) => path.endsWith(".js"));
+	const dtsFiles = result.files.filter(({ path }) => path.endsWith(".d.ts"));
+	const mapFiles = result.files.filter(({ path }) => path.endsWith(".js.map"));
 	const totalSize = result.files.reduce((sum, file) => sum + file.size, 0);
 
 	console.log("");
@@ -266,9 +314,9 @@ function printBuildSummary(result: BuildResult, verbose: boolean): void {
 
 	if (verbose) {
 		console.info(bold("Output files:"));
-		for (const file of result.files) {
-			const color = file.path.endsWith(".js") ? cyan : file.path.endsWith(".d.ts") ? yellow : gray;
-			console.log(`  ${color(file.path)} ${gray(`(${prettyBytes(file.size)})`)}`);
+		for (const { path, size } of result.files) {
+			const color = path.endsWith(".js") ? cyan : path.endsWith(".d.ts") ? yellow : gray;
+			console.log(`  ${color(path)} ${gray(`(${prettyBytes(size)})`)}`);
 		}
 		console.log("");
 	}
@@ -278,7 +326,13 @@ function printBuildSummary(result: BuildResult, verbose: boolean): void {
 	console.log(`  ${yellow("Declarations:")} ${dtsFiles.length} files`);
 	if (mapFiles.length > 0) console.log(`  ${gray("Sourcemaps:")} ${mapFiles.length} files`);
 	console.log(`  ${magenta("Total size:")} ${prettyBytes(totalSize)}`);
-	console.log(`  ${green("Duration:")} ${prettyMs(result.duration)}`);
+	console.log(`  ${green("Duration:")} ${prettyMilliseconds(result.duration)}`);
+}
+
+try {
+	await cleanDistDirectoryAsync();
+} catch {
+	// I do not care.
 }
 
 const command = new Command()
@@ -288,7 +342,7 @@ const command = new Command()
 	.option("--no-clean", "Skip cleaning dist/ before build", { default: true })
 	.option("-v, --verbose", "Show detailed build output", { default: false })
 	.option("-m, --minify", "Minify the output bundle", { default: false })
-	.option("--no-sourcemap", "Skip generating sourcemaps", { default: true })
+	.option("--sourcemap", "Generate sourcemaps", { default: false })
 	.action(async ({ clean, minify, sourcemap, verbose }) => {
 		const options: BuildOptions = { clean, minify, sourcemap, verbose };
 

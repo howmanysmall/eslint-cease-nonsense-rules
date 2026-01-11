@@ -66,6 +66,22 @@
 			"*.code-workspace": "jsonc",
 		},
 
+		"material-icon-theme.activeIconPack": "react",
+		"material-icon-theme.files.customClones": [],
+		"material-icon-theme.folders.associations": {
+			// "sub-commands": "command",
+		},
+		"material-icon-theme.folders.customClones": [
+			// https://github.com/material-extensions/vscode-material-icon-theme/blob/main/src/core/generator/clones/utils/color/materialPalette.ts
+			{
+				"base": "folder-hook",
+				"color": "indigo-400",
+				"folderNames": ["smart-hooks"],
+				"lightColor": "indigo-600",
+				"name": "smart-hooks",
+			},
+		],
+
 		"oxc.enable": true,
 		"oxc.fixKind": "safe_fix",
 		"oxc.lint.run": "onType",
