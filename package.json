@@ -97,7 +97,7 @@
 		"prepare": "simple-git-hooks",
 		"prepublishOnly": "bun run build",
 		"release": "bumpp",
-		"test": "bun test",
+		"test": "bun test --randomize",
 		"type-check": "tsgo --noEmit",
 		"type-check:safe": "tsc --noEmit"
 	},

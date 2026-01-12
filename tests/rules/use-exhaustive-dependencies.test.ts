@@ -603,8 +603,67 @@ function Component() {
 					},
 				],
 			},
+
+			// Coverage: Non-const variable decl should not be stable
+			{
+				code: `
+function Component() {
+    let a = 1;
+    useEffect(() => {
+        console.log(a);
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'a' to dependencies array",
+								output: `
+function Component() {
+    let a = 1;
+    useEffect(() => {
+        console.log(a);
+    }, [a]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
 		],
 		valid: [
+			// Coverage: TSSatisfiesExpression and other TS nodes
+			{
+				code: `
+function Component() {
+    const a = 1 as any;
+    const b = (2 as const) satisfies number;
+    useEffect(() => {
+        console.log(a, b);
+    }, [a, b]);
+}
+`,
+				languageOptions: { parser: tsParser },
+			},
+			// Coverage: Stable result as single number
+			{
+				code: `
+function Component() {
+    const [_, setter] = useCustomState();
+    useEffect(() => {
+        setter();
+    }, []);
+}
+`,
+				options: [
+					{
+						hooks: [{ name: "useCustomState", stableResult: 1 }],
+					},
+				],
+			},
 			// Correct dependencies
 			`
 function Component() {
@@ -1181,6 +1240,49 @@ function Component() {
     useMemo(() => ({ [key]: value }), [key, value]);
 }
 `,
+
+			// Recursive useCallback - self-reference should NOT be a dependency
+			`
+function Component() {
+    const toggle = useCallback((key) => {
+        if (key === "other") {
+            toggle("self");
+        }
+    }, []);
+}
+`,
+
+			// Recursive useCallback with other dependencies
+			`
+function Component() {
+    const [count] = useState(0);
+    const toggle = useCallback((key) => {
+        console.log(count);
+        if (key === "other") {
+            toggle("self");
+        }
+    }, [count]);
+}
+`,
+
+			// UseMemo returning a function that references itself via closure variable
+			`
+function Component() {
+    const factorial = useMemo(() => {
+        const compute = (n) => n <= 1 ? 1 : n * compute(n - 1);
+        return compute;
+    }, []);
+}
+`,
+
+			// Multiple assigned variables - none should be dependencies
+			`
+function Component() {
+    const [state, toggle] = useCustomHook(() => {
+        toggle();
+    }, []);
+}
+`,
 		],
 	});
 
@@ -1326,6 +1428,39 @@ function Component() {
 					},
 				],
 			},
+
+			// Coverage: React.useEffect
+			`
+function Component() {
+    React.useEffect(() => {}, []);
+}
+`,
+			// Coverage: Computed property in dependency
+			`
+function Component() {
+    const key = "prop";
+    const obj = { prop: 1 };
+    useEffect(() => {
+        console.log(obj[key]);
+    }, [obj[key]]);
+}
+`,
+			// Coverage: Stable unary expression
+			`
+function Component() {
+    const a = -1;
+    useEffect(() => {
+        console.log(a);
+    }, []);
+}
+`,
+			// Coverage: Function reference as hook argument
+			`
+function Component() {
+    const handler = useCallback(() => {}, []);
+    useEffect(handler, []);
+}
+`,
 		],
 	});
 });

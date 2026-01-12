@@ -383,7 +383,6 @@ const IS_CEASE_BOUNDARY = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.VariableDeclarator,
 ]);
 
-// TypeScript runtime expressions - these evaluate to values, not type-only constructs
 const TS_RUNTIME_EXPRESSIONS = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.TSNonNullExpression,
 	TSESTree.AST_NODE_TYPES.TSAsExpression,
@@ -402,7 +401,6 @@ function isInTypePosition(identifier: TSESTree.Identifier): boolean {
 	let parent: TSESTree.Node | undefined = identifier.parent;
 
 	while (parent) {
-		// Skip TS runtime expressions - they're not type-only positions
 		if (TS_RUNTIME_EXPRESSIONS.has(parent.type)) {
 			({ parent } = parent);
 			continue;
@@ -604,6 +602,12 @@ function isUnstableValue(node: TSESTree.Node | undefined): boolean {
 	return node ? UNSTABLE_VALUES.has(node.type) : false;
 }
 
+function isSelfReferenceCapture(capture: CaptureInfo, callNode: TSESTree.CallExpression): boolean {
+	const { parent } = callNode;
+	if (!parent || parent.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator) return false;
+	return capture.variable?.defs.some((definition) => definition.node === parent) ?? false;
+}
+
 const isNumberArray = Compile(Typebox.Array(Typebox.Number(), { minItems: 1, readOnly: true }));
 const isStringArray = Compile(Typebox.Array(Typebox.String(), { minItems: 1, readOnly: true }));
 
@@ -686,8 +690,9 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 
 				const dependenciesArgument = parameters[dependenciesIndex];
 				if (!dependenciesArgument && options.reportMissingDependenciesArray) {
-					// Const _scope = getScope(closureFunction);
-					const captures = collectCaptures(closureFunction, context.sourceCode);
+					const captures = collectCaptures(closureFunction, context.sourceCode).filter(
+						(capture) => !isSelfReferenceCapture(capture, callNode),
+					);
 
 					const requiredCaptures = captures.filter(
 						(capture) =>
@@ -722,13 +727,11 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 				}
 
 				if (!dependenciesArgument) return;
-
 				if (dependenciesArgument.type !== TSESTree.AST_NODE_TYPES.ArrayExpression) return;
-
 				const dependenciesArray = dependenciesArgument;
-
-				// Const _scope = getScope(closureFunction);
-				const captures = collectCaptures(closureFunction, context.sourceCode);
+				const captures = collectCaptures(closureFunction, context.sourceCode).filter(
+					(capture) => !isSelfReferenceCapture(capture, callNode),
+				);
 
 				const dependencies = parseDependencies(dependenciesArray, context.sourceCode);
 
