@@ -3,6 +3,8 @@ import banInstances from "./rules/ban-instances";
 import banReactFC from "./rules/ban-react-fc";
 import enforceIanitorCheckType from "./rules/enforce-ianitor-check-type";
 import fastFormat from "./rules/fast-format";
+import misleadingLuaTupleChecks from "./rules/misleading-lua-tuple-checks";
+import namingConvention from "./rules/naming-convention";
 import noAsyncConstructor from "./rules/no-async-constructor";
 import noColor3Constructor from "./rules/no-color3-constructor";
 import noCommentedCode from "./rules/no-commented-code";
@@ -12,6 +14,7 @@ import noInstanceMethodsWithoutThis from "./rules/no-instance-methods-without-th
 import noMemoChildren from "./rules/no-memo-children";
 import noPrint from "./rules/no-print";
 import noShorthandNames from "./rules/no-shorthand-names";
+import noUnusedImports from "./rules/no-unused-imports";
 import noUselessUseSpring from "./rules/no-useless-use-spring";
 import noWarn from "./rules/no-warn";
 import preferClassProperties from "./rules/prefer-class-properties";
@@ -20,9 +23,11 @@ import preferEnumItem from "./rules/prefer-enum-item";
 import preferModuleScopeConstants from "./rules/prefer-module-scope-constants";
 import preferPascalCaseEnums from "./rules/prefer-pascal-case-enums";
 import preferPatternReplacements from "./rules/prefer-pattern-replacements";
+import preferReadOnlyProps from "./rules/prefer-read-only-props";
 import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
 import preferSingularEnums from "./rules/prefer-singular-enums";
 import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
+import preventAbbreviations from "./rules/prevent-abbreviations";
 import reactHooksStrictReturn from "./rules/react-hooks-strict-return";
 import requireModuleLevelInstantiation from "./rules/require-module-level-instantiation";
 import requireNamedEffectFunctions from "./rules/require-named-effect-functions";
@@ -84,6 +89,8 @@ const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"ban-react-fc": banReactFC,
 	"enforce-ianitor-check-type": enforceIanitorCheckType,
 	"fast-format": fastFormat,
+	"misleading-lua-tuple-checks": misleadingLuaTupleChecks,
+	"naming-convention": namingConvention,
 	"no-async-constructor": noAsyncConstructor,
 	"no-color3-constructor": noColor3Constructor,
 	"no-commented-code": noCommentedCode,
@@ -93,6 +100,7 @@ const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"no-memo-children": noMemoChildren,
 	"no-print": noPrint,
 	"no-shorthand-names": noShorthandNames,
+	"no-unused-imports": noUnusedImports,
 	"no-useless-use-spring": noUselessUseSpring,
 	"no-warn": noWarn,
 	"prefer-class-properties": preferClassProperties,
@@ -101,9 +109,11 @@ const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"prefer-module-scope-constants": preferModuleScopeConstants,
 	"prefer-pascal-case-enums": preferPascalCaseEnums,
 	"prefer-pattern-replacements": preferPatternReplacements,
+	"prefer-read-only-props": preferReadOnlyProps,
 	"prefer-sequence-overloads": preferSequenceOverloads,
 	"prefer-singular-enums": preferSingularEnums,
 	"prefer-udim2-shorthand": preferUDim2Shorthand,
+	"prevent-abbreviations": preventAbbreviations,
 	"react-hooks-strict-return": reactHooksStrictReturn,
 	"require-module-level-instantiation": requireModuleLevelInstantiation,
 	"require-named-effect-functions": requireNamedEffectFunctions,
