@@ -1,7 +1,8 @@
 import { TSESTree } from "@typescript-eslint/types";
-import type { Rule, Scope } from "eslint";
+import type { TSESLint } from "@typescript-eslint/utils";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
+import { createRule } from "../utilities/create-rule";
 
 const FUNCTION_DECLARATIONS = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.FunctionExpression,
@@ -41,7 +42,7 @@ const testingMetrics = {
 };
 
 interface VariableDefinitionLike {
-	readonly node: TSESTree.Node | Rule.Node;
+	readonly node: TSESTree.Node;
 	readonly type: string;
 }
 
@@ -197,11 +198,11 @@ function getRootIdentifier(node: TSESTree.Node): TSESTree.Identifier | undefined
 	return current.type === TSESTree.AST_NODE_TYPES.Identifier ? current : undefined;
 }
 
-function nodeToDependencyString(node: TSESTree.Node, sourceCode: Rule.RuleContext["sourceCode"]): string {
-	return sourceCode.getText(node as unknown as Rule.Node);
+function nodeToDependencyString(node: TSESTree.Node, sourceCode: TSESLint.SourceCode): string {
+	return sourceCode.getText(node);
 }
 
-function nodeToSafeDependencyPath(node: TSESTree.Node, sourceCode: Rule.RuleContext["sourceCode"]): string {
+function nodeToSafeDependencyPath(node: TSESTree.Node, sourceCode: TSESLint.SourceCode): string {
 	if (node.type === TSESTree.AST_NODE_TYPES.Identifier) return node.name;
 
 	if (node.type === TSESTree.AST_NODE_TYPES.ChainExpression) {
@@ -216,7 +217,7 @@ function nodeToSafeDependencyPath(node: TSESTree.Node, sourceCode: Rule.RuleCont
 	if (node.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
 		const objectPath = nodeToSafeDependencyPath(node.object, sourceCode);
 		if (node.computed) {
-			const propertyText = sourceCode.getText(node.property as unknown as Rule.Node);
+			const propertyText = sourceCode.getText(node.property);
 			return `${objectPath}[${propertyText}]`;
 		}
 		const propertyName = node.property.type === TSESTree.AST_NODE_TYPES.Identifier ? node.property.name : "";
@@ -224,12 +225,12 @@ function nodeToSafeDependencyPath(node: TSESTree.Node, sourceCode: Rule.RuleCont
 		return `${objectPath}${separator}${propertyName}`;
 	}
 
-	return sourceCode.getText(node as unknown as Rule.Node);
+	return sourceCode.getText(node);
 }
 
 function isStableArrayIndex(
 	stableResult: StableResult | undefined,
-	node: Scope.Definition["node"],
+	node: TSESLint.Scope.Definition["node"],
 	identifierName: string,
 ): boolean {
 	if (!stableResult) return false;
@@ -244,7 +245,8 @@ function isStableArrayIndex(
 	const { elements } = node.id;
 	let index = 0;
 	for (const element of elements) {
-		if (element.type === TSESTree.AST_NODE_TYPES.Identifier && element.name === identifierName) {
+		const name = element?.type === TSESTree.AST_NODE_TYPES.Identifier ? element.name : undefined;
+		if (name === identifierName) {
 			return stableResult.has(index);
 		}
 
@@ -255,15 +257,14 @@ function isStableArrayIndex(
 }
 
 function isStableHookValue(
-	init: TSESTree.Expression | Rule.Node,
-	node: Scope.Definition["node"],
+	init: TSESTree.Expression,
+	node: TSESLint.Scope.Definition["node"],
 	identifierName: string,
 	stableHooks: Map<string, StableResult>,
 ): boolean {
-	const castInit = init as TSESTree.Expression;
-	if (castInit.type !== TSESTree.AST_NODE_TYPES.CallExpression) return false;
+	if (init.type !== TSESTree.AST_NODE_TYPES.CallExpression) return false;
 
-	const hookName = getHookName(castInit);
+	const hookName = getHookName(init);
 	if (!hookName) return false;
 
 	const stableResult = stableHooks.get(hookName);
@@ -293,7 +294,7 @@ function isStableValue(
 				continue;
 			}
 
-			const init = node.init as TSESTree.Expression | Rule.Node | undefined | null;
+			const init = node.init as TSESTree.Expression | undefined | null;
 			if (init && isStableHookValue(init, node, identifierName, stableHooks)) return true;
 
 			if (init?.type === TSESTree.AST_NODE_TYPES.CallExpression) {
@@ -383,7 +384,6 @@ const IS_CEASE_BOUNDARY = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.VariableDeclarator,
 ]);
 
-// TypeScript runtime expressions - these evaluate to values, not type-only constructs
 const TS_RUNTIME_EXPRESSIONS = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.TSNonNullExpression,
 	TSESTree.AST_NODE_TYPES.TSAsExpression,
@@ -402,7 +402,6 @@ function isInTypePosition(identifier: TSESTree.Identifier): boolean {
 	let parent: TSESTree.Node | undefined = identifier.parent;
 
 	while (parent) {
-		// Skip TS runtime expressions - they're not type-only positions
 		if (TS_RUNTIME_EXPRESSIONS.has(parent.type)) {
 			({ parent } = parent);
 			continue;
@@ -433,7 +432,7 @@ function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree
 			if (isParameter) return true;
 
 			return variable.defs.some((definition) => {
-				let node: TSESTree.Node | undefined = definition.node.parent as TSESTree.Node | undefined;
+				let node: TSESTree.Node | undefined = definition.node.parent;
 				while (node && node !== functionParent) node = node.parent;
 				return node === functionParent;
 			});
@@ -447,10 +446,10 @@ function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree
 
 function resolveFunctionReference(
 	identifier: TSESTree.Identifier,
-	scope: Scope.Scope,
+	scope: TSESLint.Scope.Scope,
 ): TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression | undefined {
-	let variable: Scope.Variable | undefined;
-	let currentScope: Scope.Scope | null = scope;
+	let variable: TSESLint.Scope.Variable | undefined;
+	let currentScope: TSESLint.Scope.Scope | null = scope;
 
 	while (currentScope) {
 		variable = currentScope.set.get(identifier.name);
@@ -473,14 +472,14 @@ function resolveFunctionReference(
 			(node.init.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression ||
 				node.init.type === TSESTree.AST_NODE_TYPES.FunctionExpression)
 		) {
-			return node.init as TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression;
+			return node.init;
 		}
 	}
 
 	return undefined;
 }
 
-function collectCaptures(node: TSESTree.Node, sourceCode: Rule.RuleContext["sourceCode"]): ReadonlyArray<CaptureInfo> {
+function collectCaptures(node: TSESTree.Node, sourceCode: TSESLint.SourceCode): ReadonlyArray<CaptureInfo> {
 	const captures = new Array<CaptureInfo>();
 	const captureSet = new Set<string>();
 
@@ -490,8 +489,8 @@ function collectCaptures(node: TSESTree.Node, sourceCode: Rule.RuleContext["sour
 
 			if (captureSet.has(name) || GLOBAL_BUILTINS.has(name) || isInTypePosition(current)) return;
 
-			let variable: Scope.Variable | undefined;
-			let currentScope: Scope.Scope | null = sourceCode.getScope(current as unknown as Rule.Node);
+			let variable: TSESLint.Scope.Variable | undefined;
+			let currentScope: TSESLint.Scope.Scope | null = sourceCode.getScope(current);
 
 			while (currentScope) {
 				variable = currentScope.set.get(name);
@@ -574,7 +573,7 @@ function collectCaptures(node: TSESTree.Node, sourceCode: Rule.RuleContext["sour
 
 function parseDependencies(
 	node: TSESTree.ArrayExpression,
-	sourceCode: Rule.RuleContext["sourceCode"],
+	sourceCode: TSESLint.SourceCode,
 ): ReadonlyArray<DependencyInfo> {
 	const dependencies = new Array<DependencyInfo>();
 
@@ -604,6 +603,12 @@ function isUnstableValue(node: TSESTree.Node | undefined): boolean {
 	return node ? UNSTABLE_VALUES.has(node.type) : false;
 }
 
+function isSelfReferenceCapture(capture: CaptureInfo, callNode: TSESTree.CallExpression): boolean {
+	const { parent } = callNode;
+	if (!parent || parent.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator) return false;
+	return capture.variable?.defs.some((definition) => definition.node === parent) ?? false;
+}
+
 const isNumberArray = Compile(Typebox.Array(Typebox.Number(), { minItems: 1, readOnly: true }));
 const isStringArray = Compile(Typebox.Array(Typebox.String(), { minItems: 1, readOnly: true }));
 
@@ -619,8 +624,21 @@ function convertStableResult(
 	return false;
 }
 
-const useExhaustiveDependencies: Rule.RuleModule = {
-	create(context) {
+type MessageIds =
+	| "missingDependencies"
+	| "missingDependenciesArray"
+	| "missingDependency"
+	| "unnecessaryDependency"
+	| "unstableDependency"
+	| "addDependenciesArraySuggestion"
+	| "removeDependencySuggestion"
+	| "addDependencySuggestion"
+	| "addMissingDependenciesSuggestion";
+
+type Options = [UseExhaustiveDependenciesOptions?];
+
+const useExhaustiveDependencies = createRule<Options, MessageIds>({
+	create(context): TSESLint.RuleListener {
 		const options: Required<UseExhaustiveDependenciesOptions> = {
 			hooks: [],
 			reportMissingDependenciesArray: true,
@@ -643,20 +661,20 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 			stableHooks.set(customHook.name, convertStableResult(customHook.stableResult));
 		}
 
-		const scopeCache = new WeakMap<TSESTree.Node, Scope.Scope>();
+		const scopeCache = new WeakMap<TSESTree.Node, TSESLint.Scope.Scope>();
 
-		function getScope(node: TSESTree.Node): Scope.Scope {
+		function getScope(node: TSESTree.Node): TSESLint.Scope.Scope {
 			const cached = scopeCache.get(node);
 			if (cached) return cached;
 
-			const scope = context.sourceCode.getScope(node as unknown as Rule.Node);
+			const scope = context.sourceCode.getScope(node);
 			scopeCache.set(node, scope);
 			return scope;
 		}
 
 		return {
 			CallExpression(node) {
-				const callNode = node as unknown as TSESTree.CallExpression;
+				const callNode = node;
 
 				const hookName = getHookName(callNode);
 				if (hookName === undefined || hookName === "") return;
@@ -686,8 +704,9 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 
 				const dependenciesArgument = parameters[dependenciesIndex];
 				if (!dependenciesArgument && options.reportMissingDependenciesArray) {
-					// Const _scope = getScope(closureFunction);
-					const captures = collectCaptures(closureFunction, context.sourceCode);
+					const captures = collectCaptures(closureFunction, context.sourceCode).filter(
+						(capture) => !isSelfReferenceCapture(capture, callNode),
+					);
 
 					const requiredCaptures = captures.filter(
 						(capture) =>
@@ -708,12 +727,11 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 							node: callNode,
 							suggest: [
 								{
-									desc: `Add dependencies array: ${dependenciesString}`,
-									fix(fixer): Rule.Fix | null {
-										//
-										const closureArgumentNode = parameters[closureIndex] as unknown as Rule.Node;
-										return fixer.insertTextAfter(closureArgumentNode, `, ${dependenciesString}`);
+									data: { dependencies: dependenciesString },
+									fix(fixer): TSESLint.RuleFix {
+										return fixer.insertTextAfter(closureArgument, `, ${dependenciesString}`);
 									},
+									messageId: "addDependenciesArraySuggestion",
 								},
 							],
 						});
@@ -722,13 +740,11 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 				}
 
 				if (!dependenciesArgument) return;
-
 				if (dependenciesArgument.type !== TSESTree.AST_NODE_TYPES.ArrayExpression) return;
-
 				const dependenciesArray = dependenciesArgument;
-
-				// Const _scope = getScope(closureFunction);
-				const captures = collectCaptures(closureFunction, context.sourceCode);
+				const captures = collectCaptures(closureFunction, context.sourceCode).filter(
+					(capture) => !isSelfReferenceCapture(capture, callNode),
+				);
 
 				const dependencies = parseDependencies(dependenciesArray, context.sourceCode);
 
@@ -756,13 +772,11 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 								node: dependency.node,
 								suggest: [
 									{
-										desc: `Remove '${dependency.name}' from dependencies array`,
-										fix(fixer): Rule.Fix | null {
-											return fixer.replaceText(
-												dependenciesArray as unknown as Rule.Node,
-												dependenciesString,
-											);
+										data: { name: dependency.name },
+										fix(fixer): TSESLint.RuleFix | null {
+											return fixer.replaceText(dependenciesArray, dependenciesString);
 										},
+										messageId: "removeDependencySuggestion",
 									},
 								],
 							});
@@ -784,13 +798,11 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 							node: dependency.node,
 							suggest: [
 								{
-									desc: `Remove '${dependency.name}' from dependencies array`,
-									fix(fixer): Rule.Fix | null {
-										return fixer.replaceText(
-											dependenciesArray as unknown as Rule.Node,
-											dependencyString,
-										);
+									data: { name: dependency.name },
+									fix(fixer): TSESLint.RuleFix | null {
+										return fixer.replaceText(dependenciesArray, dependencyString);
 									},
+									messageId: "removeDependencySuggestion",
 								},
 							],
 						});
@@ -836,13 +848,11 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 							node: lastDependency?.node ?? dependenciesArray,
 							suggest: [
 								{
-									desc: `Add '${firstMissing.usagePath}' to dependencies array`,
-									fix(fixer): Rule.Fix | null {
-										return fixer.replaceText(
-											dependenciesArray as unknown as Rule.Node,
-											newDependenciesString,
-										);
+									data: { name: firstMissing.usagePath },
+									fix(fixer): TSESLint.RuleFix | null {
+										return fixer.replaceText(dependenciesArray, newDependenciesString);
 									},
+									messageId: "addDependencySuggestion",
 								},
 							],
 						});
@@ -854,13 +864,10 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 							node: lastDependency?.node ?? dependenciesArray,
 							suggest: [
 								{
-									desc: "Add missing dependencies to array",
-									fix(fixer): Rule.Fix | null {
-										return fixer.replaceText(
-											dependenciesArray as unknown as Rule.Node,
-											newDependenciesString,
-										);
+									fix(fixer): TSESLint.RuleFix | null {
+										return fixer.replaceText(dependenciesArray, newDependenciesString);
 									},
+									messageId: "addMissingDependenciesSuggestion",
 								},
 							],
 						});
@@ -886,8 +893,8 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 						if (isMatch && isDirectIdentifier) {
 							const variableDefinition = capture.variable?.defs[0];
 							const initialNode: TSESTree.Node | undefined =
-								variableDefinition?.node.type === "VariableDeclarator"
-									? ((variableDefinition.node.init ?? undefined) as TSESTree.Expression | undefined)
+								variableDefinition?.node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator
+									? (variableDefinition.node.init ?? undefined)
 									: undefined;
 
 							if (isUnstableValue(initialNode)) {
@@ -905,19 +912,28 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 			},
 		};
 	},
+	defaultOptions: [
+		{
+			hooks: [],
+			reportMissingDependenciesArray: true,
+			reportUnnecessaryDependencies: true,
+		},
+	],
 	meta: {
 		docs: {
 			description:
 				"Enforce exhaustive and correct dependency specification in React hooks to prevent stale closures and unnecessary re-renders",
-			recommended: true,
-			url: "https://biomejs.dev/linter/rules/use-exhaustive-dependencies/",
 		},
 		fixable: "code",
 		hasSuggestions: true,
 		messages: {
+			addDependenciesArraySuggestion: "Add dependencies array: {{dependencies}}",
+			addDependencySuggestion: "Add '{{name}}' to dependencies array",
+			addMissingDependenciesSuggestion: "Add missing dependencies to array",
 			missingDependencies: "This hook does not specify all its dependencies. Missing: {{names}}",
 			missingDependenciesArray: "This hook does not specify its dependencies array. Missing: {{deps}}",
 			missingDependency: "This hook does not specify its dependency on {{name}}.",
+			removeDependencySuggestion: "Remove '{{name}}' from dependencies array",
 			unnecessaryDependency: "This dependency {{name}} can be removed from the list.",
 			unstableDependency:
 				"{{name}} changes on every re-render. Wrap the definition in useCallback() or useMemo() to stabilize it.",
@@ -975,6 +991,7 @@ const useExhaustiveDependencies: Rule.RuleModule = {
 		],
 		type: "problem",
 	},
-};
+	name: "use-exhaustive-dependencies",
+});
 
 export default useExhaustiveDependencies;
