@@ -4,7 +4,7 @@ import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "unusedImport";
 
-interface NoUnusedImportsOptions {
+export interface NoUnusedImportsOptions {
 	readonly checkJSDoc?: boolean;
 }
 

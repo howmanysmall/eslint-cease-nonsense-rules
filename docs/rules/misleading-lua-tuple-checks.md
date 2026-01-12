@@ -36,6 +36,10 @@ if (getLuaTuple()[0]) {
 const [result] = getLuaTuple();
 ```
 
+## When Not To Use It
+
+If you're not using roblox-ts or don't use LuaTuple types, this rule has no effect and can be disabled.
+
 ## Performance
 
 This rule is optimized with:

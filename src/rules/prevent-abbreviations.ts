@@ -1,10 +1,10 @@
-import type { TSESTree } from "@typescript-eslint/utils";
+import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "replace" | "suggestion";
 
-interface PreventAbbreviationsOptions {
+export interface PreventAbbreviationsOptions {
 	readonly checkFilenames?: boolean;
 	readonly checkProperties?: boolean;
 	readonly checkVariables?: boolean;
@@ -44,7 +44,8 @@ const DEFAULT_ALLOW_LIST: Record<string, boolean> = {};
 const DEFAULT_IGNORE: ReadonlyArray<string | RegExp> = [];
 
 // Regex for splitting camelCase/PascalCase words
-const CAMEL_CASE_SPLIT_PATTERN = /(?=[A-Z])|(?<=[A-Z])/u;
+// Split before uppercase letters that follow lowercase letters
+const CAMEL_CASE_SPLIT_PATTERN = /(?<=[a-z])(?=[A-Z])/u;
 
 function isUpperCase(str: string): boolean {
 	return str === str.toUpperCase();
@@ -85,11 +86,15 @@ const wordReplacementCache = new Map<
 	}
 >();
 
-function getWordReplacements(word: string, options: PreventAbbreviationsOptions): ReadonlyArray<string> {
+function getWordReplacements(
+	word: string,
+	options: PreventAbbreviationsOptions,
+	includeDisabled = true,
+): ReadonlyArray<string> {
 	// Skip constants and allowList
 	if (isUpperCase(word) || options.allowList?.[word]) return [];
 
-	const cacheKey = `${word}:${JSON.stringify(options.replacements)}:${JSON.stringify(options.allowList)}`;
+	const cacheKey = `${word}:${JSON.stringify(options.replacements)}:${JSON.stringify(options.allowList)}:${includeDisabled}`;
 	const cached = wordReplacementCache.get(cacheKey);
 	if (cached !== undefined && cached.options === options) return cached.replacements;
 
@@ -99,8 +104,9 @@ function getWordReplacements(word: string, options: PreventAbbreviationsOptions)
 	let wordReplacement: ReadonlyArray<string> = [];
 	if (replacement !== false && replacement !== undefined) {
 		const transform = isUpperFirst(word) ? upperFirst : lowerFirst;
+		// Include all replacements (enabled and disabled) for suggestions, or only enabled for fixes
 		wordReplacement = Object.entries(replacement)
-			.filter(([, enabled]) => enabled)
+			.filter(([, enabled]) => includeDisabled || enabled)
 			.map(([name]) => transform(name))
 			.toSorted();
 	}
@@ -138,8 +144,8 @@ function getNameReplacements(
 	const cached = nameReplacementCache.get(cacheKey);
 	if (cached !== undefined && cached.options === options) return cached.result;
 
-	// Find exact replacements
-	const exactReplacements = getWordReplacements(name, options);
+	// Find exact replacements (include disabled for suggestions)
+	const exactReplacements = getWordReplacements(name, options, true);
 
 	if (exactReplacements.length > 0) {
 		const result = {
@@ -154,11 +160,14 @@ function getNameReplacements(
 
 	let hasReplacements = false;
 	const combinations = words.map((word) => {
-		const wordReplacements = getWordReplacements(word, options);
+		const wordReplacements = getWordReplacements(word, options, true);
 
 		if (wordReplacements.length > 0) {
 			hasReplacements = true;
-			return wordReplacements;
+			// Preserve the original case of the word when replacing
+			// If word is "Err" (capital E), we want "Error" (capital E), not "error"
+			const isCapitalized = isUpperFirst(word);
+			return wordReplacements.map((replacement) => (isCapitalized ? upperFirst(replacement) : replacement));
 		}
 
 		return [word];
@@ -182,7 +191,10 @@ function getNameReplacements(
 		let sample = "";
 		let jndex = index;
 		for (const combo of combinations) {
-			sample += combo[jndex % combo.length];
+			const replacement = combo[jndex % combo.length];
+			if (replacement !== undefined) {
+				sample += replacement;
+			}
 			jndex = Math.floor(jndex / combo.length);
 		}
 		samplesArray.push(sample);
@@ -297,35 +309,168 @@ export default createRule<Options, MessageIds>({
 				if (identifierReplacements.total === 0) return;
 
 				if (checkProperties && shouldReportIdentifierAsProperty(node)) {
-					context.report({
-						...getMessage(node.name, identifierReplacements, "property"),
+					const message = getMessage(node.name, identifierReplacements, "property");
+					const reportOptions: {
+						fix?: (fixer: TSESLint.RuleFixer) => TSESLint.RuleFix;
+					} & typeof message & { node: TSESTree.Identifier } = {
+						...message,
 						node,
+					};
+
+					// Only provide fix if there's exactly one total replacement (not just enabled)
+					// If there are multiple total replacements, show suggestion without fix
+					if (identifierReplacements.total === 1 && identifierReplacements.samples[0]) {
+						// Check if the single replacement is enabled
+						const enabledReplacements = getWordReplacements(node.name, options, false);
+						if (enabledReplacements.length === 1 && enabledReplacements[0]) {
+							reportOptions.fix = (fixer: TSESLint.RuleFixer): TSESLint.RuleFix =>
+								fixer.replaceText(node, identifierReplacements.samples[0] ?? node.name);
+						}
+					}
+
+					context.report(reportOptions);
+					return;
+				}
+
+				if (!checkVariables) return;
+
+				// Check if this identifier is a variable declaration
+				const { parent } = node;
+				if (parent === undefined) return;
+
+				// VariableDeclarator: const err = ...
+				if (
+					parent.type === AST_NODE_TYPES.VariableDeclarator &&
+					parent.id.type === AST_NODE_TYPES.Identifier &&
+					parent.id === node
+				) {
+					const message = getMessage(node.name, identifierReplacements, "variable");
+					const reportOptions: {
+						fix?: (fixer: TSESLint.RuleFixer) => TSESLint.RuleFix;
+					} & typeof message & { node: TSESTree.Identifier } = {
+						...message,
+						node,
+					};
+
+					// Only provide fix if there's exactly one total replacement
+					// For multi-word names (like myErr), check if any word has an enabled replacement
+					if (identifierReplacements.total === 1 && identifierReplacements.samples[0]) {
+						// For single-word names, check if the replacement is enabled
+						// For multi-word names, if total is 1, provide the fix (words are already checked)
+						const words = node.name.split(CAMEL_CASE_SPLIT_PATTERN).filter(Boolean);
+						if (words.length === 1) {
+							const enabledReplacements = getWordReplacements(node.name, options, false);
+							if (enabledReplacements.length === 1 && enabledReplacements[0]) {
+								reportOptions.fix = (fixer: TSESLint.RuleFixer): TSESLint.RuleFix =>
+									fixer.replaceText(node, identifierReplacements.samples[0] ?? node.name);
+							}
+						} else {
+							// Multi-word name: check if at least one word has an enabled replacement
+							const hasEnabledReplacement = words.some((word) => {
+								const enabled = getWordReplacements(word, options, false);
+								return enabled.length > 0;
+							});
+							if (hasEnabledReplacement) {
+								reportOptions.fix = (fixer: TSESLint.RuleFixer): TSESLint.RuleFix =>
+									fixer.replaceText(node, identifierReplacements.samples[0] ?? node.name);
+							}
+						}
+					}
+
+					context.report(reportOptions);
+					return;
+				}
+
+				// Function parameter: function foo(err) { ... }
+				// Parameters can be identifiers directly or in patterns
+				if (
+					parent.type === AST_NODE_TYPES.FunctionDeclaration ||
+					parent.type === AST_NODE_TYPES.FunctionExpression ||
+					parent.type === AST_NODE_TYPES.ArrowFunctionExpression
+				) {
+					const isParameter = parent.params.some((param) => {
+						if (param === node) return true;
+						if (param.type === AST_NODE_TYPES.Identifier && param === node) return true;
+						return false;
 					});
+
+					if (isParameter) {
+						const message = getMessage(node.name, identifierReplacements, "variable");
+						const reportOptions: {
+							fix?: (fixer: TSESLint.RuleFixer) => TSESLint.RuleFix | ReadonlyArray<TSESLint.RuleFix>;
+						} & typeof message & { node: TSESTree.Identifier } = {
+							...message,
+							node,
+						};
+
+						// Only provide fix if there's exactly one total replacement
+						// For multi-word names (like myErr), check if any word has an enabled replacement
+						if (identifierReplacements.total === 1 && identifierReplacements.samples[0]) {
+							// For single-word names, check if the replacement is enabled
+							// For multi-word names, if total is 1, provide the fix (words are already checked)
+							const words = node.name.split(CAMEL_CASE_SPLIT_PATTERN).filter(Boolean);
+							let shouldFix = false;
+							if (words.length === 1) {
+								const enabledReplacements = getWordReplacements(node.name, options, false);
+								shouldFix = enabledReplacements.length === 1 && enabledReplacements[0] !== undefined;
+							} else {
+								// Multi-word name: check if at least one word has an enabled replacement
+								shouldFix = words.some((word) => {
+									const enabled = getWordReplacements(word, options, false);
+									return enabled.length > 0;
+								});
+							}
+
+							if (shouldFix) {
+								reportOptions.fix = (
+									fixer: TSESLint.RuleFixer,
+								): TSESLint.RuleFix | ReadonlyArray<TSESLint.RuleFix> => {
+									// Replace all occurrences of this parameter in the function body
+									const { sourceCode } = context;
+									const functionBody = parent.body;
+									if (functionBody === undefined) {
+										return fixer.replaceText(node, identifierReplacements.samples[0] ?? node.name);
+									}
+
+									const fixes: Array<TSESLint.RuleFix> = [
+										fixer.replaceText(node, identifierReplacements.samples[0] ?? node.name),
+									];
+
+									// Find all references to this parameter in the function body
+									const scope = sourceCode.getScope(functionBody);
+									const variable = scope.variables.find(
+										(variableItem) => variableItem.name === node.name,
+									);
+									if (variable !== undefined) {
+										for (const reference of variable.references) {
+											if (
+												reference.identifier !== node &&
+												reference.identifier.type === AST_NODE_TYPES.Identifier
+											) {
+												fixes.push(
+													fixer.replaceText(
+														reference.identifier,
+														identifierReplacements.samples[0] ?? node.name,
+													),
+												);
+											}
+										}
+									}
+
+									return fixes;
+								};
+							}
+						}
+
+						context.report(reportOptions);
+					}
 				}
 			},
 
-			"Program:exit"(program): void {
-				if (!checkVariables) return;
-
-				const scope = context.sourceCode.getScope(program);
-
-				for (const variable of scope.variables) {
-					if (variable.defs.length === 0) continue;
-
-					const variableReplacements = getNameReplacements(variable.name, options);
-
-					if (variableReplacements.total === 0) continue;
-
-					const [definition] = variable.defs;
-					if (definition === undefined) continue;
-					if (definition.name === undefined) continue;
-					if (definition.name.type !== AST_NODE_TYPES.Identifier) continue;
-
-					context.report({
-						...getMessage(definition.name.name, variableReplacements, "variable"),
-						node: definition.name,
-					});
-				}
+			"Program:exit"(): void {
+				// Variables are now checked in Identifier visitor above
+				// This exit handler is kept for any edge cases but primarily
+				// Variable checking happens in the Identifier visitor
 			},
 		};
 	},

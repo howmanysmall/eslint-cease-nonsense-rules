@@ -44,6 +44,10 @@ usedFunction();
  */
 ```
 
+## When Not To Use It
+
+If you have imports that are used only in JSDoc comments and want to keep them, disable this rule or set `checkJSDoc: true`.
+
 ## Performance
 
 This rule is optimized with:

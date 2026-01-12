@@ -48,6 +48,10 @@ const func = () => {};
 const distance = calculateDistance();
 ```
 
+## When Not To Use It
+
+If your codebase has established abbreviation conventions (e.g., `req`/`res` for Express handlers) that you want to keep, use the `allowList` option or disable this rule for those files.
+
 ## Performance
 
 This rule is optimized with:

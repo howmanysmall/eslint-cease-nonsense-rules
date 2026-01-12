@@ -38,6 +38,10 @@ function Component({ name, age }: Props) {
 }
 ```
 
+## When Not To Use It
+
+If you intentionally mutate props in your components (not recommended but sometimes necessary for performance), disable this rule.
+
 ## Performance
 
 This rule is optimized with:

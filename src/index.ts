@@ -41,13 +41,16 @@ import type { ReadonlyRecord } from "./types/utility-types.d";
 
 export type { BanInstancesOptions } from "./rules/ban-instances";
 export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
+export type { NamingConventionOptions } from "./rules/naming-convention";
 export type { NoGodComponentsOptions } from "./rules/no-god-components";
 export type { NoIdentityMapOptions } from "./rules/no-identity-map";
 export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
 export type { NoMemoChildrenOptions } from "./rules/no-memo-children";
 export type { NoShorthandOptions } from "./rules/no-shorthand-names";
+export type { NoUnusedImportsOptions } from "./rules/no-unused-imports";
 export type { NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
 export type { PreferEnumItemOptions } from "./rules/prefer-enum-item";
+export type { PreventAbbreviationsOptions } from "./rules/prevent-abbreviations";
 export type { RequireModuleLevelInstantiationOptions } from "./rules/require-module-level-instantiation";
 export type { EffectFunctionOptions, HookConfiguration } from "./rules/require-named-effect-functions";
 export type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
@@ -60,14 +63,17 @@ export {
 	createComplexityConfiguration,
 	createEffectFunctionOptions,
 	createHookConfiguration,
+	createNamingConventionOptions,
 	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
 	createNoMemoChildrenOptions,
 	createNoShorthandOptions,
+	createNoUnusedImportsOptions,
 	createNoUselessUseSpringOptions,
 	createPairConfiguration,
 	createPreferEnumItemOptions,
 	createPreferPatternReplacementsOptions,
+	createPreventAbbreviationsOptions,
 	createReactKeysOptions,
 	createRequireModuleLevelInstantiationOptions,
 	createRequirePairedCallsOptions,
@@ -149,6 +155,7 @@ const recommended = {
 		"cease-nonsense/ban-react-fc": "error",
 		"cease-nonsense/enforce-ianitor-check-type": "error",
 		"cease-nonsense/fast-format": "error",
+		"cease-nonsense/misleading-lua-tuple-checks": "error",
 		"cease-nonsense/no-async-constructor": "error",
 		"cease-nonsense/no-color3-constructor": "error",
 		"cease-nonsense/no-god-components": "error",
@@ -157,7 +164,9 @@ const recommended = {
 		"cease-nonsense/no-memo-children": "error",
 		"cease-nonsense/no-print": "error",
 		"cease-nonsense/no-shorthand-names": "error",
+		"cease-nonsense/no-unused-imports": "error",
 		"cease-nonsense/no-warn": "error",
+		"cease-nonsense/prefer-read-only-props": "error",
 		"cease-nonsense/prefer-sequence-overloads": "error",
 		"cease-nonsense/prefer-udim2-shorthand": "error",
 		"cease-nonsense/require-named-effect-functions": "error",

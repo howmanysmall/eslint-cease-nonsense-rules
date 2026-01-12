@@ -3,7 +3,7 @@ import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "namingConvention";
 
-interface NamingConventionOptions {
+export interface NamingConventionOptions {
 	readonly custom?: {
 		readonly match?: boolean;
 		readonly regex?: string;

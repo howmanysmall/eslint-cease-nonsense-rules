@@ -48,6 +48,10 @@ interface User {
 }
 ```
 
+## When Not To Use It
+
+If your codebase intentionally uses interface prefixes (e.g., `IUser`) for legacy reasons or team preference, disable this rule.
+
 ## Performance
 
 This rule is optimized with:
