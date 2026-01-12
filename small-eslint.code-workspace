@@ -1,6 +1,17 @@
 {
 	"extensions": {
-		"recommendations": ["oxc.oxc-vscode"],
+		"recommendations": [
+			"oxc.oxc-vscode",
+			"ms-vscode.ts-customized-language-service",
+			"redhat.vscode-yaml",
+			"wakatime.vscode-wakatime",
+			"tombi-toml.tombi",
+			"arktypeio.arkdark",
+			"better-ts-errors.better-ts-errors",
+			"biomejs.biome",
+			"oven.bun-vscode",
+			"wzulfikar.vscode-bun-test-explorer",
+		],
 	},
 	"folders": [
 		{
