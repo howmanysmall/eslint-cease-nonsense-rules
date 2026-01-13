@@ -311,6 +311,7 @@
 			},
 		],
 		"typescript/no-unsafe-type-assertion": "off",
+		"typescript/prefer-optional-chain": "off",
 		"typescript/strict-boolean-expressions": "off",
 		"typescript/use-unknown-in-catch-callback-variable": "error",
 		"unicorn/catch-error-name": "error",

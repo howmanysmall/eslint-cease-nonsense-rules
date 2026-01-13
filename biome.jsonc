@@ -229,6 +229,7 @@
 				"**/*.code-workspace",
 				"tsconfig.json",
 				"tsconfig*.json",
+				"opencode.jsonc",
 				"*.code-snippets",
 				"**/.ox*rc.json"
 			],

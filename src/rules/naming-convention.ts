@@ -46,7 +46,7 @@ function matchesFormat(value: string, formats: ReadonlyArray<string>): boolean {
 }
 
 function matchesCustomRegex(value: string, custom: NamingConventionOptions["custom"]): boolean {
-	if (custom === undefined || custom.regex === undefined) return true;
+	if (custom?.regex === undefined) return true;
 
 	const regex = compileRegex(custom.regex);
 	const matches = regex.test(value);

@@ -47,7 +47,7 @@ export interface Pattern<Match extends string = string> {
 	readonly [PatternBrand]: Match;
 	readonly match: Match;
 	readonly replacement: string;
-	readonly when?: { readonly [Key in ExtractCaptures<Match>]?: WhenCondition };
+	readonly when?: Readonly<Partial<Record<ExtractCaptures<Match>, WhenCondition>>>;
 }
 
 // // Input type for pattern() helper (without brand)
