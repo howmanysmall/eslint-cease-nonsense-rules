@@ -1,8 +1,7 @@
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { isArrayBindingOrAssignmentPattern, isTypeReference } from "ts-api-utils";
-import type { CallExpression, Type, Symbol as TypeScriptSymbol } from "typescript";
-import { SymbolFlags } from "typescript";
+import type { Type } from "typescript";
 import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "misleadingLuaTupleCheck" | "luaTupleDeclaration";
@@ -11,6 +10,27 @@ type Options = [];
 
 const luaTupleCache = new WeakMap<TSESTree.Node, boolean>();
 const constrainedTypeCache = new WeakMap<TSESTree.Node, Type>();
+
+function getConstrainedTypeCached(
+	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
+	node: TSESTree.Node,
+): Type | undefined {
+	const cached = constrainedTypeCache.get(node);
+	if (cached !== undefined) return cached;
+
+	const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
+	if (tsNode === undefined) return undefined;
+
+	const program = parserServices.program;
+	if (!program) return undefined;
+
+	const checker = program.getTypeChecker();
+	const rawType = checker.getTypeAtLocation(tsNode);
+	const constrainedType = checker.getBaseConstraintOfType(rawType) ?? rawType;
+	constrainedTypeCache.set(node, constrainedType);
+	return constrainedType;
+}
+
 function isLuaTupleCached(
 	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
 	node: TSESTree.Node,
@@ -18,79 +38,11 @@ function isLuaTupleCached(
 	const cached = luaTupleCache.get(node);
 	if (cached !== undefined) return cached;
 
-	const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
-	if (tsNode === undefined) {
-		luaTupleCache.set(node, false);
-		return false;
-	}
-
-	const { program } = parserServices;
-	if (program === null) {
-		luaTupleCache.set(node, false);
-		return false;
-	}
-
-	const checker = program.getTypeChecker();
-	const type = checker.getTypeAtLocation(tsNode);
-
-	const visitedTypes = new Set<Type>();
-	function checkType(type: Type): boolean {
-		if (visitedTypes.has(type)) return false;
-		visitedTypes.add(type);
-
-		const symbol = type.getSymbol();
-		if (symbol !== undefined) {
-			let effectiveSymbol = symbol;
-			if ((symbol.flags & SymbolFlags.Alias) !== 0) {
-				effectiveSymbol = checker.getAliasedSymbol(symbol);
-			}
-			if (effectiveSymbol.escapedName.toString() === "LuaTuple") return true;
-		}
-
-		// LuaTuple<T> is defined as T & { readonly LUA_TUPLE: never }
-		if (type.getProperties().some((property) => property.getName() === "LUA_TUPLE")) return true;
-		if (type.isIntersection() || type.isUnion()) return type.types.some(checkType);
-		if (isTypeReference(type)) return checkType(type.target);
-		return false;
-	}
-
-	let actualType = type;
-	if (node.type === AST_NODE_TYPES.CallExpression) {
-		const signature = checker.getResolvedSignature(tsNode as unknown as CallExpression);
-		if (signature !== undefined) {
-			actualType = checker.getReturnTypeOfSignature(signature);
-		}
-	}
-
-	const result = checkType(actualType);
+	const constrainedType = getConstrainedTypeCached(parserServices, node);
+	const aliasSymbol = constrainedType?.aliasSymbol;
+	const result = aliasSymbol !== undefined && aliasSymbol.escapedName.toString() === "LuaTuple";
 	luaTupleCache.set(node, result);
 	return result;
-}
-
-function getConstrainedTypeCached(
-	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
-	node: TSESTree.Node,
-): Type {
-	const cached = constrainedTypeCache.get(node);
-	if (cached !== undefined) return cached;
-
-	const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
-	if (tsNode === undefined) {
-		const undefinedType = parserServices.program?.getTypeChecker().getAnyType();
-		if (undefinedType !== undefined) {
-			constrainedTypeCache.set(node, undefinedType);
-			return undefinedType;
-		}
-		throw new Error("Cannot get type for node");
-	}
-
-	const { program } = parserServices;
-	if (program === null) throw new Error("Program is null");
-
-	const checker = program.getTypeChecker();
-	const type = checker.getTypeAtLocation(tsNode);
-	constrainedTypeCache.set(node, type);
-	return type;
 }
 
 function isIterableFunctionType(
