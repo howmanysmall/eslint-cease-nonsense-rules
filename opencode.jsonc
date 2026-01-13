@@ -369,6 +369,7 @@
 				"todowrite": "allow",
 				"webfetch": "ask",
 				"websearch": "allow",
+				"websearch": "allow",
 			},
 			"tools": {
 				"edit": false,
@@ -377,12 +378,23 @@
 		},
 	},
 	"autoupdate": true,
+	"autoupdate": true,
+	"compaction": {
+		"auto": true,
+		"prune": true,
+	},
 	"compaction": {
 		"auto": true,
 		"prune": true,
 	},
 	"default_agent": "plan",
+	"default_agent": "plan",
 	"disabled_providers": [],
+	"disabled_providers": [],
+	"experimental": {
+		"batch_tool": true,
+		"chatMaxRetries": 5,
+	},
 	"experimental": {
 		"batch_tool": true,
 		"chatMaxRetries": 5,
