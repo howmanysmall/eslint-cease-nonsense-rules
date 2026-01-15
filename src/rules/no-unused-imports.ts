@@ -1,3 +1,4 @@
+import { ScopeType } from "@typescript-eslint/scope-manager";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, AST_TOKEN_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utilities/create-rule";
@@ -11,8 +12,8 @@ export interface NoUnusedImportsOptions {
 type Options = [NoUnusedImportsOptions?];
 
 const JSDOC_PATTERN = new RegExp(
-	`(?:@(?:link|linkcode|linkplain|see)\\s+\\w+\\b)|` +
-		`(?:\\{@(?:link|linkcode|linkplain)\\s+\\w+\\b\\})|` +
+	`(?:@(?:link|linkcode|linkplain|see)\\s+\\{?\\w+\\b\\}?)|` +
+		`(?:\\{@(?:link|linkcode|linkplain|see)\\s+\\w+\\b\\})|` +
 		`(?:[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\\s+[^}]*\\b\\w+\\b)`,
 	"u",
 );
@@ -51,8 +52,8 @@ function isUsedInJSDocCached(
 
 		if (JSDOC_PATTERN.test(comment.value)) {
 			const identifierPattern = new RegExp(
-				`(?:@(?:link|linkcode|linkplain|see)\\s+${identifierName}\\b)|` +
-					`(?:\\{@(?:link|linkcode|linkplain)\\s+${identifierName}\\b\\})|` +
+				`(?:@(?:link|linkcode|linkplain|see)\\s+\\{?${identifierName}\\b\\}?)|` +
+					`(?:\\{@(?:link|linkcode|linkplain|see)\\s+${identifierName}\\b\\})|` +
 					`(?:[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\\s+[^}]*\\b${identifierName}\\b)`,
 				"u",
 			);
@@ -139,14 +140,15 @@ export default createRule<Options, MessageIds>({
 			},
 
 			"Program:exit"(): void {
-				const globalScope = sourceCode.getScope(sourceCode.ast);
+				const programScope = sourceCode.getScope(sourceCode.ast);
+				const moduleScope =
+					programScope.type === ScopeType.module
+						? programScope
+						: (programScope.childScopes.find((scope) => scope.type === ScopeType.module) ?? programScope);
 
 				for (const { identifierName, parent, specifier: specifierNode } of imports) {
-					const variable = globalScope.set.get(identifierName);
-					if (variable !== undefined) {
-						const hasReferences = variable.references.some((ref) => ref.identifier !== specifierNode.local);
-						if (hasReferences) continue;
-					}
+					const variable = moduleScope.set.get(identifierName);
+					if (variable && variable.references.length > 0) continue;
 
 					if (checkJSDoc && isUsedInJSDocCached(identifierName, sourceCode, jsdocCache)) continue;
 

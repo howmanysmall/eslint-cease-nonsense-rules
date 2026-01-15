@@ -7,6 +7,7 @@ import rule from "../../src/rules/misleading-lua-tuple-checks";
 setDefaultTimeout(30_000);
 
 const fixturesDir = join(__dirname, "../fixtures/misleading-lua-tuple-checks");
+const filename = join(fixturesDir, "input.ts");
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -24,7 +25,26 @@ const ruleTester = new RuleTester({
 	},
 });
 
-const valid = [
+const iterableDeclarations =
+	"interface IterableFunction<T> { (this: unknown): T; } declare function getIterable(): IterableFunction<LuaTuple<[string]>>;";
+
+const tupleDeclarations = `
+type LuaTuple<T extends unknown[]> = T & { readonly LUA_TUPLE: never };
+interface LuaSignal<T extends unknown[]> {
+	Wait(): LuaTuple<T>;
+}
+interface Player {}
+interface PlayersService {
+	PlayerAdded: LuaSignal<[Player]>;
+}
+interface Game {
+	Loaded: LuaSignal<[boolean]>;
+	GetService(name: "Players"): PlayersService;
+}
+declare const game: Game;
+`;
+
+const validSamples = [
 	"if (true) {}",
 	"if (someVar) {}",
 	"if (game.Loaded.Wait()[0]) {}",
@@ -42,7 +62,12 @@ const valid = [
 	"type FakeLuaTuple = { readonly LUA_TUPLE: never }; declare function getFake(): FakeLuaTuple; if (getFake()) {}",
 ];
 
-const invalid = [
+const valid = validSamples.map((code) => ({
+	code: `${tupleDeclarations}\n${code}`,
+	filename,
+}));
+
+const invalidCases = [
 	{
 		code: "if (game.Loaded.Wait()) {}",
 		errors: [{ messageId: "misleadingLuaTupleCheck" }],
@@ -129,16 +154,23 @@ const invalid = [
 		output: 'let player: Player; [player] = game.GetService("Players").PlayerAdded.Wait();',
 	},
 	{
-		code: 'for (const x of "I am so cool".gmatch("%S+"));',
+		code: `${iterableDeclarations} for (const x of getIterable()) {}`,
 		errors: [{ messageId: "luaTupleDeclaration" }],
-		output: 'for (const [x] of "I am so cool".gmatch("%S+"));',
+		output: `${iterableDeclarations} for (const [x] of getIterable()) {}`,
 	},
 	{
-		code: 'let x; for (x of "I am so cool".gmatch("%S+")) {}',
+		code: `${iterableDeclarations} let x; for (x of getIterable()) {}`,
 		errors: [{ messageId: "luaTupleDeclaration" }],
-		output: 'let x; for ([x] of "I am so cool".gmatch("%S+")) {}',
+		output: `${iterableDeclarations} let x; for ([x] of getIterable()) {}`,
 	},
 ];
+
+const invalid = invalidCases.map((testCase) => ({
+	code: `${tupleDeclarations}\n${testCase.code}`,
+	errors: testCase.errors,
+	filename,
+	output: `${tupleDeclarations}\n${testCase.output}`,
+}));
 
 describe("misleading-lua-tuple-checks", () => {
 	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape

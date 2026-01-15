@@ -42,7 +42,8 @@ function areAdjacentLineComments(
 		value: previous.value,
 	};
 	const tokenAfterPrevious = sourceCode.getTokenAfter(commentForApi);
-	return tokenAfterPrevious !== null && tokenAfterPrevious.loc.start.line > nextLine;
+	if (!tokenAfterPrevious) return true;
+	return tokenAfterPrevious.loc.start.line > nextLine;
 }
 
 function groupComments(
@@ -121,7 +122,7 @@ function isReturnOrThrowExclusion(statement: { type: string; argument?: { type: 
 }
 
 function isUnaryPlusMinus(expression: { type: string; operator?: string }): boolean {
-	return expression.type === "UnaryExpression" && expression.operator === "-";
+	return expression.type === "UnaryExpression" && (expression.operator === "-" || expression.operator === "+");
 }
 
 function isExcludedLiteral(expression: { type: string; value?: unknown }): boolean {
@@ -248,7 +249,7 @@ const noCommentedCode: Rule.RuleModule = {
 					if (trimmedValue === "}") continue;
 
 					const balanced = injectMissingBraces(trimmedValue);
-					if (!containsCode(balanced, context.filename)) return;
+					if (!containsCode(balanced, context.filename)) continue;
 
 					const firstComment = group.comments.at(0);
 					const lastComment = group.comments.at(-1);

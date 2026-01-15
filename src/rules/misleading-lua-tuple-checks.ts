@@ -1,7 +1,7 @@
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { isArrayBindingOrAssignmentPattern, isTypeReference } from "ts-api-utils";
-import type { Type } from "typescript";
+import type { Type, TypeChecker } from "typescript";
 import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "misleadingLuaTupleCheck" | "luaTupleDeclaration";
@@ -10,6 +10,8 @@ type Options = [];
 
 const luaTupleCache = new WeakMap<TSESTree.Node, boolean>();
 const constrainedTypeCache = new WeakMap<TSESTree.Node, Type>();
+const rawTypeCache = new WeakMap<TSESTree.Node, Type>();
+const iterableFunctionCache = new WeakMap<Type, boolean>();
 
 function getConstrainedTypeCached(
 	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
@@ -18,17 +20,35 @@ function getConstrainedTypeCached(
 	const cached = constrainedTypeCache.get(node);
 	if (cached !== undefined) return cached;
 
-	const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
-	if (tsNode === undefined) return undefined;
-
-	const program = parserServices.program;
+	const { program } = parserServices;
 	if (!program) return undefined;
 
-	const checker = program.getTypeChecker();
-	const rawType = checker.getTypeAtLocation(tsNode);
-	const constrainedType = checker.getBaseConstraintOfType(rawType) ?? rawType;
+	const rawType = parserServices.getTypeAtLocation(node);
+	const constrainedType = program.getTypeChecker().getBaseConstraintOfType(rawType) ?? rawType;
 	constrainedTypeCache.set(node, constrainedType);
 	return constrainedType;
+}
+
+function getTypeAtLocationCached(
+	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
+	node: TSESTree.Node,
+): Type | undefined {
+	const cached = rawTypeCache.get(node);
+	if (cached !== undefined) return cached;
+
+	const { program } = parserServices;
+	if (!program) return undefined;
+
+	const rawType = parserServices.getTypeAtLocation(node);
+	rawTypeCache.set(node, rawType);
+	return rawType;
+}
+
+function isLuaTupleType(type: Type | undefined): boolean {
+	if (!type) return false;
+
+	const aliasSymbol = type.aliasSymbol ?? type.getSymbol();
+	return aliasSymbol !== undefined && aliasSymbol.escapedName.toString() === "LuaTuple";
 }
 
 function isLuaTupleCached(
@@ -38,34 +58,109 @@ function isLuaTupleCached(
 	const cached = luaTupleCache.get(node);
 	if (cached !== undefined) return cached;
 
-	const constrainedType = getConstrainedTypeCached(parserServices, node);
-	const aliasSymbol = constrainedType?.aliasSymbol;
-	const result = aliasSymbol !== undefined && aliasSymbol.escapedName.toString() === "LuaTuple";
+	if (node.type === AST_NODE_TYPES.MemberExpression && node.computed) {
+		luaTupleCache.set(node, false);
+		return false;
+	}
+
+	const { program } = parserServices;
+	if (!program) {
+		luaTupleCache.set(node, false);
+		return false;
+	}
+
+	const rawType = getTypeAtLocationCached(parserServices, node);
+	if (!rawType) {
+		luaTupleCache.set(node, false);
+		return false;
+	}
+
+	const constrainedType = getConstrainedTypeCached(parserServices, node) ?? rawType;
+	const result = isLuaTupleType(constrainedType) || (rawType !== constrainedType && isLuaTupleType(rawType));
 	luaTupleCache.set(node, result);
 	return result;
+}
+
+function getIterableLuaTupleReturnType(checker: TypeChecker, type: Type): Type | undefined {
+	const apparentType = checker.getApparentType(type);
+	for (const signature of apparentType.getCallSignatures()) {
+		const returnType = signature.getReturnType();
+		const constrainedReturnType = checker.getBaseConstraintOfType(returnType) ?? returnType;
+		const { aliasSymbol } = constrainedReturnType;
+		if (aliasSymbol && aliasSymbol.escapedName.toString() === "LuaTuple") {
+			return constrainedReturnType;
+		}
+	}
+
+	return undefined;
 }
 
 function isIterableFunctionType(
 	program: ReturnType<typeof ESLintUtils.getParserServices>["program"],
 	type: Type,
+	seenTypes: WeakSet<Type> = new WeakSet<Type>(),
 ): boolean {
-	if (!isTypeReference(type)) return false;
-	if (program === null) return false;
+	if (!program) return false;
+
+	const cached = iterableFunctionCache.get(type);
+	if (cached !== undefined) return cached;
+
+	if (seenTypes.has(type)) {
+		iterableFunctionCache.set(type, false);
+		return false;
+	}
+
+	seenTypes.add(type);
 
 	const checker = program.getTypeChecker();
-	const typeArguments = checker.getTypeArguments(type);
-	if (typeArguments.length === 0) return false;
+	const directSymbol = type.aliasSymbol ?? type.getSymbol();
+	if (directSymbol && directSymbol.escapedName.toString() === "IterableFunction") {
+		iterableFunctionCache.set(type, true);
+		return true;
+	}
 
-	const [firstArgument] = typeArguments;
-	if (firstArgument === undefined) return false;
+	const constrainedType = checker.getBaseConstraintOfType(type);
+	if (constrainedType && constrainedType !== type && isIterableFunctionType(program, constrainedType, seenTypes)) {
+		iterableFunctionCache.set(type, true);
+		return true;
+	}
 
-	const symbol = firstArgument.getSymbol();
-	if (symbol === undefined) return false;
+	if (getIterableLuaTupleReturnType(checker, type)) {
+		iterableFunctionCache.set(type, true);
+		return true;
+	}
 
-	let aliasSymbol: TypeScriptSymbol | undefined = symbol;
-	if ((symbol.flags & SymbolFlags.Alias) !== 0) aliasSymbol = checker.getAliasedSymbol(symbol);
+	if (isTypeReference(type)) {
+		const [firstTypeArgument] = checker.getTypeArguments(type);
+		if (firstTypeArgument) {
+			const { aliasSymbol } = firstTypeArgument;
+			if (aliasSymbol && aliasSymbol.escapedName.toString() === "LuaTuple") {
+				iterableFunctionCache.set(type, true);
+				return true;
+			}
+		}
 
-	return aliasSymbol?.escapedName.toString() === "LuaTuple";
+		const targetSymbol = type.target.getSymbol();
+		if (targetSymbol && targetSymbol.escapedName.toString() === "IterableFunction") {
+			iterableFunctionCache.set(type, true);
+			return true;
+		}
+
+		const targetResult = isIterableFunctionType(program, type.target, seenTypes);
+		iterableFunctionCache.set(type, targetResult);
+		return targetResult;
+	}
+
+	if (type.isUnionOrIntersection()) {
+		const unionResult = type.types.some((innerType) => isIterableFunctionType(program, innerType, seenTypes));
+		iterableFunctionCache.set(type, unionResult);
+		return unionResult;
+	}
+
+	const typeName = checker.typeToString(type);
+	const result = typeName.includes("IterableFunction");
+	iterableFunctionCache.set(type, result);
+	return result;
 }
 
 function checkLuaTupleUsage(
@@ -112,15 +207,18 @@ function handleIterableFunction(
 	node: TSESTree.ForOfStatement,
 	type: Type,
 ): void {
-	if (!isTypeReference(type)) return;
-
 	const { program } = parserServices;
-	if (program === null) return;
+	if (!program) return;
 
 	const checker = program.getTypeChecker();
-	const typeArgs = checker.getTypeArguments(type);
-	const aliasSymbol = typeArgs[0]?.aliasSymbol;
-	if (aliasSymbol?.escapedName.toString() !== "LuaTuple") return;
+	const luaTupleCandidate = isTypeReference(type)
+		? checker.getTypeArguments(type)[0]
+		: getIterableLuaTupleReturnType(checker, type);
+
+	if (!luaTupleCandidate) return;
+
+	const { aliasSymbol } = luaTupleCandidate;
+	if (!aliasSymbol || aliasSymbol.escapedName.toString() !== "LuaTuple") return;
 
 	if (node.left.type === AST_NODE_TYPES.Identifier) {
 		ensureArrayDestructuring(context, parserServices, node.left);
@@ -138,10 +236,11 @@ function handleIterableFunction(
 function validateAssignmentExpression(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
-	node: TSESTree.AssignmentExpression,
+	leftNode: TSESTree.Identifier,
+	rightNode: TSESTree.Node,
 ): void {
-	if (!isLuaTupleCached(parserServices, node.left) && isLuaTupleCached(parserServices, node.right)) {
-		ensureArrayDestructuring(context, parserServices, node.left as TSESTree.Identifier);
+	if (!isLuaTupleCached(parserServices, leftNode) && isLuaTupleCached(parserServices, rightNode)) {
+		ensureArrayDestructuring(context, parserServices, leftNode);
 	}
 }
 
@@ -151,44 +250,31 @@ function validateForOfStatement(
 	node: TSESTree.ForOfStatement,
 ): void {
 	const rightNode = node.right;
-	const type = getConstrainedTypeCached(parserServices, rightNode);
-
+	const iterableType = getTypeAtLocationCached(parserServices, rightNode);
 	const { program } = parserServices;
-	if (program !== null && isIterableFunctionType(program, type)) {
-		handleIterableFunction(context, parserServices, node, type);
-	} else checkLuaTupleUsage(context, parserServices, rightNode);
+
+	if (iterableType && program && isIterableFunctionType(program, iterableType)) {
+		handleIterableFunction(context, parserServices, node, iterableType);
+		return;
+	}
+
+	checkLuaTupleUsage(context, parserServices, rightNode);
 }
 
 function validateVariableDeclarator(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
-	node: TSESTree.VariableDeclarator,
+	identifier: TSESTree.Identifier,
+	init: TSESTree.Expression | undefined,
 ): void {
-	if (node.init && isLuaTupleCached(parserServices, node.init)) {
-		ensureArrayDestructuring(context, parserServices, node.id as TSESTree.Identifier);
+	if (init && isLuaTupleCached(parserServices, init)) {
+		ensureArrayDestructuring(context, parserServices, identifier);
 	}
 }
 
 export default createRule<Options, MessageIds>({
 	create(context) {
 		const parserServices = ESLintUtils.getParserServices(context);
-
-		// Coverage hack to hit unreachable guards
-		const { ast } = context.sourceCode;
-		// oxlint-disable-next-line unicorn/no-null
-		isLuaTupleCached({ ...parserServices, program: null }, ast);
-		isLuaTupleCached(parserServices, { type: AST_NODE_TYPES.Identifier } as TSESTree.Node);
-		try {
-			// oxlint-disable-next-line unicorn/no-null
-			getConstrainedTypeCached({ ...parserServices, program: null }, ast);
-		} catch {
-			// Who cares?
-		}
-		try {
-			getConstrainedTypeCached(parserServices, { type: AST_NODE_TYPES.Identifier } as TSESTree.Node);
-		} catch {
-			// Who cares?
-		}
 
 		function containsBoolean(
 			node:
@@ -206,7 +292,7 @@ export default createRule<Options, MessageIds>({
 		return {
 			AssignmentExpression(node): void {
 				if (node.operator === "=" && node.left.type === AST_NODE_TYPES.Identifier) {
-					validateAssignmentExpression(context, parserServices, node);
+					validateAssignmentExpression(context, parserServices, node.left, node.right);
 				}
 			},
 
@@ -236,7 +322,8 @@ export default createRule<Options, MessageIds>({
 			},
 			VariableDeclarator(node): void {
 				if (node.id.type === AST_NODE_TYPES.Identifier) {
-					validateVariableDeclarator(context, parserServices, node);
+					const init = node.init ?? undefined;
+					validateVariableDeclarator(context, parserServices, node.id, init);
 				}
 			},
 			WhileStatement(node): void {

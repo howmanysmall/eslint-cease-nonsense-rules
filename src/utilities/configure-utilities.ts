@@ -272,9 +272,7 @@ export function createRequireModuleLevelInstantiationOptions(
  * @param options - Partial configuration options
  * @returns The full options
  */
-export function createNamingConventionOptions(
-	options: Partial<NamingConventionOptions> = {},
-): NamingConventionOptions {
+export function createNamingConventionOptions(options: Partial<NamingConventionOptions> = {}): NamingConventionOptions {
 	return {
 		format: ["PascalCase"],
 		selector: "interface",
@@ -287,9 +285,7 @@ export function createNamingConventionOptions(
  * @param options - Partial configuration options
  * @returns The full options
  */
-export function createNoUnusedImportsOptions(
-	options: Partial<NoUnusedImportsOptions> = {},
-): NoUnusedImportsOptions {
+export function createNoUnusedImportsOptions(options: Partial<NoUnusedImportsOptions> = {}): NoUnusedImportsOptions {
 	return { checkJSDoc: true, ...options };
 }
 
