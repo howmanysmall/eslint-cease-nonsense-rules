@@ -42,7 +42,8 @@
 			"!**/garbage/**",
 			"!**/include/**",
 			"!**/node_modules/**",
-			"!**/*.ts"
+			"!**/*.ts",
+			"!.context/**"
 		],
 		"indentStyle": "tab",
 		"indentWidth": 4,
@@ -135,6 +136,7 @@
 			"!**/do-not-sync-ever/**",
 			"!**/garbage/**",
 			"!**/node_modules/**",
+			"!.context/**",
 			"src/**",
 			".husky/**",
 			"**/*.ts"
