@@ -32,7 +32,7 @@ function shouldSkip(relativePath: string): boolean {
 }
 
 async function findMainWorktreeAsync(): Promise<string | undefined> {
-	const output = await Bun.$`git worktree list --porcelain`.text();
+	const output = await Bun.$`git worktree list --porcelain`.quiet().text();
 	const lines = output.split("\n");
 
 	for (const line of lines) {
@@ -64,7 +64,7 @@ async function fileExistsAsync(path: string): Promise<boolean> {
 
 async function isRepositoryAsync(): Promise<boolean> {
 	try {
-		const output = await Bun.$`git rev-parse --is-inside-work-tree`.text();
+		const output = await Bun.$`git rev-parse --is-inside-work-tree`.quiet().text();
 		return output.trim() === "true";
 	} catch {
 		return false;
@@ -86,7 +86,7 @@ const command = new Command()
 			exit(1);
 		}
 
-		const destRootRaw = await Bun.$`git rev-parse --show-toplevel`.text();
+		const destRootRaw = await Bun.$`git rev-parse --show-toplevel`.quiet().text();
 		const destRoot = destRootRaw.trim();
 
 		const mainRoot = await findMainWorktreeAsync();
@@ -100,7 +100,7 @@ const command = new Command()
 			exit(1);
 		}
 
-		const ignoredOutput = await Bun.$`git -C ${mainRoot} ls-files -z -o -i --exclude-standard`.text();
+		const ignoredOutput = await Bun.$`git -C ${mainRoot} ls-files -z -o -i --exclude-standard`.quiet().text();
 		const ignoredFiles = ignoredOutput.split("\0").filter(Boolean);
 
 		if (ignoredFiles.length === 0) {
