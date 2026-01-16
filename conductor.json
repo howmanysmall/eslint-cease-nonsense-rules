@@ -1,6 +1,6 @@
 {
 	"scripts": {
 		"archive": "rm -rf node_modules",
-		"setup": "bun install; clone-ignored-from-main"
+		"setup": "bun install; bun run ./scripts/clone-ignored-from-main.ts"
 	}
 }
