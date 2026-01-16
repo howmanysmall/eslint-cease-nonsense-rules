@@ -219,8 +219,78 @@ export default createRule<Options, MessageIds>({
 						const modifiers = getMemberModifiers(node);
 						handleMember(validator, node, modifiers);
 					},
+					validator: validators.classProperty,
+				},
+			"Property[computed = false][kind = 'init'][method = true], Property[computed = false][kind = 'init'][value.type = 'FunctionExpression'], Property[computed = false][kind = 'init'][value.type = 'ArrowFunctionExpression']":
+				{
+					handler: (node: TSESTree.Node, validator): void => {
+						if (node.type !== AST_NODE_TYPES.Property) {
+							return;
+						}
+						if (node.computed) {
+							return;
+						}
+						const modifiers = new Set<Modifiers>([Modifiers.public]);
+						handleMember(validator, node, modifiers);
+					},
+					validator: validators.objectLiteralMethod,
+				},
+			"Property[computed = false][kind = 'init'][method = false][value.type != 'FunctionExpression'][value.type != 'ArrowFunctionExpression']":
+				{
+					handler: (node: TSESTree.Node, validator): void => {
+						if (node.type !== AST_NODE_TYPES.Property) {
+							return;
+						}
+						if (node.computed) {
+							return;
+						}
+						const modifiers = new Set<Modifiers>([Modifiers.public]);
+						handleMember(validator, node, modifiers);
+					},
 					validator: validators.objectLiteralProperty,
 				},
+			"MethodDefinition[computed = false][kind = 'method'], TSAbstractMethodDefinition[computed = false][kind = 'method']":
+				{
+					handler: (
+						node: TSESTree.MethodDefinitionNonComputedName | TSESTree.TSAbstractMethodDefinition,
+						validator,
+					): void => {
+						const modifiers = getMemberModifiers(node);
+						handleMember(validator, node, modifiers);
+					},
+					validator: validators.classMethod,
+				},
+			":matches(PropertyDefinition, TSAbstractPropertyDefinition)[computed = false]:matches([value.type = 'ArrowFunctionExpression'], [value.type = 'FunctionExpression'], [value.type = 'TSEmptyBodyFunctionExpression'])":
+				{
+					handler: (node: TSESTree.Node, validator): void => {
+						if (
+							node.type !== AST_NODE_TYPES.PropertyDefinition &&
+							node.type !== AST_NODE_TYPES.TSAbstractPropertyDefinition
+						) {
+							return;
+						}
+						if (node.computed) {
+							return;
+						}
+						const modifiers = getMemberModifiers(node);
+						handleMember(validator, node, modifiers);
+					},
+					validator: validators.classMethod,
+				},
+			"AccessorProperty[computed = false], TSAbstractAccessorProperty[computed = false]": {
+				handler: (node: TSESTree.Node, validator): void => {
+					if (
+						node.type !== AST_NODE_TYPES.AccessorProperty &&
+						node.type !== AST_NODE_TYPES.TSAbstractAccessorProperty
+					) {
+						return;
+					}
+
+					const modifiers = getMemberModifiers(node);
+					handleMember(validator, node, modifiers);
+				},
+				validator: validators.autoAccessor,
+			},
 			"ClassDeclaration, ClassExpression": {
 				handler: (node: TSESTree.ClassDeclaration | TSESTree.ClassExpression, validator): void => {
 					const classId = node.id;

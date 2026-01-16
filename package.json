@@ -9,6 +9,8 @@
 	},
 	"description": "A bunch of lints to prevent idiot mistakes I encounter with frequency.",
 	"devDependencies": {
+		"@babel/core": "^7.28.6",
+		"@babel/eslint-parser": "^7.28.6",
 		"@biomejs/biome": "^2.3.11",
 		"@commitlint/config-conventional": "^20.3.1",
 		"@commitlint/types": "^20.3.1",
@@ -50,7 +52,8 @@
 		"ts-api-utils": "^2.4.0",
 		"ts-case-convert": "^2.1.0",
 		"type-fest": "^5.4.0",
-		"typescript": "^5.6.3"
+		"typescript": "^5.6.3",
+		"vue-eslint-parser": "^10.2.0"
 	},
 	"engines": {
 		"bun": ">=1.1.0",

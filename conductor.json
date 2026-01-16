@@ -1,0 +1,6 @@
+{
+	"scripts": {
+		"archive": "rm -rf node_modules",
+		"setup": "bun install; clone-ignored-from-main"
+	}
+}
