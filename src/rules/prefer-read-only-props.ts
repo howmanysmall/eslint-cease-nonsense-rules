@@ -6,6 +6,8 @@ type MessageIds = "readOnlyProp";
 
 type Options = [];
 
+const COMPONENT_NAME_PATTERN = /^[A-Z]/u;
+
 function isFunctionLike(
 	node: TSESTree.Node,
 ): node is TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression {
@@ -16,17 +18,42 @@ function isFunctionLike(
 	);
 }
 
-function isReactComponentType(node: TSESTree.Node): boolean {
-	if (isFunctionLike(node)) return true;
+function isComponentName(name: string): boolean {
+	return COMPONENT_NAME_PATTERN.test(name);
+}
 
-	if (node.type === AST_NODE_TYPES.VariableDeclarator) {
-		const { init } = node;
-		if (init?.type === AST_NODE_TYPES.FunctionExpression || init?.type === AST_NODE_TYPES.ArrowFunctionExpression) {
-			return true;
-		}
+function getComponentName(
+	node: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
+): string | undefined {
+	if (node.type === AST_NODE_TYPES.FunctionDeclaration && node.id) {
+		return node.id.name;
 	}
 
-	return false;
+	const { parent } = node;
+	if (parent === undefined) return undefined;
+
+	if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.id.type === AST_NODE_TYPES.Identifier) {
+		return parent.id.name;
+	}
+
+	if (parent.type === AST_NODE_TYPES.Property && parent.key.type === AST_NODE_TYPES.Identifier) {
+		return parent.key.name;
+	}
+
+	if (parent.type === AST_NODE_TYPES.MethodDefinition && parent.key.type === AST_NODE_TYPES.Identifier) {
+		return parent.key.name;
+	}
+
+	return undefined;
+}
+
+function isReactComponentType(node: TSESTree.Node): boolean {
+	if (!isFunctionLike(node)) return false;
+
+	const componentName = getComponentName(node);
+	if (componentName === undefined) return false;
+
+	return isComponentName(componentName);
 }
 
 function isReadonly(node: TSESTree.TSPropertySignature): boolean {

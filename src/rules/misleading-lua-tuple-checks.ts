@@ -9,24 +9,23 @@ type MessageIds = "misleadingLuaTupleCheck" | "luaTupleDeclaration";
 type Options = [];
 
 const luaTupleCache = new WeakMap<TSESTree.Node, boolean>();
-const constrainedTypeCache = new WeakMap<TSESTree.Node, Type>();
 const rawTypeCache = new WeakMap<TSESTree.Node, Type>();
 const iterableFunctionCache = new WeakMap<Type, boolean>();
 
-function getConstrainedTypeCached(
-	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
-	node: TSESTree.Node,
-): Type | undefined {
-	const cached = constrainedTypeCache.get(node);
-	if (cached !== undefined) return cached;
-
-	const { program } = parserServices;
-	if (!program) return undefined;
-
-	const rawType = parserServices.getTypeAtLocation(node);
-	const constrainedType = program.getTypeChecker().getBaseConstraintOfType(rawType) ?? rawType;
-	constrainedTypeCache.set(node, constrainedType);
-	return constrainedType;
+function isLuaTupleCandidate(node: TSESTree.Node): boolean {
+	switch (node.type) {
+		case AST_NODE_TYPES.Identifier:
+		case AST_NODE_TYPES.MemberExpression:
+		case AST_NODE_TYPES.CallExpression:
+		case AST_NODE_TYPES.ChainExpression:
+		case AST_NODE_TYPES.TSAsExpression:
+		case AST_NODE_TYPES.TSTypeAssertion:
+		case AST_NODE_TYPES.TSNonNullExpression:
+		case AST_NODE_TYPES.AwaitExpression:
+			return true;
+		default:
+			return false;
+	}
 }
 
 function getTypeAtLocationCached(
@@ -63,6 +62,11 @@ function isLuaTupleCached(
 		return false;
 	}
 
+	if (!isLuaTupleCandidate(node)) {
+		luaTupleCache.set(node, false);
+		return false;
+	}
+
 	const { program } = parserServices;
 	if (!program) {
 		luaTupleCache.set(node, false);
@@ -75,7 +79,8 @@ function isLuaTupleCached(
 		return false;
 	}
 
-	const constrainedType = getConstrainedTypeCached(parserServices, node) ?? rawType;
+	const checker = program.getTypeChecker();
+	const constrainedType = checker.getBaseConstraintOfType(rawType) ?? rawType;
 	const result = isLuaTupleType(constrainedType) || (rawType !== constrainedType && isLuaTupleType(rawType));
 	luaTupleCache.set(node, result);
 	return result;
@@ -157,10 +162,8 @@ function isIterableFunctionType(
 		return unionResult;
 	}
 
-	const typeName = checker.typeToString(type);
-	const result = typeName.includes("IterableFunction");
-	iterableFunctionCache.set(type, result);
-	return result;
+	iterableFunctionCache.set(type, false);
+	return false;
 }
 
 function checkLuaTupleUsage(

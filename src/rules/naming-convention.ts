@@ -72,6 +72,10 @@ function isGlobal(scope: TSESLint.Scope.Scope | undefined): boolean {
 
 export default createRule<Options, MessageIds>({
 	create(contextWithoutDefaults) {
+		if (contextWithoutDefaults.filename.endsWith(".d.ts")) {
+			return {};
+		}
+
 		const context =
 			contextWithoutDefaults.options.length > 0
 				? contextWithoutDefaults
@@ -378,12 +382,12 @@ export default createRule<Options, MessageIds>({
 			},
 			TSEnumMember: {
 				handler: (node: TSESTree.TSEnumMember, validator): void => {
-					const modifiers = new Set<Modifiers>();
 					const memberId = node.id;
 					if (requiresQuoting(memberId, compilerOptions.target)) {
-						modifiers.add(Modifiers.requiresQuotes);
+						return;
 					}
 
+					const modifiers = new Set<Modifiers>();
 					validator(memberId, modifiers);
 				},
 				validator: validators.enumMember,

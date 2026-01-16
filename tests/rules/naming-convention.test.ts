@@ -281,6 +281,15 @@ describe("naming-convention", () => {
 			},
 		],
 		valid: [
+			// Declaration files are ignored
+			{
+				code: "interface vector { x: number; }",
+				filename: "src/types/global.d.ts",
+			},
+			{
+				code: "interface _G { x: number; }",
+				filename: "src/types/roblox.d.ts",
+			},
 			{
 				code: "const fooBar = 1;",
 			},

@@ -4,7 +4,7 @@ Enforce naming conventions for TypeScript constructs.
 
 ## Rule Details
 
-This rule enforces naming conventions for interfaces, types, and other TypeScript constructs. It's optimized for common use cases like interface prefix checking without requiring type checking.
+This rule enforces naming conventions for interfaces, types, and other TypeScript constructs. It's optimized for common use cases like interface prefix checking without requiring type checking. Declaration files (`.d.ts`) are ignored by default.
 
 ## Options
 

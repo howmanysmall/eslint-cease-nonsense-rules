@@ -78,13 +78,8 @@ function compileRegex(pattern: string | RegExp): RegExp {
 }
 
 // Cache for word replacements
-const wordReplacementCache = new Map<
-	string,
-	{
-		replacements: ReadonlyArray<string>;
-		options: PreventAbbreviationsOptions;
-	}
->();
+const wordReplacementCache = new WeakMap<PreventAbbreviationsOptions, Map<string, ReadonlyArray<string>>>();
+const wordReplacementCacheWithDisabled = new WeakMap<PreventAbbreviationsOptions, Map<string, ReadonlyArray<string>>>();
 
 function getWordReplacements(
 	word: string,
@@ -94,9 +89,15 @@ function getWordReplacements(
 	// Skip constants and allowList
 	if (isUpperCase(word) || options.allowList?.[word]) return [];
 
-	const cacheKey = `${word}:${JSON.stringify(options.replacements)}:${JSON.stringify(options.allowList)}:${includeDisabled}`;
-	const cached = wordReplacementCache.get(cacheKey);
-	if (cached !== undefined && cached.options === options) return cached.replacements;
+	const cache = includeDisabled ? wordReplacementCacheWithDisabled : wordReplacementCache;
+	const cachedCache = cache.get(options);
+	const wordCache = cachedCache ?? new Map<string, ReadonlyArray<string>>();
+	if (cachedCache === undefined) {
+		cache.set(options, wordCache);
+	}
+
+	const cached = wordCache.get(word);
+	if (cached !== undefined) return cached;
 
 	const replacements = options.replacements ?? DEFAULT_REPLACEMENTS;
 	const replacement = replacements[lowerFirst(word)] ?? replacements[word] ?? replacements[upperFirst(word)];
@@ -111,18 +112,26 @@ function getWordReplacements(
 			.toSorted();
 	}
 
-	wordReplacementCache.set(cacheKey, { options, replacements: wordReplacement });
+	wordCache.set(word, wordReplacement);
 	return wordReplacement;
 }
 
 // Cache for name replacements
-const nameReplacementCache = new Map<
-	string,
-	{
-		result: { total: number; samples: ReadonlyArray<string> };
-		options: PreventAbbreviationsOptions;
-	}
+const nameReplacementCache = new WeakMap<
+	PreventAbbreviationsOptions,
+	Map<string, { total: number; samples: ReadonlyArray<string> }>
 >();
+const ignoreRegexCache = new WeakMap<PreventAbbreviationsOptions, ReadonlyArray<RegExp>>();
+
+function getIgnorePatterns(options: PreventAbbreviationsOptions): ReadonlyArray<RegExp> {
+	const cached = ignoreRegexCache.get(options);
+	if (cached !== undefined) return cached;
+
+	const ignore = options.ignore ?? DEFAULT_IGNORE;
+	const patterns = ignore.map((pattern) => compileRegex(pattern));
+	ignoreRegexCache.set(options, patterns);
+	return patterns;
+}
 
 function getNameReplacements(
 	name: string,
@@ -133,16 +142,18 @@ function getNameReplacements(
 	if (isUpperCase(name) || options.allowList?.[name]) return { samples: [], total: 0 };
 
 	// Check ignore patterns
-	if (options.ignore !== undefined) {
-		for (const pattern of options.ignore) {
-			const regex = compileRegex(pattern);
-			if (regex.test(name)) return { samples: [], total: 0 };
-		}
+	const ignorePatterns = getIgnorePatterns(options);
+	for (const regex of ignorePatterns) {
+		if (regex.test(name)) return { samples: [], total: 0 };
 	}
 
-	const cacheKey = `${name}:${JSON.stringify(options.replacements)}:${JSON.stringify(options.allowList)}:${JSON.stringify(options.ignore)}`;
-	const cached = nameReplacementCache.get(cacheKey);
-	if (cached !== undefined && cached.options === options) return cached.result;
+	const cachedCache = nameReplacementCache.get(options);
+	const nameCache = cachedCache ?? new Map<string, { total: number; samples: ReadonlyArray<string> }>();
+	if (cachedCache === undefined) {
+		nameReplacementCache.set(options, nameCache);
+	}
+	const cached = nameCache.get(name);
+	if (cached !== undefined) return cached;
 
 	// Find exact replacements (include disabled for suggestions)
 	const exactReplacements = getWordReplacements(name, options, true);
@@ -152,7 +163,7 @@ function getNameReplacements(
 			samples: exactReplacements.slice(0, limit),
 			total: exactReplacements.length,
 		};
-		nameReplacementCache.set(cacheKey, { options, result });
+		nameCache.set(name, result);
 		return result;
 	}
 
@@ -176,7 +187,7 @@ function getNameReplacements(
 	// No replacements for any word
 	if (!hasReplacements) {
 		const result = { samples: [], total: 0 };
-		nameReplacementCache.set(cacheKey, { options, result });
+		nameCache.set(name, result);
 		return result;
 	}
 
@@ -203,7 +214,7 @@ function getNameReplacements(
 	const samples: ReadonlyArray<string> = samplesArray;
 
 	const result = { samples, total };
-	nameReplacementCache.set(cacheKey, { options, result });
+	nameCache.set(name, result);
 	return result;
 }
 
@@ -279,6 +290,33 @@ function shouldReportIdentifierAsProperty(node: TSESTree.Identifier): boolean {
 	return false;
 }
 
+function isPropertyIdentifierNode(node: TSESTree.Identifier): boolean {
+	const { parent } = node;
+	if (parent === undefined) return false;
+
+	return (
+		parent.type === AST_NODE_TYPES.MemberExpression ||
+		parent.type === AST_NODE_TYPES.Property ||
+		parent.type === AST_NODE_TYPES.MethodDefinition ||
+		parent.type === AST_NODE_TYPES.PropertyDefinition
+	);
+}
+
+function isFunctionParameterIdentifier(node: TSESTree.Identifier): boolean {
+	const { parent } = node;
+	if (parent === undefined) return false;
+
+	if (
+		parent.type !== AST_NODE_TYPES.FunctionDeclaration &&
+		parent.type !== AST_NODE_TYPES.FunctionExpression &&
+		parent.type !== AST_NODE_TYPES.ArrowFunctionExpression
+	) {
+		return false;
+	}
+
+	return parent.params.some((param) => param === node);
+}
+
 export default createRule<Options, MessageIds>({
 	create(context) {
 		const [
@@ -305,10 +343,24 @@ export default createRule<Options, MessageIds>({
 			Identifier(node): void {
 				if (!(checkProperties || checkVariables)) return;
 
+				const { parent } = node;
+				if (parent === undefined) return;
+
+				const isPropertyCandidate =
+					checkProperties && isPropertyIdentifierNode(node) && shouldReportIdentifierAsProperty(node);
+				const isVariableDeclarator =
+					checkVariables &&
+					parent.type === AST_NODE_TYPES.VariableDeclarator &&
+					parent.id.type === AST_NODE_TYPES.Identifier &&
+					parent.id === node;
+				const isParameter = checkVariables && isFunctionParameterIdentifier(node);
+
+				if (!(isPropertyCandidate || isVariableDeclarator || isParameter)) return;
+
 				const identifierReplacements = getNameReplacements(node.name, options);
 				if (identifierReplacements.total === 0) return;
 
-				if (checkProperties && shouldReportIdentifierAsProperty(node)) {
+				if (isPropertyCandidate) {
 					const message = getMessage(node.name, identifierReplacements, "property");
 					const reportOptions: {
 						fix?: (fixer: TSESLint.RuleFixer) => TSESLint.RuleFix;
@@ -332,18 +384,8 @@ export default createRule<Options, MessageIds>({
 					return;
 				}
 
-				if (!checkVariables) return;
-
-				// Check if this identifier is a variable declaration
-				const { parent } = node;
-				if (parent === undefined) return;
-
 				// VariableDeclarator: const err = ...
-				if (
-					parent.type === AST_NODE_TYPES.VariableDeclarator &&
-					parent.id.type === AST_NODE_TYPES.Identifier &&
-					parent.id === node
-				) {
+				if (isVariableDeclarator) {
 					const message = getMessage(node.name, identifierReplacements, "variable");
 					const reportOptions: {
 						fix?: (fixer: TSESLint.RuleFixer) => TSESLint.RuleFix;
@@ -383,87 +425,81 @@ export default createRule<Options, MessageIds>({
 
 				// Function parameter: function foo(err) { ... }
 				// Parameters can be identifiers directly or in patterns
-				if (
-					parent.type === AST_NODE_TYPES.FunctionDeclaration ||
-					parent.type === AST_NODE_TYPES.FunctionExpression ||
-					parent.type === AST_NODE_TYPES.ArrowFunctionExpression
-				) {
-					const isParameter = parent.params.some((param) => {
-						if (param === node) return true;
-						if (param.type === AST_NODE_TYPES.Identifier && param === node) return true;
-						return false;
-					});
+				if (isParameter) {
+					const message = getMessage(node.name, identifierReplacements, "variable");
+					const reportOptions: {
+						fix?: (fixer: TSESLint.RuleFixer) => TSESLint.RuleFix | ReadonlyArray<TSESLint.RuleFix>;
+					} & typeof message & { node: TSESTree.Identifier } = {
+						...message,
+						node,
+					};
 
-					if (isParameter) {
-						const message = getMessage(node.name, identifierReplacements, "variable");
-						const reportOptions: {
-							fix?: (fixer: TSESLint.RuleFixer) => TSESLint.RuleFix | ReadonlyArray<TSESLint.RuleFix>;
-						} & typeof message & { node: TSESTree.Identifier } = {
-							...message,
-							node,
-						};
-
-						// Only provide fix if there's exactly one total replacement
-						// For multi-word names (like myErr), check if any word has an enabled replacement
-						if (identifierReplacements.total === 1 && identifierReplacements.samples[0]) {
-							// For single-word names, check if the replacement is enabled
-							// For multi-word names, if total is 1, provide the fix (words are already checked)
-							const words = node.name.split(CAMEL_CASE_SPLIT_PATTERN).filter(Boolean);
-							let shouldFix = false;
-							if (words.length === 1) {
-								const enabledReplacements = getWordReplacements(node.name, options, false);
-								shouldFix = enabledReplacements.length === 1 && enabledReplacements[0] !== undefined;
-							} else {
-								// Multi-word name: check if at least one word has an enabled replacement
-								shouldFix = words.some((word) => {
-									const enabled = getWordReplacements(word, options, false);
-									return enabled.length > 0;
-								});
-							}
-
-							if (shouldFix) {
-								reportOptions.fix = (
-									fixer: TSESLint.RuleFixer,
-								): TSESLint.RuleFix | ReadonlyArray<TSESLint.RuleFix> => {
-									// Replace all occurrences of this parameter in the function body
-									const { sourceCode } = context;
-									const functionBody = parent.body;
-									if (functionBody === undefined) {
-										return fixer.replaceText(node, identifierReplacements.samples[0] ?? node.name);
-									}
-
-									const fixes: Array<TSESLint.RuleFix> = [
-										fixer.replaceText(node, identifierReplacements.samples[0] ?? node.name),
-									];
-
-									// Find all references to this parameter in the function body
-									const scope = sourceCode.getScope(functionBody);
-									const variable = scope.variables.find(
-										(variableItem) => variableItem.name === node.name,
-									);
-									if (variable !== undefined) {
-										for (const reference of variable.references) {
-											if (
-												reference.identifier !== node &&
-												reference.identifier.type === AST_NODE_TYPES.Identifier
-											) {
-												fixes.push(
-													fixer.replaceText(
-														reference.identifier,
-														identifierReplacements.samples[0] ?? node.name,
-													),
-												);
-											}
-										}
-									}
-
-									return fixes;
-								};
-							}
+					// Only provide fix if there's exactly one total replacement
+					// For multi-word names (like myErr), check if any word has an enabled replacement
+					if (identifierReplacements.total === 1 && identifierReplacements.samples[0]) {
+						// For single-word names, check if the replacement is enabled
+						// For multi-word names, if total is 1, provide the fix (words are already checked)
+						const words = node.name.split(CAMEL_CASE_SPLIT_PATTERN).filter(Boolean);
+						let shouldFix = false;
+						if (words.length === 1) {
+							const enabledReplacements = getWordReplacements(node.name, options, false);
+							shouldFix = enabledReplacements.length === 1 && enabledReplacements[0] !== undefined;
+						} else {
+							// Multi-word name: check if at least one word has an enabled replacement
+							shouldFix = words.some((word) => {
+								const enabled = getWordReplacements(word, options, false);
+								return enabled.length > 0;
+							});
 						}
 
-						context.report(reportOptions);
+						if (shouldFix) {
+							reportOptions.fix = (
+								fixer: TSESLint.RuleFixer,
+							): TSESLint.RuleFix | ReadonlyArray<TSESLint.RuleFix> => {
+								// Replace all occurrences of this parameter in the function body
+								const { sourceCode } = context;
+								if (
+									parent.type !== AST_NODE_TYPES.FunctionDeclaration &&
+									parent.type !== AST_NODE_TYPES.FunctionExpression &&
+									parent.type !== AST_NODE_TYPES.ArrowFunctionExpression
+								) {
+									return fixer.replaceText(node, identifierReplacements.samples[0] ?? node.name);
+								}
+
+								const functionBody = parent.body;
+								if (functionBody === undefined) {
+									return fixer.replaceText(node, identifierReplacements.samples[0] ?? node.name);
+								}
+
+								const fixes: Array<TSESLint.RuleFix> = [
+									fixer.replaceText(node, identifierReplacements.samples[0] ?? node.name),
+								];
+
+								// Find all references to this parameter in the function body
+								const scope = sourceCode.getScope(functionBody);
+								const variable = scope.variables.find((variableItem) => variableItem.name === node.name);
+								if (variable !== undefined) {
+									for (const reference of variable.references) {
+										if (
+											reference.identifier !== node &&
+											reference.identifier.type === AST_NODE_TYPES.Identifier
+										) {
+											fixes.push(
+												fixer.replaceText(
+													reference.identifier,
+													identifierReplacements.samples[0] ?? node.name,
+												),
+											);
+										}
+									}
+								}
+
+								return fixes;
+							};
+						}
 					}
+
+					context.report(reportOptions);
 				}
 			},
 

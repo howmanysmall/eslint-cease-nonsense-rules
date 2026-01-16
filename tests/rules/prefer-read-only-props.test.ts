@@ -77,6 +77,13 @@ describe("prefer-read-only-props", () => {
 			},
 		],
 		valid: [
+			// Non-component functions should be ignored
+			{
+				code: "function makeConfig(props: { value: string }) { return props.value; }",
+			},
+			{
+				code: "const buildConfig = (props: { value: string }) => props.value;",
+			},
 			// Already-readonly props (should NOT warn)
 			{
 				code: "function Component(props: { readonly name: string }) { return null; }",
