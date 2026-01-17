@@ -1,7 +1,10 @@
 {
 	"compilerOptions": {
+		"declaration": false,
+		"declarationMap": false,
 		"noEmit": true,
 		"resolveJsonModule": true,
+		"rootDir": "scripts",
 	},
 	"extends": "./tsconfig.base.json",
 	"include": ["scripts/**/*.ts"],
