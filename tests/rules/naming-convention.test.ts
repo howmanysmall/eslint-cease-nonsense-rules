@@ -1,6 +1,6 @@
 import { describe } from "bun:test";
 import parser from "@typescript-eslint/parser";
-import { RuleTester } from "eslint";
+import { RuleTester } from "@typescript-eslint/rule-tester";
 import rule from "../../src/rules/naming-convention";
 
 const ruleTester = new RuleTester({
@@ -26,7 +26,6 @@ const ruleTesterWithTypes = new RuleTester({
 });
 
 describe("naming-convention", () => {
-	// @ts-expect-error -- this thing is dumb.
 	ruleTester.run("naming-convention", rule, {
 		invalid: [
 			{
@@ -653,8 +652,6 @@ describe("naming-convention", () => {
 		],
 	});
 
-	// Additional coverage tests for naming-convention.ts
-	// @ts-expect-error -- this thing is dumb.
 	ruleTester.run("naming-convention-coverage", rule, {
 		invalid: [
 			// Test exported variable (lines 168-169, 496)
@@ -1074,8 +1071,6 @@ describe("naming-convention", () => {
 		],
 	});
 
-	// Tests requiring type information
-	// @ts-expect-error -- this thing is dumb.
 	ruleTesterWithTypes.run("naming-convention-with-types", rule, {
 		invalid: [
 			// Test type: array - incorrect format
