@@ -41,7 +41,7 @@ const defaultCamelCaseAllTheThingsConfig: Options = [
 ];
 
 // Helper functions moved to module scope to avoid recreating them on every call
-function isUnused(name: string, initialScope: TSESLint.Scope.Scope | undefined): boolean {
+function isUnused(name: string, initialScope?: TSESLint.Scope.Scope): boolean {
 	let scope = initialScope;
 	while (scope) {
 		const variable = scope.set.get(name);
@@ -61,7 +61,7 @@ function isAsyncVariableIdentifier(identifier: TSESTree.Identifier): boolean {
 	);
 }
 
-function isGlobal(scope: TSESLint.Scope.Scope | undefined): boolean {
+function isGlobal(scope?: TSESLint.Scope.Scope): boolean {
 	if (!scope) return false;
 
 	return scope.type === ScopeType.global || scope.type === ScopeType.module;
