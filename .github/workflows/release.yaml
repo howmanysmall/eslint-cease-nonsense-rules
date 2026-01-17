@@ -84,7 +84,7 @@ jobs:
         run: bun run type-check
 
       - name: Test
-        run: bun test --randomize --bail --only-failures
+        run: bun test --randomize --bail
 
       - name: Build
         run: bun run build
