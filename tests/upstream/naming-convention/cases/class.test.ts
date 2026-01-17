@@ -1,10 +1,10 @@
-import { createTestCases } from './createTestCases';
+import type { Cases } from "./create-test-cases";
 
-createTestCases([
-  {
-    code: ['class % {}', 'abstract class % {}', 'const ignored = class % {}'],
-    options: {
-      selector: 'class',
-    },
-  },
-]);
+export const classCases: Cases = [
+	{
+		code: ["class % {}", "abstract class % {}", "const ignored = class % {}"],
+		options: {
+			selector: "class",
+		},
+	},
+];

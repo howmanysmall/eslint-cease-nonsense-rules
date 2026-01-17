@@ -5,22 +5,22 @@ import rule from "../../src/rules/no-unused-imports";
 import casesJs from "./no-unused-imports/cases-js";
 import casesTs from "./no-unused-imports/cases-ts";
 
-type UpstreamValidCase = {
+interface UpstreamValidCase {
 	readonly code: string;
 	readonly options?: ReadonlyArray<Record<string, unknown>>;
-};
+}
 
-type UpstreamInvalidCase = {
+interface UpstreamInvalidCase {
 	readonly code: string;
 	readonly errors: ReadonlyArray<string>;
 	readonly output: string;
 	readonly options?: ReadonlyArray<Record<string, unknown>>;
-};
+}
 
-type UpstreamCases = {
+interface UpstreamCases {
 	readonly valid: ReadonlyArray<UpstreamValidCase>;
 	readonly invalid: ReadonlyArray<UpstreamInvalidCase>;
-};
+}
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -30,14 +30,35 @@ const ruleTester = new RuleTester({
 	},
 });
 
-function toInvalidCases(cases: UpstreamCases): ReadonlyArray<UpstreamInvalidCase & { errors: ReadonlyArray<{ messageId: string }> }> {
+function toInvalidCases(
+	cases: UpstreamCases,
+): ReadonlyArray<UpstreamInvalidCase & { errors: ReadonlyArray<{ messageId: string }> }> {
 	return cases.invalid.map((testCase) => ({
 		...testCase,
 		errors: testCase.errors.map(() => ({ messageId: "unusedImport" })),
 	}));
 }
 
+function getValidCaseKey(testCase: UpstreamValidCase): string {
+	const optionsKey = testCase.options ? (JSON.stringify(testCase.options) ?? "") : "";
+	return `${testCase.code}|${optionsKey}`;
+}
+
+function dedupeValidCases(cases: ReadonlyArray<UpstreamValidCase>): ReadonlyArray<UpstreamValidCase> {
+	const seen = new Set<string>();
+	const unique: Array<UpstreamValidCase> = [];
+
+	for (const testCase of cases) {
+		const key = getValidCaseKey(testCase);
+		if (seen.has(key)) continue;
+		seen.add(key);
+		unique.push(testCase);
+	}
+
+	return unique;
+}
+
 const invalid = [...toInvalidCases(casesJs), ...toInvalidCases(casesTs)];
-const valid = [...casesJs.valid, ...casesTs.valid];
+const valid = dedupeValidCases([...casesJs.valid, ...casesTs.valid]);
 
 ruleTester.run("no-unused-imports", rule, { invalid, valid });

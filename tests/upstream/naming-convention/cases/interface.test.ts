@@ -1,10 +1,10 @@
-import { createTestCases } from './createTestCases';
+import type { Cases } from "./create-test-cases";
 
-createTestCases([
-  {
-    code: ['interface % {}'],
-    options: {
-      selector: 'interface',
-    },
-  },
-]);
+export const interfaceCases: Cases = [
+	{
+		code: ["interface % {}"],
+		options: {
+			selector: "interface",
+		},
+	},
+];

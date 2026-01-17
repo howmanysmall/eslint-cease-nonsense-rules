@@ -130,16 +130,16 @@
 	"linter": {
 		"enabled": true,
 		"includes": [
+			"src/**",
+			".husky/**",
+			"tests/**",
 			"!**/.vscode/**",
 			"!**/*.code-workspace",
 			"!**/dist/**",
 			"!**/do-not-sync-ever/**",
 			"!**/garbage/**",
 			"!**/node_modules/**",
-			"!.context/**",
-			"src/**",
-			".husky/**",
-			"**/*.ts"
+			"!.context/**"
 		],
 		"rules": {
 			// a11y: oxlint has jsx_a11y but biome coverage is better

@@ -1,6 +1,6 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
-import type { Type } from "typescript";
+import type { Type, TypeChecker } from "typescript";
 
 import type { ModifiersString, SelectorsString } from "./enums";
 import { TypeModifiers } from "./enums";
@@ -8,24 +8,82 @@ import { PredefinedFormatToCheckFunction } from "./format";
 import { selectorTypeToMessageString } from "./shared";
 import type { Context, NormalizedSelector, ValidatorFunction } from "./types";
 
+interface ParserServicesWithTypeInformation {
+	program: {
+		getTypeChecker: () => TypeChecker;
+	};
+	getTypeAtLocation: (node: TSESTree.Node) => Type;
+}
+
+interface TypeInfo {
+	checker: TypeChecker;
+	services: ParserServicesWithTypeInformation;
+}
+
+function hasTypeInformation(services: unknown): services is ParserServicesWithTypeInformation {
+	if (!services || typeof services !== "object") {
+		return false;
+	}
+
+	const getTypeAtLocation: unknown = Reflect.get(services, "getTypeAtLocation");
+	if (typeof getTypeAtLocation !== "function") {
+		return false;
+	}
+
+	const program: unknown = Reflect.get(services, "program");
+	if (!program || typeof program !== "object") {
+		return false;
+	}
+
+	const getTypeChecker: unknown = Reflect.get(program, "getTypeChecker");
+	return typeof getTypeChecker === "function";
+}
+
 export function createValidator(
 	type: SelectorsString,
 	context: Context,
 	allConfigs: Array<NormalizedSelector>,
 ): ValidatorFunction {
-	const configs = allConfigs
-		.filter((config) => config.selectors.includes(type) || config.selectors.length === 0)
-		.toSorted((first, second) => {
-			if (first.selectorPriority !== second.selectorPriority) {
-				return second.selectorPriority - first.selectorPriority;
-			}
+	const configs = allConfigs.toSorted((first, second) => {
+		if (first.selectorPriority !== second.selectorPriority) {
+			return second.selectorPriority - first.selectorPriority;
+		}
 
-			if (first.modifierWeight !== second.modifierWeight) {
-				return second.modifierWeight - first.modifierWeight;
-			}
+		if (first.modifierWeight !== second.modifierWeight) {
+			return second.modifierWeight - first.modifierWeight;
+		}
 
-			return 0;
-		});
+		return 0;
+	});
+
+	const hasTypeOptions = configs.some((config) => (config.types?.length ?? 0) > 0);
+	let typeInfo: TypeInfo | undefined;
+
+	function getTypeInfo(): TypeInfo | undefined {
+		if (!hasTypeOptions) {
+			return undefined;
+		}
+
+		if (typeInfo) {
+			return typeInfo;
+		}
+
+		const services = ESLintUtils.getParserServices(context, true);
+		if (!hasTypeInformation(services)) {
+			return undefined;
+		}
+		const { program } = services;
+		if (!program) {
+			return undefined;
+		}
+
+		typeInfo = {
+			checker: program.getTypeChecker(),
+			services,
+		};
+
+		return typeInfo;
+	}
 
 	return (node, modifiers = new Set<ModifiersString>()): void => {
 		const originalName =
@@ -38,11 +96,15 @@ export function createValidator(
 				continue;
 			}
 
+			if (modifiers.has("requiresQuotes") && !config.modifiers?.includes("requiresQuotes")) {
+				continue;
+			}
+
 			if (config.modifiers?.some((modifier) => !modifiers.has(modifier))) {
 				continue;
 			}
 
-			if (!isCorrectType(node, config, context, type)) {
+			if (!isCorrectType(node, config, type, getTypeInfo)) {
 				continue;
 			}
 
@@ -280,8 +342,8 @@ const selectorsAllowedToHaveTypes = new Set<SelectorsString>([
 function isCorrectType(
 	node: TSESTree.Node,
 	config: NormalizedSelector,
-	context: Context,
 	selector: SelectorsString,
+	getTypeInfo: () => TypeInfo | undefined,
 ): boolean {
 	if (!config.types || config.types.length === 0) {
 		return true;
@@ -291,12 +353,12 @@ function isCorrectType(
 		return true;
 	}
 
-	const services = ESLintUtils.getParserServices(context, true);
-	const { program } = services;
-	if (!program) {
+	const typeInfo = getTypeInfo();
+	if (!typeInfo) {
 		return true;
 	}
-	const checker = program.getTypeChecker();
+
+	const { checker, services } = typeInfo;
 	const type = services.getTypeAtLocation(node).getNonNullableType();
 
 	for (const allowedType of config.types) {

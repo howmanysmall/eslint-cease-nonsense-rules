@@ -129,10 +129,34 @@ function normalizeOption(option: Selector): Array<NormalizedSelector> {
 export function parseOptions(context: Context): ParsedOptions {
 	const normalizedOptions = context.options.flatMap(normalizeOption);
 	const selectorNames = getEnumNames(Selectors);
+	const selectorMap = new Map<string, Array<NormalizedSelector>>();
+
+	for (const selectorName of selectorNames) {
+		selectorMap.set(selectorName, []);
+	}
+
+	for (const option of normalizedOptions) {
+		if (option.selectors.length === 0) {
+			for (const selectorName of selectorNames) {
+				const bucket = selectorMap.get(selectorName);
+				if (bucket) {
+					bucket.push(option);
+				}
+			}
+			continue;
+		}
+
+		for (const selector of option.selectors) {
+			const bucket = selectorMap.get(selector);
+			if (bucket) {
+				bucket.push(option);
+			}
+		}
+	}
 
 	const entries = selectorNames.map((selectorName) => [
 		selectorName,
-		createValidator(selectorName, context, normalizedOptions),
+		createValidator(selectorName, context, selectorMap.get(selectorName) ?? []),
 	]);
 	return Object.fromEntries(entries) as ParsedOptions;
 }

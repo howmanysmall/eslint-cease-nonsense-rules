@@ -1,10 +1,10 @@
-import { createTestCases } from './createTestCases';
+import type { Cases } from "./create-test-cases";
 
-createTestCases([
-  {
-    code: ['function % () {}', '(function % () {});', 'declare function % ();'],
-    options: {
-      selector: 'function',
-    },
-  },
-]);
+export const functionCases: Cases = [
+	{
+		code: ["function % () {}", "(function % () {});", "declare function % ();"],
+		options: {
+			selector: "function",
+		},
+	},
+];

@@ -158,12 +158,22 @@
 		],
 		"eslint/require-await": "off",
 		"for-direction": "error",
-		"func-style": ["error", "declaration"],
+		"func-names": ["off", "never", { "generators": "never" }],
+		"func-style": [
+			"error",
+			"declaration",
+			{
+				"allowArrowFunctions": false,
+				"allowTypeAnnotation": true,
+				"namedExports": "ignore",
+				"style": "declaration",
+			},
+		],
 		"id-length": [
 			"error",
 			{
 				"exceptionPatterns": ["^_"],
-				"exceptions": ["_", "x", "y", "z", "a", "b"],
+				"exceptions": ["_", "x", "y", "z", "a", "b", "e", "i", "j"],
 				"max": 45,
 			},
 		],

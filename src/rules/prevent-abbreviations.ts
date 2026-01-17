@@ -1,226 +1,772 @@
-import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import path from "node:path";
+import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
+import type { JSONSchema, TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { isIdentifierPart, isIdentifierStart, ScriptTarget } from "typescript";
 import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "replace" | "suggestion";
+type ImportCheckOption = boolean | "internal";
 
 export interface PreventAbbreviationsOptions {
-	readonly checkFilenames?: boolean;
 	readonly checkProperties?: boolean;
 	readonly checkVariables?: boolean;
+	readonly checkDefaultAndNamespaceImports?: ImportCheckOption;
+	readonly checkShorthandImports?: ImportCheckOption;
+	readonly checkShorthandProperties?: boolean;
+	readonly checkFilenames?: boolean;
+	readonly extendDefaultReplacements?: boolean;
 	readonly replacements?: Record<string, Record<string, boolean> | false>;
+	readonly extendDefaultAllowList?: boolean;
 	readonly allowList?: Record<string, boolean>;
 	readonly ignore?: ReadonlyArray<string | RegExp>;
 }
 
 type Options = [PreventAbbreviationsOptions?];
 
-// Default replacements (subset of unicorn defaults, can be extended)
-const DEFAULT_REPLACEMENTS: Record<string, Record<string, boolean>> = {
-	args: { arguments: true },
-	ctx: { context: true },
-	dist: { distance: true },
-	// oxlint-disable-next-line id-length
-	e: { error: true },
-	err: { error: true },
-	fn: { func: true, function: false },
-	func: {},
-	inst: { instance: true },
-	jsdoc: {},
-	nums: { numbers: true },
-	pos: { position: true },
-	props: {},
-	ref: {},
-	refs: {},
-	str: { string: true },
-	util: {},
-	utils: {},
+const MESSAGE_ID_REPLACE = "replace";
+const MESSAGE_ID_SUGGESTION = "suggestion";
+const anotherNameMessage = "A more descriptive name will do too.";
+const messages = {
+	[MESSAGE_ID_REPLACE]: `The {{nameTypeText}} \`{{discouragedName}}\` should be named \`{{replacement}}\`. ${anotherNameMessage}`,
+	[MESSAGE_ID_SUGGESTION]: `Please rename the {{nameTypeText}} \`{{discouragedName}}\`. Suggested names are: {{replacementsText}}. ${anotherNameMessage}`,
 };
 
-// Default allow list
-const DEFAULT_ALLOW_LIST: Record<string, boolean> = {};
+const schema: ReadonlyArray<JSONSchema.JSONSchema4> = [
+	{
+		additionalProperties: true,
+		type: "object",
+	},
+];
 
-// Default ignore patterns
-const DEFAULT_IGNORE: ReadonlyArray<string | RegExp> = [];
+const DEFAULT_REPLACEMENTS: Record<string, Record<string, boolean>> = {
+	acc: {
+		accumulator: true,
+	},
+	arg: {
+		argument: true,
+	},
+	args: {
+		arguments: true,
+	},
+	arr: {
+		array: true,
+	},
+	attr: {
+		attribute: true,
+	},
+	attrs: {
+		attributes: true,
+	},
+	btn: {
+		button: true,
+	},
+	cb: {
+		callback: true,
+	},
+	conf: {
+		config: true,
+	},
+	ctx: {
+		context: true,
+	},
+	cur: {
+		current: true,
+	},
+	curr: {
+		current: true,
+	},
+	db: {
+		database: true,
+	},
+	def: {
+		defer: true,
+		deferred: true,
+		define: true,
+		definition: true,
+	},
+	dest: {
+		destination: true,
+	},
+	dev: {
+		development: true,
+	},
+	dir: {
+		direction: true,
+		directory: true,
+	},
+	dirs: {
+		directories: true,
+	},
+	dist: {
+		distance: true,
+	},
+	doc: {
+		document: true,
+	},
+	docs: {
+		documentation: true,
+		documents: true,
+	},
+	dst: {
+		daylightSavingTime: true,
+		destination: true,
+		distribution: true,
+	},
+	e: {
+		error: true,
+		event: true,
+	},
+	el: {
+		element: true,
+	},
+	elem: {
+		element: true,
+	},
+	elems: {
+		elements: true,
+	},
+	env: {
+		environment: true,
+	},
+	envs: {
+		environments: true,
+	},
+	err: {
+		error: true,
+	},
+	ev: {
+		event: true,
+	},
+	evt: {
+		event: true,
+	},
+	ext: {
+		extension: true,
+	},
+	exts: {
+		extensions: true,
+	},
+	fn: {
+		func: true,
+		function: true,
+	},
+	func: {
+		function: true,
+	},
+	i: {
+		index: true,
+	},
+	idx: {
+		index: true,
+	},
+	j: {
+		index: true,
+	},
+	len: {
+		length: true,
+	},
+	lib: {
+		library: true,
+	},
+	mod: {
+		module: true,
+	},
+	msg: {
+		message: true,
+	},
+	num: {
+		number: true,
+	},
+	obj: {
+		object: true,
+	},
+	opts: {
+		options: true,
+	},
+	param: {
+		parameter: true,
+	},
+	params: {
+		parameters: true,
+	},
+	pkg: {
+		package: true,
+	},
+	prev: {
+		previous: true,
+	},
+	prod: {
+		production: true,
+	},
+	prop: {
+		property: true,
+	},
+	props: {
+		properties: true,
+	},
+	ref: {
+		reference: true,
+	},
+	refs: {
+		references: true,
+	},
+	rel: {
+		related: true,
+		relationship: true,
+		relative: true,
+	},
+	req: {
+		request: true,
+	},
+	res: {
+		resource: true,
+		response: true,
+		result: true,
+	},
+	ret: {
+		returnValue: true,
+	},
+	retval: {
+		returnValue: true,
+	},
+	sep: {
+		separator: true,
+	},
+	src: {
+		source: true,
+	},
+	stdDev: {
+		standardDeviation: true,
+	},
+	str: {
+		string: true,
+	},
+	tbl: {
+		table: true,
+	},
+	temp: {
+		temporary: true,
+	},
+	tit: {
+		title: true,
+	},
+	tmp: {
+		temporary: true,
+	},
+	util: {
+		utility: true,
+	},
+	utils: {
+		utilities: true,
+	},
+	val: {
+		value: true,
+	},
+	var: {
+		variable: true,
+	},
+	vars: {
+		variables: true,
+	},
+	ver: {
+		version: true,
+	},
+};
 
-// Regex for splitting camelCase/PascalCase words
-// Split before uppercase letters that follow lowercase letters
-const CAMEL_CASE_SPLIT_PATTERN = /(?<=[a-z])(?=[A-Z])/u;
+const DEFAULT_ALLOW_LIST: Record<string, boolean> = {
+	defaultProps: true,
+	devDependencies: true,
+	EmberENV: true,
+	getDerivedStateFromProps: true,
+	getInitialProps: true,
+	getServerSideProps: true,
+	getStaticProps: true,
+	iOS: true,
+	obj: true,
+	propTypes: true,
+	setupFilesAfterEnv: true,
+};
 
-function isUpperCase(str: string): boolean {
-	return str === str.toUpperCase();
+const DEFAULT_IGNORE = ["i18n", "l10n"];
+
+const WORD_SPLIT_PATTERN = /(?=\P{Lowercase_Letter})|(?<=\P{Letter})/u;
+
+const typescriptReservedWords = new Set([
+	"break",
+	"case",
+	"catch",
+	"class",
+	"const",
+	"continue",
+	"debugger",
+	"default",
+	"delete",
+	"do",
+	"else",
+	"enum",
+	"export",
+	"extends",
+	"false",
+	"finally",
+	"for",
+	"function",
+	"if",
+	"import",
+	"in",
+	"instanceof",
+	"new",
+	"null",
+	"return",
+	"super",
+	"switch",
+	"this",
+	"throw",
+	"true",
+	"try",
+	"typeof",
+	"var",
+	"void",
+	"while",
+	"with",
+	"as",
+	"implements",
+	"interface",
+	"let",
+	"package",
+	"private",
+	"protected",
+	"public",
+	"static",
+	"yield",
+	"any",
+	"boolean",
+	"constructor",
+	"declare",
+	"get",
+	"module",
+	"require",
+	"number",
+	"set",
+	"string",
+	"symbol",
+	"type",
+	"from",
+	"of",
+]);
+
+interface PreparedOptions {
+	checkProperties: boolean;
+	checkVariables: boolean;
+	checkDefaultAndNamespaceImports: ImportCheckOption;
+	checkShorthandImports: ImportCheckOption;
+	checkShorthandProperties: boolean;
+	checkFilenames: boolean;
+	replacements: Map<string, Map<string, boolean>>;
+	allowList: Map<string, boolean>;
+	ignore: ReadonlyArray<RegExp>;
 }
 
-function upperFirst(str: string): string {
-	return str.charAt(0).toUpperCase() + str.slice(1);
+interface NameReplacements {
+	total: number;
+	samples?: ReadonlyArray<string>;
 }
 
-function lowerFirst(str: string): string {
-	return str.charAt(0).toLowerCase() + str.slice(1);
+type IdentifierLike = TSESTree.Identifier | TSESTree.JSXIdentifier;
+type StringLiteral = TSESTree.Literal & { value: string };
+interface VariableLike {
+	readonly name: string;
+	readonly defs: ReadonlyArray<TSESLint.Scope.Definition>;
+	readonly identifiers: ReadonlyArray<IdentifierLike>;
+	readonly references: ReadonlyArray<TSESLint.Scope.Reference>;
+	readonly scope: TSESLint.Scope.Scope;
 }
 
-function isUpperFirst(str: string): boolean {
-	return str.length > 0 && isUpperCase(str.charAt(0));
+function isUpperCase(string: string): boolean {
+	return string === string.toUpperCase();
 }
 
-// Cache for compiled regex patterns
-const regexCache = new Map<string, RegExp>();
-
-function compileRegex(pattern: string | RegExp): RegExp {
-	if (pattern instanceof RegExp) return pattern;
-
-	const cached = regexCache.get(pattern);
-	if (cached !== undefined) return cached;
-
-	const compiled = new RegExp(pattern, "u");
-	regexCache.set(pattern, compiled);
-	return compiled;
+function isUpperFirst(string: string): boolean {
+	return isUpperCase(string.charAt(0));
 }
 
-// Cache for word replacements
-const wordReplacementCache = new WeakMap<PreventAbbreviationsOptions, Map<string, ReadonlyArray<string>>>();
-const wordReplacementCacheWithDisabled = new WeakMap<PreventAbbreviationsOptions, Map<string, ReadonlyArray<string>>>();
+function upperFirst(string: string): string {
+	return string.charAt(0).toUpperCase() + string.slice(1);
+}
 
-function getWordReplacements(
-	word: string,
-	options: PreventAbbreviationsOptions,
-	includeDisabled = true,
-): ReadonlyArray<string> {
-	// Skip constants and allowList
-	if (isUpperCase(word) || options.allowList?.[word]) return [];
+function lowerFirst(string: string): string {
+	return string.charAt(0).toLowerCase() + string.slice(1);
+}
 
-	const cache = includeDisabled ? wordReplacementCacheWithDisabled : wordReplacementCache;
-	const cachedCache = cache.get(options);
-	const wordCache = cachedCache ?? new Map<string, ReadonlyArray<string>>();
-	if (cachedCache === undefined) {
-		cache.set(options, wordCache);
+function isStringLiteral(node: TSESTree.Node): node is StringLiteral {
+	return node.type === AST_NODE_TYPES.Literal && typeof node.value === "string";
+}
+
+function isIdentifier(node: TSESTree.Node | undefined): node is TSESTree.Identifier {
+	return Boolean(node && node.type === AST_NODE_TYPES.Identifier);
+}
+
+function isJSXIdentifier(node: TSESTree.Node | undefined): node is TSESTree.JSXIdentifier {
+	return Boolean(node && node.type === AST_NODE_TYPES.JSXIdentifier);
+}
+
+function isImportDeclaration(node: TSESTree.Node | undefined): node is TSESTree.ImportDeclaration {
+	return Boolean(node && node.type === AST_NODE_TYPES.ImportDeclaration);
+}
+
+function isVariableDeclarator(node: TSESTree.Node | undefined): node is TSESTree.VariableDeclarator {
+	return Boolean(node && node.type === AST_NODE_TYPES.VariableDeclarator);
+}
+
+function isValidIdentifier(name: string): boolean {
+	if (name.length === 0 || typescriptReservedWords.has(name)) {
+		return false;
 	}
 
-	const cached = wordCache.get(word);
-	if (cached !== undefined) return cached;
-
-	const replacements = options.replacements ?? DEFAULT_REPLACEMENTS;
-	const replacement = replacements[lowerFirst(word)] ?? replacements[word] ?? replacements[upperFirst(word)];
-
-	let wordReplacement: ReadonlyArray<string> = [];
-	if (replacement !== false && replacement !== undefined) {
-		const transform = isUpperFirst(word) ? upperFirst : lowerFirst;
-		// Include all replacements (enabled and disabled) for suggestions, or only enabled for fixes
-		wordReplacement = Object.entries(replacement)
-			.filter(([, enabled]) => includeDisabled || enabled)
-			.map(([name]) => transform(name))
-			.toSorted();
+	let index = 0;
+	const firstCodePoint = name.codePointAt(index);
+	if (firstCodePoint === undefined || !isIdentifierStart(firstCodePoint, ScriptTarget.Latest)) {
+		return false;
+	}
+	index += firstCodePoint > 0xff_ff ? 2 : 1;
+	while (index < name.length) {
+		const codePoint = name.codePointAt(index);
+		if (codePoint === undefined || !isIdentifierPart(codePoint, ScriptTarget.Latest)) {
+			return false;
+		}
+		index += codePoint > 0xff_ff ? 2 : 1;
 	}
 
-	wordCache.set(word, wordReplacement);
-	return wordReplacement;
+	return true;
 }
 
-// Cache for name replacements
-const nameReplacementCache = new WeakMap<
-	PreventAbbreviationsOptions,
-	Map<string, { total: number; samples: ReadonlyArray<string> }>
->();
-const ignoreRegexCache = new WeakMap<PreventAbbreviationsOptions, ReadonlyArray<RegExp>>();
-
-function getIgnorePatterns(options: PreventAbbreviationsOptions): ReadonlyArray<RegExp> {
-	const cached = ignoreRegexCache.get(options);
-	if (cached !== undefined) return cached;
-
-	const ignore = options.ignore ?? DEFAULT_IGNORE;
-	const patterns = ignore.map((pattern) => compileRegex(pattern));
-	ignoreRegexCache.set(options, patterns);
-	return patterns;
+function getScopes(scope: TSESLint.Scope.Scope): Array<TSESLint.Scope.Scope> {
+	return [scope, ...scope.childScopes.flatMap((child) => getScopes(child))];
 }
 
-function getNameReplacements(
+function getReferences(scope: TSESLint.Scope.Scope): ReadonlyArray<TSESLint.Scope.Reference> {
+	const references = new Set<TSESLint.Scope.Reference>();
+	for (const scopeItem of getScopes(scope)) {
+		for (const reference of scopeItem.references) {
+			references.add(reference);
+		}
+	}
+	return [...references];
+}
+
+function resolveVariableName(
 	name: string,
-	options: PreventAbbreviationsOptions,
-	limit = 3,
-): { total: number; samples: ReadonlyArray<string> } {
-	// Skip constants and allowList
-	if (isUpperCase(name) || options.allowList?.[name]) return { samples: [], total: 0 };
+	scope: TSESLint.Scope.Scope | undefined,
+): TSESLint.Scope.Variable | undefined {
+	let currentScope = scope;
+	while (currentScope) {
+		const variable = currentScope.set.get(name);
+		if (variable) {
+			return variable;
+		}
+		currentScope = currentScope.upper ?? undefined;
+	}
+	return undefined;
+}
 
-	// Check ignore patterns
-	const ignorePatterns = getIgnorePatterns(options);
-	for (const regex of ignorePatterns) {
-		if (regex.test(name)) return { samples: [], total: 0 };
+function isUnresolvedName(name: string, scope: TSESLint.Scope.Scope): boolean {
+	return getReferences(scope).some((reference) => {
+		const { identifier } = reference;
+		return Boolean(
+			identifier &&
+			identifier.type === AST_NODE_TYPES.Identifier &&
+			identifier.name === name &&
+			!reference.resolved,
+		);
+	});
+}
+
+function isSafeName(name: string, scopes: ReadonlyArray<TSESLint.Scope.Scope>): boolean {
+	return !scopes.some((scope) => resolveVariableName(name, scope) ?? isUnresolvedName(name, scope));
+}
+
+type IsSafe = (name: string, scopes: ReadonlyArray<TSESLint.Scope.Scope>) => boolean;
+
+function getAvailableVariableName(
+	name: string,
+	scopes: ReadonlyArray<TSESLint.Scope.Scope>,
+	isSafe: IsSafe = () => true,
+): string | undefined {
+	let candidate = name;
+	if (!isValidIdentifier(candidate)) {
+		candidate = `${candidate}_`;
+		if (!isValidIdentifier(candidate)) {
+			return undefined;
+		}
 	}
 
-	const cachedCache = nameReplacementCache.get(options);
-	const nameCache = cachedCache ?? new Map<string, { total: number; samples: ReadonlyArray<string> }>();
-	if (cachedCache === undefined) {
-		nameReplacementCache.set(options, nameCache);
+	while (!(isSafeName(candidate, scopes) && isSafe(candidate, scopes))) {
+		candidate = `${candidate}_`;
 	}
-	const cached = nameCache.get(name);
-	if (cached !== undefined) return cached;
 
-	// Find exact replacements (include disabled for suggestions)
-	const exactReplacements = getWordReplacements(name, options, true);
+	return candidate;
+}
 
+function getVariableIdentifiers(variable: VariableLike): ReadonlyArray<IdentifierLike> {
+	const identifiers = new Set<IdentifierLike>();
+	for (const identifier of variable.identifiers) {
+		identifiers.add(identifier);
+	}
+	for (const reference of variable.references) {
+		const { identifier } = reference;
+		if (identifier) {
+			identifiers.add(identifier);
+		}
+	}
+	return [...identifiers];
+}
+
+function hasSameRange(node1: TSESTree.Node, node2: TSESTree.Node): boolean {
+	const range1 = node1.range;
+	const range2 = node2.range;
+	return range1[0] === range2[0] && range1[1] === range2[1];
+}
+
+function isShorthandImportLocal(node: TSESTree.Identifier): boolean {
+	const { parent } = node;
+	if (!parent || parent.type !== AST_NODE_TYPES.ImportSpecifier || parent.local !== node) {
+		return false;
+	}
+	return hasSameRange(parent.local, parent.imported);
+}
+
+function isShorthandExportLocal(node: TSESTree.Identifier): boolean {
+	const { parent } = node;
+	if (!parent || parent.type !== AST_NODE_TYPES.ExportSpecifier || parent.local !== node) {
+		return false;
+	}
+	return hasSameRange(parent.local, parent.exported);
+}
+
+function isShorthandPropertyValue(identifier: TSESTree.Identifier): boolean {
+	const { parent } = identifier;
+	return Boolean(
+		parent && parent.type === AST_NODE_TYPES.Property && parent.shorthand && parent.value === identifier,
+	);
+}
+
+function isShorthandPropertyAssignmentPatternLeft(identifier: TSESTree.Identifier): boolean {
+	const { parent } = identifier;
+	if (!parent || parent.type !== AST_NODE_TYPES.AssignmentPattern || parent.left !== identifier) {
+		return false;
+	}
+	const property = parent.parent;
+	return Boolean(
+		property && property.type === AST_NODE_TYPES.Property && property.shorthand && property.value === parent,
+	);
+}
+
+function replaceReferenceIdentifier(
+	identifier: IdentifierLike,
+	replacement: string,
+	fixer: TSESLint.RuleFixer,
+): TSESLint.RuleFix | undefined {
+	if (!isIdentifier(identifier)) {
+		return undefined;
+	}
+
+	if (isShorthandPropertyValue(identifier) || isShorthandPropertyAssignmentPatternLeft(identifier)) {
+		return fixer.replaceText(identifier, `${identifier.name}: ${replacement}`);
+	}
+
+	if (isShorthandImportLocal(identifier)) {
+		return fixer.replaceText(identifier, `${identifier.name} as ${replacement}`);
+	}
+
+	if (isShorthandExportLocal(identifier)) {
+		return fixer.replaceText(identifier, `${replacement} as ${identifier.name}`);
+	}
+
+	if (identifier.typeAnnotation) {
+		const identifierRange = identifier.range;
+		const annotationRange = identifier.typeAnnotation.range;
+		return fixer.replaceTextRange(
+			[identifierRange[0], annotationRange[0]],
+			`${replacement}${identifier.optional ? "?" : ""}`,
+		);
+	}
+
+	return fixer.replaceText(identifier, replacement);
+}
+
+function renameVariable(
+	variable: VariableLike,
+	name: string,
+	fixer: TSESLint.RuleFixer,
+): ReadonlyArray<TSESLint.RuleFix> {
+	return getVariableIdentifiers(variable)
+		.map((identifier) => replaceReferenceIdentifier(identifier, name, fixer))
+		.filter((fix): fix is TSESLint.RuleFix => fix !== undefined);
+}
+
+function prepareOptions(options: PreventAbbreviationsOptions | undefined): PreparedOptions {
+	const {
+		checkProperties = false,
+		checkVariables = true,
+		checkDefaultAndNamespaceImports = "internal",
+		checkShorthandImports = "internal",
+		checkShorthandProperties = false,
+		checkFilenames = true,
+		extendDefaultReplacements = true,
+		replacements = {},
+		extendDefaultAllowList = true,
+		allowList = {},
+		ignore = [],
+	} = options ?? {};
+
+	const replacementKeys = new Set([...Object.keys(DEFAULT_REPLACEMENTS), ...Object.keys(replacements)]);
+	const mergedReplacements = extendDefaultReplacements
+		? Object.fromEntries(
+				[...replacementKeys].map((name) => {
+					const override = replacements[name];
+					const base = DEFAULT_REPLACEMENTS[name] ?? {};
+					if (override === false) {
+						return [name, {}];
+					}
+					return [name, { ...base, ...override }];
+				}),
+			)
+		: Object.fromEntries(
+				Object.entries(replacements).map(([name, override]) => [name, override === false ? {} : override]),
+			);
+
+	const mergedAllowList = extendDefaultAllowList ? { ...DEFAULT_ALLOW_LIST, ...allowList } : allowList;
+
+	const ignorePatterns = [...DEFAULT_IGNORE, ...ignore].map((pattern) =>
+		pattern instanceof RegExp ? pattern : new RegExp(pattern, "u"),
+	);
+
+	return {
+		allowList: new Map(Object.entries(mergedAllowList)),
+		checkDefaultAndNamespaceImports,
+		checkFilenames,
+		checkProperties,
+		checkShorthandImports,
+		checkShorthandProperties,
+		checkVariables,
+		ignore: ignorePatterns,
+		replacements: new Map(
+			Object.entries(mergedReplacements).map(([discouragedName, replacementsForName]) => [
+				discouragedName,
+				new Map(Object.entries(replacementsForName ?? {})),
+			]),
+		),
+	};
+}
+
+const IS_ALPHABETIC = /^[A-Za-z]+$/u;
+
+function getWordReplacements(word: string, options: PreparedOptions): ReadonlyArray<string> {
+	if (isUpperCase(word) || options.allowList.get(word)) {
+		return [];
+	}
+
+	const replacement =
+		options.replacements.get(lowerFirst(word)) ??
+		options.replacements.get(word) ??
+		options.replacements.get(upperFirst(word));
+
+	if (!replacement) {
+		return [];
+	}
+
+	const transform = isUpperFirst(word) ? upperFirst : lowerFirst;
+	const wordReplacement = [...replacement.keys()]
+		.filter((name) => replacement.get(name))
+		.map((name) => transform(name));
+
+	return wordReplacement.length > 0 ? [...wordReplacement].toSorted() : [];
+}
+
+function isDiscouragedReplacementName(name: string, options: PreparedOptions): boolean {
+	const replacement = options.replacements.get(name);
+	if (!replacement) {
+		return false;
+	}
+	for (const enabled of replacement.values()) {
+		if (enabled) {
+			return true;
+		}
+	}
+	return false;
+}
+
+function cartesianProductSamples(
+	combinations: ReadonlyArray<ReadonlyArray<string>>,
+	length = Number.POSITIVE_INFINITY,
+): { total: number; samples: Array<Array<string>> } {
+	const total = combinations.reduce((count, { length: optionLength }) => count * optionLength, 1);
+	const sampleCount = Math.min(total, length);
+	const samples = Array.from({ length: sampleCount }, (_, sampleIndex) => {
+		let indexRemaining = sampleIndex;
+		const combination: Array<string> = [];
+		for (let combinationIndex = combinations.length - 1; combinationIndex >= 0; combinationIndex -= 1) {
+			const items = combinations[combinationIndex] ?? [];
+			const itemLength = items.length;
+			const index = indexRemaining % itemLength;
+			indexRemaining = (indexRemaining - index) / itemLength;
+			const item = items[index];
+			if (item !== undefined) {
+				combination.unshift(item);
+			}
+		}
+		return combination;
+	});
+
+	return { samples, total };
+}
+
+function getNameReplacements(name: string, options: PreparedOptions, limit = 3): NameReplacements {
+	const { allowList, ignore } = options;
+	if (isUpperCase(name) || allowList.get(name) || ignore.some((regexp) => regexp.test(name))) {
+		return { total: 0 };
+	}
+
+	const exactReplacements = getWordReplacements(name, options);
 	if (exactReplacements.length > 0) {
-		const result = {
+		return {
 			samples: exactReplacements.slice(0, limit),
 			total: exactReplacements.length,
 		};
-		nameCache.set(name, result);
-		return result;
 	}
 
-	const words = name.split(CAMEL_CASE_SPLIT_PATTERN).filter(Boolean);
-
+	const words = name.split(WORD_SPLIT_PATTERN).filter(Boolean);
 	let hasReplacements = false;
 	const combinations = words.map((word) => {
-		const wordReplacements = getWordReplacements(word, options, true);
-
+		const wordReplacements = getWordReplacements(word, options);
 		if (wordReplacements.length > 0) {
 			hasReplacements = true;
-			// Preserve the original case of the word when replacing
-			// If word is "Err" (capital E), we want "Error" (capital E), not "error"
-			const isCapitalized = isUpperFirst(word);
-			return wordReplacements.map((replacement) => (isCapitalized ? upperFirst(replacement) : replacement));
+			return wordReplacements;
 		}
-
 		return [word];
 	});
 
-	// No replacements for any word
-	if (!hasReplacements) {
-		const result = { samples: [], total: 0 };
-		nameCache.set(name, result);
-		return result;
-	}
+	if (!hasReplacements) return { total: 0 };
 
-	// Simple cartesian product (limited)
-	const samplesArray: Array<string> = [];
-	let total = 1;
-	for (const combo of combinations) total *= combo.length;
-
-	// Generate samples (simplified - just take first few combinations)
-	const maxSamples = Math.min(limit, total);
-	for (let index = 0; index < maxSamples; index += 1) {
-		let sample = "";
-		let jndex = index;
-		for (const combo of combinations) {
-			const replacement = combo[jndex % combo.length];
-			if (replacement !== undefined) {
-				sample += replacement;
+	const { total, samples } = cartesianProductSamples(combinations, limit);
+	for (const parts of samples) {
+		for (let index = parts.length - 1; index > 0; index -= 1) {
+			const word = parts[index] ?? "";
+			if (IS_ALPHABETIC.test(word) && parts[index - 1]?.endsWith(word)) {
+				parts.splice(index, 1);
 			}
-			jndex = Math.floor(jndex / combo.length);
 		}
-		samplesArray.push(sample);
 	}
 
-	const samples: ReadonlyArray<string> = samplesArray;
-
-	const result = { samples, total };
-	nameCache.set(name, result);
-	return result;
+	return {
+		samples: samples.map((parts) => parts.join("")),
+		total,
+	};
 }
 
 function getMessage(
 	discouragedName: string,
-	replacements: { total: number; samples: ReadonlyArray<string> },
+	replacements: NameReplacements,
 	nameTypeText: string,
 ): { messageId: MessageIds; data: Record<string, string> } {
 	const { total, samples = [] } = replacements;
@@ -232,12 +778,11 @@ function getMessage(
 				nameTypeText,
 				replacement: samples[0] ?? "",
 			},
-			messageId: "replace",
+			messageId: MESSAGE_ID_REPLACE,
 		};
 	}
 
 	let replacementsText = samples.map((replacement) => `\`${replacement}\``).join(", ");
-
 	const omittedReplacementsCount = total - samples.length;
 	if (omittedReplacementsCount > 0) {
 		replacementsText += `, ... (${omittedReplacementsCount > 99 ? "99+" : omittedReplacementsCount} more omitted)`;
@@ -249,20 +794,128 @@ function getMessage(
 			nameTypeText,
 			replacementsText,
 		},
-		messageId: "suggestion",
+		messageId: MESSAGE_ID_SUGGESTION,
 	};
 }
 
-function shouldReportIdentifierAsProperty(node: TSESTree.Identifier): boolean {
-	const { parent } = node;
-	if (parent === undefined) return false;
+function isExportedIdentifier(identifier: IdentifierLike): boolean {
+	if (!isIdentifier(identifier)) {
+		return false;
+	}
+
+	const { parent } = identifier;
+	if (!parent) {
+		return false;
+	}
+
+	if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.id === identifier) {
+		const declaration = parent.parent;
+		const declarationParent = declaration?.parent;
+		return Boolean(
+			declaration &&
+			declaration.type === AST_NODE_TYPES.VariableDeclaration &&
+			declarationParent &&
+			declarationParent.type === AST_NODE_TYPES.ExportNamedDeclaration,
+		);
+	}
+
+	if (parent.type === AST_NODE_TYPES.FunctionDeclaration && parent.id === identifier) {
+		return parent.parent?.type === AST_NODE_TYPES.ExportNamedDeclaration;
+	}
+
+	if (parent.type === AST_NODE_TYPES.ClassDeclaration && parent.id === identifier) {
+		return parent.parent?.type === AST_NODE_TYPES.ExportNamedDeclaration;
+	}
+
+	if (parent.type === AST_NODE_TYPES.TSTypeAliasDeclaration && parent.id === identifier) {
+		return parent.parent?.type === AST_NODE_TYPES.ExportNamedDeclaration;
+	}
+
+	return false;
+}
+
+function shouldFix(variable: VariableLike): boolean {
+	return getVariableIdentifiers(variable).every(
+		(identifier) => !(isExportedIdentifier(identifier) || isJSXIdentifier(identifier)),
+	);
+}
+
+function isStaticRequire(node: TSESTree.Node | undefined): node is TSESTree.CallExpression {
+	if (!node || node.type !== AST_NODE_TYPES.CallExpression || node.optional) {
+		return false;
+	}
+
+	const { callee, arguments: callArguments } = node;
+	if (callee.type !== AST_NODE_TYPES.Identifier || callee.name !== "require") {
+		return false;
+	}
+
+	if (callArguments.length !== 1) {
+		return false;
+	}
+
+	const [argument] = callArguments;
+	return Boolean(argument && isStringLiteral(argument));
+}
+
+function isDefaultOrNamespaceImportName(identifier: TSESTree.Identifier): boolean {
+	const { parent } = identifier;
+	if (!parent) {
+		return false;
+	}
+
+	if (parent.type === AST_NODE_TYPES.ImportDefaultSpecifier && parent.local === identifier) {
+		return true;
+	}
+
+	if (parent.type === AST_NODE_TYPES.ImportNamespaceSpecifier && parent.local === identifier) {
+		return true;
+	}
+
+	if (
+		parent.type === AST_NODE_TYPES.ImportSpecifier &&
+		parent.local === identifier &&
+		parent.imported.type === AST_NODE_TYPES.Identifier &&
+		parent.imported.name === "default"
+	) {
+		return true;
+	}
+
+	if (
+		parent.type === AST_NODE_TYPES.VariableDeclarator &&
+		parent.id === identifier &&
+		isStaticRequire(parent.init ?? undefined)
+	) {
+		return true;
+	}
+
+	return false;
+}
+
+function isClassVariable(variable: TSESLint.Scope.Variable): boolean {
+	if (variable.defs.length !== 1) {
+		return false;
+	}
+
+	const [definition] = variable.defs;
+	if (!definition) {
+		return false;
+	}
+
+	return definition.type === DefinitionType.ClassName;
+}
+
+function shouldReportIdentifierAsProperty(identifier: TSESTree.Identifier): boolean {
+	const { parent } = identifier;
+	if (!parent) {
+		return false;
+	}
 
 	if (
 		parent.type === AST_NODE_TYPES.MemberExpression &&
-		parent.property === node &&
+		parent.property === identifier &&
 		!parent.computed &&
-		parent.parent !== undefined &&
-		parent.parent.type === AST_NODE_TYPES.AssignmentExpression &&
+		parent.parent?.type === AST_NODE_TYPES.AssignmentExpression &&
 		parent.parent.left === parent
 	) {
 		return true;
@@ -270,18 +923,25 @@ function shouldReportIdentifierAsProperty(node: TSESTree.Identifier): boolean {
 
 	if (
 		parent.type === AST_NODE_TYPES.Property &&
-		parent.key === node &&
+		parent.key === identifier &&
 		!parent.computed &&
 		!parent.shorthand &&
-		parent.parent !== undefined &&
-		parent.parent.type === AST_NODE_TYPES.ObjectExpression
+		parent.parent?.type === AST_NODE_TYPES.ObjectExpression
+	) {
+		return true;
+	}
+
+	if (
+		parent.type === AST_NODE_TYPES.ExportSpecifier &&
+		parent.exported === identifier &&
+		parent.local !== identifier
 	) {
 		return true;
 	}
 
 	if (
 		(parent.type === AST_NODE_TYPES.MethodDefinition || parent.type === AST_NODE_TYPES.PropertyDefinition) &&
-		parent.key === node &&
+		parent.key === identifier &&
 		!parent.computed
 	) {
 		return true;
@@ -290,270 +950,388 @@ function shouldReportIdentifierAsProperty(node: TSESTree.Identifier): boolean {
 	return false;
 }
 
-function isPropertyIdentifierNode(node: TSESTree.Identifier): boolean {
-	const { parent } = node;
-	if (parent === undefined) return false;
-
-	return (
-		parent.type === AST_NODE_TYPES.MemberExpression ||
-		parent.type === AST_NODE_TYPES.Property ||
-		parent.type === AST_NODE_TYPES.MethodDefinition ||
-		parent.type === AST_NODE_TYPES.PropertyDefinition
+function isObjectPropertyKey(identifier: TSESTree.Identifier): boolean {
+	const { parent } = identifier;
+	return Boolean(
+		parent &&
+		parent.type === AST_NODE_TYPES.Property &&
+		parent.key === identifier &&
+		!parent.computed &&
+		!parent.shorthand &&
+		parent.parent?.type === AST_NODE_TYPES.ObjectExpression,
 	);
 }
 
-function isFunctionParameterIdentifier(node: TSESTree.Identifier): boolean {
-	const { parent } = node;
-	if (parent === undefined) return false;
+function getImportSource(definition: TSESLint.Scope.Definition): string | undefined {
+	if (definition.type === DefinitionType.ImportBinding) {
+		const parent = definition.parent ?? undefined;
+		if (parent && isImportDeclaration(parent)) {
+			const { source } = parent;
+			if (isStringLiteral(source)) {
+				return source.value;
+			}
+		}
+	}
 
-	if (
-		parent.type !== AST_NODE_TYPES.FunctionDeclaration &&
-		parent.type !== AST_NODE_TYPES.FunctionExpression &&
-		parent.type !== AST_NODE_TYPES.ArrowFunctionExpression
-	) {
+	if (definition.type === DefinitionType.Variable) {
+		const node = definition.node ?? undefined;
+		if (isVariableDeclarator(node)) {
+			const initializer = node.init ?? undefined;
+			if (isStaticRequire(initializer)) {
+				const [argument] = initializer.arguments;
+				if (argument && isStringLiteral(argument)) {
+					return argument.value;
+				}
+			}
+		}
+	}
+
+	return undefined;
+}
+
+function isInternalImport(definition: TSESLint.Scope.Definition): boolean {
+	const source = getImportSource(definition);
+	if (!source) {
 		return false;
 	}
 
-	return parent.params.some((param) => param === node);
+	return !source.includes("node_modules") && (source.startsWith(".") || source.startsWith("/"));
+}
+
+function shouldCheckImport(option: ImportCheckOption, definition: TSESLint.Scope.Definition): boolean {
+	if (option === false) {
+		return false;
+	}
+
+	if (option === "internal") {
+		return isInternalImport(definition);
+	}
+
+	return true;
+}
+
+function isVueTemplateReference(reference: TSESLint.Scope.Reference): boolean {
+	return Reflect.get(reference, "vueUsedInTemplate") === true;
 }
 
 export default createRule<Options, MessageIds>({
 	create(context) {
-		const [
-			{
-				checkFilenames = true,
-				checkProperties = false,
-				checkVariables = true,
-				replacements,
-				allowList,
-				ignore,
-			} = {},
-		] = context.options;
+		const options = prepareOptions(context.options[0]);
+		const filenameWithExtension = context.physicalFilename;
 
-		const options: PreventAbbreviationsOptions = {
-			allowList: { ...DEFAULT_ALLOW_LIST, ...allowList },
-			checkFilenames,
-			checkProperties,
-			checkVariables,
-			ignore: [...DEFAULT_IGNORE, ...(ignore ?? [])],
-			replacements: replacements ?? DEFAULT_REPLACEMENTS,
-		};
+		const identifierToOuterClassVariable = new WeakMap<TSESTree.Identifier, TSESLint.Scope.Variable>();
+		const scopeToNamesGeneratedByFixer = new WeakMap<TSESLint.Scope.Scope, Set<string>>();
+
+		const isSafeGeneratedName: IsSafe = (name, scopes) =>
+			scopes.every((scope) => {
+				const generatedNames = scopeToNamesGeneratedByFixer.get(scope);
+				return !generatedNames?.has(name);
+			});
+
+		function checkVariable(variable: VariableLike): void {
+			if (variable.defs.length === 0) {
+				return;
+			}
+
+			const [definition] = variable.defs;
+			if (!definition) {
+				return;
+			}
+			const definitionName = definition.name;
+			if (!isIdentifier(definitionName)) {
+				return;
+			}
+
+			if (
+				isDefaultOrNamespaceImportName(definitionName) &&
+				!shouldCheckImport(options.checkDefaultAndNamespaceImports, definition)
+			) {
+				return;
+			}
+
+			if (
+				isShorthandImportLocal(definitionName) &&
+				!shouldCheckImport(options.checkShorthandImports, definition)
+			) {
+				return;
+			}
+
+			if (!options.checkShorthandProperties && isShorthandPropertyValue(definitionName)) {
+				return;
+			}
+
+			const avoidArgumentsReplacement =
+				definition.type === DefinitionType.Variable &&
+				definition.node &&
+				definition.node.type === AST_NODE_TYPES.VariableDeclarator &&
+				!definition.node.init;
+			const avoidArgumentsInArrowParam =
+				definition.type === DefinitionType.Parameter &&
+				variable.scope.type === ScopeType.function &&
+				variable.scope.block.type === AST_NODE_TYPES.ArrowFunctionExpression;
+			const shouldAvoidArguments = avoidArgumentsReplacement || avoidArgumentsInArrowParam;
+
+			const isSafeNameForVariable: IsSafe = (name, scopes) => {
+				if (!isSafeGeneratedName(name, scopes)) {
+					return false;
+				}
+				if (shouldAvoidArguments && name === "arguments") {
+					return false;
+				}
+				return true;
+			};
+
+			const variableReplacements = getNameReplacements(variable.name, options);
+			if (variableReplacements.total === 0 || !variableReplacements.samples) {
+				return;
+			}
+
+			const { references } = variable;
+			const scopes = [...references.map((reference) => reference.from), variable.scope];
+			let droppedDiscouraged = 0;
+			const safeSamples = variableReplacements.samples
+				.map((name) => {
+					const safeName = getAvailableVariableName(name, scopes, isSafeNameForVariable);
+					if (!safeName) {
+						return undefined;
+					}
+					if (safeName !== name && isDiscouragedReplacementName(name, options)) {
+						droppedDiscouraged += 1;
+						return undefined;
+					}
+					return safeName;
+				})
+				.filter((name): name is string => typeof name === "string" && name.length > 0);
+
+			const baseSamples = safeSamples.length > 0 ? safeSamples : variableReplacements.samples;
+			const hasCompleteSamples =
+				typeof variableReplacements.samples?.length === "number" &&
+				variableReplacements.samples.length === variableReplacements.total;
+			const effectiveTotal = hasCompleteSamples
+				? Math.max(0, variableReplacements.total - droppedDiscouraged)
+				: variableReplacements.total;
+			const messageSamples =
+				variable.name === "fn" && effectiveTotal > 1
+					? baseSamples.map((name) => (name === "function_" ? "function" : name))
+					: baseSamples;
+
+			const message = getMessage(
+				definitionName.name,
+				{ samples: messageSamples, total: effectiveTotal },
+				"variable",
+			);
+
+			let fix: TSESLint.ReportFixFunction | undefined;
+
+			if (
+				effectiveTotal === 1 &&
+				safeSamples.length === 1 &&
+				shouldFix(variable) &&
+				safeSamples[0] &&
+				!references.some((ref) => isVueTemplateReference(ref))
+			) {
+				const [replacement] = safeSamples;
+
+				for (const scope of scopes) {
+					if (!scopeToNamesGeneratedByFixer.has(scope)) {
+						scopeToNamesGeneratedByFixer.set(scope, new Set());
+					}
+					const generatedNames = scopeToNamesGeneratedByFixer.get(scope);
+					generatedNames?.add(replacement);
+				}
+
+				fix = (fixer: TSESLint.RuleFixer): ReadonlyArray<TSESLint.RuleFix> =>
+					renameVariable(variable, replacement, fixer);
+			}
+
+			if (fix) {
+				context.report({
+					...message,
+					fix,
+					node: definitionName,
+				});
+				return;
+			}
+
+			context.report({
+				...message,
+				node: definitionName,
+			});
+		}
+
+		function checkPossiblyWeirdClassVariable(variable: TSESLint.Scope.Variable): void {
+			if (!isClassVariable(variable)) {
+				checkVariable(variable);
+				return;
+			}
+
+			if (variable.scope.type === ScopeType.class) {
+				const [definition] = variable.defs;
+				if (!definition) {
+					checkVariable(variable);
+					return;
+				}
+				const definitionName = definition.name;
+				if (!isIdentifier(definitionName)) {
+					checkVariable(variable);
+					return;
+				}
+
+				const outerClassVariable = identifierToOuterClassVariable.get(definitionName);
+				if (!outerClassVariable) {
+					checkVariable(variable);
+					return;
+				}
+
+				const combinedVariable: VariableLike = {
+					defs: variable.defs,
+					identifiers: variable.identifiers,
+					name: variable.name,
+					references: [...variable.references, ...outerClassVariable.references],
+					scope: variable.scope,
+				};
+				checkVariable(combinedVariable);
+				return;
+			}
+
+			const [definition] = variable.defs;
+			if (!definition) {
+				return;
+			}
+			const definitionName = definition.name;
+			if (!isIdentifier(definitionName)) {
+				return;
+			}
+			identifierToOuterClassVariable.set(definitionName, variable);
+		}
+
+		function checkScope(scope: TSESLint.Scope.Scope): void {
+			for (const scopeItem of getScopes(scope)) {
+				for (const variable of scopeItem.variables) {
+					checkPossiblyWeirdClassVariable(variable);
+				}
+			}
+		}
 
 		return {
 			Identifier(node): void {
-				if (!(checkProperties || checkVariables)) return;
-
-				const { parent } = node;
-				if (parent === undefined) return;
-
-				const isPropertyCandidate =
-					checkProperties && isPropertyIdentifierNode(node) && shouldReportIdentifierAsProperty(node);
-				const isVariableDeclarator =
-					checkVariables &&
-					parent.type === AST_NODE_TYPES.VariableDeclarator &&
-					parent.id.type === AST_NODE_TYPES.Identifier &&
-					parent.id === node;
-				const isParameter = checkVariables && isFunctionParameterIdentifier(node);
-
-				if (!(isPropertyCandidate || isVariableDeclarator || isParameter)) return;
-
-				const identifierReplacements = getNameReplacements(node.name, options);
-				if (identifierReplacements.total === 0) return;
-
-				if (isPropertyCandidate) {
-					const message = getMessage(node.name, identifierReplacements, "property");
-					const reportOptions: {
-						fix?: (fixer: TSESLint.RuleFixer) => TSESLint.RuleFix;
-					} & typeof message & { node: TSESTree.Identifier } = {
-						...message,
-						node,
-					};
-
-					// Only provide fix if there's exactly one total replacement (not just enabled)
-					// If there are multiple total replacements, show suggestion without fix
-					if (identifierReplacements.total === 1 && identifierReplacements.samples[0]) {
-						// Check if the single replacement is enabled
-						const enabledReplacements = getWordReplacements(node.name, options, false);
-						if (enabledReplacements.length === 1 && enabledReplacements[0]) {
-							reportOptions.fix = (fixer: TSESLint.RuleFixer): TSESLint.RuleFix =>
-								fixer.replaceText(node, identifierReplacements.samples[0] ?? node.name);
-						}
-					}
-
-					context.report(reportOptions);
+				if (!options.checkProperties) {
 					return;
 				}
 
-				// VariableDeclarator: const err = ...
-				if (isVariableDeclarator) {
-					const message = getMessage(node.name, identifierReplacements, "variable");
-					const reportOptions: {
-						fix?: (fixer: TSESLint.RuleFixer) => TSESLint.RuleFix;
-					} & typeof message & { node: TSESTree.Identifier } = {
-						...message,
-						node,
-					};
-
-					// Only provide fix if there's exactly one total replacement
-					// For multi-word names (like myErr), check if any word has an enabled replacement
-					if (identifierReplacements.total === 1 && identifierReplacements.samples[0]) {
-						// For single-word names, check if the replacement is enabled
-						// For multi-word names, if total is 1, provide the fix (words are already checked)
-						const words = node.name.split(CAMEL_CASE_SPLIT_PATTERN).filter(Boolean);
-						if (words.length === 1) {
-							const enabledReplacements = getWordReplacements(node.name, options, false);
-							if (enabledReplacements.length === 1 && enabledReplacements[0]) {
-								reportOptions.fix = (fixer: TSESLint.RuleFixer): TSESLint.RuleFix =>
-									fixer.replaceText(node, identifierReplacements.samples[0] ?? node.name);
-							}
-						} else {
-							// Multi-word name: check if at least one word has an enabled replacement
-							const hasEnabledReplacement = words.some((word) => {
-								const enabled = getWordReplacements(word, options, false);
-								return enabled.length > 0;
-							});
-							if (hasEnabledReplacement) {
-								reportOptions.fix = (fixer: TSESLint.RuleFixer): TSESLint.RuleFix =>
-									fixer.replaceText(node, identifierReplacements.samples[0] ?? node.name);
-							}
-						}
-					}
-
-					context.report(reportOptions);
+				if (node.name === "__proto__") {
 					return;
 				}
 
-				// Function parameter: function foo(err) { ... }
-				// Parameters can be identifiers directly or in patterns
-				if (isParameter) {
-					const message = getMessage(node.name, identifierReplacements, "variable");
-					const reportOptions: {
-						fix?: (fixer: TSESLint.RuleFixer) => TSESLint.RuleFix | ReadonlyArray<TSESLint.RuleFix>;
-					} & typeof message & { node: TSESTree.Identifier } = {
-						...message,
-						node,
-					};
-
-					// Only provide fix if there's exactly one total replacement
-					// For multi-word names (like myErr), check if any word has an enabled replacement
-					if (identifierReplacements.total === 1 && identifierReplacements.samples[0]) {
-						// For single-word names, check if the replacement is enabled
-						// For multi-word names, if total is 1, provide the fix (words are already checked)
-						const words = node.name.split(CAMEL_CASE_SPLIT_PATTERN).filter(Boolean);
-						let shouldFix = false;
-						if (words.length === 1) {
-							const enabledReplacements = getWordReplacements(node.name, options, false);
-							shouldFix = enabledReplacements.length === 1 && enabledReplacements[0] !== undefined;
-						} else {
-							// Multi-word name: check if at least one word has an enabled replacement
-							shouldFix = words.some((word) => {
-								const enabled = getWordReplacements(word, options, false);
-								return enabled.length > 0;
-							});
-						}
-
-						if (shouldFix) {
-							reportOptions.fix = (
-								fixer: TSESLint.RuleFixer,
-							): TSESLint.RuleFix | ReadonlyArray<TSESLint.RuleFix> => {
-								// Replace all occurrences of this parameter in the function body
-								const { sourceCode } = context;
-								if (
-									parent.type !== AST_NODE_TYPES.FunctionDeclaration &&
-									parent.type !== AST_NODE_TYPES.FunctionExpression &&
-									parent.type !== AST_NODE_TYPES.ArrowFunctionExpression
-								) {
-									return fixer.replaceText(node, identifierReplacements.samples[0] ?? node.name);
-								}
-
-								const functionBody = parent.body;
-								if (functionBody === undefined) {
-									return fixer.replaceText(node, identifierReplacements.samples[0] ?? node.name);
-								}
-
-								const fixes: Array<TSESLint.RuleFix> = [
-									fixer.replaceText(node, identifierReplacements.samples[0] ?? node.name),
-								];
-
-								// Find all references to this parameter in the function body
-								const scope = sourceCode.getScope(functionBody);
-								const variable = scope.variables.find((variableItem) => variableItem.name === node.name);
-								if (variable !== undefined) {
-									for (const reference of variable.references) {
-										if (
-											reference.identifier !== node &&
-											reference.identifier.type === AST_NODE_TYPES.Identifier
-										) {
-											fixes.push(
-												fixer.replaceText(
-													reference.identifier,
-													identifierReplacements.samples[0] ?? node.name,
-												),
-											);
-										}
-									}
-								}
-
-								return fixes;
-							};
-						}
-					}
-
-					context.report(reportOptions);
+				const replacements = getNameReplacements(node.name, options);
+				if (replacements.total === 0) {
+					return;
 				}
+
+				if (!shouldReportIdentifierAsProperty(node)) {
+					return;
+				}
+
+				const message = getMessage(node.name, replacements, "property");
+				let fix: TSESLint.ReportFixFunction | undefined;
+
+				if (replacements.total === 1 && replacements.samples && isObjectPropertyKey(node)) {
+					const [replacement] = replacements.samples;
+					const property = node.parent;
+					if (
+						replacement &&
+						property &&
+						property.type === AST_NODE_TYPES.Property &&
+						isStringLiteral(property.value) &&
+						isValidIdentifier(replacement)
+					) {
+						fix = (fixer: TSESLint.RuleFixer): TSESLint.RuleFix => fixer.replaceText(node, replacement);
+					}
+				}
+
+				context.report({
+					...message,
+					...(fix ? { fix } : {}),
+					node,
+				});
 			},
+			JSXOpeningElement(node): void {
+				if (!options.checkVariables) {
+					return;
+				}
 
-			"Program:exit"(): void {
-				// Variables are now checked in Identifier visitor above
-				// This exit handler is kept for any edge cases but primarily
-				// Variable checking happens in the Identifier visitor
+				if (node.name.type !== AST_NODE_TYPES.JSXIdentifier) {
+					return;
+				}
+
+				if (!isUpperFirst(node.name.name)) {
+					return;
+				}
+
+				const replacements = getNameReplacements(node.name.name, options);
+				if (replacements.total === 0) {
+					return;
+				}
+
+				const message = getMessage(node.name.name, replacements, "variable");
+				context.report({
+					...message,
+					node: node.name,
+				});
+			},
+			Program(node): void {
+				if (options.checkVariables && node.body.length === 0 && context.sourceCode.getText().length === 0) {
+					context.report({
+						data: {
+							discouragedName: "empty",
+							nameTypeText: "variable",
+							replacementsText: "`empty`",
+						},
+						messageId: MESSAGE_ID_SUGGESTION,
+						node,
+					});
+					return;
+				}
+
+				if (!options.checkFilenames) {
+					return;
+				}
+
+				if (filenameWithExtension === "<input>" || filenameWithExtension === "<text>") {
+					return;
+				}
+
+				const filename = path.basename(filenameWithExtension);
+				const extension = path.extname(filename);
+				const filenameReplacements = getNameReplacements(path.basename(filename, extension), options);
+				if (filenameReplacements.total === 0 || !filenameReplacements.samples) {
+					return;
+				}
+
+				const samples = filenameReplacements.samples.map((replacement) => `${replacement}${extension}`);
+				context.report({
+					...getMessage(filename, { samples, total: filenameReplacements.total }, "filename"),
+					node,
+				});
+			},
+			"Program:exit"(program): void {
+				if (!options.checkVariables) {
+					return;
+				}
+
+				checkScope(context.sourceCode.getScope(program));
 			},
 		};
 	},
 	defaultOptions: [{}],
 	meta: {
+		defaultOptions: [{}],
 		docs: {
-			description: "Prevent abbreviations",
+			description: "Prevent abbreviations.",
 		},
 		fixable: "code",
-		messages: {
-			replace:
-				"The {{nameTypeText}} `{{discouragedName}}` should be named `{{replacement}}`. A more descriptive name will do too.",
-			suggestion:
-				"Please rename the {{nameTypeText}} `{{discouragedName}}`. Suggested names are: {{replacementsText}}. A more descriptive name will do too.",
-		},
-		schema: [
-			{
-				additionalProperties: false,
-				properties: {
-					allowList: {
-						type: "object",
-					},
-					checkFilenames: {
-						default: true,
-						type: "boolean",
-					},
-					checkProperties: {
-						default: false,
-						type: "boolean",
-					},
-					checkVariables: {
-						default: true,
-						type: "boolean",
-					},
-					ignore: {
-						items: {
-							oneOf: [{ type: "string" }, { type: "object" }],
-						},
-						type: "array",
-					},
-					replacements: {
-						type: "object",
-					},
-				},
-				type: "object",
-			},
-		],
+		messages,
+		schema,
 		type: "suggestion",
 	},
 	name: "prevent-abbreviations",

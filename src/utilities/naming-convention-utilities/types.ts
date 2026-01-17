@@ -1,6 +1,6 @@
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
-import type { MessageIds, Options } from "../naming-convention";
+import type { MessageIds, Options } from "../../rules/naming-convention";
 import type {
 	IndividualAndMetaSelectorsString,
 	ModifiersString,

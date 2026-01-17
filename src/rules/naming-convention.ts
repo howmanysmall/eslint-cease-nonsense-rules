@@ -3,8 +3,8 @@ import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { isIdentifierPart, isIdentifierStart, ScriptTarget } from "typescript";
 import { createRule } from "../utilities/create-rule";
-import type { Context, Selector, ValidatorFunction } from "./naming-convention-utils";
-import { Modifiers, parseOptions, SCHEMA } from "./naming-convention-utils";
+import type { Context, Selector, ValidatorFunction } from "../utilities/naming-convention-utilities";
+import { Modifiers, parseOptions, SCHEMA } from "../utilities/naming-convention-utilities";
 
 export type MessageIds =
 	| "doesNotMatchFormat"
@@ -64,9 +64,8 @@ function isAsyncVariableIdentifier(identifier: TSESTree.Identifier): boolean {
 }
 
 function isGlobal(scope: TSESLint.Scope.Scope | undefined): boolean {
-	if (!scope) {
-		return false;
-	}
+	if (!scope) return false;
+
 	return scope.type === ScopeType.global || scope.type === ScopeType.module;
 }
 
@@ -89,6 +88,35 @@ export default createRule<Options, MessageIds>({
 		const validators = parseOptions(context);
 		const parserServices = ESLintUtils.getParserServices(context, true);
 		const compilerOptions = parserServices.program?.getCompilerOptions() ?? {};
+		const unusedCache = new WeakMap<TSESLint.Scope.Scope, Map<string, boolean>>();
+		const exportedCache = new WeakMap<TSESTree.Node, Map<string, boolean>>();
+		const globalCache = new WeakMap<TSESLint.Scope.Scope, boolean>();
+
+		function isUnusedCached(name: string, initialScope: TSESLint.Scope.Scope | undefined): boolean {
+			if (!initialScope) return false;
+
+			const existingCache = unusedCache.get(initialScope);
+			const cachedValue = existingCache?.get(name);
+			if (cachedValue !== undefined) return cachedValue;
+
+			const value = isUnused(name, initialScope);
+			const scopeCache = existingCache ?? new Map<string, boolean>();
+			if (!existingCache) unusedCache.set(initialScope, scopeCache);
+
+			scopeCache.set(name, value);
+			return value;
+		}
+
+		function isGlobalCached(scope: TSESLint.Scope.Scope | undefined): boolean {
+			if (!scope) return false;
+
+			const cachedValue = globalCache.get(scope);
+			if (cachedValue !== undefined) return cachedValue;
+
+			const value = isGlobal(scope);
+			globalCache.set(scope, value);
+			return value;
+		}
 
 		function handleMember(
 			validator: ValidatorFunction,
@@ -97,15 +125,15 @@ export default createRule<Options, MessageIds>({
 				| TSESTree.MethodDefinition
 				| TSESTree.PropertyDefinition
 				| TSESTree.Property
+				| TSESTree.TSAbstractAccessorProperty
 				| TSESTree.TSAbstractMethodDefinition
 				| TSESTree.TSAbstractPropertyDefinition
 				| TSESTree.TSMethodSignature
 				| TSESTree.TSPropertySignature,
 			modifiers: Set<Modifiers>,
 		): void {
-			if (node.computed) {
-				return;
-			}
+			if (node.computed) return;
+
 			const { key } = node;
 			if (
 				key.type !== AST_NODE_TYPES.Identifier &&
@@ -136,9 +164,7 @@ export default createRule<Options, MessageIds>({
 			else modifiers.add(Modifiers.public);
 
 			if (node.static) modifiers.add(Modifiers.static);
-
 			if ("readonly" in node && node.readonly) modifiers.add(Modifiers.readonly);
-
 			if ("override" in node && node.override) modifiers.add(Modifiers.override);
 
 			if (
@@ -173,9 +199,7 @@ export default createRule<Options, MessageIds>({
 				return true;
 			}
 
-			if (!scope) {
-				return false;
-			}
+			if (!scope) return false;
 
 			const variable = scope.set.get(name);
 			if (variable) {
@@ -193,6 +217,24 @@ export default createRule<Options, MessageIds>({
 			return false;
 		}
 
+		function isExportedCached(
+			node: TSESTree.Node | undefined,
+			name: string,
+			scope: TSESLint.Scope.Scope | undefined,
+		): boolean {
+			if (!node) return false;
+
+			const nodeCache = exportedCache.get(node);
+			const cachedValue = nodeCache?.get(name);
+			if (cachedValue !== undefined) return cachedValue;
+
+			const value = isExported(node, name, scope);
+			const nextCache = nodeCache ?? new Map<string, boolean>();
+			if (!nodeCache) exportedCache.set(node, nextCache);
+			nextCache.set(name, value);
+			return value;
+		}
+
 		type SelectorHandler = {
 			bivarianceHack(node: TSESTree.Node, validator: ValidatorFunction): void;
 		}["bivarianceHack"];
@@ -204,62 +246,6 @@ export default createRule<Options, MessageIds>({
 				validator: ValidatorFunction | undefined;
 			}
 		> = {
-			":matches(PropertyDefinition, TSAbstractPropertyDefinition)[computed = false][value.type != 'ArrowFunctionExpression'][value.type != 'FunctionExpression'][value.type != 'TSEmptyBodyFunctionExpression']":
-				{
-					handler: (node: TSESTree.Node, validator): void => {
-						if (
-							node.type !== AST_NODE_TYPES.PropertyDefinition &&
-							node.type !== AST_NODE_TYPES.TSAbstractPropertyDefinition
-						) {
-							return;
-						}
-						if (node.computed) {
-							return;
-						}
-						const modifiers = getMemberModifiers(node);
-						handleMember(validator, node, modifiers);
-					},
-					validator: validators.classProperty,
-				},
-			"Property[computed = false][kind = 'init'][method = true], Property[computed = false][kind = 'init'][value.type = 'FunctionExpression'], Property[computed = false][kind = 'init'][value.type = 'ArrowFunctionExpression']":
-				{
-					handler: (node: TSESTree.Node, validator): void => {
-						if (node.type !== AST_NODE_TYPES.Property) {
-							return;
-						}
-						if (node.computed) {
-							return;
-						}
-						const modifiers = new Set<Modifiers>([Modifiers.public]);
-						handleMember(validator, node, modifiers);
-					},
-					validator: validators.objectLiteralMethod,
-				},
-			"Property[computed = false][kind = 'init'][method = false][value.type != 'FunctionExpression'][value.type != 'ArrowFunctionExpression']":
-				{
-					handler: (node: TSESTree.Node, validator): void => {
-						if (node.type !== AST_NODE_TYPES.Property) {
-							return;
-						}
-						if (node.computed) {
-							return;
-						}
-						const modifiers = new Set<Modifiers>([Modifiers.public]);
-						handleMember(validator, node, modifiers);
-					},
-					validator: validators.objectLiteralProperty,
-				},
-			"MethodDefinition[computed = false][kind = 'method'], TSAbstractMethodDefinition[computed = false][kind = 'method']":
-				{
-					handler: (
-						node: TSESTree.MethodDefinitionNonComputedName | TSESTree.TSAbstractMethodDefinition,
-						validator,
-					): void => {
-						const modifiers = getMemberModifiers(node);
-						handleMember(validator, node, modifiers);
-					},
-					validator: validators.classMethod,
-				},
 			":matches(PropertyDefinition, TSAbstractPropertyDefinition)[computed = false]:matches([value.type = 'ArrowFunctionExpression'], [value.type = 'FunctionExpression'], [value.type = 'TSEmptyBodyFunctionExpression'])":
 				{
 					handler: (node: TSESTree.Node, validator): void => {
@@ -269,13 +255,28 @@ export default createRule<Options, MessageIds>({
 						) {
 							return;
 						}
-						if (node.computed) {
-							return;
-						}
+						if (node.computed) return;
+
 						const modifiers = getMemberModifiers(node);
 						handleMember(validator, node, modifiers);
 					},
 					validator: validators.classMethod,
+				},
+			":matches(PropertyDefinition, TSAbstractPropertyDefinition)[computed = false][value.type != 'ArrowFunctionExpression'][value.type != 'FunctionExpression'][value.type != 'TSEmptyBodyFunctionExpression']":
+				{
+					handler: (node: TSESTree.Node, validator): void => {
+						if (
+							node.type !== AST_NODE_TYPES.PropertyDefinition &&
+							node.type !== AST_NODE_TYPES.TSAbstractPropertyDefinition
+						) {
+							return;
+						}
+						if (node.computed) return;
+
+						const modifiers = getMemberModifiers(node);
+						handleMember(validator, node, modifiers);
+					},
+					validator: validators.classProperty,
 				},
 			"AccessorProperty[computed = false], TSAbstractAccessorProperty[computed = false]": {
 				handler: (node: TSESTree.Node, validator): void => {
@@ -294,24 +295,14 @@ export default createRule<Options, MessageIds>({
 			"ClassDeclaration, ClassExpression": {
 				handler: (node: TSESTree.ClassDeclaration | TSESTree.ClassExpression, validator): void => {
 					const classId = node.id;
-					if (!classId) {
-						return;
-					}
+					if (!classId) return;
 
 					const modifiers = new Set<Modifiers>();
 					const scope = context.sourceCode.getScope(node).upper ?? undefined;
 
-					if (node.abstract) {
-						modifiers.add(Modifiers.abstract);
-					}
-
-					if (isExported(node, classId.name, scope)) {
-						modifiers.add(Modifiers.exported);
-					}
-
-					if (isUnused(classId.name, scope)) {
-						modifiers.add(Modifiers.unused);
-					}
+					if (node.abstract) modifiers.add(Modifiers.abstract);
+					if (isExportedCached(node, classId.name, scope)) modifiers.add(Modifiers.exported);
+					if (isUnusedCached(classId.name, scope)) modifiers.add(Modifiers.unused);
 
 					validator(classId, modifiers);
 				},
@@ -326,28 +317,15 @@ export default createRule<Options, MessageIds>({
 					) {
 						return;
 					}
-					if (!node.id) {
-						return;
-					}
+					if (!node.id) return;
 
 					const modifiers = new Set<Modifiers>();
 					const scope = context.sourceCode.getScope(node).upper ?? undefined;
 
-					if (isGlobal(scope)) {
-						modifiers.add(Modifiers.global);
-					}
-
-					if (isExported(node, node.id.name, scope)) {
-						modifiers.add(Modifiers.exported);
-					}
-
-					if (isUnused(node.id.name, scope)) {
-						modifiers.add(Modifiers.unused);
-					}
-
-					if (node.async) {
-						modifiers.add(Modifiers.async);
-					}
+					if (isGlobalCached(scope)) modifiers.add(Modifiers.global);
+					if (isExportedCached(node, node.id.name, scope)) modifiers.add(Modifiers.exported);
+					if (isUnusedCached(node.id.name, scope)) modifiers.add(Modifiers.unused);
+					if (node.async) modifiers.add(Modifiers.async);
 
 					validator(node.id, modifiers);
 				},
@@ -365,20 +343,15 @@ export default createRule<Options, MessageIds>({
 						validator,
 					): void => {
 						for (const param of node.params) {
-							if (param.type === AST_NODE_TYPES.TSParameterProperty) {
-								continue;
-							}
+							if (param.type === AST_NODE_TYPES.TSParameterProperty) continue;
 
 							const identifiers = getIdentifiersFromPattern(param);
 
 							for (const identifier of identifiers) {
 								const modifiers = new Set<Modifiers>();
 
-								if (isDestructured(identifier)) {
-									modifiers.add(Modifiers.destructured);
-								}
-
-								if (isUnused(identifier.name, context.sourceCode.getScope(identifier))) {
+								if (isDestructured(identifier)) modifiers.add(Modifiers.destructured);
+								if (isUnusedCached(identifier.name, context.sourceCode.getScope(identifier))) {
 									modifiers.add(Modifiers.unused);
 								}
 
@@ -426,6 +399,17 @@ export default createRule<Options, MessageIds>({
 					},
 					validator: validators.classicAccessor,
 				},
+			"MethodDefinition[computed = false][kind = 'method'], TSAbstractMethodDefinition[computed = false][kind = 'method']":
+				{
+					handler: (
+						node: TSESTree.MethodDefinitionNonComputedName | TSESTree.TSAbstractMethodDefinition,
+						validator,
+					): void => {
+						const modifiers = getMemberModifiers(node);
+						handleMember(validator, node, modifiers);
+					},
+					validator: validators.classMethod,
+				},
 			"Property[computed = false]:matches([kind = 'get'], [kind = 'set'])": {
 				handler: (node: TSESTree.PropertyNonComputedName, validator): void => {
 					const modifiers = new Set<Modifiers>([Modifiers.public]);
@@ -433,18 +417,34 @@ export default createRule<Options, MessageIds>({
 				},
 				validator: validators.classicAccessor,
 			},
+			"Property[computed = false][kind = 'init'][method = false][value.type != 'FunctionExpression'][value.type != 'ArrowFunctionExpression']":
+				{
+					handler: (node: TSESTree.Node, validator): void => {
+						if (node.type !== AST_NODE_TYPES.Property) return;
+						if (node.computed) return;
+
+						const modifiers = new Set<Modifiers>([Modifiers.public]);
+						handleMember(validator, node, modifiers);
+					},
+					validator: validators.objectLiteralProperty,
+				},
+			"Property[computed = false][kind = 'init'][method = true], Property[computed = false][kind = 'init'][value.type = 'FunctionExpression'], Property[computed = false][kind = 'init'][value.type = 'ArrowFunctionExpression']":
+				{
+					handler: (node: TSESTree.Node, validator): void => {
+						if (node.type !== AST_NODE_TYPES.Property) return;
+						if (node.computed) return;
+						const modifiers = new Set<Modifiers>([Modifiers.public]);
+						handleMember(validator, node, modifiers);
+					},
+					validator: validators.objectLiteralMethod,
+				},
 			TSEnumDeclaration: {
 				handler: (node: TSESTree.TSEnumDeclaration, validator): void => {
 					const modifiers = new Set<Modifiers>();
 					const scope = context.sourceCode.getScope(node).upper ?? undefined;
 
-					if (isExported(node, node.id.name, scope)) {
-						modifiers.add(Modifiers.exported);
-					}
-
-					if (isUnused(node.id.name, scope)) {
-						modifiers.add(Modifiers.unused);
-					}
+					if (isExportedCached(node, node.id.name, scope)) modifiers.add(Modifiers.exported);
+					if (isUnusedCached(node.id.name, scope)) modifiers.add(Modifiers.unused);
 
 					validator(node.id, modifiers);
 				},
@@ -453,9 +453,7 @@ export default createRule<Options, MessageIds>({
 			TSEnumMember: {
 				handler: (node: TSESTree.TSEnumMember, validator): void => {
 					const memberId = node.id;
-					if (requiresQuoting(memberId, compilerOptions.target)) {
-						return;
-					}
+					if (requiresQuoting(memberId, compilerOptions.target)) return;
 
 					const modifiers = new Set<Modifiers>();
 					validator(memberId, modifiers);
@@ -467,13 +465,8 @@ export default createRule<Options, MessageIds>({
 					const modifiers = new Set<Modifiers>();
 					const scope = context.sourceCode.getScope(node);
 
-					if (isExported(node, node.id.name, scope)) {
-						modifiers.add(Modifiers.exported);
-					}
-
-					if (isUnused(node.id.name, scope)) {
-						modifiers.add(Modifiers.unused);
-					}
+					if (isExportedCached(node, node.id.name, scope)) modifiers.add(Modifiers.exported);
+					if (isUnusedCached(node.id.name, scope)) modifiers.add(Modifiers.unused);
 
 					validator(node.id, modifiers);
 				},
@@ -495,9 +488,7 @@ export default createRule<Options, MessageIds>({
 					const modifiers = getMemberModifiers(node);
 					const identifiers = getIdentifiersFromPattern(node.parameter);
 
-					for (const identifier of identifiers) {
-						validator(identifier, modifiers);
-					}
+					for (const identifier of identifiers) validator(identifier, modifiers);
 				},
 				validator: validators.parameterProperty,
 			},
@@ -516,13 +507,8 @@ export default createRule<Options, MessageIds>({
 					const modifiers = new Set<Modifiers>();
 					const scope = context.sourceCode.getScope(node);
 
-					if (isExported(node, node.id.name, scope)) {
-						modifiers.add(Modifiers.exported);
-					}
-
-					if (isUnused(node.id.name, scope)) {
-						modifiers.add(Modifiers.unused);
-					}
+					if (isExportedCached(node, node.id.name, scope)) modifiers.add(Modifiers.exported);
+					if (isUnusedCached(node.id.name, scope)) modifiers.add(Modifiers.unused);
 
 					validator(node.id, modifiers);
 				},
@@ -533,9 +519,7 @@ export default createRule<Options, MessageIds>({
 					const modifiers = new Set<Modifiers>();
 					const scope = context.sourceCode.getScope(node);
 
-					if (isUnused(node.name.name, scope)) {
-						modifiers.add(Modifiers.unused);
-					}
+					if (isUnusedCached(node.name.name, scope)) modifiers.add(Modifiers.unused);
 
 					validator(node.name, modifiers);
 				},
@@ -543,9 +527,7 @@ export default createRule<Options, MessageIds>({
 			},
 			VariableDeclarator: {
 				handler: (node: TSESTree.Node, validator): void => {
-					if (node.type !== AST_NODE_TYPES.VariableDeclarator) {
-						return;
-					}
+					if (node.type !== AST_NODE_TYPES.VariableDeclarator) return;
 					const identifiers = getIdentifiersFromPattern(node.id);
 
 					const baseModifiers = new Set<Modifiers>();
@@ -554,29 +536,17 @@ export default createRule<Options, MessageIds>({
 						baseModifiers.add(Modifiers.const);
 					}
 
-					if (isGlobal(context.sourceCode.getScope(node))) {
-						baseModifiers.add(Modifiers.global);
-					}
+					if (isGlobalCached(context.sourceCode.getScope(node))) baseModifiers.add(Modifiers.global);
 
 					for (const identifier of identifiers) {
 						const modifiers = new Set(baseModifiers);
 
-						if (isDestructured(identifier)) {
-							modifiers.add(Modifiers.destructured);
-						}
+						if (isDestructured(identifier)) modifiers.add(Modifiers.destructured);
 
 						const scope = context.sourceCode.getScope(identifier);
-						if (isExported(parent, identifier.name, scope)) {
-							modifiers.add(Modifiers.exported);
-						}
-
-						if (isUnused(identifier.name, scope)) {
-							modifiers.add(Modifiers.unused);
-						}
-
-						if (isAsyncVariableIdentifier(identifier)) {
-							modifiers.add(Modifiers.async);
-						}
+						if (isExportedCached(parent, identifier.name, scope)) modifiers.add(Modifiers.exported);
+						if (isUnusedCached(identifier.name, scope)) modifiers.add(Modifiers.unused);
+						if (isAsyncVariableIdentifier(identifier)) modifiers.add(Modifiers.async);
 
 						validator(identifier, modifiers);
 					}
@@ -625,20 +595,16 @@ function getIdentifiersFromPattern(pattern: TSESTree.DestructuringPattern): Arra
 }
 
 function isValidIdentifierText(name: string, languageVersion: ScriptTarget): boolean {
-	if (name.length === 0) {
-		return false;
-	}
+	if (name.length === 0) return false;
+
 	let index = 0;
 	const firstCodePoint = name.codePointAt(index);
-	if (firstCodePoint === undefined || !isIdentifierStart(firstCodePoint, languageVersion)) {
-		return false;
-	}
+	if (firstCodePoint === undefined || !isIdentifierStart(firstCodePoint, languageVersion)) return false;
+
 	index += firstCodePoint > 0xff_ff ? 2 : 1;
 	while (index < name.length) {
 		const codePoint = name.codePointAt(index);
-		if (codePoint === undefined || !isIdentifierPart(codePoint, languageVersion)) {
-			return false;
-		}
+		if (codePoint === undefined || !isIdentifierPart(codePoint, languageVersion)) return false;
 		index += codePoint > 0xff_ff ? 2 : 1;
 	}
 	return true;

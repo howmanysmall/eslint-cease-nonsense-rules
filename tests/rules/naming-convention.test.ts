@@ -17,7 +17,7 @@ const ruleTesterWithTypes = new RuleTester({
 		parser,
 		parserOptions: {
 			projectService: {
-				allowDefaultProject: ["*.ts"],
+				allowDefaultProject: ["*.ts", "*.tsx"],
 			},
 			tsconfigRootDir: __dirname,
 		},

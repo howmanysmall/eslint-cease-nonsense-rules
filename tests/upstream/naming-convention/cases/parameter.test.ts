@@ -1,21 +1,21 @@
-import { createTestCases } from './createTestCases';
+import type { Cases } from "./create-test-cases";
 
-createTestCases([
-  {
-    code: [
-      'function ignored(%) {}',
-      '(function (%) {});',
-      'declare function ignored(%);',
-      'function ignored({%}) {}',
-      'function ignored(...%) {}',
-      'function ignored({% = 1}) {}',
-      'function ignored({...%}) {}',
-      'function ignored([%]) {}',
-      'function ignored([% = 1]) {}',
-      'function ignored([...%]) {}',
-    ],
-    options: {
-      selector: 'parameter',
-    },
-  },
-]);
+export const parameterCases: Cases = [
+	{
+		code: [
+			"function ignored(%) {}",
+			"(function (%) {});",
+			"declare function ignored(%);",
+			"function ignored({%}) {}",
+			"function ignored(...%) {}",
+			"function ignored({% = 1}) {}",
+			"function ignored({...%}) {}",
+			"function ignored([%]) {}",
+			"function ignored([% = 1]) {}",
+			"function ignored([...%]) {}",
+		],
+		options: {
+			selector: "parameter",
+		},
+	},
+];

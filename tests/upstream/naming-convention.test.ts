@@ -1,5 +1,5 @@
 import parser from "@typescript-eslint/parser";
-import { RuleTester } from "eslint";
+import { RuleTester } from "@typescript-eslint/rule-tester";
 
 import rule from "../../src/rules/naming-convention";
 import { invalid, valid } from "./naming-convention/cases";
@@ -10,7 +10,7 @@ const ruleTester = new RuleTester({
 		parser,
 		parserOptions: {
 			projectService: {
-				allowDefaultProject: ["*.ts"],
+				allowDefaultProject: ["*.ts", "*.tsx"],
 			},
 			tsconfigRootDir: __dirname,
 		},

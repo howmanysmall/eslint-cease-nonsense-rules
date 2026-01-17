@@ -18,6 +18,13 @@ const JSDOC_PATTERN = new RegExp(
 	"u",
 );
 
+const JSDOC_IDENTIFIER_PATTERN = new RegExp(
+	`(?:@(?:link|linkcode|linkplain|see)\\s+\\{?(\\w+)\\b\\}?)|` +
+		`(?:\\{@(?:link|linkcode|linkplain|see)\\s+(\\w+)\\b\\})|` +
+		`(?:[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\\s+[^}]*\\b(\\w+)\\b)`,
+	"gu",
+);
+
 type AnyImportSpecifier =
 	| TSESTree.ImportDefaultSpecifier
 	| TSESTree.ImportNamespaceSpecifier
@@ -36,43 +43,33 @@ function getImportIdentifierName(specifier: AnyImportSpecifier): string | undefi
 	return specifier.local.name;
 }
 
-function isUsedInJSDocCached(
-	identifierName: string,
-	sourceCode: TSESLint.SourceCode,
-	cache: Map<string, boolean>,
-): boolean {
-	const cached = cache.get(identifierName);
-	if (cached !== undefined) return cached;
-
+function collectJSDocIdentifiers(sourceCode: TSESLint.SourceCode): Set<string> {
+	const identifiers = new Set<string>();
 	const comments = sourceCode.getAllComments();
-	let found = false;
 
 	for (const comment of comments) {
 		if (comment.type !== AST_TOKEN_TYPES.Block) continue;
 
-		if (JSDOC_PATTERN.test(comment.value)) {
-			const identifierPattern = new RegExp(
-				`(?:@(?:link|linkcode|linkplain|see)\\s+\\{?${identifierName}\\b\\}?)|` +
-					`(?:\\{@(?:link|linkcode|linkplain|see)\\s+${identifierName}\\b\\})|` +
-					`(?:[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\\s+[^}]*\\b${identifierName}\\b)`,
-				"u",
-			);
-			if (identifierPattern.test(comment.value)) {
-				found = true;
-				break;
+		const { value } = comment;
+		if (!JSDOC_PATTERN.test(value)) continue;
+
+		JSDOC_IDENTIFIER_PATTERN.lastIndex = 0;
+		for (const match of value.matchAll(JSDOC_IDENTIFIER_PATTERN)) {
+			const identifier = match[1] ?? match[2] ?? match[3];
+			if (identifier) {
+				identifiers.add(identifier);
 			}
 		}
 	}
 
-	cache.set(identifierName, found);
-	return found;
+	return identifiers;
 }
 
 export default createRule<Options, MessageIds>({
 	create(context) {
 		const [{ checkJSDoc = true } = {}] = context.options;
 		const { sourceCode } = context;
-		const jsdocCache = new Map<string, boolean>();
+		const jsdocIdentifiers = checkJSDoc ? collectJSDocIdentifiers(sourceCode) : new Set<string>();
 
 		const imports = new Array<{
 			identifierName: string;
@@ -150,7 +147,7 @@ export default createRule<Options, MessageIds>({
 					const variable = moduleScope.set.get(identifierName);
 					if (variable && variable.references.length > 0) continue;
 
-					if (checkJSDoc && isUsedInJSDocCached(identifierName, sourceCode, jsdocCache)) continue;
+					if (checkJSDoc && jsdocIdentifiers.has(identifierName)) continue;
 
 					context.report({
 						data: { identifierName },

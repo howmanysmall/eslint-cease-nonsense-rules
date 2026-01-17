@@ -1,6 +1,6 @@
 import type { Cases } from "./create-test-cases";
 
-export const accessorCases: Cases = [
+export const autoAccessorCases: Cases = [
 	{
 		code: [
 			"class Ignored { accessor % = 10; }",
@@ -14,15 +14,9 @@ export const accessorCases: Cases = [
 			"class Ignored { protected accessor % = 10; }",
 			"class Ignored { public accessor % = 10; }",
 			"class Ignored { abstract accessor %; }",
-			"const ignored = { get %() {} };",
-			'const ignored = { set "%"(ignored) {} };',
-			"class Ignored { private get %() {} }",
-			'class Ignored { private set "%"(ignored) {} }',
-			"class Ignored { private static get %() {} }",
-			"class Ignored { static get #%() {} }",
 		],
 		options: {
-			selector: "accessor",
+			selector: "autoAccessor",
 		},
 	},
 ];

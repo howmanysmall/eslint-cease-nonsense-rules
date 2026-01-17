@@ -1,10 +1,10 @@
-import { createTestCases } from './createTestCases';
+import type { Cases } from "./create-test-cases";
 
-createTestCases([
-  {
-    code: ['enum % {}'],
-    options: {
-      selector: 'enum',
-    },
-  },
-]);
+export const enumCases: Cases = [
+	{
+		code: ["enum % {}"],
+		options: {
+			selector: "enum",
+		},
+	},
+];
