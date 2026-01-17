@@ -1,0 +1,10 @@
+{
+	"compilerOptions": {
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"strict": true,
+		"target": "ESNext",
+		"types": ["@rbxts/types"]
+	},
+	"include": ["*.ts", "*.tsx", "types.d.ts"]
+}

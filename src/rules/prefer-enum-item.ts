@@ -111,6 +111,7 @@ export default createRule<Options, MessageIds>({
 		const enumPathCache = new WeakMap<Type, string | false>();
 		const enumItemInfoCache = new WeakMap<Type, EnumItemInfo | false>();
 		const enumLookupCache = new WeakMap<Type, EnumLookup | false>();
+		const contextualTypeCache = new WeakMap<TSESTree.Node, Type | false>();
 
 		function getUnionTypesCached(type: Type): ReadonlyArray<Type> {
 			const cached = unionTypesCache.get(type);
@@ -234,8 +235,18 @@ export default createRule<Options, MessageIds>({
 		}
 
 		function getContextualType(node: TSESTree.Node): Type | undefined {
+			const cached = contextualTypeCache.get(node);
+			if (cached !== undefined) return cached === false ? undefined : cached;
+
 			const tsNode = services.esTreeNodeToTSNodeMap.get(node);
-			return checker.getContextualType(tsNode as Expression);
+			if (tsNode === undefined) {
+				contextualTypeCache.set(node, false);
+				return undefined;
+			}
+
+			const type = checker.getContextualType(tsNode as Expression);
+			contextualTypeCache.set(node, type ?? false);
+			return type;
 		}
 
 		function shouldSkipLiteral(node: TSESTree.Literal, value: string | number): boolean {
@@ -284,10 +295,10 @@ export default createRule<Options, MessageIds>({
 
 				if (!canHaveContextualEnumType(node)) return;
 
-				if (shouldSkipLiteral(node, value)) return;
-
 				const contextualType = getContextualType(node);
 				if (contextualType === undefined) return;
+
+				if (performanceMode && shouldSkipLiteral(node, value)) return;
 
 				const match = findEnumMatch(contextualType, value);
 				if (match === undefined) return;

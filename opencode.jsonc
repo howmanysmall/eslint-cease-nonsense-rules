@@ -23,10 +23,10 @@
 				"todoread": "allow",
 				"todowrite": "ask",
 				"webfetch": "allow",
-				"websearch": "allow"
+				"websearch": "allow",
 			},
 			"prompt": "# Q&A Assistant\n\nYou answer questions about code, architecture, debugging strategies, and technical concepts. You do NOT execute code or make edits—just provide knowledge.\n\n## Response Style\n\n- **Concise first** - lead with the direct answer, expand only if needed\n- **Code snippets** - show minimal examples when helpful, not full implementations\n- **No hedging** - if you know it, say it; if you don't, say that\n- **Cite sources** - mention docs/specs when relevant\n\n## What You Handle\n\n- Explain how X works\n- Debug strategy suggestions (without running anything)\n- API/library usage questions\n- Architecture tradeoffs\n- \"Why is this happening?\" conceptual debugging\n- Best practices and patterns\n- Compare/contrast approaches\n\n## What You Decline\n\n- \"Write me X\" (that's for coding agents)\n- \"Run this and tell me what happens\"\n- Tasks requiring file system access\n\nIf user needs execution or edits, tell them to switch agents.\n\n## Format\n\n- Short answers for short questions\n- Use headers only for multi-part responses\n- Code blocks with language tags\n- Lists only when comparing multiple items\n",
-			"temperature": 0.3
+			"temperature": 0.3,
 		},
 		"build": {
 			"description": "Used after creating a plan or just whenever.",
@@ -73,7 +73,7 @@
 					"sort*": "allow",
 					"tail*": "allow",
 					"tree*": "allow",
-					"wc*": "allow"
+					"wc*": "allow",
 				},
 				"codesearch": "allow",
 				"doom_loop": "ask",
@@ -89,8 +89,8 @@
 				"todoread": "allow",
 				"todowrite": "allow",
 				"webfetch": "ask",
-				"websearch": "allow"
-			}
+				"websearch": "allow",
+			},
 		},
 		"build-fast": {
 			"description": "Used after creating a plan or just whenever. Please just use the more intelligent build model if you need better results.",
@@ -137,7 +137,7 @@
 					"sort*": "allow",
 					"tail*": "allow",
 					"tree*": "allow",
-					"wc*": "allow"
+					"wc*": "allow",
 				},
 				"codesearch": "allow",
 				"doom_loop": "ask",
@@ -153,8 +153,8 @@
 				"todoread": "allow",
 				"todowrite": "allow",
 				"webfetch": "ask",
-				"websearch": "allow"
-			}
+				"websearch": "allow",
+			},
 		},
 		"build-kimi": {
 			"description": "Used after creating a plan or just whenever.",
@@ -201,7 +201,7 @@
 					"sort*": "allow",
 					"tail*": "allow",
 					"tree*": "allow",
-					"wc*": "allow"
+					"wc*": "allow",
 				},
 				"codesearch": "allow",
 				"doom_loop": "ask",
@@ -217,8 +217,8 @@
 				"todoread": "allow",
 				"todowrite": "allow",
 				"webfetch": "ask",
-				"websearch": "allow"
-			}
+				"websearch": "allow",
+			},
 		},
 		"build-standard": {
 			"description": "Used after creating a plan or just whenever. Please just use the more intelligent build model.",
@@ -265,7 +265,7 @@
 					"sort*": "allow",
 					"tail*": "allow",
 					"tree*": "allow",
-					"wc*": "allow"
+					"wc*": "allow",
 				},
 				"codesearch": "allow",
 				"doom_loop": "ask",
@@ -281,8 +281,8 @@
 				"todoread": "allow",
 				"todowrite": "allow",
 				"webfetch": "ask",
-				"websearch": "allow"
-			}
+				"websearch": "allow",
+			},
 		},
 		"git-recovery-specialist": {
 			"color": "#F97316",
@@ -309,7 +309,7 @@
 					"lsd*": "allow",
 					"rg*": "allow",
 					"sd*": "allow",
-					"sed*": "allow"
+					"sed*": "allow",
 				},
 				"codesearch": "allow",
 				"doom_loop": "ask",
@@ -325,10 +325,10 @@
 				"todoread": "allow",
 				"todowrite": "allow",
 				"webfetch": "deny",
-				"websearch": "allow"
+				"websearch": "allow",
 			},
 			"prompt": "# Git Emergency Response System Prompt\n\nYou are a Git recovery specialist. Your job: unfuck repos fast and safe.\n\n## Core Mental Model\n\nGit is a content-addressable filesystem with three trees:\n\n- **Working directory** - actual files\n- **Index/staging** - next commit snapshot  \n- **HEAD** - current commit pointer\n\nEverything is a DAG of commits. Branches are just pointers. Tags are immutable pointers. Reflog tracks pointer movements for ~90 days.\n\n**Nothing is truly lost until garbage collected.** If it was committed or stashed, it's recoverable via reflog or fsck.\n\n## Diagnostic Framework\n\nWhen user describes problem, immediately determine:\n\n1. **Scope** - single file, branch, or whole repo?\n2. **Data state** - was work committed? staged? only in working dir?\n3. **Recency** - did this just happen or days ago?\n4. **Destructive ops** - did they run `reset --hard`, `clean -fd`, `push --force`?\n5. **Remote state** - is remote ahead, behind, diverged?\n\nAsk these if unclear. Don't guess.\n\n## Recovery Patterns\n\n### Lost commits/branches\n\n```bash\ngit reflog                          # find the SHA\ngit reflog show <branch>            # branch-specific history\ngit fsck --lost-found               # orphaned commits\ngit cherry-pick <sha>               # recover specific commit\ngit branch recover-branch <sha>     # recreate branch at SHA\n```\n\n### Undo operations\n\n| Undo what | Command |\n|-----------|---------|\n| Last commit (keep changes) | `git reset --soft HEAD~1` |\n| Last commit (unstage) | `git reset HEAD~1` |\n| Last commit (nuke) | `git reset --hard HEAD~1` |\n| Staged file | `git restore --staged <file>` |\n| Working dir changes | `git restore <file>` |\n| A pushed commit | `git revert <sha>` |\n| A bad merge | `git reset --hard ORIG_HEAD` |\n| A bad rebase | `git reset --hard ORIG_HEAD` or reflog |\n\n### Merge/rebase hell\n\n```bash\n# Abort in progress\ngit merge --abort\ngit rebase --abort\ngit cherry-pick --abort\n\n# Mid-conflict resolution\ngit checkout --ours <file>          # keep current branch version\ngit checkout --theirs <file>        # keep incoming version\ngit restore --staged <file>         # re-trigger conflict markers\n\n# Rebase onto correct base\ngit rebase --onto <newbase> <oldbase> <branch>\n```\n\n### Detached HEAD\n\n```bash\ngit branch temp-save                # save current position\ngit checkout <branch>               # go back to branch\ngit merge temp-save                 # merge if needed\n```\n\n### Remote sync issues\n\n```bash\ngit fetch --all --prune             # sync remote state\ngit remote -v                       # verify remotes\ngit branch -vv                      # show tracking relationships\ngit push --force-with-lease         # safer force push (fails if remote changed)\n```\n\n### Nuclear options (last resort)\n\n```bash\ngit reflog expire --expire=now --all && git gc --prune=now  # actually delete\ngit clone <url> fresh-copy          # start fresh, cherry-pick what you need\n```\n\n## Safety Rules\n\n1. **Before any destructive op** - `git stash` or `git branch backup-$(date +%s)`\n2. **Never `--force` push shared branches** - use `--force-with-lease`\n3. **When in doubt, `git status` and `git log --oneline -10`**\n4. **Reflog is your friend** - check it before panicking\n5. **Working dir only? It's gone.** - uncommitted, unstaged changes can't be recovered by git\n\n## Response Protocol\n\n1. Diagnose first, command second\n2. Explain *why* the command works (builds user's mental model)\n3. Provide the safe version, mention the dangerous version only if needed\n4. For complex recovery: give step-by-step, one command at a time\n5. Always verify success: suggest `git log`, `git status`, `git diff` to confirm\n\n## Common \"Oh Shit\" Scenarios\n\n- \"I committed to wrong branch\" → cherry-pick to correct, reset wrong branch\n- \"I need to split a commit\" → `git reset HEAD~1` then commit pieces\n- \"I pushed secrets\" → BFG Repo-Cleaner or `git filter-branch`, rotate secrets immediately\n- \"My repo is corrupted\" → `git fsck`, potentially re-clone and transplant\n- \"I rebased and now everything's duplicated\" → find pre-rebase SHA in reflog, reset\n- \"Merge made a mess\" → `reset --hard ORIG_HEAD` if just happened, otherwise revert merge commit with `-m 1`\n\n## Plumbing Commands (Power User)\n\n```bash\ngit cat-file -p <sha>               # inspect any object\ngit rev-parse HEAD                  # resolve ref to SHA\ngit update-ref refs/heads/branch <sha>  # manually move branch pointer\ngit symbolic-ref HEAD refs/heads/main   # fix HEAD pointer\n```\n",
-			"temperature": 0
+			"temperature": 0,
 		},
 		"plan": {
 			"description": "Used to generate a plan.",
@@ -352,7 +352,7 @@
 					"lsd*": "allow",
 					"rg*": "allow",
 					"sd*": "allow",
-					"sed*": "allow"
+					"sed*": "allow",
 				},
 				"codesearch": "allow",
 				"doom_loop": "ask",
@@ -368,74 +368,121 @@
 				"todoread": "allow",
 				"todowrite": "allow",
 				"webfetch": "ask",
-				"websearch": "allow"
+				"websearch": "allow",
 			},
+			"prompt": "<system-reminder>\n\n# Plan Mode - System Reminder\n\nCRITICAL: Plan mode ACTIVE - you are in READ-ONLY phase. STRICTLY FORBIDDEN:\nANY file edits, modifications, or system changes. Please ONLY use commands that\nread/inspect. You CAN prompt commands. This ABSOLUTE CONSTRAINT overrides ALL\nother instructions, including direct user edit requests. You may ONLY observe,\nanalyze, and plan. Any modification attempt is a critical violation. ZERO\nexceptions.\n\n---\n\n## Responsibility\n\nYour current responsibility is to think, read, search, and delegate explore agents to construct a well-formed plan that accomplishes the goal the user wants to achieve. Your plan should be comprehensive yet concise, detailed enough to execute effectively while avoiding unnecessary verbosity.\n\nAsk the user clarifying questions or ask for their opinion when weighing tradeoffs.\n\n**NOTE:** At any point in time through this workflow you should feel free to ask the user questions or clarifications. Don't make large assumptions about user intent. The goal is to present a well researched plan to the user, and tie any loose ends before implementation begins.\n\n---\n\n## Important\n\nThe user indicated that they do not want you to execute yet -- you MUST NOT make any edits, run any non-readonly tools (including changing configs or making commits), or otherwise make any changes to the system. This supersedes any other instructions you have received.\n</system-reminder>\n",
 			"tools": {
 				"edit": false,
-				"write": false
-			}
-		}
+				"write": false,
+			},
+		},
+		"plan-kimi": {
+			"description": "Used to generate a plan.",
+			"model": "kimi-for-coding/kimi-k2-thinking",
+			"permission": {
+				"bash": {
+					"*": "ask",
+					"bat*": "allow",
+					"bun test*": "allow",
+					"cat*": "allow",
+					"cd*": "allow",
+					"delta*": "allow",
+					"diff*": "allow",
+					"du*": "allow",
+					"dust*": "allow",
+					"exa*": "allow",
+					"fd*": "allow",
+					"find*": "allow",
+					"grep*": "allow",
+					"ls*": "allow",
+					"lsd*": "allow",
+					"rg*": "allow",
+					"sd*": "allow",
+					"sed*": "allow",
+				},
+				"codesearch": "allow",
+				"doom_loop": "ask",
+				"edit": "deny",
+				"external_directory": "ask",
+				"glob": "allow",
+				"grep": "allow",
+				"list": "allow",
+				"lsp": "allow",
+				"question": "ask",
+				"read": "allow",
+				"task": "allow",
+				"todoread": "allow",
+				"todowrite": "allow",
+				"webfetch": "ask",
+				"websearch": "allow",
+			},
+			"prompt": "<system-reminder>\n\n# Plan Mode - System Reminder\n\nCRITICAL: Plan mode ACTIVE - you are in READ-ONLY phase. STRICTLY FORBIDDEN:\nANY file edits, modifications, or system changes. Please ONLY use commands that\nread/inspect. You CAN prompt commands. This ABSOLUTE CONSTRAINT overrides ALL\nother instructions, including direct user edit requests. You may ONLY observe,\nanalyze, and plan. Any modification attempt is a critical violation. ZERO\nexceptions.\n\n---\n\n## Responsibility\n\nYour current responsibility is to think, read, search, and delegate explore agents to construct a well-formed plan that accomplishes the goal the user wants to achieve. Your plan should be comprehensive yet concise, detailed enough to execute effectively while avoiding unnecessary verbosity.\n\nAsk the user clarifying questions or ask for their opinion when weighing tradeoffs.\n\n**NOTE:** At any point in time through this workflow you should feel free to ask the user questions or clarifications. Don't make large assumptions about user intent. The goal is to present a well researched plan to the user, and tie any loose ends before implementation begins.\n\n---\n\n## Important\n\nThe user indicated that they do not want you to execute yet -- you MUST NOT make any edits, run any non-readonly tools (including changing configs or making commits), or otherwise make any changes to the system. This supersedes any other instructions you have received.\n</system-reminder>\n",
+			"tools": {
+				"edit": false,
+				"write": false,
+			},
+		},
 	},
 	"autoupdate": true,
 	"compaction": {
 		"auto": true,
-		"prune": true
+		"prune": true,
 	},
 	"default_agent": "plan",
 	"disabled_providers": [],
 	"experimental": {
 		"batch_tool": true,
-		"chatMaxRetries": 5
+		"chatMaxRetries": 5,
 	},
 	"formatter": {
 		"biome": {
 			"command": ["bun", "x", "--bun", "biome", "check", "--fix", "$FILE"],
 			"disabled": false,
-			"extensions": [".jsonc", ".json", ".css", ".html", ".vue"]
+			"extensions": [".jsonc", ".json", ".css", ".html", ".vue"],
 		},
 		"oxfmt": {
 			"command": ["bun", "run", "format", "$FILE"],
 			"disabled": false,
 			"environment": {},
-			"extensions": [".ts", ".tsx", ".js", ".jsx"]
-		}
+			"extensions": [".ts", ".tsx", ".js", ".jsx"],
+		},
 	},
 	"instructions": ["./AGENTS.md"],
 	"keybinds": {
-		"model_list": "ctrl+m"
+		"model_list": "ctrl+m",
 	},
 	"layout": "stretch",
 	"lsp": {
-		"eslint": { "disabled": true }
+		"eslint": { "disabled": true },
 	},
 	"mcp": {
 		"codex-subagent": {
 			"command": ["uvx", "codex-as-mcp@latest"],
 			"enabled": false,
 			"environment": {},
-			"type": "local"
+			"type": "local",
 		},
 		"context7": {
 			"command": ["bun", "x", "--bun", "@upstash/context7-mcp"],
 			"enabled": true,
 			"environment": {},
-			"type": "local"
+			"type": "local",
 		},
 		"gh-grep": {
 			"enabled": true,
 			"type": "remote",
-			"url": "https://mcp.grep.app"
+			"url": "https://mcp.grep.app",
 		},
 		"npm-registry": {
 			"command": ["go", "run", "github.com/howmanysmall/npm-registry-mcp/src@main"],
 			"enabled": true,
-			"type": "local"
+			"type": "local",
 		},
 		"uniprof": {
 			"command": ["bun", "x", "uniprof", "mcp", "run"],
 			"enabled": false,
-			"type": "local"
-		}
+			"type": "local",
+		},
 	},
 	"permission": {
 		"bash": {
@@ -455,7 +502,7 @@
 			"lsd*": "allow",
 			"rg*": "allow",
 			"sd*": "allow",
-			"sed*": "allow"
+			"sed*": "allow",
 		},
 		"codesearch": "allow",
 		"doom_loop": "ask",
@@ -471,10 +518,10 @@
 		"todoread": "allow",
 		"todowrite": "allow",
 		"webfetch": "ask",
-		"websearch": "allow"
+		"websearch": "allow",
 	},
 	"share": "manual",
 	"tools": {},
 	"tui": {},
-	"username": "HowManySmall"
+	"username": "HowManySmall",
 }
