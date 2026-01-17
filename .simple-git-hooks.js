@@ -1,6 +1,3 @@
-/**
- * @type {import('simple-git-hooks').SimpleGitHooks}
- */
 const simpleGitHooks = {
 	"commit-msg": 'bun x --bun commitlint --edit "$1"',
 	"post-merge": "bun install",
