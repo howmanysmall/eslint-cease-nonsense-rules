@@ -1,45 +1,21 @@
 import { resolve } from "node:path";
 import { cwd, exit } from "node:process";
-import { Command, EnumType } from "@jsr/cliffy__command";
+import { Command } from "@jsr/cliffy__command";
 import { type } from "arktype";
 import { consola } from "consola";
+import picocolors from "picocolors";
 import { getConfigurationPathAsync } from "../utilities/eslint-utilities";
 import { isDirectorySimpleAsync } from "../utilities/fs-utilities";
-import { formatRulesAsJson } from "./formatters/json-formatter";
-import { formatRulesAsMinimal } from "./formatters/minimal-formatter";
-import { formatRulesAsTable } from "./formatters/table-formatter";
-import type { RuleEntry } from "./formatters/types";
 import { isValidRules } from "./formatters/types";
 
 const CURRENT_WORKING_DIRECTORY = cwd();
 
-enum OutputFormat {
-	Json = "json",
-	Minimal = "minimal",
-	Table = "table",
-}
-
-function getFormatter(format: OutputFormat): (entries: ReadonlyArray<RuleEntry>) => string {
-	switch (format) {
-		case OutputFormat.Json:
-			return formatRulesAsJson;
-		case OutputFormat.Minimal:
-			return formatRulesAsMinimal;
-		case OutputFormat.Table:
-			return formatRulesAsTable;
-	}
-}
-
 const getRulesCommand = new Command()
-	.name("get-rules")
-	.description("Get the ESLint rules from the live environment.")
+	.name("list-rules")
+	.description("List all available ESLint rules from the live environment.")
 	.version("1.0.0")
-	.type("format", new EnumType(OutputFormat))
-	.option("-f, --format <format:format>", "Output format", {
-		default: OutputFormat.Table,
-	})
-	.arguments("<directory:string> <...rule-names:string>")
-	.action(async ({ format }, directoryUnresolved, ruleName, ...ruleNames) => {
+	.arguments("<directory:string>")
+	.action(async (_, directoryUnresolved) => {
 		const directory = resolve(directoryUnresolved);
 		const isDirectoryReal = await isDirectorySimpleAsync(directory);
 		if (!isDirectoryReal) {
@@ -66,15 +42,13 @@ const getRulesCommand = new Command()
 		}
 
 		const { rules } = json;
+		const enabledRules = Object.entries(rules)
+			.filter(([, [status]]) => status !== 0)
+			.map(([name]) => name);
 
-		const uniqueRuleNames = [...new Set<string>([ruleName, ...ruleNames])];
-		const entries: Array<RuleEntry> = uniqueRuleNames.map((name) => ({
-			name,
-			rule: rules[name],
-		}));
-
-		const formatter = getFormatter(format);
-		console.log(formatter(entries));
+		const ruleNames = enabledRules.toSorted().map((name) => `- ${picocolors.green(name)}`);
+		consola.log(`Enabled ESLint rules in ${picocolors.cyan(directory)}:`);
+		consola.log(ruleNames.join("\n"));
 	});
 
 export default getRulesCommand;
