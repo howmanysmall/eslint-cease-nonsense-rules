@@ -1,12 +1,12 @@
 #!/usr/bin/env bun
 
-import fs from "node:fs/promises";
 import { resolve } from "node:path";
 import { chdir, cwd, exit } from "node:process";
 import { Command } from "@jsr/cliffy__command";
 import { type } from "arktype";
 import console from "consola";
 import picocolors from "picocolors";
+import { isDirectorySimpleAsync } from "../utilities/fs-utilities";
 
 const CURRENT_WORKING_DIRECTORY = cwd();
 
@@ -85,17 +85,14 @@ async function replacePackageJsonAsync({
 
 const testLiveCommand = new Command()
 	.name("test-live")
-	.version("1.0.0")
+	.version("1.1.0")
 	.description("Test the package in a live game environment.")
 	.option("--use-link", "Use 'bun link' instead of patching package.json.", { default: false })
+	.option("-c, --cache", "Cache ESLint results.")
 	.arguments("<directory:string>")
-	.action(async ({ useLink }, directoryUnresolved) => {
+	.action(async ({ useLink, cache }, directoryUnresolved) => {
 		const directory = resolve(directoryUnresolved);
-		const isDirectoryReal = await fs.access(directory).then(
-			() => true,
-			() => false,
-		);
-
+		const isDirectoryReal = await isDirectorySimpleAsync(directory);
 		if (!isDirectoryReal) {
 			console.fail(picocolors.red(`The directory "${picocolors.bold(directory)}" does not exist.`));
 			exit(1);
@@ -126,13 +123,15 @@ const testLiveCommand = new Command()
 		await Bun.$`bun run build`.quiet();
 
 		const nodePackages = resolve(directory, "patches", "node");
-
 		if (useLink) await Bun.$`bun link`;
 		else await Bun.$`npm pack --pack-destination ${nodePackages}`.quiet();
 
 		try {
 			chdir(directory);
 			await Bun.$`bun install`.quiet();
+			if (cache) {
+				await Bun.$`TIMING=2000 cd ${directory} && time bun x --bun eslint --cache --max-warnings=0 ./src`;
+			} else await Bun.$`TIMING=2000 cd ${directory} && time bun x --bun eslint --max-warnings=0 ./src`;
 			await Bun.$`TIMING=1400 bun run lint:eslint`.quiet();
 			chdir(CURRENT_WORKING_DIRECTORY);
 		} catch (error) {
