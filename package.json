@@ -32,6 +32,7 @@
 		"@typescript/native-preview": "7.0.0-dev.20260113.1",
 		"arkenv": "^0.8.3",
 		"arktype": "^2.1.29",
+		"better-result": "^2.1.0",
 		"bumpp": "^10.4.0",
 		"commitlint": "^20.3.1",
 		"confbox": "^0.2.2",
