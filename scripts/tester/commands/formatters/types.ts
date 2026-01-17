@@ -13,11 +13,10 @@ export interface RuleEntry {
  */
 export type RuleFormatter = (entries: ReadonlyArray<RuleEntry>) => string;
 
-export const isRule = type(["0 | 1 | 2", "...", "unknown[]"]).readonly();
+const isRule = type(["0 | 1 | 2", "...", "unknown[]"]).readonly();
 export type Rule = typeof isRule.infer;
 
 export const isValidRules = type({
 	"[string]": "unknown",
 	rules: type.Record("string", isRule).readonly(),
 }).readonly();
-export type ValidRules = typeof isValidRules.infer;

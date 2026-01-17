@@ -1,4 +1,3 @@
-export type { PredefinedFormatsString } from "./enums";
 export { Modifiers } from "./enums";
 export { parseOptions } from "./parse-options";
 export { SCHEMA } from "./schema";
