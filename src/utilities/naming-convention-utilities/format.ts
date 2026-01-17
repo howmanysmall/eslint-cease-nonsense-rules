@@ -31,23 +31,17 @@ function isStrictCamelCase(name: string): boolean {
 }
 
 function hasStrictCamelHumps(name: string, isUpper: boolean): boolean {
-	if (name.startsWith("_")) {
-		return false;
-	}
+	if (name.startsWith("_")) return false;
+
 	let isUpperCase = isUpper;
 	for (let index = 1; index < name.length; index += 1) {
-		const char = name[index];
-		if (char === undefined) return false;
-		if (char === "_") {
-			return false;
-		}
-		if (isUpperCase === isUppercaseChar(char)) {
-			if (isUpperCase) {
-				return false;
-			}
-		} else {
-			isUpperCase = !isUpperCase;
-		}
+		const character = name[index];
+		if (character === undefined) return false;
+		if (character === "_") return false;
+
+		if (isUpperCase === isUppercaseChar(character)) {
+			if (isUpperCase) return false;
+		} else isUpperCase = !isUpperCase;
 	}
 	return true;
 }
@@ -61,21 +55,16 @@ function isUpperCase(name: string): boolean {
 }
 
 function validateUnderscores(name: string): boolean {
-	if (name.startsWith("_")) {
-		return false;
-	}
+	if (name.startsWith("_")) return false;
+
 	let wasUnderscore = false;
 	for (let index = 1; index < name.length; index += 1) {
-		const char = name[index];
-		if (char === undefined) return false;
-		if (char === "_") {
-			if (wasUnderscore) {
-				return false;
-			}
+		const character = name[index];
+		if (character === undefined) return false;
+		if (character === "_") {
+			if (wasUnderscore) return false;
 			wasUnderscore = true;
-		} else {
-			wasUnderscore = false;
-		}
+		} else wasUnderscore = false;
 	}
 	return !wasUnderscore;
 }

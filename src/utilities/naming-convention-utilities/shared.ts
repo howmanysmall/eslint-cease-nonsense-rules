@@ -1,8 +1,11 @@
+import { regex } from "arkregex";
 import type { IndividualAndMetaSelectorsString, MetaSelectorsString } from "./enums";
 import { MetaSelectors } from "./enums";
 
+const ALPHABETICAL = regex("([A-Z])", "g");
+
 export function selectorTypeToMessageString(selectorType: string): string {
-	const notCamelCase = selectorType.replaceAll(/([A-Z])/g, " $1");
+	const notCamelCase = selectorType.replaceAll(ALPHABETICAL, " $1");
 	return notCamelCase.charAt(0).toUpperCase() + notCamelCase.slice(1);
 }
 

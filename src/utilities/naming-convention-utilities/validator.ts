@@ -21,19 +21,13 @@ interface TypeInfo {
 }
 
 function hasTypeInformation(services: unknown): services is ParserServicesWithTypeInformation {
-	if (!services || typeof services !== "object") {
-		return false;
-	}
+	if (!services || typeof services !== "object") return false;
 
 	const getTypeAtLocation: unknown = Reflect.get(services, "getTypeAtLocation");
-	if (typeof getTypeAtLocation !== "function") {
-		return false;
-	}
+	if (typeof getTypeAtLocation !== "function") return false;
 
 	const program: unknown = Reflect.get(services, "program");
-	if (!program || typeof program !== "object") {
-		return false;
-	}
+	if (!program || typeof program !== "object") return false;
 
 	const getTypeChecker: unknown = Reflect.get(program, "getTypeChecker");
 	return typeof getTypeChecker === "function";
@@ -45,14 +39,8 @@ export function createValidator(
 	allConfigs: Array<NormalizedSelector>,
 ): ValidatorFunction {
 	const configs = allConfigs.toSorted((first, second) => {
-		if (first.selectorPriority !== second.selectorPriority) {
-			return second.selectorPriority - first.selectorPriority;
-		}
-
-		if (first.modifierWeight !== second.modifierWeight) {
-			return second.modifierWeight - first.modifierWeight;
-		}
-
+		if (first.selectorPriority !== second.selectorPriority) return second.selectorPriority - first.selectorPriority;
+		if (first.modifierWeight !== second.modifierWeight) return second.modifierWeight - first.modifierWeight;
 		return 0;
 	});
 
@@ -60,22 +48,14 @@ export function createValidator(
 	let typeInfo: TypeInfo | undefined;
 
 	function getTypeInfo(): TypeInfo | undefined {
-		if (!hasTypeOptions) {
-			return undefined;
-		}
-
-		if (typeInfo) {
-			return typeInfo;
-		}
+		if (!hasTypeOptions) return undefined;
+		if (typeInfo) return typeInfo;
 
 		const services = ESLintUtils.getParserServices(context, true);
-		if (!hasTypeInformation(services)) {
-			return undefined;
-		}
+		if (!hasTypeInformation(services)) return undefined;
+
 		const { program } = services;
-		if (!program) {
-			return undefined;
-		}
+		if (!program) return undefined;
 
 		typeInfo = {
 			checker: program.getTypeChecker(),
@@ -92,21 +72,10 @@ export function createValidator(
 				: `${node.value}`;
 
 		for (const config of configs) {
-			if (config.filter && config.filter.regex.test(originalName) !== config.filter.match) {
-				continue;
-			}
-
-			if (modifiers.has("requiresQuotes") && !config.modifiers?.includes("requiresQuotes")) {
-				continue;
-			}
-
-			if (config.modifiers?.some((modifier) => !modifiers.has(modifier))) {
-				continue;
-			}
-
-			if (!isCorrectType(node, config, type, getTypeInfo)) {
-				continue;
-			}
+			if (config.filter && config.filter.regex.test(originalName) !== config.filter.match) continue;
+			if (modifiers.has("requiresQuotes") && !config.modifiers?.includes("requiresQuotes")) continue;
+			if (config.modifiers?.some((modifier) => !modifiers.has(modifier))) continue;
+			if (!isCorrectType(node, config, type, getTypeInfo)) continue;
 
 			let name: string | undefined = originalName;
 
@@ -121,9 +90,7 @@ export function createValidator(
 
 			name = validateAffix("suffix", config, name, node, originalName, context, type);
 			if (name === undefined) return;
-
 			if (!validateCustom(config, name, node, originalName, context, type)) return;
-
 			if (!validatePredefinedFormat(config, name, node, originalName, context, type, modifiers)) return;
 
 			return;
@@ -181,24 +148,16 @@ function validateUnderscore(
 
 	switch (option) {
 		case "allow": {
-			if (hasSingleUnderscore()) {
-				return trimSingleUnderscore();
-			}
+			if (hasSingleUnderscore()) return trimSingleUnderscore();
 			return name;
 		}
 		case "allowDouble": {
-			if (hasDoubleUnderscore()) {
-				return trimDoubleUnderscore();
-			}
+			if (hasDoubleUnderscore()) return trimDoubleUnderscore();
 			return name;
 		}
 		case "allowSingleOrDouble": {
-			if (hasDoubleUnderscore()) {
-				return trimDoubleUnderscore();
-			}
-			if (hasSingleUnderscore()) {
-				return trimSingleUnderscore();
-			}
+			if (hasDoubleUnderscore()) return trimDoubleUnderscore();
+			if (hasSingleUnderscore()) return trimSingleUnderscore();
 			return name;
 		}
 		case "forbid": {
@@ -247,18 +206,14 @@ function validateAffix(
 	selectorType: SelectorsString,
 ): string | undefined {
 	const affixes = config[position];
-	if (!affixes || affixes.length === 0) {
-		return name;
-	}
+	if (!affixes || affixes.length === 0) return name;
 
 	for (const affix of affixes) {
 		const hasAffix = position === "prefix" ? name.startsWith(affix) : name.endsWith(affix);
 		const trimAffix =
 			position === "prefix" ? (): string => name.slice(affix.length) : (): string => name.slice(0, -affix.length);
 
-		if (hasAffix) {
-			return trimAffix();
-		}
+		if (hasAffix) return trimAffix();
 	}
 
 	context.report({
@@ -278,17 +233,11 @@ function validateCustom(
 	selectorType: SelectorsString,
 ): boolean {
 	const { custom } = config;
-	if (!custom) {
-		return true;
-	}
+	if (!custom) return true;
 
 	const result = custom.regex.test(name);
-	if (custom.match && result) {
-		return true;
-	}
-	if (!(custom.match || result)) {
-		return true;
-	}
+	if (custom.match && result) return true;
+	if (!(custom.match || result)) return true;
 
 	context.report({
 		data: formatReportData(selectorType, { custom, originalName }),
@@ -308,16 +257,12 @@ function validatePredefinedFormat(
 	modifiers: Set<string>,
 ): boolean {
 	const formats = config.format;
-	if (!formats || formats.length === 0) {
-		return true;
-	}
+	if (!formats || formats.length === 0) return true;
 
 	if (!modifiers.has("requiresQuotes")) {
 		for (const format of formats) {
 			const checker = PredefinedFormatToCheckFunction[format];
-			if (checker?.(name)) {
-				return true;
-			}
+			if (checker?.(name)) return true;
 		}
 	}
 
@@ -345,18 +290,10 @@ function isCorrectType(
 	selector: SelectorsString,
 	getTypeInfo: () => TypeInfo | undefined,
 ): boolean {
-	if (!config.types || config.types.length === 0) {
-		return true;
-	}
-
-	if (!selectorsAllowedToHaveTypes.has(selector)) {
-		return true;
-	}
+	if (!config.types || config.types.length === 0 || !selectorsAllowedToHaveTypes.has(selector)) return true;
 
 	const typeInfo = getTypeInfo();
-	if (!typeInfo) {
-		return true;
-	}
+	if (!typeInfo) return true;
 
 	const { checker, services } = typeInfo;
 	const type = services.getTypeAtLocation(node).getNonNullableType();
@@ -374,17 +311,14 @@ function isCorrectType(
 				}
 				break;
 			case TypeModifiers.function:
-				if (isAllTypesMatch(type, (innerType) => innerType.getCallSignatures().length > 0)) {
-					return true;
-				}
+				if (isAllTypesMatch(type, (innerType) => innerType.getCallSignatures().length > 0)) return true;
 				break;
 			case TypeModifiers.boolean:
 			case TypeModifiers.number:
 			case TypeModifiers.string: {
 				const typeString = checker.typeToString(checker.getWidenedType(checker.getBaseTypeOfLiteralType(type)));
-				if (typeString === allowedType) {
-					return true;
-				}
+				if (typeString === allowedType) return true;
+
 				break;
 			}
 		}
@@ -394,9 +328,6 @@ function isCorrectType(
 }
 
 function isAllTypesMatch(type: Type, callback: (innerType: Type) => boolean): boolean {
-	if (type.isUnion()) {
-		return type.types.every((innerType) => callback(innerType));
-	}
-
+	if (type.isUnion()) return type.types.every((innerType) => callback(innerType));
 	return callback(type);
 }

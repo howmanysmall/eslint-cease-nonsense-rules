@@ -56,9 +56,7 @@ function collectJSDocIdentifiers(sourceCode: TSESLint.SourceCode): Set<string> {
 		JSDOC_IDENTIFIER_PATTERN.lastIndex = 0;
 		for (const match of value.matchAll(JSDOC_IDENTIFIER_PATTERN)) {
 			const identifier = match[1] ?? match[2] ?? match[3];
-			if (identifier) {
-				identifiers.add(identifier);
-			}
+			if (identifier) identifiers.add(identifier);
 		}
 	}
 

@@ -45,9 +45,7 @@ function isUnused(name: string, initialScope: TSESLint.Scope.Scope | undefined):
 	let scope = initialScope;
 	while (scope) {
 		const variable = scope.set.get(name);
-		if (variable) {
-			return variable.references.length === 0;
-		}
+		if (variable) return variable.references.length === 0;
 		scope = scope.upper ?? undefined;
 	}
 	return false;
@@ -71,9 +69,7 @@ function isGlobal(scope: TSESLint.Scope.Scope | undefined): boolean {
 
 export default createRule<Options, MessageIds>({
 	create(contextWithoutDefaults) {
-		if (contextWithoutDefaults.filename.endsWith(".d.ts")) {
-			return {};
-		}
+		if (contextWithoutDefaults.filename.endsWith(".d.ts")) return {};
 
 		const context =
 			contextWithoutDefaults.options.length > 0

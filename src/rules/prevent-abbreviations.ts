@@ -2,6 +2,7 @@ import path from "node:path";
 import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
 import type { JSONSchema, TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { regex } from "arkregex";
 import { isIdentifierPart, isIdentifierStart, ScriptTarget } from "typescript";
 import { createRule } from "../utilities/create-rule";
 
@@ -406,7 +407,7 @@ function isIdentifier(node: TSESTree.Node | undefined): node is TSESTree.Identif
 	return Boolean(node && node.type === AST_NODE_TYPES.Identifier);
 }
 
-function isJSXIdentifier(node: TSESTree.Node | undefined): node is TSESTree.JSXIdentifier {
+function isJsxIdentifier(node: TSESTree.Node | undefined): node is TSESTree.JSXIdentifier {
 	return Boolean(node && node.type === AST_NODE_TYPES.JSXIdentifier);
 }
 
@@ -419,21 +420,17 @@ function isVariableDeclarator(node: TSESTree.Node | undefined): node is TSESTree
 }
 
 function isValidIdentifier(name: string): boolean {
-	if (name.length === 0 || typescriptReservedWords.has(name)) {
-		return false;
-	}
+	if (name.length === 0 || typescriptReservedWords.has(name)) return false;
 
 	let index = 0;
 	const firstCodePoint = name.codePointAt(index);
-	if (firstCodePoint === undefined || !isIdentifierStart(firstCodePoint, ScriptTarget.Latest)) {
-		return false;
-	}
+	if (firstCodePoint === undefined || !isIdentifierStart(firstCodePoint, ScriptTarget.Latest)) return false;
+
 	index += firstCodePoint > 0xff_ff ? 2 : 1;
 	while (index < name.length) {
 		const codePoint = name.codePointAt(index);
-		if (codePoint === undefined || !isIdentifierPart(codePoint, ScriptTarget.Latest)) {
-			return false;
-		}
+		if (codePoint === undefined || !isIdentifierPart(codePoint, ScriptTarget.Latest)) return false;
+
 		index += codePoint > 0xff_ff ? 2 : 1;
 	}
 
@@ -446,11 +443,7 @@ function getScopes(scope: TSESLint.Scope.Scope): Array<TSESLint.Scope.Scope> {
 
 function getReferences(scope: TSESLint.Scope.Scope): ReadonlyArray<TSESLint.Scope.Reference> {
 	const references = new Set<TSESLint.Scope.Reference>();
-	for (const scopeItem of getScopes(scope)) {
-		for (const reference of scopeItem.references) {
-			references.add(reference);
-		}
-	}
+	for (const scopeItem of getScopes(scope)) for (const reference of scopeItem.references) references.add(reference);
 	return [...references];
 }
 
@@ -461,9 +454,7 @@ function resolveVariableName(
 	let currentScope = scope;
 	while (currentScope) {
 		const variable = currentScope.set.get(name);
-		if (variable) {
-			return variable;
-		}
+		if (variable) return variable;
 		currentScope = currentScope.upper ?? undefined;
 	}
 	return undefined;
@@ -529,17 +520,13 @@ function hasSameRange(node1: TSESTree.Node, node2: TSESTree.Node): boolean {
 
 function isShorthandImportLocal(node: TSESTree.Identifier): boolean {
 	const { parent } = node;
-	if (!parent || parent.type !== AST_NODE_TYPES.ImportSpecifier || parent.local !== node) {
-		return false;
-	}
+	if (!parent || parent.type !== AST_NODE_TYPES.ImportSpecifier || parent.local !== node) return false;
 	return hasSameRange(parent.local, parent.imported);
 }
 
 function isShorthandExportLocal(node: TSESTree.Identifier): boolean {
 	const { parent } = node;
-	if (!parent || parent.type !== AST_NODE_TYPES.ExportSpecifier || parent.local !== node) {
-		return false;
-	}
+	if (!parent || parent.type !== AST_NODE_TYPES.ExportSpecifier || parent.local !== node) return false;
 	return hasSameRange(parent.local, parent.exported);
 }
 
@@ -552,9 +539,8 @@ function isShorthandPropertyValue(identifier: TSESTree.Identifier): boolean {
 
 function isShorthandPropertyAssignmentPatternLeft(identifier: TSESTree.Identifier): boolean {
 	const { parent } = identifier;
-	if (!parent || parent.type !== AST_NODE_TYPES.AssignmentPattern || parent.left !== identifier) {
-		return false;
-	}
+	if (!parent || parent.type !== AST_NODE_TYPES.AssignmentPattern || parent.left !== identifier) return false;
+
 	const property = parent.parent;
 	return Boolean(
 		property && property.type === AST_NODE_TYPES.Property && property.shorthand && property.value === parent,
@@ -566,10 +552,7 @@ function replaceReferenceIdentifier(
 	replacement: string,
 	fixer: TSESLint.RuleFixer,
 ): TSESLint.RuleFix | undefined {
-	if (!isIdentifier(identifier)) {
-		return undefined;
-	}
-
+	if (!isIdentifier(identifier)) return undefined;
 	if (isShorthandPropertyValue(identifier) || isShorthandPropertyAssignmentPatternLeft(identifier)) {
 		return fixer.replaceText(identifier, `${identifier.name}: ${replacement}`);
 	}
@@ -625,9 +608,7 @@ function prepareOptions(options: PreventAbbreviationsOptions | undefined): Prepa
 				[...replacementKeys].map((name) => {
 					const override = replacements[name];
 					const base = DEFAULT_REPLACEMENTS[name] ?? {};
-					if (override === false) {
-						return [name, {}];
-					}
+					if (override === false) return [name, {}];
 					return [name, { ...base, ...override }];
 				}),
 			)
@@ -659,40 +640,30 @@ function prepareOptions(options: PreventAbbreviationsOptions | undefined): Prepa
 	};
 }
 
-const IS_ALPHABETIC = /^[A-Za-z]+$/u;
+const IS_ALPHABETIC = regex("^[A-Za-z]+$", "u");
 
 function getWordReplacements(word: string, options: PreparedOptions): ReadonlyArray<string> {
-	if (isUpperCase(word) || options.allowList.get(word)) {
-		return [];
-	}
+	if (isUpperCase(word) || options.allowList.get(word)) return [];
 
 	const replacement =
 		options.replacements.get(lowerFirst(word)) ??
 		options.replacements.get(word) ??
 		options.replacements.get(upperFirst(word));
 
-	if (!replacement) {
-		return [];
-	}
+	if (!replacement) return [];
 
 	const transform = isUpperFirst(word) ? upperFirst : lowerFirst;
-	const wordReplacement = [...replacement.keys()]
-		.filter((name) => replacement.get(name))
-		.map((name) => transform(name));
+	// oxlint-disable-next-line unicorn/no-array-callback-reference
+	const wordReplacement = [...replacement.keys()].filter((name) => replacement.get(name)).map(transform);
 
 	return wordReplacement.length > 0 ? [...wordReplacement].toSorted() : [];
 }
 
 function isDiscouragedReplacementName(name: string, options: PreparedOptions): boolean {
 	const replacement = options.replacements.get(name);
-	if (!replacement) {
-		return false;
-	}
-	for (const enabled of replacement.values()) {
-		if (enabled) {
-			return true;
-		}
-	}
+	if (!replacement) return false;
+
+	for (const enabled of replacement.values()) if (enabled) return true;
 	return false;
 }
 
@@ -704,16 +675,14 @@ function cartesianProductSamples(
 	const sampleCount = Math.min(total, length);
 	const samples = Array.from({ length: sampleCount }, (_, sampleIndex) => {
 		let indexRemaining = sampleIndex;
-		const combination: Array<string> = [];
+		const combination = new Array<string>();
 		for (let combinationIndex = combinations.length - 1; combinationIndex >= 0; combinationIndex -= 1) {
 			const items = combinations[combinationIndex] ?? [];
 			const itemLength = items.length;
 			const index = indexRemaining % itemLength;
 			indexRemaining = (indexRemaining - index) / itemLength;
 			const item = items[index];
-			if (item !== undefined) {
-				combination.unshift(item);
-			}
+			if (item !== undefined) combination.unshift(item);
 		}
 		return combination;
 	});
@@ -723,9 +692,7 @@ function cartesianProductSamples(
 
 function getNameReplacements(name: string, options: PreparedOptions, limit = 3): NameReplacements {
 	const { allowList, ignore } = options;
-	if (isUpperCase(name) || allowList.get(name) || ignore.some((regexp) => regexp.test(name))) {
-		return { total: 0 };
-	}
+	if (isUpperCase(name) || allowList.get(name) || ignore.some((regexp) => regexp.test(name))) return { total: 0 };
 
 	const exactReplacements = getWordReplacements(name, options);
 	if (exactReplacements.length > 0) {
@@ -752,9 +719,7 @@ function getNameReplacements(name: string, options: PreparedOptions, limit = 3):
 	for (const parts of samples) {
 		for (let index = parts.length - 1; index > 0; index -= 1) {
 			const word = parts[index] ?? "";
-			if (IS_ALPHABETIC.test(word) && parts[index - 1]?.endsWith(word)) {
-				parts.splice(index, 1);
-			}
+			if (IS_ALPHABETIC.test(word) && parts[index - 1]?.endsWith(word)) parts.splice(index, 1);
 		}
 	}
 
@@ -799,14 +764,10 @@ function getMessage(
 }
 
 function isExportedIdentifier(identifier: IdentifierLike): boolean {
-	if (!isIdentifier(identifier)) {
-		return false;
-	}
+	if (!isIdentifier(identifier)) return false;
 
 	const { parent } = identifier;
-	if (!parent) {
-		return false;
-	}
+	if (!parent) return false;
 
 	if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.id === identifier) {
 		const declaration = parent.parent;
@@ -836,23 +797,17 @@ function isExportedIdentifier(identifier: IdentifierLike): boolean {
 
 function shouldFix(variable: VariableLike): boolean {
 	return getVariableIdentifiers(variable).every(
-		(identifier) => !(isExportedIdentifier(identifier) || isJSXIdentifier(identifier)),
+		(identifier) => !(isExportedIdentifier(identifier) || isJsxIdentifier(identifier)),
 	);
 }
 
 function isStaticRequire(node: TSESTree.Node | undefined): node is TSESTree.CallExpression {
-	if (!node || node.type !== AST_NODE_TYPES.CallExpression || node.optional) {
-		return false;
-	}
+	if (!node || node.type !== AST_NODE_TYPES.CallExpression || node.optional) return false;
 
 	const { callee, arguments: callArguments } = node;
-	if (callee.type !== AST_NODE_TYPES.Identifier || callee.name !== "require") {
-		return false;
-	}
+	if (callee.type !== AST_NODE_TYPES.Identifier || callee.name !== "require") return false;
 
-	if (callArguments.length !== 1) {
-		return false;
-	}
+	if (callArguments.length !== 1) return false;
 
 	const [argument] = callArguments;
 	return Boolean(argument && isStringLiteral(argument));
@@ -860,17 +815,9 @@ function isStaticRequire(node: TSESTree.Node | undefined): node is TSESTree.Call
 
 function isDefaultOrNamespaceImportName(identifier: TSESTree.Identifier): boolean {
 	const { parent } = identifier;
-	if (!parent) {
-		return false;
-	}
-
-	if (parent.type === AST_NODE_TYPES.ImportDefaultSpecifier && parent.local === identifier) {
-		return true;
-	}
-
-	if (parent.type === AST_NODE_TYPES.ImportNamespaceSpecifier && parent.local === identifier) {
-		return true;
-	}
+	if (!parent) return false;
+	if (parent.type === AST_NODE_TYPES.ImportDefaultSpecifier && parent.local === identifier) return true;
+	if (parent.type === AST_NODE_TYPES.ImportNamespaceSpecifier && parent.local === identifier) return true;
 
 	if (
 		parent.type === AST_NODE_TYPES.ImportSpecifier &&
@@ -893,23 +840,17 @@ function isDefaultOrNamespaceImportName(identifier: TSESTree.Identifier): boolea
 }
 
 function isClassVariable(variable: TSESLint.Scope.Variable): boolean {
-	if (variable.defs.length !== 1) {
-		return false;
-	}
+	if (variable.defs.length !== 1) return false;
 
 	const [definition] = variable.defs;
-	if (!definition) {
-		return false;
-	}
+	if (!definition) return false;
 
 	return definition.type === DefinitionType.ClassName;
 }
 
 function shouldReportIdentifierAsProperty(identifier: TSESTree.Identifier): boolean {
 	const { parent } = identifier;
-	if (!parent) {
-		return false;
-	}
+	if (!parent) return false;
 
 	if (
 		parent.type === AST_NODE_TYPES.MemberExpression &&
@@ -967,9 +908,7 @@ function getImportSource(definition: TSESLint.Scope.Definition): string | undefi
 		const parent = definition.parent ?? undefined;
 		if (parent && isImportDeclaration(parent)) {
 			const { source } = parent;
-			if (isStringLiteral(source)) {
-				return source.value;
-			}
+			if (isStringLiteral(source)) return source.value;
 		}
 	}
 
@@ -979,9 +918,7 @@ function getImportSource(definition: TSESLint.Scope.Definition): string | undefi
 			const initializer = node.init ?? undefined;
 			if (isStaticRequire(initializer)) {
 				const [argument] = initializer.arguments;
-				if (argument && isStringLiteral(argument)) {
-					return argument.value;
-				}
+				if (argument && isStringLiteral(argument)) return argument.value;
 			}
 		}
 	}
@@ -991,21 +928,15 @@ function getImportSource(definition: TSESLint.Scope.Definition): string | undefi
 
 function isInternalImport(definition: TSESLint.Scope.Definition): boolean {
 	const source = getImportSource(definition);
-	if (!source) {
-		return false;
-	}
+	if (!source) return false;
 
 	return !source.includes("node_modules") && (source.startsWith(".") || source.startsWith("/"));
 }
 
 function shouldCheckImport(option: ImportCheckOption, definition: TSESLint.Scope.Definition): boolean {
-	if (option === false) {
-		return false;
-	}
+	if (option === false) return false;
 
-	if (option === "internal") {
-		return isInternalImport(definition);
-	}
+	if (option === "internal") return isInternalImport(definition);
 
 	return true;
 }
@@ -1029,18 +960,13 @@ export default createRule<Options, MessageIds>({
 			});
 
 		function checkVariable(variable: VariableLike): void {
-			if (variable.defs.length === 0) {
-				return;
-			}
+			if (variable.defs.length === 0) return;
 
 			const [definition] = variable.defs;
-			if (!definition) {
-				return;
-			}
+			if (!definition) return;
+
 			const definitionName = definition.name;
-			if (!isIdentifier(definitionName)) {
-				return;
-			}
+			if (!isIdentifier(definitionName)) return;
 
 			if (
 				isDefaultOrNamespaceImportName(definitionName) &&
@@ -1056,9 +982,7 @@ export default createRule<Options, MessageIds>({
 				return;
 			}
 
-			if (!options.checkShorthandProperties && isShorthandPropertyValue(definitionName)) {
-				return;
-			}
+			if (!options.checkShorthandProperties && isShorthandPropertyValue(definitionName)) return;
 
 			const avoidArgumentsReplacement =
 				definition.type === DefinitionType.Variable &&
@@ -1072,19 +996,13 @@ export default createRule<Options, MessageIds>({
 			const shouldAvoidArguments = avoidArgumentsReplacement || avoidArgumentsInArrowParam;
 
 			const isSafeNameForVariable: IsSafe = (name, scopes) => {
-				if (!isSafeGeneratedName(name, scopes)) {
-					return false;
-				}
-				if (shouldAvoidArguments && name === "arguments") {
-					return false;
-				}
+				if (!isSafeGeneratedName(name, scopes)) return false;
+				if (shouldAvoidArguments && name === "arguments") return false;
 				return true;
 			};
 
 			const variableReplacements = getNameReplacements(variable.name, options);
-			if (variableReplacements.total === 0 || !variableReplacements.samples) {
-				return;
-			}
+			if (variableReplacements.total === 0 || !variableReplacements.samples) return;
 
 			const { references } = variable;
 			const scopes = [...references.map((reference) => reference.from), variable.scope];
@@ -1092,9 +1010,8 @@ export default createRule<Options, MessageIds>({
 			const safeSamples = variableReplacements.samples
 				.map((name) => {
 					const safeName = getAvailableVariableName(name, scopes, isSafeNameForVariable);
-					if (!safeName) {
-						return undefined;
-					}
+					if (!safeName) return undefined;
+
 					if (safeName !== name && isDiscouragedReplacementName(name, options)) {
 						droppedDiscouraged += 1;
 						return undefined;
@@ -1133,9 +1050,7 @@ export default createRule<Options, MessageIds>({
 				const [replacement] = safeSamples;
 
 				for (const scope of scopes) {
-					if (!scopeToNamesGeneratedByFixer.has(scope)) {
-						scopeToNamesGeneratedByFixer.set(scope, new Set());
-					}
+					if (!scopeToNamesGeneratedByFixer.has(scope)) scopeToNamesGeneratedByFixer.set(scope, new Set());
 					const generatedNames = scopeToNamesGeneratedByFixer.get(scope);
 					generatedNames?.add(replacement);
 				}
@@ -1195,13 +1110,11 @@ export default createRule<Options, MessageIds>({
 			}
 
 			const [definition] = variable.defs;
-			if (!definition) {
-				return;
-			}
+			if (!definition) return;
+
 			const definitionName = definition.name;
-			if (!isIdentifier(definitionName)) {
-				return;
-			}
+			if (!isIdentifier(definitionName)) return;
+
 			identifierToOuterClassVariable.set(definitionName, variable);
 		}
 
@@ -1215,22 +1128,10 @@ export default createRule<Options, MessageIds>({
 
 		return {
 			Identifier(node): void {
-				if (!options.checkProperties) {
-					return;
-				}
-
-				if (node.name === "__proto__") {
-					return;
-				}
+				if (!options.checkProperties || node.name === "__proto__") return;
 
 				const replacements = getNameReplacements(node.name, options);
-				if (replacements.total === 0) {
-					return;
-				}
-
-				if (!shouldReportIdentifierAsProperty(node)) {
-					return;
-				}
+				if (replacements.total === 0 || !shouldReportIdentifierAsProperty(node)) return;
 
 				const message = getMessage(node.name, replacements, "property");
 				let fix: TSESLint.ReportFixFunction | undefined;
@@ -1256,22 +1157,16 @@ export default createRule<Options, MessageIds>({
 				});
 			},
 			JSXOpeningElement(node): void {
-				if (!options.checkVariables) {
-					return;
-				}
-
-				if (node.name.type !== AST_NODE_TYPES.JSXIdentifier) {
-					return;
-				}
-
-				if (!isUpperFirst(node.name.name)) {
+				if (
+					!options.checkVariables ||
+					node.name.type !== AST_NODE_TYPES.JSXIdentifier ||
+					!isUpperFirst(node.name.name)
+				) {
 					return;
 				}
 
 				const replacements = getNameReplacements(node.name.name, options);
-				if (replacements.total === 0) {
-					return;
-				}
+				if (replacements.total === 0) return;
 
 				const message = getMessage(node.name.name, replacements, "variable");
 				context.report({
@@ -1293,20 +1188,18 @@ export default createRule<Options, MessageIds>({
 					return;
 				}
 
-				if (!options.checkFilenames) {
-					return;
-				}
-
-				if (filenameWithExtension === "<input>" || filenameWithExtension === "<text>") {
+				if (
+					!options.checkFilenames ||
+					filenameWithExtension === "<input>" ||
+					filenameWithExtension === "<text>"
+				) {
 					return;
 				}
 
 				const filename = path.basename(filenameWithExtension);
 				const extension = path.extname(filename);
 				const filenameReplacements = getNameReplacements(path.basename(filename, extension), options);
-				if (filenameReplacements.total === 0 || !filenameReplacements.samples) {
-					return;
-				}
+				if (filenameReplacements.total === 0 || !filenameReplacements.samples) return;
 
 				const samples = filenameReplacements.samples.map((replacement) => `${replacement}${extension}`);
 				context.report({
@@ -1315,9 +1208,7 @@ export default createRule<Options, MessageIds>({
 				});
 			},
 			"Program:exit"(program): void {
-				if (!options.checkVariables) {
-					return;
-				}
+				if (!options.checkVariables) return;
 
 				checkScope(context.sourceCode.getScope(program));
 			},

@@ -27,11 +27,7 @@ const META_SELECTOR_MAP: Record<MetaSelectorsString, Array<keyof typeof Selector
 };
 function normalizeFilter(option: Selector): NormalizedMatchRegex | undefined {
 	if (option.filter === undefined) return undefined;
-
-	if (typeof option.filter === "string") {
-		return { match: true, regex: new RegExp(option.filter, "u") };
-	}
-
+	if (typeof option.filter === "string") return { match: true, regex: new RegExp(option.filter, "u") };
 	return { match: option.filter.match, regex: new RegExp(option.filter.regex, "u") };
 }
 
@@ -43,64 +39,30 @@ function normalizeCustom(option: Selector): NormalizedMatchRegex | undefined {
 
 function normalizeOption(option: Selector): Array<NormalizedSelector> {
 	let weight = 0;
-	if (option.modifiers) {
-		for (const modifier of option.modifiers) {
-			weight += ModifierWeights[modifier];
-		}
-	}
-	if (option.types) {
-		for (const modifier of option.types) {
-			weight += TypeModifierWeights[modifier];
-		}
-	}
-	if (option.filter !== undefined) {
-		weight += 1_000_000_000;
-	}
+	if (option.modifiers) for (const modifier of option.modifiers) weight += ModifierWeights[modifier];
+	if (option.types) for (const modifier of option.types) weight += TypeModifierWeights[modifier];
+	if (option.filter !== undefined) weight += 1_000_000_000;
 
 	const normalizedOption: Omit<NormalizedSelector, "selectors" | "selectorPriority"> = {
 		modifierWeight: weight,
 	};
 
 	const custom = normalizeCustom(option);
-	if (custom !== undefined) {
-		normalizedOption.custom = custom;
-	}
+	if (custom !== undefined) normalizedOption.custom = custom;
 
 	const filter = normalizeFilter(option);
-	if (filter !== undefined) {
-		normalizedOption.filter = filter;
-	}
+	if (filter !== undefined) normalizedOption.filter = filter;
+	if (Array.isArray(option.format)) normalizedOption.format = option.format;
 
-	if (Array.isArray(option.format)) {
-		normalizedOption.format = option.format;
-	}
-
-	if (option.leadingUnderscore !== undefined) {
-		normalizedOption.leadingUnderscore = option.leadingUnderscore;
-	}
-
-	if (option.modifiers && option.modifiers.length > 0) {
-		normalizedOption.modifiers = option.modifiers;
-	}
-
-	if (option.prefix && option.prefix.length > 0) {
-		normalizedOption.prefix = option.prefix;
-	}
-
-	if (option.suffix && option.suffix.length > 0) {
-		normalizedOption.suffix = option.suffix;
-	}
-
-	if (option.trailingUnderscore !== undefined) {
-		normalizedOption.trailingUnderscore = option.trailingUnderscore;
-	}
-
-	if (option.types && option.types.length > 0) {
-		normalizedOption.types = option.types;
-	}
+	if (option.leadingUnderscore !== undefined) normalizedOption.leadingUnderscore = option.leadingUnderscore;
+	if (option.modifiers && option.modifiers.length > 0) normalizedOption.modifiers = option.modifiers;
+	if (option.prefix && option.prefix.length > 0) normalizedOption.prefix = option.prefix;
+	if (option.suffix && option.suffix.length > 0) normalizedOption.suffix = option.suffix;
+	if (option.trailingUnderscore !== undefined) normalizedOption.trailingUnderscore = option.trailingUnderscore;
+	if (option.types && option.types.length > 0) normalizedOption.types = option.types;
 
 	const selectors = Array.isArray(option.selector) ? option.selector : [option.selector];
-	const normalizedSelectors: Array<NormalizedSelector> = [];
+	const normalizedSelectors = new Array<NormalizedSelector>();
 
 	for (const selector of selectors) {
 		const isDefault = selector === MetaSelectors.default;
@@ -131,27 +93,15 @@ export function parseOptions(context: Context): ParsedOptions {
 	const selectorNames = getEnumNames(Selectors);
 	const selectorMap = new Map<string, Array<NormalizedSelector>>();
 
-	for (const selectorName of selectorNames) {
-		selectorMap.set(selectorName, []);
-	}
+	for (const selectorName of selectorNames) selectorMap.set(selectorName, []);
 
 	for (const option of normalizedOptions) {
 		if (option.selectors.length === 0) {
-			for (const selectorName of selectorNames) {
-				const bucket = selectorMap.get(selectorName);
-				if (bucket) {
-					bucket.push(option);
-				}
-			}
+			for (const selectorName of selectorNames) selectorMap.get(selectorName)?.push(option);
 			continue;
 		}
 
-		for (const selector of option.selectors) {
-			const bucket = selectorMap.get(selector);
-			if (bucket) {
-				bucket.push(option);
-			}
-		}
+		for (const selector of option.selectors) selectorMap.get(selector)?.push(option);
 	}
 
 	const entries = selectorNames.map((selectorName) => [
