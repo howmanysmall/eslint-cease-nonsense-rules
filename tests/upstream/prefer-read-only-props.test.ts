@@ -695,6 +695,79 @@ const invalid = [
 
 const valid = [
 	...allValid,
+	// React.createContext should not be treated as a component factory
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      interface DevicePlatform {
+        name: string;
+        version: number;
+      }
+
+      export const ForcedPlatformContext = React.createContext<DevicePlatform | undefined>(undefined);
+      ForcedPlatformContext.displayName = "ForcedPlatformContext";
+    `,
+	// Arbitrary functions with type args should not be treated as component factories
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      interface ModelWithPrimaryPart {
+        primaryPart: unknown;
+      }
+
+      declare function registerComponent<T>(): T;
+
+      export const Visual = registerComponent<ModelWithPrimaryPart>();
+    `,
+	// SCREAMING_SNAKE_CASE functions are not components
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      function DEFAULT_FIND_FIRST_CHILD(parent: Instance, name: string): Instance | undefined {
+        return parent.FindFirstChild(name);
+      }
+    `,
+	// Functions that don't return React elements are not components
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      interface EnumList<T> {
+        Type: string;
+        List: Record<string, T>;
+      }
+
+      type ChooseOptionType = string | number;
+
+      function EnumListButGood<T extends ChooseOptionType>(
+        list: Record<string, T>,
+        defaultKey: string,
+      ): EnumList<T> {
+        return {
+          Type: "EnumList",
+          List: list,
+        };
+      }
+    `,
+	// CreateContext with function type arg
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import { createContext } from "react";
+
+      type ThemeContextValue = {
+        theme: string;
+        setTheme: (theme: string) => void;
+      };
+
+      export const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+    `,
 	// TSTypeOperator readonly
 	tsx`
       /// <reference types="react" />
