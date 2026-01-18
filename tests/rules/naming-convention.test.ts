@@ -1079,6 +1079,12 @@ describe("naming-convention", () => {
 				errors: [{ messageId: "doesNotMatchFormat" }],
 				options: [{ format: ["UPPER_CASE"], selector: "variable", types: ["array"] }],
 			},
+			// Test branded array type - incorrect format
+			{
+				code: "type Branded = string[] & { brand: 'x' }; const foo_bar: Branded = [];",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [{ format: ["UPPER_CASE"], selector: "variable", types: ["array"] }],
+			},
 
 			// Test type: function - incorrect format
 			{
