@@ -633,6 +633,396 @@ function Component() {
 					},
 				],
 			},
+
+			// Computed property with PARAMETER key - only base should be dependency (using props)
+			{
+				code: `
+function Component({ slots }) {
+    const callback = useCallback((slotNumber) => {
+        return slots[slotNumber];
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'slots' to dependencies array",
+								output: `
+function Component({ slots }) {
+    const callback = useCallback((slotNumber) => {
+        return slots[slotNumber];
+    }, [slots]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Computed property with parameter - missing dependency with existing deps
+			{
+				code: `
+function Component({ slots }) {
+    const [other] = useState("value");
+    const callback = useCallback((index) => {
+        console.log(other);
+        return slots[index];
+    }, [other]);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'slots' to dependencies array",
+								output: `
+function Component({ slots }) {
+    const [other] = useState("value");
+    const callback = useCallback((index) => {
+        console.log(other);
+        return slots[index];
+    }, [other, slots]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Multiple parameter-indexed accesses - same base (using props)
+			{
+				code: `
+function Component({ items }) {
+    const callback = useCallback((key1, key2) => {
+        return items[key1] + items[key2];
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'items' to dependencies array",
+								output: `
+function Component({ items }) {
+    const callback = useCallback((key1, key2) => {
+        return items[key1] + items[key2];
+    }, [items]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Nested computed access - outer key is capture, inner key is parameter
+			{
+				code: `
+function Component({ data }) {
+    const userId = "user1";
+    const callback = useCallback((index) => {
+        return data[userId][index];
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'data[userId]' to dependencies array",
+								output: `
+function Component({ data }) {
+    const userId = "user1";
+    const callback = useCallback((index) => {
+        return data[userId][index];
+    }, [data[userId]]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Property access then parameter index (using props)
+			{
+				code: `
+function Component({ obj }) {
+    const callback = useCallback((i) => {
+        return obj.items[i];
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'obj.items' to dependencies array",
+								output: `
+function Component({ obj }) {
+    const callback = useCallback((i) => {
+        return obj.items[i];
+    }, [obj.items]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Complex real-world case from screenshot (using props)
+			{
+				code: `
+function Component({ slots }) {
+    const [, setHoverInfo] = useState("");
+    const handleHoverChange = useCallback((isHovered, slotNumber) => {
+        if (isHovered) {
+            const unitData = slots[slotNumber];
+            const unitName = unitData?.unitId ?? "empty";
+            setHoverInfo(\`Slot \${slotNumber} | \${unitName}\`);
+        } else {
+            setHoverInfo("");
+        }
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'slots' to dependencies array",
+								output: `
+function Component({ slots }) {
+    const [, setHoverInfo] = useState("");
+    const handleHoverChange = useCallback((isHovered, slotNumber) => {
+        if (isHovered) {
+            const unitData = slots[slotNumber];
+            const unitName = unitData?.unitId ?? "empty";
+            setHoverInfo(\`Slot \${slotNumber} | \${unitName}\`);
+        } else {
+            setHoverInfo("");
+        }
+    }, [slots]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Optional chaining with parameter index - missing dep
+			{
+				code: `
+function Component({ data }) {
+    const callback = useCallback((index) => {
+        return data?.[index];
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'data' to dependencies array",
+								output: `
+function Component({ data }) {
+    const callback = useCallback((index) => {
+        return data?.[index];
+    }, [data]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Loop variable as index - still need the array
+			{
+				code: `
+function Component({ items }) {
+    const callback = useCallback(() => {
+        for (let i = 0; i < 10; i++) {
+            console.log(items[i]);
+        }
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'items' to dependencies array",
+								output: `
+function Component({ items }) {
+    const callback = useCallback(() => {
+        for (let i = 0; i < 10; i++) {
+            console.log(items[i]);
+        }
+    }, [items]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Destructured parameter used as key - missing dep
+			{
+				code: `
+function Component({ data }) {
+    const callback = useCallback(({ index }) => {
+        return data[index];
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'data' to dependencies array",
+								output: `
+function Component({ data }) {
+    const callback = useCallback(({ index }) => {
+        return data[index];
+    }, [data]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Multiple property accesses on same object - ALL should be detected
+			{
+				code: `
+function Component({ controls }) {
+    const callback = useCallback(() => {
+        return {
+            fov: controls.cameraFov,
+            rotation: controls.iconRotation,
+            speed: controls.rotationSpeed,
+            shadow: controls.iconShadow,
+        };
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependencies",
+						suggestions: [
+							{
+								desc: "Add missing dependencies to array",
+								output: `
+function Component({ controls }) {
+    const callback = useCallback(() => {
+        return {
+            fov: controls.cameraFov,
+            rotation: controls.iconRotation,
+            speed: controls.rotationSpeed,
+            shadow: controls.iconShadow,
+        };
+    }, [controls.cameraFov, controls.iconRotation, controls.iconShadow, controls.rotationSpeed]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Real-world case from screenshot - renderIcon with controls
+			{
+				code: `
+function Component({ controls }) {
+    const renderIcon = useCallback((_, unitData) => {
+        if (unitData?.unitId === undefined) return undefined;
+        return (
+            <UnitIcon
+                key={\`unit-icon-\${unitData.unitId}\`}
+                cameraFov={controls.cameraFov}
+                rotationEnabled={controls.iconRotation}
+                rotationSpeed={controls.rotationSpeed}
+                shadow={controls.iconShadow}
+                unitId={unitData.unitId}
+            />
+        );
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependencies",
+						suggestions: [
+							{
+								desc: "Add missing dependencies to array",
+								output: `
+function Component({ controls }) {
+    const renderIcon = useCallback((_, unitData) => {
+        if (unitData?.unitId === undefined) return undefined;
+        return (
+            <UnitIcon
+                key={\`unit-icon-\${unitData.unitId}\`}
+                cameraFov={controls.cameraFov}
+                rotationEnabled={controls.iconRotation}
+                rotationSpeed={controls.rotationSpeed}
+                shadow={controls.iconShadow}
+                unitId={unitData.unitId}
+            />
+        );
+    }, [controls.cameraFov, controls.iconRotation, controls.iconShadow, controls.rotationSpeed]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Multiple different depths on same object
+			{
+				code: `
+function Component({ obj }) {
+    const callback = useCallback(() => {
+        return obj.a + obj.b.c + obj.d;
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependencies",
+						suggestions: [
+							{
+								desc: "Add missing dependencies to array",
+								output: `
+function Component({ obj }) {
+    const callback = useCallback(() => {
+        return obj.a + obj.b.c + obj.d;
+    }, [obj.a, obj.b.c, obj.d]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
 		],
 		valid: [
 			// Coverage: TSSatisfiesExpression and other TS nodes
@@ -1281,6 +1671,103 @@ function Component() {
     const [state, toggle] = useCustomHook(() => {
         toggle();
     }, []);
+}
+`,
+
+			// Computed property with PARAMETER key - base is the dependency (using props)
+			`
+function Component({ slots }) {
+    const callback = useCallback((slotNumber) => {
+        return slots[slotNumber];
+    }, [slots]);
+}
+`,
+
+			// Computed property with parameter - multiple accesses (using props)
+			`
+function Component({ items }) {
+    const callback = useCallback((key1, key2) => {
+        return items[key1] + items[key2];
+    }, [items]);
+}
+`,
+
+			// Nested computed access - outer key is capture, inner is parameter
+			`
+function Component({ data }) {
+    const userId = "user1";
+    const callback = useCallback((index) => {
+        return data[userId][index];
+    }, [data[userId]]);
+}
+`,
+
+			// Property access then parameter index (using props)
+			`
+function Component({ obj }) {
+    const callback = useCallback((i) => {
+        return obj.items[i];
+    }, [obj.items]);
+}
+`,
+
+			// Parameter index with parent object as dep (using props)
+			`
+function Component({ obj }) {
+    const callback = useCallback((i) => {
+        return obj.items[i];
+    }, [obj]);
+}
+`,
+
+			// Complex real-world case (using props)
+			`
+function Component({ slots }) {
+    const [, setHoverInfo] = useState("");
+    const handleHoverChange = useCallback((isHovered, slotNumber) => {
+        if (isHovered) {
+            const unitData = slots[slotNumber];
+            setHoverInfo(unitData?.unitId ?? "empty");
+        }
+    }, [slots]);
+}
+`,
+
+			// Optional chaining with parameter index
+			`
+function Component({ data }) {
+    const callback = useCallback((index) => {
+        return data?.[index];
+    }, [data]);
+}
+`,
+
+			// Local variable defined inside callback used as key - should NOT be a dependency
+			`
+function Component({ items }) {
+    const callback = useCallback(() => {
+        for (let i = 0; i < 10; i++) {
+            console.log(items[i]);
+        }
+    }, [items]);
+}
+`,
+
+			// Nested callback - inner parameter as key
+			`
+function Component({ matrix }) {
+    const callback = useCallback((row) => {
+        return matrix[row].map((cell, col) => matrix[row][col]);
+    }, [matrix]);
+}
+`,
+
+			// Destructured parameter used as key
+			`
+function Component({ data }) {
+    const callback = useCallback(({ index }) => {
+        return data[index];
+    }, [data]);
 }
 `,
 		],
