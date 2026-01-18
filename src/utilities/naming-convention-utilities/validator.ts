@@ -1,6 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import type { Type, TypeChecker } from "typescript";
+import { TypeFlags } from "typescript";
 
 import type { ModifiersString, SelectorsString } from "./enums";
 import { TypeModifiers } from "./enums";
@@ -301,12 +302,7 @@ function isCorrectType(
 	for (const allowedType of config.types) {
 		switch (allowedType) {
 			case TypeModifiers.array:
-				if (
-					isAllTypesMatch(
-						type,
-						(innerType) => checker.isArrayType(innerType) || checker.isTupleType(innerType),
-					)
-				) {
+				if (isAllTypesMatch(type, (innerType) => isArrayLikeType(checker, innerType))) {
 					return true;
 				}
 				break;
@@ -330,4 +326,16 @@ function isCorrectType(
 function isAllTypesMatch(type: Type, callback: (innerType: Type) => boolean): boolean {
 	if (type.isUnion()) return type.types.every((innerType) => callback(innerType));
 	return callback(type);
+}
+
+function isArrayLikeType(checker: TypeChecker, type: Type): boolean {
+	if (isAnyType(type)) return false;
+
+	if (checker.isArrayType(type) || checker.isTupleType(type)) return true;
+
+	return checker.isArrayLikeType(type);
+}
+
+function isAnyType(type: Type): boolean {
+	return (type.flags & TypeFlags.Any) !== 0;
 }
