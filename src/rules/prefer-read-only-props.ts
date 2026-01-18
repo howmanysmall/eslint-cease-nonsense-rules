@@ -9,10 +9,13 @@ type MessageIds = "preferReadOnlyProps" | "readOnlyProp";
 type Options = [];
 
 const COMPONENT_NAME_PATTERN = regex("^[A-Z]", "u");
+const LOWERCASE_PATTERN = regex("[a-z]", "u");
 const READONLY_WRAPPER_NAMES = new Set(["Readonly", "ReadonlyArray", "ReadonlyDeep", "DeepReadonly", "DeepReadOnly"]);
 const REACT_BUILTIN_PROPS = new Set(["children", "key", "ref"]);
 const REACT_FC_TYPE_NAMES = new Set(["FC", "FunctionComponent", "VFC", "VoidFunctionComponent"]);
 const REACT_FORWARD_REF_NAMES = new Set(["forwardRef"]);
+const REACT_MEMO_NAMES = new Set(["memo"]);
+const REACT_ELEMENT_TYPE_NAMES = new Set(["Element", "ReactElement", "ReactNode", "ReactChild", "ReactFragment"]);
 
 function isPropertyReadonlyInTypeOrBase(checker: TypeChecker, type: Type, property: TSSymbol): boolean {
 	const escapedName = property.getEscapedName();
@@ -71,7 +74,78 @@ function isFunctionLike(
 }
 
 function isComponentName(name: string): boolean {
+	// React components use PascalCase:
+	// - Starts with uppercase
+	// - No underscores (excludes SCREAMING_SNAKE_CASE like DEFAULT_FIND_FIRST_CHILD)
+	// - Has lowercase letters (excludes ALLCAPS constants like ABC)
+	if (name.includes("_")) return false;
+	if (!LOWERCASE_PATTERN.test(name)) return false;
 	return COMPONENT_NAME_PATTERN.test(name);
+}
+
+function isDefinitelyNotReactReturnType(checker: TypeChecker, type: Type): boolean {
+	// Handle unions - if any member could be a React element, return false
+	if (type.isUnion()) {
+		return type.types.every((memberType) => isDefinitelyNotReactReturnType(checker, memberType));
+	}
+
+	const typeString = checker.typeToString(type);
+
+	// Null is a valid React return
+	if (typeString === "null") return false;
+
+	// Check for React element patterns in type string
+	if (typeString.includes("Element") || typeString.includes("ReactNode") || typeString.includes("ReactElement")) {
+		return false;
+	}
+
+	// Check symbol for known React element types
+	const symbol = type.getSymbol() ?? type.aliasSymbol;
+	if (symbol) {
+		const name = symbol.getName();
+		if (REACT_ELEMENT_TYPE_NAMES.has(name)) return false;
+	}
+
+	// Primitives that are clearly not React elements
+	if (
+		typeString === "string" ||
+		typeString === "number" ||
+		typeString === "boolean" ||
+		typeString === "undefined" ||
+		typeString === "void" ||
+		typeString === "never"
+	) {
+		return true;
+	}
+
+	// Custom named types that don't match React patterns are probably not React elements.
+	// We need to be conservative - only filter out if the type has a clear symbol
+	// That's not a React type
+	if (symbol) {
+		const name = symbol.getName();
+		// If it's a named type that's not a React element type, it's probably not a component return
+		if (!(REACT_ELEMENT_TYPE_NAMES.has(name) || name.includes("Element"))) {
+			return true;
+		}
+	}
+
+	// Default: assume it might be a React element (conservative)
+	return false;
+}
+
+function isReactComponentFunction(checker: TypeChecker, functionType: Type): boolean {
+	const callSignatures = functionType.getCallSignatures();
+
+	// Can't determine return type, assume it might be a component
+	if (callSignatures.length === 0) return true;
+
+	const [firstSignature] = callSignatures;
+
+	// Can't determine return type
+	if (!firstSignature) return true;
+
+	const returnType = checker.getReturnTypeOfSignature(firstSignature);
+	return !isDefinitelyNotReactReturnType(checker, returnType);
 }
 
 function getTypeLiteralFromParameter(parameter: TSESTree.Node | undefined): TSESTree.TSTypeLiteral | undefined {
@@ -184,12 +258,25 @@ const preferReadOnlyPropsRule = createRule<Options, MessageIds>({
 		function getPropertiesTypeFromCallExpressionTypeArgs(callExpr: TSESTree.CallExpression): Type | undefined {
 			if (!callExpr.typeArguments || callExpr.typeArguments.params.length === 0) return undefined;
 
-			let propertiesTypeIndex = 0;
 			const { callee } = callExpr;
+			let calleeName: string | undefined;
+
 			if (callee.type === AST_NODE_TYPES.MemberExpression && callee.property.type === AST_NODE_TYPES.Identifier) {
-				if (REACT_FORWARD_REF_NAMES.has(callee.property.name)) propertiesTypeIndex = 1;
-			} else if (callee.type === AST_NODE_TYPES.Identifier && REACT_FORWARD_REF_NAMES.has(callee.name)) {
+				calleeName = callee.property.name;
+			} else if (callee.type === AST_NODE_TYPES.Identifier) {
+				calleeName = callee.name;
+			}
+
+			if (!calleeName) return undefined;
+
+			let propertiesTypeIndex: number;
+			if (REACT_FORWARD_REF_NAMES.has(calleeName)) {
 				propertiesTypeIndex = 1;
+			} else if (REACT_MEMO_NAMES.has(calleeName)) {
+				propertiesTypeIndex = 0;
+			} else {
+				// Not a known React component factory (e.g., createContext, registerComponent)
+				return undefined;
 			}
 
 			const typeArgument = callExpr.typeArguments.params[propertiesTypeIndex];
@@ -227,10 +314,23 @@ const preferReadOnlyPropsRule = createRule<Options, MessageIds>({
 			}
 		}
 
+		function isFunctionReactComponent(
+			functionNode: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
+		): boolean {
+			const tsNode = services.esTreeNodeToTSNodeMap.get(functionNode);
+			if (!tsNode) return false;
+
+			const functionType = checker.getTypeAtLocation(tsNode);
+			if (!functionType) return false;
+
+			return isReactComponentFunction(checker, functionType);
+		}
+
 		return {
 			FunctionDeclaration(node): void {
 				if (!(node.id && isComponentName(node.id.name))) return;
 				if (node.params.length === 0) return;
+				if (!isFunctionReactComponent(node)) return;
 				reportIfNotReadonly(node, getPropertiesTypeFromFunctionNode(node));
 			},
 			VariableDeclarator(node): void {
@@ -247,6 +347,7 @@ const preferReadOnlyPropsRule = createRule<Options, MessageIds>({
 
 				if (isFunctionLike(init)) {
 					if (init.params.length === 0) return;
+					if (!isFunctionReactComponent(init)) return;
 					reportIfNotReadonly(node, getPropertiesTypeFromFunctionNode(init));
 				} else if (init.type === AST_NODE_TYPES.CallExpression) {
 					const propertiesFromTypeArgs = getPropertiesTypeFromCallExpressionTypeArgs(init);
