@@ -468,6 +468,21 @@ function Fade({ aspectRatio }) {
 					},
 				},
 			},
+			// JSX element passed via holder children prop needs key
+			{
+				code: `
+function BadHolderChildren() {
+    return <Frame holderChildren={<Child />} />;
+}
+`,
+				errors: 1,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
 		],
 		valid: [
 			// Top-level return
@@ -837,6 +852,20 @@ function Good9() {
 				code: `
 function Good10() {
     return <ErrorBoundary fallback={<div>Error</div>}><App key="app" /></ErrorBoundary>;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// JSX element passed via holder children prop with key
+			{
+				code: `
+function GoodHolderChildren() {
+    return <Frame holderChildren={<Child key="child" />} />;
 }
 `,
 				languageOptions: {

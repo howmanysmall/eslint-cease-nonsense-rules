@@ -254,6 +254,8 @@ const CONTROL_FLOW_TYPES = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.WithStatement,
 ]);
 
+const CHILD_PROP_NAME_SUFFIX = "children";
+
 function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
 	let parent = ascendPastWrappers(node.parent);
 	if (!parent) return false;
@@ -336,6 +338,19 @@ function isIgnoredCallExpression(
 	return false;
 }
 
+function getJSXAttributeName(attribute: TSESTree.JSXAttribute): string | undefined {
+	const { name } = attribute;
+
+	if (name.type === TSESTree.AST_NODE_TYPES.JSXIdentifier) return name.name;
+	if (name.type === TSESTree.AST_NODE_TYPES.JSXNamespacedName) return name.name.name;
+
+	return undefined;
+}
+
+function isChildrenAttributeName(attributeName: string): boolean {
+	return attributeName.toLowerCase().endsWith(CHILD_PROP_NAME_SUFFIX);
+}
+
 function isJSXPropValue(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
 	let { parent } = node;
 	if (!parent) return false;
@@ -355,7 +370,12 @@ function isJSXPropValue(node: TSESTree.JSXElement | TSESTree.JSXFragment): boole
 		if (!parent) return false;
 	}
 
-	return parent.type === TSESTree.AST_NODE_TYPES.JSXAttribute;
+	if (parent.type !== TSESTree.AST_NODE_TYPES.JSXAttribute) return false;
+
+	const attributeName = getJSXAttributeName(parent);
+	if (!attributeName) return true;
+
+	return !isChildrenAttributeName(attributeName);
 }
 
 /**
