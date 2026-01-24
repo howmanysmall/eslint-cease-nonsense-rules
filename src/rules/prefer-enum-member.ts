@@ -152,6 +152,7 @@ export default createRule<Options, MessageIds>({
 		const enumCandidateCache = new WeakMap<Type, ReadonlyArray<EnumCandidate> | false>();
 		const enumSymbolCache = new WeakMap<Type, TypeScriptSymbol | false>();
 		const objectKeyTypeCache = new WeakMap<Type, Type | false>();
+		const aliasTargetCache = new WeakMap<TypeScriptSymbol, Type | false>();
 		const aliasTypeParameterCache = new WeakMap<TypeScriptSymbol, Map<string, number> | false>();
 		const unionTypesCache = new WeakMap<Type, ReadonlyArray<Type>>();
 		const contextualTypeCache = new WeakMap<TSESTree.Node, Type | false>();
@@ -353,6 +354,30 @@ export default createRule<Options, MessageIds>({
 			return undefined;
 		}
 
+		function getAliasTargetType(type: Type): Type | undefined {
+			const { aliasSymbol } = type;
+			if (!aliasSymbol) return undefined;
+
+			const cached = aliasTargetCache.get(aliasSymbol);
+			if (cached !== undefined) return cached === false ? undefined : cached;
+
+			const declarations = aliasSymbol.declarations ?? [];
+			for (const declaration of declarations) {
+				if (!isTypeAliasDeclaration(declaration)) continue;
+				const { typeParameters } = declaration;
+				if (typeParameters && typeParameters.length > 0) {
+					aliasTargetCache.set(aliasSymbol, false);
+					return undefined;
+				}
+				const resolved = checker.getTypeFromTypeNode(declaration.type);
+				aliasTargetCache.set(aliasSymbol, resolved);
+				return resolved;
+			}
+
+			aliasTargetCache.set(aliasSymbol, false);
+			return undefined;
+		}
+
 		function getObjectKeyType(type: Type): Type | undefined {
 			const cached = objectKeyTypeCache.get(type);
 			if (cached !== undefined) return cached === false ? undefined : cached;
@@ -366,6 +391,12 @@ export default createRule<Options, MessageIds>({
 		function getObjectKeyTypeInternal(type: Type, visited: WeakSet<Type>): Type | undefined {
 			if (visited.has(type)) return undefined;
 			visited.add(type);
+
+			const aliasTarget = getAliasTargetType(type);
+			if (aliasTarget && aliasTarget !== type) {
+				const resolvedAlias = getObjectKeyTypeInternal(aliasTarget, visited);
+				if (resolvedAlias) return resolvedAlias;
+			}
 
 			const unionTypes = getUnionTypesCached(type);
 			if (unionTypes.length > 1) {
