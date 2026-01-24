@@ -52,6 +52,7 @@ export default [
 			"cease-nonsense/no-memo-children": "error",
 			"cease-nonsense/no-print": "error",
 			"cease-nonsense/prefer-enum-item": "error",
+			"cease-nonsense/prefer-enum-member": "error",
 			"cease-nonsense/no-shorthand-names": "error",
 			"cease-nonsense/no-unused-imports": "error",
 			"cease-nonsense/no-useless-use-spring": "error",
@@ -175,6 +176,50 @@ const props: ImageProps = { ScaleType: 1 };
 
 // Explicit enum in object
 	const props: ImageProps = { ScaleType: Enum.ScaleType.Slice };
+```
+
+#### `prefer-enum-member`
+
+Enforce using enum member references instead of raw string or number values when the type expects a TypeScript enum. Covers both `enum` and `const enum`, including object literal keys used with mapped types like `Record<Color, T>`.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/prefer-enum-member": "error"
+}
+```
+
+**❌ Bad**
+
+```typescript
+enum Color {
+	Blue = "Blue",
+	Green = "Green",
+}
+
+const meta: Record<Color, number> = {
+	Blue: 1,
+	Green: 2,
+};
+
+const selected: Color = "Blue";
+```
+
+**✅ Good**
+
+```typescript
+enum Color {
+	Blue = "Blue",
+	Green = "Green",
+}
+
+const meta: Record<Color, number> = {
+	[Color.Blue]: 1,
+	[Color.Green]: 2,
+};
+
+const selected: Color = Color.Blue;
 ```
 
 #### `no-unused-imports`

@@ -96,11 +96,6 @@ export function parseOptions(context: Context): ParsedOptions {
 	for (const selectorName of selectorNames) selectorMap.set(selectorName, []);
 
 	for (const option of normalizedOptions) {
-		if (option.selectors.length === 0) {
-			for (const selectorName of selectorNames) selectorMap.get(selectorName)?.push(option);
-			continue;
-		}
-
 		for (const selector of option.selectors) selectorMap.get(selector)?.push(option);
 	}
 

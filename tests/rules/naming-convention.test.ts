@@ -649,6 +649,14 @@ describe("naming-convention", () => {
 					{ filter: "TEST$", format: ["UPPER_CASE"], selector: "variable" },
 				],
 			},
+			// Test multiple configs for the same selector
+			{
+				code: "const fooBar = 1;",
+				options: [
+					{ format: ["camelCase"], selector: "variable" },
+					{ format: ["camelCase"], leadingUnderscore: "allow", selector: "variable" },
+				],
+			},
 		],
 	});
 
@@ -1120,6 +1128,11 @@ describe("naming-convention", () => {
 				code: "const FOO_BAR: string[] = [];",
 				options: [{ format: ["UPPER_CASE"], selector: "variable", types: ["array"] }],
 			},
+			// Test union array type - matching format
+			{
+				code: "const FOO_BAR: string[] | number[] = [];",
+				options: [{ format: ["UPPER_CASE"], selector: "variable", types: ["array"] }],
+			},
 
 			// Test type: function - matching format
 			{
@@ -1150,6 +1163,14 @@ describe("naming-convention", () => {
 				code: "const fooBar: string = 'test';",
 				options: [
 					{ format: ["UPPER_CASE"], selector: "variable", types: ["array"] },
+					{ format: ["camelCase"], selector: "variable" },
+				],
+			},
+			// Test primitive type mismatch - uses fallback rule
+			{
+				code: "const fooBar: number = 1;",
+				options: [
+					{ format: ["UPPER_CASE"], selector: "variable", types: ["string"] },
 					{ format: ["camelCase"], selector: "variable" },
 				],
 			},

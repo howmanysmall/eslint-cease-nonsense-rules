@@ -74,6 +74,7 @@ describe("format-utilities", () => {
 
 		it("returns undefined for unsupported extensions", () => {
 			expect(getExtension("file.py")).toBeUndefined();
+			expect(getExtension("file.pas")).toBeUndefined();
 			expect(getExtension("file.json")).toBeUndefined();
 			expect(getExtension("file")).toBeUndefined();
 		});
