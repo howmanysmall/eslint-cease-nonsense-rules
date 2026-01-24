@@ -68,6 +68,28 @@ type Options = [PreferEnumItemOptions?];
 const ENUM_PREFIX = "Enum.";
 const enumLiteralIndexCache = new WeakMap<TypeChecker, EnumLiteralIndex | false>();
 
+interface EnumItemCaches {
+	readonly enumItemInfoCache: WeakMap<Type, EnumItemInfo | false>;
+	readonly enumLookupCache: WeakMap<Type, EnumLookup | false>;
+	readonly enumPathCache: WeakMap<Type, string | false>;
+	readonly unionTypesCache: WeakMap<Type, ReadonlyArray<Type>>;
+}
+
+const enumItemCachesByChecker = new WeakMap<TypeChecker, EnumItemCaches>();
+
+function getEnumItemCaches(checker: TypeChecker): EnumItemCaches {
+	const cached = enumItemCachesByChecker.get(checker);
+	if (cached) return cached;
+	const created: EnumItemCaches = {
+		enumItemInfoCache: new WeakMap<Type, EnumItemInfo | false>(),
+		enumLookupCache: new WeakMap<Type, EnumLookup | false>(),
+		enumPathCache: new WeakMap<Type, string | false>(),
+		unionTypesCache: new WeakMap<Type, ReadonlyArray<Type>>(),
+	};
+	enumItemCachesByChecker.set(checker, created);
+	return created;
+}
+
 function getFullEnumPath(checker: TypeChecker, type: Type): string | undefined {
 	const symbol = type.getSymbol();
 	if (symbol === undefined) return undefined;
@@ -93,24 +115,16 @@ function getPropertyLiteralType(
 	return undefined;
 }
 
-function getUnionTypes(type: Type): ReadonlyArray<Type> {
-	if (isUnionType(type)) return unionConstituents(type);
-	return [type];
-}
-
 function createEnumMatch(enumPath: string): EnumMatch {
 	return { enumPath };
 }
 
 export default createRule<Options, MessageIds>({
 	create(context) {
-		const [{ fixNumericToValue = false, performanceMode = false } = {}] = context.options;
+		const [{ fixNumericToValue = false, performanceMode = true } = {}] = context.options;
 		const services = ESLintUtils.getParserServices(context);
 		const checker = services.program.getTypeChecker();
-		const unionTypesCache = new WeakMap<Type, ReadonlyArray<Type>>();
-		const enumPathCache = new WeakMap<Type, string | false>();
-		const enumItemInfoCache = new WeakMap<Type, EnumItemInfo | false>();
-		const enumLookupCache = new WeakMap<Type, EnumLookup | false>();
+		const { enumItemInfoCache, enumLookupCache, enumPathCache, unionTypesCache } = getEnumItemCaches(checker);
 		const contextualTypeCache = new WeakMap<TSESTree.Node, Type | false>();
 
 		function getUnionTypesCached(type: Type): ReadonlyArray<Type> {
@@ -253,8 +267,10 @@ export default createRule<Options, MessageIds>({
 			if (!performanceMode) return false;
 			const tsNode = services.esTreeNodeToTSNodeMap.get(node);
 			if (tsNode === undefined) return false;
+
 			const index = getEnumLiteralIndex(tsNode);
 			if (index === undefined) return false;
+
 			if (typeof value === "string") return !index.stringSet.has(value);
 			return !index.numberSet.has(value);
 		}
@@ -270,7 +286,7 @@ export default createRule<Options, MessageIds>({
 				return enumPath === undefined ? undefined : createEnumMatch(enumPath);
 			}
 
-			const unionTypes = getUnionTypes(contextualType);
+			const unionTypes = getUnionTypesCached(contextualType);
 
 			for (const memberType of unionTypes) {
 				const enumPath = getFullEnumPath(checker, memberType);
@@ -294,11 +310,10 @@ export default createRule<Options, MessageIds>({
 				if (typeof value !== "string" && typeof value !== "number") return;
 
 				if (!canHaveContextualEnumType(node)) return;
+				if (shouldSkipLiteral(node, value)) return;
 
 				const contextualType = getContextualType(node);
 				if (contextualType === undefined) return;
-
-				if (performanceMode && shouldSkipLiteral(node, value)) return;
 
 				const match = findEnumMatch(contextualType, value);
 				if (match === undefined) return;
@@ -325,7 +340,7 @@ export default createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [{ fixNumericToValue: false, performanceMode: false }],
+	defaultOptions: [{ fixNumericToValue: false, performanceMode: true }],
 	meta: {
 		docs: {
 			description: "Enforce using EnumItem values instead of string or number literals.",
@@ -345,7 +360,7 @@ export default createRule<Options, MessageIds>({
 						type: "boolean",
 					},
 					performanceMode: {
-						default: false,
+						default: true,
 						description: "When true, uses caching to speed up enum lookups without changing behavior",
 						type: "boolean",
 					},

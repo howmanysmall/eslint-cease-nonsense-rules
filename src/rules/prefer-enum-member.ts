@@ -29,13 +29,39 @@ interface EnumMemberLookup {
 	readonly stringMap: Map<string, string>;
 }
 
+interface EnumCandidate {
+	readonly enumSymbol: TypeScriptSymbol;
+	readonly lookup: EnumMemberLookup;
+}
+
 const IDENTIFIER_PATH = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/u;
-const SINGLE_ARG_OBJECT_WRAPPERS = new Set(["Readonly"]);
+const SINGLE_ARGUMENT_OBJECT_WRAPPERS = new Set(["Readonly"]);
 const RECORD_ALIAS_NAME = "Record";
 
-function getUnionTypes(type: Type): ReadonlyArray<Type> {
-	if (isUnionType(type)) return unionConstituents(type);
-	return [type];
+interface RuleCaches {
+	readonly aliasTypeParameterCache: WeakMap<TypeScriptSymbol, Map<string, number> | false>;
+	readonly enumCandidateCache: WeakMap<Type, ReadonlyArray<EnumCandidate> | false>;
+	readonly enumMemberCache: WeakMap<TypeScriptSymbol, EnumMemberLookup | false>;
+	readonly enumSymbolCache: WeakMap<Type, TypeScriptSymbol | false>;
+	readonly objectKeyTypeCache: WeakMap<Type, Type | false>;
+	readonly unionTypesCache: WeakMap<Type, ReadonlyArray<Type>>;
+}
+
+const cachesByChecker = new WeakMap<TypeChecker, RuleCaches>();
+
+function getRuleCaches(checker: TypeChecker): RuleCaches {
+	const cached = cachesByChecker.get(checker);
+	if (cached) return cached;
+	const created: RuleCaches = {
+		aliasTypeParameterCache: new WeakMap<TypeScriptSymbol, Map<string, number> | false>(),
+		enumCandidateCache: new WeakMap<Type, ReadonlyArray<EnumCandidate> | false>(),
+		enumMemberCache: new WeakMap<TypeScriptSymbol, EnumMemberLookup | false>(),
+		enumSymbolCache: new WeakMap<Type, TypeScriptSymbol | false>(),
+		objectKeyTypeCache: new WeakMap<Type, Type | false>(),
+		unionTypesCache: new WeakMap<Type, ReadonlyArray<Type>>(),
+	};
+	cachesByChecker.set(checker, created);
+	return created;
 }
 
 function resolveAliasSymbol(checker: TypeChecker, symbol: TypeScriptSymbol): TypeScriptSymbol {
@@ -49,6 +75,28 @@ function isPropertyKeyLiteral(node: TSESTree.Literal): boolean {
 	return parent.key === node;
 }
 
+function isModuleSpecifierLiteral(node: TSESTree.Literal): boolean {
+	const { parent } = node;
+	if (!parent) return false;
+	switch (parent.type) {
+		case AST_NODE_TYPES.ImportDeclaration:
+		case AST_NODE_TYPES.ExportNamedDeclaration:
+		case AST_NODE_TYPES.ExportAllDeclaration:
+			return parent.source === node;
+		case AST_NODE_TYPES.ImportExpression:
+			return parent.source === node;
+		default:
+			return false;
+	}
+}
+
+function isDirectiveLiteral(node: TSESTree.Literal): boolean {
+	const { parent } = node;
+	if (!parent || parent.type !== AST_NODE_TYPES.ExpressionStatement) return false;
+	if (parent.expression !== node) return false;
+	return typeof parent.directive === "string";
+}
+
 function isJSXAttributeValue(node: TSESTree.Literal): boolean {
 	const { parent } = node;
 	return parent !== undefined && parent.type === AST_NODE_TYPES.JSXAttribute && parent.value === node;
@@ -57,9 +105,7 @@ function isJSXAttributeValue(node: TSESTree.Literal): boolean {
 function getRecordKeyType(type: Type): Type | undefined {
 	const { aliasSymbol } = type;
 	if (!aliasSymbol || aliasSymbol.getName() !== RECORD_ALIAS_NAME) return undefined;
-	const { aliasTypeArguments } = type;
-	if (!aliasTypeArguments?.[0]) return undefined;
-	return aliasTypeArguments[0];
+	return type.aliasTypeArguments?.[0] ?? undefined;
 }
 
 interface PropertyKeyInfo {
@@ -86,11 +132,23 @@ export default createRule<Options, MessageIds>({
 		const services = ESLintUtils.getParserServices(context);
 		const checker = services.program.getTypeChecker();
 		const { sourceCode } = context;
-		const enumMemberCache = new WeakMap<TypeScriptSymbol, EnumMemberLookup | false>();
-		const enumMatchCache = new WeakMap<Type, Map<string | number, EnumMemberMatch | false>>();
+		const {
+			aliasTypeParameterCache,
+			enumCandidateCache,
+			enumMemberCache,
+			enumSymbolCache,
+			objectKeyTypeCache,
+			unionTypesCache,
+		} = getRuleCaches(checker);
 		const contextualTypeCache = new WeakMap<TSESTree.Node, Type | false>();
-		const objectKeyTypeCache = new WeakMap<Type, Type | false>();
-		const aliasTypeParameterCache = new WeakMap<TypeScriptSymbol, Map<string, number> | false>();
+
+		function getUnionTypesCached(type: Type): ReadonlyArray<Type> {
+			const cached = unionTypesCache.get(type);
+			if (cached !== undefined) return cached;
+			const resolved = isUnionType(type) ? unionConstituents(type) : [type];
+			unionTypesCache.set(type, resolved);
+			return resolved;
+		}
 
 		function isEquivalentType(left: Type, right: Type): boolean {
 			if (left === right) return true;
@@ -98,10 +156,22 @@ export default createRule<Options, MessageIds>({
 		}
 
 		function getEnumSymbolFromType(type: Type): TypeScriptSymbol | undefined {
+			const cached = enumSymbolCache.get(type);
+			if (cached !== undefined) return cached === false ? undefined : cached;
+
 			const symbol = type.aliasSymbol ?? type.getSymbol();
-			if (symbol === undefined) return undefined;
+			if (symbol === undefined) {
+				enumSymbolCache.set(type, false);
+				return undefined;
+			}
+
 			const resolved = resolveAliasSymbol(checker, symbol);
-			if ((resolved.flags & (SymbolFlags.Enum | SymbolFlags.ConstEnum)) !== 0) return resolved;
+
+			if ((resolved.flags & (SymbolFlags.Enum | SymbolFlags.ConstEnum)) !== 0) {
+				enumSymbolCache.set(type, resolved);
+				return resolved;
+			}
+
 			if ((resolved.flags & SymbolFlags.EnumMember) !== 0) {
 				const declarations = resolved.declarations ?? [];
 				for (const declaration of declarations) {
@@ -109,9 +179,14 @@ export default createRule<Options, MessageIds>({
 					const { parent } = declaration;
 					if (!isEnumDeclaration(parent)) continue;
 					const parentSymbol = checker.getSymbolAtLocation(parent.name);
-					if (parentSymbol) return parentSymbol;
+					if (parentSymbol) {
+						enumSymbolCache.set(type, parentSymbol);
+						return parentSymbol;
+					}
 				}
 			}
+
+			enumSymbolCache.set(type, false);
 			return undefined;
 		}
 
@@ -119,9 +194,7 @@ export default createRule<Options, MessageIds>({
 			const { valueDeclaration } = memberSymbol;
 			if (!valueDeclaration) return undefined;
 			const memberType = checker.getTypeOfSymbolAtLocation(memberSymbol, valueDeclaration);
-			if (memberType.isStringLiteral()) return memberType.value;
-			if (memberType.isNumberLiteral()) return memberType.value;
-			return undefined;
+			return memberType.isStringLiteral() || memberType.isNumberLiteral() ? memberType.value : undefined;
 		}
 
 		function getEnumMembers(enumSymbol: TypeScriptSymbol): EnumMemberLookup | undefined {
@@ -152,44 +225,55 @@ export default createRule<Options, MessageIds>({
 			return lookup;
 		}
 
-		function getEnumMemberMatch(contextualType: Type, value: string | number): EnumMemberMatch | undefined {
-			const cachedByType = enumMatchCache.get(contextualType);
-			if (cachedByType) {
-				const cachedMatch = cachedByType.get(value);
-				if (cachedMatch !== undefined) return cachedMatch === false ? undefined : cachedMatch;
-			}
+		function getEnumCandidates(contextualType: Type): ReadonlyArray<EnumCandidate> | undefined {
+			const cached = enumCandidateCache.get(contextualType);
+			if (cached !== undefined) return cached === false ? undefined : cached;
 
-			const matches = new Map<TypeScriptSymbol, string>();
-			const unionTypes = getUnionTypes(contextualType);
+			const unionTypes = getUnionTypesCached(contextualType);
+			const candidates = new Array<EnumCandidate>();
+			const seen = new Set<TypeScriptSymbol>();
 
 			for (const memberType of unionTypes) {
 				const enumSymbol = getEnumSymbolFromType(memberType);
 				if (!enumSymbol) continue;
+				if (seen.has(enumSymbol)) continue;
+
 				const lookup = getEnumMembers(enumSymbol);
 				if (!lookup) continue;
 
+				seen.add(enumSymbol);
+				candidates.push({ enumSymbol, lookup });
+			}
+
+			if (candidates.length === 0) {
+				enumCandidateCache.set(contextualType, false);
+				return undefined;
+			}
+
+			enumCandidateCache.set(contextualType, candidates);
+			return candidates;
+		}
+
+		function getEnumMemberMatch(contextualType: Type, value: string | number): EnumMemberMatch | undefined {
+			const candidates = getEnumCandidates(contextualType);
+			if (!candidates) return undefined;
+
+			let resolvedSymbol: TypeScriptSymbol | undefined;
+			let resolvedMember: string | undefined;
+
+			for (const candidate of candidates) {
 				const memberName =
-					typeof value === "string" ? lookup.stringMap.get(value) : lookup.numberMap.get(value);
+					typeof value === "string"
+						? candidate.lookup.stringMap.get(value)
+						: candidate.lookup.numberMap.get(value);
 				if (!memberName) continue;
-
-				matches.set(enumSymbol, memberName);
-				if (matches.size > 1) break;
+				if (resolvedSymbol && resolvedSymbol !== candidate.enumSymbol) return undefined;
+				resolvedSymbol = candidate.enumSymbol;
+				resolvedMember = memberName;
 			}
 
-			let resolved: EnumMemberMatch | undefined;
-			if (matches.size === 1) {
-				const [entry] = matches.entries();
-				if (entry) {
-					const [enumSymbol, memberName] = entry;
-					resolved = { enumSymbol, memberName };
-				}
-			}
-
-			const cacheMap = cachedByType ?? new Map<string | number, EnumMemberMatch | false>();
-			cacheMap.set(value, resolved ?? false);
-			if (!cachedByType) enumMatchCache.set(contextualType, cacheMap);
-
-			return resolved;
+			if (!(resolvedSymbol && resolvedMember)) return undefined;
+			return { enumSymbol: resolvedSymbol, memberName: resolvedMember };
 		}
 
 		function getEnumReferenceName(enumSymbol: TypeScriptSymbol, location: TypeScriptNode): string | undefined {
@@ -197,19 +281,18 @@ export default createRule<Options, MessageIds>({
 			return IDENTIFIER_PATH.test(name) ? name : undefined;
 		}
 
-			function getTypeParameterMap(aliasSymbol: TypeScriptSymbol): Map<string, number> | undefined {
-				const cached = aliasTypeParameterCache.get(aliasSymbol);
-				if (cached !== undefined) return cached === false ? undefined : cached;
+		function getTypeParameterMap(aliasSymbol: TypeScriptSymbol): Map<string, number> | undefined {
+			const cached = aliasTypeParameterCache.get(aliasSymbol);
+			if (cached !== undefined) return cached === false ? undefined : cached;
 
-				const declarations = aliasSymbol.declarations ?? [];
-				for (const declaration of declarations) {
-					if (!isTypeAliasDeclaration(declaration)) continue;
-					const { typeParameters } = declaration;
-					if (!typeParameters || typeParameters.length === 0) continue;
-					const map = new Map<string, number>();
-					for (const [index, param] of typeParameters.entries()) {
-						map.set(param.name.text, index);
-					}
+			const declarations = aliasSymbol.declarations ?? [];
+			for (const declaration of declarations) {
+				if (!isTypeAliasDeclaration(declaration)) continue;
+				const { typeParameters } = declaration;
+				if (!typeParameters || typeParameters.length === 0) continue;
+				const map = new Map<string, number>();
+				let index = 0;
+				for (const param of typeParameters) map.set(param.name.text, index++);
 				aliasTypeParameterCache.set(aliasSymbol, map);
 				return map;
 			}
@@ -226,8 +309,8 @@ export default createRule<Options, MessageIds>({
 			if (isTypeReferenceNode(constraint)) {
 				const { typeName } = constraint;
 				if (isIdentifier(typeName)) {
-					const paramMap = getTypeParameterMap(aliasSymbol);
-					const index = paramMap?.get(typeName.text);
+					const parameterMap = getTypeParameterMap(aliasSymbol);
+					const index = parameterMap?.get(typeName.text);
 					if (index !== undefined && aliasTypeArguments && aliasTypeArguments[index]) {
 						return aliasTypeArguments[index];
 					}
@@ -240,15 +323,15 @@ export default createRule<Options, MessageIds>({
 			const { aliasSymbol, aliasTypeArguments } = type;
 			if (!aliasSymbol) return undefined;
 
-				const declarations = aliasSymbol.declarations ?? [];
-				for (const declaration of declarations) {
-					if (!isTypeAliasDeclaration(declaration)) continue;
-					if (!isMappedTypeNode(declaration.type)) continue;
-					const { constraint } = declaration.type.typeParameter;
-					if (!constraint) continue;
-					const resolved = resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, constraint);
-					if (resolved) return resolved;
-				}
+			const declarations = aliasSymbol.declarations ?? [];
+			for (const declaration of declarations) {
+				if (!(isTypeAliasDeclaration(declaration) && isMappedTypeNode(declaration.type))) continue;
+				const { constraint } = declaration.type.typeParameter;
+				if (!constraint) continue;
+
+				const resolved = resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, constraint);
+				if (resolved) return resolved;
+			}
 
 			return undefined;
 		}
@@ -267,7 +350,7 @@ export default createRule<Options, MessageIds>({
 			if (visited.has(type)) return undefined;
 			visited.add(type);
 
-			const unionTypes = getUnionTypes(type);
+			const unionTypes = getUnionTypesCached(type);
 			if (unionTypes.length > 1) {
 				let resolved: Type | undefined;
 				for (const unionType of unionTypes) {
@@ -285,13 +368,13 @@ export default createRule<Options, MessageIds>({
 			const recordKeyType = getRecordKeyType(type);
 			if (recordKeyType) return recordKeyType;
 
-				const { aliasSymbol, aliasTypeArguments } = type;
-				if (aliasSymbol && aliasTypeArguments && aliasTypeArguments.length === 1) {
-					const aliasName = aliasSymbol.getName();
-					if (SINGLE_ARG_OBJECT_WRAPPERS.has(aliasName)) {
-						const [firstArg] = aliasTypeArguments;
-						if (firstArg) {
-						const unwrapped = getObjectKeyTypeInternal(firstArg, visited);
+			const { aliasSymbol, aliasTypeArguments } = type;
+			if (aliasSymbol && aliasTypeArguments?.length === 1) {
+				const aliasName = aliasSymbol.getName();
+				if (SINGLE_ARGUMENT_OBJECT_WRAPPERS.has(aliasName)) {
+					const [firstArgument] = aliasTypeArguments;
+					if (firstArgument) {
+						const unwrapped = getObjectKeyTypeInternal(firstArgument, visited);
 						if (unwrapped) return unwrapped;
 					}
 				}
@@ -314,14 +397,9 @@ export default createRule<Options, MessageIds>({
 			return type ?? undefined;
 		}
 
-			function getExpectedType(node: TSESTree.Node): Type | undefined {
-				const { parent } = node;
-				if (!parent) return undefined;
-
-			if (parent.type === AST_NODE_TYPES.TSLiteralType) {
-				getContextualType(parent);
-				return undefined;
-			}
+		function getExpectedType(node: TSESTree.Node): Type | undefined {
+			const { parent } = node;
+			if (!parent || parent.type === AST_NODE_TYPES.TSLiteralType) return undefined;
 
 			if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.init === node) {
 				const annotation = parent.id.type === AST_NODE_TYPES.Identifier ? parent.id.typeAnnotation : undefined;
@@ -340,6 +418,15 @@ export default createRule<Options, MessageIds>({
 			if (contextual) return contextual;
 
 			return undefined;
+		}
+
+		function shouldSkipLiteral(node: TSESTree.Literal): boolean {
+			if (isPropertyKeyLiteral(node)) return true;
+			if (node.parent?.type === AST_NODE_TYPES.TSLiteralType) return true;
+			if (node.parent?.type === AST_NODE_TYPES.TSImportType) return true;
+			if (isModuleSpecifierLiteral(node)) return true;
+			if (isDirectiveLiteral(node)) return true;
+			return false;
 		}
 
 		function reportEnumLiteral(node: TSESTree.Literal, value: string | number): void {
@@ -429,6 +516,7 @@ export default createRule<Options, MessageIds>({
 			Literal(node): void {
 				const { value } = node;
 				if (typeof value !== "string" && typeof value !== "number") return;
+				if (shouldSkipLiteral(node)) return;
 				reportEnumLiteral(node, value);
 			},
 			Property(node): void {

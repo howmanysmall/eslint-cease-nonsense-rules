@@ -440,12 +440,17 @@
 			"disabled": false,
 			"extensions": [".jsonc", ".json", ".css", ".html", ".vue"],
 		},
+		"gofmt": { "disabled": true },
 		"oxfmt": {
 			"command": ["bun", "run", "format", "$FILE"],
 			"disabled": false,
 			"environment": {},
 			"extensions": [".ts", ".tsx", ".js", ".jsx"],
 		},
+		"rustfmt": { "disabled": true },
+		"shfmt": { "disabled": true },
+		"uv": { "disabled": true },
+		"zig": { "disabled": true },
 	},
 	"instructions": ["./AGENTS.md"],
 	"keybinds": {
@@ -523,5 +528,5 @@
 	"share": "manual",
 	"tools": {},
 	"tui": {},
-	"username": "HowManySmall",
+	"username": "small-eslint",
 }
