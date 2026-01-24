@@ -139,30 +139,28 @@ function validateUnderscore(
 		return name;
 	}
 
-	const hasSingleUnderscore =
-		position === "leading" ? (): boolean => name.startsWith("_") : (): boolean => name.endsWith("_");
-	const trimSingleUnderscore = position === "leading" ? (): string => name.slice(1) : (): string => name.slice(0, -1);
+	const hasSingleUnderscore = position === "leading" ? name.startsWith("_") : name.endsWith("_");
+	const trimmedSingleUnderscore = position === "leading" ? name.slice(1) : name.slice(0, -1);
 
-	const hasDoubleUnderscore =
-		position === "leading" ? (): boolean => name.startsWith("__") : (): boolean => name.endsWith("__");
-	const trimDoubleUnderscore = position === "leading" ? (): string => name.slice(2) : (): string => name.slice(0, -2);
+	const hasDoubleUnderscore = position === "leading" ? name.startsWith("__") : name.endsWith("__");
+	const trimmedDoubleUnderscore = position === "leading" ? name.slice(2) : name.slice(0, -2);
 
 	switch (option) {
 		case "allow": {
-			if (hasSingleUnderscore()) return trimSingleUnderscore();
+			if (hasSingleUnderscore) return trimmedSingleUnderscore;
 			return name;
 		}
 		case "allowDouble": {
-			if (hasDoubleUnderscore()) return trimDoubleUnderscore();
+			if (hasDoubleUnderscore) return trimmedDoubleUnderscore;
 			return name;
 		}
 		case "allowSingleOrDouble": {
-			if (hasDoubleUnderscore()) return trimDoubleUnderscore();
-			if (hasSingleUnderscore()) return trimSingleUnderscore();
+			if (hasDoubleUnderscore) return trimmedDoubleUnderscore;
+			if (hasSingleUnderscore) return trimmedSingleUnderscore;
 			return name;
 		}
 		case "forbid": {
-			if (hasSingleUnderscore()) {
+			if (hasSingleUnderscore) {
 				context.report({
 					data: formatReportData(selectorType, { count: "one", originalName, position }),
 					messageId: "unexpectedUnderscore",
@@ -173,7 +171,7 @@ function validateUnderscore(
 			return name;
 		}
 		case "require": {
-			if (!hasSingleUnderscore()) {
+			if (!hasSingleUnderscore) {
 				context.report({
 					data: formatReportData(selectorType, { count: "one", originalName, position }),
 					messageId: "missingUnderscore",
@@ -181,10 +179,10 @@ function validateUnderscore(
 				});
 				return undefined;
 			}
-			return trimSingleUnderscore();
+			return trimmedSingleUnderscore;
 		}
-		case "requireDouble": {
-			if (!hasDoubleUnderscore()) {
+		case "requireDouble":
+			if (!hasDoubleUnderscore) {
 				context.report({
 					data: formatReportData(selectorType, { count: "two", originalName, position }),
 					messageId: "missingUnderscore",
@@ -192,8 +190,7 @@ function validateUnderscore(
 				});
 				return undefined;
 			}
-			return trimDoubleUnderscore();
-		}
+			return trimmedDoubleUnderscore;
 	}
 }
 
@@ -211,10 +208,9 @@ function validateAffix(
 
 	for (const affix of affixes) {
 		const hasAffix = position === "prefix" ? name.startsWith(affix) : name.endsWith(affix);
-		const trimAffix =
-			position === "prefix" ? (): string => name.slice(affix.length) : (): string => name.slice(0, -affix.length);
-
-		if (hasAffix) return trimAffix();
+		if (hasAffix) {
+			return position === "prefix" ? name.slice(affix.length) : name.slice(0, -affix.length);
+		}
 	}
 
 	context.report({
@@ -329,7 +325,7 @@ function isAllTypesMatch(type: Type, callback: (innerType: Type) => boolean): bo
 }
 
 function isArrayLikeType(checker: TypeChecker, type: Type): boolean {
-	if (isAnyType(type)) return false;
+	if (isAnyType(type) || isStringLikeType(type)) return false;
 
 	if (checker.isArrayType(type) || checker.isTupleType(type)) return true;
 
@@ -338,4 +334,8 @@ function isArrayLikeType(checker: TypeChecker, type: Type): boolean {
 
 function isAnyType(type: Type): boolean {
 	return (type.flags & TypeFlags.Any) !== 0;
+}
+
+function isStringLikeType(type: Type): boolean {
+	return (type.flags & TypeFlags.StringLike) !== 0;
 }

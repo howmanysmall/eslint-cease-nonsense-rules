@@ -1,7 +1,11 @@
-import { describe } from "bun:test";
+import { describe, setDefaultTimeout } from "bun:test";
+import { join } from "node:path";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 import rule from "../../src/rules/prefer-read-only-props";
+
+// Type-aware tests have cold-start overhead from TypeScript project service initialization
+setDefaultTimeout(30_000);
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -9,6 +13,23 @@ const ruleTester = new RuleTester({
 		parser,
 		parserOptions: {
 			ecmaFeatures: { jsx: true },
+		},
+		sourceType: "module",
+	},
+});
+
+const fixturesDir = join(__dirname, "../fixtures/prefer-read-only-props");
+
+const ruleTesterWithTypes = new RuleTester({
+	languageOptions: {
+		ecmaVersion: 2022,
+		parser,
+		parserOptions: {
+			projectService: {
+				allowDefaultProject: ["*.ts", "*.tsx"],
+				defaultProject: join(fixturesDir, "tsconfig.json"),
+			},
+			tsconfigRootDir: fixturesDir,
 		},
 		sourceType: "module",
 	},
@@ -147,6 +168,47 @@ describe("prefer-read-only-props", () => {
 			},
 			// Component cache - same function visited twice (should not duplicate errors)
 			// This is tested implicitly by the rule's cache mechanism
+		],
+	});
+
+	ruleTesterWithTypes.run("prefer-read-only-props-types", rule, {
+		invalid: [
+			{
+				code: `
+declare function jsxElement(): JSX.Element;
+function Component(props: { value: string }): JSX.Element {
+    return jsxElement();
+}`,
+				errors: [{ messageId: "preferReadOnlyProps" }],
+			},
+		],
+		valid: [
+			{
+				code: `
+function UnionComponent(props: { value: string }): string | number {
+    return props.value;
+}`,
+			},
+			{
+				code: `
+type FancyElement = string;
+function ElementComponent(props: { value: string }): FancyElement {
+    return props.value;
+}`,
+			},
+			{
+				code: `
+function StringComponent(props: { value: string }): string {
+    return props.value;
+}`,
+			},
+			{
+				code: `
+type CustomReturn = { value: string };
+function CustomComponent(props: { value: string }): CustomReturn {
+    return { value: props.value };
+}`,
+			},
 		],
 	});
 });
