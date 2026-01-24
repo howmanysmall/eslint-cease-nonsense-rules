@@ -1,8 +1,9 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { isUnionType, unionConstituents } from "ts-api-utils";
-import type { Type, TypeChecker, Node as TypeScriptNode, Symbol as TypeScriptSymbol } from "typescript";
+import type { Program, Type, TypeChecker, Node as TypeScriptNode, Symbol as TypeScriptSymbol } from "typescript";
 import {
+	forEachChild,
 	isEnumDeclaration,
 	isEnumMember,
 	isExpression,
@@ -38,31 +39,13 @@ const IDENTIFIER_PATH = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/u;
 const SINGLE_ARGUMENT_OBJECT_WRAPPERS = new Set(["Readonly"]);
 const RECORD_ALIAS_NAME = "Record";
 
-interface RuleCaches {
-	readonly aliasTypeParameterCache: WeakMap<TypeScriptSymbol, Map<string, number> | false>;
-	readonly enumCandidateCache: WeakMap<Type, ReadonlyArray<EnumCandidate> | false>;
-	readonly enumMemberCache: WeakMap<TypeScriptSymbol, EnumMemberLookup | false>;
-	readonly enumSymbolCache: WeakMap<Type, TypeScriptSymbol | false>;
-	readonly objectKeyTypeCache: WeakMap<Type, Type | false>;
-	readonly unionTypesCache: WeakMap<Type, ReadonlyArray<Type>>;
+interface EnumValueIndex {
+	readonly stringSet: Set<string>;
+	readonly numberSet: Set<number>;
+	readonly isComplete: boolean;
 }
 
-const cachesByChecker = new WeakMap<TypeChecker, RuleCaches>();
-
-function getRuleCaches(checker: TypeChecker): RuleCaches {
-	const cached = cachesByChecker.get(checker);
-	if (cached) return cached;
-	const created: RuleCaches = {
-		aliasTypeParameterCache: new WeakMap<TypeScriptSymbol, Map<string, number> | false>(),
-		enumCandidateCache: new WeakMap<Type, ReadonlyArray<EnumCandidate> | false>(),
-		enumMemberCache: new WeakMap<TypeScriptSymbol, EnumMemberLookup | false>(),
-		enumSymbolCache: new WeakMap<Type, TypeScriptSymbol | false>(),
-		objectKeyTypeCache: new WeakMap<Type, Type | false>(),
-		unionTypesCache: new WeakMap<Type, ReadonlyArray<Type>>(),
-	};
-	cachesByChecker.set(checker, created);
-	return created;
-}
+const enumValueIndexCache = new WeakMap<Program, EnumValueIndex | false>();
 
 function resolveAliasSymbol(checker: TypeChecker, symbol: TypeScriptSymbol): TypeScriptSymbol {
 	if ((symbol.flags & SymbolFlags.Alias) !== 0) return checker.getAliasedSymbol(symbol);
@@ -95,6 +78,39 @@ function isDirectiveLiteral(node: TSESTree.Literal): boolean {
 	if (!parent || parent.type !== AST_NODE_TYPES.ExpressionStatement) return false;
 	if (parent.expression !== node) return false;
 	return typeof parent.directive === "string";
+}
+
+function buildEnumValueIndex(program: Program, checker: TypeChecker): EnumValueIndex {
+	const stringSet = new Set<string>();
+	const numberSet = new Set<number>();
+	let hasEnumDeclaration = false;
+	let isComplete = true;
+
+	function visit(node: TypeScriptNode): void {
+		if (isEnumDeclaration(node)) {
+			hasEnumDeclaration = true;
+			for (const member of node.members) {
+				const constantValue = checker.getConstantValue(member);
+				if (typeof constantValue === "string") stringSet.add(constantValue);
+				else if (typeof constantValue === "number") numberSet.add(constantValue);
+				else isComplete = false;
+			}
+		}
+		forEachChild(node, visit);
+	}
+
+	for (const sourceFile of program.getSourceFiles()) visit(sourceFile);
+
+	if (!hasEnumDeclaration) isComplete = false;
+	return { isComplete, numberSet, stringSet };
+}
+
+function getEnumValueIndex(program: Program, checker: TypeChecker): EnumValueIndex {
+	const cached = enumValueIndexCache.get(program);
+	if (cached !== undefined && cached !== false) return cached;
+	const built = buildEnumValueIndex(program, checker);
+	enumValueIndexCache.set(program, built);
+	return built;
 }
 
 function isJSXAttributeValue(node: TSESTree.Literal): boolean {
@@ -132,15 +148,16 @@ export default createRule<Options, MessageIds>({
 		const services = ESLintUtils.getParserServices(context);
 		const checker = services.program.getTypeChecker();
 		const { sourceCode } = context;
-		const {
-			aliasTypeParameterCache,
-			enumCandidateCache,
-			enumMemberCache,
-			enumSymbolCache,
-			objectKeyTypeCache,
-			unionTypesCache,
-		} = getRuleCaches(checker);
+		const enumMemberCache = new WeakMap<TypeScriptSymbol, EnumMemberLookup | false>();
+		const enumCandidateCache = new WeakMap<Type, ReadonlyArray<EnumCandidate> | false>();
+		const enumSymbolCache = new WeakMap<Type, TypeScriptSymbol | false>();
+		const objectKeyTypeCache = new WeakMap<Type, Type | false>();
+		const aliasTypeParameterCache = new WeakMap<TypeScriptSymbol, Map<string, number> | false>();
+		const unionTypesCache = new WeakMap<Type, ReadonlyArray<Type>>();
 		const contextualTypeCache = new WeakMap<TSESTree.Node, Type | false>();
+		const enumValueIndex = getEnumValueIndex(services.program, checker);
+		const lintedSourceFile = services.program.getSourceFile(context.filename);
+		const shouldUseEnumIndex = enumValueIndex.isComplete && lintedSourceFile !== undefined;
 
 		function getUnionTypesCached(type: Type): ReadonlyArray<Type> {
 			const cached = unionTypesCache.get(type);
@@ -429,6 +446,13 @@ export default createRule<Options, MessageIds>({
 			return false;
 		}
 
+		function shouldCheckEnumValue(value: string | number): boolean {
+			if (!shouldUseEnumIndex) return true;
+			return typeof value === "string"
+				? enumValueIndex.stringSet.has(value)
+				: enumValueIndex.numberSet.has(value);
+		}
+
 		function reportEnumLiteral(node: TSESTree.Literal, value: string | number): void {
 			if (isPropertyKeyLiteral(node)) return;
 
@@ -462,6 +486,7 @@ export default createRule<Options, MessageIds>({
 
 		function reportEnumKey(node: TSESTree.Property, keyValue: PropertyKeyInfo): void {
 			if (node.parent?.type !== AST_NODE_TYPES.ObjectExpression) return;
+			if (!shouldCheckEnumValue(keyValue.value)) return;
 
 			const contextualType = getContextualType(node.parent);
 			if (!contextualType) return;
@@ -517,6 +542,7 @@ export default createRule<Options, MessageIds>({
 				const { value } = node;
 				if (typeof value !== "string" && typeof value !== "number") return;
 				if (shouldSkipLiteral(node)) return;
+				if (!shouldCheckEnumValue(value)) return;
 				reportEnumLiteral(node, value);
 			},
 			Property(node): void {
