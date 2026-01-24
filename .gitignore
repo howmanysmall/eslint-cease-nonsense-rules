@@ -137,4 +137,8 @@ CLAUDE.local.md
 
 /arguments-schemes/
 /dist/
+/profiles/.context/
 /profiles/
+
+# opensrc - source code for packages
+opensrc/

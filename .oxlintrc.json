@@ -18,7 +18,7 @@
 	"globals": {
 		"Bun": "readonly",
 	},
-	"ignorePatterns": ["dist", "do-not-sync-ever/**", "**/node_modules/**", "tests/fixtures/**/*.d.ts"],
+	"ignorePatterns": ["dist", "do-not-sync-ever/**", "**/node_modules/**", "tests/fixtures/**/*.d.ts", ".context/**"],
 	"jsPlugins": [],
 	"overrides": [
 		{
@@ -158,12 +158,22 @@
 		],
 		"eslint/require-await": "off",
 		"for-direction": "error",
-		"func-style": ["error", "declaration"],
+		"func-names": ["off", "never", { "generators": "never" }],
+		"func-style": [
+			"error",
+			"declaration",
+			{
+				"allowArrowFunctions": false,
+				"allowTypeAnnotation": true,
+				"namedExports": "ignore",
+				"style": "declaration",
+			},
+		],
 		"id-length": [
 			"error",
 			{
 				"exceptionPatterns": ["^_"],
-				"exceptions": ["_", "x", "y", "z", "a", "b"],
+				"exceptions": ["_", "x", "y", "z", "a", "b", "e", "i", "j"],
 				"max": 45,
 			},
 		],
@@ -311,6 +321,7 @@
 			},
 		],
 		"typescript/no-unsafe-type-assertion": "off",
+		"typescript/prefer-optional-chain": "off",
 		"typescript/strict-boolean-expressions": "off",
 		"typescript/use-unknown-in-catch-callback-variable": "error",
 		"unicorn/catch-error-name": "error",

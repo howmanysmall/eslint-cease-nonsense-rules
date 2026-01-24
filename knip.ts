@@ -14,6 +14,8 @@ const config: KnipConfig = {
 		"oxfmt",
 		"@commitlint/config-conventional",
 		"@commitlint/types",
+		"@rbxts/types",
+		"better-result",
 	],
 	"lint-staged": true,
 	oxlint: true,

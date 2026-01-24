@@ -111,7 +111,7 @@ export function generateDifferences(original: string, formatted: string): Readon
 			let adjustedOffset = offset;
 
 			const previous = diffs[index - 1];
-			if (previous !== undefined && previous[0] === 0) {
+			if (previous?.[0] === 0) {
 				const [, prevText] = previous;
 				let shiftCount = 0;
 				while (
@@ -125,7 +125,7 @@ export function generateDifferences(original: string, formatted: string): Readon
 			}
 
 			const next = diffs[index + 1];
-			if (next !== undefined && next[0] === 1) {
+			if (next?.[0] === 1) {
 				const [, nextText] = next;
 				differences[size++] = {
 					deleteText: text,

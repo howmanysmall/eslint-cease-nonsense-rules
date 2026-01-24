@@ -1,25 +1,12 @@
 #!/usr/bin/env bun
 
-import fs from "node:fs/promises";
-import { basename, extname, resolve } from "node:path";
-import { chdir, cwd, exit, platform } from "node:process";
+import { resolve } from "node:path";
+import { chdir, cwd, exit } from "node:process";
 import { Command } from "@jsr/cliffy__command";
 import { type } from "arktype";
 import console from "consola";
 import picocolors from "picocolors";
-
-if (typeof Bun === "undefined") {
-	const installScript =
-		platform === "win32"
-			? `${picocolors.gray("`")}${picocolors.green("powershell")} ${picocolors.yellow("-c")} ${picocolors.cyan('"irm bun.sh/install.ps1 | iex"')}${picocolors.gray("`")}`
-			: `${picocolors.gray("`")}${picocolors.green("curl")} ${picocolors.yellow("-fsSL")} ${picocolors.cyan("https://bun.sh/install")} ${picocolors.magenta("|")} ${picocolors.green("bash")}${picocolors.gray("`")}`;
-	console.fail(picocolors.red("This script must be run with Bun."));
-	console.fail(`Please install Bun using ${installScript}`);
-	exit(1);
-}
-
-const scriptPath = import.meta.path;
-const SCRIPT_NAME = basename(scriptPath, extname(scriptPath));
+import { isDirectorySimpleAsync } from "../utilities/fs-utilities";
 
 const CURRENT_WORKING_DIRECTORY = cwd();
 
@@ -96,19 +83,16 @@ async function replacePackageJsonAsync({
 	};
 }
 
-const command = new Command()
-	.name(SCRIPT_NAME)
-	.version("1.0.0")
+const testLiveCommand = new Command()
+	.name("test-live")
+	.version("1.1.0")
 	.description("Test the package in a live game environment.")
 	.option("--use-link", "Use 'bun link' instead of patching package.json.", { default: false })
+	.option("-c, --cache", "Cache ESLint results.")
 	.arguments("<directory:string>")
-	.action(async ({ useLink }, directoryUnresolved) => {
+	.action(async ({ useLink, cache }, directoryUnresolved) => {
 		const directory = resolve(directoryUnresolved);
-		const isDirectoryReal = await fs.access(directory).then(
-			() => true,
-			() => false,
-		);
-
+		const isDirectoryReal = await isDirectorySimpleAsync(directory);
 		if (!isDirectoryReal) {
 			console.fail(picocolors.red(`The directory "${picocolors.bold(directory)}" does not exist.`));
 			exit(1);
@@ -139,13 +123,15 @@ const command = new Command()
 		await Bun.$`bun run build`.quiet();
 
 		const nodePackages = resolve(directory, "patches", "node");
-
 		if (useLink) await Bun.$`bun link`;
 		else await Bun.$`npm pack --pack-destination ${nodePackages}`.quiet();
 
 		try {
 			chdir(directory);
 			await Bun.$`bun install`.quiet();
+			if (cache) {
+				await Bun.$`TIMING=2000 cd ${directory} && time bun x --bun eslint --cache --max-warnings=0 ./src`;
+			} else await Bun.$`TIMING=2000 cd ${directory} && time bun x --bun eslint --max-warnings=0 ./src`;
 			await Bun.$`TIMING=1400 bun run lint:eslint`.quiet();
 			chdir(CURRENT_WORKING_DIRECTORY);
 		} catch (error) {
@@ -160,4 +146,4 @@ const command = new Command()
 		if (await patch.exists()) await patch.delete();
 	});
 
-await command.parse(Bun.argv.slice(2));
+export default testLiveCommand;
