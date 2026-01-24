@@ -45,8 +45,6 @@ interface EnumValueIndex {
 	readonly isComplete: boolean;
 }
 
-const enumValueIndexCache = new WeakMap<Program, EnumValueIndex | false>();
-
 function resolveAliasSymbol(checker: TypeChecker, symbol: TypeScriptSymbol): TypeScriptSymbol {
 	if ((symbol.flags & SymbolFlags.Alias) !== 0) return checker.getAliasedSymbol(symbol);
 	return symbol;
@@ -105,14 +103,6 @@ function buildEnumValueIndex(program: Program, checker: TypeChecker): EnumValueI
 	return { isComplete, numberSet, stringSet };
 }
 
-function getEnumValueIndex(program: Program, checker: TypeChecker): EnumValueIndex {
-	const cached = enumValueIndexCache.get(program);
-	if (cached !== undefined && cached !== false) return cached;
-	const built = buildEnumValueIndex(program, checker);
-	enumValueIndexCache.set(program, built);
-	return built;
-}
-
 function isJSXAttributeValue(node: TSESTree.Literal): boolean {
 	const { parent } = node;
 	return parent !== undefined && parent.type === AST_NODE_TYPES.JSXAttribute && parent.value === node;
@@ -156,7 +146,8 @@ export default createRule<Options, MessageIds>({
 		const aliasTypeParameterCache = new WeakMap<TypeScriptSymbol, Map<string, number> | false>();
 		const unionTypesCache = new WeakMap<Type, ReadonlyArray<Type>>();
 		const contextualTypeCache = new WeakMap<TSESTree.Node, Type | false>();
-		const enumValueIndex = getEnumValueIndex(services.program, checker);
+		const declaredTypeCache = new WeakMap<TSESTree.Node, Type | false>();
+		const enumValueIndex = buildEnumValueIndex(services.program, checker);
 		const lintedSourceFile = services.program.getSourceFile(context.filename);
 		const shouldUseEnumIndex = enumValueIndex.isComplete && lintedSourceFile !== undefined;
 
@@ -445,22 +436,56 @@ export default createRule<Options, MessageIds>({
 			return type ?? undefined;
 		}
 
-		function getExpectedType(node: TSESTree.Node): Type | undefined {
+		function getDeclaredTypeFromParent(node: TSESTree.Node): Type | undefined {
+			const cached = declaredTypeCache.get(node);
+			if (cached !== undefined) return cached === false ? undefined : cached;
+
 			const { parent } = node;
-			if (!parent || parent.type === AST_NODE_TYPES.TSLiteralType) return undefined;
+			if (!parent) {
+				declaredTypeCache.set(node, false);
+				return undefined;
+			}
 
 			if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.init === node) {
 				const annotation = parent.id.type === AST_NODE_TYPES.Identifier ? parent.id.typeAnnotation : undefined;
 				if (annotation) {
 					const tsNode = services.esTreeNodeToTSNodeMap.get(annotation.typeAnnotation);
-					if (tsNode && isTypeNode(tsNode)) return checker.getTypeFromTypeNode(tsNode);
+					if (tsNode && isTypeNode(tsNode)) {
+						const resolved = checker.getTypeFromTypeNode(tsNode);
+						declaredTypeCache.set(node, resolved);
+						return resolved;
+					}
 				}
 			}
 
 			if (parent.type === AST_NODE_TYPES.AssignmentExpression && parent.right === node) {
 				const tsNode = services.esTreeNodeToTSNodeMap.get(parent.left);
-				if (tsNode) return checker.getTypeAtLocation(tsNode);
+				if (tsNode) {
+					const resolved = checker.getTypeAtLocation(tsNode);
+					declaredTypeCache.set(node, resolved);
+					return resolved;
+				}
 			}
+
+			if (parent.type === AST_NODE_TYPES.TSSatisfiesExpression && parent.expression === node) {
+				const tsNode = services.esTreeNodeToTSNodeMap.get(parent.typeAnnotation);
+				if (tsNode && isTypeNode(tsNode)) {
+					const resolved = checker.getTypeFromTypeNode(tsNode);
+					declaredTypeCache.set(node, resolved);
+					return resolved;
+				}
+			}
+
+			declaredTypeCache.set(node, false);
+			return undefined;
+		}
+
+		function getExpectedType(node: TSESTree.Node): Type | undefined {
+			const { parent } = node;
+			if (!parent || parent.type === AST_NODE_TYPES.TSLiteralType) return undefined;
+
+			const declared = getDeclaredTypeFromParent(node);
+			if (declared) return declared;
 
 			const contextual = getContextualType(node);
 			if (contextual) return contextual;
@@ -519,10 +544,11 @@ export default createRule<Options, MessageIds>({
 			if (node.parent?.type !== AST_NODE_TYPES.ObjectExpression) return;
 			if (!shouldCheckEnumValue(keyValue.value)) return;
 
-			const contextualType = getContextualType(node.parent);
-			if (!contextualType) return;
-
-			const keyType = getObjectKeyType(contextualType);
+			const declaredType = getDeclaredTypeFromParent(node.parent);
+			const declaredKeyType = declaredType ? getObjectKeyType(declaredType) : undefined;
+			const contextualType = declaredKeyType ? undefined : getContextualType(node.parent);
+			const contextualKeyType = contextualType ? getObjectKeyType(contextualType) : undefined;
+			const keyType = declaredKeyType ?? contextualKeyType;
 			if (!keyType) return;
 
 			const match = getEnumMemberMatch(keyType, keyValue.value);
