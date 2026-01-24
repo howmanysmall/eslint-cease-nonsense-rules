@@ -1,3 +1,4 @@
+import { DefinitionType } from "@typescript-eslint/scope-manager";
 import type { TSESTree } from "@typescript-eslint/types";
 import type { TSESLint } from "@typescript-eslint/utils";
 import Typebox from "typebox";
@@ -39,7 +40,10 @@ export default createRule({
 		function hasNameConflict(node: TSESTree.Node, identifierName: string): boolean {
 			let scope = sourceCode.getScope(node) as TSESLint.Scope.Scope | undefined;
 			while (scope) {
-				if (scope.set.has(identifierName)) return true;
+				const variable = scope.set.get(identifierName);
+				if (variable?.defs.some((definition) => definition.type !== DefinitionType.ImportBinding)) {
+					return true;
+				}
 				scope = scope.upper ?? undefined;
 			}
 			return false;
