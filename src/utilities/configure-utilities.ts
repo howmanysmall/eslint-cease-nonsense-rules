@@ -15,6 +15,7 @@ import type { EffectFunctionOptions, HookConfiguration } from "../rules/require-
 import type { PairConfiguration, RequirePairedCallsOptions } from "../rules/require-paired-calls";
 import type { ReactKeysOptions } from "../rules/require-react-component-keys";
 import type { RequireReactDisplayNamesOptions } from "../rules/require-react-display-names";
+import type { RequireSerializedNumericDataTypeOptions } from "../rules/require-serialized-numeric-data-type";
 import type { UseExhaustiveDependenciesOptions } from "../rules/use-exhaustive-dependencies";
 import type { UseHookAtTopLevelOptions } from "../rules/use-hook-at-top-level";
 import type { Pattern, PreferPatternReplacementsOptions } from "./pattern-replacement";
@@ -304,6 +305,22 @@ export function createPreventAbbreviationsOptions(
 		checkVariables: true,
 		ignore: [],
 		replacements: {},
+		...options,
+	};
+}
+
+/**
+ * Creates options for require-serialized-numeric-data-type rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createRequireSerializedNumericDataTypeOptions(
+	options: Partial<RequireSerializedNumericDataTypeOptions> = {},
+): RequireSerializedNumericDataTypeOptions {
+	return {
+		functionNames: ["registerComponent"],
+		mode: "type-arguments",
+		strict: false,
 		...options,
 	};
 }

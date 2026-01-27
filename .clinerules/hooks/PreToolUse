@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+# shellcheck disable=SC2155
+readonly input="$(cat)"
+
+# Only run when Cline is about to finalize the task output
+# shellcheck disable=SC2155
+readonly toolName="$(echo "${input}" | jq -r '.preToolUse.toolName // empty')"
+if [[ "${toolName}" != "attempt_completion" ]]; then
+	echo '{"cancel": false}'
+	exit 0
+fi
+
+# Prefer running from the first workspace root (helps in multi-root setups)
+# shellcheck disable=SC2155
+readonly workspaceRoot="$(echo "${input}" | jq -r '.workspaceRoots[0] // empty')"
+if [[ -n "${workspaceRoot}" && -d "${workspaceRoot}" ]]; then
+	cd "${workspaceRoot}" || true
+fi
+
+if ! command -v bun >/dev/null 2>&1; then
+	echo '{"cancel": true, "errorMessage": "Lint hook failed: bun is not on PATH for this environment."}'
+	exit 0
+fi
+
+export CI=1
+export NO_COLOR=1
+
+mkdir -p "${HOME}/.cline_logs"
+log="${HOME}/.cline_logs/cline_lint_hook_$(date +%Y%m%d_%H%M%S).log"
+latest="${HOME}/.cline_logs/cline_lint_hook_latest.log"
+: >"${log}"
+ln -sf "${log}" "${latest}" 2>/dev/null || true
+
+runStep() {
+	local label="$1"
+	shift
+
+	{
+		echo "=== ${label} ==="
+		echo "+ $*"
+	} >>"${log}"
+	"$@" >>"${log}" 2>&1
+	return $?
+}
+
+# IMPORTANT: exact commands requested
+if ! runStep "FORMAT" bun run format --write; then
+	tailOut="$(tail -n 80 "${log}")"
+	err="Code quality checks failed at: bun run format --write
+
+Hook blocked completion. Fix issues, then resume and try again.
+
+Log: ${log}
+
+Last output:
+${tailOut}"
+	jq -n --arg msg "${err}" --arg ctx "CODE_QUALITY: format step failed. See ${log}" \
+		'{cancel:true, errorMessage:$msg, contextModification:$ctx}'
+	exit 0
+fi
+
+if ! runStep "LINT" bun run lint; then
+	tailOut="$(tail -n 80 "${log}")"
+	err="Code quality checks failed at: bun run lint
+
+Hook blocked completion. Fix issues, then resume and try again.
+
+Log: ${log}
+
+Last output:
+${tailOut}"
+	jq -n --arg msg "${err}" --arg ctx "CODE_QUALITY: lint failed. See ${log}" \
+		'{cancel:true, errorMessage:$msg, contextModification:$ctx}'
+	exit 0
+fi
+
+if ! runStep "TYPECHECK" bun run type-check; then
+	tailOut="$(tail -n 80 "${log}")"
+	err="Code quality checks failed at: bun run type-check
+
+Hook blocked completion. Fix issues, then resume and try again.
+
+Log: ${log}
+
+Last output:
+${tailOut}"
+	jq -n --arg msg "${err}" --arg ctx "CODE_QUALITY: type-check failed. See ${log}" \
+		'{cancel:true, errorMessage:$msg, contextModification:$ctx}'
+	exit 0
+fi
+
+# All good: allow completion
+jq -n --arg ctx "CODE_QUALITY: format/lint/type-check all passed. Log: ${log}" \
+	'{cancel:false, contextModification:$ctx}'
