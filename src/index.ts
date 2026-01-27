@@ -91,7 +91,7 @@ export { pattern } from "./utilities/pattern-replacement";
  *
  * Exposes rule implementations and configuration presets for ESLint flat config.
  */
-const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
+export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"ban-instances": banInstances,
 	"ban-react-fc": banReactFC,
 	"enforce-ianitor-check-type": enforceIanitorCheckType,
@@ -149,7 +149,7 @@ const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
  * ];
  * ```
  */
-const recommended = {
+export const recommended = {
 	plugins: {
 		"cease-nonsense": { rules },
 	},

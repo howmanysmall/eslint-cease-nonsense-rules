@@ -1,12 +1,12 @@
 import { expect, it } from "bun:test";
-import plugin from "../src";
+import plugin, { rules } from "../src";
 
 // Minimal smoke test that our plugin shape is valid
 
 it("plugin exports rule and recommended config", () => {
 	expect.assertions(4);
 	expect(plugin).toBeDefined();
-	expect(plugin.rules).toBeDefined();
-	expect(Object.keys(plugin.rules)).toContain("no-print");
+	expect(rules).toBeDefined();
+	expect(Object.keys(rules)).toContain("no-print");
 	expect(plugin.configs.recommended).toBeDefined();
 });
