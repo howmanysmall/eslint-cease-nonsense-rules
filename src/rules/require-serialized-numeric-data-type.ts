@@ -96,6 +96,15 @@ function containsRawNumber(node: TSESTree.TypeNode): boolean {
 		if (typeAnnotation !== undefined) return containsRawNumber(typeAnnotation);
 	}
 
+	// Check type arguments of generic type references (e.g., Array<number>, Promise<number>)
+	if (
+		node.type === TSESTree.AST_NODE_TYPES.TSTypeReference &&
+		node.typeArguments !== undefined &&
+		node.typeArguments.params.length > 0
+	) {
+		return node.typeArguments.params.some(containsRawNumber);
+	}
+
 	return false;
 }
 
@@ -145,8 +154,8 @@ const requireSerializedNumericDataType = createRule<Options, MessageIds>({
 				"esTreeNodeToTSNodeMap" in parserServices
 			) {
 				const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
-				if (tsNode !== undefined) {
-					return checkTypeWithTypeChecker(typeChecker, tsNode as TypeNode);
+				if (tsNode !== undefined && "_typeNodeBrand" in tsNode) {
+					return checkTypeWithTypeChecker(typeChecker, tsNode);
 				}
 			}
 

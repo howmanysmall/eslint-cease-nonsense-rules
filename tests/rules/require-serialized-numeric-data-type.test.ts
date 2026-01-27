@@ -136,6 +136,26 @@ describe("require-serialized-numeric-data-type", () => {
 				errors: [{ messageId: "requireSerializedNumericDataType" }],
 				options: [{ mode: "all" }],
 			},
+			// Generic type with number argument - Array<number>
+			{
+				code: `export const Timer = registerComponent<Array<number>>({ replicated: true });`,
+				errors: [{ messageId: "requireSerializedNumericDataType" }],
+			},
+			// Generic type with number argument - Promise<number>
+			{
+				code: `export const Timer = registerComponent<Promise<number>>({ replicated: true });`,
+				errors: [{ messageId: "requireSerializedNumericDataType" }],
+			},
+			// Generic type with number argument - Map<string, number>
+			{
+				code: `export const Timer = registerComponent<Map<string, number>>({ replicated: true });`,
+				errors: [{ messageId: "requireSerializedNumericDataType" }],
+			},
+			// Nested generic with number
+			{
+				code: `export const Timer = registerComponent<Wrapper<number>>({ replicated: true });`,
+				errors: [{ messageId: "requireSerializedNumericDataType" }],
+			},
 		],
 		valid: [
 			// DataType.u8 - allowed
@@ -247,6 +267,22 @@ describe("require-serialized-numeric-data-type", () => {
 					type MyNumber = DataType.u8;
 					registerComponent<MyNumber>({ replicated: true });
 				`,
+			},
+			// Generic type with DataType argument - Array<DataType.f32>
+			{
+				code: `export const Timer = registerComponent<Array<DataType.f32>>({ replicated: true });`,
+			},
+			// Generic type with DataType argument - Promise<DataType.u8>
+			{
+				code: `export const Timer = registerComponent<Promise<DataType.u8>>({ replicated: true });`,
+			},
+			// Generic type with DataType arguments - Map<string, DataType.i32>
+			{
+				code: `export const Timer = registerComponent<Map<string, DataType.i32>>({ replicated: true });`,
+			},
+			// Nested generic with DataType
+			{
+				code: `export const Timer = registerComponent<Wrapper<DataType.u32>>({ replicated: true });`,
 			},
 		],
 	});
