@@ -165,8 +165,9 @@
 			{
 				"allowArrowFunctions": false,
 				"allowTypeAnnotation": true,
-				"namedExports": "ignore",
-				"style": "declaration",
+				"overrides": {
+					"namedExports": "ignore",
+				},
 			},
 		],
 		"id-length": [

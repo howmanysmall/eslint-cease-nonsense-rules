@@ -35,6 +35,7 @@ import requireNamedEffectFunctions from "./rules/require-named-effect-functions"
 import requirePairedCalls from "./rules/require-paired-calls";
 import requireReactComponentKeys from "./rules/require-react-component-keys";
 import requireReactDisplayNames from "./rules/require-react-display-names";
+import requireSerializedNumericDataType from "./rules/require-serialized-numeric-data-type";
 import strictComponentBoundaries from "./rules/strict-component-boundaries";
 import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
 import useHookAtTopLevel from "./rules/use-hook-at-top-level";
@@ -57,6 +58,7 @@ export type { EffectFunctionOptions, HookConfiguration } from "./rules/require-n
 export type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
 export type { ReactKeysOptions } from "./rules/require-react-component-keys";
 export type { RequireReactDisplayNamesOptions } from "./rules/require-react-display-names";
+export type { RequireSerializedNumericDataTypeOptions } from "./rules/require-serialized-numeric-data-type";
 export type { HookEntry, UseExhaustiveDependenciesOptions } from "./rules/use-exhaustive-dependencies";
 export type { EnvironmentMode } from "./types/environment-mode";
 export {
@@ -79,6 +81,7 @@ export {
 	createRequireModuleLevelInstantiationOptions,
 	createRequirePairedCallsOptions,
 	createRequireReactDisplayNamesOptions,
+	createRequireSerializedNumericDataTypeOptions,
 	createUseExhaustiveDependenciesOptions,
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
@@ -128,6 +131,7 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"require-paired-calls": requirePairedCalls,
 	"require-react-component-keys": requireReactComponentKeys,
 	"require-react-display-names": requireReactDisplayNames,
+	"require-serialized-numeric-data-type": requireSerializedNumericDataType,
 	"strict-component-boundaries": strictComponentBoundaries,
 	"use-exhaustive-dependencies": useExhaustiveDependencies,
 	"use-hook-at-top-level": useHookAtTopLevel,

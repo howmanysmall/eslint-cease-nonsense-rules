@@ -222,6 +222,50 @@ const meta: Record<Color, number> = {
 const selected: Color = Color.Blue;
 ```
 
+#### `require-serialized-numeric-data-type`
+
+Require specific serialized numeric data types (`DataType.*`) instead of generic `number` for ECS components and other serialization contexts.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/require-serialized-numeric-data-type": ["error", {
+    "mode": "type-arguments",           // "type-arguments" (default) or "all"
+    "functionNames": ["registerComponent"],  // Functions to check in type-arguments mode
+    "strict": false                     // Enable type checker resolution for aliases
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+// Generic number type
+export const Wave = registerComponent<number>({ replicated: true });
+
+// Object with number property
+export const WaveTime = registerComponent<{ elapsed: number }>({ replicated: true });
+```
+
+**✅ Good**
+
+```typescript
+import type { DataType } from "@rbxts/flamework-binary-serializer";
+
+// Specific DataType variants
+export const Wave = registerComponent<DataType.u8>({ replicated: true });
+export const WaveTime = registerComponent<DataType.f32>({ replicated: true });
+export const Yen = registerComponent<DataType.u32>({ replicated: true });
+
+// Object with DataType properties
+export const Position = registerComponent<{
+  x: DataType.f32;
+  y: DataType.f32;
+  z: DataType.f32;
+}>({ replicated: true });
+```
+
 #### `no-unused-imports`
 
 Disallow unused imports. Uses ESLint's scope analysis to detect unused imports and optionally checks JSDoc comments for references.
