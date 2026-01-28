@@ -163,7 +163,6 @@ export default createRule<Options, MessageIds>({
 			if (left === right) return true;
 			return checker.isTypeAssignableTo(left, right) && checker.isTypeAssignableTo(right, left);
 		}
-
 		function getEnumSymbolFromType(type: Type): TypeScriptSymbol | undefined {
 			const cached = enumSymbolCache.get(type);
 			if (cached !== undefined) return cached === false ? undefined : cached;
@@ -196,6 +195,21 @@ export default createRule<Options, MessageIds>({
 			}
 
 			enumSymbolCache.set(type, false);
+			return undefined;
+		}
+
+		function hasSameEnumSymbol(left: Type, right: Type): boolean {
+			const leftEnumSymbol = getEnumSymbolFromType(left);
+			if (!leftEnumSymbol) return false;
+			const rightEnumSymbol = getEnumSymbolFromType(right);
+			return rightEnumSymbol === leftEnumSymbol;
+		}
+
+		function mergeCompatibleKeyTypes(resolved: Type, candidate: Type): Type | undefined {
+			if (isEquivalentType(resolved, candidate)) return resolved;
+			if (checker.isTypeAssignableTo(resolved, candidate)) return candidate;
+			if (checker.isTypeAssignableTo(candidate, resolved)) return resolved;
+			if (hasSameEnumSymbol(resolved, candidate)) return candidate;
 			return undefined;
 		}
 
@@ -345,6 +359,31 @@ export default createRule<Options, MessageIds>({
 			return undefined;
 		}
 
+		function getRecordKeyTypeFromAlias(type: Type): Type | undefined {
+			const { aliasSymbol, aliasTypeArguments } = type;
+			if (!aliasSymbol) return undefined;
+
+			const declarations = aliasSymbol.declarations ?? [];
+			for (const declaration of declarations) {
+				if (!isTypeAliasDeclaration(declaration)) continue;
+				const aliasTypeNode = declaration.type;
+				if (!isTypeReferenceNode(aliasTypeNode)) continue;
+
+				const targetSymbol = checker.getSymbolAtLocation(aliasTypeNode.typeName);
+				if (!targetSymbol) continue;
+				const resolvedTargetSymbol = resolveAliasSymbol(checker, targetSymbol);
+				if (resolvedTargetSymbol.getName() !== RECORD_ALIAS_NAME) continue;
+
+				const [keyNode] = aliasTypeNode.typeArguments ?? [];
+				if (!keyNode) continue;
+
+				const resolvedKeyType = resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, keyNode);
+				if (resolvedKeyType) return resolvedKeyType;
+			}
+
+			return undefined;
+		}
+
 		function getAliasTargetType(type: Type): Type | undefined {
 			const { aliasSymbol } = type;
 			if (!aliasSymbol) return undefined;
@@ -399,13 +438,18 @@ export default createRule<Options, MessageIds>({
 						resolved = candidate;
 						continue;
 					}
-					if (!isEquivalentType(resolved, candidate)) return undefined;
+					const merged = mergeCompatibleKeyTypes(resolved, candidate);
+					if (!merged) return undefined;
+					resolved = merged;
 				}
 				return resolved;
 			}
 
 			const recordKeyType = getRecordKeyType(type);
 			if (recordKeyType) return recordKeyType;
+
+			const recordKeyTypeFromAlias = getRecordKeyTypeFromAlias(type);
+			if (recordKeyTypeFromAlias) return recordKeyTypeFromAlias;
 
 			const { aliasSymbol, aliasTypeArguments } = type;
 			if (aliasSymbol && aliasTypeArguments?.length === 1) {
