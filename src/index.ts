@@ -26,7 +26,7 @@ import preferPascalCaseEnums from "./rules/prefer-pascal-case-enums";
 import preferPatternReplacements from "./rules/prefer-pattern-replacements";
 import preferReadOnlyProps from "./rules/prefer-read-only-props";
 import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
-import preferSingleGet from "./rules/prefer-single-get";
+import preferSingleWorldQuery from "./rules/prefer-single-world-query";
 import preferSingularEnums from "./rules/prefer-singular-enums";
 import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
 import preventAbbreviations from "./rules/prevent-abbreviations";
@@ -123,7 +123,7 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"prefer-pattern-replacements": preferPatternReplacements,
 	"prefer-read-only-props": preferReadOnlyProps,
 	"prefer-sequence-overloads": preferSequenceOverloads,
-	"prefer-single-get": preferSingleGet,
+	"prefer-single-world-query": preferSingleWorldQuery,
 	"prefer-singular-enums": preferSingularEnums,
 	"prefer-udim2-shorthand": preferUDim2Shorthand,
 	"prevent-abbreviations": preventAbbreviations,

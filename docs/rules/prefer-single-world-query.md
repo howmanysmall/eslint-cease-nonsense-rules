@@ -1,14 +1,14 @@
-# prefer-single-get
+# prefer-single-world-query
 
-Enforces combining multiple `world.get()` calls on the same entity into a single call for better Jecs performance.
+Enforces combining multiple `world.get()` or `world.has()` calls on the same entity into a single call for better Jecs performance.
 
 ## Rule Details
 
-In Jecs (a Roblox ECS library), calling `world.get()` multiple times on the same entity results in multiple archetype lookups. Combining these calls into a single `world.get(entity, ComponentA, ComponentB, ...)` call improves performance by reducing the number of lookups and cache misses.
+In Jecs (a Roblox ECS library), calling `world.get()` or `world.has()` multiple times on the same entity results in multiple archetype lookups. Combining these calls into a single call improves performance by reducing lookups and cache misses.
 
-This rule detects consecutive `world.get()` calls on the same world and entity, and provides an automatic fix to merge them.
+This rule detects consecutive `world.get()` or `world.has()` calls on the same world and entity, and provides an automatic fix to merge them.
 
-## Examples
+## world.get() Examples
 
 ### ❌ Incorrect
 
@@ -26,11 +26,46 @@ const health = world.get(entity, Health);
 const [position, velocity, health] = world.get(entity, Position, Velocity, Health);
 ```
 
+## world.has() Examples
+
+### ❌ Incorrect
+
+```typescript
+// Multiple lookups - inefficient
+const hasPosition = world.has(entity, Position);
+const hasVelocity = world.has(entity, Velocity);
+if (hasPosition && hasVelocity) {
+    // Entity has both components
+}
+```
+
+### ✅ Correct
+
+```typescript
+// Single lookup - efficient
+const hasAll = world.has(entity, Position, Velocity);
+if (hasAll) {
+    // Entity has both components
+}
+```
+
+### ⚠️ Not Flagged (used separately)
+
+```typescript
+// Not flagged - has() calls used independently
+const hasPosition = world.has(entity, Position);
+const hasVelocity = world.has(entity, Velocity);
+
+// Different control flow
+if (hasPosition) updatePosition();
+if (hasVelocity) updateVelocity();
+```
+
 ## Performance Benefits
 
 ### Reduced Archetype Lookups
 
-Each `world.get()` call performs an archetype lookup. Combining calls reduces overhead:
+Each `world.get()` or `world.has()` call performs an archetype lookup. Combining calls reduces overhead:
 
 ```typescript
 // ❌ 3 archetype lookups
@@ -58,7 +93,9 @@ const [transform, model] = world.get(entity, Transform, Model);
 
 ## Auto-Fix Behavior
 
-This rule provides automatic fixes that merge multiple `world.get()` calls:
+This rule provides automatic fixes:
+
+### For world.get()
 
 ```typescript
 // Before:
@@ -68,6 +105,21 @@ const velocity = world.get(entity, Velocity);
 // After (auto-fixed):
 const [position, velocity] = world.get(entity, Position, Velocity);
 ```
+
+### For world.has()
+
+```typescript
+// Before:
+const hasA = world.has(entity, ComponentA);
+const hasB = world.has(entity, ComponentB);
+if (hasA && hasB) { ... }
+
+// After (auto-fixed):
+const hasA = world.has(entity, ComponentA, ComponentB);
+if (hasA) { ... }
+```
+
+Note: `world.has()` calls are only combined when their results are ANDed together (`hasA && hasB`), as this maintains equivalent semantics. If the `has()` results are used separately, they won't be combined.
 
 ## Supported Patterns
 
@@ -95,11 +147,20 @@ const a = world.get(entities[0], ComponentA);
 const b = world.get(entities[0], ComponentB);
 ```
 
+### has() in Control Flow
+
+```typescript
+// Detected when has() calls are ANDed
+const hasA = world.has(entity, ComponentA);
+const hasB = world.has(entity, ComponentB);
+while (hasA && hasB) { ... }
+```
+
 ## Limitations
 
 ### Maximum Components
 
-Jecs supports up to 4 components per `get()` call. The rule will not combine more than 4 calls on the same entity:
+Jecs supports up to 4 components per `get()` or `has()` call. The rule will not combine more than 4 calls on the same entity:
 
 ```typescript
 // These 5 calls will NOT be combined (exceeds Jecs limit)
@@ -108,6 +169,28 @@ const b = world.get(entity, B);
 const c = world.get(entity, C);
 const d = world.get(entity, D);
 const e = world.get(entity, E);
+```
+
+### has() Semantics
+
+`world.has(entity, A, B)` returns `true` only if the entity has **ALL** specified components. This is equivalent to `world.has(entity, A) && world.has(entity, B)`. Therefore, the rule only combines `has()` calls when their results are ANDed together.
+
+```typescript
+// ❌ Detected and fixed (ANDed usage)
+const hasA = world.has(entity, A);
+const hasB = world.has(entity, B);
+if (hasA && hasB) { ... }
+
+// ✅ Not detected (separate usage)
+const hasA = world.has(entity, A);
+const hasB = world.has(entity, B);
+if (hasA) doA();
+if (hasB) doB();
+
+// ✅ Not detected (OR usage)
+const hasA = world.has(entity, A);
+const hasB = world.has(entity, B);
+if (hasA || hasB) { ... }
 ```
 
 ### Non-Consecutive Calls
@@ -133,7 +216,7 @@ let y = world.get(entity, ComponentB);
 Disable this rule if:
 
 - You intentionally want separate lookups for debugging purposes
-- You're using a custom ECS implementation with different `get()` semantics
+- You're using a custom ECS implementation with different semantics
 - You prefer explicit single-component lookups for code clarity
 
 ## Related Rules

@@ -1,7 +1,7 @@
 import { describe } from "bun:test";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-import rule from "../../src/rules/prefer-single-get";
+import rule from "../../src/rules/prefer-single-world-query";
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -11,11 +11,11 @@ const ruleTester = new RuleTester({
 	},
 });
 
-describe("prefer-single-get", () => {
+describe("prefer-single-world-query", () => {
 	//@ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
-	ruleTester.run("prefer-single-get", rule, {
+	ruleTester.run("prefer-single-world-query", rule, {
 		invalid: [
-			// Basic case: two world.get calls on same world and entity
+			// Basic get case: two world.get calls on same world and entity
 			{
 				code: `
 const componentA = world.get(entity, ComponentA);
@@ -26,7 +26,7 @@ const componentB = world.get(entity, ComponentB);
 const [componentA, componentB] = world.get(entity, ComponentA, ComponentB);
 `,
 			},
-			// Three components
+			// Three get components
 			{
 				code: `
 const componentA = world.get(entity, ComponentA);
@@ -38,7 +38,7 @@ const componentC = world.get(entity, ComponentC);
 const [componentA, componentB, componentC] = world.get(entity, ComponentA, ComponentB, ComponentC);
 `,
 			},
-			// Four components (max for Jecs)
+			// Four get components (max for Jecs)
 			{
 				code: `
 const componentA = world.get(entity, ComponentA);
@@ -84,6 +84,59 @@ const componentB = world.get(entities[0], ComponentB);
 				errors: [{ messageId: "preferSingleGet" }],
 				output: `
 const [componentA, componentB] = world.get(entities[0], ComponentA, ComponentB);
+`,
+			},
+			// Has() calls combined in && expression
+			{
+				code: `
+const hasA = world.has(entity, ComponentA);
+const hasB = world.has(entity, ComponentB);
+if (hasA && hasB) { doSomething(); }
+`,
+				errors: [{ messageId: "preferSingleHas" }],
+				output: `
+const hasAll = world.has(entity, ComponentA, ComponentB);
+if (hasA && hasB) { doSomething(); }
+`,
+			},
+			// Three has() calls in &&
+			{
+				code: `
+const hasA = world.has(entity, ComponentA);
+const hasB = world.has(entity, ComponentB);
+const hasC = world.has(entity, ComponentC);
+if (hasA && hasB && hasC) { doSomething(); }
+`,
+				errors: [{ messageId: "preferSingleHas" }],
+				output: `
+const hasAll = world.has(entity, ComponentA, ComponentB, ComponentC);
+if (hasA && hasB && hasC) { doSomething(); }
+`,
+			},
+			// Has() in while loop condition
+			{
+				code: `
+const hasA = world.has(entity, ComponentA);
+const hasB = world.has(entity, ComponentB);
+while (hasA && hasB) { doSomething(); }
+`,
+				errors: [{ messageId: "preferSingleHas" }],
+				output: `
+const hasAll = world.has(entity, ComponentA, ComponentB);
+while (hasA && hasB) { doSomething(); }
+`,
+			},
+			// Has() in ternary
+			{
+				code: `
+const hasA = world.has(entity, ComponentA);
+const hasB = world.has(entity, ComponentB);
+const result = hasA && hasB ? "yes" : "no";
+`,
+				errors: [{ messageId: "preferSingleHas" }],
+				output: `
+const hasAll = world.has(entity, ComponentA, ComponentB);
+const result = hasA && hasB ? "yes" : "no";
 `,
 			},
 		],
@@ -152,6 +205,36 @@ const { b } = world.get(entity, ComponentB);
 const { x } = world.get(entity, ComponentA);
 const { y } = world.get(entity, ComponentB);
 `,
+			},
+			// Has() calls used separately (not in &&)
+			{
+				code: `
+const hasA = world.has(entity, ComponentA);
+const hasB = world.has(entity, ComponentB);
+if (hasA) { doA(); }
+if (hasB) { doB(); }
+`,
+			},
+			// Has() calls used in || (not &&)
+			{
+				code: `
+const hasA = world.has(entity, ComponentA);
+const hasB = world.has(entity, ComponentB);
+if (hasA || hasB) { doSomething(); }
+`,
+			},
+			// Has() calls used independently
+			{
+				code: `
+const hasA = world.has(entity, ComponentA);
+const hasB = world.has(entity, ComponentB);
+const x = hasA;
+const y = hasB;
+`,
+			},
+			// Single has() call
+			{
+				code: "const hasA = world.has(entity, ComponentA);",
 			},
 		],
 	});
