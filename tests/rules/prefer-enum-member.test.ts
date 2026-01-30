@@ -168,29 +168,42 @@ const values: ColorMap<Color> = { Blue: 1, Green: 2, Red: 3 };`,
 type ColorMap<T extends Color> = { [K in T]: number };
 const values: ColorMap<Color> = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]: 3 };`,
 			},
-			{
-				code: `${declarations}
-type Mixed = Record<Color, string> | Record<Color, number>;
-const values: Mixed = { Blue: 1, Green: 2, Red: 3 };`,
-				errors: [
-					{ messageId: "preferEnumMember" },
-					{ messageId: "preferEnumMember" },
-					{ messageId: "preferEnumMember" },
-				],
-				output: `${declarations}
-type Mixed = Record<Color, string> | Record<Color, number>;
-const values: Mixed = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]: 3 };`,
-			},
-			{
-				code: `${declarations}
-declare const Swatch: (props: { color: Color }) => unknown;
-<Swatch color="Blue" />;`,
-				errors: [{ messageId: "preferEnumMember" }],
-				output: `${declarations}
-declare const Swatch: (props: { color: Color }) => unknown;
-<Swatch color={Color.Blue} />;`,
-			},
-		],
+				{
+					code: `${declarations}
+	type Mixed = Record<Color, string> | Record<Color, number>;
+	const values: Mixed = { Blue: 1, Green: 2, Red: 3 };`,
+					errors: [
+						{ messageId: "preferEnumMember" },
+						{ messageId: "preferEnumMember" },
+						{ messageId: "preferEnumMember" },
+					],
+					output: `${declarations}
+	type Mixed = Record<Color, string> | Record<Color, number>;
+	const values: Mixed = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]: 3 };`,
+				},
+				{
+					code: `${declarations}
+	type Narrow = Record<Color.Blue, number>;
+	type Wide = Record<Color, number>;
+	type MixedNarrow = Narrow | Wide;
+	const mixed: MixedNarrow = { Blue: 1, Green: 2, Red: 3 };`,
+					errors: [
+						{ messageId: "preferEnumMember" },
+						{ messageId: "preferEnumMember" },
+						{ messageId: "preferEnumMember" },
+					],
+					output: `${declarations}
+	type Narrow = Record<Color.Blue, number>;
+	type Wide = Record<Color, number>;
+	type MixedNarrow = Narrow | Wide;
+	const mixed: MixedNarrow = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]: 3 };`,
+				},
+				{
+					code: `${declarations}\ndeclare const Swatch: (props: { color: Color }) => unknown;\n<Swatch color="Blue" />;`,
+					errors: [{ messageId: "preferEnumMember" }],
+					output: `${declarations}\ndeclare const Swatch: (props: { color: Color }) => unknown;\n<Swatch color={Color.Blue} />;`,
+				},
+			],
 		valid: [
 			{
 				code: `${declarations}
