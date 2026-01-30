@@ -5,9 +5,10 @@ import { chdir, cwd, exit } from "node:process";
 import { Command } from "@jsr/cliffy__command";
 import { type } from "arktype";
 import type { BunFile } from "bun";
-import { $, file } from "bun";
+import { $, file, nanoseconds } from "bun";
 import console from "consola";
 import picocolors from "picocolors";
+import prettyMilliseconds from "pretty-ms";
 import { isDirectorySimpleAsync } from "../utilities/fs-utilities";
 
 const CURRENT_WORKING_DIRECTORY = cwd();
@@ -132,14 +133,19 @@ const testLiveCommand = new Command()
 		try {
 			chdir(directory);
 			await $`bun install`.quiet();
+			console.success(picocolors.green("Dependencies installed successfully."));
 
 			const customEnv: Record<string, string> = { TIMING: "2000" };
 			if (ci) customEnv.CI = "true";
 
 			const shell = $.env(customEnv);
 
-			if (cache) await shell`cd ${directory} && time bun x --bun eslint --cache --max-warnings=0 ./src`;
-			else await shell`cd ${directory} && time bun x --bun eslint --max-warnings=0 ./src`;
+			const duration = await profileAsync(async () => {
+				if (cache) await shell`bun x --bun eslint --cache --max-warnings=0 ./src`;
+				else await shell`bun x --bun eslint --max-warnings=0 ./src`;
+			});
+
+			console.success(picocolors.green(`ESLint took ${picocolors.bold(prettyMilliseconds(duration))}.`));
 
 			chdir(CURRENT_WORKING_DIRECTORY);
 		} catch (error) {
@@ -155,3 +161,14 @@ const testLiveCommand = new Command()
 	});
 
 export default testLiveCommand;
+
+async function profileAsync(callback: () => Promise<void>): Promise<number> {
+	const startTime = nanoseconds();
+	try {
+		await callback();
+	} catch {
+		// Don't care
+	}
+	const finishTime = nanoseconds();
+	return (finishTime - startTime) / 1_000_000;
+}
