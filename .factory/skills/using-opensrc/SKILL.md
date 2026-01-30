@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires Node.js + npm (or npx) and network access. Uses git under the hood to fetch repos/tags. Writes to ./opensrc/ in the current project.
 metadata:
   tool: opensrc
-  primary-command: "opensrc <package|repo> [--modify[=true|false]]"
+  primary-command: "bun x --bun opensrc <package|repo> [--modify[=true|false]]"
   outputs:
     settings: "opensrc/settings.json"
     index: "opensrc/sources.json"
@@ -42,17 +42,17 @@ Do **not** activate if:
 
 ### 2) Decide the fetch target
 - For npm deps:
-  - Prefer `opensrc <name>` (lets opensrc match your installed version from lockfile).
-  - Use `opensrc <name>@<version>` only if you explicitly need a specific version.
+  - Prefer `bun x --bun opensrc <name>` (lets opensrc match your installed version from lockfile).
+  - Use `bun x --bun opensrc <name>@<version>` only if you explicitly need a specific version.
 - For GitHub:
-  - Use `opensrc owner/repo` (or URL) and optionally pin `@tag` or `#branch` when reproducibility matters.
+  - Use `bun x --bun opensrc owner/repo` (or URL) and optionally pin `@tag` or `#branch` when reproducibility matters.
 
 ### 3) Run opensrc
 - Default:
-  - `opensrc <target>`
+  - `bun x --bun opensrc <target>`
 - If you want to avoid interactive prompts in automation:
-  - Allow modifications: `opensrc <target> --modify`
-  - Deny modifications: `opensrc <target> --modify=false`
+  - Allow modifications: `bun x --bun opensrc <target> --modify`
+  - Deny modifications: `bun x --bun opensrc <target> --modify=false`
 
 ### 4) Confirm outputs
 After completion, verify:
@@ -61,41 +61,41 @@ After completion, verify:
 
 ### 5) Use the fetched code
 - When referencing implementation details, prefer quoting file paths + identifiers (file, function, lines if available in your environment).
-- If multiple packages/repos were fetched, use `opensrc list` to confirm names and avoid ambiguity.
+- If multiple packages/repos were fetched, use `bun x --bun opensrc list` to confirm names and avoid ambiguity.
 
 ## Commands cheat sheet
 ### npm
-- Fetch matching installed version: `opensrc zod`
-- Fetch pinned version: `opensrc zod@3.22.0`
-- Fetch multiple: `opensrc react react-dom next`
+- Fetch matching installed version: `bun x --bun opensrc zod`
+- Fetch pinned version: `bun x --bun opensrc zod@3.22.0`
+- Fetch multiple: `bun x --bun opensrc react react-dom next`
 
 ### GitHub
-- `opensrc github:owner/repo`
-- `opensrc owner/repo`
-- `opensrc https://github.com/owner/repo`
+- `bun x --bun opensrc github:owner/repo`
+- `bun x --bun opensrc owner/repo`
+- `bun x --bun opensrc https://github.com/owner/repo`
 - Pin tag/branch:
-  - `opensrc owner/repo@v1.0.0`
-  - `opensrc owner/repo#main`
+  - `bun x --bun opensrc owner/repo@v1.0.0`
+  - `bun x --bun opensrc owner/repo#main`
 
 ### Manage
-- List: `opensrc list`
-- Remove: `opensrc remove zod` / `opensrc remove owner--repo`
+- List: `bun x --bun opensrc list`
+- Remove: `bun x --bun opensrc remove zod` / `bun x --bun opensrc remove owner--repo`
 
 ## Edge cases and how to handle them
 - **Repo URL missing or mismatched tags (npm):**
-  - If opensrc can't map the package version to a git tag, fall back to fetching the repo default branch (`opensrc owner/repo#main`) and note that the code may not match the installed version.
+  - If opensrc can't map the package version to a git tag, fall back to fetching the repo default branch (`bun x --bun opensrc owner/repo#main`) and note that the code may not match the installed version.
 - **Monorepos:**
   - Expect the package to live under `packages/*` or similar; search within `opensrc/<target>/` for the package name.
 - **Lockfile not present:**
   - opensrc can't auto-detect; use an explicit `pkg@version` or fetch the GitHub repo directly.
 - **Disk size / noise:**
-  - Prefer removing unused sources via `opensrc remove ...` once investigation is complete.
+  - Prefer removing unused sources via `bun x --bun opensrc remove ...` once investigation is complete.
 
 ## Safety / hygiene
 - Treat fetched code as third-party content; do not modify dependency source under `opensrc/` unless you are intentionally patching for analysis.
 - If `--modify` is enabled, opensrc may update `.gitignore`, `tsconfig.json`, and `AGENTS.md`; verify diffs are acceptable for the project.
 
 ## Minimal examples (agent-facing)
-- "Behavior differs from types; fetch source for the installed dependency and inspect implementation." → `opensrc <dep>`
-- "Need to confirm behavior in a specific tag." → `opensrc owner/repo@<tag>`
-- "Update local cache to match current lockfile." → re-run `opensrc <dep>`
+- "Behavior differs from types; fetch source for the installed dependency and inspect implementation." → `bun x --bun opensrc <dep>`
+- "Need to confirm behavior in a specific tag." → `bun x --bun opensrc owner/repo@<tag>`
+- "Update local cache to match current lockfile." → re-run `bun x --bun opensrc <dep>`
