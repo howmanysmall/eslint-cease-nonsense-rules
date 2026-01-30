@@ -136,9 +136,10 @@ const testLiveCommand = new Command()
 			const customEnv: Record<string, string> = { TIMING: "2000" };
 			if (ci) customEnv.CI = "true";
 
-			if (cache) {
-				await $.env(customEnv)`cd ${directory} && time bun x --bun eslint --cache --max-warnings=0 ./src`;
-			} else await $.env(customEnv)`cd ${directory} && time bun x --bun eslint --max-warnings=0 ./src`;
+			const shell = $.env(customEnv);
+
+			if (cache) await shell`cd ${directory} && time bun x --bun eslint --cache --max-warnings=0 ./src`;
+			else await shell`cd ${directory} && time bun x --bun eslint --max-warnings=0 ./src`;
 
 			chdir(CURRENT_WORKING_DIRECTORY);
 		} catch (error) {
