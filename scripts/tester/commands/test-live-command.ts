@@ -91,9 +91,8 @@ const testLiveCommand = new Command()
 	.option("--use-link", "Use 'bun link' instead of patching package.json.", { default: false })
 	.option("-c, --cache", "Cache ESLint results.")
 	.option("--ci", "Enables CI mode.")
-	.option("-v, --verbose", "Enables verbose logging.")
 	.arguments("<directory:string>")
-	.action(async ({ ci, useLink, cache, verbose }, directoryUnresolved) => {
+	.action(async ({ ci, useLink, cache }, directoryUnresolved) => {
 		const directory = resolve(directoryUnresolved);
 		const isDirectoryReal = await isDirectorySimpleAsync(directory);
 		if (!isDirectoryReal) {

@@ -3,14 +3,13 @@ const simpleGitHooks = {
 	"post-merge": "bun install",
 	"pre-commit": "bun run lint-staged",
 
-	// simulate `ci.yaml`
+	// Simulate `ci.yaml`
 	"pre-push": [
-		"time bun add -D oxlint-tsgolint@latest",
-		"bun run lint",
+		"bun add -D oxlint-tsgolint@latest",
 		"bun run biome:ci",
-		"bun run knip",
+		"bun run oxc .",
 		"bun run type-check",
-		// "bun run test --bail",
+		"bun run knip",
 		"bun run build",
 	],
 };
