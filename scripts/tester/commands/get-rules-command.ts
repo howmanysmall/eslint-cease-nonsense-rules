@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import { cwd, exit } from "node:process";
 import { Command, EnumType } from "@jsr/cliffy__command";
 import { type } from "arktype";
-import { consola } from "consola";
+import { withContext } from "../logging/log-utilities";
 import { getConfigurationPathAsync } from "../utilities/eslint-utilities";
 import { isDirectorySimpleAsync } from "../utilities/fs-utilities";
 import { formatRulesAsJson } from "./formatters/json-formatter";
@@ -10,6 +10,8 @@ import { formatRulesAsMinimal } from "./formatters/minimal-formatter";
 import { formatRulesAsTable } from "./formatters/table-formatter";
 import type { RuleEntry } from "./formatters/types";
 import { isValidRules } from "./formatters/types";
+
+const log = withContext({ namespace: "tester", scope: "get-rules" });
 
 const CURRENT_WORKING_DIRECTORY = cwd();
 
@@ -43,17 +45,17 @@ const getRulesCommand = new Command()
 		const directory = resolve(directoryUnresolved);
 		const isDirectoryReal = await isDirectorySimpleAsync(directory);
 		if (!isDirectoryReal) {
-			consola.fail("The specified directory does not exist.");
+			log.fail("The specified directory does not exist.");
 			exit(1);
 		}
 
 		const configurationPath = await getConfigurationPathAsync(directory);
 		if (configurationPath === undefined) {
-			consola.fail("No ESLint configuration found in the specified directory.");
+			log.fail("No ESLint configuration found in the specified directory.");
 			exit(1);
 		}
 
-		consola.verbose("Loading ESLint configuration...");
+		log.verbose("Loading ESLint configuration...");
 
 		process.chdir(directory);
 		const text = await Bun.$`bun x --bun eslint --print-config ${configurationPath}`.quiet().text();
@@ -61,7 +63,7 @@ const getRulesCommand = new Command()
 
 		const json = isValidRules(JSON.parse(text));
 		if (json instanceof type.errors) {
-			consola.fail(`The ESLint configuration is invalid: ${json.summary}`);
+			log.fail(`The ESLint configuration is invalid: ${json.summary}`);
 			exit(1);
 		}
 

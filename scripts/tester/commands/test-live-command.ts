@@ -1,17 +1,18 @@
 #!/usr/bin/env bun
 
 import { resolve } from "node:path";
-import { chdir, cwd, exit } from "node:process";
+import { exit } from "node:process";
 import { Command } from "@jsr/cliffy__command";
 import { type } from "arktype";
 import type { BunFile } from "bun";
 import { $, file, nanoseconds } from "bun";
-import console from "consola";
 import picocolors from "picocolors";
 import prettyMilliseconds from "pretty-ms";
+import { withContext } from "../logging/log-utilities";
 import { isDirectorySimpleAsync } from "../utilities/fs-utilities";
+import { editJsonc } from "../utilities/jsonc-utilities";
 
-const CURRENT_WORKING_DIRECTORY = cwd();
+const log = withContext({ namespace: "tester", scope: "test-live" });
 
 const isBasePackageJson = type({
 	dependencies: "Record<string, string>",
@@ -26,7 +27,7 @@ async function readPackageJsonAsync(
 ): Promise<readonly [basePackageJson: BasePackageJson, contents: string]> {
 	const exists = await bunFile.exists();
 	if (!exists) {
-		console.fail("package.json not found in the testing directory.");
+		log.fail("package.json not found in the testing directory.");
 		exit(1);
 	}
 
@@ -65,24 +66,21 @@ async function replacePackageJsonAsync({
 	if (name in dependencies) dependencies[name] = pathToUse;
 	else if (name in devDependencies) devDependencies[name] = pathToUse;
 	else {
-		console.fail(`Package ${name} not found in dependencies or devDependencies.`);
+		log.fail(`Package ${name} not found in dependencies or devDependencies.`);
 		exit(1);
 	}
 
-	const newPackageJson: BasePackageJson = {
-		...livePackageJson,
-		dependencies,
-		devDependencies,
-	};
+	const updated = editJsonc(packageContents, isBasePackageJson.assert, (draft) => {
+		draft.dependencies = dependencies;
+		draft.devDependencies = devDependencies;
+		return draft;
+	});
 
-	await livePackageFile.write(JSON.stringify(newPackageJson, undefined, 2));
+	await livePackageFile.write(updated);
 
 	return async function undoAsync(): Promise<void> {
 		await livePackageFile.write(packageContents);
-
-		chdir(directory);
-		await $`bun install`.quiet();
-		chdir(CURRENT_WORKING_DIRECTORY);
+		await $.cwd(directory)`bun install`.quiet();
 	};
 }
 
@@ -93,12 +91,13 @@ const testLiveCommand = new Command()
 	.option("--use-link", "Use 'bun link' instead of patching package.json.", { default: false })
 	.option("-c, --cache", "Cache ESLint results.")
 	.option("--ci", "Enables CI mode.")
+	.option("-v, --verbose", "Enables verbose logging.")
 	.arguments("<directory:string>")
-	.action(async ({ ci, useLink, cache }, directoryUnresolved) => {
+	.action(async ({ ci, useLink, cache, verbose }, directoryUnresolved) => {
 		const directory = resolve(directoryUnresolved);
 		const isDirectoryReal = await isDirectorySimpleAsync(directory);
 		if (!isDirectoryReal) {
-			console.fail(picocolors.red(`The directory "${picocolors.bold(directory)}" does not exist.`));
+			log.fail(picocolors.red(`The directory "${picocolors.bold(directory)}" does not exist.`));
 			exit(1);
 		}
 
@@ -106,7 +105,7 @@ const testLiveCommand = new Command()
 		const isLivePackageReal = await livePackageFile.exists();
 
 		if (!isLivePackageReal) {
-			console.fail(picocolors.red(`No package.json found in "${picocolors.bold(directory)}".`));
+			log.fail(picocolors.red(`No package.json found in "${picocolors.bold(directory)}".`));
 			exit(1);
 		}
 
@@ -136,18 +135,16 @@ const testLiveCommand = new Command()
 
 			const shell = $.env(customEnv).cwd(directory);
 			await shell`bun install`.quiet();
-			console.success(picocolors.green("Dependencies installed successfully."));
+			log.success(picocolors.green("Dependencies installed successfully."));
 
 			const duration = await profileAsync(async () => {
 				if (cache) await shell`bun x --bun eslint --cache --max-warnings=0 ./src`;
 				else await shell`bun x --bun eslint --max-warnings=0 ./src`;
 			});
 
-			console.success(picocolors.green(`ESLint took ${picocolors.bold(prettyMilliseconds(duration))}.`));
+			log.success(picocolors.green(`ESLint took ${picocolors.bold(prettyMilliseconds(duration))}.`));
 		} catch (error) {
-			console.error(
-				picocolors.red(`Error running lint: ${error instanceof Error ? error.message : String(error)}`),
-			);
+			log.error(picocolors.red(`Error running lint: ${error instanceof Error ? error.message : String(error)}`));
 		} finally {
 			await cleanupAsync();
 		}
