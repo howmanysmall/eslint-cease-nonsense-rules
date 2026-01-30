@@ -4,6 +4,8 @@ import { resolve } from "node:path";
 import { chdir, cwd, exit } from "node:process";
 import { Command } from "@jsr/cliffy__command";
 import { type } from "arktype";
+import type { BunFile } from "bun";
+import { $, file } from "bun";
 import console from "consola";
 import picocolors from "picocolors";
 import { isDirectorySimpleAsync } from "../utilities/fs-utilities";
@@ -19,23 +21,23 @@ const isBasePackageJson = type({
 type BasePackageJson = typeof isBasePackageJson.infer;
 
 async function readPackageJsonAsync(
-	file: Bun.BunFile,
+	bunFile: BunFile,
 ): Promise<readonly [basePackageJson: BasePackageJson, contents: string]> {
-	const exists = await file.exists();
+	const exists = await bunFile.exists();
 	if (!exists) {
 		console.fail("package.json not found in the testing directory.");
 		exit(1);
 	}
 
-	const basePackageJson = await file.json().then(isBasePackageJson.assert);
-	const stringContents = await file.text();
+	const basePackageJson = await bunFile.json().then(isBasePackageJson.assert);
+	const stringContents = await bunFile.text();
 
 	return [basePackageJson, stringContents];
 }
 
 interface Parameters {
 	readonly directory: string;
-	readonly livePackageFile: Bun.BunFile;
+	readonly livePackageFile: BunFile;
 	readonly livePackageJson: BasePackageJson;
 	readonly packageContents: string;
 	readonly packageFileName: string;
@@ -78,19 +80,20 @@ async function replacePackageJsonAsync({
 		await livePackageFile.write(packageContents);
 
 		chdir(directory);
-		await Bun.$`bun install`.quiet();
+		await $`bun install`.quiet();
 		chdir(CURRENT_WORKING_DIRECTORY);
 	};
 }
 
 const testLiveCommand = new Command()
 	.name("test-live")
-	.version("1.1.0")
+	.version("1.2.0")
 	.description("Test the package in a live game environment.")
 	.option("--use-link", "Use 'bun link' instead of patching package.json.", { default: false })
 	.option("-c, --cache", "Cache ESLint results.")
+	.option("--ci", "Enables CI mode.")
 	.arguments("<directory:string>")
-	.action(async ({ useLink, cache }, directoryUnresolved) => {
+	.action(async ({ ci, useLink, cache }, directoryUnresolved) => {
 		const directory = resolve(directoryUnresolved);
 		const isDirectoryReal = await isDirectorySimpleAsync(directory);
 		if (!isDirectoryReal) {
@@ -98,7 +101,7 @@ const testLiveCommand = new Command()
 			exit(1);
 		}
 
-		const livePackageFile = Bun.file(resolve(directory, "package.json"));
+		const livePackageFile = file(resolve(directory, "package.json"));
 		const isLivePackageReal = await livePackageFile.exists();
 
 		if (!isLivePackageReal) {
@@ -106,7 +109,7 @@ const testLiveCommand = new Command()
 			exit(1);
 		}
 
-		const [thisPackageJson] = await readPackageJsonAsync(Bun.file(resolve(".", "package.json")));
+		const [thisPackageJson] = await readPackageJsonAsync(file(resolve(".", "package.json")));
 		const [livePackageJson, packageContents] = await readPackageJsonAsync(livePackageFile);
 
 		const packageFileName = sanitizeForPath(`${thisPackageJson.name}-${thisPackageJson.version}.tgz`);
@@ -120,19 +123,23 @@ const testLiveCommand = new Command()
 			thisPackageJson,
 		});
 
-		await Bun.$`bun run build`.quiet();
+		await $`bun run build`.quiet();
 
 		const nodePackages = resolve(directory, "patches", "node");
-		if (useLink) await Bun.$`bun link`;
-		else await Bun.$`npm pack --pack-destination ${nodePackages}`.quiet();
+		if (useLink) await $`bun link`;
+		else await $`npm pack --pack-destination ${nodePackages}`.quiet();
 
 		try {
 			chdir(directory);
-			await Bun.$`bun install`.quiet();
+			await $`bun install`.quiet();
+
+			const customEnv: Record<string, string> = { TIMING: "2000" };
+			if (ci) customEnv.CI = "true";
+
 			if (cache) {
-				await Bun.$`TIMING=2000 cd ${directory} && time bun x --bun eslint --cache --max-warnings=0 ./src`;
-			} else await Bun.$`TIMING=2000 cd ${directory} && time bun x --bun eslint --max-warnings=0 ./src`;
-			await Bun.$`TIMING=1400 bun run lint:eslint`.quiet();
+				await $.env(customEnv)`cd ${directory} && time bun x --bun eslint --cache --max-warnings=0 ./src`;
+			} else await $.env(customEnv)`cd ${directory} && time bun x --bun eslint --max-warnings=0 ./src`;
+
 			chdir(CURRENT_WORKING_DIRECTORY);
 		} catch (error) {
 			console.error(
@@ -142,7 +149,7 @@ const testLiveCommand = new Command()
 			await cleanupAsync();
 		}
 
-		const patch = Bun.file(resolve(nodePackages, packageFileName));
+		const patch = file(resolve(nodePackages, packageFileName));
 		if (await patch.exists()) await patch.delete();
 	});
 
