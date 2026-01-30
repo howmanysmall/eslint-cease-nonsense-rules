@@ -131,14 +131,12 @@ const testLiveCommand = new Command()
 		else await $`npm pack --pack-destination ${nodePackages}`.quiet();
 
 		try {
-			chdir(directory);
-			await $`bun install`.quiet();
-			console.success(picocolors.green("Dependencies installed successfully."));
-
 			const customEnv: Record<string, string> = { TIMING: "2000" };
 			if (ci) customEnv.CI = "true";
 
-			const shell = $.env(customEnv);
+			const shell = $.env(customEnv).cwd(directory);
+			await shell`bun install`.quiet();
+			console.success(picocolors.green("Dependencies installed successfully."));
 
 			const duration = await profileAsync(async () => {
 				if (cache) await shell`bun x --bun eslint --cache --max-warnings=0 ./src`;
@@ -146,8 +144,6 @@ const testLiveCommand = new Command()
 			});
 
 			console.success(picocolors.green(`ESLint took ${picocolors.bold(prettyMilliseconds(duration))}.`));
-
-			chdir(CURRENT_WORKING_DIRECTORY);
 		} catch (error) {
 			console.error(
 				picocolors.red(`Error running lint: ${error instanceof Error ? error.message : String(error)}`),

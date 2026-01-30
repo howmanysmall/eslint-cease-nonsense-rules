@@ -1,6 +1,7 @@
+import type { Reference } from "@typescript-eslint/scope-manager";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { regex } from "arkregex";
+import { regex } from "arktype";
 import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "preferSingleGet" | "preferSingleHas";
@@ -98,29 +99,22 @@ function isIdentifierDirectlyInAndExpression(node: TSESTree.Identifier): boolean
 	return false;
 }
 
+function isDirectlyInAndExpression(reference: Reference): boolean {
+	if (reference.isWrite() || reference.identifier.type !== AST_NODE_TYPES.Identifier) return false;
+	return isIdentifierDirectlyInAndExpression(reference.identifier);
+}
+
 function checkVariableUsedInAndExpression(
 	variableName: string,
 	variableDeclaration: TSESTree.VariableDeclaration,
 	sourceCode: TSESLint.SourceCode,
 ): boolean {
-	const scope = sourceCode.getScope(variableDeclaration);
-	if (!scope) return false;
-
-	const variable = scope.variables.find(({ name }) => name === variableName);
-	if (!variable) return false;
-
-	for (const reference of variable.references) {
-		if (reference.isWrite() || reference.identifier.type !== AST_NODE_TYPES.Identifier) continue;
-		if (isIdentifierDirectlyInAndExpression(reference.identifier)) return true;
-	}
-	return false;
-
-	// Return variable.references.some(
-	// 	(reference) =>
-	// 		!reference.isWrite() &&
-	// 		Reference.identifier.type === AST_NODE_TYPES.Identifier &&
-	// 		IsIdentifierDirectlyInAndExpression(reference.identifier),
-	// );
+	return (
+		sourceCode
+			.getScope(variableDeclaration)
+			?.variables.find(({ name }) => name === variableName)
+			?.references.some(isDirectlyInAndExpression) ?? false
+	);
 }
 
 function areAllVariablesUsedInAndExpressions(
@@ -152,9 +146,7 @@ function callsAreConsecutive(
 
 	const previousEntity = getNodeText(previousCall.entityNode, context);
 	const currentEntity = getNodeText(currentCall.entityNode, context);
-	if (previousEntity !== currentEntity) return false;
-
-	if (previousCall.queryType !== currentCall.queryType) return false;
+	if (previousEntity !== currentEntity || previousCall.queryType !== currentCall.queryType) return false;
 
 	const previousEnd = previousCall.variableDeclaration.range?.[1] ?? 0;
 	const currentStart = currentCall.variableDeclaration.range?.[0] ?? 0;

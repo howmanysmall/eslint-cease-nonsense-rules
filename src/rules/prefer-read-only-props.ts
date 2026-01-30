@@ -1,6 +1,6 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
-import { regex } from "arkregex";
+import { regex } from "arktype";
 import { isPropertyReadonlyInType } from "ts-api-utils";
 import type { IndexInfo, Symbol as TSSymbol, Type, TypeChecker } from "typescript";
 import { createRule } from "../utilities/create-rule";
@@ -74,39 +74,29 @@ function isFunctionLike(
 }
 
 function isComponentName(name: string): boolean {
-	// React components use PascalCase:
-	// - Starts with uppercase
-	// - No underscores (excludes SCREAMING_SNAKE_CASE like DEFAULT_FIND_FIRST_CHILD)
-	// - Has lowercase letters (excludes ALLCAPS constants like ABC)
-	if (name.includes("_")) return false;
-	if (!LOWERCASE_PATTERN.test(name)) return false;
+	if (name.includes("_") || !LOWERCASE_PATTERN.test(name)) return false;
 	return COMPONENT_NAME_PATTERN.test(name);
 }
 
 function isDefinitelyNotReactReturnType(checker: TypeChecker, type: Type): boolean {
-	// Handle unions - if any member could be a React element, return false
 	if (type.isUnion()) {
 		return type.types.every((memberType) => isDefinitelyNotReactReturnType(checker, memberType));
 	}
 
 	const typeString = checker.typeToString(type);
 
-	// Null is a valid React return
 	if (typeString === "null") return false;
 
-	// Check for React element patterns in type string
 	if (typeString.includes("Element") || typeString.includes("ReactNode") || typeString.includes("ReactElement")) {
 		return false;
 	}
 
-	// Check symbol for known React element types
 	const symbol = type.getSymbol() ?? type.aliasSymbol;
 	if (symbol) {
 		const name = symbol.getName();
 		if (REACT_ELEMENT_TYPE_NAMES.has(name)) return false;
 	}
 
-	// Primitives that are clearly not React elements
 	if (
 		typeString === "string" ||
 		typeString === "number" ||
@@ -118,30 +108,19 @@ function isDefinitelyNotReactReturnType(checker: TypeChecker, type: Type): boole
 		return true;
 	}
 
-	// Custom named types that don't match React patterns are probably not React elements.
-	// We need to be conservative - only filter out if the type has a clear symbol
-	// That's not a React type
 	if (symbol) {
 		const name = symbol.getName();
-		// If it's a named type that's not a React element type, it's probably not a component return
-		if (!(REACT_ELEMENT_TYPE_NAMES.has(name) || name.includes("Element"))) {
-			return true;
-		}
+		if (!(REACT_ELEMENT_TYPE_NAMES.has(name) || name.includes("Element"))) return true;
 	}
 
-	// Default: assume it might be a React element (conservative)
 	return false;
 }
 
 function isReactComponentFunction(checker: TypeChecker, functionType: Type): boolean {
 	const callSignatures = functionType.getCallSignatures();
-
-	// Can't determine return type, assume it might be a component
 	if (callSignatures.length === 0) return true;
 
 	const [firstSignature] = callSignatures;
-
-	// Can't determine return type
 	if (!firstSignature) return true;
 
 	const returnType = checker.getReturnTypeOfSignature(firstSignature);
@@ -172,9 +151,7 @@ const preferReadOnlyPropsRule = createRule<Options, MessageIds>({
 	create(context) {
 		function reportTypeLiteral(typeLiteral: TSESTree.TSTypeLiteral): void {
 			for (const member of typeLiteral.members) {
-				if (member.type !== AST_NODE_TYPES.TSPropertySignature || member.readonly || member.computed) {
-					continue;
-				}
+				if (member.type !== AST_NODE_TYPES.TSPropertySignature || member.readonly || member.computed) continue;
 
 				const { key } = member;
 				if (key.type !== AST_NODE_TYPES.Identifier && key.type !== AST_NODE_TYPES.Literal) continue;
@@ -263,21 +240,14 @@ const preferReadOnlyPropsRule = createRule<Options, MessageIds>({
 
 			if (callee.type === AST_NODE_TYPES.MemberExpression && callee.property.type === AST_NODE_TYPES.Identifier) {
 				calleeName = callee.property.name;
-			} else if (callee.type === AST_NODE_TYPES.Identifier) {
-				calleeName = callee.name;
-			}
+			} else if (callee.type === AST_NODE_TYPES.Identifier) calleeName = callee.name;
 
 			if (!calleeName) return undefined;
 
 			let propertiesTypeIndex: number;
-			if (REACT_FORWARD_REF_NAMES.has(calleeName)) {
-				propertiesTypeIndex = 1;
-			} else if (REACT_MEMO_NAMES.has(calleeName)) {
-				propertiesTypeIndex = 0;
-			} else {
-				// Not a known React component factory (e.g., createContext, registerComponent)
-				return undefined;
-			}
+			if (REACT_FORWARD_REF_NAMES.has(calleeName)) propertiesTypeIndex = 1;
+			else if (REACT_MEMO_NAMES.has(calleeName)) propertiesTypeIndex = 0;
+			else return undefined;
 
 			const typeArgument = callExpr.typeArguments.params[propertiesTypeIndex];
 			if (!typeArgument) return undefined;
