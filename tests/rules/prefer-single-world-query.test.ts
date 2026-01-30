@@ -12,7 +12,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("prefer-single-world-query", () => {
-	//@ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
+	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
 	ruleTester.run("prefer-single-world-query", rule, {
 		invalid: [
 			// Basic get case: two world.get calls on same world and entity
@@ -235,6 +235,39 @@ const y = hasB;
 			// Single has() call
 			{
 				code: "const hasA = world.has(entity, ComponentA);",
+			},
+			// Non-consecutive get() calls (other code between)
+			{
+				code: `
+const a = world.get(entity, ComponentA);
+console.log("something");
+const b = world.get(entity, ComponentB);
+`,
+			},
+			// Non-consecutive get() calls (function call between)
+			{
+				code: `
+const firstPrimaryPart = world.get(entity, PrimaryPart);
+systemFunc(context, 0);
+expect(firstPrimaryPart).toBe(mockModel.PrimaryPart);
+const secondPrimaryPart = world.get(entity, PrimaryPart);
+`,
+			},
+			// Non-consecutive has() calls
+			{
+				code: `
+const hasA = world.has(entity, ComponentA);
+doSomething();
+const hasB = world.has(entity, ComponentB);
+`,
+			},
+			// Non-consecutive - let declaration between
+			{
+				code: `
+const a = world.get(entity, ComponentA);
+let x = 5;
+const b = world.get(entity, ComponentB);
+`,
 			},
 		],
 	});

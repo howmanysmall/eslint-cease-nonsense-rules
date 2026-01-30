@@ -1,5 +1,6 @@
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { regex } from "arkregex";
 import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "preferSingleGet" | "preferSingleHas";
@@ -16,14 +17,7 @@ interface WorldQueryCall {
 	readonly worldNode: TSESTree.Expression;
 }
 
-interface GroupedCall {
-	readonly calls: ReadonlyArray<WorldQueryCall>;
-	readonly entityText: string;
-	readonly queryType: QueryType;
-	readonly worldText: string;
-}
-
-function isLengthOfTwo<TValue>(array: ReadonlyArray<TValue>): array is [TValue, TValue] {
+function isLengthOfTwo<TValue>(array: ReadonlyArray<TValue>): array is readonly [TValue, TValue] {
 	return array.length === 2;
 }
 
@@ -35,7 +29,6 @@ function isWorldQueryCall(node: TSESTree.Node, queryType: QueryType): node is TS
 	if (callee.computed) return false;
 	if (callee.property.type !== AST_NODE_TYPES.Identifier) return false;
 	if (callee.property.name !== queryType) return false;
-
 	if (!isLengthOfTwo(node.arguments)) return false;
 
 	const [entity, component] = node.arguments;
@@ -76,41 +69,6 @@ function extractWorldQueryCall(node: TSESTree.VariableDeclaration, queryType: Qu
 
 function getNodeText(node: TSESTree.Node, { sourceCode }: { readonly sourceCode: TSESLint.SourceCode }): string {
 	return sourceCode.getText(node);
-}
-
-function getGroupKey(call: WorldQueryCall, context: TSESLint.RuleContext<MessageIds, []>): string {
-	const worldText = getNodeText(call.worldNode, context);
-	const entityText = getNodeText(call.entityNode, context);
-	return `${call.queryType}::${worldText}::${entityText}`;
-}
-
-function filterGroups(group: GroupedCall): boolean {
-	return group.calls.length >= 2;
-}
-
-function groupCalls(
-	calls: ReadonlyArray<WorldQueryCall>,
-	context: TSESLint.RuleContext<MessageIds, []>,
-): ReadonlyArray<GroupedCall> {
-	const groups = new Map<string, GroupedCall>();
-
-	for (const call of calls) {
-		const key = getGroupKey(call, context);
-		const existing = groups.get(key);
-
-		if (existing) groups.set(key, { ...existing, calls: [...existing.calls, call] });
-		else {
-			groups.set(key, {
-				calls: [call],
-				entityText: getNodeText(call.entityNode, context),
-				queryType: call.queryType,
-				worldText: getNodeText(call.worldNode, context),
-			});
-		}
-	}
-
-	// oxlint-disable-next-line unicorn/no-array-callback-reference
-	return [...groups.values()].filter(filterGroups);
 }
 
 const VALID_TYPES = new Set([
@@ -156,6 +114,13 @@ function checkVariableUsedInAndExpression(
 		if (isIdentifierDirectlyInAndExpression(reference.identifier)) return true;
 	}
 	return false;
+
+	// Return variable.references.some(
+	// 	(reference) =>
+	// 		!reference.isWrite() &&
+	// 		Reference.identifier.type === AST_NODE_TYPES.Identifier &&
+	// 		IsIdentifierDirectlyInAndExpression(reference.identifier),
+	// );
 }
 
 function areAllVariablesUsedInAndExpressions(
@@ -171,112 +136,145 @@ function getVariableName(call: WorldQueryCall): string {
 	return call.variableName;
 }
 
-function generateHasFixCode(group: GroupedCall, context: TSESLint.RuleContext<MessageIds, []>): string {
-	const { worldText, entityText, calls } = group;
-	const componentTexts = calls.map((call) => getNodeText(call.componentNode, context));
-	const componentArguments = componentTexts.join(", ");
+// oxlint-disable-next-line unicorn/prefer-string-raw
+const ONLY_WHITESPACE_SEMICOLON = regex("^[\\s;]*$");
 
-	return `${worldText}.has(${entityText}, ${componentArguments})`;
+function callsAreConsecutive(
+	previousCall: WorldQueryCall | undefined,
+	currentCall: WorldQueryCall,
+	context: TSESLint.RuleContext<MessageIds, []>,
+): boolean {
+	if (!previousCall) return true;
+
+	const previousWorld = getNodeText(previousCall.worldNode, context);
+	const currentWorld = getNodeText(currentCall.worldNode, context);
+	if (previousWorld !== currentWorld) return false;
+
+	const previousEntity = getNodeText(previousCall.entityNode, context);
+	const currentEntity = getNodeText(currentCall.entityNode, context);
+	if (previousEntity !== currentEntity) return false;
+
+	if (previousCall.queryType !== currentCall.queryType) return false;
+
+	const previousEnd = previousCall.variableDeclaration.range?.[1] ?? 0;
+	const currentStart = currentCall.variableDeclaration.range?.[0] ?? 0;
+	const textBetween = context.sourceCode.getText().slice(previousEnd, currentStart);
+
+	return ONLY_WHITESPACE_SEMICOLON.test(textBetween);
 }
 
-function generateGetFixCode(group: GroupedCall, context: TSESLint.RuleContext<MessageIds, []>): string {
-	const { worldText, entityText, calls } = group;
+function processGetCalls(calls: ReadonlyArray<WorldQueryCall>, context: TSESLint.RuleContext<MessageIds, []>): void {
+	if (calls.length < 2) return;
+
+	const [firstCall] = calls;
+	if (!firstCall) return;
+
+	const worldText = getNodeText(firstCall.worldNode, context);
+	const entityText = getNodeText(firstCall.entityNode, context);
+
 	// oxlint-disable-next-line unicorn/no-array-callback-reference
 	const variableNames = calls.map(getVariableName);
 	const componentTexts = calls.map((call) => getNodeText(call.componentNode, context));
 
 	const destructuring = variableNames.length === 1 ? variableNames[0] : `[${variableNames.join(", ")}]`;
 	const componentArguments = componentTexts.join(", ");
+	const fixedCode = `const ${destructuring} = ${worldText}.get(${entityText}, ${componentArguments});`;
 
-	return `const ${destructuring} = ${worldText}.get(${entityText}, ${componentArguments});`;
+	const firstDeclaration = calls.at(0)?.variableDeclaration;
+	const lastDeclaration = calls.at(-1)?.variableDeclaration;
+	if (!(firstDeclaration && lastDeclaration)) return;
+
+	context.report({
+		fix(fixer) {
+			const rangeStart = firstDeclaration.range?.[0] ?? 0;
+			const rangeEnd = lastDeclaration.range?.[1] ?? 0;
+			return fixer.replaceTextRange([rangeStart, rangeEnd], fixedCode);
+		},
+		messageId: "preferSingleGet",
+		node: firstCall.node,
+	});
+}
+
+function processHasCalls(calls: ReadonlyArray<WorldQueryCall>, context: TSESLint.RuleContext<MessageIds, []>): void {
+	if (calls.length < 2) return;
+
+	// Only combine has() calls if they're used in && expressions
+	if (!areAllVariablesUsedInAndExpressions(calls, context)) return;
+
+	const [firstCall] = calls;
+	if (!firstCall) return;
+
+	const worldText = getNodeText(firstCall.worldNode, context);
+	const entityText = getNodeText(firstCall.entityNode, context);
+	const componentTexts = calls.map((call) => getNodeText(call.componentNode, context));
+	const componentArguments = componentTexts.join(", ");
+	const fixedCode = `const hasAll = ${worldText}.has(${entityText}, ${componentArguments});`;
+
+	const firstDeclaration = calls.at(0)?.variableDeclaration;
+	const lastDeclaration = calls.at(-1)?.variableDeclaration;
+	if (!(firstDeclaration && lastDeclaration)) return;
+
+	context.report({
+		fix(fixer) {
+			const rangeStart = firstDeclaration.range?.[0] ?? 0;
+			const rangeEnd = lastDeclaration.range?.[1] ?? 0;
+			return fixer.replaceTextRange([rangeStart, rangeEnd], fixedCode);
+		},
+		messageId: "preferSingleHas",
+		node: firstCall.node,
+	});
 }
 
 export default createRule<[], MessageIds>({
 	create(context) {
-		const worldGetCalls = new Array<WorldQueryCall>();
-		const worldHasCalls = new Array<WorldQueryCall>();
-		let getSize = 0;
-		let hasSize = 0;
+		// Buffers for consecutive calls
+		let currentGetBuffer = new Array<WorldQueryCall>();
+		let currentHasBuffer = new Array<WorldQueryCall>();
+
+		function flushGetBuffer(): void {
+			if (currentGetBuffer.length >= 2) processGetCalls(currentGetBuffer, context);
+
+			currentGetBuffer = [];
+		}
+
+		function flushHasBuffer(): void {
+			if (currentHasBuffer.length >= 2) processHasCalls(currentHasBuffer, context);
+			currentHasBuffer = [];
+		}
+
+		function flushAllBuffers(): void {
+			flushGetBuffer();
+			flushHasBuffer();
+		}
 
 		return {
+			// Flush buffers when we see other statement types
+			":statement:not(VariableDeclaration[kind='const'])": flushAllBuffers,
 			"Program:exit"(): void {
-				if (getSize >= 2) {
-					const getGroups = groupCalls(worldGetCalls.slice(0, getSize), context);
-					for (const group of getGroups) {
-						const { calls } = group;
-						const [firstCall] = calls;
-						if (!firstCall) continue;
-
-						const sortedCalls = [...calls].toSorted((a, b) => {
-							const positionA = a.variableDeclaration.range?.[0] ?? 0;
-							const positionB = b.variableDeclaration.range?.[0] ?? 0;
-							return positionA - positionB;
-						});
-
-						const firstDeclaration = sortedCalls.at(0)?.variableDeclaration;
-						const lastDeclaration = sortedCalls.at(-1)?.variableDeclaration;
-						if (!(firstDeclaration && lastDeclaration)) continue;
-
-						const fixedCode = generateGetFixCode({ ...group, calls: sortedCalls }, context);
-
-						context.report({
-							fix(fixer) {
-								const rangeStart = firstDeclaration.range?.[0] ?? 0;
-								const rangeEnd = lastDeclaration.range?.[1] ?? 0;
-								return fixer.replaceTextRange([rangeStart, rangeEnd], fixedCode);
-							},
-							messageId: "preferSingleGet",
-							node: firstCall.node,
-						});
-					}
-				}
-
-				if (hasSize >= 2) {
-					const hasGroups = groupCalls(worldHasCalls.slice(0, hasSize), context);
-					for (const group of hasGroups) {
-						const { calls } = group;
-						const [firstCall] = calls;
-						if (!firstCall) continue;
-
-						if (!areAllVariablesUsedInAndExpressions(calls, context)) continue;
-
-						const sortedCalls = [...calls].toSorted((a, b) => {
-							const positionA = a.variableDeclaration.range?.[0] ?? 0;
-							const positionB = b.variableDeclaration.range?.[0] ?? 0;
-							return positionA - positionB;
-						});
-
-						const firstDeclaration = sortedCalls.at(0)?.variableDeclaration;
-						const lastDeclaration = sortedCalls.at(-1)?.variableDeclaration;
-						if (!(firstDeclaration && lastDeclaration)) continue;
-
-						const hasCallCode = generateHasFixCode({ ...group, calls: sortedCalls }, context);
-						const newVariableName = "hasAll";
-
-						context.report({
-							fix(fixer) {
-								const rangeStart = firstDeclaration.range?.[0] ?? 0;
-								const rangeEnd = lastDeclaration.range?.[1] ?? 0;
-								return fixer.replaceTextRange(
-									[rangeStart, rangeEnd],
-									`const ${newVariableName} = ${hasCallCode};`,
-								);
-							},
-							messageId: "preferSingleHas",
-							node: firstCall.node,
-						});
-					}
-				}
+				flushAllBuffers();
 			},
 			"VariableDeclaration[kind='const']"(node: TSESTree.VariableDeclaration): void {
 				const getCall = extractWorldQueryCall(node, "get");
 				if (getCall) {
-					worldGetCalls[getSize++] = getCall;
+					const lastCall = currentGetBuffer.at(-1);
+					if (lastCall && !callsAreConsecutive(lastCall, getCall, context)) flushGetBuffer();
+					currentGetBuffer.push(getCall);
+
+					flushHasBuffer();
 					return;
 				}
 
 				const hasCall = extractWorldQueryCall(node, "has");
-				if (hasCall) worldHasCalls[hasSize++] = hasCall;
+				if (hasCall) {
+					const lastCall = currentHasBuffer.at(-1);
+					if (lastCall && !callsAreConsecutive(lastCall, hasCall, context)) flushHasBuffer();
+					currentHasBuffer.push(hasCall);
+
+					flushGetBuffer();
+					return;
+				}
+
+				flushAllBuffers();
 			},
 		};
 	},
