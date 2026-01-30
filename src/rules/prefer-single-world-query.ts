@@ -23,6 +23,10 @@ interface GroupedCall {
 	readonly worldText: string;
 }
 
+function isLengthOfTwo<TValue>(array: ReadonlyArray<TValue>): array is [TValue, TValue] {
+	return array.length === 2;
+}
+
 function isWorldQueryCall(node: TSESTree.Node, queryType: QueryType): node is TSESTree.CallExpression {
 	if (node.type !== AST_NODE_TYPES.CallExpression) return false;
 
@@ -32,31 +36,29 @@ function isWorldQueryCall(node: TSESTree.Node, queryType: QueryType): node is TS
 	if (callee.property.type !== AST_NODE_TYPES.Identifier) return false;
 	if (callee.property.name !== queryType) return false;
 
-	if (node.arguments.length !== 2) return false;
-	const [entity, component] = node.arguments;
-	if (!entity || entity.type === AST_NODE_TYPES.SpreadElement) return false;
-	if (!component || component.type === AST_NODE_TYPES.SpreadElement) return false;
+	if (!isLengthOfTwo(node.arguments)) return false;
 
-	return true;
+	const [entity, component] = node.arguments;
+	return !(entity.type === AST_NODE_TYPES.SpreadElement || component.type === AST_NODE_TYPES.SpreadElement);
 }
 
-function extractWorldQueryCall(
-	node: TSESTree.VariableDeclaration,
-	queryType: QueryType,
-): WorldQueryCall | undefined {
+function isMemberExpression(expression: TSESTree.Expression): expression is TSESTree.MemberExpression {
+	return expression.type === AST_NODE_TYPES.MemberExpression;
+}
+
+function extractWorldQueryCall(node: TSESTree.VariableDeclaration, queryType: QueryType): WorldQueryCall | undefined {
 	if (node.declarations.length !== 1) return undefined;
 
 	const [declarator] = node.declarations;
 	if (!declarator) return undefined;
 
 	const { id, init } = declarator;
-	if (id.type !== AST_NODE_TYPES.Identifier) return undefined;
-	if (!init) return undefined;
-	if (!isWorldQueryCall(init, queryType)) return undefined;
+	if (id.type !== AST_NODE_TYPES.Identifier || !init || !isWorldQueryCall(init, queryType)) return undefined;
 
-	const callee = init.callee as TSESTree.MemberExpression;
+	const { callee } = init;
+	if (!isMemberExpression(callee)) return undefined;
+
 	const [entityNode, componentNode] = init.arguments;
-
 	if (!entityNode || entityNode.type === AST_NODE_TYPES.SpreadElement) return undefined;
 	if (!componentNode || componentNode.type === AST_NODE_TYPES.SpreadElement) return undefined;
 
@@ -82,6 +84,10 @@ function getGroupKey(call: WorldQueryCall, context: TSESLint.RuleContext<Message
 	return `${call.queryType}::${worldText}::${entityText}`;
 }
 
+function filterGroups(group: GroupedCall): boolean {
+	return group.calls.length >= 2;
+}
+
 function groupCalls(
 	calls: ReadonlyArray<WorldQueryCall>,
 	context: TSESLint.RuleContext<MessageIds, []>,
@@ -91,48 +97,40 @@ function groupCalls(
 	for (const call of calls) {
 		const key = getGroupKey(call, context);
 		const existing = groups.get(key);
-		const worldText = getNodeText(call.worldNode, context);
-		const entityText = getNodeText(call.entityNode, context);
 
-		if (existing) {
-			groups.set(key, { ...existing, calls: [...existing.calls, call] });
-		} else {
+		if (existing) groups.set(key, { ...existing, calls: [...existing.calls, call] });
+		else {
 			groups.set(key, {
 				calls: [call],
-				entityText,
+				entityText: getNodeText(call.entityNode, context),
 				queryType: call.queryType,
-				worldText,
+				worldText: getNodeText(call.worldNode, context),
 			});
 		}
 	}
 
-	return [...groups.values()].filter((group) => group.calls.length >= 2);
+	// oxlint-disable-next-line unicorn/no-array-callback-reference
+	return [...groups.values()].filter(filterGroups);
 }
+
+const VALID_TYPES = new Set([
+	AST_NODE_TYPES.IfStatement,
+	AST_NODE_TYPES.WhileStatement,
+	AST_NODE_TYPES.DoWhileStatement,
+	AST_NODE_TYPES.ForStatement,
+	AST_NODE_TYPES.ConditionalExpression,
+]);
 
 function isIdentifierDirectlyInAndExpression(node: TSESTree.Identifier): boolean {
 	const { parent } = node;
 	if (!parent) return false;
 
-	// Check if parent is a LogicalExpression with &&
-	if (parent.type === AST_NODE_TYPES.LogicalExpression && parent.operator === "&&") {
-		return true;
-	}
+	if (parent.type === AST_NODE_TYPES.LogicalExpression && parent.operator === "&&") return true;
 
-	// Check if we're inside a test of IfStatement, WhileStatement, etc.
-	if (
-		parent.type === AST_NODE_TYPES.IfStatement ||
-		parent.type === AST_NODE_TYPES.WhileStatement ||
-		parent.type === AST_NODE_TYPES.DoWhileStatement ||
-		parent.type === AST_NODE_TYPES.ForStatement ||
-		parent.type === AST_NODE_TYPES.ConditionalExpression
-	) {
-		// Check if the identifier is in a && chain within the test
+	if (VALID_TYPES.has(parent.type)) {
 		let current: TSESTree.Node | undefined = node;
 		while (current && current !== parent) {
-			if (
-				current.parent?.type === AST_NODE_TYPES.LogicalExpression &&
-				current.parent.operator === "&&"
-			) {
+			if (current.parent?.type === AST_NODE_TYPES.LogicalExpression && current.parent.operator === "&&") {
 				return true;
 			}
 			current = current.parent;
@@ -147,20 +145,15 @@ function checkVariableUsedInAndExpression(
 	variableDeclaration: TSESTree.VariableDeclaration,
 	sourceCode: TSESLint.SourceCode,
 ): boolean {
-	const scope = sourceCode.getScope(variableDeclaration) as TSESLint.Scope.Scope | undefined;
+	const scope = sourceCode.getScope(variableDeclaration);
 	if (!scope) return false;
 
-	// Find the variable in this scope
-	const variable = scope.variables.find((scopeVariable) => scopeVariable.name === variableName);
+	const variable = scope.variables.find(({ name }) => name === variableName);
 	if (!variable) return false;
 
-	// Check all references to this variable
-	for (const ref of variable.references) {
-		// Skip the declaration itself (write reference)
-		if (ref.isWrite()) continue;
-		// Only check standard identifiers, not JSXIdentifier
-		if (ref.identifier.type !== AST_NODE_TYPES.Identifier) continue;
-		if (isIdentifierDirectlyInAndExpression(ref.identifier)) return true;
+	for (const reference of variable.references) {
+		if (reference.isWrite() || reference.identifier.type !== AST_NODE_TYPES.Identifier) continue;
+		if (isIdentifierDirectlyInAndExpression(reference.identifier)) return true;
 	}
 	return false;
 }
@@ -169,12 +162,9 @@ function areAllVariablesUsedInAndExpressions(
 	calls: ReadonlyArray<WorldQueryCall>,
 	{ sourceCode }: { readonly sourceCode: TSESLint.SourceCode },
 ): boolean {
-	for (const call of calls) {
-		if (!checkVariableUsedInAndExpression(call.variableName, call.variableDeclaration, sourceCode)) {
-			return false;
-		}
-	}
-	return true;
+	return calls.every((call) =>
+		checkVariableUsedInAndExpression(call.variableName, call.variableDeclaration, sourceCode),
+	);
 }
 
 function getVariableName(call: WorldQueryCall): string {
@@ -191,7 +181,8 @@ function generateHasFixCode(group: GroupedCall, context: TSESLint.RuleContext<Me
 
 function generateGetFixCode(group: GroupedCall, context: TSESLint.RuleContext<MessageIds, []>): string {
 	const { worldText, entityText, calls } = group;
-	const variableNames = calls.map((call) => getVariableName(call));
+	// oxlint-disable-next-line unicorn/no-array-callback-reference
+	const variableNames = calls.map(getVariableName);
 	const componentTexts = calls.map((call) => getNodeText(call.componentNode, context));
 
 	const destructuring = variableNames.length === 1 ? variableNames[0] : `[${variableNames.join(", ")}]`;
@@ -247,7 +238,6 @@ export default createRule<[], MessageIds>({
 						const [firstCall] = calls;
 						if (!firstCall) continue;
 
-						// Only combine has() calls if they're used in && expressions
 						if (!areAllVariablesUsedInAndExpressions(calls, context)) continue;
 
 						const sortedCalls = [...calls].toSorted((a, b) => {
@@ -293,7 +283,8 @@ export default createRule<[], MessageIds>({
 	defaultOptions: [],
 	meta: {
 		docs: {
-			description: "Enforce combining multiple world.get() or world.has() calls into a single call for better Jecs performance.",
+			description:
+				"Enforce combining multiple world.get() or world.has() calls into a single call for better Jecs performance.",
 		},
 		fixable: "code",
 		messages: {
