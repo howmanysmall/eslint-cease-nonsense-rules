@@ -2,6 +2,8 @@
 title: fast-format
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Enforces oxfmt code formatting with auto-fix support and intelligent caching.
 
 ## Rule Details
@@ -16,61 +18,69 @@ This rule has no configuration options. It uses oxfmt's default formatting rules
 
 ### ❌ Incorrect
 
-```typescript
-// Inconsistent spacing
-const x = 1 + 2;
-
-// Missing semicolons
-const message = "hello";
-
-// Inconsistent quote style
-const name = "John";
-const greeting = "Hello";
-
-// Poor indentation
-function example() {
-	if (true) {
-		return 42;
-	}
-}
-
-// Inconsistent object formatting
-const obj = { a: 1, b: 2, c: 3 };
-```
+<Code
+	code={[
+		"// Inconsistent spacing",
+		"const x = 1 + 2;",
+		"",
+		"// Missing semicolons",
+		'const message = "hello";',
+		"",
+		"// Inconsistent quote style",
+		'const name = "John";',
+		'const greeting = "Hello";',
+		"",
+		"// Poor indentation",
+		"function example() {",
+		"\tif (true) {",
+		"\t\treturn 42;",
+		"\t}",
+		"}",
+		"",
+		"// Inconsistent object formatting",
+		"const obj = { a: 1, b: 2, c: 3 };",
+	].join("\n")}
+	lang="typescript"
+	key="inconsistent-spacing-1cyja7"
+/>
 
 ### ✅ Correct
 
-```typescript
-// Consistent spacing
-const x = 1 + 2;
-
-// Proper semicolons
-const message = "hello";
-
-// Consistent quote style
-const name = "John";
-const greeting = "Hello";
-
-// Proper indentation
-function example() {
-	if (true) {
-		return 42;
-	}
-}
-
-// Formatted object
-const obj = { a: 1, b: 2, c: 3 };
-```
+<Code
+	code={[
+		"// Consistent spacing",
+		"const x = 1 + 2;",
+		"",
+		"// Proper semicolons",
+		'const message = "hello";',
+		"",
+		"// Consistent quote style",
+		'const name = "John";',
+		'const greeting = "Hello";',
+		"",
+		"// Proper indentation",
+		"function example() {",
+		"\tif (true) {",
+		"\t\treturn 42;",
+		"\t}",
+		"}",
+		"",
+		"// Formatted object",
+		"const obj = { a: 1, b: 2, c: 3 };",
+	].join("\n")}
+	lang="typescript"
+	key="consistent-spacing-2n8crr"
+/>
 
 ## Auto-Fix Behavior
 
 This rule provides automatic fixes for all formatting violations. When you run ESLint with `--fix`, all formatting issues will be corrected automatically.
 
-```bash
-# Fix all formatting issues
-bun run lint:fix
-eslint --fix src/
-```
+<Code
+	code={["# Fix all formatting issues", "bun run lint:fix", "eslint --fix src/"].join("\n")}
+	lang="bash"
+	key="fix-all-formatting-i-35tcuh"
+/>
 
 ## Performance Features
 
@@ -90,13 +100,17 @@ The rule only runs on supported file extensions (`.js`, `.jsx`, `.ts`, `.tsx`, `
 
 If oxfmt encounters a parsing or formatting error, the rule reports it at line 1, column 0:
 
-```typescript
-// Syntax error in file
-const x = ;
-
-// ESLint output:
-// error  Oxfmt error: unexpected token  cease-nonsense/fast-format
-```
+<Code
+	code={[
+		"// Syntax error in file",
+		"const x = ;",
+		"",
+		"// ESLint output:",
+		"// error  Oxfmt error: unexpected token  cease-nonsense/fast-format",
+	].join("\n")}
+	lang="typescript"
+	key="syntax-error-in-file-3icx0i"
+/>
 
 ## Integration with Other Tools
 
@@ -113,17 +127,21 @@ Unlike Prettier, oxfmt is specifically designed for JavaScript/TypeScript and is
 
 This rule replaces many ESLint formatting rules:
 
-```typescript
-// You can disable these when using fast-format:
-"rules": {
-	"indent": "off",
-	"quotes": "off",
-	"semi": "off",
-	"comma-spacing": "off",
-	"object-curly-spacing": "off",
-	// ... and many others
-},
-```
+<Code
+	code={[
+		"// You can disable these when using fast-format:",
+		'"rules": {',
+		'\t"indent": "off",',
+		'\t"quotes": "off",',
+		'\t"semi": "off",',
+		'\t"comma-spacing": "off",',
+		'\t"object-curly-spacing": "off",',
+		"\t// ... and many others",
+		"},",
+	].join("\n")}
+	lang="typescript"
+	key="you-can-disable-thes-1xnwcb"
+/>
 
 ## When Not To Use It
 
@@ -137,33 +155,41 @@ Disable this rule if:
 
 ### Recommended Setup
 
-```typescript
-import ceaseNonsense from "@pobammer-ts/eslint-cease-nonsense-rules";
-
-export default [
-	{
-		plugins: {
-			"cease-nonsense": ceaseNonsense,
-		},
-		rules: {
-			"cease-nonsense/fast-format": "error",
-		},
-	},
-];
-```
+<Code
+	code={[
+		'import ceaseNonsense from "@pobammer-ts/eslint-cease-nonsense-rules";',
+		"",
+		"export default [",
+		"\t{",
+		"\t\tplugins: {",
+		'\t\t\t"cease-nonsense": ceaseNonsense,',
+		"\t\t},",
+		"\t\trules: {",
+		'\t\t\t"cease-nonsense/fast-format": "error",',
+		"\t\t},",
+		"\t},",
+		"];",
+	].join("\n")}
+	lang="typescript"
+	key="import-ceasenonsense-6lw4j9"
+/>
 
 ### With Pre-commit Hook
 
-```json
-{
-	"simple-git-hooks": {
-		"pre-commit": "bun run lint:fix"
-	},
-	"lint-staged": {
-		"*.{ts,tsx,js,jsx}": ["eslint --fix"]
-	}
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"simple-git-hooks": {',
+		'\t\t"pre-commit": "bun run lint:fix"',
+		"\t},",
+		'\t"lint-staged": {',
+		'\t\t"*.{ts,tsx,js,jsx}": ["eslint --fix"]',
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="json"
+	key="block-6-yfj0r1"
+/>
 
 ## Message Types
 
@@ -171,39 +197,51 @@ The rule reports three types of formatting operations:
 
 ### INSERT
 
-```typescript
-// Before:
-const x = 1;
-
-// After:
-const x = 1;
-
-// Message: Insert ` ` at position X
-```
+<Code
+	code={[
+		"// Before:",
+		"const x = 1;",
+		"",
+		"// After:",
+		"const x = 1;",
+		"",
+		"// Message: Insert ` ` at position X",
+	].join("\n")}
+	lang="typescript"
+	key="before-262gn8"
+/>
 
 ### DELETE
 
-```typescript
-// Before:
-const x = 1;
-
-// After:
-const x = 1;
-
-// Message: Delete ` ` at position X
-```
+<Code
+	code={[
+		"// Before:",
+		"const x = 1;",
+		"",
+		"// After:",
+		"const x = 1;",
+		"",
+		"// Message: Delete ` ` at position X",
+	].join("\n")}
+	lang="typescript"
+	key="before-25pysb"
+/>
 
 ### REPLACE
 
-```typescript
-// Before:
-const x = "hello";
-
-// After:
-const x = "hello";
-
-// Message: Replace `'hello'` with `"hello"` at position X
-```
+<Code
+	code={[
+		"// Before:",
+		'const x = "hello";',
+		"",
+		"// After:",
+		'const x = "hello";',
+		"",
+		"// Message: Replace `'hello'` with `\"hello\"` at position X",
+	].join("\n")}
+	lang="typescript"
+	key="before-369bea"
+/>
 
 ## Troubleshooting
 

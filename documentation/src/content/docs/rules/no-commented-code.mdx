@@ -2,6 +2,8 @@
 title: no-commented-code
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Detects and reports commented-out code blocks.
 
 ## Rule Details
@@ -16,68 +18,92 @@ This rule has no configuration options.
 
 ### ❌ Incorrect
 
-```typescript
-function calculate(x: number) {
-	// const result = x * 2;
-	// return result;
+<Code
+	code={[
+		"function calculate(x: number) {",
+		"\t// const result = x * 2;",
+		"\t// return result;",
+		"",
+		"\t/* if (x > 10) {",
+		"    return x;",
+		"  } */",
+		"",
+		"\treturn x + 1;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="function-calculate-x-3hj1dd"
+/>
 
-	/* if (x > 10) {
-    return x;
-  } */
+<Code
+	code={[
+		"class UserService {",
+		"\t// async fetchUser(id: number) {",
+		"\t//   const response = await fetch(`/api/users/${id}`);",
+		"\t//   return response.json();",
+		"\t// }",
+		"",
+		"\tfetchUserSync(id: number) {",
+		"\t\treturn userCache.get(id);",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-userservice-2k2luf"
+/>
 
-	return x + 1;
-}
-```
-
-```typescript
-class UserService {
-	// async fetchUser(id: number) {
-	//   const response = await fetch(`/api/users/${id}`);
-	//   return response.json();
-	// }
-
-	fetchUserSync(id: number) {
-		return userCache.get(id);
-	}
-}
-```
-
-```typescript
-const config = {
-	timeout: 5000,
-	// retryCount: 3,
-	// retryDelay: 1000,
-	// onError: (err) => console.error(err),
-};
-```
+<Code
+	code={[
+		"const config = {",
+		"\ttimeout: 5000,",
+		"\t// retryCount: 3,",
+		"\t// retryDelay: 1000,",
+		"\t// onError: (err) => console.error(err),",
+		"};",
+	].join("\n")}
+	lang="typescript"
+	key="const-config-31t8rd"
+/>
 
 ### ✅ Correct
 
-```typescript
-function calculate(x: number) {
-	// TODO: Consider multiplying by 2 instead
-	// Note: This is a simplified version
-	return x + 1;
-}
-```
+<Code
+	code={[
+		"function calculate(x: number) {",
+		"\t// TODO: Consider multiplying by 2 instead",
+		"\t// Note: This is a simplified version",
+		"\treturn x + 1;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="function-calculate-x-175mp2"
+/>
 
-```typescript
-class UserService {
-	// Fetches user data synchronously from cache
-	// Returns undefined if user is not in cache
-	fetchUserSync(id: number) {
-		return userCache.get(id);
-	}
-}
-```
+<Code
+	code={[
+		"class UserService {",
+		"\t// Fetches user data synchronously from cache",
+		"\t// Returns undefined if user is not in cache",
+		"\tfetchUserSync(id: number) {",
+		"\t\treturn userCache.get(id);",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-userservice-oppfqe"
+/>
 
-```typescript
-const config = {
-	timeout: 5000,
-	// Configuration note: retry logic is handled by the network layer
-	// See NetworkManager.ts for retry implementation
-};
-```
+<Code
+	code={[
+		"const config = {",
+		"\ttimeout: 5000,",
+		"\t// Configuration note: retry logic is handled by the network layer",
+		"\t// See NetworkManager.ts for retry implementation",
+		"};",
+	].join("\n")}
+	lang="typescript"
+	key="const-config-9koaov"
+/>
 
 ## Detection Algorithm
 
@@ -85,13 +111,17 @@ const config = {
 
 The rule groups adjacent line comments and individual block comments:
 
-```typescript
-// These three comments are grouped together
-// because they are adjacent line comments
-// on consecutive lines
-
-/* This block comment is its own group */
-```
+<Code
+	code={[
+		"// These three comments are grouped together",
+		"// because they are adjacent line comments",
+		"// on consecutive lines",
+		"",
+		"/* This block comment is its own group */",
+	].join("\n")}
+	lang="typescript"
+	key="these-three-comments-1qqr3o"
+/>
 
 ### Step 2: Heuristic Filtering
 
@@ -101,26 +131,34 @@ Uses pattern-based detection to identify code-like content:
 - Has code-like structure (braces, parentheses, operators)
 - Matches common code patterns
 
-```typescript
-// ✅ Not flagged (natural language)
-// This function handles user authentication
-
-// ❌ Flagged (code-like)
-// function handleAuth(user) { return user.isValid(); }
-```
+<Code
+	code={[
+		"// ✅ Not flagged (natural language)",
+		"// This function handles user authentication",
+		"",
+		"// ❌ Flagged (code-like)",
+		"// function handleAuth(user) { return user.isValid(); }",
+	].join("\n")}
+	lang="typescript"
+	key="not-flagged-natural--8cei2z"
+/>
 
 ### Step 3: Parse Validation
 
 Attempts to parse the comment content as JavaScript/TypeScript to confirm it's valid code:
 
-```typescript
-// ❌ Flagged - parses successfully as code
-// const x = 42;
-// return x + 1;
-
-// ✅ Not flagged - doesn't parse as valid code
-// To do this properly you need to first validate
-```
+<Code
+	code={[
+		"// ❌ Flagged - parses successfully as code",
+		"// const x = 42;",
+		"// return x + 1;",
+		"",
+		"// ✅ Not flagged - doesn't parse as valid code",
+		"// To do this properly you need to first validate",
+	].join("\n")}
+	lang="typescript"
+	key="flagged-parses-succe-3ujlke"
+/>
 
 ### Step 4: Exclusion Rules
 
@@ -134,92 +172,112 @@ Certain patterns are excluded even if they parse as code:
 - Single identifiers
 - String or number literals
 
-```typescript
-// ✅ Not flagged (exclusions)
-// return;
-// continue;
-// MAX_COUNT;
-// "debug mode";
-```
+<Code
+	code={["// ✅ Not flagged (exclusions)", "// return;", "// continue;", "// MAX_COUNT;", '// "debug mode";'].join(
+		"\n",
+	)}
+	lang="typescript"
+	key="not-flagged-exclusio-3nvkue"
+/>
 
 ## Suggestions
 
 The rule provides a suggestion to automatically remove commented code:
 
-```typescript
-// ESLint suggestion: "Remove this commented out code"
-
-// const unused = fetchData();
-// processData(unused);
-
-// Click the suggestion to remove these lines
-```
+<Code
+	code={[
+		'// ESLint suggestion: "Remove this commented out code"',
+		"",
+		"// const unused = fetchData();",
+		"// processData(unused);",
+		"",
+		"// Click the suggestion to remove these lines",
+	].join("\n")}
+	lang="typescript"
+	key="eslint-suggestion-re-1mfw2t"
+/>
 
 ## Advanced Examples
 
 ### Multi-Line Comments
 
-```typescript
-// ❌ Flagged - multiple lines of code
-// function processUser(user) {
-//   const data = transform(user);
-//   save(data);
-//   return data;
-// }
-
-// ✅ Not flagged - multi-line documentation
-// This function processes user data by:
-// 1. Transforming the input
-// 2. Saving to database
-// 3. Returning the result
-```
+<Code
+	code={[
+		"// ❌ Flagged - multiple lines of code",
+		"// function processUser(user) {",
+		"//   const data = transform(user);",
+		"//   save(data);",
+		"//   return data;",
+		"// }",
+		"",
+		"// ✅ Not flagged - multi-line documentation",
+		"// This function processes user data by:",
+		"// 1. Transforming the input",
+		"// 2. Saving to database",
+		"// 3. Returning the result",
+	].join("\n")}
+	lang="typescript"
+	key="flagged-multiple-lin-y986oy"
+/>
 
 ### Block Comments
 
-```typescript
-// ❌ Flagged
-/*
-const config = {
-  host: 'localhost',
-  port: 3000
-};
-*/
-
-// ✅ Not flagged
-/*
- * Configuration options:
- * - host: Server hostname
- * - port: Server port number
- */
-```
+<Code
+	code={[
+		"// ❌ Flagged",
+		"/*",
+		"const config = {",
+		"  host: 'localhost',",
+		"  port: 3000",
+		"};",
+		"*/",
+		"",
+		"// ✅ Not flagged",
+		"/*",
+		" * Configuration options:",
+		" * - host: Server hostname",
+		" * - port: Server port number",
+		" */",
+	].join("\n")}
+	lang="typescript"
+	key="flagged-16iels"
+/>
 
 ### JSX Comments
 
-```typescript
-// ❌ Flagged
-{
-	/* <Button onClick={handleClick}>
-  <Text>Submit</Text>
-</Button> */
-}
-
-// ✅ Not flagged
-{
-	/* TODO: Add button here */
-}
-```
+<Code
+	code={[
+		"// ❌ Flagged",
+		"{",
+		"\t/* <Button onClick={handleClick}>",
+		"  <Text>Submit</Text>",
+		"</Button> */",
+		"}",
+		"",
+		"// ✅ Not flagged",
+		"{",
+		"\t/* TODO: Add button here */",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="flagged-1qvva2"
+/>
 
 ### Mixed Content
 
-```typescript
-// ❌ Flagged (contains code)
-// The old implementation used this approach:
-// if (user.age > 18) { return true; }
-
-// ✅ Not flagged (mainly documentation)
-// The old implementation used a different approach
-// involving age validation and permission checks
-```
+<Code
+	code={[
+		"// ❌ Flagged (contains code)",
+		"// The old implementation used this approach:",
+		"// if (user.age > 18) { return true; }",
+		"",
+		"// ✅ Not flagged (mainly documentation)",
+		"// The old implementation used a different approach",
+		"// involving age validation and permission checks",
+	].join("\n")}
+	lang="typescript"
+	key="flagged-contains-cod-3af2qu"
+/>
 
 ## Edge Cases
 
@@ -227,38 +285,44 @@ const config = {
 
 The rule intelligently injects missing braces to handle partially commented code:
 
-```typescript
-// ❌ Still flagged even with missing closing brace
-// if (condition) {
-//   doSomething();
-```
+<Code
+	code={["// ❌ Still flagged even with missing closing brace", "// if (condition) {", "//   doSomething();"].join(
+		"\n",
+	)}
+	lang="typescript"
+	key="still-flagged-even-w-1togv4"
+/>
 
 ### Syntax Errors
 
 Comments with minor syntax errors may still be detected:
 
-```typescript
-// ❌ Flagged despite missing semicolon
-// const x = 42
-// return x
-```
+<Code
+	code={["// ❌ Flagged despite missing semicolon", "// const x = 42", "// return x"].join("\n")}
+	lang="typescript"
+	key="flagged-despite-miss-7f57qt"
+/>
 
 ### TypeScript-Specific
 
 The rule handles both JavaScript and TypeScript:
 
-```typescript
-// ❌ Flagged (TypeScript code)
-// const user: User = {
-//   id: 1,
-//   name: 'John'
-// };
-
-// ❌ Flagged (JSX/TSX code)
-// <div className="container">
-//   <span>Hello</span>
-// </div>
-```
+<Code
+	code={[
+		"// ❌ Flagged (TypeScript code)",
+		"// const user: User = {",
+		"//   id: 1,",
+		"//   name: 'John'",
+		"// };",
+		"",
+		"// ❌ Flagged (JSX/TSX code)",
+		'// <div className="container">',
+		"//   <span>Hello</span>",
+		"// </div>",
+	].join("\n")}
+	lang="typescript"
+	key="flagged-typescript-c-jtxlym"
+/>
 
 ## When Not To Use It
 
@@ -280,27 +344,33 @@ The rule is designed to minimize false positives, but some may occur:
 
 ### Documentation with Code-Like Syntax
 
-```typescript
-// ✅ Might be incorrectly flagged
-// The API returns: { status: 200, data: {...} }
-```
+<Code
+	code={["// ✅ Might be incorrectly flagged", "// The API returns: { status: 200, data: {...} }"].join("\n")}
+	lang="typescript"
+	key="might-be-incorrectly-c3m24q"
+/>
 
 **Solution**: Rephrase to be less code-like:
 
-```typescript
-// ✅ Better documentation
-// The API returns an object with status and data properties
-```
+<Code
+	code={["// ✅ Better documentation", "// The API returns an object with status and data properties"].join("\n")}
+	lang="typescript"
+	key="better-documentation-2ohf2t"
+/>
 
 ### Regular Expressions in Documentation
 
-```typescript
-// ✅ Might be incorrectly flagged
-// Use pattern: /^[A-Z]/
-
-// ✅ Better
-// Use a regex pattern starting with capital letters
-```
+<Code
+	code={[
+		"// ✅ Might be incorrectly flagged",
+		"// Use pattern: /^[A-Z]/",
+		"",
+		"// ✅ Better",
+		"// Use a regex pattern starting with capital letters",
+	].join("\n")}
+	lang="typescript"
+	key="might-be-incorrectly-1gktbw"
+/>
 
 ## Best Practices
 
@@ -308,58 +378,74 @@ The rule is designed to minimize false positives, but some may occur:
 
 Instead of commenting code:
 
-```typescript
-// ❌ Bad
-// function oldImplementation() {
-//   return legacyLogic();
-// }
+<Code
+	code={[
+		"// ❌ Bad",
+		"// function oldImplementation() {",
+		"//   return legacyLogic();",
+		"// }",
+		"",
+		"function newImplementation() {",
+		"\treturn modernLogic();",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="bad-360ge5"
+/>
 
-function newImplementation() {
-	return modernLogic();
-}
-```
-
-```typescript
-// ✅ Good - just delete it
-function newImplementation() {
-	return modernLogic();
-}
-
-// Git history preserves the old implementation
-```
+<Code
+	code={[
+		"// ✅ Good - just delete it",
+		"function newImplementation() {",
+		"\treturn modernLogic();",
+		"}",
+		"",
+		"// Git history preserves the old implementation",
+	].join("\n")}
+	lang="typescript"
+	key="good-just-delete-it-378gek"
+/>
 
 ### Use TODO Comments
 
 For future implementation:
 
-```typescript
-// ❌ Bad
-// function featureNotReady() {
-//   return implementation();
-// }
-
-// ✅ Good
-// TODO: Implement feature
-// See ticket #123 for requirements
-```
+<Code
+	code={[
+		"// ❌ Bad",
+		"// function featureNotReady() {",
+		"//   return implementation();",
+		"// }",
+		"",
+		"// ✅ Good",
+		"// TODO: Implement feature",
+		"// See ticket #123 for requirements",
+	].join("\n")}
+	lang="typescript"
+	key="bad-1qle76"
+/>
 
 ### Use Feature Flags
 
 For conditional code:
 
-```typescript
-// ❌ Bad
-// if (USE_NEW_FEATURE) {
-//   return newLogic();
-// }
-return oldLogic();
-
-// ✅ Good
-if (featureFlags.isEnabled("newFeature")) {
-	return newLogic();
-}
-return oldLogic();
-```
+<Code
+	code={[
+		"// ❌ Bad",
+		"// if (USE_NEW_FEATURE) {",
+		"//   return newLogic();",
+		"// }",
+		"return oldLogic();",
+		"",
+		"// ✅ Good",
+		'if (featureFlags.isEnabled("newFeature")) {',
+		"\treturn newLogic();",
+		"}",
+		"return oldLogic();",
+	].join("\n")}
+	lang="typescript"
+	key="bad-3fpohq"
+/>
 
 ## Related Rules
 

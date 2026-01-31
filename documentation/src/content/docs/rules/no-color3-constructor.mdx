@@ -2,6 +2,8 @@
 title: no-color3-constructor
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Bans `new Color3(...)` except for `new Color3()` or `new Color3(0, 0, 0)`. Use `Color3.fromRGB()` instead.
 
 ## Rule Details
@@ -16,44 +18,56 @@ This rule has no configuration options.
 
 ### ❌ Incorrect
 
-```typescript
-// Using float values
-const red = new Color3(1, 0, 0);
-const blue = new Color3(0.5, 0.5, 1);
-const green = new Color3(0, 255, 0);
-
-// Partial arguments
-const white = new Color3(1, 1);
-const gray = new Color3(0.5);
-```
+<Code
+	code={[
+		"// Using float values",
+		"const red = new Color3(1, 0, 0);",
+		"const blue = new Color3(0.5, 0.5, 1);",
+		"const green = new Color3(0, 255, 0);",
+		"",
+		"// Partial arguments",
+		"const white = new Color3(1, 1);",
+		"const gray = new Color3(0.5);",
+	].join("\n")}
+	lang="typescript"
+	key="using-float-values-2ojuw2"
+/>
 
 ### ✅ Correct
 
-```typescript
-// Use Color3.fromRGB() instead
-const red = Color3.fromRGB(255, 0, 0);
-const blue = Color3.fromRGB(127, 127, 255);
-const green = Color3.fromRGB(0, 255, 0);
-
-// Zero constructors are allowed
-const black = new Color3(0, 0, 0);
-const alsoBlack = new Color3();
-
-// Using named constants
-const white = Color3.fromRGB(255, 255, 255);
-```
+<Code
+	code={[
+		"// Use Color3.fromRGB() instead",
+		"const red = Color3.fromRGB(255, 0, 0);",
+		"const blue = Color3.fromRGB(127, 127, 255);",
+		"const green = Color3.fromRGB(0, 255, 0);",
+		"",
+		"// Zero constructors are allowed",
+		"const black = new Color3(0, 0, 0);",
+		"const alsoBlack = new Color3();",
+		"",
+		"// Using named constants",
+		"const white = Color3.fromRGB(255, 255, 255);",
+	].join("\n")}
+	lang="typescript"
+	key="use-color3-fromrgb-i-fywjck"
+/>
 
 ## Auto-Fix Behavior
 
 This rule provides automatic fixes that convert float values to RGB integers:
 
-```typescript
-// Before:
-const pink = new Color3(1, 0.75, 0.8);
-
-// After (auto-fixed):
-const pink = Color3.fromRGB(255, 191, 204);
-```
+<Code
+	code={[
+		"// Before:",
+		"const pink = new Color3(1, 0.75, 0.8);",
+		"",
+		"// After (auto-fixed):",
+		"const pink = Color3.fromRGB(255, 191, 204);",
+	].join("\n")}
+	lang="typescript"
+	key="before-ma35p2"
+/>
 
 ### Float Conversion
 
@@ -62,14 +76,18 @@ The rule automatically converts float values [0-1] to integers [0-255]:
 - Values > 1 are treated as already being in [0-255] range
 - Values ≤ 1 are multiplied by 255 and rounded
 
-```typescript
-// Float to RGB conversion:
-new Color3(1, 0, 0) → Color3.fromRGB(255, 0, 0);
-new Color3(0.5, 0.5, 0.5) → Color3.fromRGB(127, 127, 127);
-
-// Already RGB values (no multiplication):
-new Color3(128, 64, 32) → Color3.fromRGB(128, 64, 32);
-```
+<Code
+	code={[
+		"// Float to RGB conversion:",
+		"new Color3(1, 0, 0) → Color3.fromRGB(255, 0, 0);",
+		"new Color3(0.5, 0.5, 0.5) → Color3.fromRGB(127, 127, 127);",
+		"",
+		"// Already RGB values (no multiplication):",
+		"new Color3(128, 64, 32) → Color3.fromRGB(128, 64, 32);",
+	].join("\n")}
+	lang="typescript"
+	key="float-to-rgb-convers-3tgr0t"
+/>
 
 ## Performance Benefits
 
@@ -83,76 +101,92 @@ new Color3(128, 64, 32) → Color3.fromRGB(128, 64, 32);
 
 ### Memory Efficiency
 
-```typescript
-// Less efficient - float representation
-const color1 = new Color3(0.5, 0.5, 0.5);
-
-// More efficient - integer representation
-const color2 = Color3.fromRGB(127, 127, 127);
-```
+<Code
+	code={[
+		"// Less efficient - float representation",
+		"const color1 = new Color3(0.5, 0.5, 0.5);",
+		"",
+		"// More efficient - integer representation",
+		"const color2 = Color3.fromRGB(127, 127, 127);",
+	].join("\n")}
+	lang="typescript"
+	key="less-efficient-float-2a1sfn"
+/>
 
 ## Common Patterns
 
 ### Color Palettes
 
-```typescript
-// ❌ Bad
-const COLORS = {
-	PRIMARY: new Color3(0.2, 0.4, 0.8),
-	SECONDARY: new Color3(0.8, 0.2, 0.4),
-	ACCENT: new Color3(0, 0.9, 0.5),
-};
-
-// ✅ Good
-const COLORS = {
-	PRIMARY: Color3.fromRGB(51, 102, 204),
-	SECONDARY: Color3.fromRGB(204, 51, 102),
-	ACCENT: Color3.fromRGB(0, 229, 127),
-};
-```
+<Code
+	code={[
+		"// ❌ Bad",
+		"const COLORS = {",
+		"\tPRIMARY: new Color3(0.2, 0.4, 0.8),",
+		"\tSECONDARY: new Color3(0.8, 0.2, 0.4),",
+		"\tACCENT: new Color3(0, 0.9, 0.5),",
+		"};",
+		"",
+		"// ✅ Good",
+		"const COLORS = {",
+		"\tPRIMARY: Color3.fromRGB(51, 102, 204),",
+		"\tSECONDARY: Color3.fromRGB(204, 51, 102),",
+		"\tACCENT: Color3.fromRGB(0, 229, 127),",
+		"};",
+	].join("\n")}
+	lang="typescript"
+	key="bad-38qipa"
+/>
 
 ### Dynamic Colors
 
-```typescript
-// ❌ Bad
-function createGradient(start: number, end: number, steps: number) {
-	const colors = [];
-	for (let i = 0; i < steps; i++) {
-		const ratio = i / (steps - 1);
-		colors.push(new Color3(ratio, ratio, ratio));
-	}
-	return colors;
-}
-
-// ✅ Good
-function createGradient(start: number, end: number, steps: number) {
-	const colors = [];
-	for (let i = 0; i < steps; i++) {
-		const ratio = i / (steps - 1);
-		const value = Math.round(ratio * 255);
-		colors.push(Color3.fromRGB(value, value, value));
-	}
-	return colors;
-}
-```
+<Code
+	code={[
+		"// ❌ Bad",
+		"function createGradient(start: number, end: number, steps: number) {",
+		"\tconst colors = [];",
+		"\tfor (let i = 0; i < steps; i++) {",
+		"\t\tconst ratio = i / (steps - 1);",
+		"\t\tcolors.push(new Color3(ratio, ratio, ratio));",
+		"\t}",
+		"\treturn colors;",
+		"}",
+		"",
+		"// ✅ Good",
+		"function createGradient(start: number, end: number, steps: number) {",
+		"\tconst colors = [];",
+		"\tfor (let i = 0; i < steps; i++) {",
+		"\t\tconst ratio = i / (steps - 1);",
+		"\t\tconst value = Math.round(ratio * 255);",
+		"\t\tcolors.push(Color3.fromRGB(value, value, value));",
+		"\t}",
+		"\treturn colors;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="bad-37wmrq"
+/>
 
 ### Color Interpolation
 
-```typescript
-// ❌ Bad
-function lerp(a: Color3, b: Color3, t: number): Color3 {
-	return new Color3(a.R + (b.R - a.R) * t, a.G + (b.G - a.G) * t, a.B + (b.B - a.B) * t);
-}
-
-// ✅ Good
-function lerp(a: Color3, b: Color3, t: number): Color3 {
-	return Color3.fromRGB(
-		Math.round(a.R * 255 + (b.R - a.R) * t * 255),
-		Math.round(a.G * 255 + (b.G - a.G) * t * 255),
-		Math.round(a.B * 255 + (b.B - a.B) * t * 255),
-	);
-}
-```
+<Code
+	code={[
+		"// ❌ Bad",
+		"function lerp(a: Color3, b: Color3, t: number): Color3 {",
+		"\treturn new Color3(a.R + (b.R - a.R) * t, a.G + (b.G - a.G) * t, a.B + (b.B - a.B) * t);",
+		"}",
+		"",
+		"// ✅ Good",
+		"function lerp(a: Color3, b: Color3, t: number): Color3 {",
+		"\treturn Color3.fromRGB(",
+		"\t\tMath.round(a.R * 255 + (b.R - a.R) * t * 255),",
+		"\t\tMath.round(a.G * 255 + (b.G - a.G) * t * 255),",
+		"\t\tMath.round(a.B * 255 + (b.B - a.B) * t * 255),",
+		"\t);",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="bad-17eohv"
+/>
 
 ## Edge Cases
 
@@ -160,41 +194,47 @@ function lerp(a: Color3, b: Color3, t: number): Color3 {
 
 The rule only applies to numeric literals:
 
-```typescript
-// Not checked (variables)
-const r = 0.5;
-const color = new Color3(r, r, r); // No error
-
-// Not checked (expressions)
-const color2 = new Color3(Math.random(), 0, 0); // No error
-
-// Checked (literals only)
-const color3 = new Color3(0.5, 0.5, 0.5); // ❌ Error
-```
+<Code
+	code={[
+		"// Not checked (variables)",
+		"const r = 0.5;",
+		"const color = new Color3(r, r, r); // No error",
+		"",
+		"// Not checked (expressions)",
+		"const color2 = new Color3(Math.random(), 0, 0); // No error",
+		"",
+		"// Checked (literals only)",
+		"const color3 = new Color3(0.5, 0.5, 0.5); // ❌ Error",
+	].join("\n")}
+	lang="typescript"
+	key="not-checked-variable-2yrb65"
+/>
 
 ### Partial Arguments
 
 Missing arguments are treated as 0:
 
-```typescript
-// Before:
-new Color3(10, 5);
-
-// After (auto-fixed):
-Color3.fromRGB(10, 5, 0);
-```
+<Code
+	code={["// Before:", "new Color3(10, 5);", "", "// After (auto-fixed):", "Color3.fromRGB(10, 5, 0);"].join("\n")}
+	lang="typescript"
+	key="before-3mxg2v"
+/>
 
 ### Mixed Float and Integer
 
 The rule handles mixed value ranges correctly:
 
-```typescript
-// Before:
-new Color3(1, 128, 0.5);
-
-// After (auto-fixed):
-Color3.fromRGB(255, 128, 127);
-```
+<Code
+	code={[
+		"// Before:",
+		"new Color3(1, 128, 0.5);",
+		"",
+		"// After (auto-fixed):",
+		"Color3.fromRGB(255, 128, 127);",
+	].join("\n")}
+	lang="typescript"
+	key="before-34yxco"
+/>
 
 ## When Not To Use It
 
@@ -208,18 +248,19 @@ This rule is Roblox-specific. Disable it if:
 
 ### Find and Replace
 
-```bash
-# Find all Color3 constructor calls
-grep -r "new Color3" --include="*.ts" --include="*.tsx"
-```
+<Code
+	code={["# Find all Color3 constructor calls", 'grep -r "new Color3" --include="*.ts" --include="*.tsx"'].join("\n")}
+	lang="bash"
+	key="find-all-color3-cons-2nm5av"
+/>
 
 ### Automated Fix
 
-```bash
-# Fix all violations automatically
-bun run lint:fix
-eslint --fix src/
-```
+<Code
+	code={["# Fix all violations automatically", "bun run lint:fix", "eslint --fix src/"].join("\n")}
+	lang="bash"
+	key="fix-all-violations-a-oaiesq"
+/>
 
 ### Manual Conversion Table
 

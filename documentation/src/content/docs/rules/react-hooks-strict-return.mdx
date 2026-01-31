@@ -2,6 +2,8 @@
 title: react-hooks-strict-return
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 React hooks must return a tuple of ≤2 elements or a single object. Prevents unwieldy hook return types.
 
 ## Rule Details
@@ -18,61 +20,69 @@ Returning tuples with 3+ elements makes destructuring awkward and unclear.
 
 ### ❌ Incorrect
 
-```typescript
-function useMyHook() {
-	return [a, b, c]; // 3 elements
-}
-
-function useData() {
-	return [state, setState, loading, error]; // 4 elements
-}
-
-function useComplexState() {
-	const items = [1, 2, 3, 4, 5];
-	return items; // Variable reference to 5-element array
-}
-
-// Even with type annotations
-function useBadHook(): [string, number, boolean, object] {
-	return ["", 0, false, {}];
-}
-```
+<Code
+	code={[
+		"function useMyHook() {",
+		"\treturn [a, b, c]; // 3 elements",
+		"}",
+		"",
+		"function useData() {",
+		"\treturn [state, setState, loading, error]; // 4 elements",
+		"}",
+		"",
+		"function useComplexState() {",
+		"\tconst items = [1, 2, 3, 4, 5];",
+		"\treturn items; // Variable reference to 5-element array",
+		"}",
+		"",
+		"// Even with type annotations",
+		"function useBadHook(): [string, number, boolean, object] {",
+		'\treturn ["", 0, false, {}];',
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="function-usemyhook-1wa3o5"
+/>
 
 ### ✅ Correct
 
-```typescript
-// Standard 2-element tuple (like useState)
-function useMyHook() {
-	return [state, setState];
-}
-
-// Single object with named properties
-function useData() {
-	return { state, setState, loading, error };
-}
-
-// Single value
-function useCurrentUser() {
-	return user;
-}
-
-// Objects are fine regardless of size
-function useComplexData() {
-	return {
-		a,
-		b,
-		c,
-		d,
-		e,
-		f,
-	}; // 6 properties OK
-}
-
-// Array of data (not a return tuple)
-function useItems() {
-	return items; // OK if used as data, not destructured
-}
-```
+<Code
+	code={[
+		"// Standard 2-element tuple (like useState)",
+		"function useMyHook() {",
+		"\treturn [state, setState];",
+		"}",
+		"",
+		"// Single object with named properties",
+		"function useData() {",
+		"\treturn { state, setState, loading, error };",
+		"}",
+		"",
+		"// Single value",
+		"function useCurrentUser() {",
+		"\treturn user;",
+		"}",
+		"",
+		"// Objects are fine regardless of size",
+		"function useComplexData() {",
+		"\treturn {",
+		"\t\ta,",
+		"\t\tb,",
+		"\t\tc,",
+		"\t\td,",
+		"\t\te,",
+		"\t\tf,",
+		"\t}; // 6 properties OK",
+		"}",
+		"",
+		"// Array of data (not a return tuple)",
+		"function useItems() {",
+		"\treturn items; // OK if used as data, not destructured",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="standard-2-element-t-c2a4y4"
+/>
 
 ## Why Limit Tuple Size?
 
@@ -80,127 +90,159 @@ function useItems() {
 
 Destructuring 3+ elements is hard to read and maintain:
 
-```typescript
-// Unclear: what are these values?
-const [a, b, c, d] = useComplexHook();
-
-// Clear: named properties
-const { state, loading, error, refetch } = useComplexHook();
-```
+<Code
+	code={[
+		"// Unclear: what are these values?",
+		"const [a, b, c, d] = useComplexHook();",
+		"",
+		"// Clear: named properties",
+		"const { state, loading, error, refetch } = useComplexHook();",
+	].join("\n")}
+	lang="typescript"
+	key="unclear-what-are-the-6ckpla"
+/>
 
 ### Positional Confusion
 
 With many positional values, it's easy to swap them:
 
-```typescript
-// Which is which?
-const [data, error, loading, refetch] = useFetch();
-const [data, loading, error, refetch] = useFetch(); // Bug!
-
-// Named properties prevent confusion
-const { data, error, loading, refetch } = useFetch();
-```
+<Code
+	code={[
+		"// Which is which?",
+		"const [data, error, loading, refetch] = useFetch();",
+		"const [data, loading, error, refetch] = useFetch(); // Bug!",
+		"",
+		"// Named properties prevent confusion",
+		"const { data, error, loading, refetch } = useFetch();",
+	].join("\n")}
+	lang="typescript"
+	key="which-is-which-1wv635"
+/>
 
 ### Optional Returns
 
 Objects handle optional returns gracefully:
 
-```typescript
-// Awkward: have to track position of undefined
-const [data, , error] = useData(); // Skipping loading
-
-// Natural: only destructure what you need
-const { data, error } = useData(); // loading not needed
-```
+<Code
+	code={[
+		"// Awkward: have to track position of undefined",
+		"const [data, , error] = useData(); // Skipping loading",
+		"",
+		"// Natural: only destructure what you need",
+		"const { data, error } = useData(); // loading not needed",
+	].join("\n")}
+	lang="typescript"
+	key="awkward-have-to-trac-2foswz"
+/>
 
 ## React Hook Patterns
 
 ### State Hooks (2-element tuple)
 
-```typescript
-function useToggle(initial = false): [boolean, () => void] {
-	const [value, setValue] = useState(initial);
-	const toggle = () => setValue((v) => !v);
-	return [value, toggle];
-}
-
-// Usage
-const [isOpen, toggle] = useToggle();
-```
+<Code
+	code={[
+		"function useToggle(initial = false): [boolean, () => void] {",
+		"\tconst [value, setValue] = useState(initial);",
+		"\tconst toggle = () => setValue((v) => !v);",
+		"\treturn [value, toggle];",
+		"}",
+		"",
+		"// Usage",
+		"const [isOpen, toggle] = useToggle();",
+	].join("\n")}
+	lang="typescript"
+	key="function-usetoggle-i-2738h2"
+/>
 
 ### Data Hooks (object)
 
-```typescript
-interface UseDataResult<T> {
-	data: T | undefined;
-	loading: boolean;
-	error: Error | undefined;
-	refetch: () => void;
-}
-
-function useData<T>(url: string): UseDataResult<T> {
-	// ...
-	return { data, loading, error, refetch };
-}
-
-// Usage
-const { data, loading } = useData<User>("/api/user");
-```
+<Code
+	code={[
+		"interface UseDataResult<T> {",
+		"\tdata: T | undefined;",
+		"\tloading: boolean;",
+		"\terror: Error | undefined;",
+		"\trefetch: () => void;",
+		"}",
+		"",
+		"function useData<T>(url: string): UseDataResult<T> {",
+		"\t// ...",
+		"\treturn { data, loading, error, refetch };",
+		"}",
+		"",
+		"// Usage",
+		'const { data, loading } = useData<User>("/api/user");',
+	].join("\n")}
+	lang="typescript"
+	key="interface-usedatares-1shdnc"
+/>
 
 ### Value Hooks (single value)
 
-```typescript
-function useWindowWidth(): number {
-	const [width, setWidth] = useState(window.innerWidth);
-	// ...
-	return width;
-}
-
-// Usage
-const width = useWindowWidth();
-```
+<Code
+	code={[
+		"function useWindowWidth(): number {",
+		"\tconst [width, setWidth] = useState(window.innerWidth);",
+		"\t// ...",
+		"\treturn width;",
+		"}",
+		"",
+		"// Usage",
+		"const width = useWindowWidth();",
+	].join("\n")}
+	lang="typescript"
+	key="function-usewindowwi-1jz3wz"
+/>
 
 ## Migration Guide
 
 ### Before (3+ Element Tuple)
 
-```typescript
-function useForm() {
-	const [values, setValues] = useState({});
-	const [errors, setErrors] = useState({});
-	const [touched, setTouched] = useState({});
-
-	return [values, setValues, errors, setErrors, touched, setTouched];
-}
-
-// Usage
-const [values, setValues, errors, setErrors, touched, setTouched] = useForm();
-```
+<Code
+	code={[
+		"function useForm() {",
+		"\tconst [values, setValues] = useState({});",
+		"\tconst [errors, setErrors] = useState({});",
+		"\tconst [touched, setTouched] = useState({});",
+		"",
+		"\treturn [values, setValues, errors, setErrors, touched, setTouched];",
+		"}",
+		"",
+		"// Usage",
+		"const [values, setValues, errors, setErrors, touched, setTouched] = useForm();",
+	].join("\n")}
+	lang="typescript"
+	key="function-useform-p3y44w"
+/>
 
 ### After (Object Return)
 
-```typescript
-interface UseFormReturn {
-	values: Record<string, unknown>;
-	setValues: (v: Record<string, unknown>) => void;
-	errors: Record<string, string>;
-	setErrors: (e: Record<string, string>) => void;
-	touched: Record<string, boolean>;
-	setTouched: (t: Record<string, boolean>) => void;
-}
-
-function useForm(): UseFormReturn {
-	const [values, setValues] = useState({});
-	const [errors, setErrors] = useState({});
-	const [touched, setTouched] = useState({});
-
-	return { values, setValues, errors, setErrors, touched, setTouched };
-}
-
-// Usage (more flexible)
-const { values, errors } = useForm(); // Only what you need
-const form = useForm(); // Or use the whole object
-```
+<Code
+	code={[
+		"interface UseFormReturn {",
+		"\tvalues: Record<string, unknown>;",
+		"\tsetValues: (v: Record<string, unknown>) => void;",
+		"\terrors: Record<string, string>;",
+		"\tsetErrors: (e: Record<string, string>) => void;",
+		"\ttouched: Record<string, boolean>;",
+		"\tsetTouched: (t: Record<string, boolean>) => void;",
+		"}",
+		"",
+		"function useForm(): UseFormReturn {",
+		"\tconst [values, setValues] = useState({});",
+		"\tconst [errors, setErrors] = useState({});",
+		"\tconst [touched, setTouched] = useState({});",
+		"",
+		"\treturn { values, setValues, errors, setErrors, touched, setTouched };",
+		"}",
+		"",
+		"// Usage (more flexible)",
+		"const { values, errors } = useForm(); // Only what you need",
+		"const form = useForm(); // Or use the whole object",
+	].join("\n")}
+	lang="typescript"
+	key="interface-useformret-1ik4za"
+/>
 
 ## Edge Cases
 
@@ -208,33 +250,41 @@ const form = useForm(); // Or use the whole object
 
 This rule only applies to functions starting with `use`:
 
-```typescript
-// Not affected (not a hook)
-function getData() {
-	return [1, 2, 3, 4, 5]; // OK
-}
-
-// Affected (is a hook)
-function useData() {
-	return [1, 2, 3, 4, 5]; // Error
-}
-```
+<Code
+	code={[
+		"// Not affected (not a hook)",
+		"function getData() {",
+		"\treturn [1, 2, 3, 4, 5]; // OK",
+		"}",
+		"",
+		"// Affected (is a hook)",
+		"function useData() {",
+		"\treturn [1, 2, 3, 4, 5]; // Error",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="not-affected-not-a-h-2c9il5"
+/>
 
 ### Type-Only Arrays
 
 If a hook returns an array of data (not a tuple), it should be typed accordingly:
 
-```typescript
-// Wrong: tuple type suggests positional destructuring
-function useItems(): [Item, Item, Item, Item] {
-	return [item1, item2, item3, item4];
-}
-
-// Right: array type suggests it's data
-function useItems(): Item[] {
-	return [item1, item2, item3, item4];
-}
-```
+<Code
+	code={[
+		"// Wrong: tuple type suggests positional destructuring",
+		"function useItems(): [Item, Item, Item, Item] {",
+		"\treturn [item1, item2, item3, item4];",
+		"}",
+		"",
+		"// Right: array type suggests it's data",
+		"function useItems(): Item[] {",
+		"\treturn [item1, item2, item3, item4];",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="wrong-tuple-type-sug-1wgsl2"
+/>
 
 ## When Not To Use It
 

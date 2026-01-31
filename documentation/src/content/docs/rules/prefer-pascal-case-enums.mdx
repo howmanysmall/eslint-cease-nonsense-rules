@@ -2,6 +2,8 @@
 title: prefer-pascal-case-enums
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Enum names and members must be PascalCase.
 
 ## Rule Details
@@ -16,66 +18,74 @@ This rule has no configuration options.
 
 ### ❌ Incorrect
 
-```typescript
-// Enum name not PascalCase
-enum my_enum {
-	Red,
-	Blue,
-}
-
-enum COLORS {
-	Red,
-	Blue,
-}
-
-enum colors {
-	Red,
-	Blue,
-}
-
-// Members not PascalCase
-enum Color {
-	RED, // SCREAMING_SNAKE_CASE
-	blue, // camelCase
-	dark_blue, // snake_case
-}
-
-enum Status {
-	is_active, // snake_case
-	IS_PENDING, // SCREAMING_SNAKE_CASE
-}
-```
+<Code
+	code={[
+		"// Enum name not PascalCase",
+		"enum my_enum {",
+		"\tRed,",
+		"\tBlue,",
+		"}",
+		"",
+		"enum COLORS {",
+		"\tRed,",
+		"\tBlue,",
+		"}",
+		"",
+		"enum colors {",
+		"\tRed,",
+		"\tBlue,",
+		"}",
+		"",
+		"// Members not PascalCase",
+		"enum Color {",
+		"\tRED, // SCREAMING_SNAKE_CASE",
+		"\tblue, // camelCase",
+		"\tdark_blue, // snake_case",
+		"}",
+		"",
+		"enum Status {",
+		"\tis_active, // snake_case",
+		"\tIS_PENDING, // SCREAMING_SNAKE_CASE",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="enum-name-not-pascal-38ktnl"
+/>
 
 ### ✅ Correct
 
-```typescript
-// Enum and members in PascalCase
-enum Color {
-	Red,
-	Green,
-	Blue,
-}
-
-enum HttpStatus {
-	Ok,
-	NotFound,
-	InternalServerError,
-}
-
-enum Direction {
-	North,
-	South,
-	East,
-	West,
-}
-
-// Multi-word names
-enum UserRole {
-	Admin,
-	SuperAdmin,
-	RegularUser,
-}
-```
+<Code
+	code={[
+		"// Enum and members in PascalCase",
+		"enum Color {",
+		"\tRed,",
+		"\tGreen,",
+		"\tBlue,",
+		"}",
+		"",
+		"enum HttpStatus {",
+		"\tOk,",
+		"\tNotFound,",
+		"\tInternalServerError,",
+		"}",
+		"",
+		"enum Direction {",
+		"\tNorth,",
+		"\tSouth,",
+		"\tEast,",
+		"\tWest,",
+		"}",
+		"",
+		"// Multi-word names",
+		"enum UserRole {",
+		"\tAdmin,",
+		"\tSuperAdmin,",
+		"\tRegularUser,",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="enum-and-members-in--c0p421"
+/>
 
 ## Why PascalCase for Enums?
 
@@ -83,348 +93,428 @@ enum UserRole {
 
 PascalCase is the standard TypeScript convention for enums:
 
-```typescript
-// ✅ Follows TypeScript style guide
-enum Status {
-	Active,
-	Inactive,
-}
-
-// ❌ Conflicts with conventions
-enum status {
-	ACTIVE,
-	INACTIVE,
-}
-```
+<Code
+	code={[
+		"// ✅ Follows TypeScript style guide",
+		"enum Status {",
+		"\tActive,",
+		"\tInactive,",
+		"}",
+		"",
+		"// ❌ Conflicts with conventions",
+		"enum status {",
+		"\tACTIVE,",
+		"\tINACTIVE,",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="follows-typescript-s-37tyo2"
+/>
 
 ### 2. Consistency with Types
 
 Enums are types, so they should follow type naming conventions:
 
-```typescript
-// Types use PascalCase
-type UserStatus = "active" | "inactive";
-interface UserData {
-	/* ... */
-}
-class UserService {
-	/* ... */
-}
-
-// Enums should too
-enum UserRole {
-	Admin,
-	User,
-}
-```
+<Code
+	code={[
+		"// Types use PascalCase",
+		'type UserStatus = "active" | "inactive";',
+		"interface UserData {",
+		"\t/* ... */",
+		"}",
+		"class UserService {",
+		"\t/* ... */",
+		"}",
+		"",
+		"// Enums should too",
+		"enum UserRole {",
+		"\tAdmin,",
+		"\tUser,",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="types-use-pascalcase-2u9ubc"
+/>
 
 ### 3. Distinguish from Constants
 
-```typescript
-// Module-level constant (SCREAMING_SNAKE_CASE)
-const MAX_RETRIES = 3;
-
-// Enum (PascalCase)
-enum RetryStrategy {
-	Exponential,
-	Linear,
-	Fixed,
-}
-```
+<Code
+	code={[
+		"// Module-level constant (SCREAMING_SNAKE_CASE)",
+		"const MAX_RETRIES = 3;",
+		"",
+		"// Enum (PascalCase)",
+		"enum RetryStrategy {",
+		"\tExponential,",
+		"\tLinear,",
+		"\tFixed,",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="module-level-constan-3dwqof"
+/>
 
 ### 4. Better Readability
 
-```typescript
-// ❌ Hard to read
-enum HTTP_STATUS {
-	OK,
-	NOT_FOUND,
-	INTERNAL_SERVER_ERROR,
-}
-
-// ✅ Easy to read
-enum HttpStatus {
-	Ok,
-	NotFound,
-	InternalServerError,
-}
-
-// Usage is clearer
-const status = HttpStatus.NotFound; // vs HTTP_STATUS.NOT_FOUND
-```
+<Code
+	code={[
+		"// ❌ Hard to read",
+		"enum HTTP_STATUS {",
+		"\tOK,",
+		"\tNOT_FOUND,",
+		"\tINTERNAL_SERVER_ERROR,",
+		"}",
+		"",
+		"// ✅ Easy to read",
+		"enum HttpStatus {",
+		"\tOk,",
+		"\tNotFound,",
+		"\tInternalServerError,",
+		"}",
+		"",
+		"// Usage is clearer",
+		"const status = HttpStatus.NotFound; // vs HTTP_STATUS.NOT_FOUND",
+	].join("\n")}
+	lang="typescript"
+	key="hard-to-read-xuykb6"
+/>
 
 ## PascalCase Conversion Rules
 
 ### Single Words
 
-```typescript
-// Before → After
-enum color → enum Color
-enum STATUS → enum Status
-enum direction → enum Direction
-```
+<Code
+	code={[
+		"// Before → After",
+		"enum color → enum Color",
+		"enum STATUS → enum Status",
+		"enum direction → enum Direction",
+	].join("\n")}
+	lang="typescript"
+	key="before-after-1jy6l5"
+/>
 
 ### Multi-Word Names
 
-```typescript
-// Before → After
-enum user_role → enum UserRole
-enum HTTP_STATUS → enum HttpStatus
-enum api_endpoint → enum ApiEndpoint
-enum DATABASE_TYPE → enum DatabaseType
-```
+<Code
+	code={[
+		"// Before → After",
+		"enum user_role → enum UserRole",
+		"enum HTTP_STATUS → enum HttpStatus",
+		"enum api_endpoint → enum ApiEndpoint",
+		"enum DATABASE_TYPE → enum DatabaseType",
+	].join("\n")}
+	lang="typescript"
+	key="before-after-2mgaqm"
+/>
 
 ### Acronyms
 
-```typescript
-// Treat acronyms as single words
-enum HTTPStatus {
-	// ✅ Correct
-	Ok,
-	NotFound,
-}
-
-enum ApiEndpoint {
-	// ✅ Correct
-	Users,
-	Posts,
-}
-
-enum UIComponent {
-	// ✅ Correct
-	Button,
-	Input,
-}
-```
+<Code
+	code={[
+		"// Treat acronyms as single words",
+		"enum HTTPStatus {",
+		"\t// ✅ Correct",
+		"\tOk,",
+		"\tNotFound,",
+		"}",
+		"",
+		"enum ApiEndpoint {",
+		"\t// ✅ Correct",
+		"\tUsers,",
+		"\tPosts,",
+		"}",
+		"",
+		"enum UIComponent {",
+		"\t// ✅ Correct",
+		"\tButton,",
+		"\tInput,",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="treat-acronyms-as-si-4y375r"
+/>
 
 ## Common Patterns
 
 ### Status Enums
 
-```typescript
-// ✅ Good
-enum Status {
-	Active,
-	Inactive,
-	Pending,
-	Archived,
-}
-
-enum OrderStatus {
-	Created,
-	Processing,
-	Shipped,
-	Delivered,
-	Cancelled,
-}
-```
+<Code
+	code={[
+		"// ✅ Good",
+		"enum Status {",
+		"\tActive,",
+		"\tInactive,",
+		"\tPending,",
+		"\tArchived,",
+		"}",
+		"",
+		"enum OrderStatus {",
+		"\tCreated,",
+		"\tProcessing,",
+		"\tShipped,",
+		"\tDelivered,",
+		"\tCancelled,",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="good-2qwp1a"
+/>
 
 ### Error Codes
 
-```typescript
-// ✅ Good
-enum ErrorCode {
-	NotFound,
-	Unauthorized,
-	BadRequest,
-	ServerError,
-}
-
-// Usage
-function handleError(code: ErrorCode) {
-	switch (code) {
-		case ErrorCode.NotFound:
-			return "Resource not found";
-		case ErrorCode.Unauthorized:
-			return "Access denied";
-		// ...
-	}
-}
-```
+<Code
+	code={[
+		"// ✅ Good",
+		"enum ErrorCode {",
+		"\tNotFound,",
+		"\tUnauthorized,",
+		"\tBadRequest,",
+		"\tServerError,",
+		"}",
+		"",
+		"// Usage",
+		"function handleError(code: ErrorCode) {",
+		"\tswitch (code) {",
+		"\t\tcase ErrorCode.NotFound:",
+		'\t\t\treturn "Resource not found";',
+		"\t\tcase ErrorCode.Unauthorized:",
+		'\t\t\treturn "Access denied";',
+		"\t\t// ...",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="good-1uqrpk"
+/>
 
 ### Configuration Options
 
-```typescript
-// ✅ Good
-enum LogLevel {
-	Debug,
-	Info,
-	Warning,
-	Error,
-}
-
-enum Environment {
-	Development,
-	Staging,
-	Production,
-}
-```
+<Code
+	code={[
+		"// ✅ Good",
+		"enum LogLevel {",
+		"\tDebug,",
+		"\tInfo,",
+		"\tWarning,",
+		"\tError,",
+		"}",
+		"",
+		"enum Environment {",
+		"\tDevelopment,",
+		"\tStaging,",
+		"\tProduction,",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="good-1lzho9"
+/>
 
 ## Numeric Enums
 
-```typescript
-// ✅ Numeric members follow same rules
-enum Priority {
-	Low, // 0
-	Medium, // 1
-	High, // 2
-	Critical, // 3
-}
-
-enum HttpStatus {
-	Ok = 200,
-	Created = 201,
-	BadRequest = 400,
-	NotFound = 404,
-}
-```
+<Code
+	code={[
+		"// ✅ Numeric members follow same rules",
+		"enum Priority {",
+		"\tLow, // 0",
+		"\tMedium, // 1",
+		"\tHigh, // 2",
+		"\tCritical, // 3",
+		"}",
+		"",
+		"enum HttpStatus {",
+		"\tOk = 200,",
+		"\tCreated = 201,",
+		"\tBadRequest = 400,",
+		"\tNotFound = 404,",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="numeric-members-foll-1ivzbn"
+/>
 
 ## String Enums
 
-```typescript
-// ✅ String enums with PascalCase
-enum Direction {
-	North = "NORTH",
-	South = "SOUTH",
-	East = "EAST",
-	West = "WEST",
-}
-
-enum ApiEndpoint {
-	Users = "/api/users",
-	Posts = "/api/posts",
-	Comments = "/api/comments",
-}
-```
+<Code
+	code={[
+		"// ✅ String enums with PascalCase",
+		"enum Direction {",
+		'\tNorth = "NORTH",',
+		'\tSouth = "SOUTH",',
+		'\tEast = "EAST",',
+		'\tWest = "WEST",',
+		"}",
+		"",
+		"enum ApiEndpoint {",
+		'\tUsers = "/api/users",',
+		'\tPosts = "/api/posts",',
+		'\tComments = "/api/comments",',
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="string-enums-with-pa-3870qd"
+/>
 
 ## Const Enums
 
-```typescript
-// ✅ Const enums follow same rules
-const enum Color {
-	Red,
-	Green,
-	Blue,
-}
-
-const enum FileExtension {
-	Ts = ".ts",
-	Tsx = ".tsx",
-	Js = ".js",
-}
-```
+<Code
+	code={[
+		"// ✅ Const enums follow same rules",
+		"const enum Color {",
+		"\tRed,",
+		"\tGreen,",
+		"\tBlue,",
+		"}",
+		"",
+		"const enum FileExtension {",
+		'\tTs = ".ts",',
+		'\tTsx = ".tsx",',
+		'\tJs = ".js",',
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="const-enums-follow-s-20jlv0"
+/>
 
 ## Computed Members
 
-```typescript
-// ✅ Computed members follow PascalCase
-enum FileAccess {
-	None = 0,
-	Read = 1 << 0,
-	Write = 1 << 1,
-	ReadWrite = Read | Write,
-}
-```
+<Code
+	code={[
+		"// ✅ Computed members follow PascalCase",
+		"enum FileAccess {",
+		"\tNone = 0,",
+		"\tRead = 1 << 0,",
+		"\tWrite = 1 << 1,",
+		"\tReadWrite = Read | Write,",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="computed-members-fol-67gszu"
+/>
 
 ## Advanced Examples
 
 ### Bit Flags
 
-```typescript
-// ✅ Good
-enum Permission {
-	None = 0,
-	Read = 1 << 0,
-	Write = 1 << 1,
-	Execute = 1 << 2,
-	All = Read | Write | Execute,
-}
-
-// Usage
-function hasPermission(current: Permission, required: Permission): boolean {
-	return (current & required) === required;
-}
-```
+<Code
+	code={[
+		"// ✅ Good",
+		"enum Permission {",
+		"\tNone = 0,",
+		"\tRead = 1 << 0,",
+		"\tWrite = 1 << 1,",
+		"\tExecute = 1 << 2,",
+		"\tAll = Read | Write | Execute,",
+		"}",
+		"",
+		"// Usage",
+		"function hasPermission(current: Permission, required: Permission): boolean {",
+		"\treturn (current & required) === required;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="good-3pdbuv"
+/>
 
 ### Mixed Types
 
-```typescript
-// ✅ Members can have different value types (as long as names are PascalCase)
-enum Mixed {
-	Zero = 0,
-	One = 1,
-	Name = "name",
-	Description = "description",
-}
-```
+<Code
+	code={[
+		"// ✅ Members can have different value types (as long as names are PascalCase)",
+		"enum Mixed {",
+		"\tZero = 0,",
+		"\tOne = 1,",
+		'\tName = "name",',
+		'\tDescription = "description",',
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="members-can-have-dif-oylsjl"
+/>
 
 ### Namespaced Enums
 
-```typescript
-// ✅ Namespace pattern
-namespace User {
-	export enum Role {
-		Admin,
-		Moderator,
-		User,
-	}
-
-	export enum Status {
-		Active,
-		Inactive,
-	}
-}
-
-// Usage
-const role: User.Role = User.Role.Admin;
-```
+<Code
+	code={[
+		"// ✅ Namespace pattern",
+		"namespace User {",
+		"\texport enum Role {",
+		"\t\tAdmin,",
+		"\t\tModerator,",
+		"\t\tUser,",
+		"\t}",
+		"",
+		"\texport enum Status {",
+		"\t\tActive,",
+		"\t\tInactive,",
+		"\t}",
+		"}",
+		"",
+		"// Usage",
+		"const role: User.Role = User.Role.Admin;",
+	].join("\n")}
+	lang="typescript"
+	key="namespace-pattern-1q4vde"
+/>
 
 ## Edge Cases
 
 ### Numbers in Member Names
 
-```typescript
-// ✅ Numbers are allowed
-enum Version {
-	V1,
-	V2,
-	V3,
-}
-
-enum Level {
-	Level1,
-	Level2,
-	Level3,
-}
-```
+<Code
+	code={[
+		"// ✅ Numbers are allowed",
+		"enum Version {",
+		"\tV1,",
+		"\tV2,",
+		"\tV3,",
+		"}",
+		"",
+		"enum Level {",
+		"\tLevel1,",
+		"\tLevel2,",
+		"\tLevel3,",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="numbers-are-allowed-1lm58v"
+/>
 
 ### String Literal Members
 
-```typescript
-// ✅ String literal keys must also be PascalCase
-enum Status {
-	"Active" = "ACTIVE", // ✅ Member name is PascalCase
-	"Inactive" = "INACTIVE", // ✅ Good
-}
-
-// ❌ Bad
-enum Status {
-	"active" = "ACTIVE", // Member name not PascalCase
-	"INACTIVE" = "inactive", // Member name SCREAMING_SNAKE_CASE
-}
-```
+<Code
+	code={[
+		"// ✅ String literal keys must also be PascalCase",
+		"enum Status {",
+		'\t"Active" = "ACTIVE", // ✅ Member name is PascalCase',
+		'\t"Inactive" = "INACTIVE", // ✅ Good',
+		"}",
+		"",
+		"// ❌ Bad",
+		"enum Status {",
+		'\t"active" = "ACTIVE", // Member name not PascalCase',
+		'\t"INACTIVE" = "inactive", // Member name SCREAMING_SNAKE_CASE',
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="string-literal-keys--hsuzah"
+/>
 
 ### Numbers Starting Member Names
 
 Members starting with digits are skipped:
 
-```typescript
-// Numbers at start - not checked by this rule
-enum Code {
-	"200" = "OK",
-	"404" = "Not Found",
-}
-```
+<Code
+	code={[
+		"// Numbers at start - not checked by this rule",
+		"enum Code {",
+		'\t"200" = "OK",',
+		'\t"404" = "Not Found",',
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="numbers-at-start-not-157jk1"
+/>
 
 ## When Not To Use It
 
@@ -438,115 +528,139 @@ Disable this rule if:
 
 ### Find All Non-PascalCase Enums
 
-```bash
-# Find enum declarations
-grep -r "enum [a-z_]" src/
-grep -r "enum [A-Z_][A-Z_]" src/
-```
+<Code
+	code={["# Find enum declarations", 'grep -r "enum [a-z_]" src/', 'grep -r "enum [A-Z_][A-Z_]" src/'].join("\n")}
+	lang="bash"
+	key="find-enum-declaratio-2q7had"
+/>
 
 ### Automated Conversion
 
 Use the toPascalCase utility from the codebase:
 
-```typescript
-// Before:
-enum user_status {
-	is_active,
-	is_pending,
-}
-
-// After:
-enum UserStatus {
-	IsActive,
-	IsPending,
-}
-```
+<Code
+	code={[
+		"// Before:",
+		"enum user_status {",
+		"\tis_active,",
+		"\tis_pending,",
+		"}",
+		"",
+		"// After:",
+		"enum UserStatus {",
+		"\tIsActive,",
+		"\tIsPending,",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="before-2m5q32"
+/>
 
 ### Update References
 
-```typescript
-// Before:
-const status = user_status.is_active;
-
-// After:
-const status = UserStatus.IsActive;
-```
+<Code
+	code={[
+		"// Before:",
+		"const status = user_status.is_active;",
+		"",
+		"// After:",
+		"const status = UserStatus.IsActive;",
+	].join("\n")}
+	lang="typescript"
+	key="before-2v4e0e"
+/>
 
 ## Benefits
 
 ### 1. Type Safety
 
-```typescript
-enum Status {
-	Active,
-	Inactive,
-}
-
-function setStatus(status: Status) {
-	// Type-safe
-}
-
-setStatus(Status.Active); // ✅ OK
-setStatus(123); // ❌ Error
-```
+<Code
+	code={[
+		"enum Status {",
+		"\tActive,",
+		"\tInactive,",
+		"}",
+		"",
+		"function setStatus(status: Status) {",
+		"\t// Type-safe",
+		"}",
+		"",
+		"setStatus(Status.Active); // ✅ OK",
+		"setStatus(123); // ❌ Error",
+	].join("\n")}
+	lang="typescript"
+	key="enum-status-1g18s2"
+/>
 
 ### 2. Autocomplete
 
 PascalCase enums provide better IDE autocomplete:
 
-```typescript
-// Type "Status." and IDE shows:
-// - Status.Active
-// - Status.Inactive
-```
+<Code
+	code={['// Type "Status." and IDE shows:', "// - Status.Active", "// - Status.Inactive"].join("\n")}
+	lang="typescript"
+	key="type-status-and-ide--20oe5k"
+/>
 
 ### 3. Refactoring Safety
 
-```typescript
-// Renaming is safe with enums
-enum Status {
-	Active, // Rename this, IDE updates all usages
-	Inactive,
-}
-```
+<Code
+	code={[
+		"// Renaming is safe with enums",
+		"enum Status {",
+		"\tActive, // Rename this, IDE updates all usages",
+		"\tInactive,",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="renaming-is-safe-wit-clnefm"
+/>
 
 ## Common Mistakes
 
 ### Mixing Cases
 
-```typescript
-// ❌ Inconsistent
-enum Status {
-	active, // lowercase
-	PENDING, // uppercase
-	InActive, // PascalCase
-}
-
-// ✅ Consistent
-enum Status {
-	Active,
-	Pending,
-	Inactive,
-}
-```
+<Code
+	code={[
+		"// ❌ Inconsistent",
+		"enum Status {",
+		"\tactive, // lowercase",
+		"\tPENDING, // uppercase",
+		"\tInActive, // PascalCase",
+		"}",
+		"",
+		"// ✅ Consistent",
+		"enum Status {",
+		"\tActive,",
+		"\tPending,",
+		"\tInactive,",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="inconsistent-23x58y"
+/>
 
 ### Using Plural Enum Names
 
 See the [prefer-singular-enums](/rules/prefer-singular-enums/) rule:
 
-```typescript
-// ❌ Plural (separate rule)
-enum Colors {
-	Red,
-	Blue,
-}
-
-// ✅ Singular + PascalCase
-enum Color {
-	Red,
-	Blue,
-}
-```
+<Code
+	code={[
+		"// ❌ Plural (separate rule)",
+		"enum Colors {",
+		"\tRed,",
+		"\tBlue,",
+		"}",
+		"",
+		"// ✅ Singular + PascalCase",
+		"enum Color {",
+		"\tRed,",
+		"\tBlue,",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="plural-separate-rule-2pq50q"
+/>
 
 ## Related Rules
 

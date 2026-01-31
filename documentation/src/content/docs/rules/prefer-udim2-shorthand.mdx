@@ -2,6 +2,8 @@
 title: prefer-udim2-shorthand
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Prefer `UDim2.fromScale()` or `UDim2.fromOffset()` when all offsets or all scales are zero.
 
 ## Rule Details
@@ -17,29 +19,37 @@ When creating a `UDim2` with all scales or all offsets set to zero, the shorthan
 
 ### ❌ Incorrect
 
-```typescript
-new UDim2(1, 0, 1, 0); // Pure scale
-new UDim2(0.5, 0, 0.5, 0); // Pure scale
-
-new UDim2(0, 100, 0, 50); // Pure offset
-new UDim2(0, 200, 0, 150); // Pure offset
-```
+<Code
+	code={[
+		"new UDim2(1, 0, 1, 0); // Pure scale",
+		"new UDim2(0.5, 0, 0.5, 0); // Pure scale",
+		"",
+		"new UDim2(0, 100, 0, 50); // Pure offset",
+		"new UDim2(0, 200, 0, 150); // Pure offset",
+	].join("\n")}
+	lang="typescript"
+	key="new-udim2-1-0-1-0-pu-hemjqq"
+/>
 
 ### ✅ Correct
 
-```typescript
-UDim2.fromScale(1, 1); // Pure scale
-UDim2.fromScale(0.5, 0.5); // Pure scale
-
-UDim2.fromOffset(100, 50); // Pure offset
-UDim2.fromOffset(200, 150); // Pure offset
-
-// Mixed scale and offset - not affected
-new UDim2(0.5, 10, 0.5, 10);
-
-// Explicit zero - not affected
-new UDim2(0, 0, 0, 0);
-```
+<Code
+	code={[
+		"UDim2.fromScale(1, 1); // Pure scale",
+		"UDim2.fromScale(0.5, 0.5); // Pure scale",
+		"",
+		"UDim2.fromOffset(100, 50); // Pure offset",
+		"UDim2.fromOffset(200, 150); // Pure offset",
+		"",
+		"// Mixed scale and offset - not affected",
+		"new UDim2(0.5, 10, 0.5, 10);",
+		"",
+		"// Explicit zero - not affected",
+		"new UDim2(0, 0, 0, 0);",
+	].join("\n")}
+	lang="typescript"
+	key="udim2-fromscale-1-1--hlzml8"
+/>
 
 ## Why Use Shorthands?
 
@@ -47,48 +57,64 @@ new UDim2(0, 0, 0, 0);
 
 The shorthand methods make intent clear:
 
-```typescript
-// Unclear: what are these numbers?
-new UDim2(1, 0, 0.5, 0);
+<Code
+	code={[
+		"// Unclear: what are these numbers?",
+		"new UDim2(1, 0, 0.5, 0);",
+		"",
+		"// Clear: scaling",
+		"UDim2.fromScale(1, 0.5);",
+	].join("\n")}
+	lang="typescript"
+	key="unclear-what-are-the-h1kelh"
+/>
 
-// Clear: scaling
-UDim2.fromScale(1, 0.5);
-```
-
-```typescript
-// Unclear: what are these numbers?
-new UDim2(0, 100, 0, 50);
-
-// Clear: pixel offsets
-UDim2.fromOffset(100, 50);
-```
+<Code
+	code={[
+		"// Unclear: what are these numbers?",
+		"new UDim2(0, 100, 0, 50);",
+		"",
+		"// Clear: pixel offsets",
+		"UDim2.fromOffset(100, 50);",
+	].join("\n")}
+	lang="typescript"
+	key="unclear-what-are-the-2hlnj9"
+/>
 
 ### Consistency
 
 Using shorthands establishes a pattern:
 
-```typescript
-// Inconsistent
-const a = new UDim2(1, 0, 1, 0);
-const b = UDim2.fromScale(0.5, 0.5);
-
-// Consistent
-const a = UDim2.fromScale(1, 1);
-const b = UDim2.fromScale(0.5, 0.5);
-```
+<Code
+	code={[
+		"// Inconsistent",
+		"const a = new UDim2(1, 0, 1, 0);",
+		"const b = UDim2.fromScale(0.5, 0.5);",
+		"",
+		"// Consistent",
+		"const a = UDim2.fromScale(1, 1);",
+		"const b = UDim2.fromScale(0.5, 0.5);",
+	].join("\n")}
+	lang="typescript"
+	key="inconsistent-2gukrx"
+/>
 
 ### Less Error-Prone
 
 Fewer arguments means fewer mistakes:
 
-```typescript
-// Easy to swap scale/offset by accident
-new UDim2(1, 100, 0, 0); // Bug: meant (1, 0, 0, 100)?
-
-// Clear: can't mix up
-UDim2.fromScale(1, 0);
-UDim2.fromOffset(0, 100);
-```
+<Code
+	code={[
+		"// Easy to swap scale/offset by accident",
+		"new UDim2(1, 100, 0, 0); // Bug: meant (1, 0, 0, 100)?",
+		"",
+		"// Clear: can't mix up",
+		"UDim2.fromScale(1, 0);",
+		"UDim2.fromOffset(0, 100);",
+	].join("\n")}
+	lang="typescript"
+	key="easy-to-swap-scale-o-349pv0"
+/>
 
 ## API Reference
 
@@ -96,39 +122,55 @@ UDim2.fromOffset(0, 100);
 
 Creates a UDim2 with only scale components (offsets are 0):
 
-```typescript
-UDim2.fromScale(scaleX: number, scaleY: number);
-
-// Equivalent to:
-new UDim2(scaleX, 0, scaleY, 0);
-```
+<Code
+	code={[
+		"UDim2.fromScale(scaleX: number, scaleY: number);",
+		"",
+		"// Equivalent to:",
+		"new UDim2(scaleX, 0, scaleY, 0);",
+	].join("\n")}
+	lang="typescript"
+	key="udim2-fromscale-scal-haevep"
+/>
 
 Examples:
 
-```typescript
-UDim2.fromScale(1, 1); // Full size
-UDim2.fromScale(0.5, 0.5); // Half size
-UDim2.fromScale(0, 0); // Zero size
-```
+<Code
+	code={[
+		"UDim2.fromScale(1, 1); // Full size",
+		"UDim2.fromScale(0.5, 0.5); // Half size",
+		"UDim2.fromScale(0, 0); // Zero size",
+	].join("\n")}
+	lang="typescript"
+	key="udim2-fromscale-1-1--38urcr"
+/>
 
 ### UDim2.fromOffset
 
 Creates a UDim2 with only offset components (scales are 0):
 
-```typescript
-UDim2.fromOffset(offsetX: number, offsetY: number);
-
-// Equivalent to:
-new UDim2(0, offsetX, 0, offsetY);
-```
+<Code
+	code={[
+		"UDim2.fromOffset(offsetX: number, offsetY: number);",
+		"",
+		"// Equivalent to:",
+		"new UDim2(0, offsetX, 0, offsetY);",
+	].join("\n")}
+	lang="typescript"
+	key="udim2-fromoffset-off-atwh6v"
+/>
 
 Examples:
 
-```typescript
-UDim2.fromOffset(100, 50); // 100px x 50px
-UDim2.fromOffset(200, 200); // 200px square
-UDim2.fromOffset(-10, -10); // Negative offset
-```
+<Code
+	code={[
+		"UDim2.fromOffset(100, 50); // 100px x 50px",
+		"UDim2.fromOffset(200, 200); // 200px square",
+		"UDim2.fromOffset(-10, -10); // Negative offset",
+	].join("\n")}
+	lang="typescript"
+	key="udim2-fromoffset-100-342opn"
+/>
 
 ## Edge Cases
 
@@ -136,13 +178,17 @@ UDim2.fromOffset(-10, -10); // Negative offset
 
 Explicit zero initialization is preserved:
 
-```typescript
-// Not changed (explicit zero)
-new UDim2(0, 0, 0, 0);
-
-// Would be changed to:
-UDim2.fromScale(0, 0); // or UDim2.fromOffset(0, 0)
-```
+<Code
+	code={[
+		"// Not changed (explicit zero)",
+		"new UDim2(0, 0, 0, 0);",
+		"",
+		"// Would be changed to:",
+		"UDim2.fromScale(0, 0); // or UDim2.fromOffset(0, 0)",
+	].join("\n")}
+	lang="typescript"
+	key="not-changed-explicit-uufja8"
+/>
 
 This is intentional - `new UDim2(0, 0, 0, 0)` is idiomatic for zero/default values.
 
@@ -150,24 +196,32 @@ This is intentional - `new UDim2(0, 0, 0, 0)` is idiomatic for zero/default valu
 
 Mixed scale and offset values are not affected:
 
-```typescript
-// Not changed (has both scale and offset)
-new UDim2(0.5, 10, 0.5, 10);
-new UDim2(1, -5, 0, 100);
-new UDim2(0, 50, 0.5, 0);
-```
+<Code
+	code={[
+		"// Not changed (has both scale and offset)",
+		"new UDim2(0.5, 10, 0.5, 10);",
+		"new UDim2(1, -5, 0, 100);",
+		"new UDim2(0, 50, 0.5, 0);",
+	].join("\n")}
+	lang="typescript"
+	key="not-changed-has-both-77twta"
+/>
 
 ### Dynamic Values
 
 Works with any expressions:
 
-```typescript
-// Before
-new UDim2(calculateScale(), 0, calculateScale(), 0);
-
-// After
-UDim2.fromScale(calculateScale(), calculateScale());
-```
+<Code
+	code={[
+		"// Before",
+		"new UDim2(calculateScale(), 0, calculateScale(), 0);",
+		"",
+		"// After",
+		"UDim2.fromScale(calculateScale(), calculateScale());",
+	].join("\n")}
+	lang="typescript"
+	key="before-2gq8qj"
+/>
 
 ## When Not To Use It
 

@@ -2,6 +2,8 @@
 title: prefer-sequence-overloads
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Prefer the optimized `ColorSequence` and `NumberSequence` constructor overloads instead of building an array of `*SequenceKeypoint`s.
 
 ## Rule Details
@@ -17,35 +19,43 @@ Roblox provides optimized constructor overloads for `ColorSequence` and `NumberS
 
 ### ❌ Incorrect
 
-```typescript
-new ColorSequence([
-	new ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),
-	new ColorSequenceKeypoint(1, Color3.fromRGB(255, 100, 200)),
-]);
-
-new NumberSequence([new NumberSequenceKeypoint(0, 0), new NumberSequenceKeypoint(1, 100)]);
-
-// Identical endpoints
-new ColorSequence([
-	new ColorSequenceKeypoint(0, Color3.fromRGB(255, 255, 255)),
-	new ColorSequenceKeypoint(1, Color3.fromRGB(255, 255, 255)),
-]);
-
-new NumberSequence([new NumberSequenceKeypoint(0, 42), new NumberSequenceKeypoint(1, 42)]);
-```
+<Code
+	code={[
+		"new ColorSequence([",
+		"\tnew ColorSequenceKeypoint(0, Color3.fromRGB(100, 200, 255)),",
+		"\tnew ColorSequenceKeypoint(1, Color3.fromRGB(255, 100, 200)),",
+		"]);",
+		"",
+		"new NumberSequence([new NumberSequenceKeypoint(0, 0), new NumberSequenceKeypoint(1, 100)]);",
+		"",
+		"// Identical endpoints",
+		"new ColorSequence([",
+		"\tnew ColorSequenceKeypoint(0, Color3.fromRGB(255, 255, 255)),",
+		"\tnew ColorSequenceKeypoint(1, Color3.fromRGB(255, 255, 255)),",
+		"]);",
+		"",
+		"new NumberSequence([new NumberSequenceKeypoint(0, 42), new NumberSequenceKeypoint(1, 42)]);",
+	].join("\n")}
+	lang="typescript"
+	key="new-colorsequence-37t66y"
+/>
 
 ### ✅ Correct
 
-```typescript
-new ColorSequence(Color3.fromRGB(100, 200, 255), Color3.fromRGB(255, 100, 200));
-
-new NumberSequence(0, 100);
-
-// Identical endpoints collapsed to single value
-new ColorSequence(Color3.fromRGB(255, 255, 255));
-
-new NumberSequence(42);
-```
+<Code
+	code={[
+		"new ColorSequence(Color3.fromRGB(100, 200, 255), Color3.fromRGB(255, 100, 200));",
+		"",
+		"new NumberSequence(0, 100);",
+		"",
+		"// Identical endpoints collapsed to single value",
+		"new ColorSequence(Color3.fromRGB(255, 255, 255));",
+		"",
+		"new NumberSequence(42);",
+	].join("\n")}
+	lang="typescript"
+	key="new-colorsequence-co-273qow"
+/>
 
 ## Why This Matters
 
@@ -57,41 +67,53 @@ The optimized overloads:
 - Reduce keypoint object creation
 - Use faster internal Roblox APIs
 
-```typescript
-// Slower: creates array + 2 keypoint objects
-new NumberSequence([new NumberSequenceKeypoint(0, 0), new NumberSequenceKeypoint(1, 1)]);
-
-// Faster: direct constructor call
-new NumberSequence(0, 1);
-```
+<Code
+	code={[
+		"// Slower: creates array + 2 keypoint objects",
+		"new NumberSequence([new NumberSequenceKeypoint(0, 0), new NumberSequenceKeypoint(1, 1)]);",
+		"",
+		"// Faster: direct constructor call",
+		"new NumberSequence(0, 1);",
+	].join("\n")}
+	lang="typescript"
+	key="slower-creates-array-1dsbky"
+/>
 
 ### Readability
 
-```typescript
-// Verbose and noisy
-new ColorSequence([
-	new ColorSequenceKeypoint(0, Color3.fromRGB(255, 0, 0)),
-	new ColorSequenceKeypoint(1, Color3.fromRGB(0, 0, 255)),
-]);
-
-// Clean and concise
-new ColorSequence(Color3.fromRGB(255, 0, 0), Color3.fromRGB(0, 0, 255));
-```
+<Code
+	code={[
+		"// Verbose and noisy",
+		"new ColorSequence([",
+		"\tnew ColorSequenceKeypoint(0, Color3.fromRGB(255, 0, 0)),",
+		"\tnew ColorSequenceKeypoint(1, Color3.fromRGB(0, 0, 255)),",
+		"]);",
+		"",
+		"// Clean and concise",
+		"new ColorSequence(Color3.fromRGB(255, 0, 0), Color3.fromRGB(0, 0, 255));",
+	].join("\n")}
+	lang="typescript"
+	key="verbose-and-noisy-1phri6"
+/>
 
 ## Automatic Collapse
 
 When start and end values are identical, the fixer automatically uses the single-value overload:
 
-```typescript
-// Before
-new ColorSequence([
-	new ColorSequenceKeypoint(0, Color3.fromRGB(128, 128, 128)),
-	new ColorSequenceKeypoint(1, Color3.fromRGB(128, 128, 128)),
-]);
-
-// After (auto-fixed)
-new ColorSequence(Color3.fromRGB(128, 128, 128));
-```
+<Code
+	code={[
+		"// Before",
+		"new ColorSequence([",
+		"\tnew ColorSequenceKeypoint(0, Color3.fromRGB(128, 128, 128)),",
+		"\tnew ColorSequenceKeypoint(1, Color3.fromRGB(128, 128, 128)),",
+		"]);",
+		"",
+		"// After (auto-fixed)",
+		"new ColorSequence(Color3.fromRGB(128, 128, 128));",
+	].join("\n")}
+	lang="typescript"
+	key="before-36akeu"
+/>
 
 ## Edge Cases
 
@@ -99,51 +121,67 @@ new ColorSequence(Color3.fromRGB(128, 128, 128));
 
 The rule only applies to sequences with exactly 2 keypoints at positions 0 and 1:
 
-```typescript
-// Not affected (3 keypoints)
-new NumberSequence([
-	new NumberSequenceKeypoint(0, 0),
-	new NumberSequenceKeypoint(0.5, 50),
-	new NumberSequenceKeypoint(1, 100),
-]);
-
-// Not affected (non-standard positions)
-new NumberSequence([new NumberSequenceKeypoint(0.25, 0), new NumberSequenceKeypoint(0.75, 100)]);
-```
+<Code
+	code={[
+		"// Not affected (3 keypoints)",
+		"new NumberSequence([",
+		"\tnew NumberSequenceKeypoint(0, 0),",
+		"\tnew NumberSequenceKeypoint(0.5, 50),",
+		"\tnew NumberSequenceKeypoint(1, 100),",
+		"]);",
+		"",
+		"// Not affected (non-standard positions)",
+		"new NumberSequence([new NumberSequenceKeypoint(0.25, 0), new NumberSequenceKeypoint(0.75, 100)]);",
+	].join("\n")}
+	lang="typescript"
+	key="not-affected-3-keypo-6485qj"
+/>
 
 ### Complex Color Expressions
 
 Works with any Color3 expression:
 
-```typescript
-// Before
-new ColorSequence([new ColorSequenceKeypoint(0, getStartColor()), new ColorSequenceKeypoint(1, getEndColor())]);
-
-// After
-new ColorSequence(getStartColor(), getEndColor());
-```
+<Code
+	code={[
+		"// Before",
+		"new ColorSequence([new ColorSequenceKeypoint(0, getStartColor()), new ColorSequenceKeypoint(1, getEndColor())]);",
+		"",
+		"// After",
+		"new ColorSequence(getStartColor(), getEndColor());",
+	].join("\n")}
+	lang="typescript"
+	key="before-h4o49f"
+/>
 
 ## API Reference
 
 ### ColorSequence
 
-```typescript
-// Two-value overload
-new ColorSequence(startColor: Color3, endColor: Color3);
-
-// Single-value overload (uniform)
-new ColorSequence(color: Color3);
-```
+<Code
+	code={[
+		"// Two-value overload",
+		"new ColorSequence(startColor: Color3, endColor: Color3);",
+		"",
+		"// Single-value overload (uniform)",
+		"new ColorSequence(color: Color3);",
+	].join("\n")}
+	lang="typescript"
+	key="two-value-overload-s8ngr4"
+/>
 
 ### NumberSequence
 
-```typescript
-// Two-value overload
-new NumberSequence(start: number, end: number);
-
-// Single-value overload (uniform)
-new NumberSequence(value: number);
-```
+<Code
+	code={[
+		"// Two-value overload",
+		"new NumberSequence(start: number, end: number);",
+		"",
+		"// Single-value overload (uniform)",
+		"new NumberSequence(value: number);",
+	].join("\n")}
+	lang="typescript"
+	key="two-value-overload-2gjs18"
+/>
 
 ## When Not To Use It
 

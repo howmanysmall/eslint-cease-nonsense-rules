@@ -2,6 +2,8 @@
 title: no-async-constructor
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Disallows asynchronous operations inside class constructors.
 
 ## Rule Details
@@ -22,229 +24,277 @@ The rule detects the following async patterns:
 
 ### ❌ Incorrect
 
-```typescript
-class UserService {
-	constructor() {
-		// Direct await
-		await this.initialize();
-	}
+<Code
+	code={[
+		"class UserService {",
+		"\tconstructor() {",
+		"\t\t// Direct await",
+		"\t\tawait this.initialize();",
+		"\t}",
+		"",
+		"\tasync initialize() {",
+		"\t\t/* ... */",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-userservice-1k7uej"
+/>
 
-	async initialize() {
-		/* ... */
-	}
-}
-```
+<Code
+	code={[
+		"class DataLoader {",
+		"\tprivate data?: Data;",
+		"",
+		"\tconstructor() {",
+		"\t\t// Promise chain",
+		"\t\tthis.loadData().then((data) => {",
+		"\t\t\tthis.data = data;",
+		"\t\t});",
+		"\t}",
+		"",
+		"\tasync loadData(): Promise<Data> {",
+		"\t\t/* ... */",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-dataloader-1p43m0"
+/>
 
-```typescript
-class DataLoader {
-	private data?: Data;
+<Code
+	code={[
+		"class ApiClient {",
+		"\tconstructor() {",
+		"\t\t// Async IIFE",
+		"\t\t(async () => {",
+		"\t\t\tawait this.connect();",
+		"\t\t})();",
+		"\t}",
+		"",
+		"\tasync connect() {",
+		"\t\t/* ... */",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-apiclient-1ivta9"
+/>
 
-	constructor() {
-		// Promise chain
-		this.loadData().then((data) => {
-			this.data = data;
-		});
-	}
+<Code
+	code={[
+		"class Worker {",
+		"\tconstructor() {",
+		"\t\t// Unhandled async call (standalone)",
+		"\t\tthis.start();",
+		"\t}",
+		"",
+		"\tasync start() {",
+		"\t\t/* ... */",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-worker-13gab5"
+/>
 
-	async loadData(): Promise<Data> {
-		/* ... */
-	}
-}
-```
-
-```typescript
-class ApiClient {
-	constructor() {
-		// Async IIFE
-		(async () => {
-			await this.connect();
-		})();
-	}
-
-	async connect() {
-		/* ... */
-	}
-}
-```
-
-```typescript
-class Worker {
-	constructor() {
-		// Unhandled async call (standalone)
-		this.start();
-	}
-
-	async start() {
-		/* ... */
-	}
-}
-```
-
-```typescript
-class Cache {
-	constructor() {
-		// Orphaned promise
-		const loadPromise = this.load();
-		// loadPromise is never awaited or handled
-	}
-
-	async load() {
-		/* ... */
-	}
-}
-```
+<Code
+	code={[
+		"class Cache {",
+		"\tconstructor() {",
+		"\t\t// Orphaned promise",
+		"\t\tconst loadPromise = this.load();",
+		"\t\t// loadPromise is never awaited or handled",
+		"\t}",
+		"",
+		"\tasync load() {",
+		"\t\t/* ... */",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-cache-2vjdue"
+/>
 
 ### ✅ Correct
 
-```typescript
-// Pattern 1: Store initialization promise
-class UserService {
-	private initPromise: Promise<void>;
+<Code
+	code={[
+		"// Pattern 1: Store initialization promise",
+		"class UserService {",
+		"\tprivate initPromise: Promise<void>;",
+		"",
+		"\tconstructor() {",
+		"\t\tthis.initPromise = this.initialize();",
+		"\t}",
+		"",
+		"\tasync initialize() {",
+		"\t\tawait fetchUserData();",
+		"\t}",
+		"",
+		"\t// Wait for init before using",
+		"\tasync getUser(id: number) {",
+		"\t\tawait this.initPromise;",
+		"\t\treturn this.users.get(id);",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="pattern-1-store-init-1tzs44"
+/>
 
-	constructor() {
-		this.initPromise = this.initialize();
-	}
+<Code
+	code={[
+		"// Pattern 2: Factory method (recommended)",
+		"class DatabaseConnection {",
+		"\tprivate constructor() {",
+		"\t\t// Constructor stays synchronous",
+		"\t}",
+		"",
+		"\tprivate async initialize(): Promise<void> {",
+		"\t\tawait this.connect();",
+		"\t\tawait this.authenticate();",
+		"\t}",
+		"",
+		"\tstatic async create(): Promise<DatabaseConnection> {",
+		"\t\tconst instance = new DatabaseConnection();",
+		"\t\tawait instance.initialize();",
+		"\t\treturn instance;",
+		"\t}",
+		"}",
+		"",
+		"// Usage",
+		"const db = await DatabaseConnection.create();",
+	].join("\n")}
+	lang="typescript"
+	key="pattern-2-factory-me-3hwu2t"
+/>
 
-	async initialize() {
-		await fetchUserData();
-	}
+<Code
+	code={[
+		"// Pattern 3: Lazy initialization",
+		"class DataCache {",
+		"\tprivate dataPromise?: Promise<Data>;",
+		"",
+		"\tconstructor() {",
+		"\t\t// No async work in constructor",
+		"\t}",
+		"",
+		"\tprivate ensureLoaded(): Promise<Data> {",
+		"\t\tif (!this.dataPromise) {",
+		"\t\t\tthis.dataPromise = this.load();",
+		"\t\t}",
+		"\t\treturn this.dataPromise;",
+		"\t}",
+		"",
+		"\tasync getData(): Promise<Data> {",
+		"\t\treturn await this.ensureLoaded();",
+		"\t}",
+		"",
+		"\tprivate async load(): Promise<Data> {",
+		"\t\t/* ... */",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="pattern-3-lazy-initi-385tth"
+/>
 
-	// Wait for init before using
-	async getUser(id: number) {
-		await this.initPromise;
-		return this.users.get(id);
-	}
-}
-```
-
-```typescript
-// Pattern 2: Factory method (recommended)
-class DatabaseConnection {
-	private constructor() {
-		// Constructor stays synchronous
-	}
-
-	private async initialize(): Promise<void> {
-		await this.connect();
-		await this.authenticate();
-	}
-
-	static async create(): Promise<DatabaseConnection> {
-		const instance = new DatabaseConnection();
-		await instance.initialize();
-		return instance;
-	}
-}
-
-// Usage
-const db = await DatabaseConnection.create();
-```
-
-```typescript
-// Pattern 3: Lazy initialization
-class DataCache {
-	private dataPromise?: Promise<Data>;
-
-	constructor() {
-		// No async work in constructor
-	}
-
-	private ensureLoaded(): Promise<Data> {
-		if (!this.dataPromise) {
-			this.dataPromise = this.load();
-		}
-		return this.dataPromise;
-	}
-
-	async getData(): Promise<Data> {
-		return await this.ensureLoaded();
-	}
-
-	private async load(): Promise<Data> {
-		/* ... */
-	}
-}
-```
-
-```typescript
-// Pattern 4: Synchronous setup only
-class EventEmitter {
-	private listeners = new Map();
-
-	constructor() {
-		// Only synchronous setup
-		this.listeners.set("ready", []);
-		this.listeners.set("error", []);
-	}
-
-	// Async work moved to separate methods
-	async connect(): Promise<void> {
-		/* ... */
-	}
-}
-```
+<Code
+	code={[
+		"// Pattern 4: Synchronous setup only",
+		"class EventEmitter {",
+		"\tprivate listeners = new Map();",
+		"",
+		"\tconstructor() {",
+		"\t\t// Only synchronous setup",
+		'\t\tthis.listeners.set("ready", []);',
+		'\t\tthis.listeners.set("error", []);',
+		"\t}",
+		"",
+		"\t// Async work moved to separate methods",
+		"\tasync connect(): Promise<void> {",
+		"\t\t/* ... */",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="pattern-4-synchronou-60bia9"
+/>
 
 ## Why This Rule Exists
 
 ### Problem 1: Incomplete Object State
 
-```typescript
-class BadExample {
-	data?: string;
-
-	constructor() {
-		this.loadData().then((result) => {
-			this.data = result;
-		});
-	}
-
-	async loadData() {
-		await delay(100);
-		return "loaded";
-	}
-}
-
-const instance = new BadExample();
-console.log(instance.data); // undefined - race condition!
-```
+<Code
+	code={[
+		"class BadExample {",
+		"\tdata?: string;",
+		"",
+		"\tconstructor() {",
+		"\t\tthis.loadData().then((result) => {",
+		"\t\t\tthis.data = result;",
+		"\t\t});",
+		"\t}",
+		"",
+		"\tasync loadData() {",
+		"\t\tawait delay(100);",
+		'\t\treturn "loaded";',
+		"\t}",
+		"}",
+		"",
+		"const instance = new BadExample();",
+		"console.log(instance.data); // undefined - race condition!",
+	].join("\n")}
+	lang="typescript"
+	key="class-badexample-2r1mf7"
+/>
 
 ### Problem 2: Unhandled Rejections
 
-```typescript
-class RiskyConstructor {
-	constructor() {
-		this.riskyOperation(); // If this rejects, it's unhandled!
-	}
-
-	async riskyOperation() {
-		throw new Error("Failed!");
-	}
-}
-
-new RiskyConstructor(); // ⚠️ UnhandledPromiseRejectionWarning
-```
+<Code
+	code={[
+		"class RiskyConstructor {",
+		"\tconstructor() {",
+		"\t\tthis.riskyOperation(); // If this rejects, it's unhandled!",
+		"\t}",
+		"",
+		"\tasync riskyOperation() {",
+		'\t\tthrow new Error("Failed!");',
+		"\t}",
+		"}",
+		"",
+		"new RiskyConstructor(); // ⚠️ UnhandledPromiseRejectionWarning",
+	].join("\n")}
+	lang="typescript"
+	key="class-riskyconstruct-21c7l1"
+/>
 
 ### Problem 3: Execution Order Confusion
 
-```typescript
-class ConfusingOrder {
-	constructor() {
-		console.log("1. Constructor start");
-
-		(async () => {
-			console.log("3. Async IIFE");
-		})();
-
-		console.log("2. Constructor end");
-	}
-}
-
-new ConfusingOrder();
-// Output:
-// 1. Constructor start
-// 2. Constructor end
-// 3. Async IIFE
-```
+<Code
+	code={[
+		"class ConfusingOrder {",
+		"\tconstructor() {",
+		'\t\tconsole.log("1. Constructor start");',
+		"",
+		"\t\t(async () => {",
+		'\t\t\tconsole.log("3. Async IIFE");',
+		"\t\t})();",
+		"",
+		'\t\tconsole.log("2. Constructor end");',
+		"\t}",
+		"}",
+		"",
+		"new ConfusingOrder();",
+		"// Output:",
+		"// 1. Constructor start",
+		"// 2. Constructor end",
+		"// 3. Async IIFE",
+	].join("\n")}
+	lang="typescript"
+	key="class-confusingorder-25mmr4"
+/>
 
 ## Advanced Examples
 
@@ -252,50 +302,58 @@ new ConfusingOrder();
 
 The rule does NOT traverse into callback functions or stored function expressions, as these don't execute during construction:
 
-```typescript
-class EventHandler {
-	constructor() {
-		// ✅ Allowed - callback with async work
-		this.button.on("click", async () => {
-			await this.handleClick();
-		});
-
-		// ✅ Allowed - stored function
-		this.handler = async () => {
-			await this.process();
-		};
-	}
-
-	async handleClick() {
-		/* ... */
-	}
-	async process() {
-		/* ... */
-	}
-}
-```
+<Code
+	code={[
+		"class EventHandler {",
+		"\tconstructor() {",
+		"\t\t// ✅ Allowed - callback with async work",
+		'\t\tthis.button.on("click", async () => {',
+		"\t\t\tawait this.handleClick();",
+		"\t\t});",
+		"",
+		"\t\t// ✅ Allowed - stored function",
+		"\t\tthis.handler = async () => {",
+		"\t\t\tawait this.process();",
+		"\t\t};",
+		"\t}",
+		"",
+		"\tasync handleClick() {",
+		"\t\t/* ... */",
+		"\t}",
+		"\tasync process() {",
+		"\t\t/* ... */",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-eventhandler-23mxq0"
+/>
 
 ### IIFEs Are Detected
 
-```typescript
-class BadIIFE {
-	constructor() {
-		// ❌ Detected - async IIFE executes immediately
-		(async () => {
-			await this.init();
-		})();
-
-		// ❌ Also detected - function expression IIFE
-		(async function () {
-			await this.init();
-		})();
-	}
-
-	async init() {
-		/* ... */
-	}
-}
-```
+<Code
+	code={[
+		"class BadIIFE {",
+		"\tconstructor() {",
+		"\t\t// ❌ Detected - async IIFE executes immediately",
+		"\t\t(async () => {",
+		"\t\t\tawait this.init();",
+		"\t\t})();",
+		"",
+		"\t\t// ❌ Also detected - function expression IIFE",
+		"\t\t(async function () {",
+		"\t\t\tawait this.init();",
+		"\t\t})();",
+		"\t}",
+		"",
+		"\tasync init() {",
+		"\t\t/* ... */",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-badiife-cuqzl8"
+/>
 
 ## When Not To Use It
 

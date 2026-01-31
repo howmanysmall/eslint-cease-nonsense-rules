@@ -2,6 +2,8 @@
 title: ban-react-fc
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Bans `React.FC`, `React.FunctionComponent`, `FC`, `VFC` and similar component type annotations.
 
 ## Rule Details
@@ -12,50 +14,58 @@ React.FC and similar type annotations break debug information in React DevTools,
 
 ### ❌ Incorrect
 
-```typescript
-export const MyComponent: React.FC<Props> = ({ children }) => {
-	return <div>{children}</div>;
-};
-
-const Button: FC<ButtonProps> = ({ label }) => <button>{label}</button>;
-
-const Modal: React.FunctionComponent = () => <div>Modal</div>;
-
-const Input: VFC = () => <input />;
-
-// Arrow function with explicit return type
-const Header: React.FC<{ title: string }> = ({ title }) => {
-	return <h1>{title}</h1>;
-};
-```
+<Code
+	code={[
+		"export const MyComponent: React.FC<Props> = ({ children }) => {",
+		"\treturn <div>{children}</div>;",
+		"};",
+		"",
+		"const Button: FC<ButtonProps> = ({ label }) => <button>{label}</button>;",
+		"",
+		"const Modal: React.FunctionComponent = () => <div>Modal</div>;",
+		"",
+		"const Input: VFC = () => <input />;",
+		"",
+		"// Arrow function with explicit return type",
+		"const Header: React.FC<{ title: string }> = ({ title }) => {",
+		"\treturn <h1>{title}</h1>;",
+		"};",
+	].join("\n")}
+	lang="typescript"
+	key="export-const-mycompo-1luzxa"
+/>
 
 ### ✅ Correct
 
-```typescript
-export function MyComponent({ children }: Props) {
-	return <div>{children}</div>;
-}
-
-function Button({ label }: ButtonProps) {
-	return <button>{label}</button>;
-}
-
-function Modal() {
-	return <div>Modal</div>;
-}
-
-function Input() {
-	return <input />;
-}
-
-// Named function with explicit props type
-function Header({ title }: { title: string }) {
-	return <h1>{title}</h1>;
-}
-
-// Arrow function without FC type (allowed)
-const Component = ({ value }: { value: number }) => <span>{value}</span>;
-```
+<Code
+	code={[
+		"export function MyComponent({ children }: Props) {",
+		"\treturn <div>{children}</div>;",
+		"}",
+		"",
+		"function Button({ label }: ButtonProps) {",
+		"\treturn <button>{label}</button>;",
+		"}",
+		"",
+		"function Modal() {",
+		"\treturn <div>Modal</div>;",
+		"}",
+		"",
+		"function Input() {",
+		"\treturn <input />;",
+		"}",
+		"",
+		"// Named function with explicit props type",
+		"function Header({ title }: { title: string }) {",
+		"\treturn <h1>{title}</h1>;",
+		"}",
+		"",
+		"// Arrow function without FC type (allowed)",
+		"const Component = ({ value }: { value: number }) => <span>{value}</span>;",
+	].join("\n")}
+	lang="typescript"
+	key="export-function-myco-29c85u"
+/>
 
 ## Why Is This Bad?
 
@@ -63,45 +73,57 @@ const Component = ({ value }: { value: number }) => <span>{value}</span>;
 
 React.FC obscures component names in React DevTools, making debugging harder:
 
-```typescript
-// Shows as "Anonymous" or "_c" in DevTools
-const Button: React.FC = () => <button>Click</button>;
-
-// Shows as "Button" in DevTools
-function Button() {
-	return <button>Click</button>;
-}
-```
+<Code
+	code={[
+		'// Shows as "Anonymous" or "_c" in DevTools',
+		"const Button: React.FC = () => <button>Click</button>;",
+		"",
+		'// Shows as "Button" in DevTools',
+		"function Button() {",
+		"\treturn <button>Click</button>;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="shows-as-anonymous-o-28qfo1"
+/>
 
 ### Implicit Children
 
 React.FC implicitly includes `children?: ReactNode`, which can lead to bugs:
 
-```typescript
-// Children are implicitly allowed!
-const Button: React.FC<{ label: string }> = ({ label }) => <button>{label}</button>;
-
-// Can be used incorrectly:
-<Button label="Click">
-	<div>This compiles but shouldn't!</div>
-</Button>;
-```
+<Code
+	code={[
+		"// Children are implicitly allowed!",
+		"const Button: React.FC<{ label: string }> = ({ label }) => <button>{label}</button>;",
+		"",
+		"// Can be used incorrectly:",
+		'<Button label="Click">',
+		"\t<div>This compiles but shouldn't!</div>",
+		"</Button>;",
+	].join("\n")}
+	lang="typescript"
+	key="children-are-implici-3jl2mv"
+/>
 
 ### Type Inference
 
 Function declarations provide better type inference and error messages:
 
-```typescript
-// Complex error messages with FC
-const Component: FC<Props> = (props) => {
-	/* ... */
-};
-
-// Clear, direct error messages
-function Component(props: Props) {
-	/* ... */
-}
-```
+<Code
+	code={[
+		"// Complex error messages with FC",
+		"const Component: FC<Props> = (props) => {",
+		"\t/* ... */",
+		"};",
+		"",
+		"// Clear, direct error messages",
+		"function Component(props: Props) {",
+		"\t/* ... */",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="complex-error-messag-vf6m3c"
+/>
 
 ## When Not To Use It
 
@@ -111,31 +133,39 @@ If you're maintaining legacy code that heavily relies on React.FC and can't migr
 
 ### Before
 
-```typescript
-export const UserProfile: React.FC<UserProfileProps> = ({ userId, onUpdate }) => {
-	const [user, setUser] = useState<User | null>(null);
-
-	useEffect(() => {
-		fetchUser(userId).then(setUser);
-	}, [userId]);
-
-	return <div>{user?.name}</div>;
-};
-```
+<Code
+	code={[
+		"export const UserProfile: React.FC<UserProfileProps> = ({ userId, onUpdate }) => {",
+		"\tconst [user, setUser] = useState<User | null>(null);",
+		"",
+		"\tuseEffect(() => {",
+		"\t\tfetchUser(userId).then(setUser);",
+		"\t}, [userId]);",
+		"",
+		"\treturn <div>{user?.name}</div>;",
+		"};",
+	].join("\n")}
+	lang="typescript"
+	key="export-const-userpro-24rq8s"
+/>
 
 ### After
 
-```typescript
-export function UserProfile({ userId, onUpdate }: UserProfileProps) {
-	const [user, setUser] = useState<User | undefined>(undefined);
-
-	useEffect(() => {
-		fetchUser(userId).then(setUser);
-	}, [userId]);
-
-	return <div>{user?.name}</div>;
-}
-```
+<Code
+	code={[
+		"export function UserProfile({ userId, onUpdate }: UserProfileProps) {",
+		"\tconst [user, setUser] = useState<User | undefined>(undefined);",
+		"",
+		"\tuseEffect(() => {",
+		"\t\tfetchUser(userId).then(setUser);",
+		"\t}, [userId]);",
+		"",
+		"\treturn <div>{user?.name}</div>;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="export-function-user-3vramd"
+/>
 
 ## Further Reading
 

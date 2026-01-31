@@ -2,6 +2,8 @@
 title: misleading-lua-tuple-checks
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Disallow the use of LuaTuple in conditional expressions.
 
 ## Rule Details
@@ -16,27 +18,35 @@ This rule has no options.
 
 ### ❌ Incorrect
 
-```typescript
-// Direct LuaTuple in conditional
-if (getLuaTuple()) {
-	// ...
-}
-
-// LuaTuple in variable declaration
-const result = getLuaTuple();
-```
+<Code
+	code={[
+		"// Direct LuaTuple in conditional",
+		"if (getLuaTuple()) {",
+		"\t// ...",
+		"}",
+		"",
+		"// LuaTuple in variable declaration",
+		"const result = getLuaTuple();",
+	].join("\n")}
+	lang="typescript"
+	key="direct-luatuple-in-c-2wva85"
+/>
 
 ### ✅ Correct
 
-```typescript
-// Explicit indexing
-if (getLuaTuple()[0]) {
-	// ...
-}
-
-// Array destructuring
-const [result] = getLuaTuple();
-```
+<Code
+	code={[
+		"// Explicit indexing",
+		"if (getLuaTuple()[0]) {",
+		"\t// ...",
+		"}",
+		"",
+		"// Array destructuring",
+		"const [result] = getLuaTuple();",
+	].join("\n")}
+	lang="typescript"
+	key="explicit-indexing-1bnkq4"
+/>
 
 ## When Not To Use It
 

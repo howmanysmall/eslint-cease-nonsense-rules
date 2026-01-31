@@ -2,6 +2,8 @@
 title: prefer-read-only-props
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Enforce that React component props are typed as read-only.
 
 ## Rule Details
@@ -16,29 +18,37 @@ This rule has no options.
 
 ### ❌ Incorrect
 
-```typescript
-interface Props {
-	name: string;
-	age: number;
-}
-
-function Component({ name, age }: Props) {
-	// ...
-}
-```
+<Code
+	code={[
+		"interface Props {",
+		"\tname: string;",
+		"\tage: number;",
+		"}",
+		"",
+		"function Component({ name, age }: Props) {",
+		"\t// ...",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="interface-props-ranwb3"
+/>
 
 ### ✅ Correct
 
-```typescript
-interface Props {
-	readonly name: string;
-	readonly age: number;
-}
-
-function Component({ name, age }: Props) {
-	// ...
-}
-```
+<Code
+	code={[
+		"interface Props {",
+		"\treadonly name: string;",
+		"\treadonly age: number;",
+		"}",
+		"",
+		"function Component({ name, age }: Props) {",
+		"\t// ...",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="interface-props-l1rb0i"
+/>
 
 ## When Not To Use It
 

@@ -2,6 +2,8 @@
 title: prefer-enum-member
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Enforce using TypeScript enum members instead of raw string or number values.
 
 ## Rule Details
@@ -16,41 +18,49 @@ This rule has no options.
 
 ### Incorrect
 
-```typescript
-enum Color {
-	Blue = "Blue",
-	Green = "Green",
-	Red = "Red",
-}
-
-const palette: Record<Color, string> = {
-	Blue: "#00F",
-	Green: "#0F0",
-	Red: "#F00",
-};
-
-function setColor(color: Color) {}
-setColor("Blue");
-```
+<Code
+	code={[
+		"enum Color {",
+		'\tBlue = "Blue",',
+		'\tGreen = "Green",',
+		'\tRed = "Red",',
+		"}",
+		"",
+		"const palette: Record<Color, string> = {",
+		'\tBlue: "#00F",',
+		'\tGreen: "#0F0",',
+		'\tRed: "#F00",',
+		"};",
+		"",
+		"function setColor(color: Color) {}",
+		'setColor("Blue");',
+	].join("\n")}
+	lang="typescript"
+	key="enum-color-38u28h"
+/>
 
 ### Correct
 
-```typescript
-enum Color {
-	Blue = "Blue",
-	Green = "Green",
-	Red = "Red",
-}
-
-const palette: Record<Color, string> = {
-	[Color.Blue]: "#00F",
-	[Color.Green]: "#0F0",
-	[Color.Red]: "#F00",
-};
-
-function setColor(color: Color) {}
-setColor(Color.Blue);
-```
+<Code
+	code={[
+		"enum Color {",
+		'\tBlue = "Blue",',
+		'\tGreen = "Green",',
+		'\tRed = "Red",',
+		"}",
+		"",
+		"const palette: Record<Color, string> = {",
+		'\t[Color.Blue]: "#00F",',
+		'\t[Color.Green]: "#0F0",',
+		'\t[Color.Red]: "#F00",',
+		"};",
+		"",
+		"function setColor(color: Color) {}",
+		"setColor(Color.Blue);",
+	].join("\n")}
+	lang="typescript"
+	key="enum-color-3lr41q"
+/>
 
 ## When Not To Use It
 

@@ -2,6 +2,8 @@
 title: prefer-singular-enums
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Enum names should be singular, not plural.
 
 ## Rule Details
@@ -12,72 +14,80 @@ Enum type names represent a single value from a set, not multiple values. Using 
 
 ### ❌ Incorrect
 
-```typescript
-enum Colors {
-	Red,
-	Blue,
-	Green,
-}
-
-enum Commands {
-	Up,
-	Down,
-	Left,
-	Right,
-}
-
-// Irregular plurals also caught
-enum Feet {
-	Left,
-	Right,
-}
-
-enum People {
-	Admin,
-	User,
-	Guest,
-}
-
-enum Children {
-	Infant,
-	Toddler,
-	Teen,
-}
-```
+<Code
+	code={[
+		"enum Colors {",
+		"\tRed,",
+		"\tBlue,",
+		"\tGreen,",
+		"}",
+		"",
+		"enum Commands {",
+		"\tUp,",
+		"\tDown,",
+		"\tLeft,",
+		"\tRight,",
+		"}",
+		"",
+		"// Irregular plurals also caught",
+		"enum Feet {",
+		"\tLeft,",
+		"\tRight,",
+		"}",
+		"",
+		"enum People {",
+		"\tAdmin,",
+		"\tUser,",
+		"\tGuest,",
+		"}",
+		"",
+		"enum Children {",
+		"\tInfant,",
+		"\tToddler,",
+		"\tTeen,",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="enum-colors-3b35zf"
+/>
 
 ### ✅ Correct
 
-```typescript
-enum Color {
-	Red,
-	Blue,
-	Green,
-}
-
-enum Command {
-	Up,
-	Down,
-	Left,
-	Right,
-}
-
-enum Foot {
-	Left,
-	Right,
-}
-
-enum Person {
-	Admin,
-	User,
-	Guest,
-}
-
-enum Child {
-	Infant,
-	Toddler,
-	Teen,
-}
-```
+<Code
+	code={[
+		"enum Color {",
+		"\tRed,",
+		"\tBlue,",
+		"\tGreen,",
+		"}",
+		"",
+		"enum Command {",
+		"\tUp,",
+		"\tDown,",
+		"\tLeft,",
+		"\tRight,",
+		"}",
+		"",
+		"enum Foot {",
+		"\tLeft,",
+		"\tRight,",
+		"}",
+		"",
+		"enum Person {",
+		"\tAdmin,",
+		"\tUser,",
+		"\tGuest,",
+		"}",
+		"",
+		"enum Child {",
+		"\tInfant,",
+		"\tToddler,",
+		"\tTeen,",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="enum-color-fbh2yy"
+/>
 
 ## Why Singular?
 
@@ -85,54 +95,66 @@ enum Child {
 
 When you use an enum, you're selecting **one** value:
 
-```typescript
-// Confusing: sounds like multiple colors
-const background: Colors = Colors.Red;
-
-// Clear: one color
-const background: Color = Color.Red;
-```
+<Code
+	code={[
+		"// Confusing: sounds like multiple colors",
+		"const background: Colors = Colors.Red;",
+		"",
+		"// Clear: one color",
+		"const background: Color = Color.Red;",
+	].join("\n")}
+	lang="typescript"
+	key="confusing-sounds-lik-mfwy68"
+/>
 
 ### Consistent with TypeScript
 
 TypeScript conventions use singular names for types representing single values:
 
-```typescript
-type User = {
-	/* ... */
-};
-interface Product {
-	/* ... */
-}
-enum Status {
-	/* ... */
-}
-
-// Not:
-type Users = {
-	/* ... */
-};
-interface Products {
-	/* ... */
-}
-enum Statuses {
-	/* ... */
-}
-```
+<Code
+	code={[
+		"type User = {",
+		"\t/* ... */",
+		"};",
+		"interface Product {",
+		"\t/* ... */",
+		"}",
+		"enum Status {",
+		"\t/* ... */",
+		"}",
+		"",
+		"// Not:",
+		"type Users = {",
+		"\t/* ... */",
+		"};",
+		"interface Products {",
+		"\t/* ... */",
+		"}",
+		"enum Statuses {",
+		"\t/* ... */",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="type-user-2m87vt"
+/>
 
 ### Better in Context
 
-```typescript
-// Awkward
-function setTheme(colors: Colors) {
-	applyColor(colors);
-}
-
-// Natural
-function setTheme(color: Color) {
-	applyColor(color);
-}
-```
+<Code
+	code={[
+		"// Awkward",
+		"function setTheme(colors: Colors) {",
+		"\tapplyColor(colors);",
+		"}",
+		"",
+		"// Natural",
+		"function setTheme(color: Color) {",
+		"\tapplyColor(color);",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="awkward-3bdz26"
+/>
 
 ## Plurals
 
@@ -157,23 +179,27 @@ The rule detects both regular and irregular plural forms:
 
 In rare cases where an enum truly represents a collection concept (like bit flags), plural names might be appropriate. However, these cases are uncommon, and you might want to use a different pattern:
 
-```typescript
-// Instead of plural enum
-enum Permissions {
-	Read = 1,
-	Write = 2,
-	Execute = 4,
-}
-
-// Consider bit flag pattern
-enum Permission {
-	Read = 1 << 0,
-	Write = 1 << 1,
-	Execute = 1 << 2,
-}
-
-type PermissionSet = number; // Represents multiple permissions
-```
+<Code
+	code={[
+		"// Instead of plural enum",
+		"enum Permissions {",
+		"\tRead = 1,",
+		"\tWrite = 2,",
+		"\tExecute = 4,",
+		"}",
+		"",
+		"// Consider bit flag pattern",
+		"enum Permission {",
+		"\tRead = 1 << 0,",
+		"\tWrite = 1 << 1,",
+		"\tExecute = 1 << 2,",
+		"}",
+		"",
+		"type PermissionSet = number; // Represents multiple permissions",
+	].join("\n")}
+	lang="typescript"
+	key="instead-of-plural-en-1a59ry"
+/>
 
 ## Related Rules
 

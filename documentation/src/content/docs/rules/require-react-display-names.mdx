@@ -2,6 +2,8 @@
 title: require-react-display-names
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Require `displayName` property on exported `React.memo` components and `React.createContext` contexts for better debugging.
 
 ## Rule Details
@@ -14,96 +16,124 @@ React components wrapped in `memo` and contexts created with `createContext` los
 
 **Direct memo export (worst pattern)**
 
-```typescript
-import { memo } from "@rbxts/react";
-
-function ButtonNoMemo() {
-	return <button />;
-}
-
-// Error: Do not export memo result directly
-export default memo(ButtonNoMemo);
-```
+<Code
+	code={[
+		'import { memo } from "@rbxts/react";',
+		"",
+		"function ButtonNoMemo() {",
+		"\treturn <button />;",
+		"}",
+		"",
+		"// Error: Do not export memo result directly",
+		"export default memo(ButtonNoMemo);",
+	].join("\n")}
+	lang="typescript"
+	key="import-memo-from-rbx-3c3uog"
+/>
 
 **Missing displayName on memo**
 
-```typescript
-import { memo } from "@rbxts/react";
-
-function ChecklistClaimButtonNoMemo() {
-	return <frame />;
-}
-
-// Error: Missing displayName
-const ChecklistClaimButton = memo(ChecklistClaimButtonNoMemo);
-export default ChecklistClaimButton;
-```
+<Code
+	code={[
+		'import { memo } from "@rbxts/react";',
+		"",
+		"function ChecklistClaimButtonNoMemo() {",
+		"\treturn <frame />;",
+		"}",
+		"",
+		"// Error: Missing displayName",
+		"const ChecklistClaimButton = memo(ChecklistClaimButtonNoMemo);",
+		"export default ChecklistClaimButton;",
+	].join("\n")}
+	lang="typescript"
+	key="import-memo-from-rbx-2r8d0m"
+/>
 
 **Direct createContext export**
 
-```typescript
-import React from "@rbxts/react";
-
-// Error: Do not export createContext result directly
-export default React.createContext<string | undefined>(undefined);
-```
+<Code
+	code={[
+		'import React from "@rbxts/react";',
+		"",
+		"// Error: Do not export createContext result directly",
+		"export default React.createContext<string | undefined>(undefined);",
+	].join("\n")}
+	lang="typescript"
+	key="import-react-from-rb-24szhs"
+/>
 
 **Missing displayName on context**
 
-```typescript
-import React from "@rbxts/react";
-
-// Error: Missing displayName
-const ErrorBoundaryContext = React.createContext<unknown>(undefined);
-export default ErrorBoundaryContext;
-```
+<Code
+	code={[
+		'import React from "@rbxts/react";',
+		"",
+		"// Error: Missing displayName",
+		"const ErrorBoundaryContext = React.createContext<unknown>(undefined);",
+		"export default ErrorBoundaryContext;",
+	].join("\n")}
+	lang="typescript"
+	key="import-react-from-rb-3h8n55"
+/>
 
 ### ✅ Correct
 
 **Proper memo pattern**
 
-```typescript
-import { memo } from "@rbxts/react";
-
-function ChecklistClaimButtonNoMemo() {
-	return <frame />;
-}
-
-export const ChecklistClaimButton = memo(ChecklistClaimButtonNoMemo);
-ChecklistClaimButton.displayName = "ChecklistClaimButton";
-export default ChecklistClaimButton;
-```
+<Code
+	code={[
+		'import { memo } from "@rbxts/react";',
+		"",
+		"function ChecklistClaimButtonNoMemo() {",
+		"\treturn <frame />;",
+		"}",
+		"",
+		"export const ChecklistClaimButton = memo(ChecklistClaimButtonNoMemo);",
+		'ChecklistClaimButton.displayName = "ChecklistClaimButton";',
+		"export default ChecklistClaimButton;",
+	].join("\n")}
+	lang="typescript"
+	key="import-memo-from-rbx-2atih9"
+/>
 
 **Proper context pattern**
 
-```typescript
-import React from "@rbxts/react";
-
-const ErrorBoundaryContext = React.createContext<unknown>(undefined);
-ErrorBoundaryContext.displayName = "ErrorBoundaryContext";
-export default ErrorBoundaryContext;
-```
+<Code
+	code={[
+		'import React from "@rbxts/react";',
+		"",
+		"const ErrorBoundaryContext = React.createContext<unknown>(undefined);",
+		'ErrorBoundaryContext.displayName = "ErrorBoundaryContext";',
+		"export default ErrorBoundaryContext;",
+	].join("\n")}
+	lang="typescript"
+	key="import-react-from-rb-2g2arc"
+/>
 
 **Internal (non-exported) usage is fine**
 
-```typescript
-import { memo, createContext } from "@rbxts/react";
-
-// Not exported, so no displayName required
-const InternalContext = createContext<number>(0);
-
-function InnerComponentNoMemo() {
-	return <div />;
-}
-
-// Not exported, so no displayName required
-const InnerComponent = memo(InnerComponentNoMemo);
-
-// Only this is exported
-export function Container() {
-	return <InnerComponent />;
-}
-```
+<Code
+	code={[
+		'import { memo, createContext } from "@rbxts/react";',
+		"",
+		"// Not exported, so no displayName required",
+		"const InternalContext = createContext<number>(0);",
+		"",
+		"function InnerComponentNoMemo() {",
+		"\treturn <div />;",
+		"}",
+		"",
+		"// Not exported, so no displayName required",
+		"const InnerComponent = memo(InnerComponentNoMemo);",
+		"",
+		"// Only this is exported",
+		"export function Container() {",
+		"\treturn <InnerComponent />;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="import-memo-createco-20saft"
+/>
 
 ## Options
 
@@ -119,13 +149,17 @@ Controls which React package sources are checked.
 
 **Configuration for standard React**
 
-```typescript
-{
-  "cease-nonsense/require-react-display-names": ["error", {
-    "environment": "standard"
-  }]
-}
-```
+<Code
+	code={[
+		"{",
+		'  "cease-nonsense/require-react-display-names": ["error", {',
+		'    "environment": "standard"',
+		"  }]",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-7-1qcetu"
+/>
 
 ## Why Is This Bad?
 
@@ -133,10 +167,14 @@ Controls which React package sources are checked.
 
 Without `displayName`, memoized components and contexts appear as anonymous or with unhelpful names in React DevTools:
 
-```text
-<Memo(Anonymous)>     // vs <ChecklistClaimButton>
-<Context.Provider>    // vs <ErrorBoundaryContext.Provider>
-```
+<Code
+	code={[
+		"<Memo(Anonymous)>     // vs <ChecklistClaimButton>",
+		"<Context.Provider>    // vs <ErrorBoundaryContext.Provider>",
+	].join("\n")}
+	lang="text"
+	key="memo-anonymous-vs-ch-2cfybb"
+/>
 
 ### Production Debugging
 
@@ -160,29 +198,37 @@ Exporting `memo(Component)` directly:
 
 ### Before
 
-```typescript
-import { memo } from "@rbxts/react";
-
-function ComponentNoMemo(props: Props) {
-	return <frame />;
-}
-
-export default memo(ComponentNoMemo);
-```
+<Code
+	code={[
+		'import { memo } from "@rbxts/react";',
+		"",
+		"function ComponentNoMemo(props: Props) {",
+		"\treturn <frame />;",
+		"}",
+		"",
+		"export default memo(ComponentNoMemo);",
+	].join("\n")}
+	lang="typescript"
+	key="import-memo-from-rbx-39p6vo"
+/>
 
 ### After
 
-```typescript
-import { memo } from "@rbxts/react";
-
-function ComponentNoMemo(props: Props) {
-	return <frame />;
-}
-
-export const Component = memo(ComponentNoMemo);
-Component.displayName = "Component";
-export default Component;
-```
+<Code
+	code={[
+		'import { memo } from "@rbxts/react";',
+		"",
+		"function ComponentNoMemo(props: Props) {",
+		"\treturn <frame />;",
+		"}",
+		"",
+		"export const Component = memo(ComponentNoMemo);",
+		'Component.displayName = "Component";',
+		"export default Component;",
+	].join("\n")}
+	lang="typescript"
+	key="import-memo-from-rbx-1iotcq"
+/>
 
 ## Related Rules
 
