@@ -8,7 +8,6 @@ import starlightContextualMenu from "starlight-contextual-menu";
 import starlightHeadingBadges from "starlight-heading-badges";
 import starlightLinksValidator from "starlight-links-validator";
 import starlightScrollToTop from "starlight-scroll-to-top";
-import starlightSiteGraph from "starlight-site-graph";
 
 // https://astro.build/config
 export default defineConfig({
@@ -35,11 +34,6 @@ export default defineConfig({
 				}),
 				starlightContextualMenu(),
 				starlightLinksValidator(),
-				starlightSiteGraph({
-					graphConfig: {
-						depth: -1,
-					},
-				}),
 				starlightScrollToTop({
 					smoothScroll: true,
 				}),
@@ -48,8 +42,8 @@ export default defineConfig({
 			sidebar: [
 				{
 					items: [
-						{ label: "Introduction", link: "/" },
-						{ label: "Installation", link: "/#quick-start" },
+						{ label: "Home", slug: "" },
+						{ label: "Introduction", slug: "introduction" },
 					],
 					label: "Getting Started",
 				},
@@ -59,7 +53,9 @@ export default defineConfig({
 						"rules/no-god-components",
 						"rules/no-memo-children",
 						"rules/no-useless-use-spring",
+						"rules/prefer-read-only-props",
 						"rules/react-hooks-strict-return",
+						"rules/require-named-effect-functions",
 						"rules/require-react-component-keys",
 						"rules/require-react-display-names",
 						"rules/strict-component-boundaries",
@@ -72,9 +68,14 @@ export default defineConfig({
 					items: [
 						"rules/ban-instances",
 						"rules/enforce-ianitor-check-type",
-						"rules/fast-format",
 						"rules/misleading-lua-tuple-checks",
 						"rules/no-color3-constructor",
+						"rules/no-instance-methods-without-this",
+						"rules/no-print",
+						"rules/no-warn",
+						"rules/prefer-enum-item",
+						"rules/prefer-sequence-overloads",
+						"rules/prefer-single-world-query",
 						"rules/prefer-udim2-shorthand",
 						"rules/require-module-level-instantiation",
 						"rules/require-serialized-numeric-data-type",
@@ -93,23 +94,16 @@ export default defineConfig({
 				},
 				{
 					items: [
+						"rules/fast-format",
 						"rules/no-async-constructor",
 						"rules/no-commented-code",
 						"rules/no-identity-map",
-						"rules/no-instance-methods-without-this",
-						"rules/no-print",
 						"rules/no-unused-imports",
-						"rules/no-warn",
 						"rules/prefer-class-properties",
 						"rules/prefer-early-return",
-						"rules/prefer-enum-item",
 						"rules/prefer-enum-member",
 						"rules/prefer-module-scope-constants",
 						"rules/prefer-pattern-replacements",
-						"rules/prefer-read-only-props",
-						"rules/prefer-sequence-overloads",
-						"rules/prefer-single-world-query",
-						"rules/require-named-effect-functions",
 						"rules/require-paired-calls",
 					],
 					label: "General Logic & Style",
