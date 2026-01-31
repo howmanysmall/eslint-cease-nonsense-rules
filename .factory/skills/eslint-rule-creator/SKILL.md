@@ -94,7 +94,7 @@ Short description of what the rule does.
 
 \`\`\`typescript
 {
-  "cease-nonsense/rule-name": ["error", { option: value }]
+"cease-nonsense/rule-name": ["error", { option: value }]
 }
 \`\`\`
 
@@ -124,7 +124,7 @@ Add a factory function:
 
 ```typescript
 export function createRuleNameOptions(options: Partial<RuleNameOptions> = {}): RuleNameOptions {
-    return { defaultValue: "default", ...options };
+	return { defaultValue: "default", ...options };
 }
 ```
 

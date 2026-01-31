@@ -7,14 +7,14 @@ An ESLint plugin that catches common mistakes before they reach production. This
 - [Installation](#installation)
 - [Usage](#usage)
 - [Rules](#rules)
-  - [Type Safety](#type-safety)
-  - [React](#react)
-  - [Logging](#logging)
-  - [Resource Management](#resource-management)
-  - [Code Quality](#code-quality)
-  - [Performance](#performance)
-  - [Module Boundaries](#module-boundaries)
-  - [TypeScript](#typescript)
+    - [Type Safety](#type-safety)
+    - [React](#react)
+    - [Logging](#logging)
+    - [Resource Management](#resource-management)
+    - [Code Quality](#code-quality)
+    - [Performance](#performance)
+    - [Module Boundaries](#module-boundaries)
+    - [TypeScript](#typescript)
 - [License](#license)
 
 ## Installation
@@ -260,9 +260,9 @@ export const Yen = registerComponent<DataType.u32>({ replicated: true });
 
 // Object with DataType properties
 export const Position = registerComponent<{
-  x: DataType.f32;
-  y: DataType.f32;
-  z: DataType.f32;
+	x: DataType.f32;
+	y: DataType.f32;
+	z: DataType.f32;
 }>({ replicated: true });
 ```
 
@@ -744,12 +744,12 @@ Enforce that React component props are typed as `readonly` in TypeScript, preven
 
 ```typescript
 interface Props {
-  name: string;
-  age: number;
+	name: string;
+	age: number;
 }
 
 function Component({ name, age }: Props) {
-  // ...
+	// ...
 }
 ```
 
@@ -757,12 +757,12 @@ function Component({ name, age }: Props) {
 
 ```typescript
 interface Props {
-  readonly name: string;
-  readonly age: number;
+	readonly name: string;
+	readonly age: number;
 }
 
 function Component({ name, age }: Props) {
-  // ...
+	// ...
 }
 ```
 
@@ -1389,8 +1389,8 @@ The rule automatically skips fixes when the replacement would conflict with a lo
 
 ```typescript
 function example() {
-  const oneScale = 5; // Local variable shadows replacement
-  const scale = UDim2.fromScale(1, 1); // No fix applied (would shadow)
+	const oneScale = 5; // Local variable shadows replacement
+	const scale = UDim2.fromScale(1, 1); // No fix applied (would shadow)
 }
 ```
 
@@ -1765,7 +1765,7 @@ Enforce naming conventions for TypeScript constructs. Optimized for common use c
 ```typescript
 // With custom: { match: false, regex: "^I[A-Z]" }
 interface IUser {
-  name: string;
+	name: string;
 }
 ```
 
@@ -1773,7 +1773,7 @@ interface IUser {
 
 ```typescript
 interface User {
-  name: string;
+	name: string;
 }
 ```
 
@@ -1793,7 +1793,7 @@ Disallow the use of `LuaTuple` types directly in conditional expressions, which 
 ```typescript
 // Direct LuaTuple in conditional
 if (getLuaTuple()) {
-  // ...
+	// ...
 }
 
 // LuaTuple in variable declaration
@@ -1805,7 +1805,7 @@ const result = getLuaTuple();
 ```typescript
 // Explicit indexing
 if (getLuaTuple()[0]) {
-  // ...
+	// ...
 }
 
 // Array destructuring

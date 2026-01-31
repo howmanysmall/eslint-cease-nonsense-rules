@@ -1,0 +1,117 @@
+---
+title: prefer-sequence-overloads
+badge:
+    text: Roblox
+    variant: success
+description:
+    Prefer the optimized ColorSequence and NumberSequence constructor overloads instead of building an array of
+    Keypoints.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Prefer optimized `ColorSequence` and `NumberSequence` constructors.
+
+## Rule Details :badge[Roblox]{variant=success}
+
+Roblox provides optimized constructor overloads for `ColorSequence` and `NumberSequence` that are significantly faster
+and cleaner than manually creating an array of `Keypoint` objects. This rule enforces these overloads for simple linear
+gradients and uniform sequences.
+
+<Aside type="tip" title="Performance">
+	The optimized overloads avoid allocating a temporary array and creating two `SequenceKeypoint` objects, reducing
+	garbage collection pressure in performance-critical code.
+</Aside>
+
+## Optimization Steps
+
+<Steps>
+1. **Analyze Sequence**
+   Check if your sequence has exactly two keypoints at positions `0` and `1`.
+2. **Check Equality** If the start and end values are identical, you can collapse the entire sequence into a
+   single-value constructor.
+3. **Strip Arrays** Remove the `[` and `]` brackets and the `new *Keypoint(...)` calls.
+4. **Update Constructor** Pass the raw values directly to the sequence constructor: `new NumberSequence(0, 1)`.
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Verbose Keypoints
+		Avoid creating arrays for simple 0→1 linear sequences.
+
+    	<Code
+    		code={[
+    			"// Manual array and keypoints",
+    			"new ColorSequence([",
+    			"\tnew ColorSequenceKeypoint(0, Color3.fromRGB(255, 0, 0)),",
+    			"\tnew ColorSequenceKeypoint(1, Color3.fromRGB(0, 0, 255)),",
+    			"]);",
+    			"",
+    			"new NumberSequence([new NumberSequenceKeypoint(0, 0), new NumberSequenceKeypoint(1, 1)]);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Linear Overloads
+    	Use the simplified constructors for linear or uniform sequences.
+
+    	<Code
+    		code={[
+    			"// Clean linear gradient",
+    			"new ColorSequence(Color3.fromRGB(255, 0, 0), Color3.fromRGB(0, 0, 255));",
+    			"",
+    			"// Uniform sequence (collapses identical values)",
+    			"new ColorSequence(Color3.fromRGB(127, 127, 127));",
+    			"",
+    			"// Simple number range",
+    			"new NumberSequence(0, 1);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why optimize sequences?
+
+<CardGrid stagger>
+	<Card title="GC Pressure" icon="bolt">
+		Reduces the number of short-lived objects that the Luau garbage collector must track.
+	</Card>
+	<Card title="Readability" icon="list-format">
+		Removes the boilerplate of repeating `new ColorSequenceKeypoint` multiple times.
+	</Card>
+	<Card title="Engine Speed" icon="rocket">
+		The engine can initialize these overloads directly without parsing a Lua table/array.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="no-color3-constructor"
+		description="Optimizes Color3 creation"
+		href="/rules/no-color3-constructor/"
+	/>
+	<LinkCard
+		title="prefer-pattern-replacements"
+		description="General pattern replacement framework"
+		href="/rules/prefer-pattern-replacements/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Roblox ColorSequence"
+		description="Official engine reference for color gradients"
+		href="https://create.roblox.com/docs/reference/engine/datatypes/ColorSequence"
+	/>
+</CardGrid>

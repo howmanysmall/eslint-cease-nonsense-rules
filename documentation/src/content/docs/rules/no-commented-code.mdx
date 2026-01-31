@@ -1,0 +1,107 @@
+---
+title: no-commented-code
+badge:
+    text: Maintenance
+    variant: note
+description: Detects and reports commented-out code blocks to keep your codebase clean and readable.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Detects and reports commented-out code blocks.
+
+## Rule Details :badge[Maintenance]{variant=note}
+
+Commented-out code clutters the codebase, causes confusion, and suggests a lack of confidence in your version control
+system. This rule uses heuristic detection combined with parsing to identify commented code while distinguishing it from
+actual documentation or explanatory comments.
+
+<Aside type="tip" title="Trust Version Control">
+	Don't be afraid to delete code! If you ever need it back, you can find it in your Git history. Commented code often
+	becomes stale and misleading within weeks.
+</Aside>
+
+## Cleanup Path
+
+<Steps>
+1. **Identify Violations**
+   The linter will flag blocks of comments that look like valid JavaScript or TypeScript (e.g., lines containing `const`, `if`, or `() =>`).
+2. **Evaluate Importance** If the code is genuinely valuable for the future, move it to a task description or a feature
+   request document.
+3. **Delete the Block** Literally just delete the commented lines.
+4. **Add Context (Optional)** If the comment was meant to explain a complex decision, rewrite it as a "Why" comment rather than keeping the old code.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Commented Code
+		Bans blocks of code that have been neutralized with `//` or `/* */`.
+
+    	<Code
+    		code={[
+    			"function calculate(x: number) {",
+    			"\t// const result = x * 2;",
+    			"\t// return result;",
+    			"",
+    			"\treturn x + 1;",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Explanatory Comments
+    	Use comments to explain things that the code cannot say for itself.
+
+    	<Code
+    		code={[
+    			"function calculate(x: number) {",
+    			"\t// TODO: Consider multiplying by 2 once API is ready",
+    			"\t// Use a simple offset for now to avoid overflow",
+    			"\treturn x + 1;",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Detection Strategy
+
+<CardGrid stagger>
+	<Card title="Keyword Matching" icon="list-format">
+		Looks for common syntax tokens like `function`, `class`, `import`, and `const` inside comments.
+	</Card>
+	<Card title="Parse Pass" icon="bolt">
+		Briefly attempts to parse the comment content; if it's valid syntax, it's flagged as code.
+	</Card>
+	<Card title="Exclusion Logic" icon="setting">
+		Automatically ignores URLs, JSDoc tags, and common English phrases to reduce false positives.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="no-unused-imports"
+		description="Clean up unused package references"
+		href="/rules/no-unused-imports/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Clean Code: Comments"
+		description="Robert C. Martin's principles on good vs bad comments"
+		href="https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882"
+	/>
+</CardGrid>

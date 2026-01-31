@@ -1,0 +1,108 @@
+---
+title: react-hooks-strict-return
+badge:
+    text: Best Practice
+    variant: success
+description: Custom React hooks must return a tuple of ≤2 elements or a single object. Prevents positional ambiguity.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Custom React hooks must return a tuple of ≤2 elements or an object.
+
+## Rule Details :badge[Best Practice]{variant=success}
+
+Custom hooks should return either a tuple with at most 2 elements (mirroring `useState`), a single object, or a single
+primitive value. Returning large tuples makes destructuring awkward and error-prone due to mandatory positional
+ordering. Objects are preferred for 3+ values as they provide named context and allow skipping properties.
+
+<Aside type="tip" title="Positional Clarity">
+	When a hook returns more than 2 elements, it's hard for callers to remember what `[a, b, c, d]` represent. Objects
+	allow the IDE to provide autocompletion for named properties.
+</Aside>
+
+## Refactoring Workflow
+
+<Steps>
+1. **Identify Large Tuples**
+   Locate hooks that return an array containing more than two variables.
+
+2. **Convert to Object** Change the `return [v1, v2, v3]` line to `return { v1, v2, v3 }`.
+
+3. **Update Call Sites** Replace array destructuring `const [v1, v2, v3] = useHook()` with object destructuring
+   `const { v1, v2, v3 } = useHook()`.
+
+4. **Review Naming** Ensure the object keys are descriptive, as they will now be the primary way users interact with the
+   hook's output.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Unwieldy Tuples
+		Bans large arrays where the position of a value is its only identifier.
+
+    	<Code
+    		code={[
+    			"function useData() {",
+    			"\treturn [state, setState, loading, error]; // ❌ 4 elements is too many",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Objects or Pairs
+    	Use objects for complexity and tuples only for simple `[value, setter]` pairs.
+
+    	<Code
+    		code={[
+    			"// ✅ Objects are clear and named",
+    			"function useData() {",
+    			"\treturn { state, setState, loading, error };",
+    			"}",
+    			"",
+    			"// ✅ Pairs are fine (standard React pattern)",
+    			"function useToggle() {",
+    			"\treturn [isOpen, toggle];",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why avoid large tuples?
+
+<CardGrid stagger>
+	<Card title="Order Sensitivity" icon="warning">
+		It's very easy to accidentally swap `[loading, error]` for `[error, loading]`.
+	</Card>
+	<Card title="Grep-ability" icon="magnifier">
+		Named object properties like `isLoaded` are much easier to search for than positional array elements.
+	</Card>
+	<Card title="Flexibility" icon="rocket">
+		Objects allow you to add new return values in the future without breaking existing destructuring order.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard title="no-god-components" description="Reduces component complexity" href="/rules/no-god-components/" />
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="React Docs: Custom Hooks"
+		description="Official guide on reusing logic"
+		href="https://react.dev/learn/reusing-logic-with-custom-hooks"
+	/>
+</CardGrid>

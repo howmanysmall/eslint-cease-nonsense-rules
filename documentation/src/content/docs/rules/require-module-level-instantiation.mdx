@@ -1,0 +1,133 @@
+---
+title: require-module-level-instantiation
+badge:
+    text: Best Practice
+    variant: caution
+description: Ensure that singletons and utility classes are instantiated once at module scope.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Require certain classes to be instantiated at module level rather than inside functions.
+
+## Rule Details :badge[Best Practice]{variant=caution}
+
+Some classes, like logging utilities or networked servers, should be instantiated exactly once at the top level of your
+file. Recreating these objects inside functions or methods leads to wasted resources, duplicate network connections, and
+fragmented state.
+
+<Aside type="tip" title="Singleton Pattern">
+	Many utility classes are designed as singletons. Recreating them inside frequently-called functions (like React
+	render cycles) defeats their design and can cause memory leaks.
+</Aside>
+
+## Refactoring Workflow
+
+<Steps>
+1. **Identify Target Classes**
+   Configure the linter with classes that must be shared globally (e.g., `Log`, `Server`).
+
+2. **Locate Local Instances** Find `new ClassName()` calls that are nested inside functions, loops, or class methods.
+
+3. **Lift to Module Scope** Move the instantiation to the top of the file, outside of all functions.
+
+4. **Verify References** Access the now-global instance from your functions. Ensure it is initialized before first use.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Local Instantiation
+		Bans recreating heavy objects inside frequently executed code blocks.
+
+    	<Code
+    		code={[
+    			'import Log from "@rbxts/rbxts-sleitnick-log";',
+    			"",
+    			"function useData() {",
+    			"\t// ❌ Created every time the function runs!",
+    			"\tconst log = new Log();",
+    			'\tlog.Info("Loading data...");',
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Static Global Instance
+    	Instantiate once at the top level and reuse the reference everywhere.
+
+    	<Code
+    		code={[
+    			'import Log from "@rbxts/rbxts-sleitnick-log";',
+    			"",
+    			"// ✅ Created once when the module loads",
+    			"const log = new Log();",
+    			"",
+    			"function useData() {",
+    			'\tlog.Info("Loading data...");',
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why Avoid Local Instantiatons?
+
+<CardGrid stagger>
+	<Card title="Performance" icon="bolt">
+		Avoids the CPU overhead of repetitive object creation and garbage collection.
+	</Card>
+	<Card title="Connections" icon="rocket">
+		Prevents opening multiple network sockets or event listeners for the same service.
+	</Card>
+	<Card title="State Consistency" icon="setting">
+		Ensures that all parts of the file share the same state (e.g., log history or server config).
+	</Card>
+</CardGrid>
+
+## Configuration Example
+
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/require-module-level-instantiation": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"classes": {',
+		'\t\t\t\t"Log": "@rbxts/rbxts-sleitnick-log",',
+		'\t\t\t\t"Server": "@rbxts/net"',
+		"\t\t\t}",
+		"\t\t}",
+		"\t]",
+		"}",
+	].join("\n")}
+	lang="json"
+	title="eslint.config.js"
+/>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="prefer-module-scope-constants"
+		description="Similar rule for naming constants"
+		href="/rules/prefer-module-scope-constants/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Singleton Design Pattern"
+		description="When and why to use shared instances"
+		href="https://refactoring.guru/design-patterns/singleton"
+	/>
+</CardGrid>

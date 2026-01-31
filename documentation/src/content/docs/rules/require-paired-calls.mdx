@@ -1,0 +1,122 @@
+---
+title: require-paired-calls
+badge:
+    text: Safety
+    variant: danger
+description:
+    Enforces that paired function calls (opener/closer) are properly balanced across all execution paths with LIFO
+    ordering.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Enforces that paired function calls are properly balanced.
+
+## Rule Details :badge[Safety]{variant=danger}
+
+This rule ensures that resource management patterns like profiling markers, database transactions, and mutex locks are
+properly paired. It validates that every "opener" (e.g., `debug.profilebegin`) has exactly one matching "closer" (e.g.,
+`debug.profileend`) and that they occur in the correct LIFO (Last In, First Out) order.
+
+<Aside type="danger" title="Resource Leaks">
+	Unpaired calls are a major source of memory leaks, deadlocks, and corrupted engine states. This rule ensures your
+	resources are always cleaned up, even in complex branching logic.
+</Aside>
+
+## Resource Management Workflow
+
+<Steps>
+1. **Initialize Opening**
+   Call your opener function (e.g., `db.begin()`).
+
+2. **Wrap in Try-Finally** Use a `try...finally` block. This is the only way to guarantee the closer runs even if an
+   error occurs.
+
+3. **Perform Action** Execute your business logic inside the `try` block.
+
+4. **Guaranteed Cleanup** Place your closer function (e.g., `db.end()`) inside the `finally` block to ensure it always
+   executes.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Unbalanced Pairs
+		Bans patterns where an early return or error could skip the cleaning phase.
+
+    	<Code
+    		code={[
+    			"function test() {",
+    			'\tdebug.profilebegin("calculation");',
+    			"\tif (isInputInvalid()) {",
+    			"\t\t// ❌ ERROR: Function ends without profileend()!",
+    			"\t\treturn;",
+    			"\t}",
+    			"\tdebug.profileend();",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Balanced Execution
+    	Use LIFO order and ensure every path out of the function hits a closer.
+
+    	<Code
+    		code={[
+    			"function test() {",
+    			'\tdebug.profilebegin("calculation");',
+    			"\ttry {",
+    			"\t\trunComplexCalculation();",
+    			"\t} finally {",
+    			"\t\t// ✅ Guaranteed to run",
+    			"\t\tdebug.profileend();",
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Common Used Pairs
+
+<CardGrid stagger>
+	<Card title="Profiling" icon="bolt">
+		`debug.profilebegin` and `debug.profileend` for Roblox MicroProfiler.
+	</Card>
+	<Card title="Transactions" icon="list-format">
+		`db.transaction` and `db.commit` for database integrity.
+	</Card>
+	<Card title="Locking" icon="rocket">
+		`mutex.lock` and `mutex.unlock` to prevent race conditions.
+	</Card>
+	<Card title="UI Layout" icon="setting">
+		`Iris.Window` and `Iris.End` for immediate mode GUI libraries.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="no-async-constructor"
+		description="Prevents race conditions in setup"
+		href="/rules/no-async-constructor/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Resource Management (RAII)"
+		description="General software patterns for resource safety"
+		href="https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization"
+	/>
+</CardGrid>

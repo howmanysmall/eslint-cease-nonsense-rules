@@ -1,0 +1,114 @@
+---
+title: require-react-display-names
+badge:
+    text: Best Practice
+    variant: success
+description: Require displayName property on exported React.memo components and React.createContext contexts for better debugging.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Require `displayName` on exported `React.memo` and `React.createContext`.
+
+## Rule Details :badge[Best Practice]{variant=success}
+
+React components wrapped in `memo` and contexts created with `createContext` lose their names in React DevTools unless you explicitly set `displayName`. This rule enforces proper naming patterns to ensure your component tree remains readable during production debugging and profiling.
+
+<Aside type="tip" title="Production Debugging">
+	Minification often strips function names. `displayName` is a string literal that survives obfuscation, making it
+	invaluable for reading stack traces in production.
+</Aside>
+
+## Refactoring Path
+
+<Steps>
+1. **Locate Exports**
+   Find `export default memo(...)` or `export const MyContext = createContext(...)` calls.
+
+2. **Assign to Constant**
+   Instead of exporting the result directly, assign it to a named variable (e.g., `const MyComponent = memo(...)`).
+
+3. **Set Display Name**
+   Append a `.displayName` assignment: `MyComponent.displayName = "MyComponent"`.
+
+4. **Export Named**
+   Export the named variable. You can still use `export default` for the named variable afterwards.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Anonymous Exports
+		Bans direct exports that hide the component name from the debugger.
+
+    	<Code
+    		code={[
+    			"// Direct memo export",
+    			"export default memo(MyComponent);",
+    			"",
+    			"// Missing displayName",
+    			"export const MyContext = React.createContext(undefined);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Labeled Components
+    	Explicitly name your exported units for better telemetry.
+
+    	<Code
+    		code={[
+    			'const MyComponent = memo(MyComponentNoMemo);',
+    			'MyComponent.displayName = "MyComponent";',
+    			"export default MyComponent;",
+    			"",
+    			"const MyContext = React.createContext(undefined);",
+    			'MyContext.displayName = "MyContext";',
+    			"export default MyContext;",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why is this important?
+
+<CardGrid stagger>
+	<Card title="DevTools Mapping" icon="list-format">
+		Ensures your component tree doesn't just show `<Memo(Anonymous)>` everywhere.
+	</Card>
+	<Card title="Profiling" icon="bolt">
+		Helps the React Profiler attribute performance bottlenecks to specific named components.
+	</Card>
+	<Card title="Refactoring Safety" icon="setting">
+		Assigning to a local constant before exporting makes the code easier to grep and refactor.
+	</Card>
+</CardGrid>
+
+## Environment Modes
+
+| Mode        | Target Packages                |
+| :---------- | :----------------------------- |
+| `roblox-ts` | `@rbxts/react`, `@rbxts/roact` |
+| `standard`  | `react`, `react-dom`           |
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard title="ban-react-fc" description="Bans React.FC for better type clarity" href="/rules/ban-react-fc/" />
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="React Docs: DisplayName"
+		description="How React uses display names for debugging"
+		href="https://legacy.reactjs.org/docs/react-component.html#displayname"
+	/>
+</CardGrid>

@@ -1,0 +1,120 @@
+---
+title: no-memo-children
+badge:
+    text: Best Practice
+    variant: success
+description: Disallow React.memo on components that accept a children prop to prevent useless memoization.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Disallow `React.memo` on components that accept `children`.
+
+## Rule Details :badge[Best Practice]{variant=success}
+
+`React.memo` performs a shallow comparison of props to determine if a re-render can be skipped. However, when a
+component accepts `children`, the `children` prop is almost always a new JSX element (an object) created on every parent
+render. This causes the shallow comparison to **always fail**, making `memo` a waste of resources.
+
+<Aside type="danger" title="The Memo Trap">
+	Wrapping a component with `children` in `memo` adds overhead (prop comparison and memory usage) for **zero
+	performance benefit**, as the `children` reference changes every time the parent re-renders.
+</Aside>
+
+## Refactoring Workflow
+
+<Steps>
+1. **Identify Useless Memo**
+   Locate components wrapped in `memo` that also destructure `children` from their props.
+
+2. **Remove the Wrapper** Delete the `memo(...)` call. In 99% of cases, the performance will be identical or slightly
+   better due to less comparison logic.
+
+3. **Switch to Render Props** If you truly need to skip re-renders, pass a stable function via a `renderContent` prop
+   instead of using `children`.
+
+4. **Name Stability** Ensure any components you extract are named correctly so they continue to look good in DevTools
+   without the `Memo()` wrapper.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Memo with Children
+		Bans `memo` on components that inherit or define a `children` prop.
+
+    	<Code
+    		code={[
+    			"// ❌ Card accepts children, so memo will always fail",
+    			"const Card = memo<CardProps>(({ title, children }) => {",
+    			"\treturn <frame>{children}</frame>;",
+    			"});",
+    			"",
+    			"// ❌ PropsWithChildren also triggers this rule",
+    			"const Panel = memo<PropsWithChildren<Props>>(({ children }) => {",
+    			"\treturn <frame>{children}</frame>;",
+    			"});",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Better Optimization
+    	Use `memo` only on "leaf" components or use stable render props.
+
+    	<Code
+    		code={[
+    			"// ✅ OK: Props without children",
+    			"const Button = memo(({ label }) => {",
+    			"\treturn <textbutton Text={label} />;",
+    			"});",
+    			"",
+    			"// ✅ OK: Render prop pattern",
+    			"const List = memo(({ renderItem }) => {",
+    			"\treturn <frame>{items.map(renderItem)}</frame>;",
+    			"});",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why is this bad?
+
+<CardGrid stagger>
+	<Card title="Always Unequal" icon="bolt">
+		`<span>Text</span>` in JSX is a new object every render. `prev.children !== next.children` is always true.
+	</Card>
+	<Card title="CPU Waste" icon="list-format">
+		The engine compares every primitive prop only to fail at the very end when it checks `children`.
+	</Card>
+	<Card title="False Security" icon="rocket">
+		Developers see `memo` and assume the component is optimized, hiding the real source of lag.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="require-react-display-names"
+		description="Ensures components have names in DevTools"
+		href="/rules/require-react-display-names/"
+	/>
+	<LinkCard title="ban-react-fc" description="Bans problematic React.FC pattern" href="/rules/ban-react-fc/" />
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="React Docs: memo"
+		description="Official guide on component memoization"
+		href="https://react.dev/reference/react/memo"
+	/>
+</CardGrid>

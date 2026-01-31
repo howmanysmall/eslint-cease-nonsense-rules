@@ -5,5 +5,5 @@ import { ESLintUtils } from "@typescript-eslint/utils";
  * URLs point to: https://github.com/howmanysmall/eslint-cease-nonsense-rules/blob/main/docs/rules/{rule-name}.md
  */
 export const createRule = ESLintUtils.RuleCreator(
-	(name) => `https://github.com/howmanysmall/eslint-cease-nonsense-rules/blob/main/docs/rules/${name}.md`,
+	(name) => `https://howmanysmall.github.io/eslint-cease-nonsense-rules/rules/${name}`,
 );

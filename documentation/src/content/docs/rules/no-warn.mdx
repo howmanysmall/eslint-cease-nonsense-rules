@@ -1,0 +1,101 @@
+---
+title: no-warn
+badge:
+    text: Best Practice
+    variant: caution
+description: Bans use of warn() function calls. Use log.Warning instead for structured logging.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+
+Bans use of `warn()` function calls. Use `log.Warning` instead for structured logging.
+
+## Rule Details :badge[Best Practice]{variant=caution}
+
+The global `warn()` function is a low-level mechanism that lacks context and centralized control. Using a proper logging system (like `Log` from `RbxUtil`) allows you to route warnings to different services, suppress them in certain environments, and maintain a consistent look in the developer console.
+
+<Aside type="tip" title="Consistent Output">
+	Using `log.Warning` instead of `warn()` ensures all your logs follow a unified format, making the developer console
+	significantly easier to read and filter.
+</Aside>
+
+## Refactoring Workflow
+
+<Steps>
+1. **Audit Warnings**
+   Determine if the warning is still relevant or if it should be an `Error` (halting) or `Info` (informational).
+
+2. **Select severity**
+   Verify that your logging system is configured to display warnings in both development and staging environments.
+
+3. **Convert Call**
+   Replace the global `warn(...)` with `log.Warning(...)` to capture high-quality telemetry.
+
+4. **Verify Suppressions**
+   Ensure your production build properly handles log filtering so that non-critical warnings don't leak into player consoles.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Raw Warning Calls
+		Avoid using the global `warn` for state alerts or deprecations.
+
+    	<Code
+    		code={[
+    			'warn("API endpoint deprecated");',
+    			'warn("Missing config property:", key);',
+    			'warn("Unexpected state in component");',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Structured Warnings
+    	Use the warning level of your logging library for consistent telemetry.
+
+    	<Code
+    		code={[
+    			'log.Warning("API endpoint deprecated");',
+    			'log.Warning("Missing config property:", key);',
+    			'log.Warning("Unexpected state in component");',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why use Log instead?
+
+<CardGrid stagger>
+	<Card title="Traffic Control" icon="list-format">
+		Easily suppress warnings in production while keeping them enabled in your staging builds.
+	</Card>
+	<Card title="Meta Data" icon="bolt">
+		Attach extra context objects that your logging system can parse and format intelligently.
+	</Card>
+	<Card title="Unified Handling" icon="setting">
+		Handle all application events (Info, Debug, Error) through a single, testable interface.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard title="no-print" description="Bans raw print() calls" href="/rules/no-print/" />
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="RbxUtil Log API"
+		description="Official documentation for Sleitnick's Log utility"
+		href="https://sleitnick.github.io/RbxUtil/api/Log"
+	/>
+</CardGrid>

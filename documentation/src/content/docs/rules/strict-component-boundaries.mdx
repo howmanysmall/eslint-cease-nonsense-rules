@@ -1,0 +1,138 @@
+---
+title: strict-component-boundaries
+badge:
+    text: Maintenance
+    variant: caution
+description: Prevent reaching into sibling component folders for nested modules. Enforces clean architectural boundaries.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Prevent reaching into sibling component folders for nested modules.
+
+## Rule Details :badge[Maintenance]{variant=caution}
+
+Components should be isolated units. Reaching into the internal folders (like `utils`, `hooks`, or `styles`) of a sibling component creates tight coupling and makes refactoring brittle. This rule enforces that components only interact with their siblings via a public API (typically an `index.ts` file).
+
+<Aside type="caution" title="Tight Coupling">
+	If you change the internal folder structure of `ComponentA`, you shouldn't have to fix imports in `ComponentB`.
+	Strict boundaries ensure internal changes stay internal.
+</Aside>
+
+## Refactoring Path
+
+<Steps>
+1. **Define Public API**
+   Ensure every component folder has an `index.ts` that exports only the public-facing elements.
+
+2. **Audit Cross-Imports**
+   Locate imports that look like `../OtherComponent/internal/helper`.
+
+3. **Expose or Move**
+    - If the helper is truly specific to `OtherComponent`, expose it in its `index.ts`.
+    - If the helper is generally useful, move it to a shared `src/utils` folder.
+
+4. **Update Imports**
+   Replace deep imports with clean, top-level imports: `import { helper } from "../OtherComponent"`.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Deep Sibling Imports
+		Bans reaching past the component's root into its subfolders.
+
+    	<Code
+    		code={[
+    			"// Reaching into another component's internals",
+    			'import { helper } from "../OtherComponent/utils/helper";',
+    			"",
+    			"// Importing from sibling's nested hooks",
+    			'import { hook } from "../UserProfile/hooks/useProfile";',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Public API & Shared Utils
+    	Interact through interfaces or move shared logic to a central location.
+
+    	<Code
+    		code={[
+    			"// Import from shared location",
+    			'import { helper } from "../../shared/utils/helper";',
+    			"",
+    			"// Index import from sibling component (Public API)",
+    			'import { OtherComponent } from "../OtherComponent";',
+    			"",
+    			"// Internal imports are allowed within the same component",
+    			'import { myLocalHelper } from "./utils/myLocalHelper";',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why Enforce Boundaries?
+
+<CardGrid stagger>
+	<Card title="Encapsulation" icon="list-format">
+		Hides internal implementation details, allowing you to refactor components safely.
+	</Card>
+	<Card title="No Cycles" icon="bolt">
+		Reduces the risk of circular dependencies by encouraging a tree-like import structure.
+	</Card>
+	<Card title="Reusability" icon="rocket">
+		Makes components easier to extract or move because they have zero hidden dependencies.
+	</Card>
+	<Card title="Refactoring Safety" icon="setting">
+		Internal renames or folder moves won't break unrelated parts of your codebase.
+	</Card>
+</CardGrid>
+
+## Recommended Structure
+
+<Code
+	code={[
+		"components/",
+		"  UserProfile/",
+		"    index.ts                 # Public API (exports only what is needed)",
+		"    UserProfile.tsx          # Main component",
+		"    hooks/                   # Internal hooks (NOT for sibling use)",
+		"      useUserData.ts",
+		"    utils/                   # Internal utilities",
+		"      formatters.ts",
+	].join("\n")}
+	lang="text"
+	title="Project Hierarchy"
+/>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="no-god-components"
+		description="Prevents components from growing too large"
+		href="/rules/no-god-components/"
+	/>
+	<LinkCard
+		title="prefer-module-scope-constants"
+		description="Proper constant scoping"
+		href="/rules/prefer-module-scope-constants/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Component-Driven Development"
+		description="Official guide to building modular UIs"
+		href="https://www.componentdriven.org/"
+	/>
+</CardGrid>

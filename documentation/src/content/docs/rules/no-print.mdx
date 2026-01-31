@@ -1,0 +1,103 @@
+---
+title: no-print
+badge:
+    text: Best Practice
+    variant: caution
+description: Bans use of print() function calls. Use log instead for structured logging.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+
+Bans use of `print()` function calls. Use `log` instead for structured logging.
+
+## Rule Details :badge[Best Practice]{variant=caution}
+
+The global `print()` function is a low-level logging mechanism that lacks structure and severity levels. Using a proper
+logging system (like `Log` from `RbxUtil`) provides better debugging capabilities, production log filtering, and
+consistent formatting.
+
+<Aside type="tip" title="Why Structured Logging?">
+	Structured logging helps you filter, search, and analyze logs in production. It provides timestamps, log levels, and
+	context that raw `print()` calls simply cannot offer.
+</Aside>
+
+## Migration Path
+
+<Steps>
+1. **Choose a Logger**
+   Select a logging library like `Log` from `RbxUtil` or create your own structured wrapper.
+
+2. **Categorize Logs** Identify which prints are for `Info`, which are for `Debug`, and which should be `Errors`.
+
+3. **Global Replace** Search for `print(` across your project and replace them with the corresponding logger method.
+
+4. **Add Context** Take advantage of structured logging by passing objects or metadata as secondary arguments.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Raw Print Calls
+		Avoid using the global `print` for debugging or telemetry.
+
+    	<Code
+    		code={[
+    			'print("Request failed");',
+    			'print("User logged in:", userId);',
+    			'print("DEBUG:", data);',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Structured Logging
+    	Use a logging library with appropriate severity levels.
+
+    	<Code
+    		code={[
+    			'log.Error("Request failed");',
+    			'log.Info("User logged in:", userId);',
+    			'log.Debug("Data state:", data);',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why use Log instead?
+
+<CardGrid stagger>
+	<Card title="Log Levels" icon="list-format">
+		Filter by `Debug`, `Info`, `Warning`, or `Error` to reduce noise in production.
+	</Card>
+	<Card title="Timestamps" icon="bolt">
+		Unified logging systems automatically attach high-resolution timestamps to every entry.
+	</Card>
+	<Card title="Remote Telemetry" icon="rocket">
+		Logging libraries often support sending critical errors to external services like Sentry.
+	</Card>
+	<Card title="Formatting" icon="setting">
+		Consistent prefixing and color coding make the developer console much easier to scan.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard title="no-warn" description="Bans raw warn() calls" href="/rules/no-warn/" />
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="RbxUtil Log API"
+		description="Official documentation for Sleitnick's Log utility"
+		href="https://sleitnick.github.io/RbxUtil/api/Log"
+	/>
+</CardGrid>

@@ -1,0 +1,106 @@
+---
+title: prefer-early-return
+badge:
+    text: Clean Code
+    variant: success
+description:
+    Prefer early returns over full-body conditional wrapping in function declarations. Reduces nesting and cognitive
+    load.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Prefer early returns over full-body conditional wrapping.
+
+## Rule Details :badge[Clean Code]{variant=success}
+
+Functions wrapped entirely in a single `if` statement should use an early return (guard clause) with a negated condition
+instead. This avoids unnecessary indentation, reduces cognitive load, and makes the "happy path" of your logic visually
+distinct.
+
+<Aside type="note" title="Cognitive Load">
+	Every level of indentation adds a mental "depth counter." Early returns keep your functions flat, allowing
+	developers to scan the main logic without entering nested blocks.
+</Aside>
+
+## Refactoring Workflow
+
+<Steps>
+1. **Identify the Wrapper**
+   Look for an `if` statement that encapsulates almost the entire body of a function.
+2. **Negate the Condition** Invert the logic of the `if`. For example, `if (isValid)` becomes `if (!isValid)`.
+3. **Insert Early Return** Add a `return` or `return undefined` immediately inside the new negated block.
+4. **Flatten the Rest** Move the original logic out of the `if` block and place it directly below the new guard clause.
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Deep Nesting
+		Bans wrapping the primary function logic in a single large conditional block.
+
+    	<Code
+    		code={[
+    			"function process(data: Data) {",
+    			"\tif (data.isValid) {",
+    			"\t\ttransform(data);",
+    			"\t\tsave(data);",
+    			"\t\tnotify();",
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Flat Logic
+    	Use guard clauses at the top to filter out invalid states early.
+
+    	<Code
+    		code={[
+    			"function process(data: Data) {",
+    			"\tif (!data.isValid) return;",
+    			"",
+    			"\ttransform(data);",
+    			"\tsave(data);",
+    			"\tnotify();",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why use early returns?
+
+<CardGrid stagger>
+	<Card title="No Arrow Code" icon="list-format">
+		Eliminates the "arrow" shape formed by deeply nested blocks, keeping code near the left margin.
+	</Card>
+	<Card title="Happy Path" icon="rocket">
+		The main purpose of the function stays at the top level of indentation, making it easier to scan.
+	</Card>
+	<Card title="Simplified Exit" icon="bolt">
+		You don't need to scroll to the bottom of a large function to see what happens when a condition fails.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard title="no-god-components" description="Reduces component complexity" href="/rules/no-god-components/" />
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Flattening Arrow Code"
+		description="Classic essay on reducing code nesting"
+		href="https://blog.codinghorror.com/flattening-arrow-code/"
+	/>
+</CardGrid>

@@ -8,9 +8,9 @@
 import { TaggedError } from "better-result";
 
 class NotFoundError extends TaggedError("NotFoundError")<{
-  resource: string;
-  id: string;
-  message: string;
+	resource: string;
+	id: string;
+	message: string;
 }>() {}
 
 // Usage
@@ -23,13 +23,13 @@ Keep constructor for derived message:
 
 ```typescript
 class NotFoundError extends TaggedError("NotFoundError")<{
-  resource: string;
-  id: string;
-  message: string;
+	resource: string;
+	id: string;
+	message: string;
 }>() {
-  constructor(args: { resource: string; id: string }) {
-    super({ ...args, message: `${args.resource} not found: ${args.id}` });
-  }
+	constructor(args: { resource: string; id: string }) {
+		super({ ...args, message: `${args.resource} not found: ${args.id}` });
+	}
 }
 
 // Usage: new NotFoundError({ resource: "User", id: "123" })
@@ -41,20 +41,20 @@ Wrap underlying exceptions:
 
 ```typescript
 class DatabaseError extends TaggedError("DatabaseError")<{
-  operation: string;
-  message: string;
-  cause: unknown;
+	operation: string;
+	message: string;
+	cause: unknown;
 }>() {
-  constructor(args: { operation: string; cause: unknown }) {
-    const msg = args.cause instanceof Error ? args.cause.message : String(args.cause);
-    super({ ...args, message: `DB ${args.operation} failed: ${msg}` });
-  }
+	constructor(args: { operation: string; cause: unknown }) {
+		const msg = args.cause instanceof Error ? args.cause.message : String(args.cause);
+		super({ ...args, message: `DB ${args.operation} failed: ${msg}` });
+	}
 }
 
 // Usage in Result.tryPromise
 Result.tryPromise({
-  try: () => db.query(sql),
-  catch: (e) => new DatabaseError({ operation: "query", cause: e })
+	try: () => db.query(sql),
+	catch: (e) => new DatabaseError({ operation: "query", cause: e }),
 });
 ```
 
@@ -62,15 +62,15 @@ Result.tryPromise({
 
 ```typescript
 class RateLimitError extends TaggedError("RateLimitError")<{
-  retryAfter: number;
-  message: string;
+	retryAfter: number;
+	message: string;
 }>() {
-  constructor(args: { retryAfterMs: number }) {
-    super({
-      retryAfter: args.retryAfterMs,
-      message: `Rate limited, retry after ${args.retryAfterMs}ms`
-    });
-  }
+	constructor(args: { retryAfterMs: number }) {
+		super({
+			retryAfter: args.retryAfterMs,
+			message: `Rate limited, retry after ${args.retryAfterMs}ms`,
+		});
+	}
 }
 ```
 
@@ -101,9 +101,9 @@ Compiler ensures all error types handled:
 import { matchError } from "better-result";
 
 const message = matchError(error, {
-  NotFoundError: (e) => `Missing: ${e.id}`,
-  ValidationError: (e) => `Invalid: ${e.field}`,
-  AuthError: (e) => `Unauthorized: ${e.reason}`,
+	NotFoundError: (e) => `Missing: ${e.id}`,
+	ValidationError: (e) => `Invalid: ${e.field}`,
+	AuthError: (e) => `Unauthorized: ${e.reason}`,
 });
 ```
 
@@ -115,9 +115,9 @@ Handle subset, catch-all for rest:
 import { matchErrorPartial } from "better-result";
 
 const message = matchErrorPartial(
-  error,
-  { NotFoundError: (e) => `Missing: ${e.id}` },
-  (e) => `Error: ${e.message}`  // fallback for ValidationError, AuthError
+	error,
+	{ NotFoundError: (e) => `Missing: ${e.id}` },
+	(e) => `Error: ${e.message}`, // fallback for ValidationError, AuthError
 );
 ```
 
@@ -128,27 +128,28 @@ import { isTaggedError, TaggedError } from "better-result";
 
 // Check any tagged error
 if (isTaggedError(value)) {
-  console.log(value._tag);
+	console.log(value._tag);
 }
 
 // Check specific error class
 if (NotFoundError.is(value)) {
-  console.log(value.id);  // narrowed to NotFoundError
+	console.log(value.id); // narrowed to NotFoundError
 }
 
 // Also available
-TaggedError.is(value);  // same as isTaggedError
+TaggedError.is(value); // same as isTaggedError
 ```
 
 ### In Result.match
 
 ```typescript
 result.match({
-  ok: (value) => handleSuccess(value),
-  err: (e) => matchError(e, {
-    NotFoundError: (e) => handleNotFound(e),
-    ValidationError: (e) => handleValidation(e),
-  })
+	ok: (value) => handleSuccess(value),
+	err: (e) =>
+		matchError(e, {
+			NotFoundError: (e) => handleNotFound(e),
+			ValidationError: (e) => handleValidation(e),
+		}),
 });
 ```
 
@@ -158,8 +159,8 @@ matchError/matchErrorPartial support data-last for pipelines:
 
 ```typescript
 const handler = matchError({
-  NotFoundError: (e) => `Missing: ${e.id}`,
-  ValidationError: (e) => `Invalid: ${e.field}`,
+	NotFoundError: (e) => `Missing: ${e.id}`,
+	ValidationError: (e) => `Invalid: ${e.field}`,
 });
 pipe(error, handler);
 ```
@@ -169,13 +170,15 @@ pipe(error, handler);
 ```typescript
 // FROM: class hierarchy
 class NotFoundError extends AppError {
-  constructor(public id: string) { super(`Not found: ${id}`); }
+	constructor(public id: string) {
+		super(`Not found: ${id}`);
+	}
 }
 // TO: TaggedError
 class NotFoundError extends TaggedError("NotFoundError")<{ id: string; message: string }>() {
-  constructor(args: { id: string }) {
-    super({ ...args, message: `Not found: ${args.id}` });
-  }
+	constructor(args: { id: string }) {
+		super({ ...args, message: `Not found: ${args.id}` });
+	}
 }
 
 // FROM: string/generic errors

@@ -1,0 +1,136 @@
+---
+title: no-color3-constructor
+badge:
+    text: Roblox
+    variant: note
+description: Bans new Color3(...) except for zero-value constructors. Use Color3.fromRGB() instead.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Bans `new Color3(...)` except for `new Color3()` or `new Color3(0, 0, 0)`. Use `Color3.fromRGB()` instead.
+
+## Rule Details :badge[Roblox]{variant=note}
+
+The `new Color3()` constructor uses floating-point values in the range [0-1] and performs worse than `Color3.fromRGB()`
+which uses integer values [0-255]. This rule enforces the use of the more performant `Color3.fromRGB()` method while
+allowing the zero-argument constructor and explicit zero values.
+
+<Aside type="tip" title="Why Color3.fromRGB?">
+	`Color3.fromRGB()` is faster because it avoids the internal float-to-int conversion performed by the engine. Most UI
+	designs use 0-255 values anyway, so this is more intuitive and performant.
+</Aside>
+
+## Refactoring Path
+
+<Steps>
+1. **Identify Violations**
+   Locate `new Color3(r, g, b)` calls where `r`, `g`, or `b` are literals between 0 and 1.
+
+2. **Convert to RGB** Multiply each component by 255 and round to the nearest integer.
+
+3. **Update Method** Replace the `new Color3` call with `Color3.fromRGB`.
+
+4. **Verify Zeros** If you meant to initialize a black color, `new Color3()` is still allowed and efficient.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Floating Point Constructors
+		Using `new Color3` with non-zero values triggers an error.
+
+    	<Code
+    		code={[
+    			"const red = new Color3(1, 0, 0);",
+    			"const blue = new Color3(0.5, 0.5, 1);",
+    			"const green = new Color3(0, 255, 0);",
+    			"",
+    			"// Partial arguments are also banned",
+    			"const white = new Color3(1, 1);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Optimized Static Methods
+    	Use `fromRGB` for colors or keep `new Color3()` for zero-initialization.
+
+    	<Code
+    		code={[
+    			"const red = Color3.fromRGB(255, 0, 0);",
+    			"const blue = Color3.fromRGB(127, 127, 255);",
+    			"",
+    			"// Zero constructors are allowed (efficient in engine)",
+    			"const alsoBlack = new Color3();",
+    			"const explicitBlack = new Color3(0, 0, 0);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Performance Benefits
+
+<CardGrid stagger>
+	<Card title="No Conversion" icon="bolt">
+		Roblox stores colors as integers. `fromRGB` skips the float-to-int math required by the standard constructor.
+	</Card>
+	<Card title="Direct Storage" icon="setting">
+		Integers are stored directly, reducing the memory and CPU cycles spent on representation.
+	</Card>
+	<Card title="Optimized Path" icon="rocket">
+		The internal C++ implementation for `fromRGB` is specifically optimized for common UI work.
+	</Card>
+</CardGrid>
+
+## Conversion Table
+
+| Float Input | RGB Output | Rule Behavior                |
+| :---------- | :--------- | :--------------------------- |
+| `0.0`       | `0`        | Allowed in constructor       |
+| `0.25`      | `64`       | Auto-fixes to `fromRGB(64)`  |
+| `0.5`       | `127`      | Auto-fixes to `fromRGB(127)` |
+| `0.75`      | `191`      | Auto-fixes to `fromRGB(191)` |
+| `1.0`       | `255`      | Auto-fixes to `fromRGB(255)` |
+
+## Edge Cases
+
+- **Variables**: The rule only flags literals. `new Color3(r, g, b)` is not flagged.
+- **Expressions**: `new Color3(Math.random(), 0, 0)` is not flagged.
+- **Mixed Ranges**: If you use `new Color3(1, 128, 0.5)`, it auto-fixes to `Color3.fromRGB(255, 128, 127)`.
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="prefer-udim2-shorthand"
+		description="Similar performance rule for UDim2"
+		href="/rules/prefer-udim2-shorthand/"
+	/>
+	<LinkCard
+		title="prefer-sequence-overloads"
+		description="Optimized sequence constructors"
+		href="/rules/prefer-sequence-overloads/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Roblox Color3 API"
+		description="Official engine documentation"
+		href="https://create.roblox.com/docs/reference/engine/datatypes/Color3"
+	/>
+	<LinkCard
+		title="Performance Optimization"
+		description="Roblox scripting performance guide"
+		href="https://create.roblox.com/docs/scripting/performance-optimization"
+	/>
+</CardGrid>

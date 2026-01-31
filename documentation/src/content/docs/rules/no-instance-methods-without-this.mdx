@@ -1,0 +1,120 @@
+---
+title: no-instance-methods-without-this
+badge:
+    text: Performance
+    variant: success
+description:
+    Detects instance methods that don't use this and should be converted to standalone functions. Optimizes metatables.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Detects instance methods that don't use `this`.
+
+## Rule Details :badge[Performance]{variant=success}
+
+In `roblox-ts`, instance methods carry significant metatable overhead. If a method doesn't access any instance state
+(via `this`), it should be extracted as a standalone function. This reduces memory usage and improves lookup speed for
+every instance of the class in the Roblox engine.
+
+<Aside type="danger" title="Metatable Overhead">
+	Each instance method in a class increases the size of the metatable. In games with thousands of instances, this
+	overhead compounds, impacting both per-frame performance and total memory.
+</Aside>
+
+## Refactoring Workflow
+
+<Steps>
+1. **Identify Stateless Methods**
+   The linter identifies methods with no `this` references in their bodies.
+
+2. **Extract to Module Scope** Move the method body outside the class definition to the top-level or a utility file.
+
+3. **Convert to Pure Function** Ensure all dependencies are passed as explicit parameters rather than being implied by
+   object membership.
+
+4. **Update Call Sites** Replace `this.myMethod()` calls with a direct module-level call: `myMethod()`.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Bound Pure Functions
+		Bans instance methods that act as pure functions but are tied to class instances.
+
+    	<Code
+    		code={[
+    			"class MathSystem {",
+    			"\t// ❌ Doesn't use 'this', but costs metatable space",
+    			"\tprivate calculate(x: number): number {",
+    			"\t\treturn x * x;",
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Standalone Utils
+    	Extract stateless logic to module scope for maximum performance.
+
+    	<Code
+    		code={[
+    			"function calculate(x: number) {",
+    			"\treturn x * x;",
+    			"}",
+    			"",
+    			"class MathSystem {",
+    			"\tpublic run(val: number) {",
+    			"\t\treturn calculate(val);",
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why is this important?
+
+<CardGrid stagger>
+	<Card title="Lookup Speed" icon="bolt">
+		Module-level functions are resolved faster than methods that require Lua index traversal.
+	</Card>
+	<Card title="Memory Scale" icon="list-format">
+		Removing 5 methods from a class with 1,000 instances significantly reduces heap fragmentation.
+	</Card>
+	<Card title="Testability" icon="rocket">
+		Pure standalone functions can be tested without the overhead of instantiating whole classes.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="prefer-class-properties"
+		description="Optimizes property setup"
+		href="/rules/prefer-class-properties/"
+	/>
+	<LinkCard
+		title="require-module-level-instantiation"
+		description="Correct placement for singletons"
+		href="/rules/require-module-level-instantiation/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="roblox-ts Performance Guide"
+		description="Optimization tips for Roblox engine"
+		href="https://roblox-ts.com/docs/guides/performance"
+	/>
+</CardGrid>

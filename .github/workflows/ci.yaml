@@ -45,7 +45,9 @@ jobs:
             ${{ runner.os }}-bun-
 
       - name: Install
-        run: bun ci
+        run: |
+          bun ci
+          bun ci --cwd documentation
 
       - name: Biome CI
         run: bun run biome:ci

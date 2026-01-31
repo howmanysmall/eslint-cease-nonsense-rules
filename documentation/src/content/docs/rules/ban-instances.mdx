@@ -1,0 +1,153 @@
+---
+title: ban-instances
+badge:
+    text: Roblox
+    variant: caution
+description: Bans specified Roblox Instance classes in new Instance() calls and JSX elements.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+
+Bans specified Roblox Instance classes in `new Instance()` calls and JSX elements.
+
+## Rule Details :badge[Roblox]{variant=caution}
+
+This rule prevents the creation of specific Roblox Instance classes that may be problematic, deprecated, or should be
+replaced with better alternatives. You can configure which Instance classes are banned and provide custom messages
+explaining why.
+
+<Aside type="note" title="Architectural Control">
+	Use this rule to enforce design decisions across your team, such as banning `Part` in favor of `MeshPart` or
+	preventing runtime `Script` creation.
+</Aside>
+
+## Configuration Guide
+
+<Steps>
+1. **Choose Targets**
+   Select the Roblox Instance classes you want to restrict (e.g., `Script`, `LocalScript`, `Frame`).
+
+2. **Define Penalties** Decide if you want a simple ban or an explanatory error message for your team.
+
+3. **Update Config** Add the rule to your `eslint.config.js` using either the array or object format.
+
+4. **Verify JSX** Ensure your JSX components use PascalCase (e.g., `<Button />`) to distinguish them from lowercase
+   Roblox Instances (e.g., `<frame />`).
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Banned Instances
+		Bans creation of instances specified in your configuration.
+
+    	<Code
+    		code={[
+    			"// If 'Part' and 'Script' are banned:",
+    			'const part = new Instance("Part");',
+    			"<script Source={...} />",
+    			"",
+    			"// Also checks case-insensitive string literals",
+    			'const alsoPart = new Instance("part");',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Allowed Alternatives
+    	Use modern or specialized instances that satisfy your project requirements.
+
+    	<Code
+    		code={[
+    			'const mesh = new Instance("MeshPart");',
+    			"<folder />",
+    			'<textlabel Text="Hello" />',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Configuration Options
+
+The rule accepts an object with a `bannedInstances` property, which can be an array or a map.
+
+<Tabs>
+	<TabItem label="Simple Array" icon="list-format">
+		### Basic Banning
+		Just a list of strings. Uses a generic error message.
+
+    	<Code
+    		code={[
+    			"{",
+    			'\t"bannedInstances": ["Part", "Frame", "Script"]',
+    			"}",
+    		].join("\n")}
+    		lang="json"
+    	/>
+    </TabItem>
+    <TabItem label="Custom Messages" icon="document">
+    	### Explanatory Errors
+    	Provide a map where the key is the Instance and the value is the reason.
+
+    	<Code
+    		code={[
+    			"{",
+    			'\t"bannedInstances": {',
+    			'\t\t"Part": "Use MeshPart instead for better performance",',
+    			'\t\t"Script": "Runtime script creation is a security risk"',
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="json"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Detection Strategy
+
+<CardGrid stagger>
+	<Card title="JSX Detection" icon="bolt">
+		Flags lowercase elements like `<part />` which represent Roblox Instances.
+	</Card>
+	<Card title="Constructor Check" icon="setting">
+		Inspects `new Instance("Name")` calls, even with complex expressions.
+	</Card>
+	<Card title="Case Insensitivity" icon="magnifier">
+		Matches "Part", "part", and "PART" identically to avoid bypasses.
+	</Card>
+	<Card title="React Safety" icon="warning">
+		Ignores PascalCase elements like `<Part />` as they are React components.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="no-color3-constructor"
+		description="Bans inefficient Color3 constructors"
+		href="/rules/no-color3-constructor/"
+	/>
+	<LinkCard
+		title="prefer-udim2-shorthand"
+		description="Enforces UDim2 shorthands"
+		href="/rules/prefer-udim2-shorthand/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Roblox Instance API"
+		description="Official reference for all Instance classes"
+		href="https://create.roblox.com/docs/reference/engine/classes/Instance"
+	/>
+</CardGrid>

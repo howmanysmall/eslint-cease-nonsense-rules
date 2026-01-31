@@ -1,0 +1,129 @@
+---
+title: fast-format
+badge:
+    text: Performance
+    variant: success
+description: Enforces oxfmt code formatting with auto-fix support and intelligent caching.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Enforces oxfmt code formatting with auto-fix support and intelligent caching.
+
+## Rule Details :badge[Performance]{variant=success}
+
+This rule integrates `oxfmt` (a high-performance Rust-based formatter) directly into ESLint. It reports formatting
+differences as `INSERT`, `DELETE`, and `REPLACE` operations, providing near-instant feedback even in massive monorepos.
+
+<Aside type="tip" title="Blazing Fast">
+	`oxfmt` is 10-100x faster than Prettier. By integrating it into ESLint, you get unified tooling without sacrificing
+	performance.
+</Aside>
+
+## How it Works
+
+<Steps>
+1. **Source Analysis**
+   The rule reads your file content and identifies its language (TS, JS, TSX, JSX).
+
+2. **Oxfmt Execution** It passes the source to the Rust-powered `oxfmt` engine via an internal bridge.
+
+3. **Diff Generation** Determines the minimum set of edits (Insert/Delete/Replace) needed to match the ideal format.
+
+4. **Auto-Fix** ESLint applies these edits automatically when running with the `--fix` flag.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Features
+
+<CardGrid stagger>
+	<Card title="Rust-Powered" icon="bolt">
+		Leverages the performance of Rust for extremely fast parsing and formatting.
+	</Card>
+	<Card title="LRU Caching" icon="setting">
+		Avoids redundant formatting for unchanged files using an intelligent caching system.
+	</Card>
+	<Card title="Auto-Fix" icon="approve-check">
+		Fully compatible with `eslint --fix` and `bun run lint:fix`.
+	</Card>
+	<Card title="Unified Tooling" icon="rocket">
+		No need for separate Prettier runs; everything happens in your standard linting pass.
+	</Card>
+</CardGrid>
+
+## Usage
+
+<Tabs>
+	<TabItem label="Command Line" icon="terminal">
+		### Fixing Issues
+		Run the fix command to automatically format your entire project.
+
+    	<Code code={["bun run lint:fix", "eslint --fix src/"].join("\n")} lang="bash" />
+    </TabItem>
+    <TabItem label="Configuration" icon="seti:typescript">
+    	### ESLint Setup
+    	Include the plugin and enable the rule in your configuration.
+
+    	<Code
+    		code={[
+    			'import ceaseNonsense from "@pobammer-ts/eslint-cease-nonsense-rules";',
+    			"",
+    			"export default [",
+    			"\t{",
+    			"\t\tplugins: {",
+    			'\t\t\t"cease-nonsense": ceaseNonsense,',
+    			"\t\t},",
+    			"\t\trules: {",
+    			'\t\t\t"cease-nonsense/fast-format": "error",',
+    			"\t\t},",
+    			"\t},",
+    			"];",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Performance Internals
+
+### LRU Cache Strategy
+
+The rule maintains a Least Recently Used (LRU) cache (default capacity: 32 files) to skip processing for files that
+haven't changed:
+
+- **Cache Keys**: Combination of filename and hashed source content.
+- **Eviction**: Automatically removes the oldest entries to maintain a low memory footprint.
+- **Support**: Runs on `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs`, and `.cjs`.
+
+## Message Types
+
+| Type      | Description                       | Example                        |
+| :-------- | :-------------------------------- | :----------------------------- |
+| `INSERT`  | Missing whitespace or punctuation | `Insert " " at position 42`    |
+| `DELETE`  | Extra or incorrect characters     | `Delete ";" at position 10`    |
+| `REPLACE` | Swapping styles (e.g., quotes)    | `Replace 'hello' with "hello"` |
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard title="no-commented-code" description="Clean up old code blocks" href="/rules/no-commented-code/" />
+	<LinkCard title="naming-convention" description="Enforce fast naming standards" href="/rules/naming-convention/" />
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="oxfmt Documentation"
+		description="Official guide to the oxc formatter"
+		href="https://oxc-project.github.io/docs/guide/usage/linter/oxfmt.html"
+	/>
+	<LinkCard
+		title="ESLint Formatters"
+		description="Understanding how ESLint handles formatting"
+		href="https://eslint.org/docs/latest/use/formatters/"
+	/>
+</CardGrid>

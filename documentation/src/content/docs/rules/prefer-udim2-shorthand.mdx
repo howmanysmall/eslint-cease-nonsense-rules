@@ -1,0 +1,116 @@
+---
+title: prefer-udim2-shorthand
+badge:
+    text: Roblox
+    variant: note
+description: Prefer UDim2.fromScale() or UDim2.fromOffset() when all offsets or all scales are zero.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Prefer `UDim2.fromScale()` or `UDim2.fromOffset()` over the 4-argument constructor.
+
+## Rule Details :badge[Roblox]{variant=note}
+
+When creating a `UDim2` with all scales or all offsets set to zero, the shorthand constructors are clearer and more concise. This rule avoids the noise of redundant zeros and explicitly signals whether you are working in coordinate scale or pixel offsets.
+
+<Aside type="tip" title="Readability">
+	`UDim2.fromScale(1, 0.5)` is instantly recognizable as a layout operation, whereas `new UDim2(1, 0, 0.5, 0)`
+	requires mental parsing to verify which components are zero.
+</Aside>
+
+## Refactoring Steps
+
+<Steps>
+1. **Analyze Constructor**
+   Look at your `new UDim2(Sx, Ox, Sy, Oy)` calls. Check if `Ox` and `Oy` are both zero, or if `Sx` and `Sy` are both zero.
+
+2. **Select Shorthand**
+    - If offsets are zero: use `UDim2.fromScale(Sx, Sy)`.
+    - If scales are zero: use `UDim2.fromOffset(Ox, Oy)`.
+
+3. **Replace Call** Update the code to use the static method. Note that the shorthand methods only take 2 arguments instead of 4.
+
+4. **Preserve Mixed** If you have a mix (e.g., `new UDim2(1, 5, 0, 0)`), keep the full constructor as shorthands don't support mixed modes easily.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Verbose Constructors
+		Bans the 4-argument version when 2 arguments are just zeros.
+
+    	<Code
+    		code={[
+    			"// Pure scale",
+    			"new UDim2(1, 0, 1, 0);",
+    			"",
+    			"// Pure offset",
+    			"new UDim2(0, 100, 0, 50);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Descriptive Shorthands
+    	Use the specific static methods for scale or offset operations.
+
+    	<Code
+    		code={[
+    			"UDim2.fromScale(1, 1);",
+    			"UDim2.fromOffset(100, 50);",
+    			"",
+    			"// Mixed values are still allowed",
+    			"new UDim2(0.5, 10, 0.5, 10);",
+    			"",
+    			"// Explicit zero-initialization is allowed",
+    			"new UDim2(0, 0, 0, 0);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why use shorthands?
+
+<CardGrid stagger>
+	<Card title="Intent" icon="magnifier">
+		Clearly signals to other developers whether you are doing relative scaling or constant padding.
+	</Card>
+	<Card title="Error Prevention" icon="bolt">
+		Reduces the chance of accidentally putting a scale value into an offset parameter.
+	</Card>
+	<Card title="Conciseness" icon="rocket">
+		Reduces horizontal noise in your JSX properties or layout scripts.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="no-color3-constructor"
+		description="Similar performance rule for Color3"
+		href="/rules/no-color3-constructor/"
+	/>
+	<LinkCard
+		title="prefer-pattern-replacements"
+		description="General pattern replacement framework"
+		href="/rules/prefer-pattern-replacements/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Roblox UDim2 Documentation"
+		description="Official engine reference for UDim2"
+		href="https://create.roblox.com/docs/reference/engine/datatypes/UDim2"
+	/>
+</CardGrid>

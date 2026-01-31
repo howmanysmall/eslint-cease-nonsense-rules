@@ -1,0 +1,99 @@
+---
+title: Introduction
+description: Learn about Cease Nonsense, a comprehensive ESLint plugin for TypeScript, React, and roblox-ts development.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+
+Welcome to **Cease Nonsense**, a comprehensive ESLint plugin designed to catch common mistakes, enforce best practices,
+and improve code quality in TypeScript, React, and roblox-ts projects.
+
+## What is Cease Nonsense?
+
+Cease Nonsense provides over 40 carefully crafted ESLint rules that go beyond standard linting. These rules are designed
+to catch subtle bugs, enforce architectural patterns, and improve developer experience.
+
+<CardGrid stagger>
+	<Card title="Type-Aware" icon="seti:typescript">
+		Rules that leverage TypeScript's type system for precise, context-aware linting with minimal false positives.
+	</Card>
+	<Card title="React Focused" icon="seti:react">
+		Specialized rules for React and roblox-ts environments to catch hook violations and component anti-patterns.
+	</Card>
+	<Card title="Performance" icon="rocket">
+		Identify performance regressions and anti-patterns before they ship to production.
+	</Card>
+	<Card title="Clean Code" icon="puzzle">
+		Enforce consistent naming conventions, architectural boundaries, and coding standards.
+	</Card>
+</CardGrid>
+
+## Who is this for?
+
+Cease Nonsense is ideal for:
+
+- **TypeScript developers** who want stricter linting than stock ESLint provides
+- **React developers** working with hooks and functional components
+- **roblox-ts developers** building games and experiences on Roblox
+- **Teams** who want to enforce consistent coding standards across projects
+
+## Quick Start
+
+<Steps>
+
+1. **Install the package**
+
+    <Code code="bun add -D eslint-plugin-cease-nonsense" lang="bash" title="Terminal" />
+
+2. **Add to your ESLint config**
+
+    <Code
+    	code={[
+    		"import ceaseNonsense from 'eslint-plugin-cease-nonsense';",
+    		"",
+    		"export default [",
+    		"\tceaseNonsense.configs.recommended,",
+    		"\t// ... your other configs",
+    		"];",
+    	].join("\n")}
+    	lang="typescript"
+    	title="eslint.config.ts"
+    />
+
+3. **Run ESLint**
+
+    <Code code="bun run eslint ." lang="bash" title="Terminal" />
+
+</Steps>
+
+## Rule Categories
+
+The rules are organized into logical categories:
+
+<CardGrid>
+	<LinkCard
+		title="React Rules"
+		description="Rules for React hooks, components, and patterns"
+		href="/rules/ban-react-fc/"
+	/>
+	<LinkCard
+		title="Roblox & Luau Rules"
+		description="Rules specific to roblox-ts development"
+		href="/rules/ban-instances/"
+	/>
+	<LinkCard
+		title="Naming Conventions"
+		description="Enforce consistent naming across your codebase"
+		href="/rules/naming-convention/"
+	/>
+	<LinkCard
+		title="General Logic & Style"
+		description="Best practices for clean, maintainable code"
+		href="/rules/prefer-early-return/"
+	/>
+</CardGrid>
+
+<Aside type="tip" title="Explore the Sidebar">
+	Use the sidebar navigation to browse all available rules. Each rule page includes examples, configuration options,
+	and related rules.
+</Aside>

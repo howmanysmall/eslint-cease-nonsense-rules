@@ -1,0 +1,124 @@
+---
+title: require-react-component-keys
+badge:
+    text: Best Practice
+    variant: success
+description: Enforces key props on all React elements except top-level returns from components.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Enforces `key` props on all React elements except top-level returns.
+
+## Rule Details :badge[Best Practice]{variant=success}
+
+React requires `key` props on elements in arrays to efficiently track changes. This rule enforces keys on all JSX elements except the root return of a component, preventing common React warnings, state bugs, and performance issues.
+
+<Aside type="caution" title="State Preservation">
+	Without keys, React may reuse the wrong elements when items are reordered, leading to "ghost" state from one item
+	appearing on another.
+</Aside>
+
+## Key Implementation Path
+
+<Steps>
+1. **Identify Lists**
+   Find `map()` calls or arrays that return JSX elements.
+
+2. **Select a Stable ID**
+   Choose a property that is unique and persistent (like a database ID or UUID). Avoid using the array index.
+
+3. **Apply the Key**
+   Add the `key` prop to the outermost element returned for each item.
+
+4. **Handle Fragments**
+   If returning multiple elements per item, use a keyed `<Fragment>` instead of the short `<>` syntax.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Missing Keys
+		Bans elements inside maps that don't have a unique identifier.
+
+    	<Code
+    		code={[
+    			"function UserList({ users }) {",
+    			"\treturn (",
+    			"\t\t<div>",
+    			"\t\t\t{users.map((user) => (",
+    			"\t\t\t\t<UserCard user={user} /> // ❌ Missing key",
+    			"\t\t\t))}",
+    			"\t\t</div>",
+    			"\t);",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Keyed Elements
+    	Use stable identifiers for every list item.
+
+    	<Code
+    		code={[
+    			"function UserList({ users }) {",
+    			"\treturn (",
+    			"\t\t<div>",
+    			"\t\t\t{users.map((user) => (",
+    			"\t\t\t\t<UserCard key={user.id} user={user} />",
+    			"\t\t\t))}",
+    			"\t\t</div>",
+    			"\t);",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why Keys Matter
+
+<CardGrid stagger>
+	<Card title="Reconciliation" icon="bolt">
+		Helps React identify which items changed, were added, or were removed.
+	</Card>
+	<Card title="State Stability" icon="setting">
+		Ensures local component state (like input values) stays attached to the correct item.
+	</Card>
+	<Card title="Performance" icon="rocket">
+		Avoids destroying and recreating the entire DOM list when only one item changes.
+	</Card>
+</CardGrid>
+
+## Good Key Practices
+
+- **Stable**: Should not change over time (avoid `Math.random()`).
+- **Unique**: No two elements in the same list should share a key.
+- **Predictable**: Avoid using array indices if the list can be reordered or filtered.
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="no-god-components"
+		description="Prevents overly complex components"
+		href="/rules/no-god-components/"
+	/>
+	<LinkCard title="ban-react-fc" description="Enforces proper component patterns" href="/rules/ban-react-fc/" />
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="React Docs: Lists & Keys"
+		description="Official guide on rendering lists"
+		href="https://react.dev/learn/rendering-lists"
+	/>
+</CardGrid>

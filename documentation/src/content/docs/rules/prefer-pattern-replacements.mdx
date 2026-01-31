@@ -1,0 +1,125 @@
+---
+title: prefer-pattern-replacements
+badge:
+    text: Advanced
+    variant: caution
+description: Enforces replacement of verbose constructor/method patterns with simpler alternatives using a capture system.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Enforces replacement of verbose constructor/method patterns with simpler alternatives.
+
+## Rule Details :badge[Advanced]{variant=caution}
+
+This rule uses a type-safe pattern matching system to detect verbose constructor or method calls that have simpler equivalents. It supports captures, optional arguments, wildcards, and scope-aware fixes.
+
+<Aside type="caution" title="Complexity Note">
+	This is a high-level orchestration rule. It allows you to define custom "shorthands" for complex object creation
+	logic across your entire codebase.
+</Aside>
+
+## Features
+
+<CardGrid stagger>
+	<Card title="Auto-Fix" icon="rocket">
+		Automatically replaces verbose patterns with their simpler equivalents during linting.
+	</Card>
+	<Card title="Captures" icon="magnifier">
+		Use `$x` or `$name` to capture values from the source and inject them into the replacement.
+	</Card>
+	<Card title="Wildcards" icon="bolt">
+		Use `_` to match any value without capturing it, useful for ignoring unneeded arguments.
+	</Card>
+	<Card title="Scope Aware" icon="warning">
+		Intelligently skips fixes if the replacement name would shadow an existing local variable.
+	</Card>
+</CardGrid>
+
+## Pattern Syntax
+
+### Capture System
+
+Capture a value to use in the replacement:
+
+- **Match**: `new Vector2($x, $y)`
+- **Replacement**: `Vector2.create($x, $y)`
+
+### Optional Arguments
+
+Match literal `0` or missing arguments using `?`:
+
+- **Match**: `new Vector2($x, 0?)`
+- **Replacement**: `fromX($x)`
+
+### Conditions (`when`)
+
+Add constraints on captured values:
+
+<Code
+	code={[
+		"pattern({",
+		'\tmatch: "new Vector2($x, $x)",',
+		'\treplacement: "fromUniform($x)",',
+		'\twhen: { x: "!= 0" }',
+		"});",
+	].join("\n")}
+	lang="typescript"
+/>
+
+## Common Use Cases
+
+<Tabs>
+	<TabItem label="Roblox UDim2" icon="laptop">
+		### Simplifying UDim2
+		Replace full constructors with shorthand methods.
+
+    	<Code
+    		code={[
+    			"// Match: new UDim2($x, 0, $y, 0)",
+    			"// Replacement: UDim2.fromScale($x, $y)",
+    			"",
+    			"const scale = new UDim2(1, 0, 1, 0);",
+    			"// Fixes to: UDim2.fromScale(1, 1);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="Vector2/3" icon="bolt">
+    	### Uniform Vectors
+    	Replace identical coordinates with uniform methods.
+
+    	<Code
+    		code={[
+    			"// Match: new Vector2($x, $x)",
+    			"// Replacement: fromUniform($x)",
+    			"",
+    			"const vec = new Vector2(5, 5);",
+    			"// Fixes to: fromUniform(5);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="no-color3-constructor"
+		description="Bans Color3 constructor specifically"
+		href="/rules/no-color3-constructor/"
+	/>
+	<LinkCard title="prefer-udim2-shorthand" description="Simpler UDim2 logic" href="/rules/prefer-udim2-shorthand/" />
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="roblox-ts Patterns"
+		description="Common shorthand patterns in roblox-ts"
+		href="https://roblox-ts.com/"
+	/>
+</CardGrid>

@@ -1,0 +1,141 @@
+---
+title: prefer-class-properties
+badge:
+    text: Clean Code
+    variant: success
+description: Prefer class properties over assignment of literals in constructors for cleaner class definitions.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Prefer class properties over assignment of literals in constructors.
+
+## Rule Details :badge[Clean Code]{variant=success}
+
+This rule enforces using class property declarations for literal values instead of assigning them in the constructor. Class properties are more concise, provide better type inference in TypeScript, and make the class's state structure visible at a glance.
+
+<Aside type="tip" title="Modern Standards">
+	Class properties (fields) are a standard part of modern JavaScript (ES2022) and TypeScript. They eliminate
+	constructor boilerplate for simple initializations.
+</Aside>
+
+## Refactoring Method
+
+<Steps>
+1. **Identify Constructors**
+   Find classes with a `constructor` that performs `this.prop = ...` assignments.
+
+2. **Check for Literals**
+   Verify if the assigned values are simple strings, numbers, arrays, or objects that don't depend on parameters.
+
+3. **Lift to Properties**
+   Move the assignment from the constructor body to a top-level property declaration.
+
+4. **Clean Up**
+   If the `constructor` is now empty (or only calls `super()`), it can be removed entirely.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Constructor Assignments
+		Avoid manually assigning static literals inside the `constructor`.
+
+    	<Code
+    		code={[
+    			"class User {",
+    			"\tconstructor() {",
+    			'\t\tthis.name = "Unknown";',
+    			"\t\tthis.age = 0;",
+    			"\t\tthis.active = true;",
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Class Properties
+    	Declare properties directly at the class level for a cleaner structure.
+
+    	<Code
+    		code={[
+    			"class User {",
+    			'\tname = "Unknown";',
+    			"\tage = 0;",
+    			"\tactive = true;",
+    			"}",
+    			"",
+    			"class Service {",
+    			"\t// Constructor is now free for dynamic logic",
+    			"\tconstructor(options: Options) {",
+    			"\t\tthis.options = options;",
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Benefits
+
+<CardGrid stagger>
+	<Card title="Readability" icon="list-format">
+		The class's properties are documented at the top, not buried in nested constructor logic.
+	</Card>
+	<Card title="Type Inference" icon="bolt">
+		TypeScript can automatically infer the property type from the initializer: `age = 0` is typed as
+		`number`.
+	</Card>
+	<Card title="Less Boilerplate" icon="setting">
+		Avoid writing `constructor() { super(); ... }` when you only need to set default values.
+	</Card>
+	<Card title="Inheritance" icon="warning">
+		Property initializers run in a predictable order relative to parent class initialization.
+	</Card>
+</CardGrid>
+
+## Simple Literal Detection
+
+The rule flags assignments of the following "simple" values:
+
+- **Primitives**: `string`, `number`, `boolean`, `null`.
+- **Structural Literals**: `[]` (Array) and `{}` (Object).
+- **Template Literals**: Backtick strings without complex interpolation.
+- **Static Members**: `Color3.fromRGB(...)`, `Vector3.zero`, etc.
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="no-async-constructor"
+		description="Avoid async work in constructors"
+		href="/rules/no-async-constructor/"
+	/>
+	<LinkCard
+		title="no-instance-methods-without-this"
+		description="Optimize class method placement"
+		href="/rules/no-instance-methods-without-this/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="TypeScript Classes"
+		description="Official guide on class fields and properties"
+		href="https://www.typescriptlang.org/docs/handbook/2/classes.html"
+	/>
+	<LinkCard
+		title="MDN: Class Fields"
+		description="Public and private class field documentation"
+		href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Public_class_fields"
+	/>
+</CardGrid>

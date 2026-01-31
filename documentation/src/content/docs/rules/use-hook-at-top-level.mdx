@@ -1,0 +1,121 @@
+---
+title: use-hook-at-top-level
+badge:
+    text: Best Practice
+    variant: success
+description:
+    Enforces that React hooks are only called at the top level of components or custom hooks, never conditionally or in
+    nested functions.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Enforces that React hooks are only called at the top level.
+
+## Rule Details :badge[Best Practice]{variant=success}
+
+React's Rules of Hooks require that hooks are called at the top level of your function. They must never be called inside
+loops, conditions, or nested functions. This ensures that hooks are called in the same order each time a component
+renders, which is how React preserves state between re-renderings.
+
+<Aside type="tip" title="State Corruption">
+	If a hook call is skipped during a re-render due to a condition, the internal state mapping for every subsequent
+	hook call will be misaligned, leading to unpredictable crashes and data corruption.
+</Aside>
+
+## Refactoring Workflow
+
+<Steps>
+1. **Identify Nested Call** Locate hooks (functions starting with `use`) called inside `if`, `for`, `while`, or nested `function`/`arrow` definitions.
+2. **Lift to Top Level** Move the hook call to the very top of your component body, before any early returns or logic.
+3. **Convert to Internal Logic** If the hook shouldn't perform work unless a condition is met, move that condition _inside_ the hook's implementation (e.g., inside the `useEffect` callback).
+4. **Component Extraction** If you need to call a hook for every item in an array, extract the item's JSX into a sub-component where the hook is called at its top level.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Conditional & Nested Hooks
+		Bans patterns that break the predictable order of execution.
+
+    	<Code
+    		code={[
+    			"function UserProfile({ userId }) {",
+    			"\t// ❌ Conditional hook",
+    			"\tif (userId) {",
+    			"\t\tuseEffect(() => { ... }, [userId]);",
+    			"\t}",
+    			"",
+    			"\t// ❌ Hook in loop",
+    			"\tuserIds.map(id => {",
+    			"\t\tconst data = useData(id);",
+    			"\t});",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Top-Level Hooks
+    	All hooks are called unconditionally at the start of the function.
+
+    	<Code
+    		code={[
+    			"function UserProfile({ userId }) {",
+    			"\t// ✅ Always called",
+    			"\tconst data = useData(userId);",
+    			"",
+    			"\tuseEffect(() => {",
+    			"\t\t// Put logic inside, not around the hook",
+    			"\t\tif (userId) { ... }",
+    			"\t}, [userId]);",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why is order important?
+
+<CardGrid stagger>
+	<Card title="Mapping" icon="list-format">
+		React doesn't know which state relates to which `useState` call except by their call order.
+	</Card>
+	<Card title="Concurrency" icon="bolt">
+		Predictable hook order is essential for React's Concurrent rendering features to function.
+	</Card>
+	<Card title="Custom Hooks" icon="rocket">
+		The rules apply recursively; if your custom hook calls a hook, it must also be called at the top level.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="use-exhaustive-dependencies"
+		description="Ensures correct dependency arrays"
+		href="/rules/use-exhaustive-dependencies/"
+	/>
+	<LinkCard
+		title="require-named-effect-functions"
+		description="Enforces named effect callbacks"
+		href="/rules/require-named-effect-functions/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="React Docs: Rules of Hooks"
+		description="Official documentation on hook constraints"
+		href="https://react.dev/reference/rules/rules-of-hooks"
+	/>
+</CardGrid>

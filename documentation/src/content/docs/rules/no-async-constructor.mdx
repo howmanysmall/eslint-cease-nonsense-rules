@@ -1,0 +1,118 @@
+---
+title: no-async-constructor
+badge:
+    text: Safety
+    variant: danger
+description:
+    Disallow async operations in class constructors to prevent race conditions and partially initialized objects.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Disallow async operations in class constructors.
+
+## Rule Details :badge[Safety]{variant=danger}
+
+Class constructors in JavaScript/TypeScript cannot be `async`. Attempting to perform asynchronous work (via `then()` or
+direct `await` inside a wrapper) in a constructor leads to objects being used before they are fully initialized. This
+creates difficult-to-debug race conditions and breaks the guarantee that a constructor returns a valid, usable instance.
+
+<Aside type="danger" title="Architectural Risk">
+	A constructor should always be synchronous and return a fully formed instance. If you need async initialization, you
+	must use the Static Factory pattern.
+</Aside>
+
+## Refactoring Workflow
+
+<Steps>
+1. **Identify Async Work**
+   Locate `this.init().then(...)` or other async callbacks inside your constructor.
+2. **Private Constructor** Make the constructor `private` or `protected` to prevent external un-safe instantiation.
+3. **Create Static Factory** Define a `static async create(...)` method that performs the initialization logic.
+4. **Return Instance** Construct the object inside the factory, `await` its async needs, and return the finished result.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Async in Constructor
+		Bans patterns that leave the object in a "loading" state after construction.
+
+    	<Code
+    		code={[
+    			"class Database {",
+    			"\tconstructor() {",
+    			"\t\t// ❌ Dangerous async side-effect",
+    			"\t\tthis.connect().then(() => print(\"Connected\"));",
+    			"\t}",
+    			"",
+    			"\tasync connect() { ... }",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Static Factory Method
+    	Use a dedicated async method to handle setup and return the instance.
+
+    	<Code
+    		code={[
+    			"class Database {",
+    			"\tprivate constructor() {",
+    			"\t\t// Initialize sync properties only",
+    			"\t}",
+    			"",
+    			"\tstatic async create() {",
+    			"\t\tconst db = new Database();",
+    			"\t\tawait db.connect();",
+    			"\t\treturn db;",
+    			"\t}",
+    			"}",
+    			"",
+    			"// Usage",
+    			"const db = await Database.create();",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why avoid async constructors?
+
+<CardGrid stagger>
+	<Card title="Race Conditions" icon="bolt">
+		Methods may be called on the instance before the `then()` callback has finished setup.
+	</Card>
+	<Card title="Error Handling" icon="warning">
+		Errors in async constructor tasks are difficult to catch and can crash the whole process.
+	</Card>
+	<Card title="Predictability" icon="rocket">
+		The Static Factory pattern makes it clear that initialization is an asynchronous, fallible process.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="require-module-level-instantiation"
+		description="Proper placement for singletons"
+		href="/rules/require-module-level-instantiation/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Factory Method Pattern"
+		description="Official guide to the Static Factory pattern"
+		href="https://refactoring.guru/design-patterns/factory-method"
+	/>
+</CardGrid>

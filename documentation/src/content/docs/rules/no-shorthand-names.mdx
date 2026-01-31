@@ -1,0 +1,152 @@
+---
+title: no-shorthand-names
+badge:
+    text: Clean Code
+    variant: success
+description: Bans shorthand variable names in favor of descriptive full names for better readability.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Bans shorthand variable names in favor of descriptive full names.
+
+## Rule Details :badge[Clean Code]{variant=success}
+
+Shorthand names (like `plr`, `dt`, or `args`) reduce code readability and make it harder for newcomers to understand the
+intent of your logic. This rule enforces full, descriptive names by detecting shorthands even within compound
+identifiers (like `plrData` → `playerData`).
+
+<Aside type="tip" title="Self-Documenting Code">
+	Descriptive names reduce the need for comments. `playerScore` is much clearer than `plrScr`.
+</Aside>
+
+## Migration Workflow
+
+<Steps>
+1. **Identify Violations**
+   Run `bun run lint` to find all usages of cryptic shorthands in your project.
+
+2. **Determine Replacements** Check the [Common Replacements](#common-replacements) table below for the recommended full
+   names.
+
+3. **Rename Identifiers** Use your IDE's refactoring tools (F2 / Rename) to update all references safely.
+
+4. **Update Compound Names** Don't forget to update camelCase names like `plrId` to `playerId` to maintain consistency.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Cryptic Shorthands
+		Bans abbreviations that obscure meaning.
+
+    	<Code
+    		code={[
+    			"const plr = getPlayer();",
+    			"const dt = 0.016;",
+    			"const args = [1, 2, 3];",
+    			"",
+    			"// Compound shorthands are also caught",
+    			"const plrData = getUserData();",
+    			"const btnClick = handleClick;",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Explicit Names
+    	Use full words to describe your variables and parameters.
+
+    	<Code
+    		code={[
+    			"const player = getPlayer();",
+    			"const deltaTime = 0.016;",
+    			"const parameters = [1, 2, 3];",
+    			"",
+    			"// Descriptive compound names",
+    			"const playerData = getUserData();",
+    			"const buttonClick = handleClick;",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Common Replacements
+
+| Shorthand | Replacement  | Context                 |
+| :-------- | :----------- | :---------------------- |
+| `plr`     | `player`     | Roblox player reference |
+| `char`    | `character`  | Roblox character model  |
+| `args`    | `parameters` | Function parameters     |
+| `dt`      | `deltaTime`  | Frame time delta        |
+| `btn`     | `button`     | UI components           |
+| `cfg`     | `config`     | Configuration           |
+
+## Advanced Features
+
+<CardGrid stagger>
+	<Card title="Compound Detection" icon="magnifier">
+		Splits identifiers at camelCase boundaries to catch `myPlrName` or `UserCfg`.
+	</Card>
+	<Card title="Regex Support" icon="setting">
+		Define custom shorthands using regex for complex naming patterns.
+	</Card>
+	<Card title="Property Access" icon="approve-check">
+		Optionally allow shorthands when accessing external properties (e.g., `character.char`).
+	</Card>
+	<Card title="Import Safety" icon="warning">
+		Automatically ignores names from external packages to prevent breaking 3rd party code.
+	</Card>
+</CardGrid>
+
+## Configuration Example
+
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/no-shorthand-names": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"shorthands": {',
+		'\t\t\t\t"cfg": "config",',
+		'\t\t\t\t"ctx": "context"',
+		"\t\t\t},",
+		'\t\t\t"allowPropertyAccess": ["char"]',
+		"\t\t}",
+		"\t]",
+		"}",
+	].join("\n")}
+	lang="json"
+	title="eslint.config.js"
+/>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="prevent-abbreviations"
+		description="General abbreviation preventative"
+		href="/rules/prevent-abbreviations/"
+	/>
+	<LinkCard
+		title="naming-convention"
+		description="Enforce casing and naming standards"
+		href="/rules/naming-convention/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Clean Code: Naming"
+		description="Principles for choosing meaningful names"
+		href="https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882"
+	/>
+</CardGrid>

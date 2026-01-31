@@ -1,0 +1,114 @@
+---
+title: no-useless-use-spring
+badge:
+    text: Performance
+    variant: caution
+description: Flags useSpring-style hooks that never change due to static configuration and dependencies.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Flags `useSpring`-style hooks that never change.
+
+## Rule Details :badge[Performance]{variant=caution}
+
+Spring hooks (`useSpring`, `useMotion`, etc.) carry significant runtime overhead in `roblox-ts`. If both the
+configuration and the dependencies are entirely static, the spring value will never update. In these cases, the hook is
+totally redundant and should be replaced with a simple constant or state value.
+
+<Aside type="danger" title="Unnecessary Subscriptions">
+	Every `useSpring` call creates reactive subscriptions and internal update loops. Using them for static values wastes
+	CPU cycles and memory for zero visual result.
+</Aside>
+
+## Optimization Path
+
+<Steps>
+1. **Analyze Configuration**
+   Check if the config object properties are literals, module-level constants, or static constructors (like `Vector3`).
+
+2. **Check Dependencies** Verify if the dependency array contains any dynamic values from props or state.
+
+3. **Ignore Mount Animations** If you use `from` and `to`, the linter will ignore the rule, as those properties indicate
+   a mount-time transition.
+
+4. **Replace with Constant** If purely static, delete the hook and use a standard `const` or `useMemo`.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Static Springs
+		Bans springs that have no way to react to anything.
+
+    	<Code
+    		code={[
+    			"// ❌ Static config with empty deps",
+    			"const spring = useSpring({ opacity: 1 }, []);",
+    			"",
+    			"// ❌ Module constants are also static",
+    			"const DEFAULT_SCALE = 1.5;",
+    			"const scale = useSpring({ scale: DEFAULT_SCALE }, [DEFAULT_SCALE]);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Dynamic or Entry Anims
+    	Use springs when they actually react to state or provide entry transitions.
+
+    	<Code
+    		code={[
+    			"// ✅ Reactive to props",
+    			"const spring = useSpring({ opacity: isOpen ? 1 : 0 }, [isOpen]);",
+    			"",
+    			"// ✅ Mount animation (allowed because it transitions on load)",
+    			"const spring = useSpring({",
+    			"\tfrom: { scale: 0 },",
+    			"\tto: { scale: 1 }",
+    			"}, []);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why is it wasteful?
+
+<CardGrid stagger>
+	<Card title="Simulation Cycles" icon="bolt">
+		The spring solver still runs logic to check for changes that will never happen.
+	</Card>
+	<Card title="Memory Allocation" icon="list-format">
+		Spring hooks allocate hidden state, history buffers, and listener arrays.
+	</Card>
+	<Card title="React Overhead" icon="rocket">
+		Every re-render of the parent still involves the hook's execution and dependency comparison.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="use-exhaustive-dependencies"
+		description="Ensure corect react dependencies"
+		href="/rules/use-exhaustive-dependencies/"
+	/>
+	<LinkCard title="no-identity-map" description="Bans wasteful data transformations" href="/rules/no-identity-map/" />
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="React Spring Optimization"
+		description="Official guide on animation performance"
+		href="https://www.react-spring.dev/docs/concepts/performance"
+	/>
+</CardGrid>

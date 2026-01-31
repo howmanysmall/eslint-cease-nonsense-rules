@@ -1,0 +1,118 @@
+---
+title: prefer-pascal-case-enums
+badge:
+    text: Clean Code
+    variant: success
+description: Enum names and members must be PascalCase to align with TypeScript conventions and improve readability.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Enum names and members must be PascalCase.
+
+## Rule Details :badge[Clean Code]{variant=success}
+
+TypeScript enums should use PascalCase for both the enum name and all members. This enforces consistency with TypeScript type conventions and makes usages like `Color.Red` immediately distinguishable from constants like `MAX_SIZE` or variables like `activePlayer`.
+
+<Aside type="tip" title="Type Convention">
+	Enums define new types in TypeScript, so they should follow the same PascalCase convention as interfaces and
+	classes.
+</Aside>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Mixed Casing
+		Bans non-PascalCase casing for enums and their members.
+
+    	<Code
+    		code={[
+    			"enum colors {",
+    			"\tRED, // SCREAMING_SNAKE_CASE",
+    			"\tblue, // camelCase",
+    			"}",
+    			"",
+    			"enum user_role {",
+    			"\tadmin_user",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Strict PascalCase
+    	Use capitalized words without underscores for both names and members.
+
+    	<Code
+    		code={[
+    			"enum Color {",
+    			"\tRed,",
+    			"\tBlue,",
+    			"\tDarkBlue,",
+    			"}",
+    			"",
+    			"enum UserRole {",
+    			"\tAdminUser",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why PascalCase?
+
+<CardGrid stagger>
+	<Card title="TS Conventions" icon="list-format">
+		Aligns with the official TypeScript style guide and community standards.
+	</Card>
+	<Card title="IDE Clarity" icon="bolt">
+		Makes it easier to distinguish types and enums from regular variables in autocomplete.
+	</Card>
+	<Card title="Readability" icon="magnifier">
+		`HttpStatus.NotFound` is easier to read than `HTTP_STATUS.NOT_FOUND` or `status_codes.not_found`.
+	</Card>
+</CardGrid>
+
+## Conversion Guide
+
+<Steps>
+1. **Acronyms**
+   Treat acronyms as single words (e.g., `HttpStatus`, not `HTTPStatus`).
+
+2. **Snake Case**
+   Remove underscores and capitalize the letter following them (e.g., `user_role` → `UserRole`).
+
+3. **Screaming Snake Case**
+   Convert to lower case and then to PascalCase (e.g., `MAX_RETRIES` → `MaxRetries`).
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="prefer-singular-enums"
+		description="Ensure enum names are singular"
+		href="/rules/prefer-singular-enums/"
+	/>
+	<LinkCard
+		title="prefer-module-scope-constants"
+		description="SCREAMING_SNAKE_CASE rules"
+		href="/rules/prefer-module-scope-constants/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="TS Style Guide: Enums"
+		description="Google's TypeScript style guide for enums"
+		href="https://google.github.io/styleguide/tsguide.html#enums"
+	/>
+</CardGrid>

@@ -1,0 +1,131 @@
+---
+title: prefer-singular-enums
+badge:
+    text: Clean Code
+    variant: success
+description: Enum names should be singular, not plural, to align with TypeScript conventions and improve readability.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Enum names should be singular, not plural.
+
+## Rule Details :badge[Clean Code]{variant=success}
+
+Enum type names represent a single choice from a set, not the entire collection. Using plural names (like `Colors`)
+makes code misleading, as it suggests the variable holds multiple values. This rule enforces singular names (like
+`Color`) to align with standard TypeScript and C# conventions.
+
+<Aside type="tip" title="Natural Language">
+	`const theme: Color = Color.DeepSea` reads much more naturally than `const theme: Colors = Colors.DeepSea`.
+</Aside>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Plural Names
+		Bans enums named with plural suffixes or irregular plural forms.
+
+    	<Code
+    		code={[
+    			"enum Colors {",
+    			"\tRed,",
+    			"\tBlue,",
+    			"}",
+    			"",
+    			"// Irregular plurals",
+    			"enum People {",
+    			"\tAdmin,",
+    			"\tUser,",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Singular Names
+    	Use singular forms for all enum declarations.
+
+    	<Code
+    		code={[
+    			"enum Color {",
+    			"\tRed,",
+    			"\tBlue,",
+    			"}",
+    			"",
+    			"enum Person {",
+    			"\tAdmin,",
+    			"\tUser,",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Refactoring Path
+
+<Steps>
+1. **Identify Plurals**
+   The linter will flag any enum that appears to be plural (including irregulars like `Feet` or `Children`).
+
+2. **Simplify Name** Determine the singular form of the identifier.
+
+3. **Rename & Update** Rename the enum and all references. Note that this often clarifies function arguments as well:
+   `function set(color: Color)`.
+
+4. **Exception Handling** If you have a bitmask enum where multiple flags are stored in one variable, consider adding a
+   `// eslint-disable-line` with a comment explaining why plural is intended.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Why Singular?
+
+<CardGrid stagger>
+	<Card title="Type Clarity" icon="list-format">
+		A variable of type `Color` clearly contains exactly one color.
+	</Card>
+	<Card title="TS Consistency" icon="bolt">
+		Matches how interfaces (e.g., `User`, not `Users`) and classes are named in the ecosystem.
+	</Card>
+	<Card title="Better API Design" icon="rocket">
+		Prevents confusing signatures like `function apply(types: Type)` which are grammatically incorrect.
+	</Card>
+</CardGrid>
+
+## Detectable Plurals
+
+This rule includes a robust detection engine for:
+
+- **Regular**: `Commands`, `Statuses`, `Types`.
+- **Irregular**: `Children`, `People`, `Feet`, `Teeth`, `Mice`.
+- **Common Suffixes**: Handles `-es`, `-ies`, and `-s` logic.
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="prefer-pascal-case-enums"
+		description="Standardize enum naming"
+		href="/rules/prefer-pascal-case-enums/"
+	/>
+	<LinkCard
+		title="prefer-enum-member"
+		description="Enforce member usage over raw values"
+		href="/rules/prefer-enum-member/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Naming Conventions"
+		description="Google's TypeScript style guide for naming"
+		href="https://google.github.io/styleguide/tsguide.html#naming-style"
+	/>
+</CardGrid>

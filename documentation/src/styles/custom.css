@@ -1,0 +1,281 @@
+/* src/styles/custom.css */
+
+/* Google Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+:root {
+	--sl-color-accent-low: #e0f2ff;
+	--sl-color-accent: #007acc;
+	--sl-color-accent-high: #002d4d;
+	--sl-color-white: #1f2129;
+	--sl-color-gray-1: #353941;
+	--sl-color-gray-2: #545861;
+	--sl-color-gray-3: #8893a7;
+	--sl-color-gray-4: #c0c8d1;
+	--sl-color-gray-5: #eceef2;
+	--sl-color-gray-6: #f5f7fa;
+	--sl-color-black: #ffffff;
+
+	/* Glassmorphism Light */
+	--glass-bg: rgba(255, 255, 255, 0.7);
+	--glass-border: rgba(0, 0, 0, 0.08);
+
+	/* Code Blocks Light */
+	--code-bg: #ffffff;
+	--code-border: #e1e4e8;
+}
+
+:root[data-theme="dark"] {
+	--sl-color-accent-low: #003e66;
+	--sl-color-accent: #4ebfff;
+	--sl-color-accent-high: #e0f2ff;
+	--sl-color-white: #ffffff;
+	--sl-color-gray-1: #eceef2;
+	--sl-color-gray-2: #c0c8d1;
+	--sl-color-gray-3: #8893a7;
+	--sl-color-gray-4: #545861;
+	--sl-color-gray-5: #353941;
+	--sl-color-gray-6: #1f2129;
+	--sl-color-black: #0c0d10;
+
+	/* Glassmorphism Dark */
+	--glass-bg: rgba(12, 13, 16, 0.7);
+	--glass-border: rgba(255, 255, 255, 0.1);
+
+	/* Code Blocks Dark */
+	--code-bg: rgba(0, 0, 0, 0.6);
+	--code-border: var(--sl-color-accent-low);
+}
+
+/* Base styles */
+body {
+	font-family:
+		"Inter",
+		system-ui,
+		-apple-system,
+		BlinkMacSystemFont,
+		"Segoe UI",
+		Roboto,
+		Oxygen,
+		Ubuntu,
+		Cantarell,
+		"Open Sans",
+		"Helvetica Neue",
+		sans-serif;
+	color: var(--sl-color-gray-2);
+	background-color: var(--sl-color-black);
+	background-image:
+		radial-gradient(circle at 50% 0%, rgba(78, 191, 255, 0.15) 0%, transparent 50%),
+		radial-gradient(circle at 100% 100%, rgba(0, 122, 204, 0.1) 0%, transparent 40%);
+	background-attachment: fixed;
+}
+
+/* Glassmorphism for header */
+header.header {
+	background-color: var(--glass-bg) !important;
+	border-bottom: 1px solid var(--glass-border) !important;
+	-webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+	backdrop-filter: blur(16px) saturate(180%) !important;
+}
+
+/* Sidebar styling */
+.sidebar-pane {
+	background-color: transparent !important;
+	border-inline-end: 1px solid var(--glass-border) !important;
+}
+
+.sidebar-content {
+	background-color: transparent !important;
+}
+
+/* Sidebar link hover effects */
+nav.sidebar a {
+	border-radius: 6px;
+	transition:
+		color 0.2s ease,
+		padding-left 0.2s ease,
+		background-color 0.2s ease;
+}
+
+nav.sidebar a:hover {
+	color: var(--sl-color-accent);
+	background-color: rgba(78, 191, 255, 0.08);
+}
+
+/* Content area */
+.main-pane {
+	background-color: transparent !important;
+}
+
+/* Cards and decorative elements */
+.card {
+	background: linear-gradient(
+		145deg,
+		var(--glass-bg) 0%,
+		rgba(78, 191, 255, 0.05) 100%
+	) !important;
+	border: 1px solid var(--glass-border) !important;
+	border-radius: 12px !important;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	backdrop-filter: blur(12px) saturate(180%);
+	transition:
+		transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+		border-color 0.3s ease,
+		box-shadow 0.3s ease;
+}
+
+.card:hover {
+	border-color: var(--sl-color-accent) !important;
+	box-shadow: 0 12px 32px rgba(0, 122, 204, 0.2);
+	transform: translateY(-6px);
+}
+
+/* LinkCard enhancements */
+.sl-link-card {
+	transition:
+		transform 0.2s ease,
+		border-color 0.2s ease,
+		box-shadow 0.2s ease;
+}
+
+.sl-link-card:hover {
+	box-shadow: 0 4px 16px rgba(0, 122, 204, 0.1);
+	transform: translateY(-2px);
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	color: var(--sl-color-white) !important;
+	letter-spacing: -0.02em;
+}
+
+h1 {
+	font-weight: 800;
+	-webkit-text-fill-color: transparent;
+	background: linear-gradient(135deg, var(--sl-color-white) 30%, var(--sl-color-accent) 100%);
+	-webkit-background-clip: text;
+	background-clip: text;
+}
+
+/* Code blocks */
+pre {
+	background-color: var(--code-bg) !important;
+	border: 1px solid var(--code-border) !important;
+	border-radius: 8px !important;
+	backdrop-filter: blur(8px);
+}
+
+/* Inline code */
+:not(pre) > code {
+	padding: 0.15em 0.4em;
+	font-size: 0.9em;
+	color: var(--sl-color-accent) !important;
+	background-color: var(--sl-color-accent-low) !important;
+	border: 1px solid var(--glass-border);
+	border-radius: 4px;
+}
+
+/* Steps component enhancement */
+.sl-steps > li {
+	position: relative;
+}
+
+.sl-steps > li::before {
+	background: linear-gradient(135deg, var(--sl-color-accent) 0%, var(--sl-color-accent-low) 100%) !important;
+}
+
+/* Aside/callout enhancements */
+.starlight-aside {
+	border-radius: 8px;
+	backdrop-filter: blur(4px);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--sl-color-gray-5);
+	border: 2px solid var(--sl-color-black);
+	border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--sl-color-gray-4);
+}
+
+/* Animations */
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes slideInRight {
+	from {
+		opacity: 0;
+		transform: translateX(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+.main-frame {
+	animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Hero section enhancements */
+.hero {
+	position: relative;
+}
+
+.hero::before {
+	position: absolute;
+	top: -50%;
+	left: 50%;
+	z-index: -1;
+	width: 600px;
+	height: 600px;
+	pointer-events: none;
+	content: "";
+	background: radial-gradient(circle, rgba(78, 191, 255, 0.1) 0%, transparent 70%);
+	transform: translateX(-50%);
+}
+
+/* Table of contents enhancements */
+starlight-toc a {
+	transition: color 0.2s ease;
+}
+
+starlight-toc a:hover {
+	color: var(--sl-color-accent);
+}
+
+/* Badge styling */
+.sl-badge {
+	font-weight: 600;
+}
+
+/* Tabs styling */
+.tablist-wrapper {
+	overflow: hidden;
+	border-radius: 8px;
+}

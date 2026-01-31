@@ -1,0 +1,130 @@
+---
+title: require-named-effect-functions
+badge:
+    text: Best Practice
+    variant: caution
+description: Enforce named effect functions for better debuggability. Prevent inline arrow functions in useEffect and similar hooks.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Enforce named effect functions for better debuggability.
+
+## Rule Details :badge[Best Practice]{variant=caution}
+
+Inline arrow functions in hooks like `useEffect` are convenient but problematic. Stack traces show them as `(anonymous)`, DevTools cannot label them helpfully, and complex logic becomes hard to read. This rule requires that effect callbacks have a name, either as a separate function definition or a named function expression.
+
+<Aside type="tip" title="Self-Documenting Effects">
+	`useEffect(onUserIdChange, [userId])` is immediately understandable, whereas
+	`useEffect(() => { ... }, [userId])` requires reading the implementation to understand the
+	intent.
+</Aside>
+
+## Refactoring Workflow
+
+<Steps>
+1. **Identify Anonymous Hooks**
+   Locate `useEffect`, `useLayoutEffect`, or `useInsertionEffect` calls that use inline arrow functions.
+
+2. **Extract Logic** Move the function body into a named function defined above the hook call.
+
+3. **Name the Action** Choose a name that describes _why_ the effect is running (e.g., `onMount`, `onDataUpdate`, `clearTimers`).
+
+4. **Replace with Identifier** Pass the function by name to the hook: `useEffect(onMount, [])`.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Anonymous Callbacks
+		Bans inline arrow functions that hide intent and clutter stack traces.
+
+    	<Code
+    		code={[
+    			"// Arrow function",
+    			"useEffect(() => {",
+    			"\tfetchData();",
+    			"}, [id]);",
+    			"",
+    			"// Anonymous expression",
+    			"useLayoutEffect(function() {",
+    			"\tcalculateLayout();",
+    			"}, []);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Named Effect Functions
+    	Use descriptive names to label your side effects.
+
+    	<Code
+    		code={[
+    			"function onDataUpdate() {",
+    			"\tfetchData();",
+    			"}",
+    			"useEffect(onDataUpdate, [id]);",
+    			"",
+    			"// Named function expression (allowed in 'standard' mode)",
+    			"useLayoutEffect(function initializeUI() {",
+    			"\tcalculateLayout();",
+    			"}, []);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why named functions?
+
+<CardGrid stagger>
+	<Card title="Stack Traces" icon="list-format">
+		Errors will explicitly mention your function name instead of the generic `(anonymous)`.
+	</Card>
+	<Card title="DevTools" icon="bolt">
+		The React Developer Tools can correctly label hooks in the component tree.
+	</Card>
+	<Card title="Testability" icon="rocket">
+		Extracted functions can be exported and unit tested in isolation from the component.
+	</Card>
+	<Card title="Readability" icon="magnifier">
+		The component's top-level structure becomes a list of clearly-named side effects.
+	</Card>
+</CardGrid>
+
+## Environment Modes
+
+| Mode        | Description                                                                     |
+| :---------- | :------------------------------------------------------------------------------ |
+| `roblox-ts` | Only identifiers allowed. Very strict and clean.                                |
+| `standard`  | Both identifiers and named function expressions (`function name() {}`) allowed. |
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="use-exhaustive-dependencies"
+		description="Ensures correct dependency arrays"
+		href="/rules/use-exhaustive-dependencies/"
+	/>
+	<LinkCard
+		title="use-hook-at-top-level"
+		description="Enforces hook placement rules"
+		href="/rules/use-hook-at-top-level/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="useEffect Reference"
+		description="Official React documentation for side effects"
+		href="https://react.dev/reference/react/useEffect"
+	/>
+</CardGrid>

@@ -1,0 +1,116 @@
+---
+title: prefer-module-scope-constants
+badge:
+    text: Clean Code
+    variant: success
+description:
+    SCREAMING_SNAKE_CASE variables must be const at module scope. Enforces consistent naming and prevents accidental
+    mutations.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+SCREAMING_SNAKE_CASE variables must be `const` at module scope.
+
+## Rule Details :badge[Clean Code]{variant=success}
+
+Variables in `SCREAMING_SNAKE_CASE` indicate global constants that should never change. This rule enforces that such
+variables are defined at the module (top) level using the `const` keyword. This prevents accidental mutations and
+ensures that constants are defined in a way that is easily reusable across the file.
+
+<Aside type="tip" title="Naming as a Signal">
+	`SCREAMING_SNAKE_CASE` is a visual signal to other developers that "this value is a fixed constant." Defining it
+	locally or with `let` breaks that mental model.
+</Aside>
+
+## Refactoring Path
+
+<Steps>
+1. **Identify Local Constants**
+   Locate `SCREAMING_SNAKE_CASE` variables defined inside functions, methods, or blocks.
+
+2. **Move to Top Level** Relocate the variable definition to the module scope (outside of any function or class).
+
+3. **Ensure Const Usage** Ensure the variable is defined using `const`. If the value needs to change, it should use
+   `camelCase` instead.
+
+4. **Export if Needed** If the constant is used in multiple files, add the `export` keyword.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Local or Mutable Constants
+		Bans uppercase naming for variables that are local or can be reassigned.
+
+    	<Code
+    		code={[
+    			"function calculate() {",
+    			"\t// ❌ Local scope constant",
+    			"\tconst PI = 3.14;",
+    			"}",
+    			"",
+    			"// ❌ Mutable screaming snake case",
+    			"let MAX_RETRIES = 3;",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Module-Level Constants
+    	Defined once at the file's root for maximum clarity and reuse.
+
+    	<Code
+    		code={[
+    			"const PI = 3.14;",
+    			"",
+    			"function calculate(radius: number) {",
+    			"\treturn radius * radius * PI;",
+    			"}",
+    			"",
+    			"// Destructuring is allowed anywhere",
+    			"const { MAX_SIZE } = getConfig();",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why use module scope?
+
+<CardGrid stagger>
+	<Card title="Immutability" icon="lock">
+		Using `const` at module scope ensures the value cannot be tampered with at runtime.
+	</Card>
+	<Card title="Reusability" icon="rocket">
+		Top-level constants can be easily exported and shared across your entire project.
+	</Card>
+	<Card title="Readability" icon="list-format">
+		Keeping constants at the top makes it easy for developers to see all configuration values in one place.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="prefer-pascal-case-enums"
+		description="Standardizes enum naming"
+		href="/rules/prefer-pascal-case-enums/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Clean Code: Meaningful Names"
+		description="Principles for constant and variable naming"
+		href="https://google.github.io/styleguide/jsguide.html#naming"
+	/>
+</CardGrid>

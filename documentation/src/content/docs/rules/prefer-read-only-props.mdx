@@ -1,0 +1,113 @@
+---
+title: prefer-read-only-props
+badge:
+    text: Safety
+    variant: success
+description: Enforce that React component props are typed as read-only to prevent accidental mutation.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+
+Enforce that React component props are typed as read-only.
+
+## Rule Details :badge[Safety]{variant=success}
+
+React props should be treated as immutable. Mutating props directly can lead to unpredictable behavior,
+difficult-to-debug UI bugs, and performance regressions. This rule ensures that all component prop interfaces are marked
+with the `readonly` modifier in TypeScript.
+
+<Aside type="tip" title="Immutability">
+	React's reconciliation process relies on the assumption that props do not change within a render cycle. Enforcing
+	`readonly` at the type level prevents bugs before they reach the runtime.
+</Aside>
+
+## Refactoring Steps
+
+<Steps>
+1. **Identify Prop Types**
+   Find `interface` or `type` definitions used for React component props.
+
+2. **Add Readonly** Prefix every property in the interface with the `readonly` keyword.
+
+3. **Check Usage** Ensure your component code does not attempt to assign to these props (e.g.,
+   `props.name = "New Name"`).
+
+4. **Verify Interfaces** If you extend other interfaces, ensure those are also immutable or use `Readonly<T>` for the
+   intersection.
+
+    {/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Mutable Props
+		Bans prop definitions that allow re-assignment.
+
+    	<Code
+    		code={[
+    			"interface ButtonProps {",
+    			"\tlabel: string;",
+    			"\tonClick: () => void;",
+    			"}",
+    			"",
+    			"function Button({ label }: ButtonProps) {",
+    			"\treturn <textbutton Text={label} />;",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Read-Only Props
+    	Use the `readonly` modifier for every property in your interface.
+
+    	<Code
+    		code={[
+    			"interface ButtonProps {",
+    			"\treadonly label: string;",
+    			"\treadonly onClick: () => void;",
+    			"}",
+    			"",
+    			"function Button({ label }: ButtonProps) {",
+    			"\treturn <textbutton Text={label} />;",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why Enforce This?
+
+<CardGrid stagger>
+	<Card title="Bug Prevention" icon="bolt">
+		Prevents developers from accidentally overwriting props within the component body.
+	</Card>
+	<Card title="Documentation" icon="list-format">
+		Clearly signals to other developers that these values are strictly inputs and should not be modified.
+	</Card>
+	<Card title="Performance" icon="rocket">
+		Immutability makes it safer to use optimizations like `React.memo` as you can trust prop references.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard title="no-memo-children" description="Optimize React.memo usage" href="/rules/no-memo-children/" />
+	<LinkCard title="ban-react-fc" description="Avoid problematic React patterns" href="/rules/ban-react-fc/" />
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="React Docs: Props"
+		description="Official guide on components and props"
+		href="https://react.dev/learn/passing-props-to-a-component"
+	/>
+</CardGrid>

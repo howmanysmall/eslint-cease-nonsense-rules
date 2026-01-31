@@ -1,0 +1,118 @@
+---
+title: use-exhaustive-dependencies
+badge:
+    text: Best Practice
+    variant: success
+description:
+    Enforces exhaustive and correct dependency specification in React hooks to prevent stale closures and unnecessary
+    re-renders.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Enforces exhaustive and correct dependency specification in React hooks.
+
+## Rule Details :badge[Best Practice]{variant=success}
+
+This rule ensures that all dependencies used inside hook callbacks (like `useEffect`, `useMemo`, and `useCallback`) are
+listed in the dependency array. Failing to do so leads to "stale closures," where your code operates on old data from a
+previous render. Conversely, including unnecessary dependencies causes performance-degrading re-renders.
+
+<Aside type="tip" title="Why it matters">
+	Stale closures are one of the most common sources of bugs in React. This rule acts as a safety net to ensure your
+	hooks always have access to the latest reactive values.
+</Aside>
+
+## Dependency Management Workflow
+
+<Steps>
+1. **Analyze Hook Body**
+   The linter identifies all variables from the component scope used inside your hook.
+2. **Categorize Inputs** Determine which values are "reactive" (props, state, or other hooks) and which are "stable"
+   (dispatchers, refs).
+3. **Update Array** Add all reactive values to the dependency array. Remove any values that are no longer used.
+4. **Stabilize if Needed** If a dependency changes too often (like an inline object), wrap its definition in `useMemo`
+   or `useCallback`.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Stale Closures
+		Bans missing or incorrect dependencies that lead to out-of-sync state.
+
+    	<Code
+    		code={[
+    			"function UserProfile({ userId }) {",
+    			"\tuseEffect(() => {",
+    			"\t\t// ❌ userId is used but not in deps",
+    			"\t\tfetchUser(userId);",
+    			"\t}, []);",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Exhaustive Dependencies
+    	Ensure every external value used is present in the array.
+
+    	<Code
+    		code={[
+    			"function UserProfile({ userId }) {",
+    			"\tuseEffect(() => {",
+    			"\t\tfetchUser(userId);",
+    			"\t}, [userId]); // ✅ Included",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Common Solutions
+
+<CardGrid stagger>
+	<Card title="Functional Updates" icon="list-format">
+		Use `setCount(c => c + 1)` to avoid needing `count` as a dependency.
+	</Card>
+	<Card title="useMemo / useCallback" icon="bolt">
+		Stabilize object or function references so they don't trigger the hook every render.
+	</Card>
+	<Card title="useRef" icon="rocket">
+		Store non-reactive data in refs, which are stable and don't require tracking.
+	</Card>
+	<Card title="Effect Extraction" icon="setting">
+		Move functions outside the component if they don't depend on any reactive values.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="use-hook-at-top-level"
+		description="Enforces hook placement rules"
+		href="/rules/use-hook-at-top-level/"
+	/>
+	<LinkCard
+		title="require-named-effect-functions"
+		description="Enforces named effect callbacks"
+		href="/rules/require-named-effect-functions/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="React Docs: Dependencies"
+		description="Official guide on reactive dependencies"
+		href="https://react.dev/reference/react/useEffect#specifying-reactive-dependencies"
+	/>
+</CardGrid>

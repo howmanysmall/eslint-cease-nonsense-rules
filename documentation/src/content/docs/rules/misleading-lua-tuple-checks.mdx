@@ -1,0 +1,112 @@
+---
+title: misleading-lua-tuple-checks
+badge:
+    text: Roblox
+    variant: note
+description: Disallow the use of LuaTuple in conditional expressions to prevent confusing truthiness bugs.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Disallow the use of `LuaTuple` in conditional expressions.
+
+## Rule Details :badge[Roblox]{variant=note}
+
+In `roblox-ts`, a `LuaTuple` represents multiple return values from Lua. Using a `LuaTuple` directly in a conditional
+expression (like an `if` statement) is almost always a bug. Because `LuaTuple` is implemented as an array at runtime,
+the object itself is always truthy in JavaScript/TypeScript, even if the first Lua return value is `false` or `nil`.
+
+<Aside type="danger" title="Confusing Behavior">
+	In Lua, `if getTuple() then` checks the first return value. In TypeScript, `if (getTuple())` checks if the *array*
+	exists. Since the array always exists, the check will always pass.
+</Aside>
+
+## Refactoring Steps
+
+<Steps>
+1. **Identify Tuple Checks**
+   Locate `if`, `while`, or ternary expressions that use a variable of type `LuaTuple`.
+2. **Destructure Results** Assign the tuple to a local array-style destructuring:
+   `const [success, result] = getTuple()`.
+3. **Check the Variable** Perform your truthiness check on the specific destructured variable: `if (success) { ... }`.
+4. **Explicit Indexing** Alternatively, if you only need the first value, use explicit indexing: `if (getTuple()[0])`.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Ambiguous Truthiness
+		Bans direct tuple checks that don't inspect the first element.
+
+    	<Code
+    		code={[
+    			"const result = getLuaTuple();",
+    			"",
+    			"// ❌ Always true! Even if the first return is false.",
+    			"if (result) {",
+    			"\tprint(\"This always prints\");",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Explicit Content Checks
+    	Inspect the specific values within the tuple or use destructuring.
+
+    	<Code
+    		code={[
+    			"// ✅ Destructuring (Recommended)",
+    			"const [success, data] = getLuaTuple();",
+    			"if (success) {",
+    			"\tprint(\"Action succeeded!\");",
+    			"}",
+    			"",
+    			"// ✅ Explicit indexing",
+    			"if (getLuaTuple()[0]) {",
+    			"\tprint(\"Value exists\");",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why is this bad?
+
+<CardGrid stagger>
+	<Card title="Runtime Mismatch" icon="bolt">
+		Mental models from Lua don't translate; `LuaTuple` is a JS object (array), not raw values.
+	</Card>
+	<Card title="Silent Failures" icon="warning">
+		Logic blocks may execute when they shouldn't, leading to difficult-to-track state bugs.
+	</Card>
+	<Card title="Type Clarity" icon="magnifier">
+		Destructuring tells other developers exactly what each returned value represents.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="enforce-ianitor-check-type"
+		description="Runtime type validation"
+		href="/rules/enforce-ianitor-check-type/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="roblox-ts: LuaTuples"
+		description="Official guide on multi-return handling"
+		href="https://roblox-ts.com/docs/guides/lua-tuples"
+	/>
+</CardGrid>

@@ -1,0 +1,114 @@
+---
+title: prefer-single-world-query
+badge:
+    text: Performance
+    variant: success
+description:
+    Enforces combining multiple world.get() or world.has() calls on the same entity into a single call for better Jecs
+    performance.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Enforces combining multiple `world.get()` or `world.has()` calls.
+
+## Rule Details :badge[Performance]{variant=success}
+
+In Jecs (a Roblox ECS library), calling `world.get()` or `world.has()` multiple times on the same entity results in
+multiple archetype lookups. Combining these calls into a single call improves performance by reducing lookups and cache
+misses. This rule detects consecutive lookups on the same entity and merges them automatically.
+
+<Aside type="tip" title="Archetype Lookups">
+	Each lookup requires the engine to find the entity's storage location. By grouping queries, Jecs can find the
+	storage location once and retrieve all requested components in a single pass.
+</Aside>
+
+## Optimization Path
+
+<Steps>
+1. **Identify Consecutive Calls**
+   Locate multiple `world.get(entity, Component)` or `world.has(entity, Component)` calls in the same block.
+2. **Verify Entity & World** Ensure all calls are targeting the exact same `world` and `entity` expressions.
+3. **Check Usage (for .has)** For `has()` calls, verify they are used together (e.g., `hasA && hasB`).
+4. **Merge calls** Replace the multiple lines with a single destructuring call:
+   `const [a, b] = world.get(entity, CompA, CompB)`. {/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Redundant Lookups
+		Bans separate calls that can be efficiently batched.
+
+    	<Code
+    		code={[
+    			"// Multiple lookups - inefficient",
+    			"const position = world.get(entity, Position);",
+    			"const velocity = world.get(entity, Velocity);",
+    			"",
+    			"const hasHealth = world.has(entity, Health);",
+    			"const hasMana = world.has(entity, Mana);",
+    			"if (hasHealth && hasMana) { ... }",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Grouped Queries
+    	Use the multi-argument overloads to minimize archetype traversals.
+
+    	<Code
+    		code={[
+    			"// Single lookup - efficient",
+    			"const [position, velocity] = world.get(entity, Position, Velocity);",
+    			"",
+    			"// Combined existence check",
+    			"const hasBoth = world.has(entity, Health, Mana);",
+    			"if (hasBoth) { ... }",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Performance Benefits
+
+<CardGrid stagger>
+	<Card title="Fewer Lookups" icon="bolt">
+		Reduces CPU cycles spent traversing the archetype table to locate component data.
+	</Card>
+	<Card title="Cache Locality" icon="rocket">
+		Accessing multiple components at once improves CPU cache usage as they are often stored together.
+	</Card>
+	<Card title="Jecs Limits" icon="setting">
+		Automatically respects Jecs limits (up to 4 components) by only merging valid counts.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="prefer-pattern-replacements"
+		description="General pattern replacement framework"
+		href="/rules/prefer-pattern-replacements/"
+	/>
+	<LinkCard
+		title="no-identity-map"
+		description="Detects pointless identity operations"
+		href="/rules/no-identity-map/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Jecs Documentation"
+		description="Official source for the Jecs ECS library"
+		href="https://github.com/ukendio/jecs"
+	/>
+</CardGrid>

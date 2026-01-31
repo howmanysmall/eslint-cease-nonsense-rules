@@ -1,0 +1,108 @@
+---
+title: no-unused-imports
+badge:
+    text: Maintenance
+    variant: note
+description: Disallow unused imports to keep your codebase clean and reduce technical debt.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Disallow unused imports to keep your codebase clean.
+
+## Rule Details :badge[Maintenance]{variant=note}
+
+This rule reports when an import is defined but never used in the code. Unused imports clutter the top of your files,
+increase build times (slightly), and make it harder to see what a module actually depends on. This rule is enhanced with
+scope analysis to detect usage even within JSDoc comments.
+
+<Aside type="note" title="JSDoc Support">
+	Unlike the standard `no-unused-vars` rule, this one can check if an import is used within a JSDoc comment (e.g.,
+	`@see`, `@link`), preventing accidental deletion of symbols used only for documentation.
+</Aside>
+
+## Cleanup Workflow
+
+<Steps>
+1. **Identify Unused Links**
+   The linter flags import statements that have no references in your file's logic or JSDoc.
+
+2. **Check for Intentional Side-Effects** Rarely, an import is needed only for its side-effects (e.g.,
+   `import "./init"`). If so, use the bare import syntax without binding variables.
+
+3. **Delete the Reference** Remove the specific named import or the entire import line.
+
+4. **Verify Dependencies** Running this cleanup often reveals nested packages that are no longer needed at the
+   `package.json` level.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Ghost Imports
+		Bans imports that don't contribute to the logic or documentation of the file.
+
+    	<Code
+    		code={[
+    			'import { unusedFunction, UsedFunction } from "./utils";',
+    			'import { AnotherUnused } from "./types";',
+    			"",
+    			"UsedFunction();",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Lean Imports
+    	Every import line corresponds to an active symbol in the file.
+
+    	<Code
+    		code={[
+    			'import { usedFunction } from "./utils";',
+    			"",
+    			"/**",
+    			" * @see {anotherUsedFunction} ✅ Counted as used",
+    			" */",
+    			'import { anotherUsedFunction } from "./more-utils";',
+    			"",
+    			"usedFunction();",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why remove unused imports?
+
+<CardGrid stagger>
+	<Card title="Code Clarity" icon="list-format">
+		Reduces mental noise when opening a file; you only see what the module actually needs.
+	</Card>
+	<Card title="Build Speed" icon="bolt">
+		Minimizes the number of files a bundler or compiler has to parse and analyze during a build.
+	</Card>
+	<Card title="Dependency Health" icon="rocket">
+		Helps you identify when a feature is truly removed and its library can be uninstalled.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard title="no-commented-code" description="Clean up dead code blocks" href="/rules/no-commented-code/" />
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="ESLint: no-unused-vars"
+		description="The standard for unused variable detection"
+		href="https://eslint.org/docs/latest/rules/no-unused-vars"
+	/>
+</CardGrid>

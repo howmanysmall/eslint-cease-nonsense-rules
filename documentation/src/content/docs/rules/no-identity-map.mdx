@@ -1,0 +1,120 @@
+---
+title: no-identity-map
+badge:
+    text: Maintenance
+    variant: note
+description: Bans pointless identity .map() calls that return the parameter unchanged. Prevents wasteful array clones.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Bans pointless identity `.map()` calls.
+
+## Rule Details :badge[Maintenance]{variant=note}
+
+This rule flags `.map()` calls where the callback function simply returns the input argument without any modification.
+These calls are redundant and negatively impact performance by creating unnecessary array copies and executing useless
+callbacks.
+
+<Aside type="caution" title="Performance Impact">
+	Every `.map()` call creates a new array and iterates over the entire collection. Identity maps
+	like `items.map(x => x)` waste CPU cycles and memory for a 1-to-1 shallow copy.
+</Aside>
+
+## Refactoring Steps
+
+<Steps>
+1. **Analyze Purpose**
+   Determine if the `.map(x => x)` was intended to create a shallow copy or if it's completely redundant.
+
+2. **Remove Redundancy** If the copy isn't needed, simply remove the `.map()` call and use the original variable.
+
+3. **Use Spread for Copies** If a shallow copy IS required, use the spread operator `[...original]` which is more
+   idiomatic and performant.
+
+4. **Verify Type Assertions** If mapping was used for a type cast (e.g., `x => x as Type`), move the assertion to the
+   entire array instead: `original as Type[]`.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Identity Maps
+		Bans patterns that return the item unchanged.
+
+    	<Code
+    		code={[
+    			"// Array identity map",
+    			"const copied = items.map((item) => item);",
+    			"",
+    			"// Binding identity map (roblox-ts)",
+    			"const level = healthBinding.map((h) => h);",
+    			"",
+    			"// Block syntax identity",
+    			"const list = data.map((x) => {",
+    			"\treturn x;",
+    			"});",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Efficient Alternatives
+    	Use the original reference if no change is needed, or use proper cloning methods.
+
+    	<Code
+    		code={[
+    			"// Just use the original",
+    			"const result = items;",
+    			"",
+    			"// Use spread for shallow copy",
+    			"const copied = [...items];",
+    			"",
+    			"// Proper transformation",
+    			"const doubled = numbers.map((n) => n * 2);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why is this wasteful?
+
+<CardGrid stagger>
+	<Card title="Arrow Overhead" icon="bolt">
+		`x => x` still involves a function call jump for every single element in your array.
+	</Card>
+	<Card title="Allocation" icon="list-format">
+		Creates a whole new array in memory that is identical to the first, doubling heap usage
+		temporarily.
+	</Card>
+	<Card title="Readability" icon="rocket">
+		Code that "does nothing" is confusing to other developers; they'll look for hidden logic
+		where none exists.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="prefer-single-world-query"
+		description="Optimizes ECS lookups"
+		href="/rules/prefer-single-world-query/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="MDN: Array.map()"
+		description="Documentation for the array map method"
+		href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map"
+	/>
+</CardGrid>

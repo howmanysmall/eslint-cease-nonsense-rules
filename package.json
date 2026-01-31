@@ -105,6 +105,8 @@
 		"build:legacy": "tsgo -p tsconfig.json",
 		"commitlint": "commitlint --edit",
 		"dev": "tsgo -w",
+		"docs:build": "bun --cwd documentation build",
+		"docs:dev": "bun --cwd documentation dev",
 		"format": "oxfmt",
 		"knip": "knip-bun",
 		"lint": "bun run oxc . && bun run biome:check src tests",

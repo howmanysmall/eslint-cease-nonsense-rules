@@ -1,0 +1,22 @@
+diff --git a/node_modules/starlight-contextual-menu/.bun-tag-ab83b9fede575ff6 b/.bun-tag-ab83b9fede575ff6
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/contextual-menu.js b/contextual-menu.js
+index de568e9b69680c7cadac88b202bc37fcb1f6f56d..f2ba7ffdcbff4d6f4a0980a885b1a5e0109e9f98 100644
+--- a/contextual-menu.js
++++ b/contextual-menu.js
+@@ -109,7 +109,7 @@ function createMenuItemsFromActions(actions) {
+     .filter(Boolean);
+ }
+ 
+-function initContextualMenu(config) {
++export function initContextualMenu(config) {
+   // Generate menu items from actions or use provided menuItems
+   const menuItems = createMenuItemsFromActions(config.actions);
+ 
+@@ -373,5 +373,3 @@ function initContextualMenu(config) {
+     };
+   });
+ }
+-
+-export default initContextualMenu;
