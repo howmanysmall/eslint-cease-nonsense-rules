@@ -10,7 +10,7 @@ function stringify(parameter: unknown): string {
 	return typeof parameter === "string" ? parameter : JSON.stringify(parameter);
 }
 
-export interface DailyFileRotateReporterOptions {
+interface DailyFileRotateReporterOptions {
 	readonly directory: string;
 	readonly filename: string;
 	readonly interval?: Interval;

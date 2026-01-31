@@ -1,1 +1,1 @@
-export { description, license, name, version } from "../../../package.json";
+export { name } from "../../../package.json";
