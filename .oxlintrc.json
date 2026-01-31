@@ -18,14 +18,7 @@
 	"globals": {
 		"Bun": "readonly",
 	},
-	"ignorePatterns": [
-		"dist",
-		"do-not-sync-ever/**",
-		"**/node_modules/**",
-		"tests/fixtures/**/*.d.ts",
-		".context/**",
-		"./documentation/tsconfig.json",
-	],
+	"ignorePatterns": ["dist", "do-not-sync-ever/**", "**/node_modules/**", "tests/fixtures/**/*.d.ts", ".context/**"],
 	"jsPlugins": [],
 	"overrides": [
 		{
