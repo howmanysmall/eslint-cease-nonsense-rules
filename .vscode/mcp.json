@@ -1,23 +1,17 @@
 {
 	"inputs": [
 		{
-			"description": "The personal access token for the GitHub MCP.",
-			"id": "github-token",
+			"description": "API key for authentication",
+			"id": "context7-api-key",
 			"password": true,
 			"type": "promptString",
 		},
 	],
 	"servers": {
-		"codex-subagent": {
-			"args": ["codex-as-mcp@latest"],
-			"command": "uvx",
-			"type": "stdio",
-		},
 		"context7": {
-			"args": ["x", "--bun", "@upstash/context7-mcp"],
-			"command": "bun",
-			"env": {},
-			"type": "stdio",
+			"headers": { "CONTEXT7_API_KEY": "${input:context7-api-key}" },
+			"type": "http",
+			"url": "https://mcp.context7.com/mcp",
 		},
 		"gh-grep": {
 			"type": "http",
@@ -28,13 +22,8 @@
 			"url": "https://api.githubcopilot.com/mcp/",
 		},
 		"npm-registry": {
-			"args": ["run", "github.com/howmanysmall/npm-registry-mcp/src@main"],
-			"command": "go",
+			"command": "npm-registry-mcp",
 			"type": "stdio",
-		},
-		"package-registry": {
-			"args": ["x", "--bun", "package-registry-mcp"],
-			"command": "bun",
 		},
 		"uniprof": {
 			"args": ["x", "uniprof", "mcp", "run"],

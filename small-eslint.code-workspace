@@ -55,6 +55,11 @@
 		"biome.enabled": true,
 		"biome.requireConfiguration": true,
 		"biome.suggestInstallingGlobally": true,
+		"chat.agentSkillsLocations": {
+			".claude/skills": false,
+		},
+		"chat.experimental.useSkillAdherencePrompt": true,
+		"chat.useNestedAgentsMdFiles": true,
 
 		"editor.acceptSuggestionOnCommitCharacter": true,
 		"editor.acceptSuggestionOnEnter": "on",

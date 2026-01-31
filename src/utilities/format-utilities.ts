@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { regex } from "arkregex";
+import { regex } from "arktype";
 import { parseJSONC } from "confbox";
 import fastDiff from "fast-diff";
 import { formatSync } from "../oxfmt-sync";

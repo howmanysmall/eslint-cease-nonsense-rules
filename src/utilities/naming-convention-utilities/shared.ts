@@ -1,4 +1,4 @@
-import { regex } from "arkregex";
+import { regex } from "arktype";
 import type { IndividualAndMetaSelectorsString, MetaSelectorsString } from "./enums";
 import { MetaSelectors } from "./enums";
 

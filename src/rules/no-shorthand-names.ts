@@ -1,5 +1,5 @@
 import { TSESTree } from "@typescript-eslint/types";
-import { regex } from "arkregex";
+import { regex } from "arktype";
 import type { Rule } from "eslint";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
@@ -62,14 +62,9 @@ interface ReplacementResult {
 	readonly matches: ReadonlyArray<ShorthandMatch>;
 }
 
-// Split by:
-// 1. camelCase boundaries: (?<=[a-z])(?=[A-Z])
-// 2. Acronym boundaries: (?<=[A-Z])(?=[A-Z][a-z])
-// 3. Letter-Digit: (?<=[a-zA-Z])(?=\d)
-// 4. Digit-Letter: (?<=\d)(?=[a-zA-Z])
 const WORD_BOUNDARY_REGEX = /(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])/;
 // oxlint-disable-next-line no-template-curly-in-string
-const FUNT_PATTERN = regex("[.+^${}()|[\\]\\\\]", "g");
+const SPECIAL_CHARACTER_REGEX = regex("[.+^${}()|[\\]\\\\]", "g");
 
 // Module-level split cache with bounded size
 const SPLIT_CACHE = new Map<string, ReadonlyArray<string>>();
@@ -95,18 +90,19 @@ type MatcherResult =
 	| { type: "exact"; original: string; replacement: string }
 	| { type: "pattern"; matcher: ShorthandMatcher };
 
+const DOLLAR_REGEXPS = /\$(\d+)/g;
+
 function countCaptureGroups(replacement: string): number {
-	const matches = replacement.match(/\$(\d+)/g);
+	const matches = replacement.match(DOLLAR_REGEXPS);
 	if (matches === null) return 0;
 	let maxGroup = 0;
-	for (const dollarRef of matches) {
-		const groupNum = Number.parseInt(dollarRef.slice(1), 10);
-		if (groupNum > maxGroup) maxGroup = groupNum;
+	for (const dollarReference of matches) {
+		const groupNumber = Number.parseInt(dollarReference.slice(1), 10);
+		if (groupNumber > maxGroup) maxGroup = groupNumber;
 	}
 	return maxGroup;
 }
 
-// Pre-computed replacement patterns cache (module-level, shared across instances)
 const REPLACEMENT_PATTERN_CACHE = new Map<number, RegExp>();
 function getReplacementPattern(index: number): RegExp {
 	let pattern = REPLACEMENT_PATTERN_CACHE.get(index);
@@ -120,10 +116,9 @@ function getReplacementPattern(index: number): RegExp {
 function buildReplacementPatterns(replacement: string): ReadonlyArray<RegExp> {
 	const count = countCaptureGroups(replacement);
 	if (count === 0) return [];
+
 	const patterns = new Array<RegExp>(count);
-	for (let index = 1; index <= count; index += 1) {
-		patterns[index - 1] = getReplacementPattern(index);
-	}
+	for (let index = 1; index <= count; index += 1) patterns[index - 1] = getReplacementPattern(index);
 	return patterns;
 }
 
@@ -145,7 +140,7 @@ function createMatcher(key: string, replacement: string): MatcherResult {
 
 	if (key.includes("*") || key.includes("?")) {
 		const regexPattern = key
-			.replaceAll(FUNT_PATTERN, String.raw`\$&`)
+			.replaceAll(SPECIAL_CHARACTER_REGEX, String.raw`\$&`)
 			.replaceAll("*", "(.*)")
 			.replaceAll("?", "(.)");
 
@@ -175,7 +170,6 @@ function matchWord(
 	matchers: ReadonlyArray<ShorthandMatcher>,
 	exactMatchers: Map<string, string>,
 ): ShorthandMatch | undefined {
-	// Check exact matches first (O(1))
 	const exactReplacement = exactMatchers.get(word);
 	if (exactReplacement !== undefined) {
 		return {
@@ -185,12 +179,10 @@ function matchWord(
 		};
 	}
 
-	// Check regex/glob matchers
 	for (const matcher of matchers) {
 		const match = word.match(matcher.pattern);
 		if (match) {
 			let replaced = matcher.replacement;
-			// Use pre-computed replacement patterns instead of creating new RegExp in loop
 			let captureIndex = 1;
 			for (const replacementPattern of matcher.replacementPatterns) {
 				replaced = replaced.replaceAll(replacementPattern, match[captureIndex] ?? "");
@@ -233,7 +225,6 @@ function normalizeOptions(rawOptions: NoShorthandOptions | undefined): Normalize
 
 	const allowPropertyAccessSource = rawOptions?.allowPropertyAccess ?? DEFAULT_OPTIONS.allowPropertyAccess;
 
-	// Process ignoreShorthands
 	const ignoreMatchers = new Array<ShorthandMatcher>();
 	const ignoreExact = new Set<string>();
 
@@ -253,7 +244,6 @@ function normalizeOptions(rawOptions: NoShorthandOptions | undefined): Normalize
 	};
 }
 
-// Import parent types to skip (O(1) lookup)
 const IMPORT_PARENT_TYPES = new Set(["ImportSpecifier", "ImportDefaultSpecifier", "ImportNamespaceSpecifier"]);
 
 const noShorthandNames: Rule.RuleModule = {
@@ -262,20 +252,19 @@ const noShorthandNames: Rule.RuleModule = {
 		const normalized = normalizeOptions(validatedOptions);
 		const { allowPropertyAccess, ignoreMatchers, ignoreExact, selector, matchers, exactMatchers } = normalized;
 
-		// Full identifier result cache - biggest optimization
 		const identifierResultCache = new Map<string, ReplacementResult | undefined>();
 		const ignoredWordCache = new Map<string, boolean>();
 
 		function cachedIsWordIgnored(word: string): boolean {
 			const cached = ignoredWordCache.get(word);
 			if (cached !== undefined) return cached;
+
 			const result = isWordIgnored(word, ignoreMatchers, ignoreExact);
 			ignoredWordCache.set(word, result);
 			return result;
 		}
 
 		function getIdentifierResult(identifier: string): ReplacementResult | undefined {
-			// Check full identifier cache first
 			if (identifierResultCache.has(identifier)) return identifierResultCache.get(identifier);
 
 			const words = splitIdentifierIntoWords(identifier);
@@ -295,7 +284,6 @@ const noShorthandNames: Rule.RuleModule = {
 				return undefined;
 			}
 
-			// Build replaced string only when needed
 			let replaced = "";
 			let matchIndex = 0;
 			for (const word of words) {
@@ -303,9 +291,7 @@ const noShorthandNames: Rule.RuleModule = {
 				if (currentMatch !== undefined && currentMatch.matchedWord === word) {
 					replaced += currentMatch.replacement;
 					matchIndex += 1;
-				} else {
-					replaced += word;
-				}
+				} else replaced += word;
 			}
 
 			const result: ReplacementResult = { matches, replaced };
@@ -317,7 +303,6 @@ const noShorthandNames: Rule.RuleModule = {
 			[selector](node: Rule.Node & { name: string; parent?: unknown }) {
 				const { parent } = node;
 
-				// Skip import specifiers FIRST - before any computation
 				if (parent !== undefined && isRecord(parent)) {
 					const parentType = parent.type as string;
 					if (IMPORT_PARENT_TYPES.has(parentType)) return;
@@ -329,10 +314,8 @@ const noShorthandNames: Rule.RuleModule = {
 
 				const { replaced, matches } = result;
 
-				// Check if full identifier name is ignored
 				if (cachedIsWordIgnored(identifierName)) return;
 
-				// Check if ALL matched words are ignored
 				let allIgnored = true;
 				for (const match of matches) {
 					if (!cachedIsWordIgnored(match.matchedWord)) {
@@ -342,7 +325,6 @@ const noShorthandNames: Rule.RuleModule = {
 				}
 				if (allIgnored) return;
 
-				// Check allowPropertyAccess in member/qualified name context
 				if (parent !== undefined && isRecord(parent)) {
 					const parentType = parent.type as string;
 					const isPropertyAccess =

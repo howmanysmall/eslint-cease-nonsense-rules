@@ -1,6 +1,6 @@
 // oxlint-disable prefer-code-point
 // oxlint-disable prefer-string-raw
-import { regex } from "arkregex";
+import { regex } from "arktype";
 
 const SPLIT_LOWER_TO_UPPER = regex("([\\p{Ll}\\d])(\\p{Lu})", "gu");
 const SPLIT_UPPER_TO_UPPER = regex("(\\p{Lu})([\\p{Lu}][\\p{Ll}])", "gu");

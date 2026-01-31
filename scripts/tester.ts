@@ -20,7 +20,7 @@ if (typeof Bun === "undefined") {
 
 const command = new Command()
 	.name("tester")
-	.version("2.1.0")
+	.version("2.2.0")
 	.description("A CLI for using the ESLint rules in a live environment.")
 	.command("get-rules", getRulesCommand)
 	.command("list-rules", listRulesCommand)

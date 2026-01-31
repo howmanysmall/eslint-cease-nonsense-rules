@@ -2,7 +2,7 @@ import path from "node:path";
 import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
 import type { JSONSchema, TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { regex } from "arkregex";
+import { regex } from "arktype";
 import { isIdentifierPart, isIdentifierStart, ScriptTarget } from "typescript";
 import { createRule } from "../utilities/create-rule";
 

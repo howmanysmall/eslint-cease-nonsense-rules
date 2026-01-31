@@ -49,8 +49,9 @@ function extractKeypoint(
 	descriptor: SequenceDescriptor,
 ): KeypointData | undefined {
 	if (element === undefined || element.type !== AST_NODE_TYPES.NewExpression) return undefined;
-	if (element.callee.type !== AST_NODE_TYPES.Identifier || element.callee.name !== descriptor.keypointName)
+	if (element.callee.type !== AST_NODE_TYPES.Identifier || element.callee.name !== descriptor.keypointName) {
 		return undefined;
+	}
 
 	if (element.arguments.length !== 2) return undefined;
 
@@ -81,8 +82,9 @@ export default createRule<[], "preferSingleOverload" | "preferTwoPointOverload">
 					argument === undefined ||
 					argument.type !== AST_NODE_TYPES.ArrayExpression ||
 					argument.elements.length !== 2
-				)
+				) {
 					return;
+				}
 
 				const firstElement = argument.elements[0] ?? undefined;
 				const secondElement = argument.elements[1] ?? undefined;

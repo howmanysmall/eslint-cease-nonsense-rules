@@ -1664,6 +1664,35 @@ function useStoryModesState() {
 }
 ```
 
+#### `prefer-single-world-query`
+
+Enforces combining multiple `world.get()` or `world.has()` calls on the same entity into a single call for better Jecs performance.
+
+**Why**
+
+In Jecs (a Roblox ECS library), calling `world.get()` or `world.has()` multiple times on the same entity results in multiple archetype lookups. Combining these calls improves performance by reducing lookups and cache misses.
+
+**Features**
+
+- ✨ Has auto-fix
+- Detects consecutive `world.get()` calls on same world and entity
+- Detects `world.has()` calls when ANDed together
+- Merges up to 4 components per call (Jecs limit)
+
+**❌ Bad**
+
+```typescript
+const position = world.get(entity, Position);
+const velocity = world.get(entity, Velocity);
+const health = world.get(entity, Health);
+```
+
+**✅ Good**
+
+```typescript
+const [position, velocity, health] = world.get(entity, Position, Velocity, Health);
+```
+
 ### Module Boundaries
 
 #### `strict-component-boundaries`

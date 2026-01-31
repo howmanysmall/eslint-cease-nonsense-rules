@@ -1,6 +1,6 @@
 import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { regex } from "arkregex";
+import { regex } from "arktype";
 import { toPascalCase } from "../utilities/casing-utilities";
 import { createRule } from "../utilities/create-rule";
 
@@ -13,7 +13,7 @@ function getIdentifierName(node: TSESTree.TSEnumMember["id"] | TSESTree.Identifi
 	return STARTS_WITH_DIGIT.test(node.value) ? undefined : node.value;
 }
 
-export default createRule({
+const preferPascalCaseEnums = createRule({
 	create(context) {
 		function report(node: TSESTree.Node, identifier: string): void {
 			context.report({
@@ -50,3 +50,5 @@ export default createRule({
 	},
 	name: "prefer-pascal-case-enums",
 });
+
+export default preferPascalCaseEnums;
