@@ -12,9 +12,11 @@ Enforce that React component props are typed as read-only.
 
 ## Rule Details :badge[Safety]{variant=success}
 
-React props should be treated as immutable. Mutating props directly can lead to unpredictable behavior, difficult-to-debug UI bugs, and performance regressions. This rule ensures that all component prop interfaces are marked with the `readonly` modifier in TypeScript.
+React props should be treated as immutable. Mutating props directly can lead to unpredictable behavior,
+difficult-to-debug UI bugs, and performance regressions. This rule ensures that all component prop interfaces are marked
+with the `readonly` modifier in TypeScript.
 
-<Aside type="important" title="Immutability">
+<Aside type="tip" title="Immutability">
 	React's reconciliation process relies on the assumption that props do not change within a render cycle. Enforcing
 	`readonly` at the type level prevents bugs before they reach the runtime.
 </Aside>
@@ -25,16 +27,15 @@ React props should be treated as immutable. Mutating props directly can lead to 
 1. **Identify Prop Types**
    Find `interface` or `type` definitions used for React component props.
 
-2. **Add Readonly**
-   Prefix every property in the interface with the `readonly` keyword.
+2. **Add Readonly** Prefix every property in the interface with the `readonly` keyword.
 
-3. **Check Usage**
-   Ensure your component code does not attempt to assign to these props (e.g., `props.name = "New Name"`).
+3. **Check Usage** Ensure your component code does not attempt to assign to these props (e.g.,
+   `props.name = "New Name"`).
 
-4. **Verify Interfaces**
-   If you extend other interfaces, ensure those are also immutable or use `Readonly<T>` for the intersection.
+4. **Verify Interfaces** If you extend other interfaces, ensure those are also immutable or use `Readonly<T>` for the
+   intersection.
 
-{/* oxfmt-ignore */}
+    {/* oxfmt-ignore */}
 
 </Steps>
 

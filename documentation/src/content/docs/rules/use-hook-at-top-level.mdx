@@ -18,7 +18,7 @@ React's Rules of Hooks require that hooks are called at the top level of your fu
 loops, conditions, or nested functions. This ensures that hooks are called in the same order each time a component
 renders, which is how React preserves state between re-renderings.
 
-<Aside type="important" title="State Corruption">
+<Aside type="tip" title="State Corruption">
 	If a hook call is skipped during a re-render due to a condition, the internal state mapping for every subsequent
 	hook call will be misaligned, leading to unpredictable crashes and data corruption.
 </Aside>

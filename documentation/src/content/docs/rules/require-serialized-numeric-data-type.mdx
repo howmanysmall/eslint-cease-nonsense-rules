@@ -18,7 +18,7 @@ When working with serialization systems like `@rbxts/flamework-binary-serializer
 ambiguous. The serializer doesn't know whether to use a small integer, a large signed value, or a high-precision double.
 This rule enforces the use of explicit `DataType` variants to optimize network bandwidth and memory usage.
 
-<Aside type="important" title="Network Optimization">
+<Aside type="tip" title="Network Optimization">
 	Using `DataType.u8` instead of `number` can save 7 bytes of bandwidth per value in every replicated packet. In
 	high-frequency ECS systems, this difference is massive.
 </Aside>

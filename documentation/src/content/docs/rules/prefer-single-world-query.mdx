@@ -18,7 +18,7 @@ In Jecs (a Roblox ECS library), calling `world.get()` or `world.has()` multiple 
 multiple archetype lookups. Combining these calls into a single call improves performance by reducing lookups and cache
 misses. This rule detects consecutive lookups on the same entity and merges them automatically.
 
-<Aside type="important" title="Archetype Lookups">
+<Aside type="tip" title="Archetype Lookups">
 	Each lookup requires the engine to find the entity's storage location. By grouping queries, Jecs can find the
 	storage location once and retrieve all requested components in a single pass.
 </Aside>

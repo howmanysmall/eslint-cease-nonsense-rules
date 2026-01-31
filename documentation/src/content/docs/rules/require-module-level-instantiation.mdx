@@ -12,9 +12,11 @@ Require certain classes to be instantiated at module level rather than inside fu
 
 ## Rule Details :badge[Best Practice]{variant=caution}
 
-Some classes, like logging utilities or networked servers, should be instantiated exactly once at the top level of your file. Recreating these objects inside functions or methods leads to wasted resources, duplicate network connections, and fragmented state.
+Some classes, like logging utilities or networked servers, should be instantiated exactly once at the top level of your
+file. Recreating these objects inside functions or methods leads to wasted resources, duplicate network connections, and
+fragmented state.
 
-<Aside type="important" title="Singleton Pattern">
+<Aside type="tip" title="Singleton Pattern">
 	Many utility classes are designed as singletons. Recreating them inside frequently-called functions (like React
 	render cycles) defeats their design and can cause memory leaks.
 </Aside>
