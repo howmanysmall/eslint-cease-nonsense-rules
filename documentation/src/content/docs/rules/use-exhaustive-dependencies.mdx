@@ -1,325 +1,118 @@
 ---
 title: use-exhaustive-dependencies
+badge:
+    text: Best Practice
+    variant: success
+description:
+    Enforces exhaustive and correct dependency specification in React hooks to prevent stale closures and unnecessary
+    re-renders.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Enforces exhaustive and correct dependency specification in React hooks to prevent stale closures and unnecessary re-renders.
+Enforces exhaustive and correct dependency specification in React hooks.
 
-## Rule Details
+## Rule Details :badge[Best Practice]{variant=success}
 
-This rule ensures that all dependencies used inside hook callbacks are listed in the dependency array, preventing bugs from stale closures while also detecting unnecessary dependencies that cause extra re-renders.
+This rule ensures that all dependencies used inside hook callbacks (like `useEffect`, `useMemo`, and `useCallback`) are
+listed in the dependency array. Failing to do so leads to "stale closures," where your code operates on old data from a
+previous render. Conversely, including unnecessary dependencies causes performance-degrading re-renders.
 
-**External Documentation**: [Biome's use-exhaustive-dependencies](https://biomejs.dev/linter/rules/use-exhaustive-dependencies/)
+<Aside type="tip" title="Why it matters">
+	Stale closures are one of the most common sources of bugs in React. This rule acts as a safety net to ensure your
+	hooks always have access to the latest reactive values.
+</Aside>
 
-## Options
+## Dependency Management Workflow
 
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/use-exhaustive-dependencies": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"reportMissingDependenciesArray": true,',
-		'\t\t\t"reportUnnecessaryDependencies": true,',
-		'\t\t\t"hooks": [',
-		"\t\t\t\t{",
-		'\t\t\t\t\t"name": "useCustomHook",',
-		'\t\t\t\t\t"closureIndex": 0,',
-		'\t\t\t\t\t"dependenciesIndex": 1,',
-		'\t\t\t\t\t"stableResult": true,',
-		"\t\t\t\t},",
-		"\t\t\t],",
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-0-1jwga2"
-/>
+<Steps>
+1. **Analyze Hook Body**
+   The linter identifies all variables from the component scope used inside your hook.
+2. **Categorize Inputs** Determine which values are "reactive" (props, state, or other hooks) and which are "stable"
+   (dispatchers, refs).
+3. **Update Array** Add all reactive values to the dependency array. Remove any values that are no longer used.
+4. **Stabilize if Needed** If a dependency changes too often (like an inline object), wrap its definition in `useMemo`
+   or `useCallback`.
 
-### Configuration Parameters
+{/* oxfmt-ignore */}
 
-- **reportMissingDependenciesArray** (default: `true`): Report when dependency array is missing entirely
-- **reportUnnecessaryDependencies** (default: `true`): Report dependencies that aren't used
-- **hooks** (default: `[]`): Configuration for custom hooks
-
-### Custom Hook Configuration
-
-- **name**: Hook function name
-- **closureIndex**: Parameter index of the callback function
-- **dependenciesIndex**: Parameter index of the dependency array
-- **stableResult**: Whether the hook returns stable references
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Stale Closures
+		Bans missing or incorrect dependencies that lead to out-of-sync state.
 
-<Code
-	code={[
-		"function UserProfile({ userId }) {",
-		"\tconst [user, setUser] = useState(null);",
-		"",
-		"\t// Missing userId dependency",
-		"\tuseEffect(() => {",
-		"\t\tfetchUser(userId).then(setUser);",
-		"\t}, []); // Should include userId",
-		"",
-		"\t// Missing dependency array entirely",
-		"\tuseEffect(() => {",
-		"\t\tdocument.title = `User ${userId}`;",
-		"\t});",
-		"",
-		"\t// Unnecessary dependency",
-		"\tuseEffect(() => {",
-		'\t\tconsole.log("mounted");',
-		"\t}, [userId]); // userId not used in effect",
-		"",
-		"\t// Stale closure",
-		"\tconst [count, setCount] = useState(0);",
-		"\tuseEffect(() => {",
-		"\t\tconst id = setInterval(() => {",
-		"\t\t\tconsole.log(count); // Always logs initial value!",
-		"\t\t}, 1000);",
-		"\t\treturn () => clearInterval(id);",
-		"\t}, []); // Missing count",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="function-userprofile-15gecv"
-/>
+    	<Code
+    		code={[
+    			"function UserProfile({ userId }) {",
+    			"\tuseEffect(() => {",
+    			"\t\t// ❌ userId is used but not in deps",
+    			"\t\tfetchUser(userId);",
+    			"\t}, []);",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Exhaustive Dependencies
+    	Ensure every external value used is present in the array.
 
-### ✅ Correct
+    	<Code
+    		code={[
+    			"function UserProfile({ userId }) {",
+    			"\tuseEffect(() => {",
+    			"\t\tfetchUser(userId);",
+    			"\t}, [userId]); // ✅ Included",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"function UserProfile({ userId }) {",
-		"\tconst [user, setUser] = useState(null);",
-		"",
-		"\t// Correct dependencies",
-		"\tuseEffect(() => {",
-		"\t\tfetchUser(userId).then(setUser);",
-		"\t}, [userId]);",
-		"",
-		"\t// Empty array for mount-only effect",
-		"\tuseEffect(() => {",
-		'\t\tconsole.log("mounted once");',
-		'\t\treturn () => console.log("unmounted");',
-		"\t}, []);",
-		"",
-		"\t// All used values in deps",
-		"\tconst [count, setCount] = useState(0);",
-		"\tuseEffect(() => {",
-		"\t\tconst id = setInterval(() => {",
-		"\t\t\tconsole.log(count); // Current count",
-		"\t\t}, 1000);",
-		"\t\treturn () => clearInterval(id);",
-		"\t}, [count]);",
-		"",
-		"\t// Or use functional update (no dep needed)",
-		"\tuseEffect(() => {",
-		"\t\tconst id = setInterval(() => {",
-		"\t\t\tsetCount((c) => c + 1); // No dependency on count",
-		"\t\t}, 1000);",
-		"\t\treturn () => clearInterval(id);",
-		"\t}, []);",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="function-userprofile-2ujoiv"
-/>
+</Tabs>
 
-## Common Patterns
+## Common Solutions
 
-### Props and State
-
-<Code
-	code={[
-		"function Component({ userId, onUpdate }) {",
-		"\tconst [data, setData] = useState(null);",
-		"",
-		"\tuseEffect(() => {",
-		"\t\tfetchUser(userId).then((user) => {",
-		"\t\t\tsetData(user);",
-		"\t\t\tonUpdate(user);",
-		"\t\t});",
-		"\t}, [userId, onUpdate]); // All referenced values",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="function-component-u-3l1vxm"
-/>
-
-### Stable Functions
-
-Use `useCallback` to stabilize function references:
-
-<Code
-	code={[
-		"function Component({ userId }) {",
-		"\t// Unstable: new function every render",
-		"\tconst loadUser = () => fetchUser(userId);",
-		"",
-		"\tuseEffect(() => {",
-		"\t\tloadUser();",
-		"\t}, [loadUser]); // Runs every render!",
-		"",
-		"\t// Better: stabilize with useCallback",
-		"\tconst loadUserStable = useCallback(() => {",
-		"\t\tfetchUser(userId);",
-		"\t}, [userId]);",
-		"",
-		"\tuseEffect(() => {",
-		"\t\tloadUserStable();",
-		"\t}, [loadUserStable]); // Only runs when userId changes",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="function-component-u-3akyfn"
-/>
-
-### Functional Updates
-
-Avoid dependencies with functional state updates:
-
-<Code
-	code={[
-		"function Counter() {",
-		"\tconst [count, setCount] = useState(0);",
-		"",
-		"\t// ❌ Depends on count",
-		"\tuseEffect(() => {",
-		"\t\tconst id = setInterval(() => setCount(count + 1), 1000);",
-		"\t\treturn () => clearInterval(id);",
-		"\t}, [count]); // Recreates interval on every change",
-		"",
-		"\t// ✅ No dependency on count",
-		"\tuseEffect(() => {",
-		"\t\tconst id = setInterval(() => setCount((c) => c + 1), 1000);",
-		"\t\treturn () => clearInterval(id);",
-		"\t}, []); // Stable interval",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="function-counter-3s31ye"
-/>
-
-### Refs (Stable)
-
-Refs don't need to be in dependencies:
-
-<Code
-	code={[
-		"function Component() {",
-		"\tconst inputRef = useRef<HTMLInputElement>(null);",
-		"",
-		"\tuseEffect(() => {",
-		"\t\tinputRef.current?.focus(); // Ref not in deps (stable)",
-		"\t}, []); // OK",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="function-component-2gzn08"
-/>
-
-## Custom Hooks
-
-Configure custom hooks similar to React's built-in hooks:
-
-<Code
-	code={[
-		"{",
-		'  "hooks": [{',
-		'    "name": "useInterval",',
-		'    "closureIndex": 0,       // Callback is first param',
-		'    "dependenciesIndex": 2,  // Deps array is third param',
-		'    "stableResult": false    // Returns non-stable values',
-		"  }]",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-7-1lvtkb"
-/>
-
-<Code
-	code={[
-		"// Usage",
-		"useInterval(",
-		"\t() => {",
-		"\t\tdoSomething(value);",
-		"\t},",
-		"\t1000,",
-		"\t[value],",
-		"); // Third param is deps",
-	].join("\n")}
-	lang="typescript"
-	key="usage-3bzl3m"
-/>
-
-## Exhaustive Dependencies Explained
-
-### Stale Closures
-
-Without proper dependencies, closures capture stale values:
-
-<Code
-	code={[
-		"function Component() {",
-		"\tconst [count, setCount] = useState(0);",
-		"",
-		"\tuseEffect(() => {",
-		"\t\t// Captures count = 0 at mount",
-		"\t\tsetTimeout(() => {",
-		"\t\t\tconsole.log(count); // Always 0!",
-		"\t\t}, 5000);",
-		"\t}, []); // Missing count",
-		"",
-		"\t// Fix: add count to deps",
-		"\tuseEffect(() => {",
-		"\t\tsetTimeout(() => {",
-		"\t\t\tconsole.log(count); // Current count",
-		"\t\t}, 5000);",
-		"\t}, [count]);",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="function-component-364ble"
-/>
-
-### Unnecessary Re-runs
-
-Too many dependencies cause performance issues:
-
-<Code
-	code={[
-		"function Component({ data }) {",
-		"\tconst [filtered, setFiltered] = useState([]);",
-		"",
-		"\tuseEffect(() => {",
-		"\t\tsetFiltered(data.filter((item) => item.active));",
-		"\t}, [data, filtered]); // filtered is unnecessary!",
-		"\t// This creates an infinite loop",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="function-component-d-3msiln"
-/>
-
-## React Compiler
-
-Note: The React Compiler (when available) will automatically handle many dependency issues, but this rule still helps catch problems during development.
-
-## When Not To Use It
-
-If you're using the React Compiler in production or prefer manual dependency management, you may disable this rule. However, it's strongly recommended for catching common React bugs.
+<CardGrid stagger>
+	<Card title="Functional Updates" icon="list-format">
+		Use `setCount(c => c + 1)` to avoid needing `count` as a dependency.
+	</Card>
+	<Card title="useMemo / useCallback" icon="bolt">
+		Stabilize object or function references so they don't trigger the hook every render.
+	</Card>
+	<Card title="useRef" icon="rocket">
+		Store non-reactive data in refs, which are stable and don't require tracking.
+	</Card>
+	<Card title="Effect Extraction" icon="setting">
+		Move functions outside the component if they don't depend on any reactive values.
+	</Card>
+</CardGrid>
 
 ## Related Rules
 
-- [use-hook-at-top-level](/rules/use-hook-at-top-level/) - Enforces hook placement
-- [require-named-effect-functions](/rules/require-named-effect-functions/) - Enforces named effect callbacks
+<CardGrid>
+	<LinkCard
+		title="use-hook-at-top-level"
+		description="Enforces hook placement rules"
+		href="/rules/use-hook-at-top-level/"
+	/>
+	<LinkCard
+		title="require-named-effect-functions"
+		description="Enforces named effect callbacks"
+		href="/rules/require-named-effect-functions/"
+	/>
+</CardGrid>
 
 ## Further Reading
 
-- [React useEffect Dependencies](https://react.dev/reference/react/useEffect#specifying-reactive-dependencies)
-- [Biome's Documentation](https://biomejs.dev/linter/rules/use-exhaustive-dependencies/)
-- [A Complete Guide to useEffect](https://overreacted.io/a-complete-guide-to-useeffect/)
+<CardGrid>
+	<LinkCard
+		title="React Docs: Dependencies"
+		description="Official guide on reactive dependencies"
+		href="https://react.dev/reference/react/useEffect#specifying-reactive-dependencies"
+	/>
+</CardGrid>

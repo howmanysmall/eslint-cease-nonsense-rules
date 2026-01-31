@@ -1,501 +1,120 @@
 ---
 title: no-instance-methods-without-this
+badge:
+    text: Performance
+    variant: success
+description:
+    Detects instance methods that don't use this and should be converted to standalone functions. Optimizes metatables.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Detects instance methods that don't use `this` and should be converted to standalone functions.
+Detects instance methods that don't use `this`.
 
-## Rule Details
+## Rule Details :badge[Performance]{variant=success}
 
-In roblox-ts, instance methods create metatable objects with significant performance overhead. Methods that don't reference `this` or `super` should be moved outside the class as standalone functions for better performance.
+In `roblox-ts`, instance methods carry significant metatable overhead. If a method doesn't access any instance state
+(via `this`), it should be extracted as a standalone function. This reduces memory usage and improves lookup speed for
+every instance of the class in the Roblox engine.
 
-## Options
+<Aside type="danger" title="Metatable Overhead">
+	Each instance method in a class increases the size of the metatable. In games with thousands of instances, this
+	overhead compounds, impacting both per-frame performance and total memory.
+</Aside>
 
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/no-instance-methods-without-this": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"checkPrivate": true, // Default: true',
-		'\t\t\t"checkProtected": true, // Default: true',
-		'\t\t\t"checkPublic": true, // Default: true',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-0-24eewd"
-/>
+## Refactoring Workflow
 
-### Configuration Parameters
+<Steps>
+1. **Identify Stateless Methods**
+   The linter identifies methods with no `this` references in their bodies.
 
-- **checkPrivate** (default: `true`): Check private methods
-- **checkProtected** (default: `true`): Check protected methods
-- **checkPublic** (default: `true`): Check public methods
+2. **Extract to Module Scope** Move the method body outside the class definition to the top-level or a utility file.
+
+3. **Convert to Pure Function** Ensure all dependencies are passed as explicit parameters rather than being implied by
+   object membership.
+
+4. **Update Call Sites** Replace `this.myMethod()` calls with a direct module-level call: `myMethod()`.
+
+{/* oxfmt-ignore */}
+
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Bound Pure Functions
+		Bans instance methods that act as pure functions but are tied to class instances.
 
-<Code
-	code={[
-		"class MathUtils {",
-		"\t// Private method without this",
-		"\tprivate add(a: number, b: number): number {",
-		"\t\treturn a + b;",
-		"\t}",
-		"",
-		"\t// Public method without this",
-		"\tpublic multiply(x: number, y: number): number {",
-		"\t\treturn x * y;",
-		"\t}",
-		"",
-		"\t// Protected method without this",
-		"\tprotected formatNumber(n: number): string {",
-		"\t\treturn n.toFixed(2);",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-mathutils-2qz49a"
-/>
+    	<Code
+    		code={[
+    			"class MathSystem {",
+    			"\t// ❌ Doesn't use 'this', but costs metatable space",
+    			"\tprivate calculate(x: number): number {",
+    			"\t\treturn x * x;",
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Standalone Utils
+    	Extract stateless logic to module scope for maximum performance.
 
-<Code
-	code={[
-		"class DataProcessor {",
-		"\tprivate data: Array<number> = [];",
-		"",
-		"\t// Method doesn't use this.data",
-		"\tprivate calculateSum(numbers: ReadonlyArray<number>): number {",
-		"\t\tlet sum = 0;",
-		"\t\tfor (const num of numbers) {",
-		"\t\t\tsum += num;",
-		"\t\t}",
-		"\t\treturn sum;",
-		"\t}",
-		"",
-		"\tpublic process(): void {",
-		"\t\tconst sum = this.calculateSum(this.data);",
-		"\t\tprint(sum);",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-dataprocessor-2efcrx"
-/>
+    	<Code
+    		code={[
+    			"function calculate(x: number) {",
+    			"\treturn x * x;",
+    			"}",
+    			"",
+    			"class MathSystem {",
+    			"\tpublic run(val: number) {",
+    			"\t\treturn calculate(val);",
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-### ✅ Correct
+</Tabs>
 
-<Code
-	code={[
-		"// Extract to standalone functions",
-		"function add(a: number, b: number): number {",
-		"\treturn a + b;",
-		"}",
-		"",
-		"function multiply(x: number, y: number): number {",
-		"\treturn x * y;",
-		"}",
-		"",
-		"function formatNumber(n: number): string {",
-		"\treturn n.toFixed(2);",
-		"}",
-		"",
-		"class MathUtils {",
-		"\t// Keep only methods that use instance state",
-		"\tpublic calculate(): number {",
-		"\t\treturn add(this.x, this.y);",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="extract-to-standalon-5has8r"
-/>
+## Why is this important?
 
-<Code
-	code={[
-		"// Extract pure function",
-		"function calculateSum(numbers: ReadonlyArray<number>): number {",
-		"\tlet sum = 0;",
-		"\tfor (const num of numbers) {",
-		"\t\tsum += num;",
-		"\t}",
-		"\treturn sum;",
-		"}",
-		"",
-		"class DataProcessor {",
-		"\tprivate data: Array<number> = [];",
-		"",
-		"\tpublic process(): void {",
-		"\t\tconst sum = calculateSum(this.data);",
-		"\t\tprint(sum);",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="extract-pure-functio-3vdljd"
-/>
-
-## Why This Rule Exists
-
-### Performance in roblox-ts
-
-Instance methods in roblox-ts create metatables with significant overhead:
-
-<Code
-	code={[
-		"// ❌ Creates metatable overhead for each instance",
-		"class Helper {",
-		"\tprivate format(text: string): string {",
-		"\t\treturn text.toUpperCase();",
-		"\t}",
-		"}",
-		"",
-		"// Each instance carries the metatable:",
-		"const h1 = new Helper(); // Metatable created",
-		"const h2 = new Helper(); // Another metatable created",
-	].join("\n")}
-	lang="typescript"
-	key="creates-metatable-ov-5pvmk5"
-/>
-
-<Code
-	code={[
-		"// ✅ No metatable overhead",
-		"function format(text: string): string {",
-		"\treturn text.toUpperCase();",
-		"}",
-		"",
-		"class Helper {",
-		"\t// Only instance state in the class",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="no-metatable-overhea-1s8et0"
-/>
-
-### Memory Efficiency
-
-<Code
-	code={[
-		"// ❌ Bad - every instance has method references",
-		"class Validator {",
-		"\tprivate isEmail(str: string): boolean {",
-		'\t\treturn str.includes("@");',
-		"\t}",
-		"",
-		"\tprivate isUrl(str: string): boolean {",
-		'\t\treturn str.startsWith("http");',
-		"\t}",
-		"}",
-		"",
-		"// 100 instances = 100 sets of method references",
-		"const validators = [];",
-		"for (let i = 0; i < 100; i++) {",
-		"\tvalidators.push(new Validator());",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="bad-every-instance-h-1vhp8t"
-/>
-
-<Code
-	code={[
-		"// ✅ Good - shared functions",
-		"function isEmail(str: string): boolean {",
-		'\treturn str.includes("@");',
-		"}",
-		"",
-		"function isUrl(str: string): boolean {",
-		'\treturn str.startsWith("http");',
-		"}",
-		"",
-		"class Validator {",
-		"\t// Only instance-specific methods",
-		"\tpublic validate(): boolean {",
-		"\t\treturn isEmail(this.input) && isUrl(this.url);",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="good-shared-function-2y9pnq"
-/>
-
-## Detection Rules
-
-The rule flags methods that:
-
-1. Are instance methods (not `static`)
-2. Are actual methods (not constructors, getters, setters)
-3. Don't contain `this` or `super` anywhere in the body
-4. Match the configured visibility (private/protected/public)
-
-### What is Checked
-
-<Code
-	code={[
-		"class Example {",
-		"\t// ✅ Checked - instance method without this",
-		"\tprivate helper(x: number): number {",
-		"\t\treturn x * 2;",
-		"\t}",
-		"",
-		"\t// ❌ Not checked - static method",
-		"\tstatic staticHelper(x: number): number {",
-		"\t\treturn x * 2;",
-		"\t}",
-		"",
-		"\t// ❌ Not checked - constructor",
-		"\tconstructor() {}",
-		"",
-		"\t// ❌ Not checked - getter",
-		"\tget value(): number {",
-		"\t\treturn 42;",
-		"\t}",
-		"",
-		"\t// ❌ Not checked - setter",
-		"\tset value(n: number) {",
-		"\t\t// ...",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-example-5ypimv"
-/>
-
-### This/Super Detection
-
-<Code
-	code={[
-		"class Example {",
-		"\tprivate data = [1, 2, 3];",
-		"",
-		"\t// ✅ Allowed - uses this",
-		"\tprivate getFirst(): number {",
-		"\t\treturn this.data[0];",
-		"\t}",
-		"",
-		"\t// ❌ Flagged - doesn't use this",
-		"\tprivate double(x: number): number {",
-		"\t\treturn x * 2;",
-		"\t}",
-		"",
-		"\t// ✅ Allowed - uses this in nested scope",
-		"\tprivate process(): void {",
-		"\t\tthis.data.forEach((item) => {",
-		"\t\t\tthis.handleItem(item);",
-		"\t\t});",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-example-1jvo15"
-/>
-
-<Code
-	code={[
-		"class Child extends Parent {",
-		"\t// ✅ Allowed - uses super",
-		"\tprotected override method(): void {",
-		"\t\tsuper.method();",
-		"\t\tdoSomething();",
-		"\t}",
-		"",
-		"\t// ❌ Flagged - doesn't use this or super",
-		"\tprotected helper(): string {",
-		'\t\treturn "helper";',
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-child-extends--pmo4hs"
-/>
-
-## Configuration Examples
-
-### Check Only Public Methods
-
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/no-instance-methods-without-this": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"checkPrivate": false,',
-		'\t\t\t"checkProtected": false,',
-		'\t\t\t"checkPublic": true,',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-12-3su55u"
-/>
-
-### Check Only Private and Protected
-
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/no-instance-methods-without-this": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"checkPrivate": true,',
-		'\t\t\t"checkProtected": true,',
-		'\t\t\t"checkPublic": false,',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-13-2nsw7p"
-/>
-
-## Migration Strategies
-
-### 1. Extract to Module-Level Function
-
-<Code
-	code={[
-		"// Before:",
-		"class UserService {",
-		"\tprivate formatName(first: string, last: string): string {",
-		"\t\treturn `${first} ${last}`;",
-		"\t}",
-		"",
-		"\tpublic getDisplayName(): string {",
-		"\t\treturn this.formatName(this.user.first, this.user.last);",
-		"\t}",
-		"}",
-		"",
-		"// After:",
-		"function formatName(first: string, last: string): string {",
-		"\treturn `${first} ${last}`;",
-		"}",
-		"",
-		"class UserService {",
-		"\tpublic getDisplayName(): string {",
-		"\t\treturn formatName(this.user.first, this.user.last);",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="before-41b8k0"
-/>
-
-### 2. Create Utility Module
-
-<Code
-	code={[
-		"// utils/validators.ts",
-		"export function isValidEmail(email: string): boolean {",
-		'\treturn email.includes("@");',
-		"}",
-		"",
-		"export function isValidPhone(phone: string): boolean {",
-		"\treturn /^\\d{10}$/.test(phone);",
-		"}",
-		"",
-		"// UserService.ts",
-		'import * as Validators from "./utils/validators";',
-		"",
-		"class UserService {",
-		"\tpublic validate(): boolean {",
-		"\t\treturn Validators.isValidEmail(this.email) && Validators.isValidPhone(this.phone);",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="utils-validators-ts-x8pop9"
-/>
-
-### 3. Keep as Static Method
-
-If the method is conceptually related to the class but doesn't need instance access:
-
-<Code
-	code={[
-		"class UserService {",
-		"\t// Static method instead of instance method",
-		"\tstatic formatName(first: string, last: string): string {",
-		"\t\treturn `${first} ${last}`;",
-		"\t}",
-		"",
-		"\tpublic getDisplayName(): string {",
-		"\t\treturn UserService.formatName(this.user.first, this.user.last);",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-userservice-1avxtg"
-/>
-
-## When Not To Use It
-
-Consider disabling this rule if:
-
-- You're not using roblox-ts (rule is optimized for roblox-ts performance)
-- You prefer keeping helper methods as private instance methods for encapsulation
-- Your performance requirements don't justify the refactoring effort
-- You're working on a codebase where the pattern is well-established
-
-## Advanced Examples
-
-### Complex Traversal
-
-The rule thoroughly checks all nested scopes:
-
-<Code
-	code={[
-		"class Example {",
-		"\t// ✅ Allowed - uses this in nested callback",
-		"\tprivate process(): void {",
-		"\t\tconst items = [1, 2, 3];",
-		"\t\titems.forEach((item) => {",
-		"\t\t\tthis.handleItem(item);",
-		"\t\t});",
-		"\t}",
-		"",
-		"\t// ❌ Flagged - nested callbacks don't use this",
-		"\tprivate calculate(): number {",
-		"\t\tconst numbers = [1, 2, 3];",
-		"\t\treturn numbers.reduce((sum, n) => sum + n, 0);",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-example-2okx3k"
-/>
-
-### Async Methods
-
-<Code
-	code={[
-		"class DataFetcher {",
-		"\t// ✅ Allowed - uses this",
-		"\tasync fetch(): Promise<Data> {",
-		"\t\treturn await fetchData(this.url);",
-		"\t}",
-		"",
-		"\t// ❌ Flagged - doesn't use this",
-		"\tasync parseJson(text: string): Promise<unknown> {",
-		"\t\treturn JSON.parse(text);",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-datafetcher-1dva4h"
-/>
+<CardGrid stagger>
+	<Card title="Lookup Speed" icon="bolt">
+		Module-level functions are resolved faster than methods that require Lua index traversal.
+	</Card>
+	<Card title="Memory Scale" icon="list-format">
+		Removing 5 methods from a class with 1,000 instances significantly reduces heap fragmentation.
+	</Card>
+	<Card title="Testability" icon="rocket">
+		Pure standalone functions can be tested without the overhead of instantiating whole classes.
+	</Card>
+</CardGrid>
 
 ## Related Rules
 
-- [prefer-class-properties](/rules/prefer-class-properties/) - Optimizes class property initialization
-- [prefer-module-scope-constants](/rules/prefer-module-scope-constants/) - Enforces module-level constants
+<CardGrid>
+	<LinkCard
+		title="prefer-class-properties"
+		description="Optimizes property setup"
+		href="/rules/prefer-class-properties/"
+	/>
+	<LinkCard
+		title="require-module-level-instantiation"
+		description="Correct placement for singletons"
+		href="/rules/require-module-level-instantiation/"
+	/>
+</CardGrid>
 
 ## Further Reading
 
-- [roblox-ts Performance Guide](https://roblox-ts.com/docs/guides/performance)
-- [Metatable Overhead in Lua](https://www.lua.org/pil/13.html)
-- [Class Design Principles](https://refactoring.guru/design-patterns/factory-method)
+<CardGrid>
+	<LinkCard
+		title="roblox-ts Performance Guide"
+		description="Optimization tips for Roblox engine"
+		href="https://roblox-ts.com/docs/guides/performance"
+	/>
+</CardGrid>

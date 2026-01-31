@@ -1,73 +1,118 @@
 ---
 title: naming-convention
+badge:
+    text: Performance
+    variant: success
+description: Enforce naming conventions for TypeScript constructs with high performance and zero type checking.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
 Enforce naming conventions for TypeScript constructs.
 
-## Rule Details
+## Rule Details :badge[Performance]{variant=success}
 
-This rule enforces naming conventions for interfaces, types, and other TypeScript constructs. It's optimized for common use cases like interface prefix checking without requiring type checking. Declaration files (`.d.ts`) are ignored by default.
+This rule enforces naming conventions for interfaces, types, and other TypeScript constructs. Unlike the standard
+`typescript-eslint` rule, this one is optimized for extreme speed by using AST-only analysis. This makes it ideal for
+large codebases where full type-checking during linting is too slow.
 
-## Options
+<Aside type="note" title="Design Philosophy">
+	We believe naming conventions should be fast and simple. By avoiding full type checking, this rule provides nearly
+	instantaneous feedback as you type.
+</Aside>
 
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/naming-convention": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"custom": {',
-		'\t\t\t\t"match": false,',
-		'\t\t\t\t"regex": "^I[A-Z]",',
-		"\t\t\t},",
-		'\t\t\t"format": ["PascalCase"],',
-		'\t\t\t"selector": "interface",',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-0-49ttwx"
-/>
+## Configuration Workflow
 
-### Configuration Parameters
+<Steps>
+1. **Identify Selectors**
+   Choose which constructs to check (e.g., `interface`, `typeAlias`, `enum`).
+2. **Select Formats** Define allowed casing formats (e.g., `PascalCase`, `camelCase`, `UPPER_CASE`).
+3. **Define Custom Rules** Use regex to add specific constraints, like banning the `I` prefix on interfaces.
+4. **Verify Performance** Ensure your lint times remain low; this rule handles thousands of nodes in milliseconds.
+{/* oxfmt-ignore */}
 
-- **custom**: Custom regex matching options.
-    - **match** (default: `true`): Whether the regex should match (`true`) or not match (`false`).
-    - **regex**: Regular expression pattern to test against names.
-- **format**: Array of format names (e.g., `["PascalCase"]`).
-- **selector**: Type of construct to check (e.g., `"interface"`).
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Invalid Casing
+		Bans names that don't match your project's architectural standards.
 
-<Code
-	code={['// With custom: { match: false, regex: "^I[A-Z]" }', "interface IUser {", "\tname: string;", "}"].join(
-		"\n",
-	)}
-	lang="typescript"
-	key="with-custom-match-fa-2g54hf"
-/>
+    	<Code
+    		code={[
+    			"// If interface must be PascalCase",
+    			"interface iUser { name: string; }",
+    			"",
+    			"// If I-prefix is banned",
+    			"interface IUser { name: string; }",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Standardized Names
+    	Consistent naming improves codebase grep-ability and professionalism.
 
-### ✅ Correct
+    	<Code
+    		code={[
+    			"interface User { name: string; }",
+    			"",
+    			"type UserData = { id: string; };",
+    			"",
+    			"enum LogLevel { Info, Warn, Error };",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code code={["interface User {", "\tname: string;", "}"].join("\n")} lang="typescript" key="interface-user-wv5yyt" />
+</Tabs>
 
-## When Not To Use It
+## Selectors & Formats
 
-If your codebase intentionally uses interface prefixes (e.g., `IUser`) for legacy reasons or team preference, disable this rule.
+| Selector    | Common Format | Description            |
+| :---------- | :------------ | :--------------------- |
+| `interface` | `PascalCase`  | Standard TS interfaces |
+| `typeAlias` | `PascalCase`  | Type definitions       |
+| `variable`  | `camelCase`   | Standard variables     |
+| `constant`  | `UPPER_CASE`  | Global constants       |
 
-## Performance
+## Why use this over TS-ESLint?
 
-This rule is optimized with:
-
-- No type checking required (fast AST-only analysis)
-- Pre-compiled regex patterns
-- Focused on common use cases
+<CardGrid stagger>
+	<Card title="No Type Graph" icon="bolt">
+		Analyzes raw code without waiting for the TypeScript compiler to build a complex type graph.
+	</Card>
+	<Card title="Regex Engine" icon="setting">
+		Pre-compiles and caches all regular expressions for maximum execution speed.
+	</Card>
+	<Card title="Memory Light" icon="rocket">
+		Consumes significantly less RAM than type-aware linting rules.
+	</Card>
+</CardGrid>
 
 ## Related Rules
 
-- `@typescript-eslint/naming-convention` - Full-featured naming convention rule (slower, more comprehensive)
+<CardGrid>
+	<LinkCard
+		title="prefer-pascal-case-enums"
+		description="Enforce PascalCase for enums"
+		href="/rules/prefer-pascal-case-enums/"
+	/>
+	<LinkCard
+		title="no-shorthand-names"
+		description="Ban problematic shorthand names"
+		href="/rules/no-shorthand-names/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Google TS Style Guide"
+		description="Official naming recommendations"
+		href="https://google.github.io/styleguide/tsguide.html#naming"
+	/>
+</CardGrid>

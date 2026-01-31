@@ -1,285 +1,136 @@
 ---
 title: no-color3-constructor
+badge:
+    text: Roblox
+    variant: note
+description: Bans new Color3(...) except for zero-value constructors. Use Color3.fromRGB() instead.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
 Bans `new Color3(...)` except for `new Color3()` or `new Color3(0, 0, 0)`. Use `Color3.fromRGB()` instead.
 
-## Rule Details
+## Rule Details :badge[Roblox]{variant=note}
 
-The `new Color3()` constructor uses floating-point values in the range [0-1] and performs worse than `Color3.fromRGB()` which uses integer values [0-255]. This rule enforces the use of the more performant `Color3.fromRGB()` method while allowing the zero-argument constructor and explicit zero values.
+The `new Color3()` constructor uses floating-point values in the range [0-1] and performs worse than `Color3.fromRGB()`
+which uses integer values [0-255]. This rule enforces the use of the more performant `Color3.fromRGB()` method while
+allowing the zero-argument constructor and explicit zero values.
 
-## Options
+<Aside type="tip" title="Why Color3.fromRGB?">
+	`Color3.fromRGB()` is faster because it avoids the internal float-to-int conversion performed by the engine. Most UI
+	designs use 0-255 values anyway, so this is more intuitive and performant.
+</Aside>
 
-This rule has no configuration options.
+## Refactoring Path
+
+<Steps>
+1. **Identify Violations**
+   Locate `new Color3(r, g, b)` calls where `r`, `g`, or `b` are literals between 0 and 1.
+
+2. **Convert to RGB** Multiply each component by 255 and round to the nearest integer.
+
+3. **Update Method** Replace the `new Color3` call with `Color3.fromRGB`.
+
+4. **Verify Zeros** If you meant to initialize a black color, `new Color3()` is still allowed and efficient.
+
+{/* oxfmt-ignore */}
+
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Floating Point Constructors
+		Using `new Color3` with non-zero values triggers an error.
 
-<Code
-	code={[
-		"// Using float values",
-		"const red = new Color3(1, 0, 0);",
-		"const blue = new Color3(0.5, 0.5, 1);",
-		"const green = new Color3(0, 255, 0);",
-		"",
-		"// Partial arguments",
-		"const white = new Color3(1, 1);",
-		"const gray = new Color3(0.5);",
-	].join("\n")}
-	lang="typescript"
-	key="using-float-values-2ojuw2"
-/>
+    	<Code
+    		code={[
+    			"const red = new Color3(1, 0, 0);",
+    			"const blue = new Color3(0.5, 0.5, 1);",
+    			"const green = new Color3(0, 255, 0);",
+    			"",
+    			"// Partial arguments are also banned",
+    			"const white = new Color3(1, 1);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Optimized Static Methods
+    	Use `fromRGB` for colors or keep `new Color3()` for zero-initialization.
 
-### ✅ Correct
+    	<Code
+    		code={[
+    			"const red = Color3.fromRGB(255, 0, 0);",
+    			"const blue = Color3.fromRGB(127, 127, 255);",
+    			"",
+    			"// Zero constructors are allowed (efficient in engine)",
+    			"const alsoBlack = new Color3();",
+    			"const explicitBlack = new Color3(0, 0, 0);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"// Use Color3.fromRGB() instead",
-		"const red = Color3.fromRGB(255, 0, 0);",
-		"const blue = Color3.fromRGB(127, 127, 255);",
-		"const green = Color3.fromRGB(0, 255, 0);",
-		"",
-		"// Zero constructors are allowed",
-		"const black = new Color3(0, 0, 0);",
-		"const alsoBlack = new Color3();",
-		"",
-		"// Using named constants",
-		"const white = Color3.fromRGB(255, 255, 255);",
-	].join("\n")}
-	lang="typescript"
-	key="use-color3-fromrgb-i-fywjck"
-/>
-
-## Auto-Fix Behavior
-
-This rule provides automatic fixes that convert float values to RGB integers:
-
-<Code
-	code={[
-		"// Before:",
-		"const pink = new Color3(1, 0.75, 0.8);",
-		"",
-		"// After (auto-fixed):",
-		"const pink = Color3.fromRGB(255, 191, 204);",
-	].join("\n")}
-	lang="typescript"
-	key="before-ma35p2"
-/>
-
-### Float Conversion
-
-The rule automatically converts float values [0-1] to integers [0-255]:
-
-- Values > 1 are treated as already being in [0-255] range
-- Values ≤ 1 are multiplied by 255 and rounded
-
-<Code
-	code={[
-		"// Float to RGB conversion:",
-		"new Color3(1, 0, 0) → Color3.fromRGB(255, 0, 0);",
-		"new Color3(0.5, 0.5, 0.5) → Color3.fromRGB(127, 127, 127);",
-		"",
-		"// Already RGB values (no multiplication):",
-		"new Color3(128, 64, 32) → Color3.fromRGB(128, 64, 32);",
-	].join("\n")}
-	lang="typescript"
-	key="float-to-rgb-convers-3tgr0t"
-/>
+</Tabs>
 
 ## Performance Benefits
 
-### Execution Speed
+<CardGrid stagger>
+	<Card title="No Conversion" icon="bolt">
+		Roblox stores colors as integers. `fromRGB` skips the float-to-int math required by the standard constructor.
+	</Card>
+	<Card title="Direct Storage" icon="setting">
+		Integers are stored directly, reducing the memory and CPU cycles spent on representation.
+	</Card>
+	<Card title="Optimized Path" icon="rocket">
+		The internal C++ implementation for `fromRGB` is specifically optimized for common UI work.
+	</Card>
+</CardGrid>
 
-`Color3.fromRGB()` is faster than `new Color3()` because:
+## Conversion Table
 
-1. **No float-to-int conversion** - Roblox engine converts [0-1] floats to [0-255] internally
-2. **Direct integer storage** - RGB values are stored as integers in the engine
-3. **Optimized code path** - `fromRGB()` uses a faster internal implementation
-
-### Memory Efficiency
-
-<Code
-	code={[
-		"// Less efficient - float representation",
-		"const color1 = new Color3(0.5, 0.5, 0.5);",
-		"",
-		"// More efficient - integer representation",
-		"const color2 = Color3.fromRGB(127, 127, 127);",
-	].join("\n")}
-	lang="typescript"
-	key="less-efficient-float-2a1sfn"
-/>
-
-## Common Patterns
-
-### Color Palettes
-
-<Code
-	code={[
-		"// ❌ Bad",
-		"const COLORS = {",
-		"\tPRIMARY: new Color3(0.2, 0.4, 0.8),",
-		"\tSECONDARY: new Color3(0.8, 0.2, 0.4),",
-		"\tACCENT: new Color3(0, 0.9, 0.5),",
-		"};",
-		"",
-		"// ✅ Good",
-		"const COLORS = {",
-		"\tPRIMARY: Color3.fromRGB(51, 102, 204),",
-		"\tSECONDARY: Color3.fromRGB(204, 51, 102),",
-		"\tACCENT: Color3.fromRGB(0, 229, 127),",
-		"};",
-	].join("\n")}
-	lang="typescript"
-	key="bad-38qipa"
-/>
-
-### Dynamic Colors
-
-<Code
-	code={[
-		"// ❌ Bad",
-		"function createGradient(start: number, end: number, steps: number) {",
-		"\tconst colors = [];",
-		"\tfor (let i = 0; i < steps; i++) {",
-		"\t\tconst ratio = i / (steps - 1);",
-		"\t\tcolors.push(new Color3(ratio, ratio, ratio));",
-		"\t}",
-		"\treturn colors;",
-		"}",
-		"",
-		"// ✅ Good",
-		"function createGradient(start: number, end: number, steps: number) {",
-		"\tconst colors = [];",
-		"\tfor (let i = 0; i < steps; i++) {",
-		"\t\tconst ratio = i / (steps - 1);",
-		"\t\tconst value = Math.round(ratio * 255);",
-		"\t\tcolors.push(Color3.fromRGB(value, value, value));",
-		"\t}",
-		"\treturn colors;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="bad-37wmrq"
-/>
-
-### Color Interpolation
-
-<Code
-	code={[
-		"// ❌ Bad",
-		"function lerp(a: Color3, b: Color3, t: number): Color3 {",
-		"\treturn new Color3(a.R + (b.R - a.R) * t, a.G + (b.G - a.G) * t, a.B + (b.B - a.B) * t);",
-		"}",
-		"",
-		"// ✅ Good",
-		"function lerp(a: Color3, b: Color3, t: number): Color3 {",
-		"\treturn Color3.fromRGB(",
-		"\t\tMath.round(a.R * 255 + (b.R - a.R) * t * 255),",
-		"\t\tMath.round(a.G * 255 + (b.G - a.G) * t * 255),",
-		"\t\tMath.round(a.B * 255 + (b.B - a.B) * t * 255),",
-		"\t);",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="bad-17eohv"
-/>
+| Float Input | RGB Output | Rule Behavior                |
+| :---------- | :--------- | :--------------------------- |
+| `0.0`       | `0`        | Allowed in constructor       |
+| `0.25`      | `64`       | Auto-fixes to `fromRGB(64)`  |
+| `0.5`       | `127`      | Auto-fixes to `fromRGB(127)` |
+| `0.75`      | `191`      | Auto-fixes to `fromRGB(191)` |
+| `1.0`       | `255`      | Auto-fixes to `fromRGB(255)` |
 
 ## Edge Cases
 
-### Non-Numeric Arguments
-
-The rule only applies to numeric literals:
-
-<Code
-	code={[
-		"// Not checked (variables)",
-		"const r = 0.5;",
-		"const color = new Color3(r, r, r); // No error",
-		"",
-		"// Not checked (expressions)",
-		"const color2 = new Color3(Math.random(), 0, 0); // No error",
-		"",
-		"// Checked (literals only)",
-		"const color3 = new Color3(0.5, 0.5, 0.5); // ❌ Error",
-	].join("\n")}
-	lang="typescript"
-	key="not-checked-variable-2yrb65"
-/>
-
-### Partial Arguments
-
-Missing arguments are treated as 0:
-
-<Code
-	code={["// Before:", "new Color3(10, 5);", "", "// After (auto-fixed):", "Color3.fromRGB(10, 5, 0);"].join("\n")}
-	lang="typescript"
-	key="before-3mxg2v"
-/>
-
-### Mixed Float and Integer
-
-The rule handles mixed value ranges correctly:
-
-<Code
-	code={[
-		"// Before:",
-		"new Color3(1, 128, 0.5);",
-		"",
-		"// After (auto-fixed):",
-		"Color3.fromRGB(255, 128, 127);",
-	].join("\n")}
-	lang="typescript"
-	key="before-34yxco"
-/>
-
-## When Not To Use It
-
-This rule is Roblox-specific. Disable it if:
-
-- You're not working with Roblox/roblox-ts
-- You're working with a codebase that extensively uses float colors and requires gradual migration
-- You have performance measurements showing `new Color3()` is acceptable for your use case
-
-## Migration Guide
-
-### Find and Replace
-
-<Code
-	code={["# Find all Color3 constructor calls", 'grep -r "new Color3" --include="*.ts" --include="*.tsx"'].join("\n")}
-	lang="bash"
-	key="find-all-color3-cons-2nm5av"
-/>
-
-### Automated Fix
-
-<Code
-	code={["# Fix all violations automatically", "bun run lint:fix", "eslint --fix src/"].join("\n")}
-	lang="bash"
-	key="fix-all-violations-a-oaiesq"
-/>
-
-### Manual Conversion Table
-
-| Float Input | RGB Output |
-| ----------- | ---------- |
-| 0.0         | 0          |
-| 0.25        | 64         |
-| 0.5         | 127        |
-| 0.75        | 191        |
-| 1.0         | 255        |
+- **Variables**: The rule only flags literals. `new Color3(r, g, b)` is not flagged.
+- **Expressions**: `new Color3(Math.random(), 0, 0)` is not flagged.
+- **Mixed Ranges**: If you use `new Color3(1, 128, 0.5)`, it auto-fixes to `Color3.fromRGB(255, 128, 127)`.
 
 ## Related Rules
 
-- [prefer-udim2-shorthand](/rules/prefer-udim2-shorthand/) - Similar performance rule for UDim2
-- [prefer-sequence-overloads](/rules/prefer-sequence-overloads/) - Optimized sequence constructors
-- [prefer-pattern-replacements](/rules/prefer-pattern-replacements/) - General constructor optimization
+<CardGrid>
+	<LinkCard
+		title="prefer-udim2-shorthand"
+		description="Similar performance rule for UDim2"
+		href="/rules/prefer-udim2-shorthand/"
+	/>
+	<LinkCard
+		title="prefer-sequence-overloads"
+		description="Optimized sequence constructors"
+		href="/rules/prefer-sequence-overloads/"
+	/>
+</CardGrid>
 
 ## Further Reading
 
-- [Roblox Color3 API](https://create.roblox.com/docs/reference/engine/datatypes/Color3)
-- [Roblox Performance Optimization](https://create.roblox.com/docs/scripting/performance-optimization)
-- [Color Theory for Game Development](https://gamedevbeginner.com/the-ultimate-guide-to-color-in-game-art/)
+<CardGrid>
+	<LinkCard
+		title="Roblox Color3 API"
+		description="Official engine documentation"
+		href="https://create.roblox.com/docs/reference/engine/datatypes/Color3"
+	/>
+	<LinkCard
+		title="Performance Optimization"
+		description="Roblox scripting performance guide"
+		href="https://create.roblox.com/docs/scripting/performance-optimization"
+	/>
+</CardGrid>

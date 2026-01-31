@@ -1,16 +1,96 @@
 ---
 title: require-module-level-instantiation
+badge:
+    text: Best Practice
+    variant: caution
+description: Ensure that singletons and utility classes are instantiated once at module scope.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
 Require certain classes to be instantiated at module level rather than inside functions.
 
-## Rule Details
+## Rule Details :badge[Best Practice]{variant=caution}
 
-Some classes, like logging utilities, should be instantiated once at module scope rather than recreated on every function call. This prevents wasted resources and potential unexpected behavior from multiple instances.
+Some classes, like logging utilities or networked servers, should be instantiated exactly once at the top level of your file. Recreating these objects inside functions or methods leads to wasted resources, duplicate network connections, and fragmented state.
 
-## Options
+<Aside type="important" title="Singleton Pattern">
+	Many utility classes are designed as singletons. Recreating them inside frequently-called functions (like React
+	render cycles) defeats their design and can cause memory leaks.
+</Aside>
+
+## Refactoring Workflow
+
+<Steps>
+1. **Identify Target Classes**
+   Configure the linter with classes that must be shared globally (e.g., `Log`, `Server`).
+
+2. **Locate Local Instances** Find `new ClassName()` calls that are nested inside functions, loops, or class methods.
+
+3. **Lift to Module Scope** Move the instantiation to the top of the file, outside of all functions.
+
+4. **Verify References** Access the now-global instance from your functions. Ensure it is initialized before first use.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Local Instantiation
+		Bans recreating heavy objects inside frequently executed code blocks.
+
+    	<Code
+    		code={[
+    			'import Log from "@rbxts/rbxts-sleitnick-log";',
+    			"",
+    			"function useData() {",
+    			"\t// ❌ Created every time the function runs!",
+    			"\tconst log = new Log();",
+    			'\tlog.Info("Loading data...");',
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Static Global Instance
+    	Instantiate once at the top level and reuse the reference everywhere.
+
+    	<Code
+    		code={[
+    			'import Log from "@rbxts/rbxts-sleitnick-log";',
+    			"",
+    			"// ✅ Created once when the module loads",
+    			"const log = new Log();",
+    			"",
+    			"function useData() {",
+    			'\tlog.Info("Loading data...");',
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why Avoid Local Instantiatons?
+
+<CardGrid stagger>
+	<Card title="Performance" icon="bolt">
+		Avoids the CPU overhead of repetitive object creation and garbage collection.
+	</Card>
+	<Card title="Connections" icon="rocket">
+		Prevents opening multiple network sockets or event listeners for the same service.
+	</Card>
+	<Card title="State Consistency" icon="setting">
+		Ensures that all parts of the file share the same state (e.g., log history or server config).
+	</Card>
+</CardGrid>
+
+## Configuration Example
 
 <Code
 	code={[
@@ -20,241 +100,32 @@ Some classes, like logging utilities, should be instantiated once at module scop
 		"\t\t{",
 		'\t\t\t"classes": {',
 		'\t\t\t\t"Log": "@rbxts/rbxts-sleitnick-log",',
-		'\t\t\t\t"Server": "@rbxts/net",',
-		"\t\t\t},",
-		"\t\t},",
-		"\t],",
+		'\t\t\t\t"Server": "@rbxts/net"',
+		"\t\t\t}",
+		"\t\t}",
+		"\t]",
 		"}",
 	].join("\n")}
-	lang="typescript"
-	key="block-0-2hra15"
+	lang="json"
+	title="eslint.config.js"
 />
-
-### `classes`
-
-A mapping of class names to their expected import sources. Only classes imported from the specified source will be checked.
-
-## Examples
-
-### Incorrect
-
-<Code
-	code={[
-		'import Log from "@rbxts/rbxts-sleitnick-log";',
-		"",
-		"function useStoryModesState() {",
-		"\tconst log = new Log(); // Recreated on every call!",
-		'\tlog.Info("Create Match clicked");',
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="import-log-from-rbxt-1sa9c4"
-/>
-
-<Code
-	code={[
-		'import Log from "@rbxts/rbxts-sleitnick-log";',
-		"",
-		"const handler = () => {",
-		"\tconst log = new Log(); // Inside arrow function",
-		"};",
-	].join("\n")}
-	lang="typescript"
-	key="import-log-from-rbxt-1icqi8"
-/>
-
-<Code
-	code={[
-		'import Log from "@rbxts/rbxts-sleitnick-log";',
-		"",
-		"class MyClass {",
-		"\tdoThing() {",
-		"\t\tconst log = new Log(); // Inside method",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="import-log-from-rbxt-15vknz"
-/>
-
-### Correct
-
-<Code
-	code={[
-		'import Log from "@rbxts/rbxts-sleitnick-log";',
-		"",
-		"const log = new Log(); // Module level - created once",
-		"",
-		"function useStoryModesState() {",
-		'\tlog.Info("Create Match clicked");',
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="import-log-from-rbxt-11q6ek"
-/>
-
-<Code
-	code={[
-		'import Log from "@rbxts/rbxts-sleitnick-log";',
-		"",
-		"const log = new Log();",
-		"",
-		"const handler = () => {",
-		'\tlog.Info("Handler called");',
-		"};",
-	].join("\n")}
-	lang="typescript"
-	key="import-log-from-rbxt-v83qna"
-/>
-
-<Code
-	code={[
-		'import Log from "@rbxts/rbxts-sleitnick-log";',
-		"",
-		"const log = new Log();",
-		"",
-		"class MyClass {",
-		"\tdoThing() {",
-		'\t\tlog.Info("Doing thing");',
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="import-log-from-rbxt-3795dw"
-/>
-
-## Why This Rule Exists
-
-### Performance
-
-Instantiating objects inside functions means creating a new instance on every call:
-
-<Code
-	code={[
-		"// Calling this 100 times creates 100 Log instances",
-		"function process() {",
-		"\tconst log = new Log();",
-		'\tlog.Info("Processing");',
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="calling-this-100-tim-3w3njn"
-/>
-
-vs.
-
-<Code
-	code={[
-		"const log = new Log(); // Created once",
-		"",
-		"// Calling this 100 times uses the same Log instance",
-		"function process() {",
-		'\tlog.Info("Processing");',
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="const-log-new-log-cr-kcceyx"
-/>
-
-### Resource Management
-
-Some classes maintain internal state, connections, or resources. Multiple instances may:
-
-- Compete for resources
-- Create duplicate connections
-- Cause inconsistent behavior
-
-### Singleton Pattern
-
-Many utility classes like loggers are designed to be used as singletons. Recreating them defeats this design.
-
-## Configuration Examples
-
-### Single Class
-
-<Code
-	code={[
-		"{",
-		'  "cease-nonsense/require-module-level-instantiation": ["error", {',
-		'    "classes": {',
-		'      "Log": "@rbxts/rbxts-sleitnick-log"',
-		"    }",
-		"  }]",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-9-1hth9k"
-/>
-
-### Multiple Classes
-
-<Code
-	code={[
-		"{",
-		'  "cease-nonsense/require-module-level-instantiation": ["error", {',
-		'    "classes": {',
-		'      "Log": "@rbxts/rbxts-sleitnick-log",',
-		'      "Server": "@rbxts/net",',
-		'      "Client": "@rbxts/net"',
-		"    }",
-		"  }]",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-10-16pdq5"
-/>
-
-## Import Handling
-
-The rule tracks imports and only flags instantiations of classes imported from the configured source.
-
-### Default Imports
-
-<Code
-	code={['import Log from "@rbxts/rbxts-sleitnick-log";', "// new Log() inside functions will be flagged"].join("\n")}
-	lang="typescript"
-	key="import-log-from-rbxt-1pobcv"
-/>
-
-### Named Imports
-
-<Code
-	code={[
-		'import { Logger } from "@company/logging";',
-		"// new Logger() inside functions will be flagged if configured",
-	].join("\n")}
-	lang="typescript"
-	key="import-logger-from-c-2zxtt2"
-/>
-
-### Aliased Imports
-
-<Code
-	code={[
-		'import { Logger as Log } from "@company/logging";',
-		"// new Log() inside functions will be flagged if Logger is configured",
-	].join("\n")}
-	lang="typescript"
-	key="import-logger-as-log-2q80jl"
-/>
-
-### Namespace Imports
-
-<Code
-	code={[
-		'import * as Logging from "@rbxts/rbxts-sleitnick-log";',
-		"// new Logging.Log() inside functions will be flagged",
-	].join("\n")}
-	lang="typescript"
-	key="import-as-logging-fr-1yditf"
-/>
-
-## When Not To Use It
-
-- If you need different instances with different configurations
-- If the class is designed to be instantiated per-use
-- If you're working with classes that don't have shared state concerns
 
 ## Related Rules
 
-- [prefer-module-scope-constants](/rules/prefer-module-scope-constants/) - Similar concept for constants
+<CardGrid>
+	<LinkCard
+		title="prefer-module-scope-constants"
+		description="Similar rule for naming constants"
+		href="/rules/prefer-module-scope-constants/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Singleton Design Pattern"
+		description="When and why to use shared instances"
+		href="https://refactoring.guru/design-patterns/singleton"
+	/>
+</CardGrid>

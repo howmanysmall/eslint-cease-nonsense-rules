@@ -1,120 +1,93 @@
 ---
 title: no-warn
+badge:
+    text: Best Practice
+    variant: caution
 description: Bans use of warn() function calls. Use log.Warning instead for structured logging.
 ---
 
-import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
 
 Bans use of `warn()` function calls. Use `log.Warning` instead for structured logging.
 
-## Rule Details
+## Rule Details :badge[Best Practice]{variant=caution}
 
-The `warn()` function is a low-level warning mechanism that lacks structure, context, and log level control. Using a proper logging system like [`Log`](https://sleitnick.github.io/RbxUtil/api/Log) provides better debugging capabilities and production logging.
+The global `warn()` function is a low-level mechanism that lacks context and centralized control. Using a proper logging system (like `Log` from `RbxUtil`) allows you to route warnings to different services, suppress them in certain environments, and maintain a consistent look in the developer console.
 
-<Aside type="tip" title="Consistent logging">
-	Using `log.Warning` instead of `warn()` ensures all your logs go through a unified logging system with consistent
-	formatting and level control.
+<Aside type="tip" title="Consistent Output">
+	Using `log.Warning` instead of `warn()` ensures all your logs follow a unified format, making the developer console
+	significantly easier to read and filter.
 </Aside>
+
+## Refactoring Workflow
+
+<Steps>
+1. **Audit Warnings**
+   Determine if the warning is still relevant or if it should be an `Error` (halting) or `Info` (informational).
+
+2. **Select severity**
+   Verify that your logging system is configured to display warnings in both development and staging environments.
+
+3. **Convert Call**
+   Replace the global `warn(...)` with `log.Warning(...)` to capture high-quality telemetry.
+
+4. **Verify Suppressions**
+   Ensure your production build properly handles log filtering so that non-critical warnings don't leak into player consoles.
+
+{/* oxfmt-ignore */}
+
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Raw Warning Calls
+		Avoid using the global `warn` for state alerts or deprecations.
 
-<Code
-	code={[
-		'warn("Warning message");',
-		'warn("Deprecated function called");',
-		'warn("Invalid configuration:", config);',
-		"",
-		"function validateInput(input: string) {",
-		"\tif (input.length === 0) {",
-		'\t\twarn("Empty input detected");',
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	title="incorrect.ts"
-/>
+    	<Code
+    		code={[
+    			'warn("API endpoint deprecated");',
+    			'warn("Missing config property:", key);',
+    			'warn("Unexpected state in component");',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Structured Warnings
+    	Use the warning level of your logging library for consistent telemetry.
 
-### ✅ Correct
+    	<Code
+    		code={[
+    			'log.Warning("API endpoint deprecated");',
+    			'log.Warning("Missing config property:", key);',
+    			'log.Warning("Unexpected state in component");',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		'log.Warning("Warning message");',
-		'log.Warning("Deprecated function called");',
-		'log.Warning("Invalid configuration:", config);',
-		"",
-		"function validateInput(input: string) {",
-		"\tif (input.length === 0) {",
-		'\t\tlog.Warning("Empty input detected");',
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	title="correct.ts"
-/>
+</Tabs>
 
-## Why Use Log Instead?
+## Why use Log instead?
 
-### Structured Logging
-
-`Log` provides structured output with timestamps, log levels, and context:
-
-<Code
-	code={[
-		"// warn() - unstructured, no context",
-		'warn("API endpoint deprecated");',
-		"",
-		"// log.Warning - structured with level and automatic timestamp",
-		'log.Warning("API endpoint deprecated");',
-		"// Output: [WARNING] 2025-12-31 12:34:56 - API endpoint deprecated",
-	].join("\n")}
-	lang="typescript"
-	title="structured-logging.ts"
-/>
-
-### Better Context
-
-Add metadata and context to warnings:
-
-<Code
-	code={[
-		'log.Warning("Deprecated API used", {',
-		'\tendpoint: "/api/v1/users",',
-		'\treplacement: "/api/v2/users",',
-		'\tdeprecationDate: "2025-01-01",',
-		"});",
-	].join("\n")}
-	lang="typescript"
-	title="context-logging.ts"
-/>
-
-### Log Levels
-
-The warning level sits between informational and error messages:
-
-<Code
-	code={[
-		'log.Debug("Detailed debug info"); // Development only',
-		'log.Info("User action completed"); // General information',
-		'log.Warning("Deprecated API used"); // ⚠️ Warnings',
-		'log.Error("Operation failed"); // Errors',
-	].join("\n")}
-	lang="typescript"
-	title="log-levels.ts"
-/>
-
-## When Not To Use It
-
-<Aside type="caution">
-	If you're writing quick scripts or prototypes where structured logging isn't necessary, you may disable this rule.
-	However, it's recommended to use proper logging even in development to build good habits.
-</Aside>
+<CardGrid stagger>
+	<Card title="Traffic Control" icon="list-format">
+		Easily suppress warnings in production while keeping them enabled in your staging builds.
+	</Card>
+	<Card title="Meta Data" icon="bolt">
+		Attach extra context objects that your logging system can parse and format intelligently.
+	</Card>
+	<Card title="Unified Handling" icon="setting">
+		Handle all application events (Info, Debug, Error) through a single, testable interface.
+	</Card>
+</CardGrid>
 
 ## Related Rules
 
 <CardGrid>
-	<LinkCard title="no-print" description="Bans print() function calls" href="/rules/no-print/" />
+	<LinkCard title="no-print" description="Bans raw print() calls" href="/rules/no-print/" />
 </CardGrid>
 
 ## Further Reading
@@ -122,12 +95,7 @@ The warning level sits between informational and error messages:
 <CardGrid>
 	<LinkCard
 		title="RbxUtil Log API"
-		description="Official documentation for the Log utility"
+		description="Official documentation for Sleitnick's Log utility"
 		href="https://sleitnick.github.io/RbxUtil/api/Log"
-	/>
-	<LinkCard
-		title="Structured Logging"
-		description="What is structured logging and why developers need it"
-		href="https://stackify.com/what-is-structured-logging-and-why-developers-need-it/"
 	/>
 </CardGrid>

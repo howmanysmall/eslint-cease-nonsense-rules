@@ -1,67 +1,112 @@
 ---
 title: prefer-read-only-props
+badge:
+    text: Safety
+    variant: success
+description: Enforce that React component props are typed as read-only to prevent accidental mutation.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
 
 Enforce that React component props are typed as read-only.
 
-## Rule Details
+## Rule Details :badge[Safety]{variant=success}
 
-This rule ensures that React component props are marked as `readonly` in TypeScript, preventing accidental mutation of props.
+React props should be treated as immutable. Mutating props directly can lead to unpredictable behavior, difficult-to-debug UI bugs, and performance regressions. This rule ensures that all component prop interfaces are marked with the `readonly` modifier in TypeScript.
 
-## Options
+<Aside type="important" title="Immutability">
+	React's reconciliation process relies on the assumption that props do not change within a render cycle. Enforcing
+	`readonly` at the type level prevents bugs before they reach the runtime.
+</Aside>
 
-This rule has no options.
+## Refactoring Steps
+
+<Steps>
+1. **Identify Prop Types**
+   Find `interface` or `type` definitions used for React component props.
+
+2. **Add Readonly**
+   Prefix every property in the interface with the `readonly` keyword.
+
+3. **Check Usage**
+   Ensure your component code does not attempt to assign to these props (e.g., `props.name = "New Name"`).
+
+4. **Verify Interfaces**
+   If you extend other interfaces, ensure those are also immutable or use `Readonly<T>` for the intersection.
+
+{/* oxfmt-ignore */}
+
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Mutable Props
+		Bans prop definitions that allow re-assignment.
 
-<Code
-	code={[
-		"interface Props {",
-		"\tname: string;",
-		"\tage: number;",
-		"}",
-		"",
-		"function Component({ name, age }: Props) {",
-		"\t// ...",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="interface-props-ranwb3"
-/>
+    	<Code
+    		code={[
+    			"interface ButtonProps {",
+    			"\tlabel: string;",
+    			"\tonClick: () => void;",
+    			"}",
+    			"",
+    			"function Button({ label }: ButtonProps) {",
+    			"\treturn <textbutton Text={label} />;",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Read-Only Props
+    	Use the `readonly` modifier for every property in your interface.
 
-### ✅ Correct
+    	<Code
+    		code={[
+    			"interface ButtonProps {",
+    			"\treadonly label: string;",
+    			"\treadonly onClick: () => void;",
+    			"}",
+    			"",
+    			"function Button({ label }: ButtonProps) {",
+    			"\treturn <textbutton Text={label} />;",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"interface Props {",
-		"\treadonly name: string;",
-		"\treadonly age: number;",
-		"}",
-		"",
-		"function Component({ name, age }: Props) {",
-		"\t// ...",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="interface-props-l1rb0i"
-/>
+</Tabs>
 
-## When Not To Use It
+## Why Enforce This?
 
-If you intentionally mutate props in your components (not recommended but sometimes necessary for performance), disable this rule.
-
-## Performance
-
-This rule is optimized with:
-
-- Direct AST pattern matching (no global component analysis)
-- Component detection caching
-- Focused on common React component patterns
+<CardGrid stagger>
+	<Card title="Bug Prevention" icon="bolt">
+		Prevents developers from accidentally overwriting props within the component body.
+	</Card>
+	<Card title="Documentation" icon="list-format">
+		Clearly signals to other developers that these values are strictly inputs and should not be modified.
+	</Card>
+	<Card title="Performance" icon="rocket">
+		Immutability makes it safer to use optimizations like `React.memo` as you can trust prop references.
+	</Card>
+</CardGrid>
 
 ## Related Rules
 
-- `react/prefer-read-only-props` - Original rule (this is a faster replacement)
+<CardGrid>
+	<LinkCard title="no-memo-children" description="Optimize React.memo usage" href="/rules/no-memo-children/" />
+	<LinkCard title="ban-react-fc" description="Avoid problematic React patterns" href="/rules/ban-react-fc/" />
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="React Docs: Props"
+		description="Official guide on components and props"
+		href="https://react.dev/learn/passing-props-to-a-component"
+	/>
+</CardGrid>

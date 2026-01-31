@@ -1,75 +1,122 @@
 ---
 title: prefer-enum-member
+badge:
+    text: Clean Code
+    variant: success
+description: Enforce using TypeScript enum members instead of raw string or number values for better consistency.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
 Enforce using TypeScript enum members instead of raw string or number values.
 
-## Rule Details
+## Rule Details :badge[Clean Code]{variant=success}
 
-Enums provide a single source of truth for values. Passing raw literals or using bare keys hides intent and creates drift when enum values change. This rule requires enum member references for both `enum` and `const enum`, including object literal keys where the expected type is a mapped enum type (like `Record<Color, T>`).
+Enums provide a single source of truth for values. Passing raw literals or using bare keys hides intent and creates drift when enum values change. This rule requires enum member references for both `enum` and `const enum`, including object literal keys where the expected type is a mapped enum type.
 
-## Options
+<Aside type="caution" title="Avoid Drift">
+	If you change an enum value but use raw strings in several places, those strings will become invalid. Using the
+	member reference ensures the value is always correct.
+</Aside>
 
-This rule has no options.
+## Refactoring Steps
+
+<Steps>
+1. **Locate Literals**
+   Find raw strings or numbers being used in places where an Enum type is expected.
+
+2. **Check Member Existence**
+   Ensure the value you are using is actually defined in the Enum.
+
+3. **Convert Call**
+   Replace the literal with the member access (e.g., `Color.Red`).
+
+4. **Object Keys**
+   For object keys derived from enums, use computed properties: `[Color.Red]: value`.
+
+{/* oxfmt-ignore */}
+
+</Steps>
 
 ## Examples
 
-### Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Raw Values
+		Bans passing raw literals where an enum is expected.
 
-<Code
-	code={[
-		"enum Color {",
-		'\tBlue = "Blue",',
-		'\tGreen = "Green",',
-		'\tRed = "Red",',
-		"}",
-		"",
-		"const palette: Record<Color, string> = {",
-		'\tBlue: "#00F",',
-		'\tGreen: "#0F0",',
-		'\tRed: "#F00",',
-		"};",
-		"",
-		"function setColor(color: Color) {}",
-		'setColor("Blue");',
-	].join("\n")}
-	lang="typescript"
-	key="enum-color-38u28h"
-/>
+    	<Code
+    		code={[
+    			'enum Color { Red = "Red", Blue = "Blue" }',
+    			"",
+    			"// Using raw string",
+    			'setColor("Red");',
+    			"",
+    			"// Using raw key in object",
+    			"const palette = {",
+    			'\tRed: "#F00"',
+    			"};",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Member References
+    	Use the enum name followed by the member for all usages.
 
-### Correct
+    	<Code
+    		code={[
+    			'enum Color { Red = "Red", Blue = "Blue" }',
+    			"",
+    			"// Using enum member",
+    			"setColor(Color.Red);",
+    			"",
+    			"// Using computed key in object",
+    			"const palette = {",
+    			'\t[Color.Red]: "#F00"',
+    			"};",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"enum Color {",
-		'\tBlue = "Blue",',
-		'\tGreen = "Green",',
-		'\tRed = "Red",',
-		"}",
-		"",
-		"const palette: Record<Color, string> = {",
-		'\t[Color.Blue]: "#00F",',
-		'\t[Color.Green]: "#0F0",',
-		'\t[Color.Red]: "#F00",',
-		"};",
-		"",
-		"function setColor(color: Color) {}",
-		"setColor(Color.Blue);",
-	].join("\n")}
-	lang="typescript"
-	key="enum-color-3lr41q"
-/>
+</Tabs>
 
-## When Not To Use It
+## Why Use Members?
 
-Disable this rule if:
-
-- You intentionally use raw enum values for interop layers
-- You do not want to enforce computed keys in mapped enum objects
+<CardGrid stagger>
+	<Card title="Global Renaming" icon="rocket">
+		IDE tools can rename an enum member across your entire project safely.
+	</Card>
+	<Card title="Type Safety" icon="approve-check">
+		Ensures you only pass values that actually exist in the enum definition.
+	</Card>
+	<Card title="Single Source of Truth" icon="setting">
+		Change a value in one place (the enum) and it updates everywhere.
+	</Card>
+</CardGrid>
 
 ## Related Rules
 
-- [prefer-enum-item](/rules/prefer-enum-item/) - Enforces EnumItem usage in roblox-ts
-- [prefer-pascal-case-enums](/rules/prefer-pascal-case-enums/) - Enforces enum naming
+<CardGrid>
+	<LinkCard
+		title="prefer-enum-item"
+		description="Enforce EnumItem usage in roblox-ts"
+		href="/rules/prefer-enum-item/"
+	/>
+	<LinkCard
+		title="prefer-pascal-case-enums"
+		description="Standardize enum naming"
+		href="/rules/prefer-pascal-case-enums/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="TypeScript Enums"
+		description="Official guide to enums and const enums"
+		href="https://www.typescriptlang.org/docs/handbook/enums.html"
+	/>
+</CardGrid>

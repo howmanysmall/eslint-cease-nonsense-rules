@@ -13,7 +13,7 @@
 	"jsxSingleQuote": false,
 	"objectWrap": "preserve",
 	"printWidth": 120,
-	"proseWrap": "preserve",
+	"proseWrap": "always",
 	"quoteProps": "as-needed",
 	"semi": true,
 	"singleAttributePerLine": false,

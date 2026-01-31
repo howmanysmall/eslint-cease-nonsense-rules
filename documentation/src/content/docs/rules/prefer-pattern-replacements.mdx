@@ -1,124 +1,58 @@
 ---
 title: prefer-pattern-replacements
+badge:
+    text: Advanced
+    variant: caution
+description: Enforces replacement of verbose constructor/method patterns with simpler alternatives using a capture system.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
 Enforces replacement of verbose constructor/method patterns with simpler alternatives.
 
-## Rule Details
+## Rule Details :badge[Advanced]{variant=caution}
 
 This rule uses a type-safe pattern matching system to detect verbose constructor or method calls that have simpler equivalents. It supports captures, optional arguments, wildcards, and scope-aware fixes.
 
+<Aside type="caution" title="Complexity Note">
+	This is a high-level orchestration rule. It allows you to define custom "shorthands" for complex object creation
+	logic across your entire codebase.
+</Aside>
+
 ## Features
 
-- ✨ Has auto-fix
-- Type-safe `pattern()` API with compile-time capture validation
-- Supports captures (`$x`, optional args (`0?`), wildcards (`_`)
-- Constant expression evaluation (`1 - 1` matches `0`)
-- Same-variable matching (`$x, $x` requires identical arguments)
-- Scope-aware: skips fix if replacement would shadow local variable
-
-## Options
-
-<Code
-	code={[
-		'import { pattern } from "@pobammer-ts/eslint-cease-nonsense-rules";',
-		"",
-		"{",
-		'\t"cease-nonsense/prefer-pattern-replacements": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"patterns": [',
-		"\t\t\t\t// Simple patterns",
-		"\t\t\t\tpattern({",
-		'\t\t\t\t\t"match": "UDim2.fromScale(1, 1)",',
-		'\t\t\t\t\t"replacement": "oneScale",',
-		"\t\t\t\t}),",
-		"",
-		"\t\t\t\t// Captures and conditions",
-		"\t\t\t\tpattern({",
-		'\t\t\t\t\t"match": "new Vector2($x, $x)",',
-		'\t\t\t\t\t"replacement": "fromUniform($x)",',
-		'\t\t\t\t\t"when": { "x": "!= 0" },',
-		"\t\t\t\t}),",
-		"",
-		"\t\t\t\t// Optional args (0? matches 0 or missing)",
-		"\t\t\t\tpattern({",
-		'\t\t\t\t\t"match": "new Vector2($x, 0?)",',
-		'\t\t\t\t\t"replacement": "fromX($x)",',
-		"\t\t\t\t}),",
-		"",
-		"\t\t\t\t// Wildcards (match any value, don't capture)",
-		"\t\t\t\tpattern({",
-		'\t\t\t\t\t"match": "new UDim2(_, 0, _, 0)",',
-		'\t\t\t\t\t"replacement": "UDim2.fromScale",',
-		"\t\t\t\t}),",
-		"\t\t\t],",
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="import-pattern-from--17itsy"
-/>
+<CardGrid stagger>
+	<Card title="Auto-Fix" icon="rocket">
+		Automatically replaces verbose patterns with their simpler equivalents during linting.
+	</Card>
+	<Card title="Captures" icon="magnifier">
+		Use `$x` or `$name` to capture values from the source and inject them into the replacement.
+	</Card>
+	<Card title="Wildcards" icon="bolt">
+		Use `_` to match any value without capturing it, useful for ignoring unneeded arguments.
+	</Card>
+	<Card title="Scope Aware" icon="warning">
+		Intelligently skips fixes if the replacement name would shadow an existing local variable.
+	</Card>
+</CardGrid>
 
 ## Pattern Syntax
 
-### Captures: `$name`
+### Capture System
 
 Capture a value to use in the replacement:
 
-<Code
-	code={[
-		"pattern({",
-		'\tmatch: "new Vector2($x, $y)",',
-		'\treplacement: "Vector2.create($x, $y)",',
-		"});",
-		"",
-		"// new Vector2(10, 20) → Vector2.create(10, 20)",
-	].join("\n")}
-	lang="typescript"
-	key="pattern-398sue"
-/>
+- **Match**: `new Vector2($x, $y)`
+- **Replacement**: `Vector2.create($x, $y)`
 
-### Optional Arguments: `0?`
+### Optional Arguments
 
-Match literal `0` or missing argument:
+Match literal `0` or missing arguments using `?`:
 
-<Code
-	code={[
-		"pattern({",
-		'\tmatch: "new Vector2($x, 0?)",',
-		'\treplacement: "fromX($x)",',
-		"});",
-		"",
-		"// new Vector2(5, 0) → fromX(5)",
-		"// new Vector2(5) → fromX(5)",
-	].join("\n")}
-	lang="typescript"
-	key="pattern-2j0cmb"
-/>
+- **Match**: `new Vector2($x, 0?)`
+- **Replacement**: `fromX($x)`
 
-### Wildcards: `_`
-
-Match any value without capturing:
-
-<Code
-	code={[
-		"pattern({",
-		'\tmatch: "new Color3(_, _, 0)",',
-		'\treplacement: "Color3.fromRGB",',
-		"});",
-		"",
-		"// new Color3(255, 128, 0) → Color3.fromRGB (matched)",
-		"// new Color3(255, 128, 64) → (no match)",
-	].join("\n")}
-	lang="typescript"
-	key="pattern-1eb8m3"
-/>
-
-### Conditions: `when`
+### Conditions (`when`)
 
 Add constraints on captured values:
 
@@ -127,220 +61,65 @@ Add constraints on captured values:
 		"pattern({",
 		'\tmatch: "new Vector2($x, $x)",',
 		'\treplacement: "fromUniform($x)",',
-		'\twhen: { x: "!= 0" },',
-		"});",
-		"",
-		"// new Vector2(5, 5) → fromUniform(5)",
-		"// new Vector2(0, 0) → (no match, when condition fails)",
-	].join("\n")}
-	lang="typescript"
-	key="pattern-3qsf8w"
-/>
-
-Supported operators: `==`, `!=`, `>`, `<`, `>=`, `<=`
-
-### Same-Variable Matching
-
-Using the same capture variable name requires identical values:
-
-<Code
-	code={[
-		"pattern({",
-		'\tmatch: "new Vector2($x, $x)",',
-		'\treplacement: "fromUniform($x)",',
-		"});",
-		"",
-		"// new Vector2(5, 5) → fromUniform(5) ✓",
-		"// new Vector2(5, 10) → (no match, values differ) ✗",
-	].join("\n")}
-	lang="typescript"
-	key="pattern-v9dnwl"
-/>
-
-## Replacement Types
-
-### Identifier
-
-<Code
-	code={[
-		"pattern({",
-		'\tmatch: "UDim2.fromScale(1, 1)",',
-		'\treplacement: "oneScale",',
-		"});",
-		"",
-		"// UDim2.fromScale(1, 1) → oneScale",
-	].join("\n")}
-	lang="typescript"
-	key="pattern-c9zwzh"
-/>
-
-### Static Access
-
-<Code
-	code={[
-		"pattern({",
-		'\tmatch: "new Vector2(1, 1)",',
-		'\treplacement: "Vector2.one",',
-		"});",
-		"",
-		"// new Vector2(1, 1) → Vector2.one",
-	].join("\n")}
-	lang="typescript"
-	key="pattern-15qonz"
-/>
-
-### Call Expression
-
-<Code
-	code={[
-		"pattern({",
-		'\tmatch: "new Vector2($x, $x)",',
-		'\treplacement: "fromUniform($x)",',
-		"});",
-		"",
-		"// new Vector2(5, 5) → fromUniform(5)",
-	].join("\n")}
-	lang="typescript"
-	key="pattern-2hxg7x"
-/>
-
-<Code
-	code={[
-		"pattern({",
-		'\tmatch: "new Vector2($x, $y)",',
-		'\treplacement: "Vector2.create($x, $y)",',
-		"});",
-		"",
-		"// new Vector2(10, 20) → Vector2.create(10, 20)",
-	].join("\n")}
-	lang="typescript"
-	key="pattern-398sue"
-/>
-
-## Examples
-
-### ❌ Incorrect
-
-<Code
-	code={[
-		"const scale = UDim2.fromScale(1, 1);",
-		"const vec = new Vector2(5, 5);",
-		"const offset = new Vector2(10, 0);",
-		"const color = new Color3(255, 0, 0);",
-	].join("\n")}
-	lang="typescript"
-	key="const-scale-udim2-fr-ddr9ty"
-/>
-
-### ✅ Correct
-
-<Code
-	code={[
-		"const scale = oneScale;",
-		"const vec = fromUniform(5);",
-		"const offset = fromX(10);",
-		"const color = Color3.fromRGB(255, 0, 0);",
-	].join("\n")}
-	lang="typescript"
-	key="const-scale-onescale-3gqnl6"
-/>
-
-## Scope Awareness
-
-The rule automatically skips fixes when the replacement would conflict with a local variable:
-
-<Code
-	code={[
-		"function example() {",
-		"\tconst oneScale = 5; // Local variable shadows replacement",
-		"\tconst scale = UDim2.fromScale(1, 1); // No fix applied (would shadow)",
-		"}",
-		"",
-		"function other() {",
-		"\tconst scale = UDim2.fromScale(1, 1); // Fix applied: oneScale",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="function-example-y5n4i3"
-/>
-
-## Common Patterns
-
-### Roblox UDim2
-
-<Code
-	code={[
-		"pattern({",
-		'\tmatch: "UDim2.fromScale(1, 1)",',
-		'\treplacement: "oneScale",',
-		"});",
-		"",
-		"pattern({",
-		'\tmatch: "UDim2.fromScale(0, 0)",',
-		'\treplacement: "zeroScale",',
-		"});",
-		"",
-		"pattern({",
-		'\tmatch: "new UDim2($scaleX, 0, $scaleY, 0)",',
-		'\treplacement: "UDim2.fromScale($scaleX, $scaleY)",',
+		'\twhen: { x: "!= 0" }',
 		"});",
 	].join("\n")}
 	lang="typescript"
-	key="pattern-3efmzk"
 />
 
-### Vector2/Vector3
+## Common Use Cases
 
-<Code
-	code={[
-		"pattern({",
-		'\tmatch: "new Vector2($x, $x)",',
-		'\treplacement: "fromUniform($x)",',
-		'\twhen: { x: "!= 0" },',
-		"});",
-		"",
-		"pattern({",
-		'\tmatch: "new Vector2($x, 0?)",',
-		'\treplacement: "fromX($x)",',
-		"});",
-		"",
-		"pattern({",
-		'\tmatch: "new Vector2(0?, $y)",',
-		'\treplacement: "fromY($y)",',
-		"});",
-	].join("\n")}
-	lang="typescript"
-	key="pattern-gxihrp"
-/>
+<Tabs>
+	<TabItem label="Roblox UDim2" icon="laptop">
+		### Simplifying UDim2
+		Replace full constructors with shorthand methods.
 
-### Color3
+    	<Code
+    		code={[
+    			"// Match: new UDim2($x, 0, $y, 0)",
+    			"// Replacement: UDim2.fromScale($x, $y)",
+    			"",
+    			"const scale = new UDim2(1, 0, 1, 0);",
+    			"// Fixes to: UDim2.fromScale(1, 1);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="Vector2/3" icon="bolt">
+    	### Uniform Vectors
+    	Replace identical coordinates with uniform methods.
 
-<Code
-	code={[
-		"pattern({",
-		'\tmatch: "new Color3(1, 1, 1)",',
-		'\treplacement: "Color3.white",',
-		"});",
-		"",
-		"pattern({",
-		'\tmatch: "new Color3(0, 0, 0)",',
-		'\treplacement: "Color3.black",',
-		"});",
-	].join("\n")}
-	lang="typescript"
-	key="pattern-20dnea"
-/>
+    	<Code
+    		code={[
+    			"// Match: new Vector2($x, $x)",
+    			"// Replacement: fromUniform($x)",
+    			"",
+    			"const vec = new Vector2(5, 5);",
+    			"// Fixes to: fromUniform(5);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-## When Not To Use It
-
-If your codebase doesn't use patterns that have simpler alternatives, or if the verbose syntax is preferred for clarity, you can disable this rule or configure it with specific patterns.
+</Tabs>
 
 ## Related Rules
 
-- [no-color3-constructor](/rules/no-color3-constructor/) - Bans Color3 constructor in favor of fromRGB
-- [prefer-udim2-shorthand](/rules/prefer-udim2-shorthand/) - Simplifies UDim2 constructors
+<CardGrid>
+	<LinkCard
+		title="no-color3-constructor"
+		description="Bans Color3 constructor specifically"
+		href="/rules/no-color3-constructor/"
+	/>
+	<LinkCard title="prefer-udim2-shorthand" description="Simpler UDim2 logic" href="/rules/prefer-udim2-shorthand/" />
+</CardGrid>
 
 ## Further Reading
 
-- [roblox-ts Best Practices](https://roblox-ts.com/)
-- [Pattern Matching in Programming](https://en.wikipedia.org/wiki/Pattern_matching)
+<CardGrid>
+	<LinkCard
+		title="roblox-ts Patterns"
+		description="Common shorthand patterns in roblox-ts"
+		href="https://roblox-ts.com/"
+	/>
+</CardGrid>

@@ -1,211 +1,131 @@
 ---
 title: prefer-singular-enums
+badge:
+    text: Clean Code
+    variant: success
+description: Enum names should be singular, not plural, to align with TypeScript conventions and improve readability.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
 Enum names should be singular, not plural.
 
-## Rule Details
+## Rule Details :badge[Clean Code]{variant=success}
 
-Enum type names represent a single value from a set, not multiple values. Using singular names makes code more readable and aligns with TypeScript conventions.
+Enum type names represent a single choice from a set, not the entire collection. Using plural names (like `Colors`)
+makes code misleading, as it suggests the variable holds multiple values. This rule enforces singular names (like
+`Color`) to align with standard TypeScript and C# conventions.
+
+<Aside type="tip" title="Natural Language">
+	`const theme: Color = Color.DeepSea` reads much more naturally than `const theme: Colors = Colors.DeepSea`.
+</Aside>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Plural Names
+		Bans enums named with plural suffixes or irregular plural forms.
 
-<Code
-	code={[
-		"enum Colors {",
-		"\tRed,",
-		"\tBlue,",
-		"\tGreen,",
-		"}",
-		"",
-		"enum Commands {",
-		"\tUp,",
-		"\tDown,",
-		"\tLeft,",
-		"\tRight,",
-		"}",
-		"",
-		"// Irregular plurals also caught",
-		"enum Feet {",
-		"\tLeft,",
-		"\tRight,",
-		"}",
-		"",
-		"enum People {",
-		"\tAdmin,",
-		"\tUser,",
-		"\tGuest,",
-		"}",
-		"",
-		"enum Children {",
-		"\tInfant,",
-		"\tToddler,",
-		"\tTeen,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="enum-colors-3b35zf"
-/>
+    	<Code
+    		code={[
+    			"enum Colors {",
+    			"\tRed,",
+    			"\tBlue,",
+    			"}",
+    			"",
+    			"// Irregular plurals",
+    			"enum People {",
+    			"\tAdmin,",
+    			"\tUser,",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Singular Names
+    	Use singular forms for all enum declarations.
 
-### ✅ Correct
+    	<Code
+    		code={[
+    			"enum Color {",
+    			"\tRed,",
+    			"\tBlue,",
+    			"}",
+    			"",
+    			"enum Person {",
+    			"\tAdmin,",
+    			"\tUser,",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"enum Color {",
-		"\tRed,",
-		"\tBlue,",
-		"\tGreen,",
-		"}",
-		"",
-		"enum Command {",
-		"\tUp,",
-		"\tDown,",
-		"\tLeft,",
-		"\tRight,",
-		"}",
-		"",
-		"enum Foot {",
-		"\tLeft,",
-		"\tRight,",
-		"}",
-		"",
-		"enum Person {",
-		"\tAdmin,",
-		"\tUser,",
-		"\tGuest,",
-		"}",
-		"",
-		"enum Child {",
-		"\tInfant,",
-		"\tToddler,",
-		"\tTeen,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="enum-color-fbh2yy"
-/>
+</Tabs>
+
+## Refactoring Path
+
+<Steps>
+1. **Identify Plurals**
+   The linter will flag any enum that appears to be plural (including irregulars like `Feet` or `Children`).
+
+2. **Simplify Name** Determine the singular form of the identifier.
+
+3. **Rename & Update** Rename the enum and all references. Note that this often clarifies function arguments as well:
+   `function set(color: Color)`.
+
+4. **Exception Handling** If you have a bitmask enum where multiple flags are stored in one variable, consider adding a
+   `// eslint-disable-line` with a comment explaining why plural is intended.
+
+{/* oxfmt-ignore */}
+
+</Steps>
 
 ## Why Singular?
 
-### Represents Single Values
+<CardGrid stagger>
+	<Card title="Type Clarity" icon="list-format">
+		A variable of type `Color` clearly contains exactly one color.
+	</Card>
+	<Card title="TS Consistency" icon="bolt">
+		Matches how interfaces (e.g., `User`, not `Users`) and classes are named in the ecosystem.
+	</Card>
+	<Card title="Better API Design" icon="rocket">
+		Prevents confusing signatures like `function apply(types: Type)` which are grammatically incorrect.
+	</Card>
+</CardGrid>
 
-When you use an enum, you're selecting **one** value:
+## Detectable Plurals
 
-<Code
-	code={[
-		"// Confusing: sounds like multiple colors",
-		"const background: Colors = Colors.Red;",
-		"",
-		"// Clear: one color",
-		"const background: Color = Color.Red;",
-	].join("\n")}
-	lang="typescript"
-	key="confusing-sounds-lik-mfwy68"
-/>
+This rule includes a robust detection engine for:
 
-### Consistent with TypeScript
-
-TypeScript conventions use singular names for types representing single values:
-
-<Code
-	code={[
-		"type User = {",
-		"\t/* ... */",
-		"};",
-		"interface Product {",
-		"\t/* ... */",
-		"}",
-		"enum Status {",
-		"\t/* ... */",
-		"}",
-		"",
-		"// Not:",
-		"type Users = {",
-		"\t/* ... */",
-		"};",
-		"interface Products {",
-		"\t/* ... */",
-		"}",
-		"enum Statuses {",
-		"\t/* ... */",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="type-user-2m87vt"
-/>
-
-### Better in Context
-
-<Code
-	code={[
-		"// Awkward",
-		"function setTheme(colors: Colors) {",
-		"\tapplyColor(colors);",
-		"}",
-		"",
-		"// Natural",
-		"function setTheme(color: Color) {",
-		"\tapplyColor(color);",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="awkward-3bdz26"
-/>
-
-## Plurals
-
-The rule detects both regular and irregular plural forms:
-
-### Regular Plurals (add 's' or 'es')
-
-- `Commands` → `Command`
-- `Types` → `Type`
-- `Statuses` → `Status`
-
-### Irregular Plurals
-
-- `Children` → `Child`
-- `People` → `Person`
-- `Feet` → `Foot`
-- `Teeth` → `Tooth`
-- `Mice` → `Mouse`
-- `Geese` → `Goose`
-
-## When Not To Use It
-
-In rare cases where an enum truly represents a collection concept (like bit flags), plural names might be appropriate. However, these cases are uncommon, and you might want to use a different pattern:
-
-<Code
-	code={[
-		"// Instead of plural enum",
-		"enum Permissions {",
-		"\tRead = 1,",
-		"\tWrite = 2,",
-		"\tExecute = 4,",
-		"}",
-		"",
-		"// Consider bit flag pattern",
-		"enum Permission {",
-		"\tRead = 1 << 0,",
-		"\tWrite = 1 << 1,",
-		"\tExecute = 1 << 2,",
-		"}",
-		"",
-		"type PermissionSet = number; // Represents multiple permissions",
-	].join("\n")}
-	lang="typescript"
-	key="instead-of-plural-en-1a59ry"
-/>
+- **Regular**: `Commands`, `Statuses`, `Types`.
+- **Irregular**: `Children`, `People`, `Feet`, `Teeth`, `Mice`.
+- **Common Suffixes**: Handles `-es`, `-ies`, and `-s` logic.
 
 ## Related Rules
 
-- [prefer-pascal-case-enums](/rules/prefer-pascal-case-enums/) - Enforces PascalCase for enum names and members
+<CardGrid>
+	<LinkCard
+		title="prefer-pascal-case-enums"
+		description="Standardize enum naming"
+		href="/rules/prefer-pascal-case-enums/"
+	/>
+	<LinkCard
+		title="prefer-enum-member"
+		description="Enforce member usage over raw values"
+		href="/rules/prefer-enum-member/"
+	/>
+</CardGrid>
 
 ## Further Reading
 
-- [TypeScript Enum Best Practices](https://www.typescriptlang.org/docs/handbook/enums.html)
-- [Naming Conventions](https://google.github.io/styleguide/tsguide.html#naming-style)
+<CardGrid>
+	<LinkCard
+		title="Naming Conventions"
+		description="Google's TypeScript style guide for naming"
+		href="https://google.github.io/styleguide/tsguide.html#naming-style"
+	/>
+</CardGrid>

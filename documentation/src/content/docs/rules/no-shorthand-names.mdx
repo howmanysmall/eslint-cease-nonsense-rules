@@ -1,247 +1,111 @@
 ---
 title: no-shorthand-names
+badge:
+    text: Clean Code
+    variant: success
+description: Bans shorthand variable names in favor of descriptive full names for better readability.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
 Bans shorthand variable names in favor of descriptive full names.
 
-## Rule Details
+## Rule Details :badge[Clean Code]{variant=success}
 
-Shorthand names reduce code readability and make it harder for newcomers to understand the codebase. This rule enforces full, descriptive names by matching shorthands within compound identifiers and providing detailed replacement suggestions.
+Shorthand names (like `plr`, `dt`, or `args`) reduce code readability and make it harder for newcomers to understand the
+intent of your logic. This rule enforces full, descriptive names by detecting shorthands even within compound
+identifiers (like `plrData` → `playerData`).
 
-## Options
+<Aside type="tip" title="Self-Documenting Code">
+	Descriptive names reduce the need for comments. `playerScore` is much clearer than `plrScr`.
+</Aside>
 
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/no-shorthand-names": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"shorthands": {',
-		'\t\t\t\t"plr": "player",',
-		'\t\t\t\t"args": "parameters",',
-		'\t\t\t\t"dt": "deltaTime",',
-		'\t\t\t\t"char": "character",',
-		"\t\t\t},",
-		'\t\t\t"allowPropertyAccess": ["char", "Props"],',
-		'\t\t\t"ignoreShorthands": ["PropsWithoutRef"],',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-0-2034qk"
-/>
+## Migration Workflow
 
-### Configuration Parameters
+<Steps>
+1. **Identify Violations**
+   Run `bun run lint` to find all usages of cryptic shorthands in your project.
 
-- **shorthands**: Map of shorthand patterns to replacements (supports exact, glob, regex)
-- **allowPropertyAccess**: Shorthands allowed in property access (`obj.prop`) or qualified names (`Type.Member`)
-- **ignoreShorthands**: Patterns to ignore completely
+2. **Determine Replacements** Check the [Common Replacements](#common-replacements) table below for the recommended full
+   names.
 
-## Pattern Syntax
+3. **Rename Identifiers** Use your IDE's refactoring tools (F2 / Rename) to update all references safely.
 
-### Exact Matching
+4. **Update Compound Names** Don't forget to update camelCase names like `plrId` to `playerId` to maintain consistency.
 
-<Code
-	code={["{", '\t"shorthands": {', '\t\t"plr": "player",', '\t\t"dt": "deltaTime",', "\t},", "}"].join("\n")}
-	lang="typescript"
-	key="block-1-a8kdhu"
-/>
+{/* oxfmt-ignore */}
 
-### Glob Patterns
-
-Use `*` (any characters) and `?` (single character):
-
-<Code
-	code={[
-		"{",
-		'\t"shorthands": {',
-		'\t\t"str*": "string*", // strValue → stringValue',
-		'\t\t"*Props": "*Properties", // DataProps → DataProperties',
-		'\t\t"*Btn*": "*Button*", // myBtnClick → myButtonClick',
-		"\t},",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-2-w9utaa"
-/>
-
-### Regex Patterns
-
-Use `/pattern/flags` syntax:
-
-<Code
-	code={[
-		"{",
-		'\t"shorthands": {',
-		'\t\t"/^str(.*)$/": "string$1", // strName → stringName',
-		'\t\t"/^props$/i": "properties", // Props or props → properties',
-		"\t},",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-3-2715e7"
-/>
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Cryptic Shorthands
+		Bans abbreviations that obscure meaning.
 
-<Code
-	code={[
-		"// Direct shorthand usage",
-		"const plr = getPlayer();",
-		"const args = [1, 2, 3];",
-		"const dt = 0.016;",
-		"",
-		"// Compound identifiers",
-		"const plrData = getUserData();",
-		'const strValue = "hello";',
-		"const btnClick = handleClick;",
-		"",
-		"// Type names",
-		"interface PlrInfo {",
-		"\tname: string;",
-		"}",
-		"",
-		"type ArgsConfig = Array<string>;",
-	].join("\n")}
-	lang="typescript"
-	key="direct-shorthand-usa-c00iut"
-/>
+    	<Code
+    		code={[
+    			"const plr = getPlayer();",
+    			"const dt = 0.016;",
+    			"const args = [1, 2, 3];",
+    			"",
+    			"// Compound shorthands are also caught",
+    			"const plrData = getUserData();",
+    			"const btnClick = handleClick;",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Explicit Names
+    	Use full words to describe your variables and parameters.
 
-### ✅ Correct
+    	<Code
+    		code={[
+    			"const player = getPlayer();",
+    			"const deltaTime = 0.016;",
+    			"const parameters = [1, 2, 3];",
+    			"",
+    			"// Descriptive compound names",
+    			"const playerData = getUserData();",
+    			"const buttonClick = handleClick;",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"// Full names",
-		"const player = getPlayer();",
-		"const parameters = [1, 2, 3];",
-		"const deltaTime = 0.016;",
-		"",
-		"// Full compound names",
-		"const playerData = getUserData();",
-		'const stringValue = "hello";',
-		"const buttonClick = handleClick;",
-		"",
-		"// Full type names",
-		"interface PlayerInfo {",
-		"\tname: string;",
-		"}",
-		"",
-		"type ParametersConfig = Array<string>;",
-		"",
-		"// Property access (if configured in allowPropertyAccess)",
-		"const model = entity.char; // Allowed",
-		"const props = component.Props; // Allowed",
-	].join("\n")}
-	lang="typescript"
-	key="full-names-2h0qvr"
-/>
+</Tabs>
 
-## Compound Identifier Matching
+## Common Replacements
 
-Identifiers are split at camelCase/PascalCase boundaries, and each word is checked:
+| Shorthand | Replacement  | Context                 |
+| :-------- | :----------- | :---------------------- |
+| `plr`     | `player`     | Roblox player reference |
+| `char`    | `character`  | Roblox character model  |
+| `args`    | `parameters` | Function parameters     |
+| `dt`      | `deltaTime`  | Frame time delta        |
+| `btn`     | `button`     | UI components           |
+| `cfg`     | `config`     | Configuration           |
 
-<Code
-	code={["{", '\t"shorthands": {', '\t\t"plr": "player",', '\t\t"Props": "Properties",', "\t},", "}"].join("\n")}
-	lang="typescript"
-	key="block-6-1w1sup"
-/>
+## Advanced Features
 
-<Code
-	code={[
-		"plrData → playerData",
-		"UnitBoxBadgeInfoProps → UnitBoxBadgeInfoProperties",
-		"plrConfigProps → playerConfigProperties",
-	].join("\n")}
-	lang="txt"
-	key="plrdata-playerdata-21c4xh"
-/>
+<CardGrid stagger>
+	<Card title="Compound Detection" icon="magnifier">
+		Splits identifiers at camelCase boundaries to catch `myPlrName` or `UserCfg`.
+	</Card>
+	<Card title="Regex Support" icon="setting">
+		Define custom shorthands using regex for complex naming patterns.
+	</Card>
+	<Card title="Property Access" icon="approve-check">
+		Optionally allow shorthands when accessing external properties (e.g., `character.char`).
+	</Card>
+	<Card title="Import Safety" icon="warning">
+		Automatically ignores names from external packages to prevent breaking 3rd party code.
+	</Card>
+</CardGrid>
 
-### Word Boundary Detection
-
-The rule splits on:
-
-- camelCase: `myValue` → `["my", "Value"]`
-- PascalCase: `MyValue` → `["My", "Value"]`
-- Acronyms: `HTMLParser` → `["HTML", "Parser"]`
-- Numbers: `value2X` → `["value", "2", "X"]`
-
-## Special Cases
-
-### Players.LocalPlayer Pattern
-
-Special handling for the common Roblox pattern:
-
-<Code
-	code={[
-		"// ❌ Bad - uses 'plr' shorthand",
-		"const plr = Players.LocalPlayer;",
-		"",
-		"// ✅ Good - special case suggests 'localPlayer'",
-		"const localPlayer = Players.LocalPlayer;",
-	].join("\n")}
-	lang="typescript"
-	key="bad-uses-plr-shortha-1jcfpc"
-/>
-
-### Property Access Exemption
-
-Shorthands are allowed in property access when configured:
-
-<Code
-	code={[
-		"{",
-		'\t"allowPropertyAccess": ["char", "Props"],',
-		"}",
-		"",
-		"// ✅ Allowed - property access",
-		"const model = character.char;",
-		"const type = React.Props;",
-		"",
-		"// ❌ Not allowed - variable name",
-		"const char = getCharacter(); // Error!",
-		"const Props = {}; // Error!",
-	].join("\n")}
-	lang="typescript"
-	key="block-9-33bm3q"
-/>
-
-### Import Specifiers
-
-Import specifiers are automatically ignored (external packages control naming):
-
-<Code
-	code={[
-		"// ✅ Always allowed - import specifier",
-		'import { plr } from "external-package";',
-		'import { dt as deltaTime } from "another-package";',
-	].join("\n")}
-	lang="typescript"
-	key="always-allowed-impor-ukz1p8"
-/>
-
-## Default Mappings
-
-<Code
-	code={[
-		"{",
-		'\t"plr": "player",',
-		'\t"args": "parameters",',
-		'\t"dt": "deltaTime",',
-		'\t"char": "character",',
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-11-248mgc"
-/>
-
-## Configuration Examples
-
-### Custom Shorthands
+## Configuration Example
 
 <Code
 	code={[
@@ -251,253 +115,38 @@ Import specifiers are automatically ignored (external packages control naming):
 		"\t\t{",
 		'\t\t\t"shorthands": {',
 		'\t\t\t\t"cfg": "config",',
-		'\t\t\t\t"ctx": "context",',
-		'\t\t\t\t"req": "request",',
-		'\t\t\t\t"res": "response",',
-		'\t\t\t\t"db": "database",',
+		'\t\t\t\t"ctx": "context"',
 		"\t\t\t},",
-		"\t\t},",
-		"\t],",
+		'\t\t\t"allowPropertyAccess": ["char"]',
+		"\t\t}",
+		"\t]",
 		"}",
 	].join("\n")}
-	lang="typescript"
-	key="block-12-xotyd0"
+	lang="json"
+	title="eslint.config.js"
 />
-
-### With Glob Patterns
-
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/no-shorthand-names": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"shorthands": {',
-		'\t\t\t\t"*Btn": "*Button",',
-		'\t\t\t\t"*Img": "*Image",',
-		'\t\t\t\t"*Msg": "*Message",',
-		'\t\t\t\t"str*": "string*",',
-		"\t\t\t},",
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-13-aridyh"
-/>
-
-### With Regex Patterns
-
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/no-shorthand-names": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"shorthands": {',
-		'\t\t\t\t"/^e$/": "event",',
-		'\t\t\t\t"/^i$/": "index",',
-		'\t\t\t\t"/^(\\\\w+)Fn$/": "$1Function",',
-		'\t\t\t\t"/^on(\\\\w+)Cb$/": "on$1Callback",',
-		"\t\t\t},",
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-14-1koij5"
-/>
-
-### Allow Specific Contexts
-
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/no-shorthand-names": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"shorthands": {',
-		'\t\t\t\t"Props": "Properties",',
-		"\t\t\t},",
-		'\t\t\t"allowPropertyAccess": ["Props"],',
-		'\t\t\t"ignoreShorthands": ["PropsWithChildren", "PropsWithoutRef"],',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-15-npj2ex"
-/>
-
-## Advanced Examples
-
-### Nested Shorthands
-
-<Code
-	code={[
-		"{",
-		'\t"shorthands": {',
-		'\t\t"plr": "player",',
-		'\t\t"cfg": "config",',
-		"\t},",
-		"}",
-		"",
-		"// Before:",
-		"const plrCfgData = getData();",
-		"",
-		"// After:",
-		"const playerConfigData = getData();",
-	].join("\n")}
-	lang="typescript"
-	key="block-16-1x9942"
-/>
-
-### Multiple Pattern Types
-
-<Code
-	code={[
-		"{",
-		'\t"shorthands": {',
-		'\t\t"plr": "player", // Exact',
-		'\t\t"*Btn": "*Button", // Glob',
-		'\t\t"/^str/": "string", // Regex',
-		"\t},",
-		"}",
-		"",
-		"// All matched:",
-		"const plr = getPlayer();       // plr → player",
-		"const submitBtn = button;      // submitBtn → submitButton",
-		'const strValue = "text";       // strValue → stringValue',
-	].join("\n")}
-	lang="typescript"
-	key="block-17-sy0mty"
-/>
-
-### Ignored Patterns
-
-<Code
-	code={[
-		"{",
-		'\t"shorthands": {',
-		'\t\t"Props": "Properties",',
-		"\t},",
-		'\t"ignoreShorthands": ["PropsWithChildren", "PropsWithoutRef", "*PropsInternal"],',
-		"}",
-		"",
-		"// ❌ Flagged:",
-		"interface UserProps {} // Error",
-		"",
-		"// ✅ Ignored:",
-		"type PropsWithChildren = ...;",
-		"type ButtonPropsInternal = ...;",
-	].join("\n")}
-	lang="typescript"
-	key="block-18-1g2bco"
-/>
-
-## Performance Optimizations
-
-The rule includes several performance optimizations:
-
-1. **Split Cache**: Caches word boundary splits (bounded at 1024 entries)
-2. **Result Cache**: Caches full identifier results
-3. **Pattern Precompilation**: Regex patterns compiled once
-4. **Early Import Skip**: Skips import specifiers before any processing
-
-## When Not To Use It
-
-Consider disabling this rule if:
-
-- You're working with an established codebase with shorthand conventions
-- Your team has agreed-upon abbreviations (consider adding to `ignoreShorthands`)
-- You're integrating with external libraries that use shorthands extensively
-
-For specific exceptions:
-
-<Code
-	code={[
-		"// Disable for specific line",
-		"const plr = getPlayer(); // eslint-disable-line cease-nonsense/no-shorthand-names",
-		"",
-		"// Disable for file",
-		"/* eslint-disable cease-nonsense/no-shorthand-names */",
-	].join("\n")}
-	lang="typescript"
-	key="disable-for-specific-2nu3jw"
-/>
-
-## Migration Guide
-
-### 1. Find All Violations
-
-<Code
-	code={["# List all violations", 'bun run lint | grep "no-shorthand-names"'].join("\n")}
-	lang="bash"
-	key="list-all-violations-zynlfa"
-/>
-
-### 2. Review Common Patterns
-
-<Code
-	code={[
-		"# Find most common shorthands in your codebase",
-		'grep -r "const plr" src/ | wc -l',
-		'grep -r "const args" src/ | wc -l',
-		'grep -r "const dt" src/ | wc -l',
-	].join("\n")}
-	lang="bash"
-	key="find-most-common-sho-2t65hp"
-/>
-
-### 3. Configure Ignores for Legacy Code
-
-<Code
-	code={[
-		"{",
-		'\t"ignoreShorthands": [',
-		'\t\t"plrId", // Legacy database column',
-		'\t\t"argsRaw", // Legacy API parameter',
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-22-1xnmxi"
-/>
-
-### 4. Gradual Adoption
-
-Enable rule with warnings first:
-
-<Code
-	code={["{", '\t"cease-nonsense/no-shorthand-names": "warn",', "}"].join("\n")}
-	lang="typescript"
-	key="block-23-18eytz"
-/>
-
-## Common Shorthands to Replace
-
-| Shorthand | Replacement  | Context                 |
-| --------- | ------------ | ----------------------- |
-| `plr`     | `player`     | Roblox player reference |
-| `char`    | `character`  | Roblox character model  |
-| `args`    | `parameters` | Function parameters     |
-| `dt`      | `deltaTime`  | Frame time delta        |
-| `cfg`     | `config`     | Configuration           |
-| `ctx`     | `context`    | Context objects         |
-| `req`     | `request`    | HTTP requests           |
-| `res`     | `response`   | HTTP responses          |
-| `db`      | `database`   | Database connections    |
-| `btn`     | `button`     | UI buttons              |
-| `img`     | `image`      | Images                  |
-| `msg`     | `message`    | Messages                |
 
 ## Related Rules
 
-- [prefer-pascal-case-enums](/rules/prefer-pascal-case-enums/) - Enforces PascalCase for enums
-- [prefer-singular-enums](/rules/prefer-singular-enums/) - Enforces singular enum names
+<CardGrid>
+	<LinkCard
+		title="prevent-abbreviations"
+		description="General abbreviation preventative"
+		href="/rules/prevent-abbreviations/"
+	/>
+	<LinkCard
+		title="naming-convention"
+		description="Enforce casing and naming standards"
+		href="/rules/naming-convention/"
+	/>
+</CardGrid>
 
 ## Further Reading
 
-- [Clean Code: Meaningful Names](https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882)
-- [Naming Conventions Guide](https://github.com/kettanaito/naming-cheatsheet)
-- [Code Readability Research](https://www.sciencedirect.com/science/article/pii/S0164121218300323)
+<CardGrid>
+	<LinkCard
+		title="Clean Code: Naming"
+		description="Principles for choosing meaningful names"
+		href="https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882"
+	/>
+</CardGrid>

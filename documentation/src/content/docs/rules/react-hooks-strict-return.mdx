@@ -1,300 +1,108 @@
 ---
 title: react-hooks-strict-return
+badge:
+    text: Best Practice
+    variant: success
+description: Custom React hooks must return a tuple of ≤2 elements or a single object. Prevents positional ambiguity.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-React hooks must return a tuple of ≤2 elements or a single object. Prevents unwieldy hook return types.
+Custom React hooks must return a tuple of ≤2 elements or an object.
 
-## Rule Details
+## Rule Details :badge[Best Practice]{variant=success}
 
-Custom React hooks should return either:
+Custom hooks should return either a tuple with at most 2 elements (mirroring `useState`), a single object, or a single
+primitive value. Returning large tuples makes destructuring awkward and error-prone due to mandatory positional
+ordering. Objects are preferred for 3+ values as they provide named context and allow skipping properties.
 
-- A tuple with at most 2 elements (like `useState`)
-- A single object
-- A single non-array value
+<Aside type="tip" title="Positional Clarity">
+	When a hook returns more than 2 elements, it's hard for callers to remember what `[a, b, c, d]` represent. Objects
+	allow the IDE to provide autocompletion for named properties.
+</Aside>
 
-Returning tuples with 3+ elements makes destructuring awkward and unclear.
+## Refactoring Workflow
+
+<Steps>
+1. **Identify Large Tuples**
+   Locate hooks that return an array containing more than two variables.
+
+2. **Convert to Object** Change the `return [v1, v2, v3]` line to `return { v1, v2, v3 }`.
+
+3. **Update Call Sites** Replace array destructuring `const [v1, v2, v3] = useHook()` with object destructuring
+   `const { v1, v2, v3 } = useHook()`.
+
+4. **Review Naming** Ensure the object keys are descriptive, as they will now be the primary way users interact with the
+   hook's output.
+
+{/* oxfmt-ignore */}
+
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Unwieldy Tuples
+		Bans large arrays where the position of a value is its only identifier.
 
-<Code
-	code={[
-		"function useMyHook() {",
-		"\treturn [a, b, c]; // 3 elements",
-		"}",
-		"",
-		"function useData() {",
-		"\treturn [state, setState, loading, error]; // 4 elements",
-		"}",
-		"",
-		"function useComplexState() {",
-		"\tconst items = [1, 2, 3, 4, 5];",
-		"\treturn items; // Variable reference to 5-element array",
-		"}",
-		"",
-		"// Even with type annotations",
-		"function useBadHook(): [string, number, boolean, object] {",
-		'\treturn ["", 0, false, {}];',
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="function-usemyhook-1wa3o5"
-/>
+    	<Code
+    		code={[
+    			"function useData() {",
+    			"\treturn [state, setState, loading, error]; // ❌ 4 elements is too many",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Objects or Pairs
+    	Use objects for complexity and tuples only for simple `[value, setter]` pairs.
 
-### ✅ Correct
+    	<Code
+    		code={[
+    			"// ✅ Objects are clear and named",
+    			"function useData() {",
+    			"\treturn { state, setState, loading, error };",
+    			"}",
+    			"",
+    			"// ✅ Pairs are fine (standard React pattern)",
+    			"function useToggle() {",
+    			"\treturn [isOpen, toggle];",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"// Standard 2-element tuple (like useState)",
-		"function useMyHook() {",
-		"\treturn [state, setState];",
-		"}",
-		"",
-		"// Single object with named properties",
-		"function useData() {",
-		"\treturn { state, setState, loading, error };",
-		"}",
-		"",
-		"// Single value",
-		"function useCurrentUser() {",
-		"\treturn user;",
-		"}",
-		"",
-		"// Objects are fine regardless of size",
-		"function useComplexData() {",
-		"\treturn {",
-		"\t\ta,",
-		"\t\tb,",
-		"\t\tc,",
-		"\t\td,",
-		"\t\te,",
-		"\t\tf,",
-		"\t}; // 6 properties OK",
-		"}",
-		"",
-		"// Array of data (not a return tuple)",
-		"function useItems() {",
-		"\treturn items; // OK if used as data, not destructured",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="standard-2-element-t-c2a4y4"
-/>
+</Tabs>
 
-## Why Limit Tuple Size?
+## Why avoid large tuples?
 
-### Readability
-
-Destructuring 3+ elements is hard to read and maintain:
-
-<Code
-	code={[
-		"// Unclear: what are these values?",
-		"const [a, b, c, d] = useComplexHook();",
-		"",
-		"// Clear: named properties",
-		"const { state, loading, error, refetch } = useComplexHook();",
-	].join("\n")}
-	lang="typescript"
-	key="unclear-what-are-the-6ckpla"
-/>
-
-### Positional Confusion
-
-With many positional values, it's easy to swap them:
-
-<Code
-	code={[
-		"// Which is which?",
-		"const [data, error, loading, refetch] = useFetch();",
-		"const [data, loading, error, refetch] = useFetch(); // Bug!",
-		"",
-		"// Named properties prevent confusion",
-		"const { data, error, loading, refetch } = useFetch();",
-	].join("\n")}
-	lang="typescript"
-	key="which-is-which-1wv635"
-/>
-
-### Optional Returns
-
-Objects handle optional returns gracefully:
-
-<Code
-	code={[
-		"// Awkward: have to track position of undefined",
-		"const [data, , error] = useData(); // Skipping loading",
-		"",
-		"// Natural: only destructure what you need",
-		"const { data, error } = useData(); // loading not needed",
-	].join("\n")}
-	lang="typescript"
-	key="awkward-have-to-trac-2foswz"
-/>
-
-## React Hook Patterns
-
-### State Hooks (2-element tuple)
-
-<Code
-	code={[
-		"function useToggle(initial = false): [boolean, () => void] {",
-		"\tconst [value, setValue] = useState(initial);",
-		"\tconst toggle = () => setValue((v) => !v);",
-		"\treturn [value, toggle];",
-		"}",
-		"",
-		"// Usage",
-		"const [isOpen, toggle] = useToggle();",
-	].join("\n")}
-	lang="typescript"
-	key="function-usetoggle-i-2738h2"
-/>
-
-### Data Hooks (object)
-
-<Code
-	code={[
-		"interface UseDataResult<T> {",
-		"\tdata: T | undefined;",
-		"\tloading: boolean;",
-		"\terror: Error | undefined;",
-		"\trefetch: () => void;",
-		"}",
-		"",
-		"function useData<T>(url: string): UseDataResult<T> {",
-		"\t// ...",
-		"\treturn { data, loading, error, refetch };",
-		"}",
-		"",
-		"// Usage",
-		'const { data, loading } = useData<User>("/api/user");',
-	].join("\n")}
-	lang="typescript"
-	key="interface-usedatares-1shdnc"
-/>
-
-### Value Hooks (single value)
-
-<Code
-	code={[
-		"function useWindowWidth(): number {",
-		"\tconst [width, setWidth] = useState(window.innerWidth);",
-		"\t// ...",
-		"\treturn width;",
-		"}",
-		"",
-		"// Usage",
-		"const width = useWindowWidth();",
-	].join("\n")}
-	lang="typescript"
-	key="function-usewindowwi-1jz3wz"
-/>
-
-## Migration Guide
-
-### Before (3+ Element Tuple)
-
-<Code
-	code={[
-		"function useForm() {",
-		"\tconst [values, setValues] = useState({});",
-		"\tconst [errors, setErrors] = useState({});",
-		"\tconst [touched, setTouched] = useState({});",
-		"",
-		"\treturn [values, setValues, errors, setErrors, touched, setTouched];",
-		"}",
-		"",
-		"// Usage",
-		"const [values, setValues, errors, setErrors, touched, setTouched] = useForm();",
-	].join("\n")}
-	lang="typescript"
-	key="function-useform-p3y44w"
-/>
-
-### After (Object Return)
-
-<Code
-	code={[
-		"interface UseFormReturn {",
-		"\tvalues: Record<string, unknown>;",
-		"\tsetValues: (v: Record<string, unknown>) => void;",
-		"\terrors: Record<string, string>;",
-		"\tsetErrors: (e: Record<string, string>) => void;",
-		"\ttouched: Record<string, boolean>;",
-		"\tsetTouched: (t: Record<string, boolean>) => void;",
-		"}",
-		"",
-		"function useForm(): UseFormReturn {",
-		"\tconst [values, setValues] = useState({});",
-		"\tconst [errors, setErrors] = useState({});",
-		"\tconst [touched, setTouched] = useState({});",
-		"",
-		"\treturn { values, setValues, errors, setErrors, touched, setTouched };",
-		"}",
-		"",
-		"// Usage (more flexible)",
-		"const { values, errors } = useForm(); // Only what you need",
-		"const form = useForm(); // Or use the whole object",
-	].join("\n")}
-	lang="typescript"
-	key="interface-useformret-1ik4za"
-/>
-
-## Edge Cases
-
-### Non-Hook Functions
-
-This rule only applies to functions starting with `use`:
-
-<Code
-	code={[
-		"// Not affected (not a hook)",
-		"function getData() {",
-		"\treturn [1, 2, 3, 4, 5]; // OK",
-		"}",
-		"",
-		"// Affected (is a hook)",
-		"function useData() {",
-		"\treturn [1, 2, 3, 4, 5]; // Error",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="not-affected-not-a-h-2c9il5"
-/>
-
-### Type-Only Arrays
-
-If a hook returns an array of data (not a tuple), it should be typed accordingly:
-
-<Code
-	code={[
-		"// Wrong: tuple type suggests positional destructuring",
-		"function useItems(): [Item, Item, Item, Item] {",
-		"\treturn [item1, item2, item3, item4];",
-		"}",
-		"",
-		"// Right: array type suggests it's data",
-		"function useItems(): Item[] {",
-		"\treturn [item1, item2, item3, item4];",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="wrong-tuple-type-sug-1wgsl2"
-/>
-
-## When Not To Use It
-
-If you have a specific reason to return 3+ element tuples (extremely rare), you can disable this rule. However, consider refactoring to an object return instead.
+<CardGrid stagger>
+	<Card title="Order Sensitivity" icon="warning">
+		It's very easy to accidentally swap `[loading, error]` for `[error, loading]`.
+	</Card>
+	<Card title="Grep-ability" icon="magnifier">
+		Named object properties like `isLoaded` are much easier to search for than positional array elements.
+	</Card>
+	<Card title="Flexibility" icon="rocket">
+		Objects allow you to add new return values in the future without breaking existing destructuring order.
+	</Card>
+</CardGrid>
 
 ## Related Rules
 
-- [react-hooks-strict-return](/rules/react-hooks-strict-return/) - This rule
+<CardGrid>
+	<LinkCard title="no-god-components" description="Reduces component complexity" href="/rules/no-god-components/" />
+</CardGrid>
 
 ## Further Reading
 
-- [React Hooks API Reference](https://react.dev/reference/react/hooks)
-- [Custom Hook Patterns](https://react.dev/learn/reusing-logic-with-custom-hooks)
+<CardGrid>
+	<LinkCard
+		title="React Docs: Custom Hooks"
+		description="Official guide on reusing logic"
+		href="https://react.dev/learn/reusing-logic-with-custom-hooks"
+	/>
+</CardGrid>

@@ -1,562 +1,106 @@
 ---
 title: prefer-early-return
+badge:
+    text: Clean Code
+    variant: success
+description:
+    Prefer early returns over full-body conditional wrapping in function declarations. Reduces nesting and cognitive
+    load.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Prefer early returns over full-body conditional wrapping in function declarations.
+Prefer early returns over full-body conditional wrapping.
 
-## Rule Details
+## Rule Details :badge[Clean Code]{variant=success}
 
-Functions wrapped entirely in a single `if` statement should use an early return with a negated condition instead. This reduces nesting, improves readability, and makes the "happy path" more obvious.
+Functions wrapped entirely in a single `if` statement should use an early return (guard clause) with a negated condition
+instead. This avoids unnecessary indentation, reduces cognitive load, and makes the "happy path" of your logic visually
+distinct.
 
-## Options
+<Aside type="note" title="Cognitive Load">
+	Every level of indentation adds a mental "depth counter." Early returns keep your functions flat, allowing
+	developers to scan the main logic without entering nested blocks.
+</Aside>
 
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/prefer-early-return": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"maximumStatements": 1,',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-0-33dh01"
-/>
+## Refactoring Workflow
 
-### Configuration Parameters
+<Steps>
+1. **Identify the Wrapper**
+   Look for an `if` statement that encapsulates almost the entire body of a function.
+2. **Negate the Condition** Invert the logic of the `if`. For example, `if (isValid)` becomes `if (!isValid)`.
+3. **Insert Early Return** Add a `return` or `return undefined` immediately inside the new negated block.
+4. **Flatten the Rest** Move the original logic out of the `if` block and place it directly below the new guard clause.
+{/* oxfmt-ignore */}
 
-- **maximumStatements** (default: `1`): Maximum number of statements in the if-body before suggesting early return. Set to `0` to flag even single-statement ifs.
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Deep Nesting
+		Bans wrapping the primary function logic in a single large conditional block.
 
-<Code
-	code={[
-		"// Single statement wrapped",
-		"function validate(user: User) {",
-		"\tif (user.isActive) {",
-		'\t\tconsole.log("User is active");',
-		"\t}",
-		"}",
-		"",
-		"// Multiple statements wrapped",
-		"function process(data: Data) {",
-		"\tif (data.isValid) {",
-		"\t\ttransform(data);",
-		"\t\tsave(data);",
-		"\t\tnotify();",
-		"\t}",
-		"}",
-		"",
-		"// Deeply nested",
-		"function execute(task: Task) {",
-		"\tif (task.enabled) {",
-		"\t\tconst result = task.run();",
-		"\t\ttask.complete(result);",
-		"\t\treturn result;",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="single-statement-wra-nel1zi"
-/>
+    	<Code
+    		code={[
+    			"function process(data: Data) {",
+    			"\tif (data.isValid) {",
+    			"\t\ttransform(data);",
+    			"\t\tsave(data);",
+    			"\t\tnotify();",
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Flat Logic
+    	Use guard clauses at the top to filter out invalid states early.
 
-### ✅ Correct
+    	<Code
+    		code={[
+    			"function process(data: Data) {",
+    			"\tif (!data.isValid) return;",
+    			"",
+    			"\ttransform(data);",
+    			"\tsave(data);",
+    			"\tnotify();",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"// Early return",
-		"function validate(user: User) {",
-		"\tif (!user.isActive) return;",
-		'\tconsole.log("User is active");',
-		"}",
-		"",
-		"// Early return with multiple statements",
-		"function process(data: Data) {",
-		"\tif (!data.isValid) return;",
-		"",
-		"\ttransform(data);",
-		"\tsave(data);",
-		"\tnotify();",
-		"}",
-		"",
-		"// Early return with value",
-		"function execute(task: Task) {",
-		"\tif (!task.enabled) return;",
-		"",
-		"\tconst result = task.run();",
-		"\ttask.complete(result);",
-		"\treturn result;",
-		"}",
-		"",
-		"// If-else is fine (alternate path exists)",
-		"function getStatus(user: User) {",
-		"\tif (user.isActive) {",
-		'\t\treturn "active";',
-		"\t} else {",
-		'\t\treturn "inactive";',
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="early-return-3fpesk"
-/>
+</Tabs>
 
-## Why Early Returns?
+## Why use early returns?
 
-### 1. Reduces Nesting
-
-<Code
-	code={[
-		"// ❌ Nested - harder to read",
-		"function processUser(user: User) {",
-		"\tif (user) {",
-		"\t\tif (user.isValid) {",
-		"\t\t\tif (user.isPremium) {",
-		"\t\t\t\tapplyPremiumFeatures(user);",
-		"\t\t\t}",
-		"\t\t}",
-		"\t}",
-		"}",
-		"",
-		"// ✅ Flat - easier to read",
-		"function processUser(user: User) {",
-		"\tif (!user) return;",
-		"\tif (!user.isValid) return;",
-		"\tif (!user.isPremium) return;",
-		"",
-		"\tapplyPremiumFeatures(user);",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="nested-harder-to-rea-2hgk5d"
-/>
-
-### 2. Makes Happy Path Obvious
-
-<Code
-	code={[
-		"// ❌ Happy path buried in if-body",
-		"function save(data: Data) {",
-		"\tif (data.isValid) {",
-		"\t\t// Main logic hidden inside",
-		"\t\tvalidate(data);",
-		"\t\ttransform(data);",
-		"\t\tpersist(data);",
-		"\t\tnotify();",
-		"\t}",
-		"}",
-		"",
-		"// ✅ Happy path at top level",
-		"function save(data: Data) {",
-		"\tif (!data.isValid) return;",
-		"",
-		"\t// Main logic clearly visible",
-		"\tvalidate(data);",
-		"\ttransform(data);",
-		"\tpersist(data);",
-		"\tnotify();",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="happy-path-buried-in-2znhmv"
-/>
-
-### 3. Reduces Cognitive Load
-
-<Code
-	code={[
-		"// ❌ Need to track if-scope",
-		"function handleRequest(req: Request) {",
-		"\tif (req.isValid) {",
-		"\t\t// 20 lines of code",
-		"\t\t// ...",
-		"\t\t// Still inside if-scope?",
-		"\t}",
-		"}",
-		"",
-		"// ✅ No scope tracking needed",
-		"function handleRequest(req: Request) {",
-		"\tif (!req.isValid) return;",
-		"",
-		"\t// 20 lines of code at top level",
-		"\t// ...",
-		"\t// Clearly not in any conditional",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="need-to-track-if-sco-390qp9"
-/>
-
-## Configuration Examples
-
-### Default (Maximum 1 Statement)
-
-<Code
-	code={[
-		"{",
-		'  "cease-nonsense/prefer-early-return": ["error", {',
-		'    "maximumStatements": 1',
-		"  }]",
-		"}",
-		"",
-		"// ❌ Flagged - 2 statements",
-		"if (condition) {",
-		"  doA();",
-		"  doB();",
-		"}",
-		"",
-		"// ✅ Not flagged - 1 statement",
-		"if (condition) {",
-		"  doA();",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-6-3ft9vd"
-/>
-
-### Strict Mode (Maximum 0 Statements)
-
-<Code
-	code={[
-		"{",
-		'  "cease-nonsense/prefer-early-return": ["error", {',
-		'    "maximumStatements": 0',
-		"  }]",
-		"}",
-		"",
-		"// ❌ Flagged - even 1 statement",
-		"if (condition) {",
-		"  doA();",
-		"}",
-		"",
-		"// ✅ Use early return",
-		"if (!condition) return;",
-		"doA();",
-	].join("\n")}
-	lang="typescript"
-	key="block-7-2f9232"
-/>
-
-### Lenient (Maximum 3 Statements)
-
-<Code
-	code={[
-		"{",
-		'  "cease-nonsense/prefer-early-return": ["error", {',
-		'    "maximumStatements": 3',
-		"  }]",
-		"}",
-		"",
-		"// ✅ Not flagged - only 3 statements",
-		"if (condition) {",
-		"  doA();",
-		"  doB();",
-		"  doC();",
-		"}",
-		"",
-		"// ❌ Flagged - 4 statements",
-		"if (condition) {",
-		"  doA();",
-		"  doB();",
-		"  doC();",
-		"  doD();",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-8-1dr02d"
-/>
-
-## When NOT to Refactor
-
-### If-Else Present
-
-<Code
-	code={[
-		"// ✅ Don't refactor - has else clause",
-		"function getStatus(active: boolean) {",
-		"\tif (active) {",
-		'\t\treturn "active";',
-		"\t} else {",
-		'\t\treturn "inactive";',
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="don-t-refactor-has-e-27lmf8"
-/>
-
-### Multiple Conditions
-
-<Code
-	code={[
-		"// ✅ Don't refactor - multiple independent conditions",
-		"function validate(data: Data) {",
-		"\tif (data.hasName) {",
-		"\t\tvalidateName(data.name);",
-		"\t}",
-		"",
-		"\tif (data.hasEmail) {",
-		"\t\tvalidateEmail(data.email);",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="don-t-refactor-multi-1il2i6"
-/>
-
-### Short Functions
-
-<Code
-	code={[
-		"// ✅ Acceptable - function is short anyway",
-		"function log(enabled: boolean, message: string) {",
-		"\tif (enabled) {",
-		"\t\tconsole.log(message);",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="acceptable-function--d80q9d"
-/>
-
-## Advanced Examples
-
-### Arrow Functions
-
-<Code
-	code={[
-		"// ❌ Bad",
-		"const process = (data: Data) => {",
-		"\tif (data.isValid) {",
-		"\t\ttransform(data);",
-		"\t\tsave(data);",
-		"\t}",
-		"};",
-		"",
-		"// ✅ Good",
-		"const process = (data: Data) => {",
-		"\tif (!data.isValid) return;",
-		"",
-		"\ttransform(data);",
-		"\tsave(data);",
-		"};",
-	].join("\n")}
-	lang="typescript"
-	key="bad-1820id"
-/>
-
-### Async Functions
-
-<Code
-	code={[
-		"// ❌ Bad",
-		"async function fetchUser(id: number) {",
-		"\tif (id > 0) {",
-		"\t\tconst user = await api.getUser(id);",
-		"\t\treturn user;",
-		"\t}",
-		"}",
-		"",
-		"// ✅ Good",
-		"async function fetchUser(id: number) {",
-		"\tif (id <= 0) return;",
-		"",
-		"\tconst user = await api.getUser(id);",
-		"\treturn user;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="bad-3mnqdu"
-/>
-
-### With Return Values
-
-<Code
-	code={[
-		"// ❌ Bad",
-		"function calculate(x: number): number {",
-		"\tif (x > 0) {",
-		"\t\tconst result = x * 2;",
-		"\t\treturn result;",
-		"\t}",
-		"}",
-		"",
-		"// ✅ Good",
-		"function calculate(x: number): number | undefined {",
-		"\tif (x <= 0) return undefined;",
-		"",
-		"\tconst result = x * 2;",
-		"\treturn result;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="bad-2yjj6q"
-/>
-
-### Guard Clauses Pattern
-
-<Code
-	code={[
-		"// ✅ Excellent - multiple guards",
-		"function processPayment(payment: Payment) {",
-		"\tif (!payment) return;",
-		"\tif (!payment.isValid) return;",
-		"\tif (payment.amount <= 0) return;",
-		"\tif (!payment.method) return;",
-		"",
-		"\t// Main logic clearly separated",
-		"\tconst processed = chargePayment(payment);",
-		"\tsendReceipt(payment);",
-		"\treturn processed;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="excellent-multiple-g-3d2q92"
-/>
-
-## Common Patterns
-
-### Validation Functions
-
-<Code
-	code={[
-		"// Before:",
-		"function validateUser(user: User) {",
-		"\tif (user && user.email && user.password) {",
-		"\t\t// Validation logic",
-		"\t\tcheckEmail(user.email);",
-		"\t\tcheckPassword(user.password);",
-		"\t\treturn true;",
-		"\t}",
-		"\treturn false;",
-		"}",
-		"",
-		"// After:",
-		"function validateUser(user: User) {",
-		"\tif (!user) return false;",
-		"\tif (!user.email) return false;",
-		"\tif (!user.password) return false;",
-		"",
-		"\tcheckEmail(user.email);",
-		"\tcheckPassword(user.password);",
-		"\treturn true;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="before-342ozf"
-/>
-
-### Event Handlers
-
-<Code
-	code={[
-		"// Before:",
-		"function handleClick(event: Event) {",
-		"\tif (!event.defaultPrevented) {",
-		"\t\tevent.preventDefault();",
-		"\t\tprocessClick(event);",
-		"\t\tupdateUI();",
-		"\t}",
-		"}",
-		"",
-		"// After:",
-		"function handleClick(event: Event) {",
-		"\tif (event.defaultPrevented) return;",
-		"",
-		"\tevent.preventDefault();",
-		"\tprocessClick(event);",
-		"\tupdateUI();",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="before-30xp4e"
-/>
-
-### API Handlers
-
-<Code
-	code={[
-		"// Before:",
-		"async function handleRequest(req: Request) {",
-		'\tif (req.method === "POST") {',
-		"\t\tconst body = await req.json();",
-		"\t\tvalidate(body);",
-		"\t\tconst result = await process(body);",
-		"\t\treturn result;",
-		"\t}",
-		"}",
-		"",
-		"// After:",
-		"async function handleRequest(req: Request) {",
-		'\tif (req.method !== "POST") return;',
-		"",
-		"\tconst body = await req.json();",
-		"\tvalidate(body);",
-		"\tconst result = await process(body);",
-		"\treturn result;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="before-fw876h"
-/>
-
-## When Not To Use It
-
-Consider disabling this rule if:
-
-- Your team prefers explicit if-wrapping for all conditional logic
-- You're working in a codebase with established patterns that conflict
-- You find early returns make code harder to understand in your context
-
-## Migration Tips
-
-### Negate Conditions Correctly
-
-<Code
-	code={[
-		"// Original condition → Negated condition",
-		"if (x === 5) → if (x !== 5) return;",
-		"if (x > 5) → if (x <= 5) return;",
-		"if (x >= 5) → if (x < 5) return;",
-		"if (isValid) → if (!isValid) return;",
-		"if (a && b) → if (!(a && b)) return; or if (!a || !b) return;",
-		"if (a || b) → if (!(a || b)) return; or if (!a && !b) return;",
-	].join("\n")}
-	lang="typescript"
-	key="original-condition-n-205ydn"
-/>
-
-### De Morgan's Laws
-
-<Code
-	code={[
-		"// !(A && B) === (!A || !B)",
-		"if (!(user.isActive && user.isPremium)) return;",
-		"// Same as:",
-		"if (!user.isActive || !user.isPremium) return;",
-		"",
-		"// !(A || B) === (!A && !B)",
-		"if (!(x < 0 || x > 100)) return;",
-		"// Same as:",
-		"if (x >= 0 && x <= 100) return;",
-	].join("\n")}
-	lang="typescript"
-	key="a-b-a-b-2y6h76"
-/>
+<CardGrid stagger>
+	<Card title="No Arrow Code" icon="list-format">
+		Eliminates the "arrow" shape formed by deeply nested blocks, keeping code near the left margin.
+	</Card>
+	<Card title="Happy Path" icon="rocket">
+		The main purpose of the function stays at the top level of indentation, making it easier to scan.
+	</Card>
+	<Card title="Simplified Exit" icon="bolt">
+		You don't need to scroll to the bottom of a large function to see what happens when a condition fails.
+	</Card>
+</CardGrid>
 
 ## Related Rules
 
-- [no-god-components](/rules/no-god-components/) - Reduces component complexity
-- [prefer-module-scope-constants](/rules/prefer-module-scope-constants/) - Organizes constants
+<CardGrid>
+	<LinkCard title="no-god-components" description="Reduces component complexity" href="/rules/no-god-components/" />
+</CardGrid>
 
 ## Further Reading
 
-- [Guard Clauses](https://refactoring.com/catalog/replaceNestedConditionalWithGuardClauses.html)
-- [Flattening Arrow Code](https://blog.codinghorror.com/flattening-arrow-code/)
-- [Early Return Pattern](https://medium.com/@scadge/if-statements-design-guard-clauses-might-be-all-you-need-67219a1a981a)
+<CardGrid>
+	<LinkCard
+		title="Flattening Arrow Code"
+		description="Classic essay on reducing code nesting"
+		href="https://blog.codinghorror.com/flattening-arrow-code/"
+	/>
+</CardGrid>

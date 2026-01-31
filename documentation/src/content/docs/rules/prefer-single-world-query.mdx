@@ -1,298 +1,114 @@
 ---
 title: prefer-single-world-query
+badge:
+    text: Performance
+    variant: success
+description:
+    Enforces combining multiple world.get() or world.has() calls on the same entity into a single call for better Jecs
+    performance.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Enforces combining multiple `world.get()` or `world.has()` calls on the same entity into a single call for better Jecs performance.
+Enforces combining multiple `world.get()` or `world.has()` calls.
 
-## Rule Details
+## Rule Details :badge[Performance]{variant=success}
 
-In Jecs (a Roblox ECS library), calling `world.get()` or `world.has()` multiple times on the same entity results in multiple archetype lookups. Combining these calls into a single call improves performance by reducing lookups and cache misses.
+In Jecs (a Roblox ECS library), calling `world.get()` or `world.has()` multiple times on the same entity results in
+multiple archetype lookups. Combining these calls into a single call improves performance by reducing lookups and cache
+misses. This rule detects consecutive lookups on the same entity and merges them automatically.
 
-This rule detects consecutive `world.get()` or `world.has()` calls on the same world and entity, and provides an automatic fix to merge them.
+<Aside type="important" title="Archetype Lookups">
+	Each lookup requires the engine to find the entity's storage location. By grouping queries, Jecs can find the
+	storage location once and retrieve all requested components in a single pass.
+</Aside>
 
-## world.get() Examples
+## Optimization Path
 
-### ❌ Incorrect
+<Steps>
+1. **Identify Consecutive Calls**
+   Locate multiple `world.get(entity, Component)` or `world.has(entity, Component)` calls in the same block.
+2. **Verify Entity & World** Ensure all calls are targeting the exact same `world` and `entity` expressions.
+3. **Check Usage (for .has)** For `has()` calls, verify they are used together (e.g., `hasA && hasB`).
+4. **Merge calls** Replace the multiple lines with a single destructuring call:
+   `const [a, b] = world.get(entity, CompA, CompB)`. {/* oxfmt-ignore */}
 
-<Code
-	code={[
-		"// Multiple lookups - inefficient",
-		"const position = world.get(entity, Position);",
-		"const velocity = world.get(entity, Velocity);",
-		"const health = world.get(entity, Health);",
-	].join("\n")}
-	lang="typescript"
-	key="multiple-lookups-ine-3ap5q0"
-/>
+</Steps>
 
-### ✅ Correct
+## Examples
 
-<Code
-	code={[
-		"// Single lookup - efficient",
-		"const [position, velocity, health] = world.get(entity, Position, Velocity, Health);",
-	].join("\n")}
-	lang="typescript"
-	key="single-lookup-effici-e278u2"
-/>
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Redundant Lookups
+		Bans separate calls that can be efficiently batched.
 
-## world.has() Examples
+    	<Code
+    		code={[
+    			"// Multiple lookups - inefficient",
+    			"const position = world.get(entity, Position);",
+    			"const velocity = world.get(entity, Velocity);",
+    			"",
+    			"const hasHealth = world.has(entity, Health);",
+    			"const hasMana = world.has(entity, Mana);",
+    			"if (hasHealth && hasMana) { ... }",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Grouped Queries
+    	Use the multi-argument overloads to minimize archetype traversals.
 
-### ❌ Incorrect
+    	<Code
+    		code={[
+    			"// Single lookup - efficient",
+    			"const [position, velocity] = world.get(entity, Position, Velocity);",
+    			"",
+    			"// Combined existence check",
+    			"const hasBoth = world.has(entity, Health, Mana);",
+    			"if (hasBoth) { ... }",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"// Multiple lookups - inefficient",
-		"const hasPosition = world.has(entity, Position);",
-		"const hasVelocity = world.has(entity, Velocity);",
-		"if (hasPosition && hasVelocity) {",
-		"\t// Entity has both components",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="multiple-lookups-ine-1kp3z3"
-/>
-
-### ✅ Correct
-
-<Code
-	code={[
-		"// Single lookup - efficient",
-		"const hasAll = world.has(entity, Position, Velocity);",
-		"if (hasAll) {",
-		"\t// Entity has both components",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="single-lookup-effici-gqwlzc"
-/>
-
-### ⚠️ Not Flagged (used separately)
-
-<Code
-	code={[
-		"// Not flagged - has() calls used independently",
-		"const hasPosition = world.has(entity, Position);",
-		"const hasVelocity = world.has(entity, Velocity);",
-		"",
-		"// Different control flow",
-		"if (hasPosition) updatePosition();",
-		"if (hasVelocity) updateVelocity();",
-	].join("\n")}
-	lang="typescript"
-	key="not-flagged-has-call-3t8yi0"
-/>
+</Tabs>
 
 ## Performance Benefits
 
-### Reduced Archetype Lookups
-
-Each `world.get()` or `world.has()` call performs an archetype lookup. Combining calls reduces overhead:
-
-<Code
-	code={[
-		"// ❌ 3 archetype lookups",
-		"const position = world.get(entity, Position);",
-		"const velocity = world.get(entity, Velocity);",
-		"const health = world.get(entity, Health);",
-		"",
-		"// ✅ 1 archetype lookup",
-		"const [position, velocity, health] = world.get(entity, Position, Velocity, Health);",
-	].join("\n")}
-	lang="typescript"
-	key="3-archetype-lookups-1bg7yc"
-/>
-
-### Cache Efficiency
-
-Jecs caches archetype information. Multiple calls on the same entity benefit from cache locality when combined:
-
-<Code
-	code={[
-		"// ❌ Cache may be invalidated between calls",
-		"const transform = world.get(entity, Transform);",
-		"// ... other code ...",
-		"const model = world.get(entity, Model);",
-		"",
-		"// ✅ Cache remains valid for single lookup",
-		"const [transform, model] = world.get(entity, Transform, Model);",
-	].join("\n")}
-	lang="typescript"
-	key="cache-may-be-invalid-2manfq"
-/>
-
-## Auto-Fix Behavior
-
-This rule provides automatic fixes:
-
-### For world.get()
-
-<Code
-	code={[
-		"// Before:",
-		"const position = world.get(entity, Position);",
-		"const velocity = world.get(entity, Velocity);",
-		"",
-		"// After (auto-fixed):",
-		"const [position, velocity] = world.get(entity, Position, Velocity);",
-	].join("\n")}
-	lang="typescript"
-	key="before-2qb8x8"
-/>
-
-### For world.has()
-
-<Code
-	code={[
-		"// Before:",
-		"const hasA = world.has(entity, ComponentA);",
-		"const hasB = world.has(entity, ComponentB);",
-		"if (hasA && hasB) { ... }",
-		"",
-		"// After (auto-fixed):",
-		"const hasA = world.has(entity, ComponentA, ComponentB);",
-		"if (hasA) { ... }",
-	].join("\n")}
-	lang="typescript"
-	key="before-emcx36"
-/>
-
-Note: `world.has()` calls are only combined when their results are ANDed together (`hasA && hasB`), as this maintains equivalent semantics. If the `has()` results are used separately, they won't be combined.
-
-## Supported Patterns
-
-### Basic Variable Declarations
-
-<Code
-	code={[
-		"// Detected and fixed",
-		"const position = world.get(entity, Position);",
-		"const velocity = world.get(entity, Velocity);",
-	].join("\n")}
-	lang="typescript"
-	key="detected-and-fixed-23oppt"
-/>
-
-### Method Chains
-
-<Code
-	code={[
-		"// Detected when world is a member expression",
-		"const position = this.world.get(entity, Position);",
-		"const velocity = this.world.get(entity, Velocity);",
-	].join("\n")}
-	lang="typescript"
-	key="detected-when-world--27mjpz"
-/>
-
-### Complex Entity Expressions
-
-<Code
-	code={[
-		"// Detected when entity expression matches",
-		"const a = world.get(entities[0], ComponentA);",
-		"const b = world.get(entities[0], ComponentB);",
-	].join("\n")}
-	lang="typescript"
-	key="detected-when-entity-poh3ja"
-/>
-
-### has() in Control Flow
-
-<Code
-	code={[
-		"// Detected when has() calls are ANDed",
-		"const hasA = world.has(entity, ComponentA);",
-		"const hasB = world.has(entity, ComponentB);",
-		"while (hasA && hasB) { ... }",
-	].join("\n")}
-	lang="typescript"
-	key="detected-when-has-ca-sy9eqx"
-/>
-
-## Limitations
-
-### Maximum Components
-
-Jecs supports up to 4 components per `get()` or `has()` call. The rule will not combine more than 4 calls on the same entity:
-
-<Code
-	code={[
-		"// These 5 calls will NOT be combined (exceeds Jecs limit)",
-		"const a = world.get(entity, A);",
-		"const b = world.get(entity, B);",
-		"const c = world.get(entity, C);",
-		"const d = world.get(entity, D);",
-		"const e = world.get(entity, E);",
-	].join("\n")}
-	lang="typescript"
-	key="these-5-calls-will-n-2tybtc"
-/>
-
-### has() Semantics
-
-`world.has(entity, A, B)` returns `true` only if the entity has **ALL** specified components. This is equivalent to `world.has(entity, A) && world.has(entity, B)`. Therefore, the rule only combines `has()` calls when their results are ANDed together.
-
-<Code
-	code={[
-		"// ❌ Detected and fixed (ANDed usage)",
-		"const hasA = world.has(entity, A);",
-		"const hasB = world.has(entity, B);",
-		"if (hasA && hasB) { ... }",
-		"",
-		"// ✅ Not detected (separate usage)",
-		"const hasA = world.has(entity, A);",
-		"const hasB = world.has(entity, B);",
-		"if (hasA) doA();",
-		"if (hasB) doB();",
-		"",
-		"// ✅ Not detected (OR usage)",
-		"const hasA = world.has(entity, A);",
-		"const hasB = world.has(entity, B);",
-		"if (hasA || hasB) { ... }",
-	].join("\n")}
-	lang="typescript"
-	key="detected-and-fixed-a-8jbvas"
-/>
-
-### Non-Consecutive Calls
-
-Currently, the rule only detects calls within the same program/file scope. Calls separated by unrelated code may not be detected in all cases.
-
-### Non-Identifier Variables
-
-The rule only optimizes simple variable declarations with identifiers:
-
-<Code
-	code={[
-		"// ❌ Not optimized (destructuring)",
-		"const { x } = world.get(entity, ComponentA);",
-		"const { y } = world.get(entity, ComponentB);",
-		"",
-		"// ❌ Not optimized (let declaration)",
-		"let x = world.get(entity, ComponentA);",
-		"let y = world.get(entity, ComponentB);",
-	].join("\n")}
-	lang="typescript"
-	key="not-optimized-destru-1nnbgv"
-/>
-
-## When Not To Use It
-
-Disable this rule if:
-
-- You intentionally want separate lookups for debugging purposes
-- You're using a custom ECS implementation with different semantics
-- You prefer explicit single-component lookups for code clarity
+<CardGrid stagger>
+	<Card title="Fewer Lookups" icon="bolt">
+		Reduces CPU cycles spent traversing the archetype table to locate component data.
+	</Card>
+	<Card title="Cache Locality" icon="rocket">
+		Accessing multiple components at once improves CPU cache usage as they are often stored together.
+	</Card>
+	<Card title="Jecs Limits" icon="setting">
+		Automatically respects Jecs limits (up to 4 components) by only merging valid counts.
+	</Card>
+</CardGrid>
 
 ## Related Rules
 
-- [prefer-pattern-replacements](/rules/prefer-pattern-replacements/) - Optimizes constructor patterns
-- [no-identity-map](/rules/no-identity-map/) - Detects pointless identity operations
+<CardGrid>
+	<LinkCard
+		title="prefer-pattern-replacements"
+		description="General pattern replacement framework"
+		href="/rules/prefer-pattern-replacements/"
+	/>
+	<LinkCard
+		title="no-identity-map"
+		description="Detects pointless identity operations"
+		href="/rules/no-identity-map/"
+	/>
+</CardGrid>
 
 ## Further Reading
 
-- [Jecs Documentation](https://github.com/ukendio/jecs)
-- [ECS Architecture Patterns](https://en.wikipedia.org/wiki/Entity_component_system)
+<CardGrid>
+	<LinkCard
+		title="Jecs Documentation"
+		description="Official source for the Jecs ECS library"
+		href="https://github.com/ukendio/jecs"
+	/>
+</CardGrid>

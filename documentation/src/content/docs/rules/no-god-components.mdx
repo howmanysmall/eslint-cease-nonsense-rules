@@ -1,520 +1,127 @@
 ---
 title: no-god-components
+badge:
+    text: Complex
+    variant: danger
+description: Flags React components that are too large or complex, encouraging better separation of concerns.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Flags React components that are too large or complex, encouraging better separation of concerns.
+Flags React components that are too large or complex.
 
-## Rule Details
+## Rule Details :badge[Complex]{variant=danger}
 
-This rule enforces component size and complexity limits inspired by the "Refactor God Component" checklist. It checks multiple metrics to identify components that should be split into smaller, more maintainable pieces.
+A "God Component" is one that does too much, knows too much, and is a nightmare to test or maintain. This rule enforces
+component size and complexity limits based on a strict checklist. If a component exceeds these limits, it's a strong
+signal that you should split it into smaller, logically isolated pieces.
 
-## Options
+<Aside type="caution" title="Complexity Signals">
+	Deeply nested JSX, dozens of separate `useState` hooks, and components spanning hundreds of lines are warning signs
+	of poor architectural health.
+</Aside>
 
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/no-god-components": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"targetLines": 120,',
-		'\t\t\t"maxLines": 200,',
-		'\t\t\t"maxTsxNesting": 3,',
-		'\t\t\t"maxStateHooks": 5,',
-		'\t\t\t"stateHooks": ["useState", "useReducer", "useBinding"],',
-		'\t\t\t"maxDestructuredProps": 5,',
-		'\t\t\t"enforceTargetLines": true,',
-		'\t\t\t"ignoreComponents": ["LegacyComponent"],',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-0-1xwnrz"
-/>
+## Refactoring Workflow
 
-### Configuration Parameters
+<Steps>
+1. **Identify the Core Concern**
+   Determine the primary responsibility of the component. Anything not strictly related should be moved.
+2. **Extract Logic to Hooks** Move state management, API calls, and complex event handlers into custom `use*` hooks.
+3. **Slice the UI** Identify independent UI sections (Headers, Lists, Sidebars) and extract them into sub-components.
+4. **Flatten JSX** If you have more than 3 levels of nesting, extract the inner levels into a dedicated component.
+{/* oxfmt-ignore */}
 
-- **targetLines** (default: `120`): Soft limit for component lines (warning level)
-- **maxLines** (default: `200`): Hard maximum lines for a component (error level)
-- **maxTsxNesting** (default: `3`): Maximum JSX/TSX nesting depth
-- **maxStateHooks** (default: `5`): Maximum number of stateful hooks
-- **stateHooks** (default: `["useState", "useReducer", "useBinding"]`): Hook names to count toward state complexity
-- **maxDestructuredProps** (default: `5`): Maximum destructured props in function parameters
-- **enforceTargetLines** (default: `true`): Whether to report when exceeding targetLines
-- **ignoreComponents** (default: `[]`): Component names to skip
-
-## Checks Performed
-
-### 1. Component Line Count
-
-**Target lines** (soft limit): Warns when component exceeds target size
-**Max lines** (hard limit): Errors when component exceeds maximum size
-
-<Code
-	code={[
-		"// ❌ Bad (assuming targetLines: 120, maxLines: 200)",
-		"function LargeComponent() {",
-		"\t// ... 150 lines of code",
-		"\t// Warning: exceeds target",
-		"}",
-		"",
-		"function HugeComponent() {",
-		"\t// ... 250 lines of code",
-		"\t// Error: exceeds maximum",
-		"}",
-		"",
-		"// ✅ Good",
-		"function CompactComponent() {",
-		"\t// ... 80 lines of code",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="bad-assuming-targetl-1fad1e"
-/>
-
-### 2. TSX Nesting Depth
-
-Measures how deeply JSX elements are nested.
-
-<Code
-	code={[
-		"// ❌ Bad (maxTsxNesting: 3)",
-		"function DeepComponent() {",
-		"\treturn (",
-		"\t\t<div>",
-		'\t\t\t{" "}',
-		"\t\t\t{/* depth 1 */}",
-		"\t\t\t<section>",
-		'\t\t\t\t{" "}',
-		"\t\t\t\t{/* depth 2 */}",
-		"\t\t\t\t<article>",
-		'\t\t\t\t\t{" "}',
-		"\t\t\t\t\t{/* depth 3 */}",
-		"\t\t\t\t\t<div>",
-		'\t\t\t\t\t\t{" "}',
-		"\t\t\t\t\t\t{/* depth 4 - exceeds limit! */}",
-		"\t\t\t\t\t\t<span>Content</span>",
-		"\t\t\t\t\t</div>",
-		"\t\t\t\t</article>",
-		"\t\t\t</section>",
-		"\t\t</div>",
-		"\t);",
-		"}",
-		"",
-		"// ✅ Good",
-		"function ShallowComponent() {",
-		"\treturn (",
-		"\t\t<div>",
-		'\t\t\t{" "}',
-		"\t\t\t{/* depth 1 */}",
-		"\t\t\t<Header /> {/* depth 2 */}",
-		"\t\t\t<Content /> {/* depth 2 */}",
-		"\t\t</div>",
-		"\t);",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="bad-maxtsxnesting-3-26dbdc"
-/>
-
-### 3. Stateful Hook Count
-
-Counts uses of stateful hooks like `useState`, `useReducer`, etc.
-
-<Code
-	code={[
-		"// ❌ Bad (maxStateHooks: 5)",
-		"function StatefulComponent() {",
-		'\tconst [name, setName] = useState("");',
-		'\tconst [email, setEmail] = useState("");',
-		"\tconst [age, setAge] = useState(0);",
-		'\tconst [address, setAddress] = useState("");',
-		'\tconst [phone, setPhone] = useState("");',
-		'\tconst [notes, setNotes] = useState(""); // 6th state hook!',
-		"",
-		"\treturn <div>...</div>;",
-		"}",
-		"",
-		"// ✅ Good - group related state",
-		"function BetterComponent() {",
-		"\tconst [formData, setFormData] = useState({",
-		'\t\tname: "",',
-		'\t\temail: "",',
-		"\t\tage: 0,",
-		'\t\taddress: "",',
-		'\t\tphone: "",',
-		'\t\tnotes: "",',
-		"\t});",
-		"",
-		"\treturn <div>...</div>;",
-		"}",
-		"",
-		"// ✅ Even better - extract to custom hook",
-		"function useUserForm() {",
-		"\tconst [formData, setFormData] = useState({",
-		'\t\tname: "",',
-		'\t\temail: "",',
-		"\t\tage: 0,",
-		'\t\taddress: "",',
-		'\t\tphone: "",',
-		'\t\tnotes: "",',
-		"\t});",
-		"",
-		"\treturn { formData, setFormData };",
-		"}",
-		"",
-		"function CleanComponent() {",
-		"\tconst { formData, setFormData } = useUserForm();",
-		"\treturn <div>...</div>;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="bad-maxstatehooks-5-24txo4"
-/>
-
-### 4. Destructured Props
-
-Counts props destructured in the component parameter.
-
-<Code
-	code={[
-		"// ❌ Bad (maxDestructuredProps: 5)",
-		"function ManyPropsComponent({",
-		"\ttitle,",
-		"\tsubtitle,",
-		"\tdescription,",
-		"\timageUrl,",
-		"\tauthor,",
-		"\tdate,",
-		"\ttags,",
-		"}) {",
-		"\treturn <div>...</div>;",
-		"}",
-		"",
-		"// ✅ Good - group props into objects",
-		"interface CardContentProps {",
-		"\ttitle: string;",
-		"\tsubtitle: string;",
-		"\tdescription: string;",
-		"}",
-		"",
-		"interface CardMetaProps {",
-		"\tauthor: string;",
-		"\tdate: Date;",
-		"\ttags: string[];",
-		"}",
-		"",
-		"function BetterComponent({ content, meta, imageUrl }: Props) {",
-		"\treturn <div>...</div>;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="bad-maxdestructuredp-v5z94i"
-/>
-
-### 5. Null Literals (Always Banned)
-
-Runtime `null` literals are always flagged - use `undefined` instead.
-
-<Code
-	code={[
-		"// ❌ Bad",
-		"function Component() {",
-		"\tconst [data, setData] = useState(null); // Error!",
-		"\treturn null; // Error!",
-		"}",
-		"",
-		"// ✅ Good",
-		"function Component() {",
-		"\tconst [data, setData] = useState(undefined);",
-		"\treturn undefined;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="bad-3583h4"
-/>
-
-**Exception**: Type-only `null` is allowed:
-
-<Code
-	code={[
-		"// ✅ Allowed - type annotation only",
-		"type Data = string | null;",
-		"const data: Data | null = fetchData();",
-	].join("\n")}
-	lang="typescript"
-	key="allowed-type-annotat-37w6wc"
-/>
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Bloated Components
+		Bans components that attempt to manage an entire screen's worth of logic and UI.
 
-<Code
-	code={[
-		"// Too many destructured props",
-		"function UserProfile({",
-		"\tid,",
-		"\tname,",
-		"\temail,",
-		"\tavatar,",
-		"\tbio,",
-		"\tcreatedAt,",
-		"\tupdatedAt,",
-		"}) {",
-		"\tconst [editing, setEditing] = useState(false);",
-		"\tconst [name, setName] = useState(name);",
-		"\tconst [email, setEmail] = useState(email);",
-		"\tconst [bio, setBio] = useState(bio);",
-		"\tconst [avatar, setAvatar] = useState(avatar);",
-		"\tconst [loading, setLoading] = useState(false);",
-		"",
-		"\treturn (",
-		"\t\t<div>",
-		"\t\t\t<div>",
-		"\t\t\t\t<div>",
-		"\t\t\t\t\t<div>",
-		"\t\t\t\t\t\t<div>",
-		'\t\t\t\t\t\t\t{" "}',
-		"\t\t\t\t\t\t\t{/* Deep nesting! */}",
-		"\t\t\t\t\t\t\t<span>{name}</span>",
-		"\t\t\t\t\t\t</div>",
-		"\t\t\t\t\t</div>",
-		"\t\t\t\t</div>",
-		"\t\t\t</div>",
-		"\t\t</div>",
-		"\t);",
-		"}",
-		"",
-		"// Returns null literal",
-		"function ConditionalComponent({ show }: Props) {",
-		"\tif (!show) return null; // Error!",
-		"\treturn <div>Content</div>;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="too-many-destructure-2mtm04"
-/>
+    	<Code
+    		code={[
+    			"function MassiveDashboard() {",
+    			"  const [user, setUser] = useState();",
+    			"  const [theme, setTheme] = useState();",
+    			"  const [notifications, setNotifications] = useState([]);",
+    			"  const [data, setData] = useState();",
+    			"  const [filter, setFilter] = useState('');",
+    			"  const [sort, setSort] = useState('asc'); // 7th state hook!",
+    			"",
+    			"  return (",
+    			"    <div>",
+    			"      <header>...</header>",
+    			"      <aside>...</aside>",
+    			"      <main>...",
+    			"        <section>...",
+    			"          <div>{/* This is too deep! */}</div>",
+    			"        </section>",
+    			"      </main>",
+    			"    </div>",
+    			"  );",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Composed Dashboard
+    	Break the screen into tiny, focused, and testable units.
 
-### ✅ Correct
+    	<Code
+    		code={[
+    			"function Dashboard() {",
+    			"  const { user, notifications } = useDashboardData();",
+    			"  const { filter, sort, setFilter, setSort } = useDashboardFilters();",
+    			"",
+    			"  return (",
+    			"    <Layout>",
+    			"      <Header user={user} />",
+    			"      <MainContent ",
+    			"        data={notifications} ",
+    			"        filters={{ filter, sort }} ",
+    			"      />",
+    			"    </Layout>",
+    			"  );",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"// Split into smaller components",
-		"interface UserData {",
-		"\tid: number;",
-		"\tname: string;",
-		"\temail: string;",
-		"\tavatar: string;",
-		"}",
-		"",
-		"interface UserMeta {",
-		"\tbio: string;",
-		"\tcreatedAt: Date;",
-		"\tupdatedAt: Date;",
-		"}",
-		"",
-		"function UserProfile({ user, meta }: Props) {",
-		"\tconst editor = useUserEditor(user);",
-		"",
-		"\treturn (",
-		"\t\t<div>",
-		"\t\t\t<ProfileHeader user={user} editor={editor} />",
-		"\t\t\t<ProfileContent meta={meta} />",
-		"\t\t</div>",
-		"\t);",
-		"}",
-		"",
-		"// Extract editing logic to custom hook",
-		"function useUserEditor(user: UserData) {",
-		"\tconst [editing, setEditing] = useState(false);",
-		"\tconst [formData, setFormData] = useState(user);",
-		"\tconst [loading, setLoading] = useState(false);",
-		"",
-		"\treturn { editing, setEditing, formData, setFormData, loading };",
-		"}",
-		"",
-		"// Return undefined instead of null",
-		"function ConditionalComponent({ show }: Props) {",
-		"\tif (!show) return undefined;",
-		"\treturn <div>Content</div>;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="split-into-smaller-c-8dcu7x"
-/>
+</Tabs>
 
-## Component Detection
+## Complexity Metrics
 
-The rule detects components by:
-
-1. **Function names starting with uppercase**: `function UserCard() {}`
-2. **Variable assignments with uppercase**: `const Button = () => {}`
-3. **HOC wrappers**: `const Enhanced = memo(Component)`
-4. **Class methods**: `class Container { render() {} }`
-
-<Code
-	code={[
-		"// All detected as components:",
-		"function MyComponent() {}",
-		"const AnotherComponent = () => {};",
-		"const Wrapped = forwardRef(() => {});",
-		"const Memoized = React.memo(() => {});",
-	].join("\n")}
-	lang="typescript"
-	key="all-detected-as-comp-1g7fbj"
-/>
-
-## When Not To Use It
-
-Consider disabling this rule if:
-
-- You're working with a legacy codebase that needs gradual refactoring
-- You have specific components (like layout containers) that legitimately need to be large
-- Your team has different component size standards
-
-For specific exceptions, use the `ignoreComponents` option:
-
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/no-god-components": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"ignoreComponents": ["LegacyDashboard", "AdminPanel"],',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-10-16wtaj"
-/>
-
-## Refactoring Strategies
-
-### 1. Extract Child Components
-
-<Code
-	code={[
-		"// Before:",
-		"function UserDashboard() {",
-		"\treturn (",
-		"\t\t<div>",
-		"\t\t\t<header>...</header>",
-		"\t\t\t<nav>...</nav>",
-		"\t\t\t<main>...</main>",
-		"\t\t\t<aside>...</aside>",
-		"\t\t\t<footer>...</footer>",
-		"\t\t</div>",
-		"\t);",
-		"}",
-		"",
-		"// After:",
-		"function UserDashboard() {",
-		"\treturn (",
-		"\t\t<div>",
-		"\t\t\t<DashboardHeader />",
-		"\t\t\t<DashboardNav />",
-		"\t\t\t<DashboardMain />",
-		"\t\t\t<DashboardAside />",
-		"\t\t\t<DashboardFooter />",
-		"\t\t</div>",
-		"\t);",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="before-ognr4c"
-/>
-
-### 2. Extract Custom Hooks
-
-<Code
-	code={[
-		"// Before:",
-		"function Form() {",
-		'\tconst [name, setName] = useState("");',
-		'\tconst [email, setEmail] = useState("");',
-		"\tconst [loading, setLoading] = useState(false);",
-		"\tconst [errors, setErrors] = useState({});",
-		"",
-		"\t// ... validation logic",
-		"\t// ... submission logic",
-		"",
-		"\treturn <form>...</form>;",
-		"}",
-		"",
-		"// After:",
-		"function useFormState(initialData) {",
-		"\tconst [data, setData] = useState(initialData);",
-		"\tconst [loading, setLoading] = useState(false);",
-		"\tconst [errors, setErrors] = useState({});",
-		"",
-		"\treturn { data, setData, loading, setErrors, errors };",
-		"}",
-		"",
-		"function Form() {",
-		'\tconst form = useFormState({ name: "", email: "" });',
-		"\treturn <form>...</form>;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="before-2v6r6i"
-/>
-
-### 3. Group Related Props
-
-<Code
-	code={[
-		"// Before:",
-		"interface Props {",
-		"\tuserId: number;",
-		"\tuserName: string;",
-		"\tuserEmail: string;",
-		"\tuserAvatar: string;",
-		"\tshowHeader: boolean;",
-		"\tshowFooter: boolean;",
-		"\tonSave: () => void;",
-		"\tonCancel: () => void;",
-		"}",
-		"",
-		"// After:",
-		"interface User {",
-		"\tid: number;",
-		"\tname: string;",
-		"\temail: string;",
-		"\tavatar: string;",
-		"}",
-		"",
-		"interface DisplayOptions {",
-		"\tshowHeader: boolean;",
-		"\tshowFooter: boolean;",
-		"}",
-		"",
-		"interface Callbacks {",
-		"\tonSave: () => void;",
-		"\tonCancel: () => void;",
-		"}",
-		"",
-		"interface Props {",
-		"\tuser: User;",
-		"\tdisplay: DisplayOptions;",
-		"\tcallbacks: Callbacks;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="before-2nastr"
-/>
+<CardGrid stagger>
+	<Card title="Line Count" icon="list-format">
+		Hard limit of 200 lines. Components should ideally stay under 120 lines.
+	</Card>
+	<Card title="TSX Nesting" icon="magnifier">
+		Max depth of 3. Deeply nested HTML belongs in a sub-component.
+	</Card>
+	<Card title="State Hooks" icon="bolt">
+		Max 5 stateful hooks (`useState`, etc.). More suggests a need for a Reducer or Custom Hook.
+	</Card>
+	<Card title="Explicit Undefined" icon="warning">
+		Bans `null` literals in favor of `undefined` to keep types clean and idiomatic.
+	</Card>
+</CardGrid>
 
 ## Related Rules
 
-- [react-hooks-strict-return](/rules/react-hooks-strict-return/) - Enforces hook return patterns
-- [require-named-effect-functions](/rules/require-named-effect-functions/) - Prevents inline effect functions
-- [use-exhaustive-dependencies](/rules/use-exhaustive-dependencies/) - Prevents stale closures
+<CardGrid>
+	<LinkCard title="ban-react-fc" description="Bans React.FC for better clarity" href="/rules/ban-react-fc/" />
+</CardGrid>
 
 ## Further Reading
 
-- [React Component Composition](https://react.dev/learn/passing-props-to-a-component)
-- [Extracting Custom Hooks](https://react.dev/learn/reusing-logic-with-custom-hooks)
-- [Component Design Principles](https://kentcdodds.com/blog/colocation)
+<CardGrid>
+	<LinkCard
+		title="React: Thinking in React"
+		description="Official guide to component decomposition"
+		href="https://react.dev/learn/thinking-in-react"
+	/>
+</CardGrid>

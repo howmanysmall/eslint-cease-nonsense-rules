@@ -1,16 +1,95 @@
 ---
 title: prefer-enum-item
+badge:
+    text: Roblox
+    variant: note
+description: Enforce using EnumItem values instead of string or number literals when the type expects an EnumItem.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
 Enforce using EnumItem values instead of string or number literals when the type expects an EnumItem.
 
-## Rule Details
+## Rule Details :badge[Roblox]{variant=note}
 
-In roblox-ts, EnumItem values can often be passed as their string name or numeric value for convenience. While this works at runtime, it sacrifices type safety and makes code harder to understand. This rule ensures you use the explicit enum form (`Enum.ScaleType.Slice`) instead of magic strings (`"Slice"`) or numbers (`1`).
+In `roblox-ts`, EnumItem values can often be passed as their string name or numeric value for convenience. While this works at runtime, it sacrifices type safety and IDE features like "Go to Definition" or "Find References". This rule ensures you use the explicit form (`Enum.ScaleType.Slice`) instead of magic strings (`"Slice"`) or numbers (`1`).
 
-## Options
+<Aside type="tip" title="Self-Documenting Code">
+	Explicit enums tell you exactly what kind of value is expected. `Enum.UIFlexMode.Fill` is much clearer than just
+	`"Fill"`.
+</Aside>
+
+## Refactoring Steps
+
+<Steps>
+1. **Identify Magic Literals**
+   Locate strings or numbers being used in places where a Roblox Enum is expected (e.g., JSX properties like `ScaleType`).
+
+2. **Search Enum Global**
+   Look up the corresponding Enum name in the [Roblox Enum Browser](https://create.roblox.com/docs/reference/engine/enums).
+
+3. **Update Reference**
+   Replace the literal with the full `Enum.Category.Member` path.
+
+4. **Auto-Fix**
+   Most violations can be fixed automatically by running `eslint --fix`.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Magic Values
+		Bans patterns that use strings or numbers where enums are expected.
+
+    	<Code
+    		code={[
+    			"// String literal",
+    			'<uiflexitem FlexMode="Fill" />',
+    			"",
+    			"// Number literal",
+    			"<Halftones nativeProperties={{ ScaleType: 1 }} />",
+    			"",
+    			"// In function arguments",
+    			'setFlexMode("Fill");',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Explicit Enums
+    	Use the built-in `Enum` global for all property assignments and arguments.
+
+    	<Code
+    		code={[
+    			"// Explicit enum usage",
+    			"<uiflexitem FlexMode={Enum.UIFlexMode.Fill} />",
+    			"",
+    			"// Explicit enum in objects",
+    			"<Halftones nativeProperties={{ ScaleType: Enum.ScaleType.Slice }} />",
+    			"",
+    			"// In function arguments",
+    			"setFlexMode(Enum.UIFlexMode.Fill);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Configuration
+
+<CardGrid stagger>
+	<Card title="fixNumericToValue" icon="setting">
+		When `true`, numeric literals fix to `Enum.X.Y.Value` instead of `Enum.X.Y`.
+	</Card>
+	<Card title="performanceMode" icon="bolt">
+		Caches enum lookups to speed up linting on large projects.
+	</Card>
+</CardGrid>
 
 <Code
 	code={[
@@ -18,78 +97,36 @@ In roblox-ts, EnumItem values can often be passed as their string name or numeri
 		'\t"cease-nonsense/prefer-enum-item": [',
 		'\t\t"error",',
 		"\t\t{",
-		'\t\t\t"fixNumericToValue": false,',
-		'\t\t\t"performanceMode": false,',
-		"\t\t},",
-		"\t],",
+		'\t\t\t"fixNumericToValue": true',
+		"\t\t}",
+		"\t]",
 		"}",
 	].join("\n")}
-	lang="typescript"
-	key="block-0-3ox7kt"
+	lang="json"
+	title="eslint.config.js"
 />
-
-### Configuration Parameters
-
-- **fixNumericToValue** (default: `false`): When `true`, numeric literals fix to `Enum.X.Y.Value` instead of `Enum.X.Y`. The `.Value` form preserves numeric runtime value for performance while being self-documenting.
-- **performanceMode** (default: `false`): When `true`, caches enum lookups to reduce repeated TypeScript API calls without changing behavior.
-
-## Examples
-
-### ❌ Incorrect
-
-<Code
-	code={[
-		"// String literal where EnumItem expected",
-		'<uiflexitem FlexMode="Fill" />',
-		"",
-		"// Number literal where EnumItem expected",
-		"<Halftones nativeProperties={{ ScaleType: 1 }} />",
-		"",
-		"// In function arguments",
-		'setFlexMode("Fill");',
-		"",
-		"// In variable assignments",
-		'const mode: Enum.UIFlexMode = "Fill";',
-		"",
-		"// In object properties",
-		'const config = { scaleType: "Slice" as Enum.ScaleType };',
-	].join("\n")}
-	lang="typescript"
-	key="string-literal-where-11gan6"
-/>
-
-### ✅ Correct
-
-<Code
-	code={[
-		"// Explicit enum usage",
-		"<uiflexitem FlexMode={Enum.UIFlexMode.Fill} />",
-		"",
-		"// Explicit enum in objects",
-		"<Halftones nativeProperties={{ ScaleType: Enum.ScaleType.Slice }} />",
-		"",
-		"// In function arguments",
-		"setFlexMode(Enum.UIFlexMode.Fill);",
-		"",
-		"// In variable assignments",
-		"const mode: Enum.UIFlexMode = Enum.UIFlexMode.Fill;",
-		"",
-		"// Using .Value when needed for performance (with fixNumericToValue: true)",
-		"const config = { scaleType: Enum.ScaleType.Slice.Value };",
-	].join("\n")}
-	lang="typescript"
-	key="explicit-enum-usage-2y6bjp"
-/>
-
-## When Not To Use It
-
-Disable this rule if:
-
-- You're working with legacy code that heavily uses string/number enum values
-- You need to interface with APIs that specifically require string or number values
-- Performance is critical and you've measured that `.Value` access adds overhead
 
 ## Related Rules
 
-- [prefer-pascal-case-enums](/rules/prefer-pascal-case-enums/) - Enforces PascalCase for enum names and members
-- [prefer-singular-enums](/rules/prefer-singular-enums/) - Enforces singular enum names
+<CardGrid>
+	<LinkCard
+		title="prefer-pascal-case-enums"
+		description="Ensure your enums follow casing rules"
+		href="/rules/prefer-pascal-case-enums/"
+	/>
+	<LinkCard
+		title="prefer-singular-enums"
+		description="Avoid plural enum names"
+		href="/rules/prefer-singular-enums/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Roblox Enums"
+		description="Official engine documentation for enums"
+		href="https://create.roblox.com/docs/reference/engine/enums"
+	/>
+</CardGrid>

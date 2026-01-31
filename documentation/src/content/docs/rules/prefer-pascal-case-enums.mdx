@@ -1,675 +1,118 @@
 ---
 title: prefer-pascal-case-enums
+badge:
+    text: Clean Code
+    variant: success
+description: Enum names and members must be PascalCase to align with TypeScript conventions and improve readability.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
 Enum names and members must be PascalCase.
 
-## Rule Details
+## Rule Details :badge[Clean Code]{variant=success}
 
-TypeScript enums should use PascalCase for both the enum name and all members. This enforces consistency with TypeScript conventions and improves code readability.
+TypeScript enums should use PascalCase for both the enum name and all members. This enforces consistency with TypeScript type conventions and makes usages like `Color.Red` immediately distinguishable from constants like `MAX_SIZE` or variables like `activePlayer`.
 
-## Options
-
-This rule has no configuration options.
+<Aside type="tip" title="Type Convention">
+	Enums define new types in TypeScript, so they should follow the same PascalCase convention as interfaces and
+	classes.
+</Aside>
 
 ## Examples
 
-### ❌ Incorrect
-
-<Code
-	code={[
-		"// Enum name not PascalCase",
-		"enum my_enum {",
-		"\tRed,",
-		"\tBlue,",
-		"}",
-		"",
-		"enum COLORS {",
-		"\tRed,",
-		"\tBlue,",
-		"}",
-		"",
-		"enum colors {",
-		"\tRed,",
-		"\tBlue,",
-		"}",
-		"",
-		"// Members not PascalCase",
-		"enum Color {",
-		"\tRED, // SCREAMING_SNAKE_CASE",
-		"\tblue, // camelCase",
-		"\tdark_blue, // snake_case",
-		"}",
-		"",
-		"enum Status {",
-		"\tis_active, // snake_case",
-		"\tIS_PENDING, // SCREAMING_SNAKE_CASE",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="enum-name-not-pascal-38ktnl"
-/>
-
-### ✅ Correct
-
-<Code
-	code={[
-		"// Enum and members in PascalCase",
-		"enum Color {",
-		"\tRed,",
-		"\tGreen,",
-		"\tBlue,",
-		"}",
-		"",
-		"enum HttpStatus {",
-		"\tOk,",
-		"\tNotFound,",
-		"\tInternalServerError,",
-		"}",
-		"",
-		"enum Direction {",
-		"\tNorth,",
-		"\tSouth,",
-		"\tEast,",
-		"\tWest,",
-		"}",
-		"",
-		"// Multi-word names",
-		"enum UserRole {",
-		"\tAdmin,",
-		"\tSuperAdmin,",
-		"\tRegularUser,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="enum-and-members-in--c0p421"
-/>
-
-## Why PascalCase for Enums?
-
-### 1. TypeScript Convention
-
-PascalCase is the standard TypeScript convention for enums:
-
-<Code
-	code={[
-		"// ✅ Follows TypeScript style guide",
-		"enum Status {",
-		"\tActive,",
-		"\tInactive,",
-		"}",
-		"",
-		"// ❌ Conflicts with conventions",
-		"enum status {",
-		"\tACTIVE,",
-		"\tINACTIVE,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="follows-typescript-s-37tyo2"
-/>
-
-### 2. Consistency with Types
-
-Enums are types, so they should follow type naming conventions:
-
-<Code
-	code={[
-		"// Types use PascalCase",
-		'type UserStatus = "active" | "inactive";',
-		"interface UserData {",
-		"\t/* ... */",
-		"}",
-		"class UserService {",
-		"\t/* ... */",
-		"}",
-		"",
-		"// Enums should too",
-		"enum UserRole {",
-		"\tAdmin,",
-		"\tUser,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="types-use-pascalcase-2u9ubc"
-/>
-
-### 3. Distinguish from Constants
-
-<Code
-	code={[
-		"// Module-level constant (SCREAMING_SNAKE_CASE)",
-		"const MAX_RETRIES = 3;",
-		"",
-		"// Enum (PascalCase)",
-		"enum RetryStrategy {",
-		"\tExponential,",
-		"\tLinear,",
-		"\tFixed,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="module-level-constan-3dwqof"
-/>
-
-### 4. Better Readability
-
-<Code
-	code={[
-		"// ❌ Hard to read",
-		"enum HTTP_STATUS {",
-		"\tOK,",
-		"\tNOT_FOUND,",
-		"\tINTERNAL_SERVER_ERROR,",
-		"}",
-		"",
-		"// ✅ Easy to read",
-		"enum HttpStatus {",
-		"\tOk,",
-		"\tNotFound,",
-		"\tInternalServerError,",
-		"}",
-		"",
-		"// Usage is clearer",
-		"const status = HttpStatus.NotFound; // vs HTTP_STATUS.NOT_FOUND",
-	].join("\n")}
-	lang="typescript"
-	key="hard-to-read-xuykb6"
-/>
-
-## PascalCase Conversion Rules
-
-### Single Words
-
-<Code
-	code={[
-		"// Before → After",
-		"enum color → enum Color",
-		"enum STATUS → enum Status",
-		"enum direction → enum Direction",
-	].join("\n")}
-	lang="typescript"
-	key="before-after-1jy6l5"
-/>
-
-### Multi-Word Names
-
-<Code
-	code={[
-		"// Before → After",
-		"enum user_role → enum UserRole",
-		"enum HTTP_STATUS → enum HttpStatus",
-		"enum api_endpoint → enum ApiEndpoint",
-		"enum DATABASE_TYPE → enum DatabaseType",
-	].join("\n")}
-	lang="typescript"
-	key="before-after-2mgaqm"
-/>
-
-### Acronyms
-
-<Code
-	code={[
-		"// Treat acronyms as single words",
-		"enum HTTPStatus {",
-		"\t// ✅ Correct",
-		"\tOk,",
-		"\tNotFound,",
-		"}",
-		"",
-		"enum ApiEndpoint {",
-		"\t// ✅ Correct",
-		"\tUsers,",
-		"\tPosts,",
-		"}",
-		"",
-		"enum UIComponent {",
-		"\t// ✅ Correct",
-		"\tButton,",
-		"\tInput,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="treat-acronyms-as-si-4y375r"
-/>
-
-## Common Patterns
-
-### Status Enums
-
-<Code
-	code={[
-		"// ✅ Good",
-		"enum Status {",
-		"\tActive,",
-		"\tInactive,",
-		"\tPending,",
-		"\tArchived,",
-		"}",
-		"",
-		"enum OrderStatus {",
-		"\tCreated,",
-		"\tProcessing,",
-		"\tShipped,",
-		"\tDelivered,",
-		"\tCancelled,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="good-2qwp1a"
-/>
-
-### Error Codes
-
-<Code
-	code={[
-		"// ✅ Good",
-		"enum ErrorCode {",
-		"\tNotFound,",
-		"\tUnauthorized,",
-		"\tBadRequest,",
-		"\tServerError,",
-		"}",
-		"",
-		"// Usage",
-		"function handleError(code: ErrorCode) {",
-		"\tswitch (code) {",
-		"\t\tcase ErrorCode.NotFound:",
-		'\t\t\treturn "Resource not found";',
-		"\t\tcase ErrorCode.Unauthorized:",
-		'\t\t\treturn "Access denied";',
-		"\t\t// ...",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="good-1uqrpk"
-/>
-
-### Configuration Options
-
-<Code
-	code={[
-		"// ✅ Good",
-		"enum LogLevel {",
-		"\tDebug,",
-		"\tInfo,",
-		"\tWarning,",
-		"\tError,",
-		"}",
-		"",
-		"enum Environment {",
-		"\tDevelopment,",
-		"\tStaging,",
-		"\tProduction,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="good-1lzho9"
-/>
-
-## Numeric Enums
-
-<Code
-	code={[
-		"// ✅ Numeric members follow same rules",
-		"enum Priority {",
-		"\tLow, // 0",
-		"\tMedium, // 1",
-		"\tHigh, // 2",
-		"\tCritical, // 3",
-		"}",
-		"",
-		"enum HttpStatus {",
-		"\tOk = 200,",
-		"\tCreated = 201,",
-		"\tBadRequest = 400,",
-		"\tNotFound = 404,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="numeric-members-foll-1ivzbn"
-/>
-
-## String Enums
-
-<Code
-	code={[
-		"// ✅ String enums with PascalCase",
-		"enum Direction {",
-		'\tNorth = "NORTH",',
-		'\tSouth = "SOUTH",',
-		'\tEast = "EAST",',
-		'\tWest = "WEST",',
-		"}",
-		"",
-		"enum ApiEndpoint {",
-		'\tUsers = "/api/users",',
-		'\tPosts = "/api/posts",',
-		'\tComments = "/api/comments",',
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="string-enums-with-pa-3870qd"
-/>
-
-## Const Enums
-
-<Code
-	code={[
-		"// ✅ Const enums follow same rules",
-		"const enum Color {",
-		"\tRed,",
-		"\tGreen,",
-		"\tBlue,",
-		"}",
-		"",
-		"const enum FileExtension {",
-		'\tTs = ".ts",',
-		'\tTsx = ".tsx",',
-		'\tJs = ".js",',
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="const-enums-follow-s-20jlv0"
-/>
-
-## Computed Members
-
-<Code
-	code={[
-		"// ✅ Computed members follow PascalCase",
-		"enum FileAccess {",
-		"\tNone = 0,",
-		"\tRead = 1 << 0,",
-		"\tWrite = 1 << 1,",
-		"\tReadWrite = Read | Write,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="computed-members-fol-67gszu"
-/>
-
-## Advanced Examples
-
-### Bit Flags
-
-<Code
-	code={[
-		"// ✅ Good",
-		"enum Permission {",
-		"\tNone = 0,",
-		"\tRead = 1 << 0,",
-		"\tWrite = 1 << 1,",
-		"\tExecute = 1 << 2,",
-		"\tAll = Read | Write | Execute,",
-		"}",
-		"",
-		"// Usage",
-		"function hasPermission(current: Permission, required: Permission): boolean {",
-		"\treturn (current & required) === required;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="good-3pdbuv"
-/>
-
-### Mixed Types
-
-<Code
-	code={[
-		"// ✅ Members can have different value types (as long as names are PascalCase)",
-		"enum Mixed {",
-		"\tZero = 0,",
-		"\tOne = 1,",
-		'\tName = "name",',
-		'\tDescription = "description",',
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="members-can-have-dif-oylsjl"
-/>
-
-### Namespaced Enums
-
-<Code
-	code={[
-		"// ✅ Namespace pattern",
-		"namespace User {",
-		"\texport enum Role {",
-		"\t\tAdmin,",
-		"\t\tModerator,",
-		"\t\tUser,",
-		"\t}",
-		"",
-		"\texport enum Status {",
-		"\t\tActive,",
-		"\t\tInactive,",
-		"\t}",
-		"}",
-		"",
-		"// Usage",
-		"const role: User.Role = User.Role.Admin;",
-	].join("\n")}
-	lang="typescript"
-	key="namespace-pattern-1q4vde"
-/>
-
-## Edge Cases
-
-### Numbers in Member Names
-
-<Code
-	code={[
-		"// ✅ Numbers are allowed",
-		"enum Version {",
-		"\tV1,",
-		"\tV2,",
-		"\tV3,",
-		"}",
-		"",
-		"enum Level {",
-		"\tLevel1,",
-		"\tLevel2,",
-		"\tLevel3,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="numbers-are-allowed-1lm58v"
-/>
-
-### String Literal Members
-
-<Code
-	code={[
-		"// ✅ String literal keys must also be PascalCase",
-		"enum Status {",
-		'\t"Active" = "ACTIVE", // ✅ Member name is PascalCase',
-		'\t"Inactive" = "INACTIVE", // ✅ Good',
-		"}",
-		"",
-		"// ❌ Bad",
-		"enum Status {",
-		'\t"active" = "ACTIVE", // Member name not PascalCase',
-		'\t"INACTIVE" = "inactive", // Member name SCREAMING_SNAKE_CASE',
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="string-literal-keys--hsuzah"
-/>
-
-### Numbers Starting Member Names
-
-Members starting with digits are skipped:
-
-<Code
-	code={[
-		"// Numbers at start - not checked by this rule",
-		"enum Code {",
-		'\t"200" = "OK",',
-		'\t"404" = "Not Found",',
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="numbers-at-start-not-157jk1"
-/>
-
-## When Not To Use It
-
-Disable this rule if:
-
-- Your project uses different enum naming conventions
-- You're working with generated code that uses other conventions
-- You're integrating with external libraries that expect specific naming
-
-## Migration Guide
-
-### Find All Non-PascalCase Enums
-
-<Code
-	code={["# Find enum declarations", 'grep -r "enum [a-z_]" src/', 'grep -r "enum [A-Z_][A-Z_]" src/'].join("\n")}
-	lang="bash"
-	key="find-enum-declaratio-2q7had"
-/>
-
-### Automated Conversion
-
-Use the toPascalCase utility from the codebase:
-
-<Code
-	code={[
-		"// Before:",
-		"enum user_status {",
-		"\tis_active,",
-		"\tis_pending,",
-		"}",
-		"",
-		"// After:",
-		"enum UserStatus {",
-		"\tIsActive,",
-		"\tIsPending,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="before-2m5q32"
-/>
-
-### Update References
-
-<Code
-	code={[
-		"// Before:",
-		"const status = user_status.is_active;",
-		"",
-		"// After:",
-		"const status = UserStatus.IsActive;",
-	].join("\n")}
-	lang="typescript"
-	key="before-2v4e0e"
-/>
-
-## Benefits
-
-### 1. Type Safety
-
-<Code
-	code={[
-		"enum Status {",
-		"\tActive,",
-		"\tInactive,",
-		"}",
-		"",
-		"function setStatus(status: Status) {",
-		"\t// Type-safe",
-		"}",
-		"",
-		"setStatus(Status.Active); // ✅ OK",
-		"setStatus(123); // ❌ Error",
-	].join("\n")}
-	lang="typescript"
-	key="enum-status-1g18s2"
-/>
-
-### 2. Autocomplete
-
-PascalCase enums provide better IDE autocomplete:
-
-<Code
-	code={['// Type "Status." and IDE shows:', "// - Status.Active", "// - Status.Inactive"].join("\n")}
-	lang="typescript"
-	key="type-status-and-ide--20oe5k"
-/>
-
-### 3. Refactoring Safety
-
-<Code
-	code={[
-		"// Renaming is safe with enums",
-		"enum Status {",
-		"\tActive, // Rename this, IDE updates all usages",
-		"\tInactive,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="renaming-is-safe-wit-clnefm"
-/>
-
-## Common Mistakes
-
-### Mixing Cases
-
-<Code
-	code={[
-		"// ❌ Inconsistent",
-		"enum Status {",
-		"\tactive, // lowercase",
-		"\tPENDING, // uppercase",
-		"\tInActive, // PascalCase",
-		"}",
-		"",
-		"// ✅ Consistent",
-		"enum Status {",
-		"\tActive,",
-		"\tPending,",
-		"\tInactive,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="inconsistent-23x58y"
-/>
-
-### Using Plural Enum Names
-
-See the [prefer-singular-enums](/rules/prefer-singular-enums/) rule:
-
-<Code
-	code={[
-		"// ❌ Plural (separate rule)",
-		"enum Colors {",
-		"\tRed,",
-		"\tBlue,",
-		"}",
-		"",
-		"// ✅ Singular + PascalCase",
-		"enum Color {",
-		"\tRed,",
-		"\tBlue,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="plural-separate-rule-2pq50q"
-/>
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Mixed Casing
+		Bans non-PascalCase casing for enums and their members.
+
+    	<Code
+    		code={[
+    			"enum colors {",
+    			"\tRED, // SCREAMING_SNAKE_CASE",
+    			"\tblue, // camelCase",
+    			"}",
+    			"",
+    			"enum user_role {",
+    			"\tadmin_user",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Strict PascalCase
+    	Use capitalized words without underscores for both names and members.
+
+    	<Code
+    		code={[
+    			"enum Color {",
+    			"\tRed,",
+    			"\tBlue,",
+    			"\tDarkBlue,",
+    			"}",
+    			"",
+    			"enum UserRole {",
+    			"\tAdminUser",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why PascalCase?
+
+<CardGrid stagger>
+	<Card title="TS Conventions" icon="list-format">
+		Aligns with the official TypeScript style guide and community standards.
+	</Card>
+	<Card title="IDE Clarity" icon="bolt">
+		Makes it easier to distinguish types and enums from regular variables in autocomplete.
+	</Card>
+	<Card title="Readability" icon="magnifier">
+		`HttpStatus.NotFound` is easier to read than `HTTP_STATUS.NOT_FOUND` or `status_codes.not_found`.
+	</Card>
+</CardGrid>
+
+## Conversion Guide
+
+<Steps>
+1. **Acronyms**
+   Treat acronyms as single words (e.g., `HttpStatus`, not `HTTPStatus`).
+
+2. **Snake Case**
+   Remove underscores and capitalize the letter following them (e.g., `user_role` → `UserRole`).
+
+3. **Screaming Snake Case**
+   Convert to lower case and then to PascalCase (e.g., `MAX_RETRIES` → `MaxRetries`).
+
+{/* oxfmt-ignore */}
+
+</Steps>
 
 ## Related Rules
 
-- [prefer-singular-enums](/rules/prefer-singular-enums/) - Enforces singular enum names
-- [prefer-module-scope-constants](/rules/prefer-module-scope-constants/) - Constants use SCREAMING_SNAKE_CASE
-- [no-shorthand-names](/rules/no-shorthand-names/) - Enforces descriptive names
+<CardGrid>
+	<LinkCard
+		title="prefer-singular-enums"
+		description="Ensure enum names are singular"
+		href="/rules/prefer-singular-enums/"
+	/>
+	<LinkCard
+		title="prefer-module-scope-constants"
+		description="SCREAMING_SNAKE_CASE rules"
+		href="/rules/prefer-module-scope-constants/"
+	/>
+</CardGrid>
 
 ## Further Reading
 
-- [TypeScript Enum Documentation](https://www.typescriptlang.org/docs/handbook/enums.html)
-- [TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html#enums)
-- [Naming Conventions](https://github.com/basarat/typescript-book/blob/master/docs/styleguide/styleguide.md#enum)
+<CardGrid>
+	<LinkCard
+		title="TS Style Guide: Enums"
+		description="Google's TypeScript style guide for enums"
+		href="https://google.github.io/styleguide/tsguide.html#enums"
+	/>
+</CardGrid>

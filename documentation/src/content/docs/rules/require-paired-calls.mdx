@@ -1,301 +1,122 @@
 ---
 title: require-paired-calls
+badge:
+    text: Safety
+    variant: danger
+description:
+    Enforces that paired function calls (opener/closer) are properly balanced across all execution paths with LIFO
+    ordering.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Enforces that paired function calls (opener/closer) are properly balanced across all execution paths with LIFO (Last In, First Out) ordering.
+Enforces that paired function calls are properly balanced.
 
-## Rule Details
+## Rule Details :badge[Safety]{variant=danger}
 
-This rule ensures resource management patterns like profiling markers, database transactions, and locks are properly paired. It validates that:
+This rule ensures that resource management patterns like profiling markers, database transactions, and mutex locks are
+properly paired. It validates that every "opener" (e.g., `debug.profilebegin`) has exactly one matching "closer" (e.g.,
+`debug.profileend`) and that they occur in the correct LIFO (Last In, First Out) order.
 
-1. Every opener has a matching closer
-2. Closers are called in LIFO order (like stack unwinding)
-3. All code paths include the closer (no early returns without cleanup)
-4. Optional sync requirements prevent async operations between pairs
+<Aside type="danger" title="Resource Leaks">
+	Unpaired calls are a major source of memory leaks, deadlocks, and corrupted engine states. This rule ensures your
+	resources are always cleaned up, even in complex branching logic.
+</Aside>
 
-## Options
+## Resource Management Workflow
 
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/require-paired-calls": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"pairs": [',
-		"\t\t\t\t{",
-		'\t\t\t\t\t"opener": "debug.profilebegin",',
-		'\t\t\t\t\t"closer": "debug.profileend",',
-		'\t\t\t\t\t"alternatives": ["db.rollback"],',
-		'\t\t\t\t\t"requireSync": true,',
-		'\t\t\t\t\t"platform": "roblox",',
-		'\t\t\t\t\t"yieldingFunctions": ["task.wait", "*.WaitForChild"],',
-		"\t\t\t\t},",
-		"\t\t\t],",
-		'\t\t\t"allowConditionalClosers": false,',
-		'\t\t\t"allowMultipleOpeners": true,',
-		'\t\t\t"maxNestingDepth": 0,',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-0-f3izkr"
-/>
+<Steps>
+1. **Initialize Opening**
+   Call your opener function (e.g., `db.begin()`).
 
-### Pair Configuration
+2. **Wrap in Try-Finally** Use a `try...finally` block. This is the only way to guarantee the closer runs even if an
+   error occurs.
 
-- **opener** (required): Function name that starts the paired operation
-- **openerAlternatives** (optional): Additional opener names sharing the same closer
-- **closer** (required): Function name(s) that close the operation (string or array)
-- **alternatives** (optional): Alternative closers for error paths (e.g., rollback)
-- **requireSync** (optional): Disallow `await`/`yield` between opener and closer
-- **platform** (optional): Platform-specific behavior (`"roblox"`)
-- **yieldingFunctions** (optional): Patterns for Roblox yielding functions (supports wildcards like `*.WaitForChild`)
+3. **Perform Action** Execute your business logic inside the `try` block.
 
-### Top-Level Options
+4. **Guaranteed Cleanup** Place your closer function (e.g., `db.end()`) inside the `finally` block to ensure it always
+   executes.
 
-- **pairs** (required): Array of pair configurations
-- **allowConditionalClosers** (optional): Allow closers in some but not all branches
-- **allowMultipleOpeners** (optional): Allow consecutive opener calls without closers
-- **maxNestingDepth** (optional): Maximum nesting depth (0 = unlimited)
+{/* oxfmt-ignore */}
+
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Unbalanced Pairs
+		Bans patterns where an early return or error could skip the cleaning phase.
 
-<Code
-	code={[
-		"// Missing closer on early return",
-		"function test() {",
-		'\tdebug.profilebegin("task");',
-		"\tif (error) return; // Never closed!",
-		"\tdebug.profileend();",
-		"}",
-		"",
-		"// Wrong LIFO order",
-		"function test() {",
-		'\tdebug.profilebegin("outer");',
-		'\tdebug.profilebegin("inner");',
-		"\tdebug.profileend(); // closes inner",
-		"\t// outer is never closed",
-		"}",
-		"",
-		"// Async operation with requireSync",
-		"async function test() {",
-		'\tdebug.profilebegin("task");',
-		'\tawait fetch("/api"); // Violates requireSync',
-		"\tdebug.profileend();",
-		"}",
-		"",
-		"// Closer in only one branch",
-		"function test() {",
-		'\tdebug.profilebegin("task");',
-		"\tif (condition) {",
-		"\t\tdebug.profileend();",
-		"\t}",
-		"\t// Missing closer on else branch",
-		"}",
-		"",
-		"// Roblox: yielding call between pairs",
-		"function test() {",
-		'\tdebug.profilebegin("task");',
-		"\ttask.wait(1); // Yields, breaks sync requirement",
-		"\tdebug.profileend();",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="missing-closer-on-ea-1xaz48"
-/>
+    	<Code
+    		code={[
+    			"function test() {",
+    			'\tdebug.profilebegin("calculation");',
+    			"\tif (isInputInvalid()) {",
+    			"\t\t// ❌ ERROR: Function ends without profileend()!",
+    			"\t\treturn;",
+    			"\t}",
+    			"\tdebug.profileend();",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Balanced Execution
+    	Use LIFO order and ensure every path out of the function hits a closer.
 
-### ✅ Correct
+    	<Code
+    		code={[
+    			"function test() {",
+    			'\tdebug.profilebegin("calculation");',
+    			"\ttry {",
+    			"\t\trunComplexCalculation();",
+    			"\t} finally {",
+    			"\t\t// ✅ Guaranteed to run",
+    			"\t\tdebug.profileend();",
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"// Simple pairing",
-		"function test() {",
-		'\tdebug.profilebegin("task");',
-		"\tdoWork();",
-		"\tdebug.profileend();",
-		"}",
-		"",
-		"// Proper LIFO nesting",
-		"function test() {",
-		'\tdebug.profilebegin("outer");',
-		'\tdebug.profilebegin("inner");',
-		"\tdebug.profileend(); // closes inner",
-		"\tdebug.profileend(); // closes outer",
-		"}",
-		"",
-		"// Try-finally ensures closer on all paths",
-		"function test() {",
-		'\tdebug.profilebegin("task");',
-		"\ttry {",
-		"\t\triskyOperation();",
-		"\t} finally {",
-		"\t\tdebug.profileend();",
-		"\t}",
-		"}",
-		"",
-		"// Alternative closer for error path",
-		"async function test() {",
-		"\tawait db.transaction();",
-		"\ttry {",
-		'\t\tawait db.query("INSERT ...");',
-		"\t\tawait db.commit();",
-		"\t} catch {",
-		"\t\tawait db.rollback(); // Alternative closer",
-		"\t}",
-		"}",
-		"",
-		"// Multiple openers with allowMultipleOpeners",
-		"function test() {",
-		'\tdebug.profilebegin("task1");',
-		'\tdebug.profilebegin("task2");',
-		"\tdebug.profileend();",
-		"\tdebug.profileend();",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="simple-pairing-1jji1e"
-/>
+</Tabs>
 
-## Real-World Examples
+## Common Used Pairs
 
-### Database Transactions
-
-<Code
-	code={[
-		"{",
-		'  "pairs": [{',
-		'    "opener": "db.transaction",',
-		'    "closer": "db.commit",',
-		'    "alternatives": ["db.rollback"]',
-		"  }]",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-3-31akcy"
-/>
-
-<Code
-	code={[
-		"async function updateUser(id: number, data: UserData) {",
-		"\tawait db.transaction();",
-		"\ttry {",
-		'\t\tawait db.query("UPDATE users SET ...", data);',
-		"\t\tawait db.commit();",
-		"\t} catch (error) {",
-		"\t\tawait db.rollback();",
-		"\t\tthrow error;",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="async-function-updat-2w6jds"
-/>
-
-### Lock Acquire/Release
-
-<Code
-	code={[
-		"{",
-		'  "pairs": [{',
-		'    "opener": "lock.acquire",',
-		'    "closer": ["lock.release", "lock.free"]',
-		"  }]",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-5-121dxd"
-/>
-
-<Code
-	code={[
-		"async function criticalSection() {",
-		"\tawait lock.acquire();",
-		"\ttry {",
-		"\t\tawait modifySharedResource();",
-		"\t} finally {",
-		"\t\tlock.release();",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="async-function-criti-owcvcz"
-/>
-
-### Roblox Iris UI
-
-<Code
-	code={[
-		"{",
-		'  "pairs": [{',
-		'    "opener": "Iris.CollapsingHeader",',
-		'    "openerAlternatives": ["Iris.Window", "Iris.TreeNode", "Iris.Table"],',
-		'    "closer": "Iris.End",',
-		'    "platform": "roblox",',
-		'    "requireSync": true',
-		"  }]",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-7-2foexk"
-/>
-
-<Code
-	code={[
-		"function renderUI() {",
-		'\tif (Iris.CollapsingHeader("Section")) {',
-		'\t\tIris.Text("Content");',
-		"\t\tIris.End();",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="function-renderui-1c9gx7"
-/>
-
-## Platform-Specific Behavior
-
-### Roblox Platform
-
-When `platform: "roblox"` is set, the rule detects yielding functions that break synchronous execution:
-
-- Built-in: `task.wait`, `wait`
-- Patterns: `*.WaitForChild`, `*.WaitFor*`
-- Custom patterns via `yieldingFunctions` option
-
-<Code
-	code={[
-		"// Violates Roblox sync requirement",
-		"function badCode() {",
-		'\tdebug.profilebegin("task");',
-		'\tconst part = workspace.WaitForChild("Part"); // Yields!',
-		"\tdebug.profileend();",
-		"}",
-		"",
-		"// Correct: no yielding",
-		"function goodCode() {",
-		'\tdebug.profilebegin("task");',
-		'\tconst part = workspace.FindFirstChild("Part");',
-		"\tdebug.profileend();",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="violates-roblox-sync-kh47v2"
-/>
-
-## When Not To Use It
-
-If your codebase doesn't use paired resource management patterns, this rule isn't applicable. Disable it or configure specific pairs for your use case.
+<CardGrid stagger>
+	<Card title="Profiling" icon="bolt">
+		`debug.profilebegin` and `debug.profileend` for Roblox MicroProfiler.
+	</Card>
+	<Card title="Transactions" icon="list-format">
+		`db.transaction` and `db.commit` for database integrity.
+	</Card>
+	<Card title="Locking" icon="rocket">
+		`mutex.lock` and `mutex.unlock` to prevent race conditions.
+	</Card>
+	<Card title="UI Layout" icon="setting">
+		`Iris.Window` and `Iris.End` for immediate mode GUI libraries.
+	</Card>
+</CardGrid>
 
 ## Related Rules
 
-- [react-hooks-strict-return](/rules/react-hooks-strict-return/) - Enforces hook return value patterns
+<CardGrid>
+	<LinkCard
+		title="no-async-constructor"
+		description="Prevents race conditions in setup"
+		href="/rules/no-async-constructor/"
+	/>
+</CardGrid>
 
 ## Further Reading
 
-- [Resource Acquisition Is Initialization (RAII)](https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization)
-- [Roblox Profiling Best Practices](https://create.roblox.com/docs/scripting/performance-optimization/profiling)
+<CardGrid>
+	<LinkCard
+		title="Resource Management (RAII)"
+		description="General software patterns for resource safety"
+		href="https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization"
+	/>
+</CardGrid>

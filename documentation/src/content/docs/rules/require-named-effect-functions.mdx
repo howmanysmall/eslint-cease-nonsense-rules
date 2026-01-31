@@ -1,336 +1,130 @@
 ---
 title: require-named-effect-functions
+badge:
+    text: Best Practice
+    variant: caution
+description: Enforce named effect functions for better debuggability. Prevent inline arrow functions in useEffect and similar hooks.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Enforce named effect functions for better debuggability. Prevent inline arrow functions in `useEffect` and similar hooks.
+Enforce named effect functions for better debuggability.
 
-## Rule Details
+## Rule Details :badge[Best Practice]{variant=caution}
 
-Inline arrow functions in `useEffect` make debugging difficult because:
+Inline arrow functions in hooks like `useEffect` are convenient but problematic. Stack traces show them as `(anonymous)`, DevTools cannot label them helpfully, and complex logic becomes hard to read. This rule requires that effect callbacks have a name, either as a separate function definition or a named function expression.
 
-- Stack traces show "anonymous" instead of meaningful names
-- DevTools can't display helpful function names
-- Code is harder to test in isolation
+<Aside type="tip" title="Self-Documenting Effects">
+	`useEffect(onUserIdChange, [userId])` is immediately understandable, whereas
+	`useEffect(() => { ... }, [userId])` requires reading the implementation to understand the
+	intent.
+</Aside>
 
-This rule enforces using named functions (either identifiers or named function expressions) as effect callbacks.
+## Refactoring Workflow
 
-## Options
+<Steps>
+1. **Identify Anonymous Hooks**
+   Locate `useEffect`, `useLayoutEffect`, or `useInsertionEffect` calls that use inline arrow functions.
 
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/require-named-effect-functions": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"environment": "roblox-ts", // or "standard"',
-		'\t\t\t"hooks": ["useEffect", "useLayoutEffect", "useInsertionEffect"],',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-0-3spv8d"
-/>
+2. **Extract Logic** Move the function body into a named function defined above the hook call.
 
-### Configuration Parameters
+3. **Name the Action** Choose a name that describes _why_ the effect is running (e.g., `onMount`, `onDataUpdate`, `clearTimers`).
 
-- **environment** (default: `"roblox-ts"`):
-    - `"roblox-ts"`: Only identifiers allowed (strictest)
-    - `"standard"`: Identifiers and named function expressions allowed
-- **hooks** (default: `["useEffect", "useLayoutEffect", "useInsertionEffect"]`): Effect hooks to check
+4. **Replace with Identifier** Pass the function by name to the hook: `useEffect(onMount, [])`.
 
-## Behavior by Environment
+{/* oxfmt-ignore */}
 
-### `roblox-ts` Mode (Default)
-
-Only identifiers are allowed - function must be defined separately:
-
-<Code
-	code={["// ✅ Only allowed pattern", "function onMount() {", "\tdoThing();", "}", "useEffect(onMount, []);"].join(
-		"\n",
-	)}
-	lang="typescript"
-	key="only-allowed-pattern-3vcpcg"
-/>
-
-### `standard` Mode
-
-Both identifiers and named function expressions are allowed:
-
-<Code
-	code={[
-		"// ✅ Identifier",
-		"function onMount() {",
-		"\tdoThing();",
-		"}",
-		"useEffect(onMount, []);",
-		"",
-		"// ✅ Named function expression",
-		"useEffect(function onMount() {",
-		"\tdoThing();",
-		"}, []);",
-	].join("\n")}
-	lang="typescript"
-	key="identifier-2rgxt3"
-/>
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Anonymous Callbacks
+		Bans inline arrow functions that hide intent and clutter stack traces.
 
-<Code
-	code={[
-		"// Arrow function",
-		"useEffect(() => {",
-		"\tdoThing();",
-		"}, [dep]);",
-		"",
-		"// Anonymous function expression",
-		"useEffect(",
-		"\tfunction () {",
-		"\t\tdoThing();",
-		"\t},",
-		"\t[dep],",
-		");",
-		"",
-		"// Inline arrow with dep",
-		"useEffect(() => {",
-		"\tfetchData(userId);",
-		"}, [userId]);",
-	].join("\n")}
-	lang="typescript"
-	key="arrow-function-3rfcyb"
-/>
+    	<Code
+    		code={[
+    			"// Arrow function",
+    			"useEffect(() => {",
+    			"\tfetchData();",
+    			"}, [id]);",
+    			"",
+    			"// Anonymous expression",
+    			"useLayoutEffect(function() {",
+    			"\tcalculateLayout();",
+    			"}, []);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Named Effect Functions
+    	Use descriptive names to label your side effects.
 
-### ✅ Correct (roblox-ts mode)
+    	<Code
+    		code={[
+    			"function onDataUpdate() {",
+    			"\tfetchData();",
+    			"}",
+    			"useEffect(onDataUpdate, [id]);",
+    			"",
+    			"// Named function expression (allowed in 'standard' mode)",
+    			"useLayoutEffect(function initializeUI() {",
+    			"\tcalculateLayout();",
+    			"}, []);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"// Named function identifier",
-		"function onDepChange() {",
-		"\tdoThing();",
-		"}",
-		"useEffect(onDepChange, [dep]);",
-		"",
-		"// With dependency",
-		"function onUserIdChange() {",
-		"\tfetchData(userId);",
-		"}",
-		"useEffect(onUserIdChange, [userId]);",
-	].join("\n")}
-	lang="typescript"
-	key="named-function-ident-2wrjmn"
-/>
+</Tabs>
 
-### ✅ Correct (standard mode)
+## Why named functions?
 
-<Code
-	code={[
-		"// Named function identifier",
-		"function onDepChange() {",
-		"\tdoThing();",
-		"}",
-		"useEffect(onDepChange, [dep]);",
-		"",
-		"// Named function expression (also allowed in standard mode)",
-		"useEffect(",
-		"\tfunction onDepChange() {",
-		"\t\tdoThing();",
-		"\t},",
-		"\t[dep],",
-		");",
-	].join("\n")}
-	lang="typescript"
-	key="named-function-ident-18dj8v"
-/>
+<CardGrid stagger>
+	<Card title="Stack Traces" icon="list-format">
+		Errors will explicitly mention your function name instead of the generic `(anonymous)`.
+	</Card>
+	<Card title="DevTools" icon="bolt">
+		The React Developer Tools can correctly label hooks in the component tree.
+	</Card>
+	<Card title="Testability" icon="rocket">
+		Extracted functions can be exported and unit tested in isolation from the component.
+	</Card>
+	<Card title="Readability" icon="magnifier">
+		The component's top-level structure becomes a list of clearly-named side effects.
+	</Card>
+</CardGrid>
 
-## Why Named Functions?
+## Environment Modes
 
-### Better Stack Traces
-
-<Code
-	code={[
-		'// Anonymous - stack trace shows "(anonymous)"',
-		"useEffect(() => {",
-		'\tthrow new Error("oops");',
-		"}, []);",
-		"",
-		'// Named - stack trace shows "onMount"',
-		"function onMount() {",
-		'\tthrow new Error("oops");',
-		"}",
-		"useEffect(onMount, []);",
-	].join("\n")}
-	lang="typescript"
-	key="anonymous-stack-trac-n4fefq"
-/>
-
-### DevTools Display
-
-<Code
-	code={[
-		'// DevTools shows: "useEffect(anonymous)"',
-		"useEffect(() => {}, []);",
-		"",
-		'// DevTools shows: "useEffect(onMount)"',
-		"useEffect(onMount, []);",
-	].join("\n")}
-	lang="javascript"
-	key="devtools-shows-useef-1tjiaj"
-/>
-
-### Testability
-
-<Code
-	code={[
-		"// Can't test in isolation",
-		"useEffect(() => {",
-		"\tcomplexLogic();",
-		"\tmoreLogic();",
-		"}, [dep]);",
-		"",
-		"// Can test separately",
-		"export function onDepChange() {",
-		"\tcomplexLogic();",
-		"\tmoreLogic();",
-		"}",
-		"useEffect(onDepChange, [dep]);",
-		"",
-		"// In tests",
-		'test("onDepChange handles X correctly", () => {',
-		"\tonDepChange();",
-		"\texpect(/* ... */);",
-		"});",
-	].join("\n")}
-	lang="typescript"
-	key="can-t-test-in-isolat-34n0ma"
-/>
-
-### Self-Documentation
-
-<Code
-	code={[
-		"// What does this do?",
-		"useEffect(() => {",
-		"\tfetchUser(userId);",
-		"\tupdateUI();",
-		"}, [userId]);",
-		"",
-		"// Clear intent",
-		"function onUserIdChange() {",
-		"\tfetchUser(userId);",
-		"\tupdateUI();",
-		"}",
-		"useEffect(onUserIdChange, [userId]);",
-	].join("\n")}
-	lang="typescript"
-	key="what-does-this-do-1qmeq4"
-/>
-
-## Naming Conventions
-
-Use descriptive names that indicate when the effect runs:
-
-<Code
-	code={[
-		"// Describe the trigger",
-		"function onMount() {}",
-		"function onUnmount() {}",
-		"function onUserIdChange() {}",
-		"function onDependencyUpdate() {}",
-		"",
-		"// Describe the action (if trigger is obvious)",
-		"function fetchUserData() {}",
-		"function subscribeToUpdates() {}",
-		"function initializeWidget() {}",
-	].join("\n")}
-	lang="typescript"
-	key="describe-the-trigger-2su90t"
-/>
-
-## Pattern: Effect with Cleanup
-
-<Code
-	code={[
-		"function subscribeToUpdates() {",
-		"\tconst subscription = subscribe(userId);",
-		"",
-		"\t// Return cleanup function",
-		"\treturn function cleanup() {",
-		"\t\tsubscription.unsubscribe();",
-		"\t};",
-		"}",
-		"",
-		"useEffect(subscribeToUpdates, [userId]);",
-	].join("\n")}
-	lang="typescript"
-	key="function-subscribeto-rzg8t6"
-/>
-
-Or with named cleanup:
-
-<Code
-	code={[
-		"function subscribeToUpdates() {",
-		"\tconst subscription = subscribe(userId);",
-		"\treturn () => subscription.unsubscribe();",
-		"}",
-		"",
-		"// Better: named cleanup",
-		"function onUserIdChange() {",
-		"\tconst subscription = subscribe(userId);",
-		"",
-		"\tfunction cleanup() {",
-		"\t\tsubscription.unsubscribe();",
-		"\t}",
-		"",
-		"\treturn cleanup;",
-		"}",
-		"",
-		"useEffect(onUserIdChange, [userId]);",
-	].join("\n")}
-	lang="typescript"
-	key="function-subscribeto-3wubp1"
-/>
-
-## Multiple Effects
-
-Name functions to indicate their specific purpose:
-
-<Code
-	code={[
-		"function initializeWidget() {",
-		"\t/* ... */",
-		"}",
-		"useEffect(initializeWidget, []);",
-		"",
-		"function onUserIdChange() {",
-		"\t/* ... */",
-		"}",
-		"useEffect(onUserIdChange, [userId]);",
-		"",
-		"function onThemeChange() {",
-		"\t/* ... */",
-		"}",
-		"useEffect(onThemeChange, [theme]);",
-	].join("\n")}
-	lang="typescript"
-	key="function-initializew-35fvxv"
-/>
-
-## When Not To Use It
-
-If you prefer inline arrow functions for simple effects or don't care about stack trace clarity, you can disable this rule. However, named functions are generally recommended for maintainability.
+| Mode        | Description                                                                     |
+| :---------- | :------------------------------------------------------------------------------ |
+| `roblox-ts` | Only identifiers allowed. Very strict and clean.                                |
+| `standard`  | Both identifiers and named function expressions (`function name() {}`) allowed. |
 
 ## Related Rules
 
-- [use-exhaustive-dependencies](/rules/use-exhaustive-dependencies/) - Ensures correct dependency arrays
-- [use-hook-at-top-level](/rules/use-hook-at-top-level/) - Enforces hook placement rules
+<CardGrid>
+	<LinkCard
+		title="use-exhaustive-dependencies"
+		description="Ensures correct dependency arrays"
+		href="/rules/use-exhaustive-dependencies/"
+	/>
+	<LinkCard
+		title="use-hook-at-top-level"
+		description="Enforces hook placement rules"
+		href="/rules/use-hook-at-top-level/"
+	/>
+</CardGrid>
 
 ## Further Reading
 
-- [useEffect Documentation](https://react.dev/reference/react/useEffect)
-- [React DevTools](https://react.dev/learn/react-developer-tools)
-- [Debugging React](https://react.dev/learn/debugging)
+<CardGrid>
+	<LinkCard
+		title="useEffect Reference"
+		description="Official React documentation for side effects"
+		href="https://react.dev/reference/react/useEffect"
+	/>
+</CardGrid>

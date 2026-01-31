@@ -1,409 +1,120 @@
 ---
 title: no-identity-map
+badge:
+    text: Maintenance
+    variant: note
+description: Bans pointless identity .map() calls that return the parameter unchanged. Prevents wasteful array clones.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Bans pointless identity `.map()` calls that return the parameter unchanged.
+Bans pointless identity `.map()` calls.
 
-## Rule Details
+## Rule Details :badge[Maintenance]{variant=note}
 
-Identity map operations (`array.map(x => x)`) are redundant and should be removed. For arrays, use proper cloning methods. For Bindings, use the original binding directly. This rule detects identity callbacks and provides automatic fixes.
+This rule flags `.map()` calls where the callback function simply returns the input argument without any modification.
+These calls are redundant and negatively impact performance by creating unnecessary array copies and executing useless
+callbacks.
 
-## Options
+<Aside type="caution" title="Performance Impact">
+	Every `.map()` call creates a new array and iterates over the entire collection. Identity maps
+	like `items.map(x => x)` waste CPU cycles and memory for a 1-to-1 shallow copy.
+</Aside>
 
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/no-identity-map": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"bindingPatterns": ["binding"], // Case-insensitive patterns',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-0-2uou37"
-/>
+## Refactoring Steps
 
-### Configuration Parameters
+<Steps>
+1. **Analyze Purpose**
+   Determine if the `.map(x => x)` was intended to create a shallow copy or if it's completely redundant.
 
-- **bindingPatterns** (default: `["binding"]`): Variable name patterns to recognize as Bindings (case-insensitive)
+2. **Remove Redundancy** If the copy isn't needed, simply remove the `.map()` call and use the original variable.
+
+3. **Use Spread for Copies** If a shallow copy IS required, use the spread operator `[...original]` which is more
+   idiomatic and performant.
+
+4. **Verify Type Assertions** If mapping was used for a type cast (e.g., `x => x as Type`), move the assertion to the
+   entire array instead: `original as Type[]`.
+
+{/* oxfmt-ignore */}
+
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Identity Maps
+		Bans patterns that return the item unchanged.
 
-<Code
-	code={[
-		"// Identity map on Binding",
-		"const result = scaleBinding.map((value) => value);",
-		"",
-		"// Arrow function with block",
-		"const data = myBinding.map((x) => {",
-		"\treturn x;",
-		"});",
-		"",
-		"// Function expression",
-		"const output = someBinding.map(function (item) {",
-		"\treturn item;",
-		"});",
-		"",
-		"// Identity map on Array",
-		"const copied = items.map((item) => item);",
-		"const users = userList.map((user) => user);",
-	].join("\n")}
-	lang="typescript"
-	key="identity-map-on-bind-x1h0ro"
-/>
+    	<Code
+    		code={[
+    			"// Array identity map",
+    			"const copied = items.map((item) => item);",
+    			"",
+    			"// Binding identity map (roblox-ts)",
+    			"const level = healthBinding.map((h) => h);",
+    			"",
+    			"// Block syntax identity",
+    			"const list = data.map((x) => {",
+    			"\treturn x;",
+    			"});",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Efficient Alternatives
+    	Use the original reference if no change is needed, or use proper cloning methods.
 
-### ✅ Correct
+    	<Code
+    		code={[
+    			"// Just use the original",
+    			"const result = items;",
+    			"",
+    			"// Use spread for shallow copy",
+    			"const copied = [...items];",
+    			"",
+    			"// Proper transformation",
+    			"const doubled = numbers.map((n) => n * 2);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"// Bindings - use directly",
-		"const result = scaleBinding;",
-		"const data = myBinding;",
-		"",
-		"// Arrays - use proper cloning",
-		"const copied = table.clone(items);",
-		"const copied2 = [...items];",
-		"",
-		"// Actual transformations are fine",
-		"const doubled = items.map((x) => x * 2);",
-		"const names = users.map((user) => user.name);",
-	].join("\n")}
-	lang="typescript"
-	key="bindings-use-directl-122v2i"
-/>
+</Tabs>
 
-## Auto-Fix Behavior
+## Why is this wasteful?
 
-This rule provides automatic fixes that remove the pointless `.map()` call:
-
-<Code
-	code={[
-		"// Before:",
-		"const result = myBinding.map((x) => x);",
-		"",
-		"// After (auto-fixed):",
-		"const result = myBinding;",
-	].join("\n")}
-	lang="typescript"
-	key="before-3om981"
-/>
-
-## Binding Detection
-
-The rule uses multiple strategies to detect Bindings:
-
-### 1. Variable Name Patterns
-
-Case-insensitive matching against configured patterns:
-
-<Code
-	code={[
-		"{",
-		'\t"bindingPatterns": ["binding", "signal"],',
-		"}",
-		"",
-		"// All detected as Bindings:",
-		"const scaleBinding = ...",
-		"const positionbinding = ...",
-		"const mySignal = ...",
-		"const dataSignal = ...",
-	].join("\n")}
-	lang="typescript"
-	key="block-4-1zdgpz"
-/>
-
-### 2. Initialization Analysis
-
-Detects Bindings by looking at how they're created:
-
-<Code
-	code={[
-		"// Detected as Binding",
-		"const myBinding = useBinding(0);",
-		"const joined = joinBindings(a, b);",
-		"const mapped = otherBinding.map((x) => x * 2);",
-	].join("\n")}
-	lang="typescript"
-	key="detected-as-binding-p93w3e"
-/>
-
-### 3. Chained Map Calls
-
-<Code
-	code={[
-		"// Detected as Binding (chained from another map)",
-		"const doubled = binding.map((x) => x * 2);",
-		"const identity = doubled.map((x) => x); // ❌ Flagged",
-	].join("\n")}
-	lang="typescript"
-	key="detected-as-binding--zi1ao5"
-/>
-
-## Message Types
-
-The rule provides context-specific messages:
-
-### For Bindings
-
-<Code
-	code={[
-		"const result = myBinding.map((x) => x);",
-		"// Error: Pointless identity `.map()` call on Binding. Use the original binding directly.",
-	].join("\n")}
-	lang="typescript"
-	key="const-result-mybindi-1ryvvc"
-/>
-
-### For Arrays
-
-<Code
-	code={[
-		"const copied = items.map((x) => x);",
-		"// Error: Pointless identity `.map()` call on Array. Use `table.clone(array)` or `[...array]` instead.",
-	].join("\n")}
-	lang="typescript"
-	key="const-copied-items-m-20jwbb"
-/>
-
-## Identity Callback Detection
-
-The rule recognizes these identity patterns:
-
-### Arrow Functions
-
-<Code
-	code={[
-		"// All detected as identity:",
-		"array.map((x) => x);",
-		"array.map((item) => item);",
-		"array.map((value) => value);",
-		"",
-		"// With block syntax:",
-		"array.map((x) => {",
-		"\treturn x;",
-		"});",
-	].join("\n")}
-	lang="typescript"
-	key="all-detected-as-iden-3ii9cx"
-/>
-
-### Function Expressions
-
-<Code
-	code={["// Detected as identity:", "array.map(function (x) {", "\treturn x;", "});"].join("\n")}
-	lang="typescript"
-	key="detected-as-identity-6e9ouw"
-/>
-
-### Not Detected
-
-These are NOT considered identity operations:
-
-<Code
-	code={[
-		"// Transformation",
-		"array.map((x) => x * 2);",
-		"array.map((x) => x.property);",
-		"",
-		"// Multiple parameters",
-		"array.map((x, index) => x);",
-		"",
-		"// Block with additional logic",
-		"array.map((x) => {",
-		"\tconsole.log(x);",
-		"\treturn x;",
-		"});",
-	].join("\n")}
-	lang="typescript"
-	key="transformation-2hwwub"
-/>
-
-## Common Use Cases
-
-### Array Cloning
-
-<Code
-	code={[
-		"// ❌ Bad - inefficient and unclear",
-		"const copy = original.map((x) => x);",
-		"",
-		"// ✅ Good - explicit cloning",
-		"const copy = table.clone(original);",
-		"const copy2 = [...original];",
-	].join("\n")}
-	lang="typescript"
-	key="bad-inefficient-and--sf5axv"
-/>
-
-### Binding Passthrough
-
-<Code
-	code={[
-		"// ❌ Bad - unnecessary map",
-		"function MyComponent({ positionBinding }: Props) {",
-		"\tconst localBinding = positionBinding.map((p) => p);",
-		"\treturn <Frame Position={localBinding} />;",
-		"}",
-		"",
-		"// ✅ Good - use directly",
-		"function MyComponent({ positionBinding }: Props) {",
-		"\treturn <Frame Position={positionBinding} />;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="bad-unnecessary-map-1uwx8z"
-/>
-
-### Reactive Programming
-
-<Code
-	code={[
-		"// ❌ Bad",
-		"const doubled = signal.map((x) => x * 2);",
-		"const identity = doubled.map((x) => x); // Pointless!",
-		"",
-		"// ✅ Good - remove identity map",
-		"const doubled = signal.map((x) => x * 2);",
-		"const result = doubled; // Use directly",
-	].join("\n")}
-	lang="typescript"
-	key="bad-1azbha"
-/>
-
-## Edge Cases
-
-### Computed Properties
-
-<Code
-	code={["// Not checked (not simple identity)", "array.map((x) => ({ ...x }));", "array.map((x) => [x]);"].join(
-		"\n",
-	)}
-	lang="typescript"
-	key="not-checked-not-simp-iwscqe"
-/>
-
-### Destructuring
-
-<Code
-	code={["// Not checked (different parameter names)", "array.map(({ id }) => id);"].join("\n")}
-	lang="typescript"
-	key="not-checked-differen-30cba6"
-/>
-
-### Type Assertions
-
-<Code
-	code={[
-		"// ❌ Still detected as identity",
-		"const typed = items.map((x) => x as MyType);",
-		"",
-		"// Use type assertion on the whole result instead:",
-		"const typed = items as MyType[];",
-	].join("\n")}
-	lang="typescript"
-	key="still-detected-as-id-1uaq9v"
-/>
-
-## Performance Considerations
-
-### Arrays
-
-Identity map on arrays creates unnecessary overhead:
-
-<Code
-	code={[
-		"// Performance cost: iterates entire array + creates new array",
-		"const copied = items.map((x) => x);",
-		"",
-		"// Better: O(n) but more explicit and optimized",
-		"const copied = table.clone(items);",
-		"const copied2 = [...items]; // Even clearer intent",
-	].join("\n")}
-	lang="typescript"
-	key="performance-cost-ite-26k9pc"
-/>
-
-### Bindings
-
-Identity map on Bindings is completely pointless:
-
-<Code
-	code={[
-		"// Unnecessary reactive computation",
-		"const identity = binding.map((x) => x);",
-		"",
-		"// Just use the original - no computation",
-		"const same = binding;",
-	].join("\n")}
-	lang="typescript"
-	key="unnecessary-reactive-11db99"
-/>
-
-## When Not To Use It
-
-Disable this rule if:
-
-- You need identity maps for type narrowing in very specific cases
-- You're working with a custom reactive library that has different semantics
-- Identity maps have specific meaning in your framework
-
-## Configuration Examples
-
-### Default Configuration
-
-<Code
-	code={["{", '\t"cease-nonsense/no-identity-map": "error",', "}"].join("\n")}
-	lang="typescript"
-	key="block-20-1ee8ff"
-/>
-
-### Custom Binding Patterns
-
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/no-identity-map": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"bindingPatterns": ["binding", "signal", "observable", "stream"],',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-21-dbn8c3"
-/>
-
-### Multiple Patterns
-
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/no-identity-map": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"bindingPatterns": ["binding", "signal", "ref", "state"],',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-22-fxv0o1"
-/>
+<CardGrid stagger>
+	<Card title="Arrow Overhead" icon="bolt">
+		`x => x` still involves a function call jump for every single element in your array.
+	</Card>
+	<Card title="Allocation" icon="list-format">
+		Creates a whole new array in memory that is identical to the first, doubling heap usage
+		temporarily.
+	</Card>
+	<Card title="Readability" icon="rocket">
+		Code that "does nothing" is confusing to other developers; they'll look for hidden logic
+		where none exists.
+	</Card>
+</CardGrid>
 
 ## Related Rules
 
-- [no-useless-use-spring](/rules/no-useless-use-spring/) - Detects static spring configurations
-- [prefer-pattern-replacements](/rules/prefer-pattern-replacements/) - Optimizes constructor patterns
+<CardGrid>
+	<LinkCard
+		title="prefer-single-world-query"
+		description="Optimizes ECS lookups"
+		href="/rules/prefer-single-world-query/"
+	/>
+</CardGrid>
 
 ## Further Reading
 
-- [Array Cloning Methods](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)
-- [Reactive Programming Patterns](https://www.reactivemanifesto.org/)
-- [Roblox Bindings](https://roblox-ts.com/docs/guides/roact#bindings)
+<CardGrid>
+	<LinkCard
+		title="MDN: Array.map()"
+		description="Documentation for the array map method"
+		href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map"
+	/>
+</CardGrid>

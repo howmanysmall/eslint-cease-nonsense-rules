@@ -1,16 +1,87 @@
 ---
 title: prevent-abbreviations
+badge:
+    text: Clean Code
+    variant: success
+description: Prevent cryptic abbreviations in variable and property names to improve code self-documentation.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Prevent abbreviations in variable and property names.
+Prevent cryptic abbreviations in variable and property names.
 
-## Rule Details
+## Rule Details :badge[Clean Code]{variant=success}
 
-This rule discourages the use of abbreviations in favor of more descriptive names. It provides suggestions for replacements and can automatically fix single-replacement cases.
+This rule discourages the use of abbreviations in favor of more descriptive names. It provides suggestions for replacements and can automatically fix single-replacement cases. By using full words, your code becomes more accessible to contributors and easier to maintain over time.
 
-## Options
+<Aside type="tip" title="Self-Documenting Code">
+	Abbreviations like `fn` or `dist` are ambiguous. Using `function` or `distance` immediately clarifies the purpose of
+	the identifier.
+</Aside>
+
+## Refactoring Steps
+
+<Steps>
+1. **Identify Abbreviations**
+   The linter will flag common abbreviations like `err`, `acc`, or `idx`.
+
+2. **Evaluate Context** Determine the full name that best describes the variable's role (e.g., `error`, `accumulator`, `index`).
+
+3. **Check Allow-List** If an abbreviation is a widely accepted industry standard (like `props` in React), add it to your `allowList` configuration.
+
+4. **Auto-Fix** Run `eslint --fix` to automatically convert simple abbreviations to their full-word equivalents.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Cryptic Names
+		Bans short, ambiguous names that force the reader to guess the meaning.
+
+    	<Code
+    		code={[
+    			"const err = new Error();",
+    			"const fn = () => {};",
+    			"const dist = calculate();",
+    			"const acc = items.reduce(...);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Descriptive Names
+    	Use complete words to make the code readable and professional.
+
+    	<Code
+    		code={[
+    			"const error = new Error();",
+    			"const callback = () => {};",
+    			"const distance = calculate();",
+    			"const accumulator = items.reduce(...);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Configuration Options
+
+<CardGrid stagger>
+	<Card title="checkFilenames" icon="document">
+		Ensures that source files follow the same naming standards (e.g., `util.ts` → `utility.ts`).
+	</Card>
+	<Card title="replacements" icon="setting">
+		Define custom mapping for your domain-specific abbreviations.
+	</Card>
+	<Card title="allowList" icon="approve-check">
+		Permit specific short names that are standard in your framework (e.g., `ref`, `env`).
+	</Card>
+</CardGrid>
 
 <Code
 	code={[
@@ -19,58 +90,32 @@ This rule discourages the use of abbreviations in favor of more descriptive name
 		'\t\t"error",',
 		"\t\t{",
 		'\t\t\t"checkFilenames": true,',
-		'\t\t\t"checkProperties": false,',
-		'\t\t\t"checkVariables": true,',
-		'\t\t\t"replacements": {},',
-		'\t\t\t"allowList": {},',
-		'\t\t\t"ignore": [],',
-		"\t\t},",
-		"\t],",
+		'\t\t\t"allowList": { "props": true, "ref": true }',
+		"\t\t}",
+		"\t]",
 		"}",
 	].join("\n")}
-	lang="typescript"
-	key="block-0-2sb8gx"
+	lang="json"
+	title="eslint.config.js"
 />
-
-### Configuration Parameters
-
-- **checkFilenames** (default: `true`): Check file names for abbreviations.
-- **checkProperties** (default: `false`): Check object properties and method names.
-- **checkVariables** (default: `true`): Check variable names.
-- **replacements**: Custom replacement mappings (e.g., `{ "args": { "arguments": true } }`).
-- **allowList**: List of abbreviations to allow (e.g., `{ "props": true }`).
-- **ignore**: Array of regex patterns or strings to ignore.
-
-## Examples
-
-### ❌ Incorrect
-
-<Code
-	code={["const err = new Error();", "const fn = () => {};", "const dist = calculateDistance();"].join("\n")}
-	lang="typescript"
-	key="const-err-new-error-agajww"
-/>
-
-### ✅ Correct
-
-<Code
-	code={["const error = new Error();", "const func = () => {};", "const distance = calculateDistance();"].join("\n")}
-	lang="typescript"
-	key="const-error-new-erro-3b9kfy"
-/>
-
-## When Not To Use It
-
-If your codebase has established abbreviation conventions (e.g., `req`/`res` for Express handlers) that you want to keep, use the `allowList` option or disable this rule for those files.
-
-## Performance
-
-This rule is optimized with:
-
-- Aggressive caching of word and name replacements
-- Pre-compiled regex patterns
-- Early exits for constants and allow-listed names
 
 ## Related Rules
 
-- `unicorn/prevent-abbreviations` - Original rule (this is a faster replacement)
+<CardGrid>
+	<LinkCard
+		title="no-shorthand-names"
+		description="Bans Roblox-specific shorthands"
+		href="/rules/no-shorthand-names/"
+	/>
+	<LinkCard title="naming-convention" description="General naming standards" href="/rules/naming-convention/" />
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Clean Code: Small Names"
+		description="Principles for choosing readable identifiers"
+		href="https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882"
+	/>
+</CardGrid>

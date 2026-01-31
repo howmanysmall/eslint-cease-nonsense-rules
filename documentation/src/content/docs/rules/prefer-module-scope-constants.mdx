@@ -1,536 +1,116 @@
 ---
 title: prefer-module-scope-constants
+badge:
+    text: Clean Code
+    variant: success
+description:
+    SCREAMING_SNAKE_CASE variables must be const at module scope. Enforces consistent naming and prevents accidental
+    mutations.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
 SCREAMING_SNAKE_CASE variables must be `const` at module scope.
 
-## Rule Details
+## Rule Details :badge[Clean Code]{variant=success}
 
-Variables in SCREAMING_SNAKE_CASE indicate constants that should be defined using `const` at the module (top) level. This rule enforces this convention to maintain consistency and prevent accidental mutations of constant values.
+Variables in `SCREAMING_SNAKE_CASE` indicate global constants that should never change. This rule enforces that such
+variables are defined at the module (top) level using the `const` keyword. This prevents accidental mutations and
+ensures that constants are defined in a way that is easily reusable across the file.
 
-## Options
+<Aside type="tip" title="Naming as a Signal">
+	`SCREAMING_SNAKE_CASE` is a visual signal to other developers that "this value is a fixed constant." Defining it
+	locally or with `let` breaks that mental model.
+</Aside>
 
-This rule has no configuration options.
+## Refactoring Path
+
+<Steps>
+1. **Identify Local Constants**
+   Locate `SCREAMING_SNAKE_CASE` variables defined inside functions, methods, or blocks.
+
+2. **Move to Top Level** Relocate the variable definition to the module scope (outside of any function or class).
+
+3. **Ensure Const Usage** Ensure the variable is defined using `const`. If the value needs to change, it should use
+   `camelCase` instead.
+
+4. **Export if Needed** If the constant is used in multiple files, add the `export` keyword.
+
+{/* oxfmt-ignore */}
+
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Local or Mutable Constants
+		Bans uppercase naming for variables that are local or can be reassigned.
 
-<Code
-	code={[
-		"// Not using const",
-		"let MAX_SIZE = 100;",
-		"var DEFAULT_TIMEOUT = 5000;",
-		"",
-		"// Not at module scope",
-		"function calculate() {",
-		"\tconst PI_SQUARED = 9.87; // Inside function",
-		"}",
-		"",
-		"class Config {",
-		"\tmethod() {",
-		"\t\tconst MAX_RETRIES = 3; // Inside method",
-		"\t}",
-		"}",
-		"",
-		"// Block scope",
-		"if (condition) {",
-		"\tconst ERROR_CODE = 500;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="not-using-const-2rl72a"
-/>
+    	<Code
+    		code={[
+    			"function calculate() {",
+    			"\t// ❌ Local scope constant",
+    			"\tconst PI = 3.14;",
+    			"}",
+    			"",
+    			"// ❌ Mutable screaming snake case",
+    			"let MAX_RETRIES = 3;",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Module-Level Constants
+    	Defined once at the file's root for maximum clarity and reuse.
 
-### ✅ Correct
+    	<Code
+    		code={[
+    			"const PI = 3.14;",
+    			"",
+    			"function calculate(radius: number) {",
+    			"\treturn radius * radius * PI;",
+    			"}",
+    			"",
+    			"// Destructuring is allowed anywhere",
+    			"const { MAX_SIZE } = getConfig();",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"// Module-level const",
-		"const MAX_SIZE = 100;",
-		"const DEFAULT_TIMEOUT = 5000;",
-		'const API_KEY = "secret";',
-		"const ERROR_CODES = {",
-		"\tNOT_FOUND: 404,",
-		"\tSERVER_ERROR: 500,",
-		"};",
-		"",
-		"// Destructuring is allowed anywhere",
-		"function loadConfig() {",
-		"\tconst { MAX_SIZE, DEFAULT_TIMEOUT } = getConfig();",
-		"\treturn { MAX_SIZE, DEFAULT_TIMEOUT };",
-		"}",
-		"",
-		"// Not SCREAMING_SNAKE_CASE - rule doesn't apply",
-		"const maxSize = 100; // camelCase",
-		"const MaxSize = 100; // PascalCase",
-	].join("\n")}
-	lang="typescript"
-	key="module-level-const-31cegw"
-/>
+</Tabs>
 
-## Why This Rule Exists
+## Why use module scope?
 
-### 1. Naming Convention Clarity
-
-SCREAMING_SNAKE_CASE signals "this is a constant":
-
-<Code
-	code={[
-		"// ❌ Confusing - looks like constant but can change",
-		"let MAX_CONNECTIONS = 10;",
-		"MAX_CONNECTIONS = 20; // Wait, constants can change?",
-		"",
-		"// ✅ Clear - const enforces immutability",
-		"const MAX_CONNECTIONS = 10;",
-		"// MAX_CONNECTIONS = 20; // Error: cannot reassign",
-	].join("\n")}
-	lang="typescript"
-	key="confusing-looks-like-shc84v"
-/>
-
-### 2. Scope Visibility
-
-Constants should be module-level for visibility and reuse:
-
-<Code
-	code={[
-		"// ❌ Hidden in function - can't be reused",
-		"function process() {",
-		"\tconst CHUNK_SIZE = 1024;",
-		"\t// ...",
-		"}",
-		"",
-		"function analyze() {",
-		"\tconst CHUNK_SIZE = 1024; // Duplicated!",
-		"\t// ...",
-		"}",
-		"",
-		"// ✅ Module-level - single source of truth",
-		"const CHUNK_SIZE = 1024;",
-		"",
-		"function process() {",
-		"\t// Use CHUNK_SIZE",
-		"}",
-		"",
-		"function analyze() {",
-		"\t// Use same CHUNK_SIZE",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="hidden-in-function-c-13188v"
-/>
-
-### 3. Prevention of Accidental Mutations
-
-<Code
-	code={[
-		"// ❌ Using let allows accidental changes",
-		'let API_ENDPOINT = "https://api.example.com";',
-		"",
-		"function updateConfig() {",
-		'\tAPI_ENDPOINT = "https://new-api.example.com"; // Oops!',
-		"}",
-		"",
-		"// ✅ const prevents mutations",
-		'const API_ENDPOINT = "https://api.example.com";',
-		"",
-		"function updateConfig() {",
-		'\t// API_ENDPOINT = "..."; // Error!',
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="using-let-allows-acc-3dbqmg"
-/>
-
-## Module Scope Definition
-
-### What is Module Scope?
-
-Module scope includes:
-
-- Top level of a file
-- Global scope (for scripts)
-
-<Code
-	code={[
-		"// ✅ Module scope",
-		"const MAX_SIZE = 100;",
-		"const DEFAULT_COLOR = Color3.fromRGB(255, 0, 0);",
-		"",
-		'export const API_VERSION = "v1";',
-		"",
-		"// ❌ Not module scope",
-		"function example() {",
-		"\tconst NESTED_CONSTANT = 42; // Function scope",
-		"}",
-		"",
-		"class MyClass {",
-		"\tmethod() {",
-		"\t\tconst CLASS_CONSTANT = 100; // Method scope",
-		"\t}",
-		"}",
-		"",
-		"if (true) {",
-		'\tconst BLOCK_CONSTANT = "value"; // Block scope',
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="module-scope-2oqcjw"
-/>
-
-### Script vs Module
-
-<Code
-	code={[
-		"// Script file (no imports/exports)",
-		"// Global scope = module scope",
-		"const MAX_RETRIES = 3; // ✅ OK",
-		"",
-		"// Module file (has imports/exports)",
-		'import { helper } from "./utils";',
-		"",
-		"const DEFAULT_TIMEOUT = 5000; // ✅ Module scope",
-		"",
-		"export function process() {",
-		"\t// ...",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="script-file-no-impor-273rov"
-/>
-
-## Destructuring Exception
-
-Destructuring patterns are allowed at any scope:
-
-<Code
-	code={[
-		"// ✅ Allowed - destructuring pattern",
-		"function loadSettings() {",
-		"\tconst { API_KEY, API_SECRET } = environment;",
-		"\treturn { API_KEY, API_SECRET };",
-		"}",
-		"",
-		"// ✅ Allowed - array destructuring",
-		"function getConstants() {",
-		"\tconst [FIRST, SECOND, THIRD] = values;",
-		"\treturn { FIRST, SECOND, THIRD };",
-		"}",
-		"",
-		"// ✅ Allowed - nested destructuring",
-		"function parseConfig() {",
-		"\tconst {",
-		"\t\tdatabase: { HOST, PORT },",
-		"\t} = config;",
-		"\treturn { HOST, PORT };",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="allowed-destructurin-32rh96"
-/>
-
-**Why**: Destructuring extracts values from external sources; the naming convention still helps identify constants even in local scope.
-
-## Common Patterns
-
-### Configuration Constants
-
-<Code
-	code={[
-		"// ✅ Good - module-level configuration",
-		"const MAX_CONNECTIONS = 100;",
-		"const DEFAULT_TIMEOUT = 5000;",
-		"const RETRY_DELAY = 1000;",
-		'const API_ENDPOINT = "https://api.example.com";',
-		"",
-		"export function createClient() {",
-		"\treturn new Client({",
-		"\t\tmaxConnections: MAX_CONNECTIONS,",
-		"\t\ttimeout: DEFAULT_TIMEOUT,",
-		"\t\tretryDelay: RETRY_DELAY,",
-		"\t\tendpoint: API_ENDPOINT,",
-		"\t});",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="good-module-level-co-iqrlc2"
-/>
-
-### Error Codes
-
-<Code
-	code={[
-		"// ✅ Good - module-level error constants",
-		'const ERROR_NOT_FOUND = "ERR_NOT_FOUND";',
-		'const ERROR_UNAUTHORIZED = "ERR_UNAUTHORIZED";',
-		'const ERROR_SERVER = "ERR_SERVER";',
-		"",
-		"export function handleError(code: string) {",
-		"\tswitch (code) {",
-		"\t\tcase ERROR_NOT_FOUND:",
-		'\t\t\treturn "Resource not found";',
-		"\t\tcase ERROR_UNAUTHORIZED:",
-		'\t\t\treturn "Unauthorized access";',
-		"\t\tcase ERROR_SERVER:",
-		'\t\t\treturn "Server error";',
-		"\t\tdefault:",
-		'\t\t\treturn "Unknown error";',
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="good-module-level-er-1s9onj"
-/>
-
-### Feature Flags
-
-<Code
-	code={[
-		"// ✅ Good - module-level flags",
-		"const ENABLE_NEW_FEATURE = true;",
-		"const ENABLE_BETA_MODE = false;",
-		"const MAX_BETA_USERS = 100;",
-		"",
-		"export function canAccessFeature(user: User): boolean {",
-		"\tif (!ENABLE_NEW_FEATURE) return false;",
-		"\tif (ENABLE_BETA_MODE && user.betaOptIn) return true;",
-		"\treturn user.isAdmin;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="good-module-level-fl-235400"
-/>
-
-## When to Use SCREAMING_SNAKE_CASE
-
-### ✅ Use For
-
-- Configuration values
-- API endpoints
-- Error codes
-- Mathematical/physical constants
-- Feature flags
-- Maximum/minimum limits
-- Default values
-
-<Code
-	code={[
-		'const API_BASE_URL = "https://api.example.com";',
-		"const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB",
-		"const GRAVITY = 9.81;",
-		'const DEFAULT_LANGUAGE = "en";',
-		"const ENABLE_LOGGING = true;",
-	].join("\n")}
-	lang="typescript"
-	key="const-api-base-url-h-1odrv7"
-/>
-
-### ❌ Don't Use For
-
-- Regular variables (use camelCase)
-- Class names (use PascalCase)
-- Enum values (use PascalCase per prefer-pascal-case-enums)
-- Function names
-- Computed or dynamic values
-
-<Code
-	code={[
-		"// ❌ Wrong - use camelCase",
-		'const user_name = "John";',
-		"const current_time = Date.now();",
-		"",
-		"// ✅ Right - use camelCase for regular variables",
-		'const userName = "John";',
-		"const currentTime = Date.now();",
-		"",
-		"// ❌ Wrong - use PascalCase for enums",
-		"enum Status {",
-		"\tACTIVE,",
-		"\tINACTIVE,",
-		"}",
-		"",
-		"// ✅ Right - PascalCase for enum values",
-		"enum Status {",
-		"\tActive,",
-		"\tInactive,",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="wrong-use-camelcase-3a0qnm"
-/>
-
-## Advanced Examples
-
-### Grouped Constants
-
-<Code
-	code={[
-		"// ✅ Good - related constants grouped",
-		"const HTTP_STATUS_OK = 200;",
-		"const HTTP_STATUS_CREATED = 201;",
-		"const HTTP_STATUS_BAD_REQUEST = 400;",
-		"const HTTP_STATUS_NOT_FOUND = 404;",
-		"const HTTP_STATUS_SERVER_ERROR = 500;",
-		"",
-		"// Or as an object (not SCREAMING_SNAKE_CASE)",
-		"const HttpStatus = {",
-		"\tOK: 200,",
-		"\tCREATED: 201,",
-		"\tBAD_REQUEST: 400,",
-		"\tNOT_FOUND: 404,",
-		"\tSERVER_ERROR: 500,",
-		"} as const;",
-	].join("\n")}
-	lang="typescript"
-	key="good-related-constan-2y500y"
-/>
-
-### With Type Annotations
-
-<Code
-	code={[
-		"// ✅ Explicit types for constants",
-		"const MAX_SIZE: number = 1000;",
-		'const DEFAULT_NAME: string = "Unknown";',
-		'const COLORS: ReadonlyArray<string> = ["red", "green", "blue"];',
-		"",
-		"// ✅ as const for literal types",
-		"const STATUS_CODES = {",
-		"\tSUCCESS: 200,",
-		"\tERROR: 500,",
-		"} as const;",
-	].join("\n")}
-	lang="typescript"
-	key="explicit-types-for-c-zvhxtv"
-/>
-
-### Re-exported Constants
-
-<Code
-	code={[
-		"// constants.ts",
-		"export const MAX_RETRIES = 3;",
-		"export const TIMEOUT_MS = 5000;",
-		"",
-		"// config.ts",
-		'import { MAX_RETRIES, TIMEOUT_MS } from "./constants";',
-		"",
-		"export function createConfig() {",
-		"\treturn {",
-		"\t\tretries: MAX_RETRIES,",
-		"\t\ttimeout: TIMEOUT_MS,",
-		"\t};",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="constants-ts-2z0gk6"
-/>
-
-## When Not To Use It
-
-This rule may not be appropriate if:
-
-- Your codebase uses different naming conventions for constants
-- You need function-scoped constants for encapsulation
-- You're working with generated code that violates this convention
-
-## Error Messages
-
-### Must Use Const
-
-<Code
-	code={[
-		"let MAX_SIZE = 100;",
-		"// Error: You must use `const` when defining screaming snake case variables.",
-		"// If this is not a constant, use camelCase instead.",
-	].join("\n")}
-	lang="typescript"
-	key="let-max-size-100-373wn3"
-/>
-
-### Must Be Module Scope
-
-<Code
-	code={[
-		"function example() {",
-		"\tconst MAX_SIZE = 100;",
-		"\t// Error: You must place screaming snake case at module scope.",
-		"\t// If this is not meant to be a module-scoped variable, use camelCase instead.",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="function-example-3qyqzr"
-/>
-
-## Migration Guide
-
-### Step 1: Find All Violations
-
-<Code
-	code={[
-		"# Search for let/var with SCREAMING_SNAKE_CASE",
-		'grep -r "let [A-Z_]* =" src/',
-		'grep -r "var [A-Z_]* =" src/',
-	].join("\n")}
-	lang="bash"
-	key="search-for-let-var-w-1wjhst"
-/>
-
-### Step 2: Move to Module Scope
-
-<Code
-	code={[
-		"// Before:",
-		"function calculate() {",
-		"\tconst PI = 3.14159;",
-		"\treturn radius * radius * PI;",
-		"}",
-		"",
-		"// After:",
-		"const PI = 3.14159;",
-		"",
-		"function calculate() {",
-		"\treturn radius * radius * PI;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="before-25yfsp"
-/>
-
-### Step 3: Change to camelCase if Not Constant
-
-<Code
-	code={[
-		"// Before:",
-		"function process() {",
-		"\tlet CURRENT_INDEX = 0; // This changes!",
-		"\tfor (const item of items) {",
-		"\t\tCURRENT_INDEX++;",
-		"\t}",
-		"}",
-		"",
-		"// After:",
-		"function process() {",
-		"\tlet currentIndex = 0; // camelCase for variables",
-		"\tfor (const item of items) {",
-		"\t\tcurrentIndex++;",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="before-1336ff"
-/>
+<CardGrid stagger>
+	<Card title="Immutability" icon="lock">
+		Using `const` at module scope ensures the value cannot be tampered with at runtime.
+	</Card>
+	<Card title="Reusability" icon="rocket">
+		Top-level constants can be easily exported and shared across your entire project.
+	</Card>
+	<Card title="Readability" icon="list-format">
+		Keeping constants at the top makes it easy for developers to see all configuration values in one place.
+	</Card>
+</CardGrid>
 
 ## Related Rules
 
-- [prefer-pascal-case-enums](/rules/prefer-pascal-case-enums/) - Enforces PascalCase for enums
-- [no-shorthand-names](/rules/no-shorthand-names/) - Enforces descriptive names
+<CardGrid>
+	<LinkCard
+		title="prefer-pascal-case-enums"
+		description="Standardizes enum naming"
+		href="/rules/prefer-pascal-case-enums/"
+	/>
+</CardGrid>
 
 ## Further Reading
 
-- [JavaScript Naming Conventions](https://www.robinwieruch.de/javascript-naming-conventions/)
-- [Const Correctness](https://isocpp.org/wiki/faq/const-correctness)
-- [Clean Code: Meaningful Names](https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882)
+<CardGrid>
+	<LinkCard
+		title="Clean Code: Meaningful Names"
+		description="Principles for constant and variable naming"
+		href="https://google.github.io/styleguide/jsguide.html#naming"
+	/>
+</CardGrid>

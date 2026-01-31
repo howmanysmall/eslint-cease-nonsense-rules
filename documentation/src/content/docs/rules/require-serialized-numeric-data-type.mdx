@@ -1,83 +1,99 @@
 ---
 title: require-serialized-numeric-data-type
+badge:
+    text: Roblox
+    variant: caution
+description:
+    Require specific serialized numeric data types (DataType.*) instead of generic number for ECS components and other
+    serialization contexts.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Require specific serialized numeric data types (`DataType.*`) instead of generic `number` for ECS components and other serialization contexts.
+Require specific numeric data types instead of generic `number`.
 
-## Rule Details
+## Rule Details :badge[Roblox]{variant=caution}
 
-When working with serialization systems like `@rbxts/flamework-binary-serializer`, using the generic `number` type is problematic because the serializer doesn't know which binary representation to use. This rule enforces the use of specific `DataType` variants that explicitly declare the serialization format.
+When working with serialization systems like `@rbxts/flamework-binary-serializer`, the generic `number` type is
+ambiguous. The serializer doesn't know whether to use a small integer, a large signed value, or a high-precision double.
+This rule enforces the use of explicit `DataType` variants to optimize network bandwidth and memory usage.
 
-### Supported DataType variants
+<Aside type="important" title="Network Optimization">
+	Using `DataType.u8` instead of `number` can save 7 bytes of bandwidth per value in every replicated packet. In
+	high-frequency ECS systems, this difference is massive.
+</Aside>
 
-- `DataType.u8` - Unsigned 8-bit integer (0 to 255)
-- `DataType.u16` - Unsigned 16-bit integer (0 to 65,535)
-- `DataType.u32` - Unsigned 32-bit integer (0 to 4,294,967,295)
-- `DataType.i8` - Signed 8-bit integer (-128 to 127)
-- `DataType.i16` - Signed 16-bit integer (-32,768 to 32,767)
-- `DataType.i32` - Signed 32-bit integer (-2,147,483,648 to 2,147,483,647)
-- `DataType.f32` - 32-bit floating point
-- `DataType.f64` - 64-bit floating point (double precision)
+## Choosing a Data Type
 
-## Modes
+<Steps>
+1. **Determine Range**
+   Check if your value is always positive (`u`) or can be negative (`i`).
+2. **Check Magnitude**
+   Select the smallest bit-size that fits your maximum value (e.g., `u8` for 0-255, `u16` for up to 65k).
+3. **Float vs Integer**
+   Use `f32` or `f64` only if you need decimal precision.
+4. **Apply to Type**
+   Replace `number` in your component interface or function arguments with the specific `DataType`.
 
-The rule supports two check modes:
+{/* oxfmt-ignore */}
 
-### `type-arguments` (default)
+</Steps>
 
-Only checks type arguments of specific function calls (e.g., `registerComponent<T>()`).
+## Examples
 
-### `all`
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Ambiguous Numbers
+		Bans generic `number` in serialization contexts.
 
-Checks all `number` type annotations globally, including:
+    	<Code
+    		code={[
+    			"// Serializer doesn't know how to pack this",
+    			"export const WaveNumber = registerComponent<number>({ replicated: true });",
+    			"",
+    			"interface Stats {",
+    			"\thealth: number;",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Explicit Variants
+    	Use the `DataType` enum to specify the exact binary format.
 
-- Variable declarations
-- Function parameters and return types
-- Interface and type alias properties
-- Class properties and method signatures
+    	<Code
+    		code={[
+    			'import type { DataType } from "@rbxts/flamework-binary-serializer";',
+    			"",
+    			"// Explicit 8-bit unsigned integer",
+    			"export const WaveNumber = registerComponent<DataType.u8>({ replicated: true });",
+    			"",
+    			"interface Stats {",
+    			"\thealth: DataType.u16;",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-## Options
+</Tabs>
 
-<Code
-	code={[
-		"interface RequireSerializedNumericDataTypeOptions {",
-		"\t/**",
-		"\t * Check mode:",
-		'\t * - `"type-arguments"` (default): Only check type arguments of function calls',
-		'\t * - `"all"`: Check all `number` type annotations globally',
-		"\t */",
-		'\tmode?: "type-arguments" | "all";',
-		"",
-		"\t/**",
-		'\t * Function names to check for type arguments when mode is "type-arguments".',
-		'\t * @default ["registerComponent"]',
-		"\t */",
-		"\tfunctionNames?: string[];",
-		"",
-		"\t/**",
-		"\t * When true, resolves type aliases using TypeScript's type checker.",
-		"\t * Slower but catches aliased types like `type Foo = number`.",
-		"\t * Requires `parserOptions.project` to be configured.",
-		"\t * @default false",
-		"\t */",
-		"\tstrict?: boolean;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="interface-requireser-3fvv1y"
-/>
+## Supported Types
 
-### Default Configuration
+<CardGrid stagger>
+	<Card title="Unsigned Ints" icon="approve-check">
+		`u8` (0-255), `u16` (0-65k), `u32` (0-4b).
+	</Card>
+	<Card title="Signed Ints" icon="warning">
+		`i8` (-128 to 127), `i16` (-32k to 32k), `i32` (-2b to 2b).
+	</Card>
+	<Card title="Floats" icon="bolt">
+		`f32` (Standard precision), `f64` (Double precision).
+	</Card>
+</CardGrid>
 
-<Code
-	code={["{", '\t"cease-nonsense/require-serialized-numeric-data-type": "error",', "}"].join("\n")}
-	lang="typescript"
-	key="block-1-3k0mts"
-/>
-
-### Custom Function Names
+## Configuration Example
 
 <Code
 	code={[
@@ -85,150 +101,32 @@ Checks all `number` type annotations globally, including:
 		'\t"cease-nonsense/require-serialized-numeric-data-type": [',
 		'\t\t"error",',
 		"\t\t{",
-		'\t\t\t"functionNames": ["registerComponent", "registerEvent", "createReplicatedValue"],',
-		"\t\t},",
-		"\t],",
+		'\t\t\t"mode": "type-arguments",',
+		'\t\t\t"functionNames": ["registerComponent", "createEvent"]',
+		"\t\t}",
+		"\t]",
 		"}",
 	].join("\n")}
-	lang="typescript"
-	key="block-2-72bedz"
+	lang="json"
+	title="eslint.config.js"
 />
-
-### Global Mode
-
-<Code
-	code={["{", '\t"cease-nonsense/require-serialized-numeric-data-type": ["error", { "mode": "all" }],', "}"].join(
-		"\n",
-	)}
-	lang="typescript"
-	key="block-3-15ngjb"
-/>
-
-### Strict Mode
-
-<Code
-	code={["{", '\t"cease-nonsense/require-serialized-numeric-data-type": ["error", { "strict": true }],', "}"].join(
-		"\n",
-	)}
-	lang="typescript"
-	key="block-4-1qlixz"
-/>
-
-## Examples
-
-### Incorrect
-
-<Code
-	code={[
-		"// Generic number type",
-		"export const WaveNumber = registerComponent<number>({ replicated: true });",
-		"",
-		"// Object with number property",
-		"export const Timer = registerComponent<{ elapsed: number }>({ replicated: true });",
-		"",
-		"// Union containing number",
-		"export const Value = registerComponent<number | string>({ replicated: true });",
-		"",
-		"// Branded number (still serialized as number)",
-		'export const BrandedId = registerComponent<number & { _brand: "id" }>({ replicated: true });',
-		"",
-		"// Array of numbers",
-		"export const Values = registerComponent<number[]>({ replicated: true });",
-	].join("\n")}
-	lang="typescript"
-	key="generic-number-type-249e6c"
-/>
-
-### Correct
-
-<Code
-	code={[
-		'import type { DataType } from "@rbxts/flamework-binary-serializer";',
-		"",
-		"// Specific DataType variants",
-		"export const WaveNumber = registerComponent<DataType.u8>({ replicated: true });",
-		"export const Timer = registerComponent<DataType.f32>({ replicated: true });",
-		"export const Money = registerComponent<DataType.u32>({ replicated: true });",
-		"",
-		"// Object with DataType properties",
-		"export const Position = registerComponent<{",
-		"\tx: DataType.f32;",
-		"\ty: DataType.f32;",
-		"\tz: DataType.f32;",
-		"}>({ replicated: true });",
-		"",
-		"// Union of DataTypes (allowed)",
-		"export const Value = registerComponent<DataType.u8 | DataType.u32>({ replicated: true });",
-		"",
-		"// Array of DataType",
-		"export const Values = registerComponent<DataType.u8[]>({ replicated: true });",
-		"",
-		"// Other types (not number)",
-		"export const Name = registerComponent<string>({ replicated: true });",
-		"export const Active = registerComponent<boolean>({ replicated: true });",
-	].join("\n")}
-	lang="typescript"
-	key="import-type-datatype-16ck84"
-/>
-
-### Global Mode Examples
-
-When `mode: "all"` is configured:
-
-**Incorrect:**
-
-<Code
-	code={[
-		"// Variable declaration",
-		"const health: number = 100;",
-		"",
-		"// Function parameter",
-		"function calculateDamage(base: number, multiplier: number): number {",
-		"\treturn base * multiplier;",
-		"}",
-		"",
-		"// Interface property",
-		"interface PlayerStats {",
-		"\thealth: number;",
-		"\tmana: number;",
-		"}",
-		"",
-		"// Type alias",
-		"type ScoreValue = number;",
-	].join("\n")}
-	lang="typescript"
-	key="variable-declaration-10ga1w"
-/>
-
-**Correct:**
-
-<Code
-	code={[
-		"// Variable declaration",
-		"const health: DataType.u16 = 100;",
-		"",
-		"// Function parameter",
-		"function calculateDamage(base: DataType.f32, multiplier: DataType.f32): DataType.f32 {",
-		"\treturn base * multiplier;",
-		"}",
-		"",
-		"// Interface property",
-		"interface PlayerStats {",
-		"\thealth: DataType.u16;",
-		"\tmana: DataType.u16;",
-		"}",
-		"",
-		"// Type alias",
-		"type ScoreValue = DataType.u32;",
-	].join("\n")}
-	lang="typescript"
-	key="variable-declaration-prj3zj"
-/>
-
-## When Not To Use It
-
-If you're not using a serialization system that requires specific numeric type annotations, you can disable this rule. The generic `number` type is perfectly fine for most TypeScript code that doesn't serialize over the network.
 
 ## Related Rules
 
-- [`enforce-ianitor-check-type`](/rules/enforce-ianitor-check-type/) - Enforces runtime type validation for complex types
+<CardGrid>
+	<LinkCard
+		title="enforce-ianitor-check-type"
+		description="Runtime type validation"
+		href="/rules/enforce-ianitor-check-type/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Flamework Binary Serializer"
+		description="Official documentation for binary replication"
+		href="https://flamework.cloud/docs/binary-serializer"
+	/>
+</CardGrid>

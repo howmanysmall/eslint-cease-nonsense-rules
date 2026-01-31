@@ -1,102 +1,95 @@
 ---
 title: no-print
+badge:
+    text: Best Practice
+    variant: caution
 description: Bans use of print() function calls. Use log instead for structured logging.
 ---
 
-import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
 
 Bans use of `print()` function calls. Use `log` instead for structured logging.
 
-## Rule Details
+## Rule Details :badge[Best Practice]{variant=caution}
 
-The `print()` function is a low-level logging mechanism that lacks structure, context, and log level control. Using a proper logging system like [`Log`](https://sleitnick.github.io/RbxUtil/api/Log) provides better debugging capabilities and production logging.
+The global `print()` function is a low-level logging mechanism that lacks structure and severity levels. Using a proper
+logging system (like `Log` from `RbxUtil`) provides better debugging capabilities, production log filtering, and
+consistent formatting.
 
-<Aside type="tip" title="Why structured logging?">
+<Aside type="tip" title="Why Structured Logging?">
 	Structured logging helps you filter, search, and analyze logs in production. It provides timestamps, log levels, and
-	context that `print()` simply cannot offer.
+	context that raw `print()` calls simply cannot offer.
 </Aside>
+
+## Migration Path
+
+<Steps>
+1. **Choose a Logger**
+   Select a logging library like `Log` from `RbxUtil` or create your own structured wrapper.
+
+2. **Categorize Logs** Identify which prints are for `Info`, which are for `Debug`, and which should be `Errors`.
+
+3. **Global Replace** Search for `print(` across your project and replace them with the corresponding logger method.
+
+4. **Add Context** Take advantage of structured logging by passing objects or metadata as secondary arguments.
+
+{/* oxfmt-ignore */}
+
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Raw Print Calls
+		Avoid using the global `print` for debugging or telemetry.
 
-<Code
-	code={[
-		'print("Debug message");',
-		'print("User logged in:", userId);',
-		'print("Error:", error);',
-		"",
-		"function processData(data: unknown) {",
-		'\tprint("Processing data:", data);',
-		"\t// ...",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	title="incorrect.ts"
-/>
+    	<Code
+    		code={[
+    			'print("Request failed");',
+    			'print("User logged in:", userId);',
+    			'print("DEBUG:", data);',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Structured Logging
+    	Use a logging library with appropriate severity levels.
 
-### ✅ Correct
+    	<Code
+    		code={[
+    			'log.Error("Request failed");',
+    			'log.Info("User logged in:", userId);',
+    			'log.Debug("Data state:", data);',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		'log.Info("Debug message");',
-		'log.Info("User logged in:", userId);',
-		'log.Error("Error:", error);',
-		"",
-		"function processData(data: unknown) {",
-		'\tlog.Debug("Processing data:", data);',
-		"\t// ...",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	title="correct.ts"
-/>
+</Tabs>
 
-## Why Use Log Instead?
+## Why use Log instead?
 
-### Structured Logging
-
-`Log` provides structured output with timestamps, log levels, and context:
-
-<Code
-	code={[
-		"// print() - unstructured, no context",
-		'print("Request failed");',
-		"",
-		"// log - structured with level and automatic timestamp",
-		'log.Error("Request failed");',
-		"// Output: [ERROR] 2025-12-31 12:34:56 - Request failed",
-	].join("\n")}
-	lang="typescript"
-	title="structured-logging.ts"
-/>
-
-### Log Levels
-
-Different log levels help filter messages in development vs production:
-
-<Code
-	code={[
-		'log.Debug("Detailed debug info"); // Only in development',
-		'log.Info("User action completed"); // General information',
-		'log.Warning("Deprecated API used"); // Warnings',
-		'log.Error("Operation failed"); // Errors',
-	].join("\n")}
-	lang="typescript"
-	title="log-levels.ts"
-/>
-
-## When Not To Use It
-
-<Aside type="caution">
-	If you're writing quick scripts or prototypes where structured logging isn't necessary, you may disable this rule.
-	However, it's recommended to use proper logging even in development.
-</Aside>
+<CardGrid stagger>
+	<Card title="Log Levels" icon="list-format">
+		Filter by `Debug`, `Info`, `Warning`, or `Error` to reduce noise in production.
+	</Card>
+	<Card title="Timestamps" icon="bolt">
+		Unified logging systems automatically attach high-resolution timestamps to every entry.
+	</Card>
+	<Card title="Remote Telemetry" icon="rocket">
+		Logging libraries often support sending critical errors to external services like Sentry.
+	</Card>
+	<Card title="Formatting" icon="setting">
+		Consistent prefixing and color coding make the developer console much easier to scan.
+	</Card>
+</CardGrid>
 
 ## Related Rules
 
 <CardGrid>
-	<LinkCard title="no-warn" description="Bans warn() function calls" href="/rules/no-warn/" />
+	<LinkCard title="no-warn" description="Bans raw warn() calls" href="/rules/no-warn/" />
 </CardGrid>
 
 ## Further Reading
@@ -104,12 +97,7 @@ Different log levels help filter messages in development vs production:
 <CardGrid>
 	<LinkCard
 		title="RbxUtil Log API"
-		description="Official documentation for the Log utility"
+		description="Official documentation for Sleitnick's Log utility"
 		href="https://sleitnick.github.io/RbxUtil/api/Log"
-	/>
-	<LinkCard
-		title="Best Practices for Logging"
-		description="The 10 commandments of logging"
-		href="https://www.dataset.com/blog/the-10-commandments-of-logging/"
 	/>
 </CardGrid>

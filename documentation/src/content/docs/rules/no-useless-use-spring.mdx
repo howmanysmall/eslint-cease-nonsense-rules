@@ -1,523 +1,114 @@
 ---
 title: no-useless-use-spring
+badge:
+    text: Performance
+    variant: caution
+description: Flags useSpring-style hooks that never change due to static configuration and dependencies.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Flags `useSpring`-style hooks that never change (static config plus non-updating deps).
+Flags `useSpring`-style hooks that never change.
 
-## Rule Details
+## Rule Details :badge[Performance]{variant=caution}
 
-This rule detects spring hooks (`useSpring`, `useMotion`, etc.) where both the configuration and dependencies are entirely static, making the hook pointless. If neither the config nor the dependencies change, the spring value will never update and can be replaced with a constant.
+Spring hooks (`useSpring`, `useMotion`, etc.) carry significant runtime overhead in `roblox-ts`. If both the
+configuration and the dependencies are entirely static, the spring value will never update. In these cases, the hook is
+totally redundant and should be replaced with a simple constant or state value.
 
-## Options
+<Aside type="danger" title="Unnecessary Subscriptions">
+	Every `useSpring` call creates reactive subscriptions and internal update loops. Using them for static values wastes
+	CPU cycles and memory for zero visual result.
+</Aside>
 
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/no-useless-use-spring": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"springHooks": ["useSpring", "useMotion"],',
-		'\t\t\t"treatEmptyDepsAsViolation": true,',
-		'\t\t\t"staticGlobalFactories": ["Vector2", "Vector3", "UDim2", "Color3"],',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-0-35xuyb"
-/>
+## Optimization Path
 
-### Configuration Parameters
+<Steps>
+1. **Analyze Configuration**
+   Check if the config object properties are literals, module-level constants, or static constructors (like `Vector3`).
 
-- **springHooks** (default: `["useSpring"]`): Hook names to check
-- **treatEmptyDepsAsViolation** (default: `true`): Treat empty dependency arrays as violations
-- **staticGlobalFactories** (default: Roblox datatypes): Global constructors considered static
+2. **Check Dependencies** Verify if the dependency array contains any dynamic values from props or state.
+
+3. **Ignore Mount Animations** If you use `from` and `to`, the linter will ignore the rule, as those properties indicate
+   a mount-time transition.
+
+4. **Replace with Constant** If purely static, delete the hook and use a standard `const` or `useMemo`.
+
+{/* oxfmt-ignore */}
+
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
-
-<Code
-	code={[
-		"// Static config with empty deps",
-		"const spring = useSpring({ opacity: 1 }, []);",
-		"",
-		"// Static config with no deps",
-		"const spring = useSpring({ scale: 1.5 });",
-		"",
-		"// Static config with static deps",
-		"const TARGET = 100;",
-		"const spring = useSpring({ position: TARGET }, [TARGET]);",
-		"",
-		"// All literals",
-		"const spring = useSpring(",
-		"\t{",
-		"\t\ttransparency: 0,",
-		"\t\tsize: new UDim2(1, 0, 1, 0),",
-		"\t},",
-		"\t[],",
-		");",
-	].join("\n")}
-	lang="typescript"
-	key="static-config-with-e-x8j9os"
-/>
-
-### ✅ Correct
-
-<Code
-	code={[
-		"// Dynamic config based on state",
-		"const spring = useSpring({ opacity: isOpen ? 1 : 0 }, [isOpen]);",
-		"",
-		"// Config updates with props",
-		"const spring = useSpring({ scale: props.scale }, [props.scale]);",
-		"",
-		"// Mount animation with from/to (valid use case)",
-		"const spring = useSpring(",
-		"\t{",
-		"\t\tfrom: { opacity: 0 },",
-		"\t\tto: { opacity: 1 },",
-		"\t},",
-		"\t[],",
-		");",
-		"",
-		"// Dynamic calculation",
-		"const spring = useSpring(",
-		"\t{",
-		"\t\tposition: isActive ? activePos : inactivePos,",
-		"\t},",
-		"\t[isActive, activePos, inactivePos],",
-		");",
-		"",
-		"// No spring hook needed - use constant",
-		"const OPACITY = 1;",
-		"const SIZE = new UDim2(1, 0, 1, 0);",
-	].join("\n")}
-	lang="typescript"
-	key="dynamic-config-based-mdop0c"
-/>
-
-## Static Expression Detection
-
-The rule determines if values are static by analyzing:
-
-### 1. Literals
-
-<Code
-	code={[
-		"// All static:",
-		"const spring = useSpring(",
-		"\t{",
-		"\t\tx: 42,",
-		'\t\ty: "hello",',
-		"\t\tz: true,",
-		"\t\tw: null,",
-		"\t},",
-		"\t[],",
-		");",
-	].join("\n")}
-	lang="typescript"
-	key="all-static-3okxc9"
-/>
-
-### 2. Module-Level Constants
-
-<Code
-	code={[
-		"// Static - defined at module scope",
-		"const TARGET_SCALE = 1.5;",
-		"const DEFAULT_COLOR = Color3.fromRGB(255, 0, 0);",
-		"",
-		"function Component() {",
-		"\t// ❌ Static config",
-		"\tconst spring = useSpring(",
-		"\t\t{",
-		"\t\t\tscale: TARGET_SCALE,",
-		"\t\t\tcolor: DEFAULT_COLOR,",
-		"\t\t},",
-		"\t\t[],",
-		"\t);",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="static-defined-at-mo-3gkd3i"
-/>
-
-### 3. Global Constructors
-
-Default Roblox datatypes are considered static:
-
-<Code
-	code={[
-		"// All static constructors:",
-		"useSpring(",
-		"\t{",
-		"\t\tposition: new Vector3(0, 10, 0),",
-		"\t\tsize: UDim2.fromScale(1, 1),",
-		"\t\tcolor: Color3.fromRGB(255, 255, 255),",
-		"\t\tcframe: CFrame.identity,",
-		"\t},",
-		"\t[],",
-		");",
-	].join("\n")}
-	lang="typescript"
-	key="all-static-construct-230wup"
-/>
-
-### 4. Imports
-
-Imported values are considered static:
-
-<Code
-	code={[
-		'import { ANIMATION_CONFIG } from "./constants";',
-		"",
-		"// ❌ Static - imported constant",
-		"const spring = useSpring(ANIMATION_CONFIG, []);",
-	].join("\n")}
-	lang="typescript"
-	key="import-animation-con-ihnmaz"
-/>
-
-### 5. Arithmetic & Logic
-
-Static expressions remain static:
-
-<Code
-	code={[
-		"const BASE = 100;",
-		"",
-		"// ❌ All static calculations",
-		"const spring = useSpring(",
-		"\t{",
-		"\t\tx: BASE * 2,",
-		"\t\ty: BASE + 50,",
-		"\t\tz: BASE / 2,",
-		"\t},",
-		"\t[BASE],",
-		");",
-	].join("\n")}
-	lang="typescript"
-	key="const-base-100-169d9r"
-/>
-
-### 6. Objects & Arrays
-
-Objects and arrays of static values are static:
-
-<Code
-	code={[
-		"// ❌ Static object",
-		"const spring = useSpring(",
-		"\t{",
-		"\t\tconfig: {",
-		"\t\t\ttension: 170,",
-		"\t\t\tfriction: 26,",
-		"\t\t},",
-		"\t\timmediate: false,",
-		"\t},",
-		"\t[],",
-		");",
-		"",
-		"// ❌ Static array",
-		"const spring = useSpring(",
-		"\t{",
-		"\t\tvalues: [1, 2, 3],",
-		"\t},",
-		"\t[],",
-		");",
-	].join("\n")}
-	lang="typescript"
-	key="static-object-279ug6"
-/>
-
-## Mount Animations Exception
-
-Mount animations with both `from` and `to` properties are allowed:
-
-<Code
-	code={[
-		"// ✅ Allowed - animates once on mount",
-		"const spring = useSpring(",
-		"\t{",
-		"\t\tfrom: { opacity: 0 },",
-		"\t\tto: { opacity: 1 },",
-		"\t},",
-		"\t[],",
-		");",
-		"",
-		"// ✅ Also allowed",
-		"const spring = useSpring(",
-		"\t{",
-		"\t\tfrom: { scale: 0.8 },",
-		"\t\tto: { scale: 1 },",
-		"\t\tconfig: { tension: 200 },",
-		"\t},",
-		"\t[],",
-		");",
-	].join("\n")}
-	lang="typescript"
-	key="allowed-animates-onc-16v2jf"
-/>
-
-## Dependency Array Analysis
-
-### Empty Array
-
-<Code
-	code={[
-		"{",
-		'  "treatEmptyDepsAsViolation": true',
-		"}",
-		"",
-		"// ❌ Flagged - static config + empty deps",
-		"const spring = useSpring({ x: 1 }, []);",
-		"",
-		"// ✅ Not flagged if from/to present",
-		"const spring = useSpring({ from: { x: 0 }, to: { x: 1 } }, []);",
-	].join("\n")}
-	lang="typescript"
-	key="block-10-1d8lsp"
-/>
-
-### Static Dependencies
-
-<Code
-	code={[
-		"const CONSTANT = 42;",
-		"",
-		"// ❌ Static deps are same as no deps",
-		"const spring = useSpring({ x: CONSTANT }, [CONSTANT]);",
-	].join("\n")}
-	lang="typescript"
-	key="const-constant-42-3p4q14"
-/>
-
-### Missing Dependencies Array
-
-<Code
-	code={["// ❌ Flagged - no deps array means never updates", "const spring = useSpring({ x: 1 });"].join("\n")}
-	lang="typescript"
-	key="flagged-no-deps-arra-8gm1ev"
-/>
-
-### Dynamic Dependencies
-
-<Code
-	code={[
-		"// ✅ Allowed - deps can change",
-		"const spring = useSpring({ x: value }, [value]);",
-		"const spring2 = useSpring({ x: props.x }, [props.x]);",
-	].join("\n")}
-	lang="typescript"
-	key="allowed-deps-can-cha-2vdkz5"
-/>
-
-## Common Use Cases
-
-### Animation States
-
-<Code
-	code={[
-		"// ❌ Bad - static",
-		"const spring = useSpring({ opacity: 1 }, []);",
-		"",
-		"// ✅ Good - reactive",
-		"const spring = useSpring({ opacity: isVisible ? 1 : 0 }, [isVisible]);",
-	].join("\n")}
-	lang="typescript"
-	key="bad-static-3ibkrv"
-/>
-
-### Prop-Driven Animations
-
-<Code
-	code={[
-		"// ❌ Bad - static default",
-		"function AnimatedBox() {",
-		"\tconst spring = useSpring({ scale: 1 }, []);",
-		"\treturn <Box Scale={spring.scale} />;",
-		"}",
-		"",
-		"// ✅ Good - driven by prop",
-		"function AnimatedBox({ targetScale }: Props) {",
-		"\tconst spring = useSpring({ scale: targetScale }, [targetScale]);",
-		"\treturn <Box Scale={spring.scale} />;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="bad-static-default-37tj8t"
-/>
-
-### Mount Animations
-
-<Code
-	code={[
-		"// ✅ Good - valid mount animation",
-		"function FadeIn({ children }: Props) {",
-		"\tconst spring = useSpring({",
-		"\t\tfrom: { opacity: 0, y: -20 },",
-		"\t\tto: { opacity: 1, y: 0 },",
-		"\t}, []);",
-		"",
-		"\treturn <Frame Style={spring}>{children}</Frame>;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="good-valid-mount-ani-drobk3"
-/>
-
-### State-Based Animations
-
-<Code
-	code={[
-		"// ❌ Bad - static",
-		"const [count, setCount] = useState(0);",
-		"const spring = useSpring({ value: 100 }, []); // Never changes!",
-		"",
-		"// ✅ Good - reactive to state",
-		"const [count, setCount] = useState(0);",
-		"const spring = useSpring({ value: count * 10 }, [count]);",
-	].join("\n")}
-	lang="typescript"
-	key="bad-static-4srguy"
-/>
-
-## Configuration Examples
-
-### Custom Spring Hooks
-
-<Code
-	code={[
-		"{",
-		'  "cease-nonsense/no-useless-use-spring": ["error", {',
-		'    "springHooks": ["useSpring", "useMotion", "useAnimation", "useTransition"]',
-		"  }]",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-18-2erkum"
-/>
-
-### Allow Empty Dependencies
-
-<Code
-	code={[
-		"{",
-		'  "cease-nonsense/no-useless-use-spring": ["error", {',
-		'    "treatEmptyDepsAsViolation": false',
-		"  }]",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-19-3ih4lk"
-/>
-
-### Custom Static Factories
-
-<Code
-	code={[
-		"{",
-		'  "cease-nonsense/no-useless-use-spring": ["error", {',
-		'    "staticGlobalFactories": [',
-		'      "Vector2", "Vector3", "CFrame",',
-		'      "MyCustomFactory", "AnotherFactory"',
-		"    ]",
-		"  }]",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-20-qxlxg8"
-/>
-
-## When Not To Use It
-
-Disable this rule if:
-
-- You intentionally use springs for interpolation even with static values
-- Your spring library has different semantics where static configs are meaningful
-- You're prototyping and plan to make values dynamic later
-
-## Performance Implications
-
-Static springs have performance costs:
-
-<Code
-	code={[
-		"// ❌ Bad - creates spring subscription for static value",
-		"const spring = useSpring({ opacity: 1 }, []);",
-		"",
-		"// ✅ Good - just use the value directly",
-		"const opacity = 1;",
-	].join("\n")}
-	lang="typescript"
-	key="bad-creates-spring-s-25kfml"
-/>
-
-Each spring hook creates:
-
-- Reactive subscriptions
-- Update mechanisms
-- Memory allocation for spring state
-
-For static values, this overhead is wasted.
-
-## Migration Guide
-
-### Replace with Constants
-
-<Code
-	code={["// Before:", "const spring = useSpring({ scale: 1.5 }, []);", "", "// After:", "const scale = 1.5;"].join(
-		"\n",
-	)}
-	lang="typescript"
-	key="before-2hen22"
-/>
-
-### Add Dynamic Dependencies
-
-<Code
-	code={[
-		"// Before:",
-		"const spring = useSpring({ x: position }, []); // position not in deps!",
-		"",
-		"// After:",
-		"const spring = useSpring({ x: position }, [position]);",
-	].join("\n")}
-	lang="typescript"
-	key="before-2923e2"
-/>
-
-### Extract to Props
-
-<Code
-	code={[
-		"// Before:",
-		"function Box() {",
-		"\tconst spring = useSpring({ color: Color3.fromRGB(255, 0, 0) }, []);",
-		"\treturn <Frame BackgroundColor3={spring.color} />;",
-		"}",
-		"",
-		"// After:",
-		"function Box({ color }: Props) {",
-		"\tconst spring = useSpring({ color }, [color]);",
-		"\treturn <Frame BackgroundColor3={spring.color} />;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="before-2ejc8a"
-/>
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Static Springs
+		Bans springs that have no way to react to anything.
+
+    	<Code
+    		code={[
+    			"// ❌ Static config with empty deps",
+    			"const spring = useSpring({ opacity: 1 }, []);",
+    			"",
+    			"// ❌ Module constants are also static",
+    			"const DEFAULT_SCALE = 1.5;",
+    			"const scale = useSpring({ scale: DEFAULT_SCALE }, [DEFAULT_SCALE]);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Dynamic or Entry Anims
+    	Use springs when they actually react to state or provide entry transitions.
+
+    	<Code
+    		code={[
+    			"// ✅ Reactive to props",
+    			"const spring = useSpring({ opacity: isOpen ? 1 : 0 }, [isOpen]);",
+    			"",
+    			"// ✅ Mount animation (allowed because it transitions on load)",
+    			"const spring = useSpring({",
+    			"\tfrom: { scale: 0 },",
+    			"\tto: { scale: 1 }",
+    			"}, []);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why is it wasteful?
+
+<CardGrid stagger>
+	<Card title="Simulation Cycles" icon="bolt">
+		The spring solver still runs logic to check for changes that will never happen.
+	</Card>
+	<Card title="Memory Allocation" icon="list-format">
+		Spring hooks allocate hidden state, history buffers, and listener arrays.
+	</Card>
+	<Card title="React Overhead" icon="rocket">
+		Every re-render of the parent still involves the hook's execution and dependency comparison.
+	</Card>
+</CardGrid>
 
 ## Related Rules
 
-- [use-exhaustive-dependencies](/rules/use-exhaustive-dependencies/) - Ensures correct dependency arrays
-- [no-identity-map](/rules/no-identity-map/) - Detects pointless transformations
-- [prefer-pattern-replacements](/rules/prefer-pattern-replacements/) - Optimizes constructor patterns
+<CardGrid>
+	<LinkCard
+		title="use-exhaustive-dependencies"
+		description="Ensure corect react dependencies"
+		href="/rules/use-exhaustive-dependencies/"
+	/>
+	<LinkCard title="no-identity-map" description="Bans wasteful data transformations" href="/rules/no-identity-map/" />
+</CardGrid>
 
 ## Further Reading
 
-- [React Spring Documentation](https://www.react-spring.dev/)
-- [Understanding React Hooks Dependencies](https://react.dev/learn/removing-effect-dependencies)
-- [Roblox Spring Animations](https://create.roblox.com/docs/ui/animation)
+<CardGrid>
+	<LinkCard
+		title="React Spring Optimization"
+		description="Official guide on animation performance"
+		href="https://www.react-spring.dev/docs/concepts/performance"
+	/>
+</CardGrid>

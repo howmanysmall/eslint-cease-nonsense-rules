@@ -1,235 +1,114 @@
 ---
 title: require-react-display-names
+badge:
+    text: Best Practice
+    variant: success
+description: Require displayName property on exported React.memo components and React.createContext contexts for better debugging.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Require `displayName` property on exported `React.memo` components and `React.createContext` contexts for better debugging.
+Require `displayName` on exported `React.memo` and `React.createContext`.
 
-## Rule Details
+## Rule Details :badge[Best Practice]{variant=success}
 
-React components wrapped in `memo` and contexts created with `createContext` lose their names in React DevTools unless you explicitly set `displayName`. This rule enforces proper naming patterns to maintain debuggability.
+React components wrapped in `memo` and contexts created with `createContext` lose their names in React DevTools unless you explicitly set `displayName`. This rule enforces proper naming patterns to ensure your component tree remains readable during production debugging and profiling.
+
+<Aside type="tip" title="Production Debugging">
+	Minification often strips function names. `displayName` is a string literal that survives obfuscation, making it
+	invaluable for reading stack traces in production.
+</Aside>
+
+## Refactoring Path
+
+<Steps>
+1. **Locate Exports**
+   Find `export default memo(...)` or `export const MyContext = createContext(...)` calls.
+
+2. **Assign to Constant**
+   Instead of exporting the result directly, assign it to a named variable (e.g., `const MyComponent = memo(...)`).
+
+3. **Set Display Name**
+   Append a `.displayName` assignment: `MyComponent.displayName = "MyComponent"`.
+
+4. **Export Named**
+   Export the named variable. You can still use `export default` for the named variable afterwards.
+
+{/* oxfmt-ignore */}
+
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Anonymous Exports
+		Bans direct exports that hide the component name from the debugger.
 
-**Direct memo export (worst pattern)**
+    	<Code
+    		code={[
+    			"// Direct memo export",
+    			"export default memo(MyComponent);",
+    			"",
+    			"// Missing displayName",
+    			"export const MyContext = React.createContext(undefined);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Labeled Components
+    	Explicitly name your exported units for better telemetry.
 
-<Code
-	code={[
-		'import { memo } from "@rbxts/react";',
-		"",
-		"function ButtonNoMemo() {",
-		"\treturn <button />;",
-		"}",
-		"",
-		"// Error: Do not export memo result directly",
-		"export default memo(ButtonNoMemo);",
-	].join("\n")}
-	lang="typescript"
-	key="import-memo-from-rbx-3c3uog"
-/>
+    	<Code
+    		code={[
+    			'const MyComponent = memo(MyComponentNoMemo);',
+    			'MyComponent.displayName = "MyComponent";',
+    			"export default MyComponent;",
+    			"",
+    			"const MyContext = React.createContext(undefined);",
+    			'MyContext.displayName = "MyContext";',
+    			"export default MyContext;",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-**Missing displayName on memo**
+</Tabs>
 
-<Code
-	code={[
-		'import { memo } from "@rbxts/react";',
-		"",
-		"function ChecklistClaimButtonNoMemo() {",
-		"\treturn <frame />;",
-		"}",
-		"",
-		"// Error: Missing displayName",
-		"const ChecklistClaimButton = memo(ChecklistClaimButtonNoMemo);",
-		"export default ChecklistClaimButton;",
-	].join("\n")}
-	lang="typescript"
-	key="import-memo-from-rbx-2r8d0m"
-/>
+## Why is this important?
 
-**Direct createContext export**
+<CardGrid stagger>
+	<Card title="DevTools Mapping" icon="list-format">
+		Ensures your component tree doesn't just show `<Memo(Anonymous)>` everywhere.
+	</Card>
+	<Card title="Profiling" icon="bolt">
+		Helps the React Profiler attribute performance bottlenecks to specific named components.
+	</Card>
+	<Card title="Refactoring Safety" icon="setting">
+		Assigning to a local constant before exporting makes the code easier to grep and refactor.
+	</Card>
+</CardGrid>
 
-<Code
-	code={[
-		'import React from "@rbxts/react";',
-		"",
-		"// Error: Do not export createContext result directly",
-		"export default React.createContext<string | undefined>(undefined);",
-	].join("\n")}
-	lang="typescript"
-	key="import-react-from-rb-24szhs"
-/>
+## Environment Modes
 
-**Missing displayName on context**
-
-<Code
-	code={[
-		'import React from "@rbxts/react";',
-		"",
-		"// Error: Missing displayName",
-		"const ErrorBoundaryContext = React.createContext<unknown>(undefined);",
-		"export default ErrorBoundaryContext;",
-	].join("\n")}
-	lang="typescript"
-	key="import-react-from-rb-3h8n55"
-/>
-
-### ✅ Correct
-
-**Proper memo pattern**
-
-<Code
-	code={[
-		'import { memo } from "@rbxts/react";',
-		"",
-		"function ChecklistClaimButtonNoMemo() {",
-		"\treturn <frame />;",
-		"}",
-		"",
-		"export const ChecklistClaimButton = memo(ChecklistClaimButtonNoMemo);",
-		'ChecklistClaimButton.displayName = "ChecklistClaimButton";',
-		"export default ChecklistClaimButton;",
-	].join("\n")}
-	lang="typescript"
-	key="import-memo-from-rbx-2atih9"
-/>
-
-**Proper context pattern**
-
-<Code
-	code={[
-		'import React from "@rbxts/react";',
-		"",
-		"const ErrorBoundaryContext = React.createContext<unknown>(undefined);",
-		'ErrorBoundaryContext.displayName = "ErrorBoundaryContext";',
-		"export default ErrorBoundaryContext;",
-	].join("\n")}
-	lang="typescript"
-	key="import-react-from-rb-2g2arc"
-/>
-
-**Internal (non-exported) usage is fine**
-
-<Code
-	code={[
-		'import { memo, createContext } from "@rbxts/react";',
-		"",
-		"// Not exported, so no displayName required",
-		"const InternalContext = createContext<number>(0);",
-		"",
-		"function InnerComponentNoMemo() {",
-		"\treturn <div />;",
-		"}",
-		"",
-		"// Not exported, so no displayName required",
-		"const InnerComponent = memo(InnerComponentNoMemo);",
-		"",
-		"// Only this is exported",
-		"export function Container() {",
-		"\treturn <InnerComponent />;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="import-memo-createco-20saft"
-/>
-
-## Options
-
-### `environment`
-
-- Type: `"roblox-ts" | "standard"`
-- Default: `"roblox-ts"`
-
-Controls which React package sources are checked.
-
-- `"roblox-ts"`: Checks imports from `@rbxts/react` and `@rbxts/roact`
-- `"standard"`: Checks imports from `react` and `react-dom`
-
-**Configuration for standard React**
-
-<Code
-	code={[
-		"{",
-		'  "cease-nonsense/require-react-display-names": ["error", {',
-		'    "environment": "standard"',
-		"  }]",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-7-1qcetu"
-/>
-
-## Why Is This Bad?
-
-### DevTools Debugging
-
-Without `displayName`, memoized components and contexts appear as anonymous or with unhelpful names in React DevTools:
-
-<Code
-	code={[
-		"<Memo(Anonymous)>     // vs <ChecklistClaimButton>",
-		"<Context.Provider>    // vs <ErrorBoundaryContext.Provider>",
-	].join("\n")}
-	lang="text"
-	key="memo-anonymous-vs-ch-2cfybb"
-/>
-
-### Production Debugging
-
-Minification often strips function names. `displayName` survives minification and appears in error stack traces and profiler data.
-
-### Direct Export Problems
-
-Exporting `memo(Component)` directly:
-
-1. Loses the component name completely
-2. Makes it impossible to set `displayName` after the fact
-3. Prevents named exports alongside default
-
-## When Not To Use It
-
-- For non-exported memo/context usage (the rule already ignores these)
-- If you're using a bundler/transformer that automatically adds displayName
-- For very simple internal components where debugging isn't a concern
-
-## Migration Guide
-
-### Before
-
-<Code
-	code={[
-		'import { memo } from "@rbxts/react";',
-		"",
-		"function ComponentNoMemo(props: Props) {",
-		"\treturn <frame />;",
-		"}",
-		"",
-		"export default memo(ComponentNoMemo);",
-	].join("\n")}
-	lang="typescript"
-	key="import-memo-from-rbx-39p6vo"
-/>
-
-### After
-
-<Code
-	code={[
-		'import { memo } from "@rbxts/react";',
-		"",
-		"function ComponentNoMemo(props: Props) {",
-		"\treturn <frame />;",
-		"}",
-		"",
-		"export const Component = memo(ComponentNoMemo);",
-		'Component.displayName = "Component";',
-		"export default Component;",
-	].join("\n")}
-	lang="typescript"
-	key="import-memo-from-rbx-1iotcq"
-/>
+| Mode        | Target Packages                |
+| :---------- | :----------------------------- |
+| `roblox-ts` | `@rbxts/react`, `@rbxts/roact` |
+| `standard`  | `react`, `react-dom`           |
 
 ## Related Rules
 
-- [ban-react-fc](/rules/ban-react-fc/) - Bans React.FC which also causes DevTools issues
+<CardGrid>
+	<LinkCard title="ban-react-fc" description="Bans React.FC for better type clarity" href="/rules/ban-react-fc/" />
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="React Docs: DisplayName"
+		description="How React uses display names for debugging"
+		href="https://legacy.reactjs.org/docs/react-component.html#displayname"
+	/>
+</CardGrid>

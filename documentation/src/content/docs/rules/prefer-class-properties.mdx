@@ -1,571 +1,141 @@
 ---
 title: prefer-class-properties
+badge:
+    text: Clean Code
+    variant: success
+description: Prefer class properties over assignment of literals in constructors for cleaner class definitions.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
 Prefer class properties over assignment of literals in constructors.
 
-## Rule Details
+## Rule Details :badge[Clean Code]{variant=success}
 
-This rule enforces using class property declarations for literal values instead of assigning them in the constructor. Class properties are more concise, clearer in intent, and better match modern JavaScript/TypeScript style.
+This rule enforces using class property declarations for literal values instead of assigning them in the constructor. Class properties are more concise, provide better type inference in TypeScript, and make the class's state structure visible at a glance.
 
-## Options
+<Aside type="tip" title="Modern Standards">
+	Class properties (fields) are a standard part of modern JavaScript (ES2022) and TypeScript. They eliminate
+	constructor boilerplate for simple initializations.
+</Aside>
 
-<Code
-	code={["{", '\t"cease-nonsense/prefer-class-properties": ["error", "always"],', "}"].join("\n")}
-	lang="typescript"
-	key="block-0-22uhtk"
-/>
+## Refactoring Method
 
-### Option Values
+<Steps>
+1. **Identify Constructors**
+   Find classes with a `constructor` that performs `this.prop = ...` assignments.
 
-- `"always"` (default): Prefer class properties for literals
-- `"never"`: Disallow class properties (prefer constructor assignments)
+2. **Check for Literals**
+   Verify if the assigned values are simple strings, numbers, arrays, or objects that don't depend on parameters.
+
+3. **Lift to Properties**
+   Move the assignment from the constructor body to a top-level property declaration.
+
+4. **Clean Up**
+   If the `constructor` is now empty (or only calls `super()`), it can be removed entirely.
+
+{/* oxfmt-ignore */}
+
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect (with `"always"`)
-
-<Code
-	code={[
-		"class User {",
-		"\tconstructor() {",
-		'\t\tthis.name = "Unknown"; // Literal in constructor',
-		"\t\tthis.age = 0;",
-		"\t\tthis.active = true;",
-		'\t\tthis.roles = ["user"];',
-		'\t\tthis.config = { theme: "dark" };',
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-user-3nm9qp"
-/>
-
-<Code
-	code={[
-		"class Component {",
-		"\tconstructor() {",
-		"\t\tthis.id = `component-${Math.random()}`; // Still literal-like",
-		'\t\tthis.element = document.createElement("div");',
-		"\t\tthis.data = {",
-		"\t\t\tx: 0,",
-		"\t\t\ty: 0,",
-		"\t\t};",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-component-1klsfh"
-/>
-
-### ✅ Correct (with `"always"`)
-
-<Code
-	code={[
-		"class User {",
-		'\tname = "Unknown"; // Class property',
-		"\tage = 0;",
-		"\tactive = true;",
-		'\troles = ["user"];',
-		'\tconfig = { theme: "dark" };',
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-user-28uxh3"
-/>
-
-<Code
-	code={[
-		"class Component {",
-		"\tid = `component-${Math.random()}`;",
-		'\telement = document.createElement("div");',
-		"\tdata = {",
-		"\t\tx: 0,",
-		"\t\ty: 0,",
-		"\t};",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-component-301hr3"
-/>
-
-<Code
-	code={[
-		"class Example {",
-		"\t// Constructor assignments are OK for non-literals",
-		"\tconstructor(config: Config) {",
-		"\t\tthis.config = config; // Not a literal",
-		"\t\tthis.handler = this.createHandler(); // Method call",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-example-3rdgc9"
-/>
-
-### ❌ Incorrect (with `"never"`)
-
-<Code
-	code={["class User {", '\tname = "Unknown"; // Class property not allowed', "\tage = 0;", "}"].join("\n")}
-	lang="typescript"
-	key="class-user-20l94e"
-/>
-
-### ✅ Correct (with `"never"`)
-
-<Code
-	code={["class User {", "\tconstructor() {", '\t\tthis.name = "Unknown";', "\t\tthis.age = 0;", "\t}", "}"].join(
-		"\n",
-	)}
-	lang="typescript"
-	key="class-user-25tzj9"
-/>
-
-## What is Considered a "Simple Literal"?
-
-The rule considers these as simple literals:
-
-### Primitive Literals
-
-<Code
-	code={[
-		"class Example {",
-		"\t// ❌ Should be class properties",
-		"\tconstructor() {",
-		'\t\tthis.string = "hello";',
-		"\t\tthis.number = 42;",
-		"\t\tthis.boolean = true;",
-		"\t\tthis.nullValue = null;",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-example-134eew"
-/>
-
-### Object Literals
-
-<Code
-	code={[
-		"class Example {",
-		"\t// ❌ Should be class property",
-		"\tconstructor() {",
-		"\t\tthis.config = {",
-		"\t\t\tx: 10,",
-		"\t\t\ty: 20,",
-		"\t\t\tnested: {",
-		"\t\t\t\ta: 1,",
-		"\t\t\t},",
-		"\t\t};",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-example-38a060"
-/>
-
-### Array Literals
-
-<Code
-	code={[
-		"class Example {",
-		"\t// ❌ Should be class property",
-		"\tconstructor() {",
-		"\t\tthis.items = [1, 2, 3];",
-		"\t\tthis.nested = [",
-		"\t\t\t[1, 2],",
-		"\t\t\t[3, 4],",
-		"\t\t];",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-example-18jbmq"
-/>
-
-### Static Member Expressions
-
-<Code
-	code={[
-		"class Example {",
-		"\t// ❌ Should be class property",
-		"\tconstructor() {",
-		"\t\tthis.color = Color3.fromRGB(255, 0, 0);",
-		"\t\tthis.vector = Vector3.zero;",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-example-2xm702"
-/>
-
-## What is NOT Considered?
-
-### Constructor Parameters
-
-<Code
-	code={[
-		"class Example {",
-		"\t// ✅ Allowed - not a literal",
-		"\tconstructor(name: string) {",
-		"\t\tthis.name = name;",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-example-1ubc9e"
-/>
-
-### Method Calls
-
-<Code
-	code={[
-		"class Example {",
-		"\t// ✅ Allowed - method call result",
-		"\tconstructor() {",
-		"\t\tthis.id = generateId();",
-		"\t\tthis.handler = this.createHandler();",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-example-fqh65p"
-/>
-
-### Dynamic Property Access
-
-<Code
-	code={[
-		"class Example {",
-		"\t// ✅ Allowed - computed property",
-		"\tconstructor() {",
-		"\t\tthis.value = obj[key];",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-example-3lhcin"
-/>
-
-### Non-This Assignments
-
-<Code
-	code={[
-		"class Example {",
-		"\t// ✅ Allowed - not assigning to this",
-		"\tconstructor() {",
-		'\t\tconst temp = "value";',
-		'\t\tsomeObject.prop = "value";',
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-example-1tqvg2"
-/>
-
-## Benefits of Class Properties
-
-### 1. Clarity and Readability
-
-<Code
-	code={[
-		"// ❌ Harder to see class structure",
-		"class User {",
-		"\tconstructor() {",
-		'\t\tthis.name = "";',
-		'\t\tthis.email = "";',
-		"\t\tthis.age = 0;",
-		"\t\tthis.active = true;",
-		"\t}",
-		"}",
-		"",
-		"// ✅ Class structure immediately visible",
-		"class User {",
-		'\tname = "";',
-		'\temail = "";',
-		"\tage = 0;",
-		"\tactive = true;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="harder-to-see-class--3l4dam"
-/>
-
-### 2. Less Boilerplate
-
-<Code
-	code={[
-		"// ❌ Requires constructor",
-		"class Config {",
-		"\tconstructor() {",
-		"\t\tthis.timeout = 5000;",
-		"\t\tthis.retries = 3;",
-		"\t\tthis.debug = false;",
-		"\t}",
-		"}",
-		"",
-		"// ✅ No constructor needed",
-		"class Config {",
-		"\ttimeout = 5000;",
-		"\tretries = 3;",
-		"\tdebug = false;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="requires-constructor-1j8eww"
-/>
-
-### 3. Better TypeScript Integration
-
-<Code
-	code={[
-		"// ✅ TypeScript infers types from initializers",
-		"class Point {",
-		"\tx = 0; // TypeScript knows this is number",
-		"\ty = 0;",
-		"}",
-		"",
-		"// vs requiring explicit types",
-		"class Point {",
-		"\tx: number;",
-		"\ty: number;",
-		"",
-		"\tconstructor() {",
-		"\t\tthis.x = 0;",
-		"\t\tthis.y = 0;",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="typescript-infers-ty-onvtxe"
-/>
-
-### 4. Clearer Inheritance
-
-<Code
-	code={[
-		"class Base {",
-		'\tbaseProp = "base";',
-		"}",
-		"",
-		"class Derived extends Base {",
-		'\tderivedProp = "derived";',
-		"",
-		"\t// Constructor only needed if doing non-literal work",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-base-ouund1"
-/>
-
-## Advanced Examples
-
-### Mixed Assignments
-
-<Code
-	code={[
-		"class Component {",
-		"\t// Class properties for literals",
-		"\tid = generateId();",
-		"\tdefaultSize = new Vector2(100, 100);",
-		"\tconfig = {",
-		"\t\tenabled: true,",
-		'\t\ttheme: "dark",',
-		"\t};",
-		"",
-		"\t// Constructor for dynamic values",
-		"\tconstructor(options: Options) {",
-		"\t\tthis.options = options;",
-		"\t\tthis.handler = this.createHandler(options);",
-		"\t}",
-		"",
-		"\tprivate createHandler(options: Options) {",
-		"\t\t// ...",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-component-3ct2q1"
-/>
-
-### With Visibility Modifiers
-
-<Code
-	code={[
-		"class Service {",
-		"\t// Public class properties",
-		'\tpublic name = "ServiceName";',
-		'\tpublic version = "1.0.0";',
-		"",
-		"\t// Private class properties",
-		"\tprivate cache = new Map();",
-		"\tprivate initialized = false;",
-		"",
-		"\t// Protected class properties",
-		"\tprotected config = {",
-		"\t\ttimeout: 5000,",
-		"\t};",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-service-3mov6b"
-/>
-
-### With Readonly
-
-<Code
-	code={[
-		"class Constants {",
-		"\treadonly MAX_SIZE = 100;",
-		"\treadonly DEFAULT_COLOR = Color3.fromRGB(255, 255, 255);",
-		"\treadonly CONFIG = {",
-		'\t\tkey: "value",',
-		"\t};",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-constants-35a60i"
-/>
-
-## Edge Cases
-
-### Computed Property Names
-
-<Code
-	code={[
-		"class Example {",
-		"\t// ✅ Class properties support computed names (but rare)",
-		'\t["computed" + "Name"] = "value";',
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-example-21ct5t"
-/>
-
-### Decorators
-
-<Code
-	code={[
-		"class Component {",
-		"\t// ✅ Can use decorators with class properties",
-		"\t@observable",
-		"\tcount = 0;",
-		"",
-		"\t@computed",
-		"\tget doubled() {",
-		"\t\treturn this.count * 2;",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="class-component-tzleba"
-/>
-
-## When Not To Use It
-
-Consider using `"never"` option if:
-
-- Your codebase consistently uses constructor assignment
-- You're working with a style guide that requires constructor initialization
-- You need to maintain compatibility with older JavaScript environments
-
-## Configuration Examples
-
-### Enforce Class Properties (Default)
-
-<Code
-	code={["{", '  "cease-nonsense/prefer-class-properties": ["error", "always"]', "}"].join("\n")}
-	lang="typescript"
-	key="block-25-2byn0g"
-/>
-
-### Disallow Class Properties
-
-<Code
-	code={["{", '  "cease-nonsense/prefer-class-properties": ["error", "never"]', "}"].join("\n")}
-	lang="typescript"
-	key="block-26-2dccjo"
-/>
-
-### Warn Instead of Error
-
-<Code
-	code={["{", '  "cease-nonsense/prefer-class-properties": ["warn", "always"]', "}"].join("\n")}
-	lang="typescript"
-	key="block-27-33jes1"
-/>
-
-## Migration Guide
-
-### Automated Migration
-
-Most cases can be automatically refactored:
-
-1. Find all constructor assignments of literals
-2. Move them to class property declarations
-3. Remove constructor if it becomes empty
-
-<Code
-	code={[
-		"// Before:",
-		"class Example {",
-		"\tconstructor() {",
-		"\t\tthis.a = 1;",
-		"\t\tthis.b = 2;",
-		"\t}",
-		"",
-		"\tmethod() {",
-		"\t\t/* ... */",
-		"\t}",
-		"}",
-		"",
-		"// After:",
-		"class Example {",
-		"\ta = 1;",
-		"\tb = 2;",
-		"",
-		"\tmethod() {",
-		"\t\t/* ... */",
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="before-2w86f3"
-/>
-
-### Handling Computed Values
-
-<Code
-	code={[
-		"// Before:",
-		"class Component {",
-		"\tconstructor() {",
-		"\t\tthis.id = `id-${Math.random()}`;",
-		"\t\tthis.timestamp = Date.now();",
-		"\t}",
-		"}",
-		"",
-		"// After (computed per instance):",
-		"class Component {",
-		"\tid = `id-${Math.random()}`;",
-		"\ttimestamp = Date.now();",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="before-26k5cj"
-/>
-
-**Note**: Class property initializers run once per instance, maintaining correct behavior.
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Constructor Assignments
+		Avoid manually assigning static literals inside the `constructor`.
+
+    	<Code
+    		code={[
+    			"class User {",
+    			"\tconstructor() {",
+    			'\t\tthis.name = "Unknown";',
+    			"\t\tthis.age = 0;",
+    			"\t\tthis.active = true;",
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Class Properties
+    	Declare properties directly at the class level for a cleaner structure.
+
+    	<Code
+    		code={[
+    			"class User {",
+    			'\tname = "Unknown";',
+    			"\tage = 0;",
+    			"\tactive = true;",
+    			"}",
+    			"",
+    			"class Service {",
+    			"\t// Constructor is now free for dynamic logic",
+    			"\tconstructor(options: Options) {",
+    			"\t\tthis.options = options;",
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Benefits
+
+<CardGrid stagger>
+	<Card title="Readability" icon="list-format">
+		The class's properties are documented at the top, not buried in nested constructor logic.
+	</Card>
+	<Card title="Type Inference" icon="bolt">
+		TypeScript can automatically infer the property type from the initializer: `age = 0` is typed as
+		`number`.
+	</Card>
+	<Card title="Less Boilerplate" icon="setting">
+		Avoid writing `constructor() { super(); ... }` when you only need to set default values.
+	</Card>
+	<Card title="Inheritance" icon="warning">
+		Property initializers run in a predictable order relative to parent class initialization.
+	</Card>
+</CardGrid>
+
+## Simple Literal Detection
+
+The rule flags assignments of the following "simple" values:
+
+- **Primitives**: `string`, `number`, `boolean`, `null`.
+- **Structural Literals**: `[]` (Array) and `{}` (Object).
+- **Template Literals**: Backtick strings without complex interpolation.
+- **Static Members**: `Color3.fromRGB(...)`, `Vector3.zero`, etc.
 
 ## Related Rules
 
-- [no-async-constructor](/rules/no-async-constructor/) - Prevents async operations in constructors
-- [prefer-module-scope-constants](/rules/prefer-module-scope-constants/) - Enforces module-level constants
+<CardGrid>
+	<LinkCard
+		title="no-async-constructor"
+		description="Avoid async work in constructors"
+		href="/rules/no-async-constructor/"
+	/>
+	<LinkCard
+		title="no-instance-methods-without-this"
+		description="Optimize class method placement"
+		href="/rules/no-instance-methods-without-this/"
+	/>
+</CardGrid>
 
 ## Further Reading
 
-- [TC39 Class Fields Proposal](https://github.com/tc39/proposal-class-fields)
-- [TypeScript Class Members](https://www.typescriptlang.org/docs/handbook/2/classes.html)
-- [MDN: Class Fields](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Public_class_fields)
+<CardGrid>
+	<LinkCard
+		title="TypeScript Classes"
+		description="Official guide on class fields and properties"
+		href="https://www.typescriptlang.org/docs/handbook/2/classes.html"
+	/>
+	<LinkCard
+		title="MDN: Class Fields"
+		description="Public and private class field documentation"
+		href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Public_class_fields"
+	/>
+</CardGrid>

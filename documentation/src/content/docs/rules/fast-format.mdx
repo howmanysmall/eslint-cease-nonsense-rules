@@ -1,264 +1,129 @@
 ---
 title: fast-format
+badge:
+    text: Performance
+    variant: success
+description: Enforces oxfmt code formatting with auto-fix support and intelligent caching.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
 Enforces oxfmt code formatting with auto-fix support and intelligent caching.
 
-## Rule Details
+## Rule Details :badge[Performance]{variant=success}
 
-This rule integrates oxfmt (a fast code formatter) directly into ESLint, reporting formatting differences as INSERT, DELETE, and REPLACE operations. It includes an LRU cache to avoid re-formatting unchanged files, making it suitable for large codebases.
+This rule integrates `oxfmt` (a high-performance Rust-based formatter) directly into ESLint. It reports formatting
+differences as `INSERT`, `DELETE`, and `REPLACE` operations, providing near-instant feedback even in massive monorepos.
 
-## Options
+<Aside type="tip" title="Blazing Fast">
+	`oxfmt` is 10-100x faster than Prettier. By integrating it into ESLint, you get unified tooling without sacrificing
+	performance.
+</Aside>
 
-This rule has no configuration options. It uses oxfmt's default formatting rules.
+## How it Works
 
-## Examples
+<Steps>
+1. **Source Analysis**
+   The rule reads your file content and identifies its language (TS, JS, TSX, JSX).
 
-### ❌ Incorrect
+2. **Oxfmt Execution** It passes the source to the Rust-powered `oxfmt` engine via an internal bridge.
 
-<Code
-	code={[
-		"// Inconsistent spacing",
-		"const x = 1 + 2;",
-		"",
-		"// Missing semicolons",
-		'const message = "hello";',
-		"",
-		"// Inconsistent quote style",
-		'const name = "John";',
-		'const greeting = "Hello";',
-		"",
-		"// Poor indentation",
-		"function example() {",
-		"\tif (true) {",
-		"\t\treturn 42;",
-		"\t}",
-		"}",
-		"",
-		"// Inconsistent object formatting",
-		"const obj = { a: 1, b: 2, c: 3 };",
-	].join("\n")}
-	lang="typescript"
-	key="inconsistent-spacing-1cyja7"
-/>
+3. **Diff Generation** Determines the minimum set of edits (Insert/Delete/Replace) needed to match the ideal format.
 
-### ✅ Correct
+4. **Auto-Fix** ESLint applies these edits automatically when running with the `--fix` flag.
 
-<Code
-	code={[
-		"// Consistent spacing",
-		"const x = 1 + 2;",
-		"",
-		"// Proper semicolons",
-		'const message = "hello";',
-		"",
-		"// Consistent quote style",
-		'const name = "John";',
-		'const greeting = "Hello";',
-		"",
-		"// Proper indentation",
-		"function example() {",
-		"\tif (true) {",
-		"\t\treturn 42;",
-		"\t}",
-		"}",
-		"",
-		"// Formatted object",
-		"const obj = { a: 1, b: 2, c: 3 };",
-	].join("\n")}
-	lang="typescript"
-	key="consistent-spacing-2n8crr"
-/>
+{/* oxfmt-ignore */}
 
-## Auto-Fix Behavior
+</Steps>
 
-This rule provides automatic fixes for all formatting violations. When you run ESLint with `--fix`, all formatting issues will be corrected automatically.
+## Features
 
-<Code
-	code={["# Fix all formatting issues", "bun run lint:fix", "eslint --fix src/"].join("\n")}
-	lang="bash"
-	key="fix-all-formatting-i-35tcuh"
-/>
+<CardGrid stagger>
+	<Card title="Rust-Powered" icon="bolt">
+		Leverages the performance of Rust for extremely fast parsing and formatting.
+	</Card>
+	<Card title="LRU Caching" icon="setting">
+		Avoids redundant formatting for unchanged files using an intelligent caching system.
+	</Card>
+	<Card title="Auto-Fix" icon="approve-check">
+		Fully compatible with `eslint --fix` and `bun run lint:fix`.
+	</Card>
+	<Card title="Unified Tooling" icon="rocket">
+		No need for separate Prettier runs; everything happens in your standard linting pass.
+	</Card>
+</CardGrid>
 
-## Performance Features
+## Usage
 
-### LRU Cache
+<Tabs>
+	<TabItem label="Command Line" icon="terminal">
+		### Fixing Issues
+		Run the fix command to automatically format your entire project.
 
-The rule uses a Least Recently Used (LRU) cache to avoid reformatting unchanged files:
+    	<Code code={["bun run lint:fix", "eslint --fix src/"].join("\n")} lang="bash" />
+    </TabItem>
+    <TabItem label="Configuration" icon="seti:typescript">
+    	### ESLint Setup
+    	Include the plugin and enable the rule in your configuration.
 
-- **Default capacity**: 32 files
-- **Cache keys**: Combination of filename and source content
-- **Cache behavior**: Automatically evicts oldest entries when capacity is reached
+    	<Code
+    		code={[
+    			'import ceaseNonsense from "@pobammer-ts/eslint-cease-nonsense-rules";',
+    			"",
+    			"export default [",
+    			"\t{",
+    			"\t\tplugins: {",
+    			'\t\t\t"cease-nonsense": ceaseNonsense,',
+    			"\t\t},",
+    			"\t\trules: {",
+    			'\t\t\t"cease-nonsense/fast-format": "error",',
+    			"\t\t},",
+    			"\t},",
+    			"];",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-### File Extension Detection
+</Tabs>
 
-The rule only runs on supported file extensions (`.js`, `.jsx`, `.ts`, `.tsx`, `.mjs`, `.cjs`) and skips other files entirely for better performance.
+## Performance Internals
 
-## Error Handling
+### LRU Cache Strategy
 
-If oxfmt encounters a parsing or formatting error, the rule reports it at line 1, column 0:
+The rule maintains a Least Recently Used (LRU) cache (default capacity: 32 files) to skip processing for files that
+haven't changed:
 
-<Code
-	code={[
-		"// Syntax error in file",
-		"const x = ;",
-		"",
-		"// ESLint output:",
-		"// error  Oxfmt error: unexpected token  cease-nonsense/fast-format",
-	].join("\n")}
-	lang="typescript"
-	key="syntax-error-in-file-3icx0i"
-/>
-
-## Integration with Other Tools
-
-### Prettier Comparison
-
-Unlike Prettier, oxfmt is specifically designed for JavaScript/TypeScript and is significantly faster:
-
-- ✅ **Faster**: 10-100x faster than Prettier
-- ✅ **Integrated**: Reports as ESLint violations
-- ✅ **Cached**: Avoids re-formatting unchanged files
-- ✅ **Auto-fix**: Works with ESLint's --fix flag
-
-### ESLint Formatting Rules
-
-This rule replaces many ESLint formatting rules:
-
-<Code
-	code={[
-		"// You can disable these when using fast-format:",
-		'"rules": {',
-		'\t"indent": "off",',
-		'\t"quotes": "off",',
-		'\t"semi": "off",',
-		'\t"comma-spacing": "off",',
-		'\t"object-curly-spacing": "off",',
-		"\t// ... and many others",
-		"},",
-	].join("\n")}
-	lang="typescript"
-	key="you-can-disable-thes-1xnwcb"
-/>
-
-## When Not To Use It
-
-Disable this rule if:
-
-- You use a different code formatter (e.g., Prettier)
-- You prefer to format code manually
-- Your project has specific formatting requirements not supported by oxfmt
-
-## Configuration Examples
-
-### Recommended Setup
-
-<Code
-	code={[
-		'import ceaseNonsense from "@pobammer-ts/eslint-cease-nonsense-rules";',
-		"",
-		"export default [",
-		"\t{",
-		"\t\tplugins: {",
-		'\t\t\t"cease-nonsense": ceaseNonsense,',
-		"\t\t},",
-		"\t\trules: {",
-		'\t\t\t"cease-nonsense/fast-format": "error",',
-		"\t\t},",
-		"\t},",
-		"];",
-	].join("\n")}
-	lang="typescript"
-	key="import-ceasenonsense-6lw4j9"
-/>
-
-### With Pre-commit Hook
-
-<Code
-	code={[
-		"{",
-		'\t"simple-git-hooks": {',
-		'\t\t"pre-commit": "bun run lint:fix"',
-		"\t},",
-		'\t"lint-staged": {',
-		'\t\t"*.{ts,tsx,js,jsx}": ["eslint --fix"]',
-		"\t}",
-		"}",
-	].join("\n")}
-	lang="json"
-	key="block-6-yfj0r1"
-/>
+- **Cache Keys**: Combination of filename and hashed source content.
+- **Eviction**: Automatically removes the oldest entries to maintain a low memory footprint.
+- **Support**: Runs on `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs`, and `.cjs`.
 
 ## Message Types
 
-The rule reports three types of formatting operations:
+| Type      | Description                       | Example                        |
+| :-------- | :-------------------------------- | :----------------------------- |
+| `INSERT`  | Missing whitespace or punctuation | `Insert " " at position 42`    |
+| `DELETE`  | Extra or incorrect characters     | `Delete ";" at position 10`    |
+| `REPLACE` | Swapping styles (e.g., quotes)    | `Replace 'hello' with "hello"` |
 
-### INSERT
+## Related Rules
 
-<Code
-	code={[
-		"// Before:",
-		"const x = 1;",
-		"",
-		"// After:",
-		"const x = 1;",
-		"",
-		"// Message: Insert ` ` at position X",
-	].join("\n")}
-	lang="typescript"
-	key="before-262gn8"
-/>
-
-### DELETE
-
-<Code
-	code={[
-		"// Before:",
-		"const x = 1;",
-		"",
-		"// After:",
-		"const x = 1;",
-		"",
-		"// Message: Delete ` ` at position X",
-	].join("\n")}
-	lang="typescript"
-	key="before-25pysb"
-/>
-
-### REPLACE
-
-<Code
-	code={[
-		"// Before:",
-		'const x = "hello";',
-		"",
-		"// After:",
-		'const x = "hello";',
-		"",
-		"// Message: Replace `'hello'` with `\"hello\"` at position X",
-	].join("\n")}
-	lang="typescript"
-	key="before-369bea"
-/>
-
-## Troubleshooting
-
-### Cache Issues
-
-If you experience stale formatting results, the cache may need clearing. Restarting your ESLint process will clear the cache automatically.
-
-### Performance in Large Codebases
-
-For very large codebases (>1000 files), consider:
-
-- Using ESLint's cache: `eslint --cache`
-- Running only on changed files in CI
-- Adjusting the cache capacity if memory is a concern
+<CardGrid>
+	<LinkCard title="no-commented-code" description="Clean up old code blocks" href="/rules/no-commented-code/" />
+	<LinkCard title="naming-convention" description="Enforce fast naming standards" href="/rules/naming-convention/" />
+</CardGrid>
 
 ## Further Reading
 
-- [oxfmt Documentation](https://oxc-project.github.io/docs/guide/usage/linter/oxfmt.html)
-- [ESLint Formatters](https://eslint.org/docs/latest/use/formatters/)
-- [Code Formatting Best Practices](https://prettier.io/docs/en/rationale.html)
+<CardGrid>
+	<LinkCard
+		title="oxfmt Documentation"
+		description="Official guide to the oxc formatter"
+		href="https://oxc-project.github.io/docs/guide/usage/linter/oxfmt.html"
+	/>
+	<LinkCard
+		title="ESLint Formatters"
+		description="Understanding how ESLint handles formatting"
+		href="https://eslint.org/docs/latest/use/formatters/"
+	/>
+</CardGrid>

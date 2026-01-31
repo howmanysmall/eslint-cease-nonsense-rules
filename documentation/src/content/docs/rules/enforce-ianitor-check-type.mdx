@@ -1,141 +1,117 @@
 ---
 title: enforce-ianitor-check-type
+badge:
+    text: Roblox
+    variant: note
+description: Enforces Ianitor.Check<T> type annotations on complex TypeScript types to ensure runtime validation.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Enforces `Ianitor.Check<T>` type annotations on complex TypeScript types to ensure runtime validation.
+Enforces `Ianitor.Check<T>` type annotations on complex types.
 
-## Rule Details
+## Rule Details :badge[Roblox]{variant=note}
 
-This rule calculates structural complexity of TypeScript types and requires Ianitor validators when complexity exceeds configured thresholds. Runtime validation prevents type mismatches that TypeScript cannot catch at compile time.
+This rule calculates the structural complexity of your TypeScript types and requires `Ianitor` validators when
+complexity exceeds configured thresholds. Runtime validation prevents "impossible" states and type mismatches that
+TypeScript cannot catch at compile time—critical for data from DataStores or RemoteEvents.
 
-## Options
+<Aside type="caution" title="Runtime Safety">
+	TypeScript only provides compile-time safety. `Ianitor` ensures that data coming from external sources (like
+	DataStores) actually matches your expected shapes.
+</Aside>
 
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/enforce-ianitor-check-type": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"baseThreshold": 10, // Minimum complexity to require validation',
-		'\t\t\t"warnThreshold": 15, // Warning threshold',
-		'\t\t\t"errorThreshold": 25, // Error threshold',
-		'\t\t\t"interfacePenalty": 20, // Complexity penalty for interfaces',
-		'\t\t\t"performanceMode": true, // Enable performance optimizations',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="block-0-3izarl"
-/>
+## Validation Workflow
 
-### Configuration Parameters
+<Steps>
+1. **Analyze Type Shape**
+   The linter recursively calculates a complexity score based on nesting, property counts, and structural weight.
+2. **Trigger Threshold** If the score exceeds the configured limit, a linter error will prompt you for a runtime check.
+3. **Define Ianitor Schema** Create an `Ianitor` validator that matches your TypeScript interface.
+4. **Derive Type** Use `type MyType = Ianitor.Static<typeof myValidator>` to ensure your runtime check and type are
+   perfectly synced.
+{/* oxfmt-ignore */}
 
-- **baseThreshold** (default: `10`): Minimum structural complexity score to trigger validation requirement
-- **warnThreshold** (default: `15`): Complexity level that produces warnings
-- **errorThreshold** (default: `25`): Complexity level that produces errors
-- **interfacePenalty** (default: `20`): Additional complexity added for interface types
-- **performanceMode** (default: `true`): Enable caching and optimization for large codebases
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Dangerous Types
+		Bans complex, deeply nested types that lack a runtime validation schema.
 
-<Code
-	code={[
-		"// Complex type without runtime validation",
-		"type UserConfig = {",
-		"\tid: number;",
-		"\tname: string;",
-		"\tsettings: {",
-		"\t\ttheme: string;",
-		"\t\tnotifications: boolean;",
-		"\t};",
-		"};",
-		"",
-		"const config = getUserConfig(); // No runtime check!",
-		"",
-		"// Deeply nested type without validation",
-		"type ApiResponse = {",
-		"\tdata: {",
-		"\t\tusers: Array<{",
-		"\t\t\tid: number;",
-		"\t\t\tprofile: {",
-		"\t\t\t\tavatar: string;",
-		"\t\t\t\tbio: string;",
-		"\t\t\t};",
-		"\t\t}>;",
-		"\t};",
-		"\tmeta: {",
-		"\t\tpage: number;",
-		"\t\ttotal: number;",
-		"\t};",
-		"};",
-	].join("\n")}
-	lang="typescript"
-	key="complex-type-without-23wxll"
-/>
+    	<Code
+    		code={[
+    			"// Too complex to be trusted without a check!",
+    			"type UserPayload = {",
+    			"\tdata: {",
+    			"\t\tpreferences: {",
+    			"\t\t\ttheme: string;",
+    			"\t\t\tblurEnabled: boolean;",
+    			"\t\t};",
+    			"\t\tlastLogin: number;",
+    			"\t};",
+    			"};",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Schema-Derived Types
+    	Define the schema once and use `Ianitor.Static` to get the TypeScript type.
 
-### ✅ Correct
+    	<Code
+    		code={[
+    			"const userValidator = Ianitor.interface({",
+    			"\tdata: Ianitor.interface({",
+    			"\t\tpreferences: Ianitor.interface({ ... }),",
+    			"\t\tlastLogin: Ianitor.number(),",
+    			"\t}),",
+    			"});",
+    			"",
+    			"// Safely derived and validated",
+    			"type UserPayload = Ianitor.Static<typeof userValidator>;",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"const userConfigValidator = Ianitor.interface({",
-		"\tid: Ianitor.number(),",
-		"\tname: Ianitor.string(),",
-		"\tsettings: Ianitor.interface({",
-		"\t\ttheme: Ianitor.string(),",
-		"\t\tnotifications: Ianitor.boolean(),",
-		"\t}),",
-		"});",
-		"",
-		"type UserConfig = Ianitor.Static<typeof userConfigValidator>;",
-		"",
-		"const config = userConfigValidator.check(getUserConfig());",
-		"",
-		"// With nested validators",
-		"const apiResponseValidator = Ianitor.interface({",
-		"\tdata: Ianitor.interface({",
-		"\t\tusers: Ianitor.array(",
-		"\t\t\tIanitor.interface({",
-		"\t\t\t\tid: Ianitor.number(),",
-		"\t\t\t\tprofile: Ianitor.interface({",
-		"\t\t\t\t\tavatar: Ianitor.string(),",
-		"\t\t\t\t\tbio: Ianitor.string(),",
-		"\t\t\t\t}),",
-		"\t\t\t}),",
-		"\t\t),",
-		"\t}),",
-		"\tmeta: Ianitor.interface({",
-		"\t\tpage: Ianitor.number(),",
-		"\t\ttotal: Ianitor.number(),",
-		"\t}),",
-		"});",
-		"",
-		"type ApiResponse = Ianitor.Static<typeof apiResponseValidator>;",
-	].join("\n")}
-	lang="typescript"
-	key="const-userconfigvali-21wm5w"
-/>
+</Tabs>
 
-## When Not To Use It
+## Complexity Factors
 
-If you're working in a fully type-safe environment with no external data sources or runtime type validation requirements, this rule may be overly restrictive.
+<CardGrid stagger>
+	<Card title="Structural Weight" icon="list-format">
+		Unions, intersections, and optional properties add more complexity than simple primitives.
+	</Card>
+	<Card title="Nesting Depth" icon="magnifier">
+		Each level of object nesting multiplies the complexity score significantly.
+	</Card>
+	<Card title="Property Density" icon="bolt">
+		Large objects with dozens of fields are penalized to encourage modular sub-interfaces.
+	</Card>
+	<Card title="Performance" icon="setting">
+		The rule uses aggressive caching to ensure calculation doesn't slow down your IDE.
+	</Card>
+</CardGrid>
 
-## Complexity Calculation
+## Related Rules
 
-The rule calculates complexity by:
-
-1. Counting nested object properties
-2. Weighing array types and unions
-3. Adding penalties for interface types
-4. Accumulating complexity scores across type hierarchies
-
-Types exceeding the configured thresholds require Ianitor validation.
+<CardGrid>
+	<LinkCard
+		title="require-serialized-numeric-data-type"
+		description="Correct types for binary data"
+		href="/rules/require-serialized-numeric-data-type/"
+	/>
+</CardGrid>
 
 ## Further Reading
 
-- [Ianitor Documentation](https://github.com/howmanysmall/ianitor)
-- [Runtime Type Validation Best Practices](https://www.typescriptlang.org/docs/handbook/2/narrowing.html)
+<CardGrid>
+	<LinkCard
+		title="Ianitor GitHub"
+		description="Official source for the Ianitor library"
+		href="https://github.com/howmanysmall/ianitor"
+	/>
+</CardGrid>

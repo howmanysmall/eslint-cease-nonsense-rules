@@ -1,173 +1,113 @@
 ---
 title: ban-react-fc
+badge:
+    text: Best Practice
+    variant: success
+description: Bans React.FC and similar component type annotations in favor of explicit function declarations.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Bans `React.FC`, `React.FunctionComponent`, `FC`, `VFC` and similar component type annotations.
+Bans `React.FC` and similar component type annotations.
 
-## Rule Details
+## Rule Details :badge[Best Practice]{variant=success}
 
-React.FC and similar type annotations break debug information in React DevTools, hide component display names, and encourage poor patterns like implicit children typing. Use explicit function declarations with typed props instead.
+`React.FC` and similar type annotations break debug information in React DevTools, hide component display names, and
+encourage poor patterns like implicit children typing. Use explicit function declarations with typed props instead to
+ensure maximum type safety and a clean debugging experience.
+
+<Aside type="danger" title="Why Ban React.FC?">
+	`React.FC` makes your components harder to debug and less type-safe. It encourages using arrow functions which often
+	show up as `Anonymous` in DevTools.
+</Aside>
+
+## Refactoring Steps
+
+<Steps>
+1. **Identify React.FC**
+   Look for variable declarations using `: React.FC<Props>` or `: FC<Props>`.
+2. **Convert to Function** Change `const Component: React.FC<Props> = (...)` to `function Component(...)`.
+3. **Type Props Directly** Move the prop type from the variable annotation to the function parameter list:
+   `(props: Props)`.
+4. **Clean Up** Check if your component uses `children`. If so, explicitly add `children: ReactNode` to your props
+   interface.
+{/* oxfmt-ignore */}
+
+</Steps>
 
 ## Examples
 
-### ❌ Incorrect
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Type Annotations
+		Bans the use of generic wrapper types for component variables.
 
-<Code
-	code={[
-		"export const MyComponent: React.FC<Props> = ({ children }) => {",
-		"\treturn <div>{children}</div>;",
-		"};",
-		"",
-		"const Button: FC<ButtonProps> = ({ label }) => <button>{label}</button>;",
-		"",
-		"const Modal: React.FunctionComponent = () => <div>Modal</div>;",
-		"",
-		"const Input: VFC = () => <input />;",
-		"",
-		"// Arrow function with explicit return type",
-		"const Header: React.FC<{ title: string }> = ({ title }) => {",
-		"\treturn <h1>{title}</h1>;",
-		"};",
-	].join("\n")}
-	lang="typescript"
-	key="export-const-mycompo-1luzxa"
-/>
+    	<Code
+    		code={[
+    			"export const MyComponent: React.FC<Props> = ({ children }) => {",
+    			"\treturn <div>{children}</div>;",
+    			"};",
+    			"",
+    			"const Button: FC<ButtonProps> = ({ label }) => <button>{label}</button>;",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Function Declarations
+    	Use standard TypeScript function signatures for your components.
 
-### ✅ Correct
+    	<Code
+    		code={[
+    			"export function MyComponent({ children }: Props) {",
+    			"\treturn <div>{children}</div>;",
+    			"}",
+    			"",
+    			"function Button({ label }: ButtonProps) {",
+    			"\treturn <button>{label}</button>;",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"export function MyComponent({ children }: Props) {",
-		"\treturn <div>{children}</div>;",
-		"}",
-		"",
-		"function Button({ label }: ButtonProps) {",
-		"\treturn <button>{label}</button>;",
-		"}",
-		"",
-		"function Modal() {",
-		"\treturn <div>Modal</div>;",
-		"}",
-		"",
-		"function Input() {",
-		"\treturn <input />;",
-		"}",
-		"",
-		"// Named function with explicit props type",
-		"function Header({ title }: { title: string }) {",
-		"\treturn <h1>{title}</h1>;",
-		"}",
-		"",
-		"// Arrow function without FC type (allowed)",
-		"const Component = ({ value }: { value: number }) => <span>{value}</span>;",
-	].join("\n")}
-	lang="typescript"
-	key="export-function-myco-29c85u"
-/>
+</Tabs>
 
-## Why Is This Bad?
+## Problems with React.FC
 
-### DevTools Issues
+<CardGrid stagger>
+	<Card title="DevTools Issues" icon="setting">
+		Obscures names in React DevTools, making it difficult to navigate your component tree.
+	</Card>
+	<Card title="Implicit Children" icon="warning">
+		Automatically includes `children`, which can lead to bugs if a component shouldn't accept them.
+	</Card>
+	<Card title="Generic Support" icon="bolt">
+		`React.FC` is difficult to use with generic components, whereas function declarations handle them naturally.
+	</Card>
+</CardGrid>
 
-React.FC obscures component names in React DevTools, making debugging harder:
+## Related Rules
 
-<Code
-	code={[
-		'// Shows as "Anonymous" or "_c" in DevTools',
-		"const Button: React.FC = () => <button>Click</button>;",
-		"",
-		'// Shows as "Button" in DevTools',
-		"function Button() {",
-		"\treturn <button>Click</button>;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="shows-as-anonymous-o-28qfo1"
-/>
-
-### Implicit Children
-
-React.FC implicitly includes `children?: ReactNode`, which can lead to bugs:
-
-<Code
-	code={[
-		"// Children are implicitly allowed!",
-		"const Button: React.FC<{ label: string }> = ({ label }) => <button>{label}</button>;",
-		"",
-		"// Can be used incorrectly:",
-		'<Button label="Click">',
-		"\t<div>This compiles but shouldn't!</div>",
-		"</Button>;",
-	].join("\n")}
-	lang="typescript"
-	key="children-are-implici-3jl2mv"
-/>
-
-### Type Inference
-
-Function declarations provide better type inference and error messages:
-
-<Code
-	code={[
-		"// Complex error messages with FC",
-		"const Component: FC<Props> = (props) => {",
-		"\t/* ... */",
-		"};",
-		"",
-		"// Clear, direct error messages",
-		"function Component(props: Props) {",
-		"\t/* ... */",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="complex-error-messag-vf6m3c"
-/>
-
-## When Not To Use It
-
-If you're maintaining legacy code that heavily relies on React.FC and can't migrate immediately, you may want to disable this rule temporarily.
-
-## Migration Guide
-
-### Before
-
-<Code
-	code={[
-		"export const UserProfile: React.FC<UserProfileProps> = ({ userId, onUpdate }) => {",
-		"\tconst [user, setUser] = useState<User | null>(null);",
-		"",
-		"\tuseEffect(() => {",
-		"\t\tfetchUser(userId).then(setUser);",
-		"\t}, [userId]);",
-		"",
-		"\treturn <div>{user?.name}</div>;",
-		"};",
-	].join("\n")}
-	lang="typescript"
-	key="export-const-userpro-24rq8s"
-/>
-
-### After
-
-<Code
-	code={[
-		"export function UserProfile({ userId, onUpdate }: UserProfileProps) {",
-		"\tconst [user, setUser] = useState<User | undefined>(undefined);",
-		"",
-		"\tuseEffect(() => {",
-		"\t\tfetchUser(userId).then(setUser);",
-		"\t}, [userId]);",
-		"",
-		"\treturn <div>{user?.name}</div>;",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="export-function-user-3vramd"
-/>
+<CardGrid>
+	<LinkCard
+		title="require-react-display-names"
+		description="Ensures components have names in DevTools"
+		href="/rules/require-react-display-names/"
+	/>
+	<LinkCard
+		title="no-god-components"
+		description="Prevents overly complex components"
+		href="/rules/no-god-components/"
+	/>
+</CardGrid>
 
 ## Further Reading
 
-- [React TypeScript Cheatsheet](https://react-typescript-cheatsheet.netlify.app/docs/basic/getting-started/function_components/)
-- [Why You Should Stop Using React.FC](https://www.totaltypescript.com/you-should-stop-using-react-fc)
+<CardGrid>
+	<LinkCard
+		title="You Should Stop Using React.FC"
+		description="A detailed look into the flaws of FC"
+		href="https://www.totaltypescript.com/you-should-stop-using-react-fc"
+	/>
+</CardGrid>

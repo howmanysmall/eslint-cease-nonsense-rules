@@ -1,223 +1,131 @@
 ---
 title: ban-instances
+badge:
+    text: Roblox
+    variant: caution
 description: Bans specified Roblox Instance classes in new Instance() calls and JSX elements.
 ---
 
-import { Aside, Badge, Code, LinkCard, CardGrid, Tabs, TabItem } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
 
 Bans specified Roblox Instance classes in `new Instance()` calls and JSX elements.
 
-## Rule Details
+## Rule Details :badge[Roblox]{variant=caution}
 
-This rule prevents the creation of specific Roblox Instance classes that may be problematic, deprecated, or should be replaced with better alternatives. You can configure which Instance classes are banned and provide custom messages explaining why.
+This rule prevents the creation of specific Roblox Instance classes that may be problematic, deprecated, or should be
+replaced with better alternatives. You can configure which Instance classes are banned and provide custom messages
+explaining why.
 
-<Aside type="note">
-	This rule is particularly useful for enforcing architectural decisions, improving performance, and ensuring security
-	best practices in Roblox TypeScript projects.
+<Aside type="note" title="Architectural Control">
+	Use this rule to enforce design decisions across your team, such as banning `Part` in favor of `MeshPart` or
+	preventing runtime `Script` creation.
 </Aside>
 
-## Options
+## Configuration Guide
 
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/ban-instances": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"bannedInstances": ["Part", "Frame", "Script"]',
-		"\t\t}",
-		"\t]",
-		"}",
-	].join("\n")}
-	lang="json"
-	title="eslint.config.js"
-/>
+<Steps>
+1. **Choose Targets**
+   Select the Roblox Instance classes you want to restrict (e.g., `Script`, `LocalScript`, `Frame`).
 
-### Configuration Formats
+2. **Define Penalties** Decide if you want a simple ban or an explanatory error message for your team.
+
+3. **Update Config** Add the rule to your `eslint.config.js` using either the array or object format.
+
+4. **Verify JSX** Ensure your JSX components use PascalCase (e.g., `<Button />`) to distinguish them from lowercase
+   Roblox Instances (e.g., `<frame />`).
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
 
 <Tabs>
-	<TabItem label="Array Format" icon="list-format">
-		Uses default error message for each banned instance:
+	<TabItem label="❌ Incorrect" icon="close">
+		### Banned Instances
+		Bans creation of instances specified in your configuration.
+
+    	<Code
+    		code={[
+    			"// If 'Part' and 'Script' are banned:",
+    			'const part = new Instance("Part");',
+    			"<script Source={...} />",
+    			"",
+    			"// Also checks case-insensitive string literals",
+    			'const alsoPart = new Instance("part");',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Allowed Alternatives
+    	Use modern or specialized instances that satisfy your project requirements.
+
+    	<Code
+    		code={[
+    			'const mesh = new Instance("MeshPart");',
+    			"<folder />",
+    			'<textlabel Text="Hello" />',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Configuration Options
+
+The rule accepts an object with a `bannedInstances` property, which can be an array or a map.
+
+<Tabs>
+	<TabItem label="Simple Array" icon="list-format">
+		### Basic Banning
+		Just a list of strings. Uses a generic error message.
 
     	<Code
     		code={[
     			"{",
-    			'\t"bannedInstances": ["Part", "Frame", "Script", "LocalScript"]',
+    			'\t"bannedInstances": ["Part", "Frame", "Script"]',
     			"}",
     		].join("\n")}
     		lang="json"
-    		title="Array format"
     	/>
     </TabItem>
-    <TabItem label="Object Format" icon="document">
-    	Provides custom messages per instance class:
+    <TabItem label="Custom Messages" icon="document">
+    	### Explanatory Errors
+    	Provide a map where the key is the Instance and the value is the reason.
 
     	<Code
     		code={[
     			"{",
     			'\t"bannedInstances": {',
     			'\t\t"Part": "Use MeshPart instead for better performance",',
-    			'\t\t"Script": "Scripts should not be created at runtime",',
-    			'\t\t"Frame": "Use modern UI components instead"',
+    			'\t\t"Script": "Runtime script creation is a security risk"',
     			"\t}",
     			"}",
     		].join("\n")}
     		lang="json"
-    		title="Object format"
     	/>
     </TabItem>
 
 </Tabs>
 
-## Examples
+## Detection Strategy
 
-### ❌ Incorrect
-
-<Code
-	code={[
-		'// With config: { bannedInstances: ["Part", "Script"] }',
-		"",
-		"// new Instance() constructor",
-		'const part = new Instance("Part");',
-		'const script = new Instance("Script");',
-		"",
-		"// JSX elements (lowercase = Roblox Instance)",
-		"<part Size={new Vector3(1, 1, 1)} />",
-		`<script Source="print('hello')" />`,
-		"<frame Size={UDim2.fromScale(1, 1)} />",
-	].join("\n")}
-	lang="tsx"
-	title="incorrect.tsx"
-/>
-
-### ✅ Correct
-
-<Code
-	code={[
-		"// Using allowed alternatives",
-		'const meshPart = new Instance("MeshPart");',
-		'const folder = new Instance("Folder");',
-		"",
-		"// JSX with allowed Instances",
-		"<meshpart Size={new Vector3(1, 1, 1)} />",
-		"<folder />",
-		'<textlabel Text="Hello" />',
-	].join("\n")}
-	lang="tsx"
-	title="correct.tsx"
-/>
-
-## When Not To Use It
-
-<Aside type="caution">
-	If you don't work with Roblox or don't need to restrict specific Instance classes, this rule isn't applicable. You
-	can also disable it in specific files where you need to use banned Instances for legacy compatibility.
-</Aside>
-
-## Common Use Cases
-
-<Tabs>
-	<TabItem label="Performance" icon="rocket">
-		### Performance Optimization
-
-    	Ban inefficient Instance types:
-
-    	<Code
-    		code={[
-    			"{",
-    			'\t"bannedInstances": {',
-    			'\t\t"Part": "Use MeshPart instead - better performance and more features",',
-    			'\t\t"UnionOperation": "Unions are expensive; use MeshParts with optimized meshes"',
-    			"\t}",
-    			"}",
-    		].join("\n")}
-    		lang="json"
-    		title="performance.json"
-    	/>
-    </TabItem>
-    <TabItem label="Security" icon="warning">
-    	### Security Concerns
-
-    	Prevent runtime script creation:
-
-    	<Code
-    		code={[
-    			"{",
-    			'\t"bannedInstances": {',
-    			'\t\t"Script": "Server scripts should not be created at runtime",',
-    			'\t\t"LocalScript": "Client scripts should not be created at runtime - security risk",',
-    			'\t\t"ModuleScript": "Module scripts should be statically required, not dynamically created"',
-    			"\t}",
-    			"}",
-    		].join("\n")}
-    		lang="json"
-    		title="security.json"
-    	/>
-    </TabItem>
-    <TabItem label="Migration" icon="forward-slash">
-    	### API Migration
-
-    	Enforce migration to new UI libraries:
-
-    	<Code
-    		code={[
-    			"{",
-    			'\t"bannedInstances": {',
-    			'\t\t"Frame": "Migrate to new UI library components",',
-    			'\t\t"TextLabel": "Use Text component from UI library instead",',
-    			'\t\t"ImageLabel": "Use Image component from UI library instead"',
-    			"\t}",
-    			"}",
-    		].join("\n")}
-    		lang="json"
-    		title="migration.json"
-    	/>
-    </TabItem>
-
-</Tabs>
-
-## Edge Cases
-
-### JSX Detection
-
-The rule detects JSX elements that represent Roblox Instances by checking if the element name starts with a lowercase letter:
-
-<Code
-	code={[
-		"// These are checked (lowercase = Roblox Instance)",
-		'<part /> // ❌ Banned if "Part" is in config',
-		'<frame /> // ❌ Banned if "Frame" is in config',
-		"",
-		"// These are NOT checked (uppercase = React components)",
-		"<Part /> // ✅ Allowed - React component",
-		"<Frame /> // ✅ Allowed - React component",
-	].join("\n")}
-	lang="tsx"
-	title="jsx-detection.tsx"
-/>
-
-<Aside type="tip" title="React vs Roblox">
-	In roblox-ts, lowercase JSX elements represent Roblox Instances, while PascalCase elements are React components.
-	This rule only checks lowercase elements.
-</Aside>
-
-### Case Sensitivity
-
-The rule performs case-insensitive matching:
-
-<Code
-	code={[
-		'// Config: { "bannedInstances": ["Part"] }',
-		"",
-		"// All of these are banned:",
-		'new Instance("Part");',
-		'new Instance("part");',
-		'new Instance("PART");',
-		"<part />",
-	].join("\n")}
-	lang="tsx"
-	title="case-sensitivity.tsx"
-/>
+<CardGrid stagger>
+	<Card title="JSX Detection" icon="bolt">
+		Flags lowercase elements like `<part />` which represent Roblox Instances.
+	</Card>
+	<Card title="Constructor Check" icon="setting">
+		Inspects `new Instance("Name")` calls, even with complex expressions.
+	</Card>
+	<Card title="Case Insensitivity" icon="magnifier">
+		Matches "Part", "part", and "PART" identically to avoid bypasses.
+	</Card>
+	<Card title="React Safety" icon="warning">
+		Ignores PascalCase elements like `<Part />` as they are React components.
+	</Card>
+</CardGrid>
 
 ## Related Rules
 
@@ -239,12 +147,7 @@ The rule performs case-insensitive matching:
 <CardGrid>
 	<LinkCard
 		title="Roblox Instance API"
-		description="Official Roblox documentation for the Instance class"
+		description="Official reference for all Instance classes"
 		href="https://create.roblox.com/docs/reference/engine/classes/Instance"
-	/>
-	<LinkCard
-		title="Performance Optimization"
-		description="Best practices for Roblox performance"
-		href="https://create.roblox.com/docs/scripting/performance-optimization"
 	/>
 </CardGrid>
