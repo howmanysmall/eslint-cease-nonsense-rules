@@ -133,6 +133,12 @@
 				"complexity": "off",
 			},
 		},
+		{
+			"files": ["**/*.d.ts"],
+			"rules": {
+				"import/unambiguous": "off",
+			},
+		},
 	],
 	"plugins": ["eslint", "import", "jsdoc", "node", "oxc", "promise", "typescript", "unicorn"],
 	"rules": {
