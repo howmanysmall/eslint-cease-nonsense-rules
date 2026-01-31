@@ -1,40 +1,56 @@
 ---
 title: no-print
+description: Bans use of print() function calls. Use log instead for structured logging.
 ---
 
-Bans use of `print()` function calls. Use `Log` instead.
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
+
+Bans use of `print()` function calls. Use `log` instead for structured logging.
 
 ## Rule Details
 
-The `print()` function is a low-level logging mechanism that lacks structure, context, and log level control. Using a proper logging system like `Log` provides better debugging capabilities and production logging.
+The `print()` function is a low-level logging mechanism that lacks structure, context, and log level control. Using a proper logging system like [`Log`](https://sleitnick.github.io/RbxUtil/api/Log) provides better debugging capabilities and production logging.
+
+<Aside type="tip" title="Why structured logging?">
+	Structured logging helps you filter, search, and analyze logs in production. It provides timestamps, log levels, and
+	context that `print()` simply cannot offer.
+</Aside>
 
 ## Examples
 
 ### ❌ Incorrect
 
-```typescript
-print("Debug message");
-print("User logged in:", userId);
-print("Error:", error);
-
-function processData(data: unknown) {
-	print("Processing data:", data);
-	// ...
-}
-```
+<Code
+	code={[
+		'print("Debug message");',
+		'print("User logged in:", userId);',
+		'print("Error:", error);',
+		"",
+		"function processData(data: unknown) {",
+		'\tprint("Processing data:", data);',
+		"\t// ...",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	title="incorrect.ts"
+/>
 
 ### ✅ Correct
 
-```typescript
-Log.info("Debug message");
-Log.info("User logged in:", userId);
-Log.error("Error:", error);
-
-function processData(data: unknown) {
-	Log.debug("Processing data:", data);
-	// ...
-}
-```
+<Code
+	code={[
+		'log.Info("Debug message");',
+		'log.Info("User logged in:", userId);',
+		'log.Error("Error:", error);',
+		"",
+		"function processData(data: unknown) {",
+		'\tlog.Debug("Processing data:", data);',
+		"\t// ...",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	title="correct.ts"
+/>
 
 ## Why Use Log Instead?
 
@@ -42,47 +58,58 @@ function processData(data: unknown) {
 
 `Log` provides structured output with timestamps, log levels, and context:
 
-```typescript
-// print() - unstructured
-print("Request failed");
-
-// Log - structured with level and timestamp
-Log.error("Request failed");
-// [ERROR] 2025-12-31 12:34:56 - Request failed
-```
+<Code
+	code={[
+		"// print() - unstructured, no context",
+		'print("Request failed");',
+		"",
+		"// log - structured with level and automatic timestamp",
+		'log.Error("Request failed");',
+		"// Output: [ERROR] 2025-12-31 12:34:56 - Request failed",
+	].join("\n")}
+	lang="typescript"
+	title="structured-logging.ts"
+/>
 
 ### Log Levels
 
 Different log levels help filter messages in development vs production:
 
-```typescript
-Log.debug("Detailed debug info"); // Only in development
-Log.info("User action completed"); // General information
-Log.warn("Deprecated API used"); // Warnings
-Log.error("Operation failed"); // Errors
-```
-
-### Filtering and Control
-
-Log systems can be configured to show/hide messages based on level:
-
-```typescript
-// Development: show all logs
-Log.setLevel("debug");
-
-// Production: only warnings and errors
-Log.setLevel("warn");
-```
+<Code
+	code={[
+		'log.Debug("Detailed debug info"); // Only in development',
+		'log.Info("User action completed"); // General information',
+		'log.Warning("Deprecated API used"); // Warnings',
+		'log.Error("Operation failed"); // Errors',
+	].join("\n")}
+	lang="typescript"
+	title="log-levels.ts"
+/>
 
 ## When Not To Use It
 
-If you're writing quick scripts or prototypes where structured logging isn't necessary, you may disable this rule. However, it's recommended to use proper logging even in development.
+<Aside type="caution">
+	If you're writing quick scripts or prototypes where structured logging isn't necessary, you may disable this rule.
+	However, it's recommended to use proper logging even in development.
+</Aside>
 
 ## Related Rules
 
-- [no-warn](./no-warn.md) - Bans `warn()` function calls
+<CardGrid>
+	<LinkCard title="no-warn" description="Bans warn() function calls" href="/rules/no-warn/" />
+</CardGrid>
 
 ## Further Reading
 
-- [Best Practices for Logging](https://www.dataset.com/blog/the-10-commandments-of-logging/)
-- [Structured Logging](https://stackify.com/what-is-structured-logging-and-why-developers-need-it/)
+<CardGrid>
+	<LinkCard
+		title="RbxUtil Log API"
+		description="Official documentation for the Log utility"
+		href="https://sleitnick.github.io/RbxUtil/api/Log"
+	/>
+	<LinkCard
+		title="Best Practices for Logging"
+		description="The 10 commandments of logging"
+		href="https://www.dataset.com/blog/the-10-commandments-of-logging/"
+	/>
+</CardGrid>

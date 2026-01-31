@@ -1,14 +1,20 @@
 ---
 title: ban-instances
+description: Bans specified Roblox Instance classes in new Instance() calls and JSX elements.
 ---
 
-import { Code } from "@astrojs/starlight/components";
+import { Aside, Badge, Code, LinkCard, CardGrid, Tabs, TabItem } from "@astrojs/starlight/components";
 
 Bans specified Roblox Instance classes in `new Instance()` calls and JSX elements.
 
 ## Rule Details
 
 This rule prevents the creation of specific Roblox Instance classes that may be problematic, deprecated, or should be replaced with better alternatives. You can configure which Instance classes are banned and provide custom messages explaining why.
+
+<Aside type="note">
+	This rule is particularly useful for enforcing architectural decisions, improving performance, and ensuring security
+	best practices in Roblox TypeScript projects.
+</Aside>
 
 ## Options
 
@@ -18,54 +24,50 @@ This rule prevents the creation of specific Roblox Instance classes that may be 
 		'\t"cease-nonsense/ban-instances": [',
 		'\t\t"error",',
 		"\t\t{",
-		'\t\t\t"bannedInstances": ["Part", "Frame", "Script"],',
-		"\t\t},",
-		"\t],",
+		'\t\t\t"bannedInstances": ["Part", "Frame", "Script"]',
+		"\t\t}",
+		"\t]",
 		"}",
 	].join("\n")}
-	lang="typescript"
-	key="json-object-format"
+	lang="json"
+	title="eslint.config.js"
 />
 
 ### Configuration Formats
 
-**Array format** (uses default message):
+<Tabs>
+	<TabItem label="Array Format" icon="list-format">
+		Uses default error message for each banned instance:
 
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/ban-instances": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"bannedInstances": ["Part", "Frame", "Script", "LocalScript"],',
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	key="json-array-format"
-	lang="typescript"
-/>
+    	<Code
+    		code={[
+    			"{",
+    			'\t"bannedInstances": ["Part", "Frame", "Script", "LocalScript"]',
+    			"}",
+    		].join("\n")}
+    		lang="json"
+    		title="Array format"
+    	/>
+    </TabItem>
+    <TabItem label="Object Format" icon="document">
+    	Provides custom messages per instance class:
 
-**Object format** (custom messages per class):
+    	<Code
+    		code={[
+    			"{",
+    			'\t"bannedInstances": {',
+    			'\t\t"Part": "Use MeshPart instead for better performance",',
+    			'\t\t"Script": "Scripts should not be created at runtime",',
+    			'\t\t"Frame": "Use modern UI components instead"',
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="json"
+    		title="Object format"
+    	/>
+    </TabItem>
 
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/ban-instances": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"bannedInstances": {',
-		'\t\t\t\t"Part": "Use MeshPart instead for better performance",',
-		'\t\t\t\t"Script": "Scripts should not be created at runtime"',
-		'\t\t\t\t"Frame": "Use modern UI components instead",',
-		"\t\t\t},",
-		"\t\t},",
-		"\t],",
-		"}",
-	].join("\n")}
-	key="json-object-format"
-	lang="typescript"
-/>
+</Tabs>
 
 ## Examples
 
@@ -84,8 +86,8 @@ This rule prevents the creation of specific Roblox Instance classes that may be 
 		`<script Source="print('hello')" />`,
 		"<frame Size={UDim2.fromScale(1, 1)} />",
 	].join("\n")}
-	key="incorrect-examples"
 	lang="tsx"
+	title="incorrect.tsx"
 />
 
 ### ✅ Correct
@@ -101,62 +103,78 @@ This rule prevents the creation of specific Roblox Instance classes that may be 
 		"<folder />",
 		'<textlabel Text="Hello" />',
 	].join("\n")}
-	key="correct-examples"
 	lang="tsx"
+	title="correct.tsx"
 />
 
 ## When Not To Use It
 
-If you don't work with Roblox or don't need to restrict specific Instance classes, this rule isn't applicable. You can also disable it in specific files where you need to use banned Instances for legacy compatibility.
+<Aside type="caution">
+	If you don't work with Roblox or don't need to restrict specific Instance classes, this rule isn't applicable. You
+	can also disable it in specific files where you need to use banned Instances for legacy compatibility.
+</Aside>
 
 ## Common Use Cases
 
-### Performance Optimization
+<Tabs>
+	<TabItem label="Performance" icon="rocket">
+		### Performance Optimization
 
-<Code
-	code={[
-		"{",
-		'\t"bannedInstances": {',
-		'\t\t"Part": "Use MeshPart instead - better performance and more features",',
-		'\t\t"UnionOperation": "Unions are expensive; use MeshParts with optimized meshes",',
-		"\t},",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="performance-optimization"
-/>
+    	Ban inefficient Instance types:
 
-### Security Concerns
+    	<Code
+    		code={[
+    			"{",
+    			'\t"bannedInstances": {',
+    			'\t\t"Part": "Use MeshPart instead - better performance and more features",',
+    			'\t\t"UnionOperation": "Unions are expensive; use MeshParts with optimized meshes"',
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="json"
+    		title="performance.json"
+    	/>
+    </TabItem>
+    <TabItem label="Security" icon="warning">
+    	### Security Concerns
 
-<Code
-	code={[
-		"{",
-		'\t"bannedInstances": {',
-		'\t\t"Script": "Server scripts should not be created at runtime",',
-		'\t\t"LocalScript": "Client scripts should not be created at runtime - security risk",',
-		'\t\t"ModuleScript": "Module scripts should be statically required, not dynamically created",',
-		"\t},",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="security-concerns"
-/>
+    	Prevent runtime script creation:
 
-### API Migration
+    	<Code
+    		code={[
+    			"{",
+    			'\t"bannedInstances": {',
+    			'\t\t"Script": "Server scripts should not be created at runtime",',
+    			'\t\t"LocalScript": "Client scripts should not be created at runtime - security risk",',
+    			'\t\t"ModuleScript": "Module scripts should be statically required, not dynamically created"',
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="json"
+    		title="security.json"
+    	/>
+    </TabItem>
+    <TabItem label="Migration" icon="forward-slash">
+    	### API Migration
 
-<Code
-	code={[
-		"{",
-		'\t"bannedInstances": {',
-		'\t\t"Frame": "Migrate to new UI library components",',
-		'\t\t"TextLabel": "Use Text component from UI library instead",',
-		'\t\t"ImageLabel": "Use Image component from UI library instead",',
-		"\t},",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	key="api-migration"
-/>
+    	Enforce migration to new UI libraries:
+
+    	<Code
+    		code={[
+    			"{",
+    			'\t"bannedInstances": {',
+    			'\t\t"Frame": "Migrate to new UI library components",',
+    			'\t\t"TextLabel": "Use Text component from UI library instead",',
+    			'\t\t"ImageLabel": "Use Image component from UI library instead"',
+    			"\t}",
+    			"}",
+    		].join("\n")}
+    		lang="json"
+    		title="migration.json"
+    	/>
+    </TabItem>
+
+</Tabs>
 
 ## Edge Cases
 
@@ -175,20 +193,22 @@ The rule detects JSX elements that represent Roblox Instances by checking if the
 		"<Frame /> // ✅ Allowed - React component",
 	].join("\n")}
 	lang="tsx"
-	key="jsx-detection"
+	title="jsx-detection.tsx"
 />
+
+<Aside type="tip" title="React vs Roblox">
+	In roblox-ts, lowercase JSX elements represent Roblox Instances, while PascalCase elements are React components.
+	This rule only checks lowercase elements.
+</Aside>
 
 ### Case Sensitivity
 
 The rule performs case-insensitive matching:
 
 <Code
-	code={["{", '\t"bannedInstances": ["Part"],', "}"].join("\n")}
-	lang="typescript"
-	key="case-sensitivity-configuration"
-/>
-<Code
 	code={[
+		'// Config: { "bannedInstances": ["Part"] }',
+		"",
 		"// All of these are banned:",
 		'new Instance("Part");',
 		'new Instance("part");',
@@ -196,15 +216,35 @@ The rule performs case-insensitive matching:
 		"<part />",
 	].join("\n")}
 	lang="tsx"
-	key="case-sensitivity-examples"
+	title="case-sensitivity.tsx"
 />
 
 ## Related Rules
 
-- [no-color3-constructor](./no-color3-constructor.md) - Bans inefficient Color3 constructors
-- [prefer-udim2-shorthand](./prefer-udim2-shorthand.md) - Enforces UDim2 shorthands
+<CardGrid>
+	<LinkCard
+		title="no-color3-constructor"
+		description="Bans inefficient Color3 constructors"
+		href="/rules/no-color3-constructor/"
+	/>
+	<LinkCard
+		title="prefer-udim2-shorthand"
+		description="Enforces UDim2 shorthands"
+		href="/rules/prefer-udim2-shorthand/"
+	/>
+</CardGrid>
 
 ## Further Reading
 
-- [Roblox Instance API](https://create.roblox.com/docs/reference/engine/classes/Instance)
-- [Roblox Performance Optimization](https://create.roblox.com/docs/scripting/performance-optimization)
+<CardGrid>
+	<LinkCard
+		title="Roblox Instance API"
+		description="Official Roblox documentation for the Instance class"
+		href="https://create.roblox.com/docs/reference/engine/classes/Instance"
+	/>
+	<LinkCard
+		title="Performance Optimization"
+		description="Best practices for Roblox performance"
+		href="https://create.roblox.com/docs/scripting/performance-optimization"
+	/>
+</CardGrid>

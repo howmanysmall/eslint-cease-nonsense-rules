@@ -1,5 +1,8 @@
 /* src/styles/custom.css */
 
+/* Google Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
 :root {
 	--sl-color-accent-low: #002d4d;
 	--sl-color-accent: #007acc;
@@ -12,6 +15,10 @@
 	--sl-color-gray-5: #353941;
 	--sl-color-gray-6: #1f2129;
 	--sl-color-black: #0c0d10;
+
+	/* Glassmorphism */
+	--glass-bg: rgba(255, 255, 255, 0.03);
+	--glass-border: rgba(0, 0, 0, 0.1);
 }
 
 :root[data-theme="dark"] {
@@ -36,7 +43,6 @@
 body {
 	font-family:
 		"Inter",
-		"Outfit",
 		system-ui,
 		-apple-system,
 		BlinkMacSystemFont,
@@ -55,10 +61,11 @@ body {
 }
 
 /* Glassmorphism for header */
-header {
+header.header {
 	background-color: var(--glass-bg) !important;
 	border-bottom: 1px solid var(--glass-border) !important;
-	backdrop-filter: blur(12px) !important;
+	-webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+	backdrop-filter: blur(16px) saturate(180%) !important;
 }
 
 /* Sidebar styling */
@@ -71,6 +78,20 @@ header {
 	background-color: transparent !important;
 }
 
+/* Sidebar link hover effects */
+nav.sidebar a {
+	border-radius: 6px;
+	transition:
+		color 0.2s ease,
+		padding-left 0.2s ease,
+		background-color 0.2s ease;
+}
+
+nav.sidebar a:hover {
+	color: var(--sl-color-accent);
+	background-color: rgba(78, 191, 255, 0.08);
+}
+
 /* Content area */
 .main-pane {
 	background-color: transparent !important;
@@ -78,17 +99,32 @@ header {
 
 /* Cards and decorative elements */
 .card {
-	background-color: rgba(255, 255, 255, 0.03) !important;
+	background-color: var(--glass-bg) !important;
 	border: 1px solid var(--glass-border) !important;
 	border-radius: 12px !important;
 	backdrop-filter: blur(8px);
 	transition:
 		transform 0.2s ease,
-		border-color 0.2s ease;
+		border-color 0.2s ease,
+		box-shadow 0.2s ease;
 }
 
 .card:hover {
 	border-color: var(--sl-color-accent) !important;
+	box-shadow: 0 8px 24px rgba(0, 122, 204, 0.15);
+	transform: translateY(-3px);
+}
+
+/* LinkCard enhancements */
+.sl-link-card {
+	transition:
+		transform 0.2s ease,
+		border-color 0.2s ease,
+		box-shadow 0.2s ease;
+}
+
+.sl-link-card:hover {
+	box-shadow: 0 4px 16px rgba(0, 122, 204, 0.1);
 	transform: translateY(-2px);
 }
 
@@ -119,9 +155,33 @@ pre {
 	backdrop-filter: blur(4px);
 }
 
+/* Inline code */
+:not(pre) > code {
+	padding: 0.15em 0.4em;
+	font-size: 0.9em;
+	background-color: rgba(78, 191, 255, 0.1) !important;
+	border-radius: 4px;
+}
+
+/* Steps component enhancement */
+.sl-steps > li {
+	position: relative;
+}
+
+.sl-steps > li::before {
+	background: linear-gradient(135deg, var(--sl-color-accent) 0%, var(--sl-color-accent-low) 100%) !important;
+}
+
+/* Aside/callout enhancements */
+.starlight-aside {
+	border-radius: 8px;
+	backdrop-filter: blur(4px);
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
 	width: 10px;
+	height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -150,6 +210,55 @@ pre {
 	}
 }
 
+@keyframes slideInRight {
+	from {
+		opacity: 0;
+		transform: translateX(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
 .main-frame {
 	animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Hero section enhancements */
+.hero {
+	position: relative;
+}
+
+.hero::before {
+	position: absolute;
+	top: -50%;
+	left: 50%;
+	z-index: -1;
+	width: 600px;
+	height: 600px;
+	pointer-events: none;
+	content: "";
+	background: radial-gradient(circle, rgba(78, 191, 255, 0.1) 0%, transparent 70%);
+	transform: translateX(-50%);
+}
+
+/* Table of contents enhancements */
+starlight-toc a {
+	transition: color 0.2s ease;
+}
+
+starlight-toc a:hover {
+	color: var(--sl-color-accent);
+}
+
+/* Badge styling */
+.sl-badge {
+	font-weight: 600;
+}
+
+/* Tabs styling */
+.tablist-wrapper {
+	overflow: hidden;
+	border-radius: 8px;
 }

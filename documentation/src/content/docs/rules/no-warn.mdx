@@ -1,42 +1,58 @@
 ---
 title: no-warn
+description: Bans use of warn() function calls. Use log.Warning instead for structured logging.
 ---
 
-Bans use of `warn()` function calls. Use `Log` instead.
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
+
+Bans use of `warn()` function calls. Use `log.Warning` instead for structured logging.
 
 ## Rule Details
 
-The `warn()` function is a low-level warning mechanism that lacks structure, context, and log level control. Using a proper logging system like `Log` provides better debugging capabilities and production logging.
+The `warn()` function is a low-level warning mechanism that lacks structure, context, and log level control. Using a proper logging system like [`Log`](https://sleitnick.github.io/RbxUtil/api/Log) provides better debugging capabilities and production logging.
+
+<Aside type="tip" title="Consistent logging">
+	Using `log.Warning` instead of `warn()` ensures all your logs go through a unified logging system with consistent
+	formatting and level control.
+</Aside>
 
 ## Examples
 
 ### ❌ Incorrect
 
-```typescript
-warn("Warning message");
-warn("Deprecated function called");
-warn("Invalid configuration:", config);
-
-function validateInput(input: string) {
-	if (input.length === 0) {
-		warn("Empty input detected");
-	}
-}
-```
+<Code
+	code={[
+		'warn("Warning message");',
+		'warn("Deprecated function called");',
+		'warn("Invalid configuration:", config);',
+		"",
+		"function validateInput(input: string) {",
+		"\tif (input.length === 0) {",
+		'\t\twarn("Empty input detected");',
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	title="incorrect.ts"
+/>
 
 ### ✅ Correct
 
-```typescript
-log.Warn("Warning message");
-log.Warn("Deprecated function called");
-log.Warn("Invalid configuration:", config);
-
-function validateInput(input: string) {
-	if (input.length === 0) {
-		log.Warn("Empty input detected");
-	}
-}
-```
+<Code
+	code={[
+		'log.Warning("Warning message");',
+		'log.Warning("Deprecated function called");',
+		'log.Warning("Invalid configuration:", config);',
+		"",
+		"function validateInput(input: string) {",
+		"\tif (input.length === 0) {",
+		'\t\tlog.Warning("Empty input detected");',
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	title="correct.ts"
+/>
 
 ## Why Use Log Instead?
 
@@ -44,34 +60,74 @@ function validateInput(input: string) {
 
 `Log` provides structured output with timestamps, log levels, and context:
 
-```typescript
-// warn() - unstructured
-warn("API endpoint deprecated");
-// log.Warn - more structured
-log.Warning("API endpoint deprecated");
-```
+<Code
+	code={[
+		"// warn() - unstructured, no context",
+		'warn("API endpoint deprecated");',
+		"",
+		"// log.Warning - structured with level and automatic timestamp",
+		'log.Warning("API endpoint deprecated");',
+		"// Output: [WARNING] 2025-12-31 12:34:56 - API endpoint deprecated",
+	].join("\n")}
+	lang="typescript"
+	title="structured-logging.ts"
+/>
 
 ### Better Context
 
 Add metadata and context to warnings:
 
-```typescript
-log.Warning("Deprecated API used", {
-	endpoint: "/api/v1/users",
-	replacement: "/api/v2/users",
-	deprecationDate: "2025-01-01",
-});
-```
+<Code
+	code={[
+		'log.Warning("Deprecated API used", {',
+		'\tendpoint: "/api/v1/users",',
+		'\treplacement: "/api/v2/users",',
+		'\tdeprecationDate: "2025-01-01",',
+		"});",
+	].join("\n")}
+	lang="typescript"
+	title="context-logging.ts"
+/>
+
+### Log Levels
+
+The warning level sits between informational and error messages:
+
+<Code
+	code={[
+		'log.Debug("Detailed debug info"); // Development only',
+		'log.Info("User action completed"); // General information',
+		'log.Warning("Deprecated API used"); // ⚠️ Warnings',
+		'log.Error("Operation failed"); // Errors',
+	].join("\n")}
+	lang="typescript"
+	title="log-levels.ts"
+/>
 
 ## When Not To Use It
 
-If you're writing quick scripts or prototypes where structured logging isn't necessary, you may disable this rule. However, it's recommended to use proper logging even in development.
+<Aside type="caution">
+	If you're writing quick scripts or prototypes where structured logging isn't necessary, you may disable this rule.
+	However, it's recommended to use proper logging even in development to build good habits.
+</Aside>
 
 ## Related Rules
 
-- [no-print](./no-print.md) - Bans `print()` function calls
+<CardGrid>
+	<LinkCard title="no-print" description="Bans print() function calls" href="/rules/no-print/" />
+</CardGrid>
 
 ## Further Reading
 
-- [Best Practices for Logging](https://www.dataset.com/blog/the-10-commandments-of-logging/)
-- [Structured Logging](https://stackify.com/what-is-structured-logging-and-why-developers-need-it/)
+<CardGrid>
+	<LinkCard
+		title="RbxUtil Log API"
+		description="Official documentation for the Log utility"
+		href="https://sleitnick.github.io/RbxUtil/api/Log"
+	/>
+	<LinkCard
+		title="Structured Logging"
+		description="What is structured logging and why developers need it"
+		href="https://stackify.com/what-is-structured-logging-and-why-developers-need-it/"
+	/>
+</CardGrid>

@@ -1,11 +1,12 @@
 ---
 title: Cease Nonsense
-description: Catch common mistakes before they reach production.
+description: A powerful ESLint plugin that catches common mistakes before they reach production.
 template: splash
 hero:
-    tagline: A powerful ESLint plugin that helps prevent patterns leading to bugs and performance issues.
+    tagline: A powerful ESLint plugin for TypeScript, React, and roblox-ts that helps prevent patterns leading to bugs and performance issues.
     image:
         file: ../../assets/logo.webp
+        alt: Cease Nonsense Logo
     actions:
         - text: Get Started
           link: /rules/ban-instances/
@@ -14,23 +15,83 @@ hero:
         - text: View on GitHub
           link: https://github.com/howmanysmall/eslint-cease-nonsense-rules
           icon: external
+          variant: minimal
 ---
 
-import { Card, CardGrid } from "@astrojs/starlight/components";
+import { Card, CardGrid, LinkCard, Steps, Code, Aside } from "@astrojs/starlight/components";
 
 ## Why Cease Nonsense?
 
 <CardGrid stagger>
-	<Card title="Type Safe" icon="pencil">
-		Deep integration with TypeScript and Ianitor for runtime validation.
+	<Card title="Type Safe" icon="seti:typescript">
+		Deep integration with TypeScript for precise type-aware linting with zero false positives.
 	</Card>
-	<Card title="React Optimized" icon="add-document">
-		Rules specifically designed for React and roblox-ts environments.
+	<Card title="React Optimized" icon="seti:react">
+		Rules specifically designed for React and roblox-ts environments to catch hook violations and component
+		anti-patterns.
 	</Card>
-	<Card title="Performance First" icon="setting">
-		Caught performance regressions and anti-patterns early.
+	<Card title="Performance First" icon="rocket">
+		Catch performance regressions and anti-patterns early before they ship to production.
 	</Card>
-	<Card title="Modern Aesthetics" icon="open-book">
-		Beautifully documented rules with clear examples.
+	<Card title="Batteries Included" icon="puzzle">
+		Over 40 carefully crafted rules covering everything from naming conventions to architectural patterns.
 	</Card>
 </CardGrid>
+
+## Quick Start
+
+<Steps>
+
+1. **Install the package**
+
+    <Code code="bun add -D eslint-plugin-cease-nonsense" lang="bash" title="Terminal" />
+
+2. **Add to your ESLint config**
+
+    <Code
+    	code={[
+    		"import ceaseNonsense from 'eslint-plugin-cease-nonsense';",
+    		"",
+    		"export default [",
+    		"\tceaseNonsense.configs.recommended,",
+    		"\t// ... your other configs",
+    		"];",
+    	].join("\n")}
+    	lang="typescript"
+    	title="eslint.config.ts"
+    />
+
+3. **Run ESLint**
+
+    <Code code="bun run eslint ." lang="bash" title="Terminal" />
+
+</Steps>
+
+## Featured Rules
+
+<CardGrid>
+	<LinkCard
+		title="ban-instances"
+		description="Ban specific Roblox Instance classes from being created"
+		href="/rules/ban-instances/"
+	/>
+	<LinkCard
+		title="no-god-components"
+		description="Prevent components from becoming too complex"
+		href="/rules/no-god-components/"
+	/>
+	<LinkCard
+		title="use-exhaustive-dependencies"
+		description="Ensure React hooks have correct dependency arrays"
+		href="/rules/use-exhaustive-dependencies/"
+	/>
+	<LinkCard
+		title="prefer-early-return"
+		description="Reduce nesting with early returns"
+		href="/rules/prefer-early-return/"
+	/>
+</CardGrid>
+
+<Aside type="tip" title="Looking for all rules?">
+	Check the sidebar for the complete list of 40+ available rules with full documentation and examples.
+</Aside>
