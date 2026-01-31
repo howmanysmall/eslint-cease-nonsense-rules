@@ -33,9 +33,13 @@ export default defineConfig({
 					exitOnBrowserBack: true,
 					fullscreenButtonTooltip: "View in fullscreen",
 				}),
-				starlightContextualMenu({}),
-				starlightLinksValidator({}),
-				starlightSiteGraph({}),
+				starlightContextualMenu(),
+				starlightLinksValidator(),
+				starlightSiteGraph({
+					graphConfig: {
+						depth: -1,
+					},
+				}),
 				starlightScrollToTop({
 					smoothScroll: true,
 				}),
