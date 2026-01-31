@@ -11,6 +11,7 @@ import starlightScrollToTop from "starlight-scroll-to-top";
 
 // https://astro.build/config
 export default defineConfig({
+	base: "/eslint-cease-nonsense-rules",
 	integrations: [
 		starlight({
 			customCss: ["./src/styles/custom.css"],
@@ -127,5 +128,5 @@ export default defineConfig({
 		react(),
 		viewTransitions(),
 	],
-	site: "https://howmanysmall.github.io/eslint-cease-nonsense-rules",
+	site: "https://howmanysmall.github.io",
 });
