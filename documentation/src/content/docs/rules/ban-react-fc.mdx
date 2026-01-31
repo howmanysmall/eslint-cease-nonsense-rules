@@ -1,0 +1,143 @@
+---
+title: ban-react-fc
+---
+
+Bans `React.FC`, `React.FunctionComponent`, `FC`, `VFC` and similar component type annotations.
+
+## Rule Details
+
+React.FC and similar type annotations break debug information in React DevTools, hide component display names, and encourage poor patterns like implicit children typing. Use explicit function declarations with typed props instead.
+
+## Examples
+
+### ❌ Incorrect
+
+```typescript
+export const MyComponent: React.FC<Props> = ({ children }) => {
+	return <div>{children}</div>;
+};
+
+const Button: FC<ButtonProps> = ({ label }) => <button>{label}</button>;
+
+const Modal: React.FunctionComponent = () => <div>Modal</div>;
+
+const Input: VFC = () => <input />;
+
+// Arrow function with explicit return type
+const Header: React.FC<{ title: string }> = ({ title }) => {
+	return <h1>{title}</h1>;
+};
+```
+
+### ✅ Correct
+
+```typescript
+export function MyComponent({ children }: Props) {
+	return <div>{children}</div>;
+}
+
+function Button({ label }: ButtonProps) {
+	return <button>{label}</button>;
+}
+
+function Modal() {
+	return <div>Modal</div>;
+}
+
+function Input() {
+	return <input />;
+}
+
+// Named function with explicit props type
+function Header({ title }: { title: string }) {
+	return <h1>{title}</h1>;
+}
+
+// Arrow function without FC type (allowed)
+const Component = ({ value }: { value: number }) => <span>{value}</span>;
+```
+
+## Why Is This Bad?
+
+### DevTools Issues
+
+React.FC obscures component names in React DevTools, making debugging harder:
+
+```typescript
+// Shows as "Anonymous" or "_c" in DevTools
+const Button: React.FC = () => <button>Click</button>;
+
+// Shows as "Button" in DevTools
+function Button() {
+	return <button>Click</button>;
+}
+```
+
+### Implicit Children
+
+React.FC implicitly includes `children?: ReactNode`, which can lead to bugs:
+
+```typescript
+// Children are implicitly allowed!
+const Button: React.FC<{ label: string }> = ({ label }) => <button>{label}</button>;
+
+// Can be used incorrectly:
+<Button label="Click">
+	<div>This compiles but shouldn't!</div>
+</Button>;
+```
+
+### Type Inference
+
+Function declarations provide better type inference and error messages:
+
+```typescript
+// Complex error messages with FC
+const Component: FC<Props> = (props) => {
+	/* ... */
+};
+
+// Clear, direct error messages
+function Component(props: Props) {
+	/* ... */
+}
+```
+
+## When Not To Use It
+
+If you're maintaining legacy code that heavily relies on React.FC and can't migrate immediately, you may want to disable this rule temporarily.
+
+## Migration Guide
+
+### Before
+
+```typescript
+export const UserProfile: React.FC<UserProfileProps> = ({ userId, onUpdate }) => {
+	const [user, setUser] = useState<User | null>(null);
+
+	useEffect(() => {
+		fetchUser(userId).then(setUser);
+	}, [userId]);
+
+	return <div>{user?.name}</div>;
+};
+```
+
+### After
+
+```typescript
+export function UserProfile({ userId, onUpdate }: UserProfileProps) {
+	const [user, setUser] = useState<User | undefined>(undefined);
+
+	useEffect(() => {
+		fetchUser(userId).then(setUser);
+	}, [userId]);
+
+	return <div>{user?.name}</div>;
+}
+```
+
+## Further Reading
+
+- [React TypeScript Cheatsheet](https://react-typescript-cheatsheet.netlify.app/docs/basic/getting-started/function_components/)
+- [Why You Should Stop Using React.FC](https://www.totaltypescript.com/you-should-stop-using-react-fc)

@@ -1,0 +1,279 @@
+---
+title: use-exhaustive-dependencies
+---
+
+Enforces exhaustive and correct dependency specification in React hooks to prevent stale closures and unnecessary re-renders.
+
+## Rule Details
+
+This rule ensures that all dependencies used inside hook callbacks are listed in the dependency array, preventing bugs from stale closures while also detecting unnecessary dependencies that cause extra re-renders.
+
+**External Documentation**: [Biome's use-exhaustive-dependencies](https://biomejs.dev/linter/rules/use-exhaustive-dependencies/)
+
+## Options
+
+```jsonc
+{
+	"cease-nonsense/use-exhaustive-dependencies": [
+		"error",
+		{
+			"reportMissingDependenciesArray": true,
+			"reportUnnecessaryDependencies": true,
+			"hooks": [
+				{
+					"name": "useCustomHook",
+					"closureIndex": 0,
+					"dependenciesIndex": 1,
+					"stableResult": true,
+				},
+			],
+		},
+	],
+}
+```
+
+### Configuration Parameters
+
+- **reportMissingDependenciesArray** (default: `true`): Report when dependency array is missing entirely
+- **reportUnnecessaryDependencies** (default: `true`): Report dependencies that aren't used
+- **hooks** (default: `[]`): Configuration for custom hooks
+
+### Custom Hook Configuration
+
+- **name**: Hook function name
+- **closureIndex**: Parameter index of the callback function
+- **dependenciesIndex**: Parameter index of the dependency array
+- **stableResult**: Whether the hook returns stable references
+
+## Examples
+
+### ❌ Incorrect
+
+```typescript
+function UserProfile({ userId }) {
+	const [user, setUser] = useState(null);
+
+	// Missing userId dependency
+	useEffect(() => {
+		fetchUser(userId).then(setUser);
+	}, []); // Should include userId
+
+	// Missing dependency array entirely
+	useEffect(() => {
+		document.title = `User ${userId}`;
+	});
+
+	// Unnecessary dependency
+	useEffect(() => {
+		console.log("mounted");
+	}, [userId]); // userId not used in effect
+
+	// Stale closure
+	const [count, setCount] = useState(0);
+	useEffect(() => {
+		const id = setInterval(() => {
+			console.log(count); // Always logs initial value!
+		}, 1000);
+		return () => clearInterval(id);
+	}, []); // Missing count
+}
+```
+
+### ✅ Correct
+
+```typescript
+function UserProfile({ userId }) {
+	const [user, setUser] = useState(null);
+
+	// Correct dependencies
+	useEffect(() => {
+		fetchUser(userId).then(setUser);
+	}, [userId]);
+
+	// Empty array for mount-only effect
+	useEffect(() => {
+		console.log("mounted once");
+		return () => console.log("unmounted");
+	}, []);
+
+	// All used values in deps
+	const [count, setCount] = useState(0);
+	useEffect(() => {
+		const id = setInterval(() => {
+			console.log(count); // Current count
+		}, 1000);
+		return () => clearInterval(id);
+	}, [count]);
+
+	// Or use functional update (no dep needed)
+	useEffect(() => {
+		const id = setInterval(() => {
+			setCount((c) => c + 1); // No dependency on count
+		}, 1000);
+		return () => clearInterval(id);
+	}, []);
+}
+```
+
+## Common Patterns
+
+### Props and State
+
+```typescript
+function Component({ userId, onUpdate }) {
+	const [data, setData] = useState(null);
+
+	useEffect(() => {
+		fetchUser(userId).then((user) => {
+			setData(user);
+			onUpdate(user);
+		});
+	}, [userId, onUpdate]); // All referenced values
+}
+```
+
+### Stable Functions
+
+Use `useCallback` to stabilize function references:
+
+```typescript
+function Component({ userId }) {
+	// Unstable: new function every render
+	const loadUser = () => fetchUser(userId);
+
+	useEffect(() => {
+		loadUser();
+	}, [loadUser]); // Runs every render!
+
+	// Better: stabilize with useCallback
+	const loadUserStable = useCallback(() => {
+		fetchUser(userId);
+	}, [userId]);
+
+	useEffect(() => {
+		loadUserStable();
+	}, [loadUserStable]); // Only runs when userId changes
+}
+```
+
+### Functional Updates
+
+Avoid dependencies with functional state updates:
+
+```typescript
+function Counter() {
+	const [count, setCount] = useState(0);
+
+	// ❌ Depends on count
+	useEffect(() => {
+		const id = setInterval(() => setCount(count + 1), 1000);
+		return () => clearInterval(id);
+	}, [count]); // Recreates interval on every change
+
+	// ✅ No dependency on count
+	useEffect(() => {
+		const id = setInterval(() => setCount((c) => c + 1), 1000);
+		return () => clearInterval(id);
+	}, []); // Stable interval
+}
+```
+
+### Refs (Stable)
+
+Refs don't need to be in dependencies:
+
+```typescript
+function Component() {
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	useEffect(() => {
+		inputRef.current?.focus(); // Ref not in deps (stable)
+	}, []); // OK
+}
+```
+
+## Custom Hooks
+
+Configure custom hooks similar to React's built-in hooks:
+
+```typescript
+{
+  "hooks": [{
+    "name": "useInterval",
+    "closureIndex": 0,       // Callback is first param
+    "dependenciesIndex": 2,  // Deps array is third param
+    "stableResult": false    // Returns non-stable values
+  }]
+}
+```
+
+```typescript
+// Usage
+useInterval(
+	() => {
+		doSomething(value);
+	},
+	1000,
+	[value],
+); // Third param is deps
+```
+
+## Exhaustive Dependencies Explained
+
+### Stale Closures
+
+Without proper dependencies, closures capture stale values:
+
+```typescript
+function Component() {
+	const [count, setCount] = useState(0);
+
+	useEffect(() => {
+		// Captures count = 0 at mount
+		setTimeout(() => {
+			console.log(count); // Always 0!
+		}, 5000);
+	}, []); // Missing count
+
+	// Fix: add count to deps
+	useEffect(() => {
+		setTimeout(() => {
+			console.log(count); // Current count
+		}, 5000);
+	}, [count]);
+}
+```
+
+### Unnecessary Re-runs
+
+Too many dependencies cause performance issues:
+
+```typescript
+function Component({ data }) {
+	const [filtered, setFiltered] = useState([]);
+
+	useEffect(() => {
+		setFiltered(data.filter((item) => item.active));
+	}, [data, filtered]); // filtered is unnecessary!
+	// This creates an infinite loop
+}
+```
+
+## React Compiler
+
+Note: The React Compiler (when available) will automatically handle many dependency issues, but this rule still helps catch problems during development.
+
+## When Not To Use It
+
+If you're using the React Compiler in production or prefer manual dependency management, you may disable this rule. However, it's strongly recommended for catching common React bugs.
+
+## Related Rules
+
+- [use-hook-at-top-level](./use-hook-at-top-level.md) - Enforces hook placement
+- [require-named-effect-functions](./require-named-effect-functions.md) - Enforces named effect callbacks
+
+## Further Reading
+
+- [React useEffect Dependencies](https://react.dev/reference/react/useEffect#specifying-reactive-dependencies)
+- [Biome's Documentation](https://biomejs.dev/linter/rules/use-exhaustive-dependencies/)
+- [A Complete Guide to useEffect](https://overreacted.io/a-complete-guide-to-useeffect/)

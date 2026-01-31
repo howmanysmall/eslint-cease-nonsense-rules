@@ -1,0 +1,561 @@
+---
+title: prefer-pascal-case-enums
+---
+
+Enum names and members must be PascalCase.
+
+## Rule Details
+
+TypeScript enums should use PascalCase for both the enum name and all members. This enforces consistency with TypeScript conventions and improves code readability.
+
+## Options
+
+This rule has no configuration options.
+
+## Examples
+
+### ❌ Incorrect
+
+```typescript
+// Enum name not PascalCase
+enum my_enum {
+	Red,
+	Blue,
+}
+
+enum COLORS {
+	Red,
+	Blue,
+}
+
+enum colors {
+	Red,
+	Blue,
+}
+
+// Members not PascalCase
+enum Color {
+	RED, // SCREAMING_SNAKE_CASE
+	blue, // camelCase
+	dark_blue, // snake_case
+}
+
+enum Status {
+	is_active, // snake_case
+	IS_PENDING, // SCREAMING_SNAKE_CASE
+}
+```
+
+### ✅ Correct
+
+```typescript
+// Enum and members in PascalCase
+enum Color {
+	Red,
+	Green,
+	Blue,
+}
+
+enum HttpStatus {
+	Ok,
+	NotFound,
+	InternalServerError,
+}
+
+enum Direction {
+	North,
+	South,
+	East,
+	West,
+}
+
+// Multi-word names
+enum UserRole {
+	Admin,
+	SuperAdmin,
+	RegularUser,
+}
+```
+
+## Why PascalCase for Enums?
+
+### 1. TypeScript Convention
+
+PascalCase is the standard TypeScript convention for enums:
+
+```typescript
+// ✅ Follows TypeScript style guide
+enum Status {
+	Active,
+	Inactive,
+}
+
+// ❌ Conflicts with conventions
+enum status {
+	ACTIVE,
+	INACTIVE,
+}
+```
+
+### 2. Consistency with Types
+
+Enums are types, so they should follow type naming conventions:
+
+```typescript
+// Types use PascalCase
+type UserStatus = "active" | "inactive";
+interface UserData {
+	/* ... */
+}
+class UserService {
+	/* ... */
+}
+
+// Enums should too
+enum UserRole {
+	Admin,
+	User,
+}
+```
+
+### 3. Distinguish from Constants
+
+```typescript
+// Module-level constant (SCREAMING_SNAKE_CASE)
+const MAX_RETRIES = 3;
+
+// Enum (PascalCase)
+enum RetryStrategy {
+	Exponential,
+	Linear,
+	Fixed,
+}
+```
+
+### 4. Better Readability
+
+```typescript
+// ❌ Hard to read
+enum HTTP_STATUS {
+	OK,
+	NOT_FOUND,
+	INTERNAL_SERVER_ERROR,
+}
+
+// ✅ Easy to read
+enum HttpStatus {
+	Ok,
+	NotFound,
+	InternalServerError,
+}
+
+// Usage is clearer
+const status = HttpStatus.NotFound; // vs HTTP_STATUS.NOT_FOUND
+```
+
+## PascalCase Conversion Rules
+
+### Single Words
+
+```typescript
+// Before → After
+enum color → enum Color
+enum STATUS → enum Status
+enum direction → enum Direction
+```
+
+### Multi-Word Names
+
+```typescript
+// Before → After
+enum user_role → enum UserRole
+enum HTTP_STATUS → enum HttpStatus
+enum api_endpoint → enum ApiEndpoint
+enum DATABASE_TYPE → enum DatabaseType
+```
+
+### Acronyms
+
+```typescript
+// Treat acronyms as single words
+enum HTTPStatus {
+	// ✅ Correct
+	Ok,
+	NotFound,
+}
+
+enum ApiEndpoint {
+	// ✅ Correct
+	Users,
+	Posts,
+}
+
+enum UIComponent {
+	// ✅ Correct
+	Button,
+	Input,
+}
+```
+
+## Common Patterns
+
+### Status Enums
+
+```typescript
+// ✅ Good
+enum Status {
+	Active,
+	Inactive,
+	Pending,
+	Archived,
+}
+
+enum OrderStatus {
+	Created,
+	Processing,
+	Shipped,
+	Delivered,
+	Cancelled,
+}
+```
+
+### Error Codes
+
+```typescript
+// ✅ Good
+enum ErrorCode {
+	NotFound,
+	Unauthorized,
+	BadRequest,
+	ServerError,
+}
+
+// Usage
+function handleError(code: ErrorCode) {
+	switch (code) {
+		case ErrorCode.NotFound:
+			return "Resource not found";
+		case ErrorCode.Unauthorized:
+			return "Access denied";
+		// ...
+	}
+}
+```
+
+### Configuration Options
+
+```typescript
+// ✅ Good
+enum LogLevel {
+	Debug,
+	Info,
+	Warning,
+	Error,
+}
+
+enum Environment {
+	Development,
+	Staging,
+	Production,
+}
+```
+
+## Numeric Enums
+
+```typescript
+// ✅ Numeric members follow same rules
+enum Priority {
+	Low, // 0
+	Medium, // 1
+	High, // 2
+	Critical, // 3
+}
+
+enum HttpStatus {
+	Ok = 200,
+	Created = 201,
+	BadRequest = 400,
+	NotFound = 404,
+}
+```
+
+## String Enums
+
+```typescript
+// ✅ String enums with PascalCase
+enum Direction {
+	North = "NORTH",
+	South = "SOUTH",
+	East = "EAST",
+	West = "WEST",
+}
+
+enum ApiEndpoint {
+	Users = "/api/users",
+	Posts = "/api/posts",
+	Comments = "/api/comments",
+}
+```
+
+## Const Enums
+
+```typescript
+// ✅ Const enums follow same rules
+const enum Color {
+	Red,
+	Green,
+	Blue,
+}
+
+const enum FileExtension {
+	Ts = ".ts",
+	Tsx = ".tsx",
+	Js = ".js",
+}
+```
+
+## Computed Members
+
+```typescript
+// ✅ Computed members follow PascalCase
+enum FileAccess {
+	None = 0,
+	Read = 1 << 0,
+	Write = 1 << 1,
+	ReadWrite = Read | Write,
+}
+```
+
+## Advanced Examples
+
+### Bit Flags
+
+```typescript
+// ✅ Good
+enum Permission {
+	None = 0,
+	Read = 1 << 0,
+	Write = 1 << 1,
+	Execute = 1 << 2,
+	All = Read | Write | Execute,
+}
+
+// Usage
+function hasPermission(current: Permission, required: Permission): boolean {
+	return (current & required) === required;
+}
+```
+
+### Mixed Types
+
+```typescript
+// ✅ Members can have different value types (as long as names are PascalCase)
+enum Mixed {
+	Zero = 0,
+	One = 1,
+	Name = "name",
+	Description = "description",
+}
+```
+
+### Namespaced Enums
+
+```typescript
+// ✅ Namespace pattern
+namespace User {
+	export enum Role {
+		Admin,
+		Moderator,
+		User,
+	}
+
+	export enum Status {
+		Active,
+		Inactive,
+	}
+}
+
+// Usage
+const role: User.Role = User.Role.Admin;
+```
+
+## Edge Cases
+
+### Numbers in Member Names
+
+```typescript
+// ✅ Numbers are allowed
+enum Version {
+	V1,
+	V2,
+	V3,
+}
+
+enum Level {
+	Level1,
+	Level2,
+	Level3,
+}
+```
+
+### String Literal Members
+
+```typescript
+// ✅ String literal keys must also be PascalCase
+enum Status {
+	"Active" = "ACTIVE", // ✅ Member name is PascalCase
+	"Inactive" = "INACTIVE", // ✅ Good
+}
+
+// ❌ Bad
+enum Status {
+	"active" = "ACTIVE", // Member name not PascalCase
+	"INACTIVE" = "inactive", // Member name SCREAMING_SNAKE_CASE
+}
+```
+
+### Numbers Starting Member Names
+
+Members starting with digits are skipped:
+
+```typescript
+// Numbers at start - not checked by this rule
+enum Code {
+	"200" = "OK",
+	"404" = "Not Found",
+}
+```
+
+## When Not To Use It
+
+Disable this rule if:
+
+- Your project uses different enum naming conventions
+- You're working with generated code that uses other conventions
+- You're integrating with external libraries that expect specific naming
+
+## Migration Guide
+
+### Find All Non-PascalCase Enums
+
+```bash
+# Find enum declarations
+grep -r "enum [a-z_]" src/
+grep -r "enum [A-Z_][A-Z_]" src/
+```
+
+### Automated Conversion
+
+Use the toPascalCase utility from the codebase:
+
+```typescript
+// Before:
+enum user_status {
+	is_active,
+	is_pending,
+}
+
+// After:
+enum UserStatus {
+	IsActive,
+	IsPending,
+}
+```
+
+### Update References
+
+```typescript
+// Before:
+const status = user_status.is_active;
+
+// After:
+const status = UserStatus.IsActive;
+```
+
+## Benefits
+
+### 1. Type Safety
+
+```typescript
+enum Status {
+	Active,
+	Inactive,
+}
+
+function setStatus(status: Status) {
+	// Type-safe
+}
+
+setStatus(Status.Active); // ✅ OK
+setStatus(123); // ❌ Error
+```
+
+### 2. Autocomplete
+
+PascalCase enums provide better IDE autocomplete:
+
+```typescript
+// Type "Status." and IDE shows:
+// - Status.Active
+// - Status.Inactive
+```
+
+### 3. Refactoring Safety
+
+```typescript
+// Renaming is safe with enums
+enum Status {
+	Active, // Rename this, IDE updates all usages
+	Inactive,
+}
+```
+
+## Common Mistakes
+
+### Mixing Cases
+
+```typescript
+// ❌ Inconsistent
+enum Status {
+	active, // lowercase
+	PENDING, // uppercase
+	InActive, // PascalCase
+}
+
+// ✅ Consistent
+enum Status {
+	Active,
+	Pending,
+	Inactive,
+}
+```
+
+### Using Plural Enum Names
+
+See the [prefer-singular-enums](./prefer-singular-enums.md) rule:
+
+```typescript
+// ❌ Plural (separate rule)
+enum Colors {
+	Red,
+	Blue,
+}
+
+// ✅ Singular + PascalCase
+enum Color {
+	Red,
+	Blue,
+}
+```
+
+## Related Rules
+
+- [prefer-singular-enums](./prefer-singular-enums.md) - Enforces singular enum names
+- [prefer-module-scope-constants](./prefer-module-scope-constants.md) - Constants use SCREAMING_SNAKE_CASE
+- [no-shorthand-names](./no-shorthand-names.md) - Enforces descriptive names
+
+## Further Reading
+
+- [TypeScript Enum Documentation](https://www.typescriptlang.org/docs/handbook/enums.html)
+- [TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html#enums)
+- [Naming Conventions](https://github.com/basarat/typescript-book/blob/master/docs/styleguide/styleguide.md#enum)

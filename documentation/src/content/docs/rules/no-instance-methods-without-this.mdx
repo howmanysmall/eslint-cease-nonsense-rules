@@ -1,0 +1,423 @@
+---
+title: no-instance-methods-without-this
+---
+
+Detects instance methods that don't use `this` and should be converted to standalone functions.
+
+## Rule Details
+
+In roblox-ts, instance methods create metatable objects with significant performance overhead. Methods that don't reference `this` or `super` should be moved outside the class as standalone functions for better performance.
+
+## Options
+
+```jsonc
+{
+	"cease-nonsense/no-instance-methods-without-this": [
+		"error",
+		{
+			"checkPrivate": true, // Default: true
+			"checkProtected": true, // Default: true
+			"checkPublic": true, // Default: true
+		},
+	],
+}
+```
+
+### Configuration Parameters
+
+- **checkPrivate** (default: `true`): Check private methods
+- **checkProtected** (default: `true`): Check protected methods
+- **checkPublic** (default: `true`): Check public methods
+
+## Examples
+
+### ❌ Incorrect
+
+```typescript
+class MathUtils {
+	// Private method without this
+	private add(a: number, b: number): number {
+		return a + b;
+	}
+
+	// Public method without this
+	public multiply(x: number, y: number): number {
+		return x * y;
+	}
+
+	// Protected method without this
+	protected formatNumber(n: number): string {
+		return n.toFixed(2);
+	}
+}
+```
+
+```typescript
+class DataProcessor {
+	private data: Array<number> = [];
+
+	// Method doesn't use this.data
+	private calculateSum(numbers: ReadonlyArray<number>): number {
+		let sum = 0;
+		for (const num of numbers) {
+			sum += num;
+		}
+		return sum;
+	}
+
+	public process(): void {
+		const sum = this.calculateSum(this.data);
+		print(sum);
+	}
+}
+```
+
+### ✅ Correct
+
+```typescript
+// Extract to standalone functions
+function add(a: number, b: number): number {
+	return a + b;
+}
+
+function multiply(x: number, y: number): number {
+	return x * y;
+}
+
+function formatNumber(n: number): string {
+	return n.toFixed(2);
+}
+
+class MathUtils {
+	// Keep only methods that use instance state
+	public calculate(): number {
+		return add(this.x, this.y);
+	}
+}
+```
+
+```typescript
+// Extract pure function
+function calculateSum(numbers: ReadonlyArray<number>): number {
+	let sum = 0;
+	for (const num of numbers) {
+		sum += num;
+	}
+	return sum;
+}
+
+class DataProcessor {
+	private data: Array<number> = [];
+
+	public process(): void {
+		const sum = calculateSum(this.data);
+		print(sum);
+	}
+}
+```
+
+## Why This Rule Exists
+
+### Performance in roblox-ts
+
+Instance methods in roblox-ts create metatables with significant overhead:
+
+```typescript
+// ❌ Creates metatable overhead for each instance
+class Helper {
+	private format(text: string): string {
+		return text.toUpperCase();
+	}
+}
+
+// Each instance carries the metatable:
+const h1 = new Helper(); // Metatable created
+const h2 = new Helper(); // Another metatable created
+```
+
+```typescript
+// ✅ No metatable overhead
+function format(text: string): string {
+	return text.toUpperCase();
+}
+
+class Helper {
+	// Only instance state in the class
+}
+```
+
+### Memory Efficiency
+
+```typescript
+// ❌ Bad - every instance has method references
+class Validator {
+	private isEmail(str: string): boolean {
+		return str.includes("@");
+	}
+
+	private isUrl(str: string): boolean {
+		return str.startsWith("http");
+	}
+}
+
+// 100 instances = 100 sets of method references
+const validators = [];
+for (let i = 0; i < 100; i++) {
+	validators.push(new Validator());
+}
+```
+
+```typescript
+// ✅ Good - shared functions
+function isEmail(str: string): boolean {
+	return str.includes("@");
+}
+
+function isUrl(str: string): boolean {
+	return str.startsWith("http");
+}
+
+class Validator {
+	// Only instance-specific methods
+	public validate(): boolean {
+		return isEmail(this.input) && isUrl(this.url);
+	}
+}
+```
+
+## Detection Rules
+
+The rule flags methods that:
+
+1. Are instance methods (not `static`)
+2. Are actual methods (not constructors, getters, setters)
+3. Don't contain `this` or `super` anywhere in the body
+4. Match the configured visibility (private/protected/public)
+
+### What is Checked
+
+```typescript
+class Example {
+	// ✅ Checked - instance method without this
+	private helper(x: number): number {
+		return x * 2;
+	}
+
+	// ❌ Not checked - static method
+	static staticHelper(x: number): number {
+		return x * 2;
+	}
+
+	// ❌ Not checked - constructor
+	constructor() {}
+
+	// ❌ Not checked - getter
+	get value(): number {
+		return 42;
+	}
+
+	// ❌ Not checked - setter
+	set value(n: number) {
+		// ...
+	}
+}
+```
+
+### This/Super Detection
+
+```typescript
+class Example {
+	private data = [1, 2, 3];
+
+	// ✅ Allowed - uses this
+	private getFirst(): number {
+		return this.data[0];
+	}
+
+	// ❌ Flagged - doesn't use this
+	private double(x: number): number {
+		return x * 2;
+	}
+
+	// ✅ Allowed - uses this in nested scope
+	private process(): void {
+		this.data.forEach((item) => {
+			this.handleItem(item);
+		});
+	}
+}
+```
+
+```typescript
+class Child extends Parent {
+	// ✅ Allowed - uses super
+	protected override method(): void {
+		super.method();
+		doSomething();
+	}
+
+	// ❌ Flagged - doesn't use this or super
+	protected helper(): string {
+		return "helper";
+	}
+}
+```
+
+## Configuration Examples
+
+### Check Only Public Methods
+
+```jsonc
+{
+	"cease-nonsense/no-instance-methods-without-this": [
+		"error",
+		{
+			"checkPrivate": false,
+			"checkProtected": false,
+			"checkPublic": true,
+		},
+	],
+}
+```
+
+### Check Only Private and Protected
+
+```jsonc
+{
+	"cease-nonsense/no-instance-methods-without-this": [
+		"error",
+		{
+			"checkPrivate": true,
+			"checkProtected": true,
+			"checkPublic": false,
+		},
+	],
+}
+```
+
+## Migration Strategies
+
+### 1. Extract to Module-Level Function
+
+```typescript
+// Before:
+class UserService {
+	private formatName(first: string, last: string): string {
+		return `${first} ${last}`;
+	}
+
+	public getDisplayName(): string {
+		return this.formatName(this.user.first, this.user.last);
+	}
+}
+
+// After:
+function formatName(first: string, last: string): string {
+	return `${first} ${last}`;
+}
+
+class UserService {
+	public getDisplayName(): string {
+		return formatName(this.user.first, this.user.last);
+	}
+}
+```
+
+### 2. Create Utility Module
+
+```typescript
+// utils/validators.ts
+export function isValidEmail(email: string): boolean {
+	return email.includes("@");
+}
+
+export function isValidPhone(phone: string): boolean {
+	return /^\d{10}$/.test(phone);
+}
+
+// UserService.ts
+import * as Validators from "./utils/validators";
+
+class UserService {
+	public validate(): boolean {
+		return Validators.isValidEmail(this.email) && Validators.isValidPhone(this.phone);
+	}
+}
+```
+
+### 3. Keep as Static Method
+
+If the method is conceptually related to the class but doesn't need instance access:
+
+```typescript
+class UserService {
+	// Static method instead of instance method
+	static formatName(first: string, last: string): string {
+		return `${first} ${last}`;
+	}
+
+	public getDisplayName(): string {
+		return UserService.formatName(this.user.first, this.user.last);
+	}
+}
+```
+
+## When Not To Use It
+
+Consider disabling this rule if:
+
+- You're not using roblox-ts (rule is optimized for roblox-ts performance)
+- You prefer keeping helper methods as private instance methods for encapsulation
+- Your performance requirements don't justify the refactoring effort
+- You're working on a codebase where the pattern is well-established
+
+## Advanced Examples
+
+### Complex Traversal
+
+The rule thoroughly checks all nested scopes:
+
+```typescript
+class Example {
+	// ✅ Allowed - uses this in nested callback
+	private process(): void {
+		const items = [1, 2, 3];
+		items.forEach((item) => {
+			this.handleItem(item);
+		});
+	}
+
+	// ❌ Flagged - nested callbacks don't use this
+	private calculate(): number {
+		const numbers = [1, 2, 3];
+		return numbers.reduce((sum, n) => sum + n, 0);
+	}
+}
+```
+
+### Async Methods
+
+```typescript
+class DataFetcher {
+	// ✅ Allowed - uses this
+	async fetch(): Promise<Data> {
+		return await fetchData(this.url);
+	}
+
+	// ❌ Flagged - doesn't use this
+	async parseJson(text: string): Promise<unknown> {
+		return JSON.parse(text);
+	}
+}
+```
+
+## Related Rules
+
+- [prefer-class-properties](./prefer-class-properties.md) - Optimizes class property initialization
+- [prefer-module-scope-constants](./prefer-module-scope-constants.md) - Enforces module-level constants
+
+## Further Reading
+
+- [roblox-ts Performance Guide](https://roblox-ts.com/docs/guides/performance)
+- [Metatable Overhead in Lua](https://www.lua.org/pil/13.html)
+- [Class Design Principles](https://refactoring.guru/design-patterns/factory-method)

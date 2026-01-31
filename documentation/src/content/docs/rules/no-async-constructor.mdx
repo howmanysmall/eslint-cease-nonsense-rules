@@ -1,0 +1,318 @@
+---
+title: no-async-constructor
+---
+
+Disallows asynchronous operations inside class constructors.
+
+## Rule Details
+
+Constructors execute synchronously and return immediately. Using async operations inside constructors creates race conditions, unhandled promise rejections, and incomplete object states. This rule detects and prevents various forms of async work in constructors.
+
+## Detected Violations
+
+The rule detects the following async patterns:
+
+1. **`await` expressions** - Direct use of await
+2. **Promise chains** - `.then()`, `.catch()`, `.finally()` calls
+3. **Async IIFEs** - `(async () => {})()` or `(async function() {})()`
+4. **Unhandled async method calls** - Calling async methods without storing the Promise
+5. **Orphaned promises** - Storing async results in local variables that are never consumed
+
+## Examples
+
+### ❌ Incorrect
+
+```typescript
+class UserService {
+	constructor() {
+		// Direct await
+		await this.initialize();
+	}
+
+	async initialize() {
+		/* ... */
+	}
+}
+```
+
+```typescript
+class DataLoader {
+	private data?: Data;
+
+	constructor() {
+		// Promise chain
+		this.loadData().then((data) => {
+			this.data = data;
+		});
+	}
+
+	async loadData(): Promise<Data> {
+		/* ... */
+	}
+}
+```
+
+```typescript
+class ApiClient {
+	constructor() {
+		// Async IIFE
+		(async () => {
+			await this.connect();
+		})();
+	}
+
+	async connect() {
+		/* ... */
+	}
+}
+```
+
+```typescript
+class Worker {
+	constructor() {
+		// Unhandled async call (standalone)
+		this.start();
+	}
+
+	async start() {
+		/* ... */
+	}
+}
+```
+
+```typescript
+class Cache {
+	constructor() {
+		// Orphaned promise
+		const loadPromise = this.load();
+		// loadPromise is never awaited or handled
+	}
+
+	async load() {
+		/* ... */
+	}
+}
+```
+
+### ✅ Correct
+
+```typescript
+// Pattern 1: Store initialization promise
+class UserService {
+	private initPromise: Promise<void>;
+
+	constructor() {
+		this.initPromise = this.initialize();
+	}
+
+	async initialize() {
+		await fetchUserData();
+	}
+
+	// Wait for init before using
+	async getUser(id: number) {
+		await this.initPromise;
+		return this.users.get(id);
+	}
+}
+```
+
+```typescript
+// Pattern 2: Factory method (recommended)
+class DatabaseConnection {
+	private constructor() {
+		// Constructor stays synchronous
+	}
+
+	private async initialize(): Promise<void> {
+		await this.connect();
+		await this.authenticate();
+	}
+
+	static async create(): Promise<DatabaseConnection> {
+		const instance = new DatabaseConnection();
+		await instance.initialize();
+		return instance;
+	}
+}
+
+// Usage
+const db = await DatabaseConnection.create();
+```
+
+```typescript
+// Pattern 3: Lazy initialization
+class DataCache {
+	private dataPromise?: Promise<Data>;
+
+	constructor() {
+		// No async work in constructor
+	}
+
+	private ensureLoaded(): Promise<Data> {
+		if (!this.dataPromise) {
+			this.dataPromise = this.load();
+		}
+		return this.dataPromise;
+	}
+
+	async getData(): Promise<Data> {
+		return await this.ensureLoaded();
+	}
+
+	private async load(): Promise<Data> {
+		/* ... */
+	}
+}
+```
+
+```typescript
+// Pattern 4: Synchronous setup only
+class EventEmitter {
+	private listeners = new Map();
+
+	constructor() {
+		// Only synchronous setup
+		this.listeners.set("ready", []);
+		this.listeners.set("error", []);
+	}
+
+	// Async work moved to separate methods
+	async connect(): Promise<void> {
+		/* ... */
+	}
+}
+```
+
+## Why This Rule Exists
+
+### Problem 1: Incomplete Object State
+
+```typescript
+class BadExample {
+	data?: string;
+
+	constructor() {
+		this.loadData().then((result) => {
+			this.data = result;
+		});
+	}
+
+	async loadData() {
+		await delay(100);
+		return "loaded";
+	}
+}
+
+const instance = new BadExample();
+console.log(instance.data); // undefined - race condition!
+```
+
+### Problem 2: Unhandled Rejections
+
+```typescript
+class RiskyConstructor {
+	constructor() {
+		this.riskyOperation(); // If this rejects, it's unhandled!
+	}
+
+	async riskyOperation() {
+		throw new Error("Failed!");
+	}
+}
+
+new RiskyConstructor(); // ⚠️ UnhandledPromiseRejectionWarning
+```
+
+### Problem 3: Execution Order Confusion
+
+```typescript
+class ConfusingOrder {
+	constructor() {
+		console.log("1. Constructor start");
+
+		(async () => {
+			console.log("3. Async IIFE");
+		})();
+
+		console.log("2. Constructor end");
+	}
+}
+
+new ConfusingOrder();
+// Output:
+// 1. Constructor start
+// 2. Constructor end
+// 3. Async IIFE
+```
+
+## Advanced Examples
+
+### Callback Functions (Allowed)
+
+The rule does NOT traverse into callback functions or stored function expressions, as these don't execute during construction:
+
+```typescript
+class EventHandler {
+	constructor() {
+		// ✅ Allowed - callback with async work
+		this.button.on("click", async () => {
+			await this.handleClick();
+		});
+
+		// ✅ Allowed - stored function
+		this.handler = async () => {
+			await this.process();
+		};
+	}
+
+	async handleClick() {
+		/* ... */
+	}
+	async process() {
+		/* ... */
+	}
+}
+```
+
+### IIFEs Are Detected
+
+```typescript
+class BadIIFE {
+	constructor() {
+		// ❌ Detected - async IIFE executes immediately
+		(async () => {
+			await this.init();
+		})();
+
+		// ❌ Also detected - function expression IIFE
+		(async function () {
+			await this.init();
+		})();
+	}
+
+	async init() {
+		/* ... */
+	}
+}
+```
+
+## When Not To Use It
+
+This rule is essential for preventing async bugs in constructors. However, you might disable it if:
+
+- You're in a testing environment where you mock async operations to be synchronous
+- You have a legacy codebase that requires significant refactoring
+
+In most cases, refactoring to use factory methods or lazy initialization is the better solution.
+
+## Related Rules
+
+- [require-paired-calls](./require-paired-calls.md) - Ensures proper resource cleanup
+- [use-exhaustive-dependencies](./use-exhaustive-dependencies.md) - Prevents stale closures in hooks
+
+## Further Reading
+
+- [JavaScript Constructors and Promises](https://javascript.info/constructor-new)
+- [Factory Pattern](https://refactoring.guru/design-patterns/factory-method)
+- [Async Constructor Antipattern](https://blog.logrocket.com/javascript-async-constructors/)

@@ -256,9 +256,7 @@ describe("prefer-pattern-replacements", () => {
 				errors: [{ messageId: "preferReplacement" }],
 				options: [
 					{
-						patterns: [
-							pattern({ match: "UDim2.fromScale(0.5, 0.5)", replacement: "centerScale" }),
-						],
+						patterns: [pattern({ match: "UDim2.fromScale(0.5, 0.5)", replacement: "centerScale" })],
 					},
 				],
 				output: 'import { centerScale } from "udim2-utilities"; const x = centerScale;',

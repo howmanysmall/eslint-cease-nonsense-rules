@@ -18,8 +18,8 @@ Arguments: $ARGUMENTS
 **Process:**
 
 1. **Ensure Branch is Ready**: !`git status`
-   - Commit all changes
-   - Push to remote: `git push origin [branch-name]`
+    - Commit all changes
+    - Push to remote: `git push origin [branch-name]`
 
 2. **Create PR**: Create a well-formatted pull request
 

@@ -1,0 +1,88 @@
+---
+title: no-print
+---
+
+Bans use of `print()` function calls. Use `Log` instead.
+
+## Rule Details
+
+The `print()` function is a low-level logging mechanism that lacks structure, context, and log level control. Using a proper logging system like `Log` provides better debugging capabilities and production logging.
+
+## Examples
+
+### ❌ Incorrect
+
+```typescript
+print("Debug message");
+print("User logged in:", userId);
+print("Error:", error);
+
+function processData(data: unknown) {
+	print("Processing data:", data);
+	// ...
+}
+```
+
+### ✅ Correct
+
+```typescript
+Log.info("Debug message");
+Log.info("User logged in:", userId);
+Log.error("Error:", error);
+
+function processData(data: unknown) {
+	Log.debug("Processing data:", data);
+	// ...
+}
+```
+
+## Why Use Log Instead?
+
+### Structured Logging
+
+`Log` provides structured output with timestamps, log levels, and context:
+
+```typescript
+// print() - unstructured
+print("Request failed");
+
+// Log - structured with level and timestamp
+Log.error("Request failed");
+// [ERROR] 2025-12-31 12:34:56 - Request failed
+```
+
+### Log Levels
+
+Different log levels help filter messages in development vs production:
+
+```typescript
+Log.debug("Detailed debug info"); // Only in development
+Log.info("User action completed"); // General information
+Log.warn("Deprecated API used"); // Warnings
+Log.error("Operation failed"); // Errors
+```
+
+### Filtering and Control
+
+Log systems can be configured to show/hide messages based on level:
+
+```typescript
+// Development: show all logs
+Log.setLevel("debug");
+
+// Production: only warnings and errors
+Log.setLevel("warn");
+```
+
+## When Not To Use It
+
+If you're writing quick scripts or prototypes where structured logging isn't necessary, you may disable this rule. However, it's recommended to use proper logging even in development.
+
+## Related Rules
+
+- [no-warn](./no-warn.md) - Bans `warn()` function calls
+
+## Further Reading
+
+- [Best Practices for Logging](https://www.dataset.com/blog/the-10-commandments-of-logging/)
+- [Structured Logging](https://stackify.com/what-is-structured-logging-and-why-developers-need-it/)

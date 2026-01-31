@@ -1,0 +1,282 @@
+---
+title: require-named-effect-functions
+---
+
+Enforce named effect functions for better debuggability. Prevent inline arrow functions in `useEffect` and similar hooks.
+
+## Rule Details
+
+Inline arrow functions in `useEffect` make debugging difficult because:
+
+- Stack traces show "anonymous" instead of meaningful names
+- DevTools can't display helpful function names
+- Code is harder to test in isolation
+
+This rule enforces using named functions (either identifiers or named function expressions) as effect callbacks.
+
+## Options
+
+```jsonc
+{
+	"cease-nonsense/require-named-effect-functions": [
+		"error",
+		{
+			"environment": "roblox-ts", // or "standard"
+			"hooks": ["useEffect", "useLayoutEffect", "useInsertionEffect"],
+		},
+	],
+}
+```
+
+### Configuration Parameters
+
+- **environment** (default: `"roblox-ts"`):
+    - `"roblox-ts"`: Only identifiers allowed (strictest)
+    - `"standard"`: Identifiers and named function expressions allowed
+- **hooks** (default: `["useEffect", "useLayoutEffect", "useInsertionEffect"]`): Effect hooks to check
+
+## Behavior by Environment
+
+### `roblox-ts` Mode (Default)
+
+Only identifiers are allowed - function must be defined separately:
+
+```typescript
+// ✅ Only allowed pattern
+function onMount() {
+	doThing();
+}
+useEffect(onMount, []);
+```
+
+### `standard` Mode
+
+Both identifiers and named function expressions are allowed:
+
+```typescript
+// ✅ Identifier
+function onMount() {
+	doThing();
+}
+useEffect(onMount, []);
+
+// ✅ Named function expression
+useEffect(function onMount() {
+	doThing();
+}, []);
+```
+
+## Examples
+
+### ❌ Incorrect
+
+```typescript
+// Arrow function
+useEffect(() => {
+	doThing();
+}, [dep]);
+
+// Anonymous function expression
+useEffect(
+	function () {
+		doThing();
+	},
+	[dep],
+);
+
+// Inline arrow with dep
+useEffect(() => {
+	fetchData(userId);
+}, [userId]);
+```
+
+### ✅ Correct (roblox-ts mode)
+
+```typescript
+// Named function identifier
+function onDepChange() {
+	doThing();
+}
+useEffect(onDepChange, [dep]);
+
+// With dependency
+function onUserIdChange() {
+	fetchData(userId);
+}
+useEffect(onUserIdChange, [userId]);
+```
+
+### ✅ Correct (standard mode)
+
+```typescript
+// Named function identifier
+function onDepChange() {
+	doThing();
+}
+useEffect(onDepChange, [dep]);
+
+// Named function expression (also allowed in standard mode)
+useEffect(
+	function onDepChange() {
+		doThing();
+	},
+	[dep],
+);
+```
+
+## Why Named Functions?
+
+### Better Stack Traces
+
+```typescript
+// Anonymous - stack trace shows "(anonymous)"
+useEffect(() => {
+	throw new Error("oops");
+}, []);
+
+// Named - stack trace shows "onMount"
+function onMount() {
+	throw new Error("oops");
+}
+useEffect(onMount, []);
+```
+
+### DevTools Display
+
+```javascript
+// DevTools shows: "useEffect(anonymous)"
+useEffect(() => {}, []);
+
+// DevTools shows: "useEffect(onMount)"
+useEffect(onMount, []);
+```
+
+### Testability
+
+```typescript
+// Can't test in isolation
+useEffect(() => {
+	complexLogic();
+	moreLogic();
+}, [dep]);
+
+// Can test separately
+export function onDepChange() {
+	complexLogic();
+	moreLogic();
+}
+useEffect(onDepChange, [dep]);
+
+// In tests
+test("onDepChange handles X correctly", () => {
+	onDepChange();
+	expect(/* ... */);
+});
+```
+
+### Self-Documentation
+
+```typescript
+// What does this do?
+useEffect(() => {
+	fetchUser(userId);
+	updateUI();
+}, [userId]);
+
+// Clear intent
+function onUserIdChange() {
+	fetchUser(userId);
+	updateUI();
+}
+useEffect(onUserIdChange, [userId]);
+```
+
+## Naming Conventions
+
+Use descriptive names that indicate when the effect runs:
+
+```typescript
+// Describe the trigger
+function onMount() {}
+function onUnmount() {}
+function onUserIdChange() {}
+function onDependencyUpdate() {}
+
+// Describe the action (if trigger is obvious)
+function fetchUserData() {}
+function subscribeToUpdates() {}
+function initializeWidget() {}
+```
+
+## Pattern: Effect with Cleanup
+
+```typescript
+function subscribeToUpdates() {
+	const subscription = subscribe(userId);
+
+	// Return cleanup function
+	return function cleanup() {
+		subscription.unsubscribe();
+	};
+}
+
+useEffect(subscribeToUpdates, [userId]);
+```
+
+Or with named cleanup:
+
+```typescript
+function subscribeToUpdates() {
+	const subscription = subscribe(userId);
+	return () => subscription.unsubscribe();
+}
+
+// Better: named cleanup
+function onUserIdChange() {
+	const subscription = subscribe(userId);
+
+	function cleanup() {
+		subscription.unsubscribe();
+	}
+
+	return cleanup;
+}
+
+useEffect(onUserIdChange, [userId]);
+```
+
+## Multiple Effects
+
+Name functions to indicate their specific purpose:
+
+```typescript
+function initializeWidget() {
+	/* ... */
+}
+useEffect(initializeWidget, []);
+
+function onUserIdChange() {
+	/* ... */
+}
+useEffect(onUserIdChange, [userId]);
+
+function onThemeChange() {
+	/* ... */
+}
+useEffect(onThemeChange, [theme]);
+```
+
+## When Not To Use It
+
+If you prefer inline arrow functions for simple effects or don't care about stack trace clarity, you can disable this rule. However, named functions are generally recommended for maintainability.
+
+## Related Rules
+
+- [use-exhaustive-dependencies](./use-exhaustive-dependencies.md) - Ensures correct dependency arrays
+- [use-hook-at-top-level](./use-hook-at-top-level.md) - Enforces hook placement rules
+
+## Further Reading
+
+- [useEffect Documentation](https://react.dev/reference/react/useEffect)
+- [React DevTools](https://react.dev/learn/react-developer-tools)
+- [Debugging React](https://react.dev/learn/debugging)

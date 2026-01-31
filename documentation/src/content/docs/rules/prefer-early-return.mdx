@@ -1,0 +1,476 @@
+---
+title: prefer-early-return
+---
+
+Prefer early returns over full-body conditional wrapping in function declarations.
+
+## Rule Details
+
+Functions wrapped entirely in a single `if` statement should use an early return with a negated condition instead. This reduces nesting, improves readability, and makes the "happy path" more obvious.
+
+## Options
+
+```jsonc
+{
+	"cease-nonsense/prefer-early-return": [
+		"error",
+		{
+			"maximumStatements": 1,
+		},
+	],
+}
+```
+
+### Configuration Parameters
+
+- **maximumStatements** (default: `1`): Maximum number of statements in the if-body before suggesting early return. Set to `0` to flag even single-statement ifs.
+
+## Examples
+
+### ❌ Incorrect
+
+```typescript
+// Single statement wrapped
+function validate(user: User) {
+	if (user.isActive) {
+		console.log("User is active");
+	}
+}
+
+// Multiple statements wrapped
+function process(data: Data) {
+	if (data.isValid) {
+		transform(data);
+		save(data);
+		notify();
+	}
+}
+
+// Deeply nested
+function execute(task: Task) {
+	if (task.enabled) {
+		const result = task.run();
+		task.complete(result);
+		return result;
+	}
+}
+```
+
+### ✅ Correct
+
+```typescript
+// Early return
+function validate(user: User) {
+	if (!user.isActive) return;
+	console.log("User is active");
+}
+
+// Early return with multiple statements
+function process(data: Data) {
+	if (!data.isValid) return;
+
+	transform(data);
+	save(data);
+	notify();
+}
+
+// Early return with value
+function execute(task: Task) {
+	if (!task.enabled) return;
+
+	const result = task.run();
+	task.complete(result);
+	return result;
+}
+
+// If-else is fine (alternate path exists)
+function getStatus(user: User) {
+	if (user.isActive) {
+		return "active";
+	} else {
+		return "inactive";
+	}
+}
+```
+
+## Why Early Returns?
+
+### 1. Reduces Nesting
+
+```typescript
+// ❌ Nested - harder to read
+function processUser(user: User) {
+	if (user) {
+		if (user.isValid) {
+			if (user.isPremium) {
+				applyPremiumFeatures(user);
+			}
+		}
+	}
+}
+
+// ✅ Flat - easier to read
+function processUser(user: User) {
+	if (!user) return;
+	if (!user.isValid) return;
+	if (!user.isPremium) return;
+
+	applyPremiumFeatures(user);
+}
+```
+
+### 2. Makes Happy Path Obvious
+
+```typescript
+// ❌ Happy path buried in if-body
+function save(data: Data) {
+	if (data.isValid) {
+		// Main logic hidden inside
+		validate(data);
+		transform(data);
+		persist(data);
+		notify();
+	}
+}
+
+// ✅ Happy path at top level
+function save(data: Data) {
+	if (!data.isValid) return;
+
+	// Main logic clearly visible
+	validate(data);
+	transform(data);
+	persist(data);
+	notify();
+}
+```
+
+### 3. Reduces Cognitive Load
+
+```typescript
+// ❌ Need to track if-scope
+function handleRequest(req: Request) {
+	if (req.isValid) {
+		// 20 lines of code
+		// ...
+		// Still inside if-scope?
+	}
+}
+
+// ✅ No scope tracking needed
+function handleRequest(req: Request) {
+	if (!req.isValid) return;
+
+	// 20 lines of code at top level
+	// ...
+	// Clearly not in any conditional
+}
+```
+
+## Configuration Examples
+
+### Default (Maximum 1 Statement)
+
+```typescript
+{
+  "cease-nonsense/prefer-early-return": ["error", {
+    "maximumStatements": 1
+  }]
+}
+
+// ❌ Flagged - 2 statements
+if (condition) {
+  doA();
+  doB();
+}
+
+// ✅ Not flagged - 1 statement
+if (condition) {
+  doA();
+}
+```
+
+### Strict Mode (Maximum 0 Statements)
+
+```typescript
+{
+  "cease-nonsense/prefer-early-return": ["error", {
+    "maximumStatements": 0
+  }]
+}
+
+// ❌ Flagged - even 1 statement
+if (condition) {
+  doA();
+}
+
+// ✅ Use early return
+if (!condition) return;
+doA();
+```
+
+### Lenient (Maximum 3 Statements)
+
+```typescript
+{
+  "cease-nonsense/prefer-early-return": ["error", {
+    "maximumStatements": 3
+  }]
+}
+
+// ✅ Not flagged - only 3 statements
+if (condition) {
+  doA();
+  doB();
+  doC();
+}
+
+// ❌ Flagged - 4 statements
+if (condition) {
+  doA();
+  doB();
+  doC();
+  doD();
+}
+```
+
+## When NOT to Refactor
+
+### If-Else Present
+
+```typescript
+// ✅ Don't refactor - has else clause
+function getStatus(active: boolean) {
+	if (active) {
+		return "active";
+	} else {
+		return "inactive";
+	}
+}
+```
+
+### Multiple Conditions
+
+```typescript
+// ✅ Don't refactor - multiple independent conditions
+function validate(data: Data) {
+	if (data.hasName) {
+		validateName(data.name);
+	}
+
+	if (data.hasEmail) {
+		validateEmail(data.email);
+	}
+}
+```
+
+### Short Functions
+
+```typescript
+// ✅ Acceptable - function is short anyway
+function log(enabled: boolean, message: string) {
+	if (enabled) {
+		console.log(message);
+	}
+}
+```
+
+## Advanced Examples
+
+### Arrow Functions
+
+```typescript
+// ❌ Bad
+const process = (data: Data) => {
+	if (data.isValid) {
+		transform(data);
+		save(data);
+	}
+};
+
+// ✅ Good
+const process = (data: Data) => {
+	if (!data.isValid) return;
+
+	transform(data);
+	save(data);
+};
+```
+
+### Async Functions
+
+```typescript
+// ❌ Bad
+async function fetchUser(id: number) {
+	if (id > 0) {
+		const user = await api.getUser(id);
+		return user;
+	}
+}
+
+// ✅ Good
+async function fetchUser(id: number) {
+	if (id <= 0) return;
+
+	const user = await api.getUser(id);
+	return user;
+}
+```
+
+### With Return Values
+
+```typescript
+// ❌ Bad
+function calculate(x: number): number {
+	if (x > 0) {
+		const result = x * 2;
+		return result;
+	}
+}
+
+// ✅ Good
+function calculate(x: number): number | undefined {
+	if (x <= 0) return undefined;
+
+	const result = x * 2;
+	return result;
+}
+```
+
+### Guard Clauses Pattern
+
+```typescript
+// ✅ Excellent - multiple guards
+function processPayment(payment: Payment) {
+	if (!payment) return;
+	if (!payment.isValid) return;
+	if (payment.amount <= 0) return;
+	if (!payment.method) return;
+
+	// Main logic clearly separated
+	const processed = chargePayment(payment);
+	sendReceipt(payment);
+	return processed;
+}
+```
+
+## Common Patterns
+
+### Validation Functions
+
+```typescript
+// Before:
+function validateUser(user: User) {
+	if (user && user.email && user.password) {
+		// Validation logic
+		checkEmail(user.email);
+		checkPassword(user.password);
+		return true;
+	}
+	return false;
+}
+
+// After:
+function validateUser(user: User) {
+	if (!user) return false;
+	if (!user.email) return false;
+	if (!user.password) return false;
+
+	checkEmail(user.email);
+	checkPassword(user.password);
+	return true;
+}
+```
+
+### Event Handlers
+
+```typescript
+// Before:
+function handleClick(event: Event) {
+	if (!event.defaultPrevented) {
+		event.preventDefault();
+		processClick(event);
+		updateUI();
+	}
+}
+
+// After:
+function handleClick(event: Event) {
+	if (event.defaultPrevented) return;
+
+	event.preventDefault();
+	processClick(event);
+	updateUI();
+}
+```
+
+### API Handlers
+
+```typescript
+// Before:
+async function handleRequest(req: Request) {
+	if (req.method === "POST") {
+		const body = await req.json();
+		validate(body);
+		const result = await process(body);
+		return result;
+	}
+}
+
+// After:
+async function handleRequest(req: Request) {
+	if (req.method !== "POST") return;
+
+	const body = await req.json();
+	validate(body);
+	const result = await process(body);
+	return result;
+}
+```
+
+## When Not To Use It
+
+Consider disabling this rule if:
+
+- Your team prefers explicit if-wrapping for all conditional logic
+- You're working in a codebase with established patterns that conflict
+- You find early returns make code harder to understand in your context
+
+## Migration Tips
+
+### Negate Conditions Correctly
+
+```typescript
+// Original condition → Negated condition
+if (x === 5) → if (x !== 5) return;
+if (x > 5) → if (x <= 5) return;
+if (x >= 5) → if (x < 5) return;
+if (isValid) → if (!isValid) return;
+if (a && b) → if (!(a && b)) return; or if (!a || !b) return;
+if (a || b) → if (!(a || b)) return; or if (!a && !b) return;
+```
+
+### De Morgan's Laws
+
+```typescript
+// !(A && B) === (!A || !B)
+if (!(user.isActive && user.isPremium)) return;
+// Same as:
+if (!user.isActive || !user.isPremium) return;
+
+// !(A || B) === (!A && !B)
+if (!(x < 0 || x > 100)) return;
+// Same as:
+if (x >= 0 && x <= 100) return;
+```
+
+## Related Rules
+
+- [no-god-components](./no-god-components.md) - Reduces component complexity
+- [prefer-module-scope-constants](./prefer-module-scope-constants.md) - Organizes constants
+
+## Further Reading
+
+- [Guard Clauses](https://refactoring.com/catalog/replaceNestedConditionalWithGuardClauses.html)
+- [Flattening Arrow Code](https://blog.codinghorror.com/flattening-arrow-code/)
+- [Early Return Pattern](https://medium.com/@scadge/if-statements-design-guard-clauses-might-be-all-you-need-67219a1a981a)
