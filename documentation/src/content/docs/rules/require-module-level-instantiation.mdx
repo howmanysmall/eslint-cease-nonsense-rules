@@ -2,6 +2,8 @@
 title: require-module-level-instantiation
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Require certain classes to be instantiated at module level rather than inside functions.
 
 ## Rule Details
@@ -10,19 +12,23 @@ Some classes, like logging utilities, should be instantiated once at module scop
 
 ## Options
 
-```jsonc
-{
-	"cease-nonsense/require-module-level-instantiation": [
-		"error",
-		{
-			"classes": {
-				"Log": "@rbxts/rbxts-sleitnick-log",
-				"Server": "@rbxts/net",
-			},
-		},
-	],
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/require-module-level-instantiation": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"classes": {',
+		'\t\t\t\t"Log": "@rbxts/rbxts-sleitnick-log",',
+		'\t\t\t\t"Server": "@rbxts/net",',
+		"\t\t\t},",
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-0-2hra15"
+/>
 
 ### `classes`
 
@@ -32,66 +38,90 @@ A mapping of class names to their expected import sources. Only classes imported
 
 ### Incorrect
 
-```typescript
-import Log from "@rbxts/rbxts-sleitnick-log";
+<Code
+	code={[
+		'import Log from "@rbxts/rbxts-sleitnick-log";',
+		"",
+		"function useStoryModesState() {",
+		"\tconst log = new Log(); // Recreated on every call!",
+		'\tlog.Info("Create Match clicked");',
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="import-log-from-rbxt-1sa9c4"
+/>
 
-function useStoryModesState() {
-	const log = new Log(); // Recreated on every call!
-	log.Info("Create Match clicked");
-}
-```
+<Code
+	code={[
+		'import Log from "@rbxts/rbxts-sleitnick-log";',
+		"",
+		"const handler = () => {",
+		"\tconst log = new Log(); // Inside arrow function",
+		"};",
+	].join("\n")}
+	lang="typescript"
+	key="import-log-from-rbxt-1icqi8"
+/>
 
-```typescript
-import Log from "@rbxts/rbxts-sleitnick-log";
-
-const handler = () => {
-	const log = new Log(); // Inside arrow function
-};
-```
-
-```typescript
-import Log from "@rbxts/rbxts-sleitnick-log";
-
-class MyClass {
-	doThing() {
-		const log = new Log(); // Inside method
-	}
-}
-```
+<Code
+	code={[
+		'import Log from "@rbxts/rbxts-sleitnick-log";',
+		"",
+		"class MyClass {",
+		"\tdoThing() {",
+		"\t\tconst log = new Log(); // Inside method",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="import-log-from-rbxt-15vknz"
+/>
 
 ### Correct
 
-```typescript
-import Log from "@rbxts/rbxts-sleitnick-log";
+<Code
+	code={[
+		'import Log from "@rbxts/rbxts-sleitnick-log";',
+		"",
+		"const log = new Log(); // Module level - created once",
+		"",
+		"function useStoryModesState() {",
+		'\tlog.Info("Create Match clicked");',
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="import-log-from-rbxt-11q6ek"
+/>
 
-const log = new Log(); // Module level - created once
+<Code
+	code={[
+		'import Log from "@rbxts/rbxts-sleitnick-log";',
+		"",
+		"const log = new Log();",
+		"",
+		"const handler = () => {",
+		'\tlog.Info("Handler called");',
+		"};",
+	].join("\n")}
+	lang="typescript"
+	key="import-log-from-rbxt-v83qna"
+/>
 
-function useStoryModesState() {
-	log.Info("Create Match clicked");
-}
-```
-
-```typescript
-import Log from "@rbxts/rbxts-sleitnick-log";
-
-const log = new Log();
-
-const handler = () => {
-	log.Info("Handler called");
-};
-```
-
-```typescript
-import Log from "@rbxts/rbxts-sleitnick-log";
-
-const log = new Log();
-
-class MyClass {
-	doThing() {
-		log.Info("Doing thing");
-	}
-}
-```
+<Code
+	code={[
+		'import Log from "@rbxts/rbxts-sleitnick-log";',
+		"",
+		"const log = new Log();",
+		"",
+		"class MyClass {",
+		"\tdoThing() {",
+		'\t\tlog.Info("Doing thing");',
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="import-log-from-rbxt-3795dw"
+/>
 
 ## Why This Rule Exists
 
@@ -99,24 +129,32 @@ class MyClass {
 
 Instantiating objects inside functions means creating a new instance on every call:
 
-```typescript
-// Calling this 100 times creates 100 Log instances
-function process() {
-	const log = new Log();
-	log.Info("Processing");
-}
-```
+<Code
+	code={[
+		"// Calling this 100 times creates 100 Log instances",
+		"function process() {",
+		"\tconst log = new Log();",
+		'\tlog.Info("Processing");',
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="calling-this-100-tim-3w3njn"
+/>
 
 vs.
 
-```typescript
-const log = new Log(); // Created once
-
-// Calling this 100 times uses the same Log instance
-function process() {
-	log.Info("Processing");
-}
-```
+<Code
+	code={[
+		"const log = new Log(); // Created once",
+		"",
+		"// Calling this 100 times uses the same Log instance",
+		"function process() {",
+		'\tlog.Info("Processing");',
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="const-log-new-log-cr-kcceyx"
+/>
 
 ### Resource Management
 
@@ -134,29 +172,37 @@ Many utility classes like loggers are designed to be used as singletons. Recreat
 
 ### Single Class
 
-```typescript
-{
-  "cease-nonsense/require-module-level-instantiation": ["error", {
-    "classes": {
-      "Log": "@rbxts/rbxts-sleitnick-log"
-    }
-  }]
-}
-```
+<Code
+	code={[
+		"{",
+		'  "cease-nonsense/require-module-level-instantiation": ["error", {',
+		'    "classes": {',
+		'      "Log": "@rbxts/rbxts-sleitnick-log"',
+		"    }",
+		"  }]",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-9-1hth9k"
+/>
 
 ### Multiple Classes
 
-```typescript
-{
-  "cease-nonsense/require-module-level-instantiation": ["error", {
-    "classes": {
-      "Log": "@rbxts/rbxts-sleitnick-log",
-      "Server": "@rbxts/net",
-      "Client": "@rbxts/net"
-    }
-  }]
-}
-```
+<Code
+	code={[
+		"{",
+		'  "cease-nonsense/require-module-level-instantiation": ["error", {',
+		'    "classes": {',
+		'      "Log": "@rbxts/rbxts-sleitnick-log",',
+		'      "Server": "@rbxts/net",',
+		'      "Client": "@rbxts/net"',
+		"    }",
+		"  }]",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-10-16pdq5"
+/>
 
 ## Import Handling
 
@@ -164,31 +210,44 @@ The rule tracks imports and only flags instantiations of classes imported from t
 
 ### Default Imports
 
-```typescript
-import Log from "@rbxts/rbxts-sleitnick-log";
-// new Log() inside functions will be flagged
-```
+<Code
+	code={['import Log from "@rbxts/rbxts-sleitnick-log";', "// new Log() inside functions will be flagged"].join("\n")}
+	lang="typescript"
+	key="import-log-from-rbxt-1pobcv"
+/>
 
 ### Named Imports
 
-```typescript
-import { Logger } from "@company/logging";
-// new Logger() inside functions will be flagged if configured
-```
+<Code
+	code={[
+		'import { Logger } from "@company/logging";',
+		"// new Logger() inside functions will be flagged if configured",
+	].join("\n")}
+	lang="typescript"
+	key="import-logger-from-c-2zxtt2"
+/>
 
 ### Aliased Imports
 
-```typescript
-import { Logger as Log } from "@company/logging";
-// new Log() inside functions will be flagged if Logger is configured
-```
+<Code
+	code={[
+		'import { Logger as Log } from "@company/logging";',
+		"// new Log() inside functions will be flagged if Logger is configured",
+	].join("\n")}
+	lang="typescript"
+	key="import-logger-as-log-2q80jl"
+/>
 
 ### Namespace Imports
 
-```typescript
-import * as Logging from "@rbxts/rbxts-sleitnick-log";
-// new Logging.Log() inside functions will be flagged
-```
+<Code
+	code={[
+		'import * as Logging from "@rbxts/rbxts-sleitnick-log";',
+		"// new Logging.Log() inside functions will be flagged",
+	].join("\n")}
+	lang="typescript"
+	key="import-as-logging-fr-1yditf"
+/>
 
 ## When Not To Use It
 

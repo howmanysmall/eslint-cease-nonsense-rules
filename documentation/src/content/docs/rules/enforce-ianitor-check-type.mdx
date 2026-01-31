@@ -2,6 +2,8 @@
 title: enforce-ianitor-check-type
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Enforces `Ianitor.Check<T>` type annotations on complex TypeScript types to ensure runtime validation.
 
 ## Rule Details
@@ -10,20 +12,24 @@ This rule calculates structural complexity of TypeScript types and requires Iani
 
 ## Options
 
-```jsonc
-{
-	"cease-nonsense/enforce-ianitor-check-type": [
-		"error",
-		{
-			"baseThreshold": 10, // Minimum complexity to require validation
-			"warnThreshold": 15, // Warning threshold
-			"errorThreshold": 25, // Error threshold
-			"interfacePenalty": 20, // Complexity penalty for interfaces
-			"performanceMode": true, // Enable performance optimizations
-		},
-	],
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/enforce-ianitor-check-type": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"baseThreshold": 10, // Minimum complexity to require validation',
+		'\t\t\t"warnThreshold": 15, // Warning threshold',
+		'\t\t\t"errorThreshold": 25, // Error threshold',
+		'\t\t\t"interfacePenalty": 20, // Complexity penalty for interfaces',
+		'\t\t\t"performanceMode": true, // Enable performance optimizations',
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-0-3izarl"
+/>
 
 ### Configuration Parameters
 
@@ -37,74 +43,82 @@ This rule calculates structural complexity of TypeScript types and requires Iani
 
 ### ❌ Incorrect
 
-```typescript
-// Complex type without runtime validation
-type UserConfig = {
-	id: number;
-	name: string;
-	settings: {
-		theme: string;
-		notifications: boolean;
-	};
-};
-
-const config = getUserConfig(); // No runtime check!
-
-// Deeply nested type without validation
-type ApiResponse = {
-	data: {
-		users: Array<{
-			id: number;
-			profile: {
-				avatar: string;
-				bio: string;
-			};
-		}>;
-	};
-	meta: {
-		page: number;
-		total: number;
-	};
-};
-```
+<Code
+	code={[
+		"// Complex type without runtime validation",
+		"type UserConfig = {",
+		"\tid: number;",
+		"\tname: string;",
+		"\tsettings: {",
+		"\t\ttheme: string;",
+		"\t\tnotifications: boolean;",
+		"\t};",
+		"};",
+		"",
+		"const config = getUserConfig(); // No runtime check!",
+		"",
+		"// Deeply nested type without validation",
+		"type ApiResponse = {",
+		"\tdata: {",
+		"\t\tusers: Array<{",
+		"\t\t\tid: number;",
+		"\t\t\tprofile: {",
+		"\t\t\t\tavatar: string;",
+		"\t\t\t\tbio: string;",
+		"\t\t\t};",
+		"\t\t}>;",
+		"\t};",
+		"\tmeta: {",
+		"\t\tpage: number;",
+		"\t\ttotal: number;",
+		"\t};",
+		"};",
+	].join("\n")}
+	lang="typescript"
+	key="complex-type-without-23wxll"
+/>
 
 ### ✅ Correct
 
-```typescript
-const userConfigValidator = Ianitor.interface({
-	id: Ianitor.number(),
-	name: Ianitor.string(),
-	settings: Ianitor.interface({
-		theme: Ianitor.string(),
-		notifications: Ianitor.boolean(),
-	}),
-});
-
-type UserConfig = Ianitor.Static<typeof userConfigValidator>;
-
-const config = userConfigValidator.check(getUserConfig());
-
-// With nested validators
-const apiResponseValidator = Ianitor.interface({
-	data: Ianitor.interface({
-		users: Ianitor.array(
-			Ianitor.interface({
-				id: Ianitor.number(),
-				profile: Ianitor.interface({
-					avatar: Ianitor.string(),
-					bio: Ianitor.string(),
-				}),
-			}),
-		),
-	}),
-	meta: Ianitor.interface({
-		page: Ianitor.number(),
-		total: Ianitor.number(),
-	}),
-});
-
-type ApiResponse = Ianitor.Static<typeof apiResponseValidator>;
-```
+<Code
+	code={[
+		"const userConfigValidator = Ianitor.interface({",
+		"\tid: Ianitor.number(),",
+		"\tname: Ianitor.string(),",
+		"\tsettings: Ianitor.interface({",
+		"\t\ttheme: Ianitor.string(),",
+		"\t\tnotifications: Ianitor.boolean(),",
+		"\t}),",
+		"});",
+		"",
+		"type UserConfig = Ianitor.Static<typeof userConfigValidator>;",
+		"",
+		"const config = userConfigValidator.check(getUserConfig());",
+		"",
+		"// With nested validators",
+		"const apiResponseValidator = Ianitor.interface({",
+		"\tdata: Ianitor.interface({",
+		"\t\tusers: Ianitor.array(",
+		"\t\t\tIanitor.interface({",
+		"\t\t\t\tid: Ianitor.number(),",
+		"\t\t\t\tprofile: Ianitor.interface({",
+		"\t\t\t\t\tavatar: Ianitor.string(),",
+		"\t\t\t\t\tbio: Ianitor.string(),",
+		"\t\t\t\t}),",
+		"\t\t\t}),",
+		"\t\t),",
+		"\t}),",
+		"\tmeta: Ianitor.interface({",
+		"\t\tpage: Ianitor.number(),",
+		"\t\ttotal: Ianitor.number(),",
+		"\t}),",
+		"});",
+		"",
+		"type ApiResponse = Ianitor.Static<typeof apiResponseValidator>;",
+	].join("\n")}
+	lang="typescript"
+	key="const-userconfigvali-21wm5w"
+/>
 
 ## When Not To Use It
 

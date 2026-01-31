@@ -2,6 +2,8 @@
 title: prefer-class-properties
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Prefer class properties over assignment of literals in constructors.
 
 ## Rule Details
@@ -10,11 +12,11 @@ This rule enforces using class property declarations for literal values instead 
 
 ## Options
 
-```jsonc
-{
-	"cease-nonsense/prefer-class-properties": ["error", "always"],
-}
-```
+<Code
+	code={["{", '\t"cease-nonsense/prefer-class-properties": ["error", "always"],', "}"].join("\n")}
+	lang="typescript"
+	key="block-0-22uhtk"
+/>
 
 ### Option Values
 
@@ -25,83 +27,101 @@ This rule enforces using class property declarations for literal values instead 
 
 ### ❌ Incorrect (with `"always"`)
 
-```typescript
-class User {
-	constructor() {
-		this.name = "Unknown"; // Literal in constructor
-		this.age = 0;
-		this.active = true;
-		this.roles = ["user"];
-		this.config = { theme: "dark" };
-	}
-}
-```
+<Code
+	code={[
+		"class User {",
+		"\tconstructor() {",
+		'\t\tthis.name = "Unknown"; // Literal in constructor',
+		"\t\tthis.age = 0;",
+		"\t\tthis.active = true;",
+		'\t\tthis.roles = ["user"];',
+		'\t\tthis.config = { theme: "dark" };',
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-user-3nm9qp"
+/>
 
-```typescript
-class Component {
-	constructor() {
-		this.id = `component-${Math.random()}`; // Still literal-like
-		this.element = document.createElement("div");
-		this.data = {
-			x: 0,
-			y: 0,
-		};
-	}
-}
-```
+<Code
+	code={[
+		"class Component {",
+		"\tconstructor() {",
+		"\t\tthis.id = `component-${Math.random()}`; // Still literal-like",
+		'\t\tthis.element = document.createElement("div");',
+		"\t\tthis.data = {",
+		"\t\t\tx: 0,",
+		"\t\t\ty: 0,",
+		"\t\t};",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-component-1klsfh"
+/>
 
 ### ✅ Correct (with `"always"`)
 
-```typescript
-class User {
-	name = "Unknown"; // Class property
-	age = 0;
-	active = true;
-	roles = ["user"];
-	config = { theme: "dark" };
-}
-```
+<Code
+	code={[
+		"class User {",
+		'\tname = "Unknown"; // Class property',
+		"\tage = 0;",
+		"\tactive = true;",
+		'\troles = ["user"];',
+		'\tconfig = { theme: "dark" };',
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-user-28uxh3"
+/>
 
-```typescript
-class Component {
-	id = `component-${Math.random()}`;
-	element = document.createElement("div");
-	data = {
-		x: 0,
-		y: 0,
-	};
-}
-```
+<Code
+	code={[
+		"class Component {",
+		"\tid = `component-${Math.random()}`;",
+		'\telement = document.createElement("div");',
+		"\tdata = {",
+		"\t\tx: 0,",
+		"\t\ty: 0,",
+		"\t};",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-component-301hr3"
+/>
 
-```typescript
-class Example {
-	// Constructor assignments are OK for non-literals
-	constructor(config: Config) {
-		this.config = config; // Not a literal
-		this.handler = this.createHandler(); // Method call
-	}
-}
-```
+<Code
+	code={[
+		"class Example {",
+		"\t// Constructor assignments are OK for non-literals",
+		"\tconstructor(config: Config) {",
+		"\t\tthis.config = config; // Not a literal",
+		"\t\tthis.handler = this.createHandler(); // Method call",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-example-3rdgc9"
+/>
 
 ### ❌ Incorrect (with `"never"`)
 
-```typescript
-class User {
-	name = "Unknown"; // Class property not allowed
-	age = 0;
-}
-```
+<Code
+	code={["class User {", '\tname = "Unknown"; // Class property not allowed', "\tage = 0;", "}"].join("\n")}
+	lang="typescript"
+	key="class-user-20l94e"
+/>
 
 ### ✅ Correct (with `"never"`)
 
-```typescript
-class User {
-	constructor() {
-		this.name = "Unknown";
-		this.age = 0;
-	}
-}
-```
+<Code
+	code={["class User {", "\tconstructor() {", '\t\tthis.name = "Unknown";', "\t\tthis.age = 0;", "\t}", "}"].join(
+		"\n",
+	)}
+	lang="typescript"
+	key="class-user-25tzj9"
+/>
 
 ## What is Considered a "Simple Literal"?
 
@@ -109,271 +129,339 @@ The rule considers these as simple literals:
 
 ### Primitive Literals
 
-```typescript
-class Example {
-	// ❌ Should be class properties
-	constructor() {
-		this.string = "hello";
-		this.number = 42;
-		this.boolean = true;
-		this.nullValue = null;
-	}
-}
-```
+<Code
+	code={[
+		"class Example {",
+		"\t// ❌ Should be class properties",
+		"\tconstructor() {",
+		'\t\tthis.string = "hello";',
+		"\t\tthis.number = 42;",
+		"\t\tthis.boolean = true;",
+		"\t\tthis.nullValue = null;",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-example-134eew"
+/>
 
 ### Object Literals
 
-```typescript
-class Example {
-	// ❌ Should be class property
-	constructor() {
-		this.config = {
-			x: 10,
-			y: 20,
-			nested: {
-				a: 1,
-			},
-		};
-	}
-}
-```
+<Code
+	code={[
+		"class Example {",
+		"\t// ❌ Should be class property",
+		"\tconstructor() {",
+		"\t\tthis.config = {",
+		"\t\t\tx: 10,",
+		"\t\t\ty: 20,",
+		"\t\t\tnested: {",
+		"\t\t\t\ta: 1,",
+		"\t\t\t},",
+		"\t\t};",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-example-38a060"
+/>
 
 ### Array Literals
 
-```typescript
-class Example {
-	// ❌ Should be class property
-	constructor() {
-		this.items = [1, 2, 3];
-		this.nested = [
-			[1, 2],
-			[3, 4],
-		];
-	}
-}
-```
+<Code
+	code={[
+		"class Example {",
+		"\t// ❌ Should be class property",
+		"\tconstructor() {",
+		"\t\tthis.items = [1, 2, 3];",
+		"\t\tthis.nested = [",
+		"\t\t\t[1, 2],",
+		"\t\t\t[3, 4],",
+		"\t\t];",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-example-18jbmq"
+/>
 
 ### Static Member Expressions
 
-```typescript
-class Example {
-	// ❌ Should be class property
-	constructor() {
-		this.color = Color3.fromRGB(255, 0, 0);
-		this.vector = Vector3.zero;
-	}
-}
-```
+<Code
+	code={[
+		"class Example {",
+		"\t// ❌ Should be class property",
+		"\tconstructor() {",
+		"\t\tthis.color = Color3.fromRGB(255, 0, 0);",
+		"\t\tthis.vector = Vector3.zero;",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-example-2xm702"
+/>
 
 ## What is NOT Considered?
 
 ### Constructor Parameters
 
-```typescript
-class Example {
-	// ✅ Allowed - not a literal
-	constructor(name: string) {
-		this.name = name;
-	}
-}
-```
+<Code
+	code={[
+		"class Example {",
+		"\t// ✅ Allowed - not a literal",
+		"\tconstructor(name: string) {",
+		"\t\tthis.name = name;",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-example-1ubc9e"
+/>
 
 ### Method Calls
 
-```typescript
-class Example {
-	// ✅ Allowed - method call result
-	constructor() {
-		this.id = generateId();
-		this.handler = this.createHandler();
-	}
-}
-```
+<Code
+	code={[
+		"class Example {",
+		"\t// ✅ Allowed - method call result",
+		"\tconstructor() {",
+		"\t\tthis.id = generateId();",
+		"\t\tthis.handler = this.createHandler();",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-example-fqh65p"
+/>
 
 ### Dynamic Property Access
 
-```typescript
-class Example {
-	// ✅ Allowed - computed property
-	constructor() {
-		this.value = obj[key];
-	}
-}
-```
+<Code
+	code={[
+		"class Example {",
+		"\t// ✅ Allowed - computed property",
+		"\tconstructor() {",
+		"\t\tthis.value = obj[key];",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-example-3lhcin"
+/>
 
 ### Non-This Assignments
 
-```typescript
-class Example {
-	// ✅ Allowed - not assigning to this
-	constructor() {
-		const temp = "value";
-		someObject.prop = "value";
-	}
-}
-```
+<Code
+	code={[
+		"class Example {",
+		"\t// ✅ Allowed - not assigning to this",
+		"\tconstructor() {",
+		'\t\tconst temp = "value";',
+		'\t\tsomeObject.prop = "value";',
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-example-1tqvg2"
+/>
 
 ## Benefits of Class Properties
 
 ### 1. Clarity and Readability
 
-```typescript
-// ❌ Harder to see class structure
-class User {
-	constructor() {
-		this.name = "";
-		this.email = "";
-		this.age = 0;
-		this.active = true;
-	}
-}
-
-// ✅ Class structure immediately visible
-class User {
-	name = "";
-	email = "";
-	age = 0;
-	active = true;
-}
-```
+<Code
+	code={[
+		"// ❌ Harder to see class structure",
+		"class User {",
+		"\tconstructor() {",
+		'\t\tthis.name = "";',
+		'\t\tthis.email = "";',
+		"\t\tthis.age = 0;",
+		"\t\tthis.active = true;",
+		"\t}",
+		"}",
+		"",
+		"// ✅ Class structure immediately visible",
+		"class User {",
+		'\tname = "";',
+		'\temail = "";',
+		"\tage = 0;",
+		"\tactive = true;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="harder-to-see-class--3l4dam"
+/>
 
 ### 2. Less Boilerplate
 
-```typescript
-// ❌ Requires constructor
-class Config {
-	constructor() {
-		this.timeout = 5000;
-		this.retries = 3;
-		this.debug = false;
-	}
-}
-
-// ✅ No constructor needed
-class Config {
-	timeout = 5000;
-	retries = 3;
-	debug = false;
-}
-```
+<Code
+	code={[
+		"// ❌ Requires constructor",
+		"class Config {",
+		"\tconstructor() {",
+		"\t\tthis.timeout = 5000;",
+		"\t\tthis.retries = 3;",
+		"\t\tthis.debug = false;",
+		"\t}",
+		"}",
+		"",
+		"// ✅ No constructor needed",
+		"class Config {",
+		"\ttimeout = 5000;",
+		"\tretries = 3;",
+		"\tdebug = false;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="requires-constructor-1j8eww"
+/>
 
 ### 3. Better TypeScript Integration
 
-```typescript
-// ✅ TypeScript infers types from initializers
-class Point {
-	x = 0; // TypeScript knows this is number
-	y = 0;
-}
-
-// vs requiring explicit types
-class Point {
-	x: number;
-	y: number;
-
-	constructor() {
-		this.x = 0;
-		this.y = 0;
-	}
-}
-```
+<Code
+	code={[
+		"// ✅ TypeScript infers types from initializers",
+		"class Point {",
+		"\tx = 0; // TypeScript knows this is number",
+		"\ty = 0;",
+		"}",
+		"",
+		"// vs requiring explicit types",
+		"class Point {",
+		"\tx: number;",
+		"\ty: number;",
+		"",
+		"\tconstructor() {",
+		"\t\tthis.x = 0;",
+		"\t\tthis.y = 0;",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="typescript-infers-ty-onvtxe"
+/>
 
 ### 4. Clearer Inheritance
 
-```typescript
-class Base {
-	baseProp = "base";
-}
-
-class Derived extends Base {
-	derivedProp = "derived";
-
-	// Constructor only needed if doing non-literal work
-}
-```
+<Code
+	code={[
+		"class Base {",
+		'\tbaseProp = "base";',
+		"}",
+		"",
+		"class Derived extends Base {",
+		'\tderivedProp = "derived";',
+		"",
+		"\t// Constructor only needed if doing non-literal work",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-base-ouund1"
+/>
 
 ## Advanced Examples
 
 ### Mixed Assignments
 
-```typescript
-class Component {
-	// Class properties for literals
-	id = generateId();
-	defaultSize = new Vector2(100, 100);
-	config = {
-		enabled: true,
-		theme: "dark",
-	};
-
-	// Constructor for dynamic values
-	constructor(options: Options) {
-		this.options = options;
-		this.handler = this.createHandler(options);
-	}
-
-	private createHandler(options: Options) {
-		// ...
-	}
-}
-```
+<Code
+	code={[
+		"class Component {",
+		"\t// Class properties for literals",
+		"\tid = generateId();",
+		"\tdefaultSize = new Vector2(100, 100);",
+		"\tconfig = {",
+		"\t\tenabled: true,",
+		'\t\ttheme: "dark",',
+		"\t};",
+		"",
+		"\t// Constructor for dynamic values",
+		"\tconstructor(options: Options) {",
+		"\t\tthis.options = options;",
+		"\t\tthis.handler = this.createHandler(options);",
+		"\t}",
+		"",
+		"\tprivate createHandler(options: Options) {",
+		"\t\t// ...",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-component-3ct2q1"
+/>
 
 ### With Visibility Modifiers
 
-```typescript
-class Service {
-	// Public class properties
-	public name = "ServiceName";
-	public version = "1.0.0";
-
-	// Private class properties
-	private cache = new Map();
-	private initialized = false;
-
-	// Protected class properties
-	protected config = {
-		timeout: 5000,
-	};
-}
-```
+<Code
+	code={[
+		"class Service {",
+		"\t// Public class properties",
+		'\tpublic name = "ServiceName";',
+		'\tpublic version = "1.0.0";',
+		"",
+		"\t// Private class properties",
+		"\tprivate cache = new Map();",
+		"\tprivate initialized = false;",
+		"",
+		"\t// Protected class properties",
+		"\tprotected config = {",
+		"\t\ttimeout: 5000,",
+		"\t};",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-service-3mov6b"
+/>
 
 ### With Readonly
 
-```typescript
-class Constants {
-	readonly MAX_SIZE = 100;
-	readonly DEFAULT_COLOR = Color3.fromRGB(255, 255, 255);
-	readonly CONFIG = {
-		key: "value",
-	};
-}
-```
+<Code
+	code={[
+		"class Constants {",
+		"\treadonly MAX_SIZE = 100;",
+		"\treadonly DEFAULT_COLOR = Color3.fromRGB(255, 255, 255);",
+		"\treadonly CONFIG = {",
+		'\t\tkey: "value",',
+		"\t};",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-constants-35a60i"
+/>
 
 ## Edge Cases
 
 ### Computed Property Names
 
-```typescript
-class Example {
-	// ✅ Class properties support computed names (but rare)
-	["computed" + "Name"] = "value";
-}
-```
+<Code
+	code={[
+		"class Example {",
+		"\t// ✅ Class properties support computed names (but rare)",
+		'\t["computed" + "Name"] = "value";',
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-example-21ct5t"
+/>
 
 ### Decorators
 
-```typescript
-class Component {
-	// ✅ Can use decorators with class properties
-	@observable
-	count = 0;
-
-	@computed
-	get doubled() {
-		return this.count * 2;
-	}
-}
-```
+<Code
+	code={[
+		"class Component {",
+		"\t// ✅ Can use decorators with class properties",
+		"\t@observable",
+		"\tcount = 0;",
+		"",
+		"\t@computed",
+		"\tget doubled() {",
+		"\t\treturn this.count * 2;",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="class-component-tzleba"
+/>
 
 ## When Not To Use It
 
@@ -387,27 +475,27 @@ Consider using `"never"` option if:
 
 ### Enforce Class Properties (Default)
 
-```typescript
-{
-  "cease-nonsense/prefer-class-properties": ["error", "always"]
-}
-```
+<Code
+	code={["{", '  "cease-nonsense/prefer-class-properties": ["error", "always"]', "}"].join("\n")}
+	lang="typescript"
+	key="block-25-2byn0g"
+/>
 
 ### Disallow Class Properties
 
-```typescript
-{
-  "cease-nonsense/prefer-class-properties": ["error", "never"]
-}
-```
+<Code
+	code={["{", '  "cease-nonsense/prefer-class-properties": ["error", "never"]', "}"].join("\n")}
+	lang="typescript"
+	key="block-26-2dccjo"
+/>
 
 ### Warn Instead of Error
 
-```typescript
-{
-  "cease-nonsense/prefer-class-properties": ["warn", "always"]
-}
-```
+<Code
+	code={["{", '  "cease-nonsense/prefer-class-properties": ["warn", "always"]', "}"].join("\n")}
+	lang="typescript"
+	key="block-27-33jes1"
+/>
 
 ## Migration Guide
 
@@ -419,47 +507,55 @@ Most cases can be automatically refactored:
 2. Move them to class property declarations
 3. Remove constructor if it becomes empty
 
-```typescript
-// Before:
-class Example {
-	constructor() {
-		this.a = 1;
-		this.b = 2;
-	}
-
-	method() {
-		/* ... */
-	}
-}
-
-// After:
-class Example {
-	a = 1;
-	b = 2;
-
-	method() {
-		/* ... */
-	}
-}
-```
+<Code
+	code={[
+		"// Before:",
+		"class Example {",
+		"\tconstructor() {",
+		"\t\tthis.a = 1;",
+		"\t\tthis.b = 2;",
+		"\t}",
+		"",
+		"\tmethod() {",
+		"\t\t/* ... */",
+		"\t}",
+		"}",
+		"",
+		"// After:",
+		"class Example {",
+		"\ta = 1;",
+		"\tb = 2;",
+		"",
+		"\tmethod() {",
+		"\t\t/* ... */",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="before-2w86f3"
+/>
 
 ### Handling Computed Values
 
-```typescript
-// Before:
-class Component {
-	constructor() {
-		this.id = `id-${Math.random()}`;
-		this.timestamp = Date.now();
-	}
-}
-
-// After (computed per instance):
-class Component {
-	id = `id-${Math.random()}`;
-	timestamp = Date.now();
-}
-```
+<Code
+	code={[
+		"// Before:",
+		"class Component {",
+		"\tconstructor() {",
+		"\t\tthis.id = `id-${Math.random()}`;",
+		"\t\tthis.timestamp = Date.now();",
+		"\t}",
+		"}",
+		"",
+		"// After (computed per instance):",
+		"class Component {",
+		"\tid = `id-${Math.random()}`;",
+		"\ttimestamp = Date.now();",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="before-26k5cj"
+/>
 
 **Note**: Class property initializers run once per instance, maintaining correct behavior.
 

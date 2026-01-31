@@ -2,6 +2,8 @@
 title: require-named-effect-functions
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Enforce named effect functions for better debuggability. Prevent inline arrow functions in `useEffect` and similar hooks.
 
 ## Rule Details
@@ -16,17 +18,21 @@ This rule enforces using named functions (either identifiers or named function e
 
 ## Options
 
-```jsonc
-{
-	"cease-nonsense/require-named-effect-functions": [
-		"error",
-		{
-			"environment": "roblox-ts", // or "standard"
-			"hooks": ["useEffect", "useLayoutEffect", "useInsertionEffect"],
-		},
-	],
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/require-named-effect-functions": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"environment": "roblox-ts", // or "standard"',
+		'\t\t\t"hooks": ["useEffect", "useLayoutEffect", "useInsertionEffect"],',
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-0-3spv8d"
+/>
 
 ### Configuration Parameters
 
@@ -41,230 +47,278 @@ This rule enforces using named functions (either identifiers or named function e
 
 Only identifiers are allowed - function must be defined separately:
 
-```typescript
-// ✅ Only allowed pattern
-function onMount() {
-	doThing();
-}
-useEffect(onMount, []);
-```
+<Code
+	code={["// ✅ Only allowed pattern", "function onMount() {", "\tdoThing();", "}", "useEffect(onMount, []);"].join(
+		"\n",
+	)}
+	lang="typescript"
+	key="only-allowed-pattern-3vcpcg"
+/>
 
 ### `standard` Mode
 
 Both identifiers and named function expressions are allowed:
 
-```typescript
-// ✅ Identifier
-function onMount() {
-	doThing();
-}
-useEffect(onMount, []);
-
-// ✅ Named function expression
-useEffect(function onMount() {
-	doThing();
-}, []);
-```
+<Code
+	code={[
+		"// ✅ Identifier",
+		"function onMount() {",
+		"\tdoThing();",
+		"}",
+		"useEffect(onMount, []);",
+		"",
+		"// ✅ Named function expression",
+		"useEffect(function onMount() {",
+		"\tdoThing();",
+		"}, []);",
+	].join("\n")}
+	lang="typescript"
+	key="identifier-2rgxt3"
+/>
 
 ## Examples
 
 ### ❌ Incorrect
 
-```typescript
-// Arrow function
-useEffect(() => {
-	doThing();
-}, [dep]);
-
-// Anonymous function expression
-useEffect(
-	function () {
-		doThing();
-	},
-	[dep],
-);
-
-// Inline arrow with dep
-useEffect(() => {
-	fetchData(userId);
-}, [userId]);
-```
+<Code
+	code={[
+		"// Arrow function",
+		"useEffect(() => {",
+		"\tdoThing();",
+		"}, [dep]);",
+		"",
+		"// Anonymous function expression",
+		"useEffect(",
+		"\tfunction () {",
+		"\t\tdoThing();",
+		"\t},",
+		"\t[dep],",
+		");",
+		"",
+		"// Inline arrow with dep",
+		"useEffect(() => {",
+		"\tfetchData(userId);",
+		"}, [userId]);",
+	].join("\n")}
+	lang="typescript"
+	key="arrow-function-3rfcyb"
+/>
 
 ### ✅ Correct (roblox-ts mode)
 
-```typescript
-// Named function identifier
-function onDepChange() {
-	doThing();
-}
-useEffect(onDepChange, [dep]);
-
-// With dependency
-function onUserIdChange() {
-	fetchData(userId);
-}
-useEffect(onUserIdChange, [userId]);
-```
+<Code
+	code={[
+		"// Named function identifier",
+		"function onDepChange() {",
+		"\tdoThing();",
+		"}",
+		"useEffect(onDepChange, [dep]);",
+		"",
+		"// With dependency",
+		"function onUserIdChange() {",
+		"\tfetchData(userId);",
+		"}",
+		"useEffect(onUserIdChange, [userId]);",
+	].join("\n")}
+	lang="typescript"
+	key="named-function-ident-2wrjmn"
+/>
 
 ### ✅ Correct (standard mode)
 
-```typescript
-// Named function identifier
-function onDepChange() {
-	doThing();
-}
-useEffect(onDepChange, [dep]);
-
-// Named function expression (also allowed in standard mode)
-useEffect(
-	function onDepChange() {
-		doThing();
-	},
-	[dep],
-);
-```
+<Code
+	code={[
+		"// Named function identifier",
+		"function onDepChange() {",
+		"\tdoThing();",
+		"}",
+		"useEffect(onDepChange, [dep]);",
+		"",
+		"// Named function expression (also allowed in standard mode)",
+		"useEffect(",
+		"\tfunction onDepChange() {",
+		"\t\tdoThing();",
+		"\t},",
+		"\t[dep],",
+		");",
+	].join("\n")}
+	lang="typescript"
+	key="named-function-ident-18dj8v"
+/>
 
 ## Why Named Functions?
 
 ### Better Stack Traces
 
-```typescript
-// Anonymous - stack trace shows "(anonymous)"
-useEffect(() => {
-	throw new Error("oops");
-}, []);
-
-// Named - stack trace shows "onMount"
-function onMount() {
-	throw new Error("oops");
-}
-useEffect(onMount, []);
-```
+<Code
+	code={[
+		'// Anonymous - stack trace shows "(anonymous)"',
+		"useEffect(() => {",
+		'\tthrow new Error("oops");',
+		"}, []);",
+		"",
+		'// Named - stack trace shows "onMount"',
+		"function onMount() {",
+		'\tthrow new Error("oops");',
+		"}",
+		"useEffect(onMount, []);",
+	].join("\n")}
+	lang="typescript"
+	key="anonymous-stack-trac-n4fefq"
+/>
 
 ### DevTools Display
 
-```javascript
-// DevTools shows: "useEffect(anonymous)"
-useEffect(() => {}, []);
-
-// DevTools shows: "useEffect(onMount)"
-useEffect(onMount, []);
-```
+<Code
+	code={[
+		'// DevTools shows: "useEffect(anonymous)"',
+		"useEffect(() => {}, []);",
+		"",
+		'// DevTools shows: "useEffect(onMount)"',
+		"useEffect(onMount, []);",
+	].join("\n")}
+	lang="javascript"
+	key="devtools-shows-useef-1tjiaj"
+/>
 
 ### Testability
 
-```typescript
-// Can't test in isolation
-useEffect(() => {
-	complexLogic();
-	moreLogic();
-}, [dep]);
-
-// Can test separately
-export function onDepChange() {
-	complexLogic();
-	moreLogic();
-}
-useEffect(onDepChange, [dep]);
-
-// In tests
-test("onDepChange handles X correctly", () => {
-	onDepChange();
-	expect(/* ... */);
-});
-```
+<Code
+	code={[
+		"// Can't test in isolation",
+		"useEffect(() => {",
+		"\tcomplexLogic();",
+		"\tmoreLogic();",
+		"}, [dep]);",
+		"",
+		"// Can test separately",
+		"export function onDepChange() {",
+		"\tcomplexLogic();",
+		"\tmoreLogic();",
+		"}",
+		"useEffect(onDepChange, [dep]);",
+		"",
+		"// In tests",
+		'test("onDepChange handles X correctly", () => {',
+		"\tonDepChange();",
+		"\texpect(/* ... */);",
+		"});",
+	].join("\n")}
+	lang="typescript"
+	key="can-t-test-in-isolat-34n0ma"
+/>
 
 ### Self-Documentation
 
-```typescript
-// What does this do?
-useEffect(() => {
-	fetchUser(userId);
-	updateUI();
-}, [userId]);
-
-// Clear intent
-function onUserIdChange() {
-	fetchUser(userId);
-	updateUI();
-}
-useEffect(onUserIdChange, [userId]);
-```
+<Code
+	code={[
+		"// What does this do?",
+		"useEffect(() => {",
+		"\tfetchUser(userId);",
+		"\tupdateUI();",
+		"}, [userId]);",
+		"",
+		"// Clear intent",
+		"function onUserIdChange() {",
+		"\tfetchUser(userId);",
+		"\tupdateUI();",
+		"}",
+		"useEffect(onUserIdChange, [userId]);",
+	].join("\n")}
+	lang="typescript"
+	key="what-does-this-do-1qmeq4"
+/>
 
 ## Naming Conventions
 
 Use descriptive names that indicate when the effect runs:
 
-```typescript
-// Describe the trigger
-function onMount() {}
-function onUnmount() {}
-function onUserIdChange() {}
-function onDependencyUpdate() {}
-
-// Describe the action (if trigger is obvious)
-function fetchUserData() {}
-function subscribeToUpdates() {}
-function initializeWidget() {}
-```
+<Code
+	code={[
+		"// Describe the trigger",
+		"function onMount() {}",
+		"function onUnmount() {}",
+		"function onUserIdChange() {}",
+		"function onDependencyUpdate() {}",
+		"",
+		"// Describe the action (if trigger is obvious)",
+		"function fetchUserData() {}",
+		"function subscribeToUpdates() {}",
+		"function initializeWidget() {}",
+	].join("\n")}
+	lang="typescript"
+	key="describe-the-trigger-2su90t"
+/>
 
 ## Pattern: Effect with Cleanup
 
-```typescript
-function subscribeToUpdates() {
-	const subscription = subscribe(userId);
-
-	// Return cleanup function
-	return function cleanup() {
-		subscription.unsubscribe();
-	};
-}
-
-useEffect(subscribeToUpdates, [userId]);
-```
+<Code
+	code={[
+		"function subscribeToUpdates() {",
+		"\tconst subscription = subscribe(userId);",
+		"",
+		"\t// Return cleanup function",
+		"\treturn function cleanup() {",
+		"\t\tsubscription.unsubscribe();",
+		"\t};",
+		"}",
+		"",
+		"useEffect(subscribeToUpdates, [userId]);",
+	].join("\n")}
+	lang="typescript"
+	key="function-subscribeto-rzg8t6"
+/>
 
 Or with named cleanup:
 
-```typescript
-function subscribeToUpdates() {
-	const subscription = subscribe(userId);
-	return () => subscription.unsubscribe();
-}
-
-// Better: named cleanup
-function onUserIdChange() {
-	const subscription = subscribe(userId);
-
-	function cleanup() {
-		subscription.unsubscribe();
-	}
-
-	return cleanup;
-}
-
-useEffect(onUserIdChange, [userId]);
-```
+<Code
+	code={[
+		"function subscribeToUpdates() {",
+		"\tconst subscription = subscribe(userId);",
+		"\treturn () => subscription.unsubscribe();",
+		"}",
+		"",
+		"// Better: named cleanup",
+		"function onUserIdChange() {",
+		"\tconst subscription = subscribe(userId);",
+		"",
+		"\tfunction cleanup() {",
+		"\t\tsubscription.unsubscribe();",
+		"\t}",
+		"",
+		"\treturn cleanup;",
+		"}",
+		"",
+		"useEffect(onUserIdChange, [userId]);",
+	].join("\n")}
+	lang="typescript"
+	key="function-subscribeto-3wubp1"
+/>
 
 ## Multiple Effects
 
 Name functions to indicate their specific purpose:
 
-```typescript
-function initializeWidget() {
-	/* ... */
-}
-useEffect(initializeWidget, []);
-
-function onUserIdChange() {
-	/* ... */
-}
-useEffect(onUserIdChange, [userId]);
-
-function onThemeChange() {
-	/* ... */
-}
-useEffect(onThemeChange, [theme]);
-```
+<Code
+	code={[
+		"function initializeWidget() {",
+		"\t/* ... */",
+		"}",
+		"useEffect(initializeWidget, []);",
+		"",
+		"function onUserIdChange() {",
+		"\t/* ... */",
+		"}",
+		"useEffect(onUserIdChange, [userId]);",
+		"",
+		"function onThemeChange() {",
+		"\t/* ... */",
+		"}",
+		"useEffect(onThemeChange, [theme]);",
+	].join("\n")}
+	lang="typescript"
+	key="function-initializew-35fvxv"
+/>
 
 ## When Not To Use It
 

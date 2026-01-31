@@ -2,6 +2,8 @@
 title: strict-component-boundaries
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Prevent reaching into sibling component folders for nested modules.
 
 ## Rule Details
@@ -10,17 +12,21 @@ Components should be isolated and not directly import from the internal structur
 
 ## Options
 
-```jsonc
-{
-	"cease-nonsense/strict-component-boundaries": [
-		"error",
-		{
-			"allow": ["components/\\w+$"], // Regex patterns to allow
-			"maxDepth": 1, // Maximum import depth
-		},
-	],
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/strict-component-boundaries": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"allow": ["components/\\\\w+$"], // Regex patterns to allow',
+		'\t\t\t"maxDepth": 1, // Maximum import depth',
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-0-1cjvs3"
+/>
 
 ### Configuration Parameters
 
@@ -31,41 +37,49 @@ Components should be isolated and not directly import from the internal structur
 
 ### ❌ Incorrect
 
-```typescript
-// Reaching into another component's internals
-import { helper } from "../OtherComponent/utils/helper";
-
-// Importing from sibling's nested structure
-import { hook } from "../UserProfile/hooks/useProfile";
-
-// Too deep into component structure
-import { constant } from "./components/Foo/internal/constants";
-
-// Sibling component internals
-import { validator } from "../../shared/components/Form/validators/email";
-```
+<Code
+	code={[
+		"// Reaching into another component's internals",
+		'import { helper } from "../OtherComponent/utils/helper";',
+		"",
+		"// Importing from sibling's nested structure",
+		'import { hook } from "../UserProfile/hooks/useProfile";',
+		"",
+		"// Too deep into component structure",
+		'import { constant } from "./components/Foo/internal/constants";',
+		"",
+		"// Sibling component internals",
+		'import { validator } from "../../shared/components/Form/validators/email";',
+	].join("\n")}
+	lang="typescript"
+	key="reaching-into-anothe-3c7jgs"
+/>
 
 ### ✅ Correct
 
-```typescript
-// Import from shared location
-import { helper } from "../../shared/utils/helper";
-import { hook } from "../../shared/hooks/useProfile";
-
-// Index import from component (public API)
-import { OtherComponent } from "../OtherComponent";
-import { UserProfile } from "../UserProfile";
-
-// Direct component import (within maxDepth)
-import { Foo } from "./components/Foo";
-
-// Same-level or parent imports (not crossing boundaries)
-import { myHelper } from "./utils/myHelper";
-import { ParentUtil } from "../utils/shared";
-
-// Shared/common folders (not components)
-import { validator } from "../../shared/validators/email";
-```
+<Code
+	code={[
+		"// Import from shared location",
+		'import { helper } from "../../shared/utils/helper";',
+		'import { hook } from "../../shared/hooks/useProfile";',
+		"",
+		"// Index import from component (public API)",
+		'import { OtherComponent } from "../OtherComponent";',
+		'import { UserProfile } from "../UserProfile";',
+		"",
+		"// Direct component import (within maxDepth)",
+		'import { Foo } from "./components/Foo";',
+		"",
+		"// Same-level or parent imports (not crossing boundaries)",
+		'import { myHelper } from "./utils/myHelper";',
+		'import { ParentUtil } from "../utils/shared";',
+		"",
+		"// Shared/common folders (not components)",
+		'import { validator } from "../../shared/validators/email";',
+	].join("\n")}
+	lang="typescript"
+	key="import-from-shared-l-31j25f"
+/>
 
 ## Why Enforce Boundaries?
 
@@ -73,37 +87,49 @@ import { validator } from "../../shared/validators/email";
 
 Components should expose a public API through their index file:
 
-```typescript
-// ❌ Breaks encapsulation
-import { InternalState } from "../User/state/internal";
-
-// ✅ Uses public API
-import { useUserState } from "../User";
-```
+<Code
+	code={[
+		"// ❌ Breaks encapsulation",
+		'import { InternalState } from "../User/state/internal";',
+		"",
+		"// ✅ Uses public API",
+		'import { useUserState } from "../User";',
+	].join("\n")}
+	lang="typescript"
+	key="breaks-encapsulation-1ndxq0"
+/>
 
 ### Refactoring Safety
 
 Internal changes shouldn't break external code:
 
-```typescript
-// ❌ Brittle: breaks if User restructures
-import { helper } from "../User/utils/helpers/formatName";
-
-// ✅ Resilient: User controls public API
-import { formatUserName } from "../User";
-```
+<Code
+	code={[
+		"// ❌ Brittle: breaks if User restructures",
+		'import { helper } from "../User/utils/helpers/formatName";',
+		"",
+		"// ✅ Resilient: User controls public API",
+		'import { formatUserName } from "../User";',
+	].join("\n")}
+	lang="typescript"
+	key="brittle-breaks-if-us-3ok24n"
+/>
 
 ### Circular Dependencies
 
 Cross-component imports create dependency cycles:
 
-```typescript
-// ComponentA/helper.ts
-import { utilB } from "../ComponentB/utils/utilB";
-
-// ComponentB/utils/utilB.ts
-import { helperA } from "../../ComponentA/helper"; // Cycle!
-```
+<Code
+	code={[
+		"// ComponentA/helper.ts",
+		'import { utilB } from "../ComponentB/utils/utilB";',
+		"",
+		"// ComponentB/utils/utilB.ts",
+		'import { helperA } from "../../ComponentA/helper"; // Cycle!',
+	].join("\n")}
+	lang="typescript"
+	key="componenta-helper-ts-2oz34k"
+/>
 
 ### Coupling
 
@@ -118,47 +144,59 @@ Tight coupling makes components harder to:
 
 ### Component with Public API
 
-```txt
-components/
-  UserProfile/
-    index.ts                 # Public API (exports)
-    UserProfile.tsx          # Main component
-    components/              # Internal sub-components
-      UserHeader.tsx
-      UserStats.tsx
-    hooks/                   # Internal hooks
-      useUserData.ts
-    utils/                   # Internal utilities
-      formatters.ts
-```
+<Code
+	code={[
+		"components/",
+		"  UserProfile/",
+		"    index.ts                 # Public API (exports)",
+		"    UserProfile.tsx          # Main component",
+		"    components/              # Internal sub-components",
+		"      UserHeader.tsx",
+		"      UserStats.tsx",
+		"    hooks/                   # Internal hooks",
+		"      useUserData.ts",
+		"    utils/                   # Internal utilities",
+		"      formatters.ts",
+	].join("\n")}
+	lang="txt"
+	key="components-nfeq93"
+/>
 
-```typescript
-// components/UserProfile/index.ts - Public API
-export { UserProfile } from "./UserProfile";
-export { useUserData } from "./hooks/useUserData";
-export type { UserProfileProps } from "./UserProfile";
-
-// Internal stuff NOT exported
-```
+<Code
+	code={[
+		"// components/UserProfile/index.ts - Public API",
+		'export { UserProfile } from "./UserProfile";',
+		'export { useUserData } from "./hooks/useUserData";',
+		'export type { UserProfileProps } from "./UserProfile";',
+		"",
+		"// Internal stuff NOT exported",
+	].join("\n")}
+	lang="typescript"
+	key="components-userprofi-3blzxi"
+/>
 
 ### Proper Imports
 
-```typescript
-// ✅ From other components
-import { UserProfile } from "../UserProfile"; // Uses public API
-
-// ✅ Within same component
-import { UserHeader } from "./components/UserHeader"; // Internal OK
-import { useUserData } from "./hooks/useUserData"; // Internal OK
-
-// ✅ From shared code
-import { formatDate } from "../../shared/utils/date";
-import { API_ENDPOINT } from "../../config/constants";
-
-// ❌ From sibling component internals
-import { UserHeader } from "../UserProfile/components/UserHeader";
-import { useUserData } from "../UserProfile/hooks/useUserData";
-```
+<Code
+	code={[
+		"// ✅ From other components",
+		'import { UserProfile } from "../UserProfile"; // Uses public API',
+		"",
+		"// ✅ Within same component",
+		'import { UserHeader } from "./components/UserHeader"; // Internal OK',
+		'import { useUserData } from "./hooks/useUserData"; // Internal OK',
+		"",
+		"// ✅ From shared code",
+		'import { formatDate } from "../../shared/utils/date";',
+		'import { API_ENDPOINT } from "../../config/constants";',
+		"",
+		"// ❌ From sibling component internals",
+		'import { UserHeader } from "../UserProfile/components/UserHeader";',
+		'import { useUserData } from "../UserProfile/hooks/useUserData";',
+	].join("\n")}
+	lang="typescript"
+	key="from-other-component-2u20dw"
+/>
 
 ## maxDepth Option
 
@@ -166,56 +204,73 @@ Controls how deep you can import from component folders:
 
 ### maxDepth: 1 (default)
 
-```typescript
-// ✅ Allowed (1 level)
-import { Foo } from "./components/Foo";
-
-// ❌ Disallowed (2 levels)
-import { Bar } from "./components/Foo/Bar";
-```
+<Code
+	code={[
+		"// ✅ Allowed (1 level)",
+		'import { Foo } from "./components/Foo";',
+		"",
+		"// ❌ Disallowed (2 levels)",
+		'import { Bar } from "./components/Foo/Bar";',
+	].join("\n")}
+	lang="typescript"
+	key="allowed-1-level-wzhgxj"
+/>
 
 ### maxDepth: 2
 
-```typescript
-// ✅ Allowed (2 levels)
-import { Foo } from "./components/Foo";
-import { Bar } from "./components/Foo/Bar";
-
-// ❌ Disallowed (3 levels)
-import { Baz } from "./components/Foo/Bar/Baz";
-```
+<Code
+	code={[
+		"// ✅ Allowed (2 levels)",
+		'import { Foo } from "./components/Foo";',
+		'import { Bar } from "./components/Foo/Bar";',
+		"",
+		"// ❌ Disallowed (3 levels)",
+		'import { Baz } from "./components/Foo/Bar/Baz";',
+	].join("\n")}
+	lang="typescript"
+	key="allowed-2-levels-1h48nu"
+/>
 
 ### maxDepth: 0 (unlimited)
 
-```typescript
-// ✅ Any depth allowed
-import { Deep } from "./components/A/B/C/D/Deep";
-```
+<Code
+	code={["// ✅ Any depth allowed", 'import { Deep } from "./components/A/B/C/D/Deep";'].join("\n")}
+	lang="typescript"
+	key="any-depth-allowed-362aqi"
+/>
 
 ## allow Option
 
 Specify regex patterns for allowed imports:
 
-```typescript
-{
-  "allow": [
-    "components/\\w+$",           // Direct component imports
-    "shared/.*",                   // Anything in shared/
-    "components/common/.*"         // Common components
-  ]
-}
-```
+<Code
+	code={[
+		"{",
+		'  "allow": [',
+		'    "components/\\\\w+$",           // Direct component imports',
+		'    "shared/.*",                   // Anything in shared/',
+		'    "components/common/.*"         // Common components',
+		"  ]",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-12-1zh6wj"
+/>
 
-```typescript
-// ✅ Matches "components/\w+$"
-import { Button } from "./components/Button";
-
-// ✅ Matches "shared/.*"
-import { helper } from "../../shared/utils/helper";
-
-// ❌ Doesn't match any pattern
-import { thing } from "../OtherComponent/internal/thing";
-```
+<Code
+	code={[
+		'// ✅ Matches "components/\\w+$"',
+		'import { Button } from "./components/Button";',
+		"",
+		'// ✅ Matches "shared/.*"',
+		'import { helper } from "../../shared/utils/helper";',
+		"",
+		"// ❌ Doesn't match any pattern",
+		'import { thing } from "../OtherComponent/internal/thing";',
+	].join("\n")}
+	lang="typescript"
+	key="matches-components-w-35mfh1"
+/>
 
 ## Migration Strategy
 
@@ -223,41 +278,57 @@ import { thing } from "../OtherComponent/internal/thing";
 
 For each component, determine what should be public:
 
-```typescript
-// What does this component expose?
-// - Main component?
-// - Reusable hooks?
-// - Type definitions?
-// - Utility functions?
-```
+<Code
+	code={[
+		"// What does this component expose?",
+		"// - Main component?",
+		"// - Reusable hooks?",
+		"// - Type definitions?",
+		"// - Utility functions?",
+	].join("\n")}
+	lang="typescript"
+	key="what-does-this-compo-5xhvui"
+/>
 
 ### 2. Create Index Files
 
-```typescript
-// components/UserProfile/index.ts
-export { UserProfile } from "./UserProfile";
-export { useUserProfile } from "./hooks/useUserProfile";
-export type { UserProfileProps } from "./types";
-```
+<Code
+	code={[
+		"// components/UserProfile/index.ts",
+		'export { UserProfile } from "./UserProfile";',
+		'export { useUserProfile } from "./hooks/useUserProfile";',
+		'export type { UserProfileProps } from "./types";',
+	].join("\n")}
+	lang="typescript"
+	key="components-userprofi-3tmgqi"
+/>
 
 ### 3. Update Imports
 
-```typescript
-// Before
-import { UserProfile } from "../UserProfile/UserProfile";
-import { useUserProfile } from "../UserProfile/hooks/useUserProfile";
-
-// After
-import { UserProfile, useUserProfile } from "../UserProfile";
-```
+<Code
+	code={[
+		"// Before",
+		'import { UserProfile } from "../UserProfile/UserProfile";',
+		'import { useUserProfile } from "../UserProfile/hooks/useUserProfile";',
+		"",
+		"// After",
+		'import { UserProfile, useUserProfile } from "../UserProfile";',
+	].join("\n")}
+	lang="typescript"
+	key="before-3uymha"
+/>
 
 ### 4. Move Shared Code
 
-```typescript
-// If multiple components need it, move to shared/
-components/UserProfile/utils/formatDate.ts
-  → shared/utils/formatDate.ts
-```
+<Code
+	code={[
+		"// If multiple components need it, move to shared/",
+		"components/UserProfile/utils/formatDate.ts",
+		"  → shared/utils/formatDate.ts",
+	].join("\n")}
+	lang="typescript"
+	key="if-multiple-componen-1olsxe"
+/>
 
 ## When Not To Use It
 

@@ -2,6 +2,8 @@
 title: no-unused-imports
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Disallow unused imports.
 
 ## Rule Details
@@ -10,16 +12,20 @@ This rule reports when an import is defined but never used in the code. It uses 
 
 ## Options
 
-```jsonc
-{
-	"cease-nonsense/no-unused-imports": [
-		"error",
-		{
-			"checkJSDoc": true,
-		},
-	],
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/no-unused-imports": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"checkJSDoc": true,',
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-0-3db7ge"
+/>
 
 ### Configuration Parameters
 
@@ -29,25 +35,33 @@ This rule reports when an import is defined but never used in the code. It uses 
 
 ### ❌ Incorrect
 
-```typescript
-import { unusedFunction } from "./utils";
-import { AnotherUnused } from "./types";
-
-// unusedFunction and AnotherUnused are never used
-```
+<Code
+	code={[
+		'import { unusedFunction } from "./utils";',
+		'import { AnotherUnused } from "./types";',
+		"",
+		"// unusedFunction and AnotherUnused are never used",
+	].join("\n")}
+	lang="typescript"
+	key="import-unusedfunctio-2s0cxk"
+/>
 
 ### ✅ Correct
 
-```typescript
-import { usedFunction } from "./utils";
-
-usedFunction();
-
-// Or used in JSDoc
-/**
- * @see {usedFunction}
- */
-```
+<Code
+	code={[
+		'import { usedFunction } from "./utils";',
+		"",
+		"usedFunction();",
+		"",
+		"// Or used in JSDoc",
+		"/**",
+		" * @see {usedFunction}",
+		" */",
+	].join("\n")}
+	lang="typescript"
+	key="import-usedfunction--112106"
+/>
 
 ## When Not To Use It
 

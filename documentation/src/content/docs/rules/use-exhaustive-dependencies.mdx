@@ -2,6 +2,8 @@
 title: use-exhaustive-dependencies
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Enforces exhaustive and correct dependency specification in React hooks to prevent stale closures and unnecessary re-renders.
 
 ## Rule Details
@@ -12,25 +14,29 @@ This rule ensures that all dependencies used inside hook callbacks are listed in
 
 ## Options
 
-```jsonc
-{
-	"cease-nonsense/use-exhaustive-dependencies": [
-		"error",
-		{
-			"reportMissingDependenciesArray": true,
-			"reportUnnecessaryDependencies": true,
-			"hooks": [
-				{
-					"name": "useCustomHook",
-					"closureIndex": 0,
-					"dependenciesIndex": 1,
-					"stableResult": true,
-				},
-			],
-		},
-	],
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/use-exhaustive-dependencies": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"reportMissingDependenciesArray": true,',
+		'\t\t\t"reportUnnecessaryDependencies": true,',
+		'\t\t\t"hooks": [',
+		"\t\t\t\t{",
+		'\t\t\t\t\t"name": "useCustomHook",',
+		'\t\t\t\t\t"closureIndex": 0,',
+		'\t\t\t\t\t"dependenciesIndex": 1,',
+		'\t\t\t\t\t"stableResult": true,',
+		"\t\t\t\t},",
+		"\t\t\t],",
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-0-1jwga2"
+/>
 
 ### Configuration Parameters
 
@@ -49,174 +55,206 @@ This rule ensures that all dependencies used inside hook callbacks are listed in
 
 ### ❌ Incorrect
 
-```typescript
-function UserProfile({ userId }) {
-	const [user, setUser] = useState(null);
-
-	// Missing userId dependency
-	useEffect(() => {
-		fetchUser(userId).then(setUser);
-	}, []); // Should include userId
-
-	// Missing dependency array entirely
-	useEffect(() => {
-		document.title = `User ${userId}`;
-	});
-
-	// Unnecessary dependency
-	useEffect(() => {
-		console.log("mounted");
-	}, [userId]); // userId not used in effect
-
-	// Stale closure
-	const [count, setCount] = useState(0);
-	useEffect(() => {
-		const id = setInterval(() => {
-			console.log(count); // Always logs initial value!
-		}, 1000);
-		return () => clearInterval(id);
-	}, []); // Missing count
-}
-```
+<Code
+	code={[
+		"function UserProfile({ userId }) {",
+		"\tconst [user, setUser] = useState(null);",
+		"",
+		"\t// Missing userId dependency",
+		"\tuseEffect(() => {",
+		"\t\tfetchUser(userId).then(setUser);",
+		"\t}, []); // Should include userId",
+		"",
+		"\t// Missing dependency array entirely",
+		"\tuseEffect(() => {",
+		"\t\tdocument.title = `User ${userId}`;",
+		"\t});",
+		"",
+		"\t// Unnecessary dependency",
+		"\tuseEffect(() => {",
+		'\t\tconsole.log("mounted");',
+		"\t}, [userId]); // userId not used in effect",
+		"",
+		"\t// Stale closure",
+		"\tconst [count, setCount] = useState(0);",
+		"\tuseEffect(() => {",
+		"\t\tconst id = setInterval(() => {",
+		"\t\t\tconsole.log(count); // Always logs initial value!",
+		"\t\t}, 1000);",
+		"\t\treturn () => clearInterval(id);",
+		"\t}, []); // Missing count",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="function-userprofile-15gecv"
+/>
 
 ### ✅ Correct
 
-```typescript
-function UserProfile({ userId }) {
-	const [user, setUser] = useState(null);
-
-	// Correct dependencies
-	useEffect(() => {
-		fetchUser(userId).then(setUser);
-	}, [userId]);
-
-	// Empty array for mount-only effect
-	useEffect(() => {
-		console.log("mounted once");
-		return () => console.log("unmounted");
-	}, []);
-
-	// All used values in deps
-	const [count, setCount] = useState(0);
-	useEffect(() => {
-		const id = setInterval(() => {
-			console.log(count); // Current count
-		}, 1000);
-		return () => clearInterval(id);
-	}, [count]);
-
-	// Or use functional update (no dep needed)
-	useEffect(() => {
-		const id = setInterval(() => {
-			setCount((c) => c + 1); // No dependency on count
-		}, 1000);
-		return () => clearInterval(id);
-	}, []);
-}
-```
+<Code
+	code={[
+		"function UserProfile({ userId }) {",
+		"\tconst [user, setUser] = useState(null);",
+		"",
+		"\t// Correct dependencies",
+		"\tuseEffect(() => {",
+		"\t\tfetchUser(userId).then(setUser);",
+		"\t}, [userId]);",
+		"",
+		"\t// Empty array for mount-only effect",
+		"\tuseEffect(() => {",
+		'\t\tconsole.log("mounted once");',
+		'\t\treturn () => console.log("unmounted");',
+		"\t}, []);",
+		"",
+		"\t// All used values in deps",
+		"\tconst [count, setCount] = useState(0);",
+		"\tuseEffect(() => {",
+		"\t\tconst id = setInterval(() => {",
+		"\t\t\tconsole.log(count); // Current count",
+		"\t\t}, 1000);",
+		"\t\treturn () => clearInterval(id);",
+		"\t}, [count]);",
+		"",
+		"\t// Or use functional update (no dep needed)",
+		"\tuseEffect(() => {",
+		"\t\tconst id = setInterval(() => {",
+		"\t\t\tsetCount((c) => c + 1); // No dependency on count",
+		"\t\t}, 1000);",
+		"\t\treturn () => clearInterval(id);",
+		"\t}, []);",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="function-userprofile-2ujoiv"
+/>
 
 ## Common Patterns
 
 ### Props and State
 
-```typescript
-function Component({ userId, onUpdate }) {
-	const [data, setData] = useState(null);
-
-	useEffect(() => {
-		fetchUser(userId).then((user) => {
-			setData(user);
-			onUpdate(user);
-		});
-	}, [userId, onUpdate]); // All referenced values
-}
-```
+<Code
+	code={[
+		"function Component({ userId, onUpdate }) {",
+		"\tconst [data, setData] = useState(null);",
+		"",
+		"\tuseEffect(() => {",
+		"\t\tfetchUser(userId).then((user) => {",
+		"\t\t\tsetData(user);",
+		"\t\t\tonUpdate(user);",
+		"\t\t});",
+		"\t}, [userId, onUpdate]); // All referenced values",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="function-component-u-3l1vxm"
+/>
 
 ### Stable Functions
 
 Use `useCallback` to stabilize function references:
 
-```typescript
-function Component({ userId }) {
-	// Unstable: new function every render
-	const loadUser = () => fetchUser(userId);
-
-	useEffect(() => {
-		loadUser();
-	}, [loadUser]); // Runs every render!
-
-	// Better: stabilize with useCallback
-	const loadUserStable = useCallback(() => {
-		fetchUser(userId);
-	}, [userId]);
-
-	useEffect(() => {
-		loadUserStable();
-	}, [loadUserStable]); // Only runs when userId changes
-}
-```
+<Code
+	code={[
+		"function Component({ userId }) {",
+		"\t// Unstable: new function every render",
+		"\tconst loadUser = () => fetchUser(userId);",
+		"",
+		"\tuseEffect(() => {",
+		"\t\tloadUser();",
+		"\t}, [loadUser]); // Runs every render!",
+		"",
+		"\t// Better: stabilize with useCallback",
+		"\tconst loadUserStable = useCallback(() => {",
+		"\t\tfetchUser(userId);",
+		"\t}, [userId]);",
+		"",
+		"\tuseEffect(() => {",
+		"\t\tloadUserStable();",
+		"\t}, [loadUserStable]); // Only runs when userId changes",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="function-component-u-3akyfn"
+/>
 
 ### Functional Updates
 
 Avoid dependencies with functional state updates:
 
-```typescript
-function Counter() {
-	const [count, setCount] = useState(0);
-
-	// ❌ Depends on count
-	useEffect(() => {
-		const id = setInterval(() => setCount(count + 1), 1000);
-		return () => clearInterval(id);
-	}, [count]); // Recreates interval on every change
-
-	// ✅ No dependency on count
-	useEffect(() => {
-		const id = setInterval(() => setCount((c) => c + 1), 1000);
-		return () => clearInterval(id);
-	}, []); // Stable interval
-}
-```
+<Code
+	code={[
+		"function Counter() {",
+		"\tconst [count, setCount] = useState(0);",
+		"",
+		"\t// ❌ Depends on count",
+		"\tuseEffect(() => {",
+		"\t\tconst id = setInterval(() => setCount(count + 1), 1000);",
+		"\t\treturn () => clearInterval(id);",
+		"\t}, [count]); // Recreates interval on every change",
+		"",
+		"\t// ✅ No dependency on count",
+		"\tuseEffect(() => {",
+		"\t\tconst id = setInterval(() => setCount((c) => c + 1), 1000);",
+		"\t\treturn () => clearInterval(id);",
+		"\t}, []); // Stable interval",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="function-counter-3s31ye"
+/>
 
 ### Refs (Stable)
 
 Refs don't need to be in dependencies:
 
-```typescript
-function Component() {
-	const inputRef = useRef<HTMLInputElement>(null);
-
-	useEffect(() => {
-		inputRef.current?.focus(); // Ref not in deps (stable)
-	}, []); // OK
-}
-```
+<Code
+	code={[
+		"function Component() {",
+		"\tconst inputRef = useRef<HTMLInputElement>(null);",
+		"",
+		"\tuseEffect(() => {",
+		"\t\tinputRef.current?.focus(); // Ref not in deps (stable)",
+		"\t}, []); // OK",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="function-component-2gzn08"
+/>
 
 ## Custom Hooks
 
 Configure custom hooks similar to React's built-in hooks:
 
-```typescript
-{
-  "hooks": [{
-    "name": "useInterval",
-    "closureIndex": 0,       // Callback is first param
-    "dependenciesIndex": 2,  // Deps array is third param
-    "stableResult": false    // Returns non-stable values
-  }]
-}
-```
+<Code
+	code={[
+		"{",
+		'  "hooks": [{',
+		'    "name": "useInterval",',
+		'    "closureIndex": 0,       // Callback is first param',
+		'    "dependenciesIndex": 2,  // Deps array is third param',
+		'    "stableResult": false    // Returns non-stable values',
+		"  }]",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-7-1lvtkb"
+/>
 
-```typescript
-// Usage
-useInterval(
-	() => {
-		doSomething(value);
-	},
-	1000,
-	[value],
-); // Third param is deps
-```
+<Code
+	code={[
+		"// Usage",
+		"useInterval(",
+		"\t() => {",
+		"\t\tdoSomething(value);",
+		"\t},",
+		"\t1000,",
+		"\t[value],",
+		"); // Third param is deps",
+	].join("\n")}
+	lang="typescript"
+	key="usage-3bzl3m"
+/>
 
 ## Exhaustive Dependencies Explained
 
@@ -224,40 +262,48 @@ useInterval(
 
 Without proper dependencies, closures capture stale values:
 
-```typescript
-function Component() {
-	const [count, setCount] = useState(0);
-
-	useEffect(() => {
-		// Captures count = 0 at mount
-		setTimeout(() => {
-			console.log(count); // Always 0!
-		}, 5000);
-	}, []); // Missing count
-
-	// Fix: add count to deps
-	useEffect(() => {
-		setTimeout(() => {
-			console.log(count); // Current count
-		}, 5000);
-	}, [count]);
-}
-```
+<Code
+	code={[
+		"function Component() {",
+		"\tconst [count, setCount] = useState(0);",
+		"",
+		"\tuseEffect(() => {",
+		"\t\t// Captures count = 0 at mount",
+		"\t\tsetTimeout(() => {",
+		"\t\t\tconsole.log(count); // Always 0!",
+		"\t\t}, 5000);",
+		"\t}, []); // Missing count",
+		"",
+		"\t// Fix: add count to deps",
+		"\tuseEffect(() => {",
+		"\t\tsetTimeout(() => {",
+		"\t\t\tconsole.log(count); // Current count",
+		"\t\t}, 5000);",
+		"\t}, [count]);",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="function-component-364ble"
+/>
 
 ### Unnecessary Re-runs
 
 Too many dependencies cause performance issues:
 
-```typescript
-function Component({ data }) {
-	const [filtered, setFiltered] = useState([]);
-
-	useEffect(() => {
-		setFiltered(data.filter((item) => item.active));
-	}, [data, filtered]); // filtered is unnecessary!
-	// This creates an infinite loop
-}
-```
+<Code
+	code={[
+		"function Component({ data }) {",
+		"\tconst [filtered, setFiltered] = useState([]);",
+		"",
+		"\tuseEffect(() => {",
+		"\t\tsetFiltered(data.filter((item) => item.active));",
+		"\t}, [data, filtered]); // filtered is unnecessary!",
+		"\t// This creates an infinite loop",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="function-component-d-3msiln"
+/>
 
 ## React Compiler
 

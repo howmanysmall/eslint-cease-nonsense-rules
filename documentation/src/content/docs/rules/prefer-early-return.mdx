@@ -2,6 +2,8 @@
 title: prefer-early-return
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Prefer early returns over full-body conditional wrapping in function declarations.
 
 ## Rule Details
@@ -10,16 +12,20 @@ Functions wrapped entirely in a single `if` statement should use an early return
 
 ## Options
 
-```jsonc
-{
-	"cease-nonsense/prefer-early-return": [
-		"error",
-		{
-			"maximumStatements": 1,
-		},
-	],
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/prefer-early-return": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"maximumStatements": 1,',
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-0-33dh01"
+/>
 
 ### Configuration Parameters
 
@@ -29,404 +35,476 @@ Functions wrapped entirely in a single `if` statement should use an early return
 
 ### ❌ Incorrect
 
-```typescript
-// Single statement wrapped
-function validate(user: User) {
-	if (user.isActive) {
-		console.log("User is active");
-	}
-}
-
-// Multiple statements wrapped
-function process(data: Data) {
-	if (data.isValid) {
-		transform(data);
-		save(data);
-		notify();
-	}
-}
-
-// Deeply nested
-function execute(task: Task) {
-	if (task.enabled) {
-		const result = task.run();
-		task.complete(result);
-		return result;
-	}
-}
-```
+<Code
+	code={[
+		"// Single statement wrapped",
+		"function validate(user: User) {",
+		"\tif (user.isActive) {",
+		'\t\tconsole.log("User is active");',
+		"\t}",
+		"}",
+		"",
+		"// Multiple statements wrapped",
+		"function process(data: Data) {",
+		"\tif (data.isValid) {",
+		"\t\ttransform(data);",
+		"\t\tsave(data);",
+		"\t\tnotify();",
+		"\t}",
+		"}",
+		"",
+		"// Deeply nested",
+		"function execute(task: Task) {",
+		"\tif (task.enabled) {",
+		"\t\tconst result = task.run();",
+		"\t\ttask.complete(result);",
+		"\t\treturn result;",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="single-statement-wra-nel1zi"
+/>
 
 ### ✅ Correct
 
-```typescript
-// Early return
-function validate(user: User) {
-	if (!user.isActive) return;
-	console.log("User is active");
-}
-
-// Early return with multiple statements
-function process(data: Data) {
-	if (!data.isValid) return;
-
-	transform(data);
-	save(data);
-	notify();
-}
-
-// Early return with value
-function execute(task: Task) {
-	if (!task.enabled) return;
-
-	const result = task.run();
-	task.complete(result);
-	return result;
-}
-
-// If-else is fine (alternate path exists)
-function getStatus(user: User) {
-	if (user.isActive) {
-		return "active";
-	} else {
-		return "inactive";
-	}
-}
-```
+<Code
+	code={[
+		"// Early return",
+		"function validate(user: User) {",
+		"\tif (!user.isActive) return;",
+		'\tconsole.log("User is active");',
+		"}",
+		"",
+		"// Early return with multiple statements",
+		"function process(data: Data) {",
+		"\tif (!data.isValid) return;",
+		"",
+		"\ttransform(data);",
+		"\tsave(data);",
+		"\tnotify();",
+		"}",
+		"",
+		"// Early return with value",
+		"function execute(task: Task) {",
+		"\tif (!task.enabled) return;",
+		"",
+		"\tconst result = task.run();",
+		"\ttask.complete(result);",
+		"\treturn result;",
+		"}",
+		"",
+		"// If-else is fine (alternate path exists)",
+		"function getStatus(user: User) {",
+		"\tif (user.isActive) {",
+		'\t\treturn "active";',
+		"\t} else {",
+		'\t\treturn "inactive";',
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="early-return-3fpesk"
+/>
 
 ## Why Early Returns?
 
 ### 1. Reduces Nesting
 
-```typescript
-// ❌ Nested - harder to read
-function processUser(user: User) {
-	if (user) {
-		if (user.isValid) {
-			if (user.isPremium) {
-				applyPremiumFeatures(user);
-			}
-		}
-	}
-}
-
-// ✅ Flat - easier to read
-function processUser(user: User) {
-	if (!user) return;
-	if (!user.isValid) return;
-	if (!user.isPremium) return;
-
-	applyPremiumFeatures(user);
-}
-```
+<Code
+	code={[
+		"// ❌ Nested - harder to read",
+		"function processUser(user: User) {",
+		"\tif (user) {",
+		"\t\tif (user.isValid) {",
+		"\t\t\tif (user.isPremium) {",
+		"\t\t\t\tapplyPremiumFeatures(user);",
+		"\t\t\t}",
+		"\t\t}",
+		"\t}",
+		"}",
+		"",
+		"// ✅ Flat - easier to read",
+		"function processUser(user: User) {",
+		"\tif (!user) return;",
+		"\tif (!user.isValid) return;",
+		"\tif (!user.isPremium) return;",
+		"",
+		"\tapplyPremiumFeatures(user);",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="nested-harder-to-rea-2hgk5d"
+/>
 
 ### 2. Makes Happy Path Obvious
 
-```typescript
-// ❌ Happy path buried in if-body
-function save(data: Data) {
-	if (data.isValid) {
-		// Main logic hidden inside
-		validate(data);
-		transform(data);
-		persist(data);
-		notify();
-	}
-}
-
-// ✅ Happy path at top level
-function save(data: Data) {
-	if (!data.isValid) return;
-
-	// Main logic clearly visible
-	validate(data);
-	transform(data);
-	persist(data);
-	notify();
-}
-```
+<Code
+	code={[
+		"// ❌ Happy path buried in if-body",
+		"function save(data: Data) {",
+		"\tif (data.isValid) {",
+		"\t\t// Main logic hidden inside",
+		"\t\tvalidate(data);",
+		"\t\ttransform(data);",
+		"\t\tpersist(data);",
+		"\t\tnotify();",
+		"\t}",
+		"}",
+		"",
+		"// ✅ Happy path at top level",
+		"function save(data: Data) {",
+		"\tif (!data.isValid) return;",
+		"",
+		"\t// Main logic clearly visible",
+		"\tvalidate(data);",
+		"\ttransform(data);",
+		"\tpersist(data);",
+		"\tnotify();",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="happy-path-buried-in-2znhmv"
+/>
 
 ### 3. Reduces Cognitive Load
 
-```typescript
-// ❌ Need to track if-scope
-function handleRequest(req: Request) {
-	if (req.isValid) {
-		// 20 lines of code
-		// ...
-		// Still inside if-scope?
-	}
-}
-
-// ✅ No scope tracking needed
-function handleRequest(req: Request) {
-	if (!req.isValid) return;
-
-	// 20 lines of code at top level
-	// ...
-	// Clearly not in any conditional
-}
-```
+<Code
+	code={[
+		"// ❌ Need to track if-scope",
+		"function handleRequest(req: Request) {",
+		"\tif (req.isValid) {",
+		"\t\t// 20 lines of code",
+		"\t\t// ...",
+		"\t\t// Still inside if-scope?",
+		"\t}",
+		"}",
+		"",
+		"// ✅ No scope tracking needed",
+		"function handleRequest(req: Request) {",
+		"\tif (!req.isValid) return;",
+		"",
+		"\t// 20 lines of code at top level",
+		"\t// ...",
+		"\t// Clearly not in any conditional",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="need-to-track-if-sco-390qp9"
+/>
 
 ## Configuration Examples
 
 ### Default (Maximum 1 Statement)
 
-```typescript
-{
-  "cease-nonsense/prefer-early-return": ["error", {
-    "maximumStatements": 1
-  }]
-}
-
-// ❌ Flagged - 2 statements
-if (condition) {
-  doA();
-  doB();
-}
-
-// ✅ Not flagged - 1 statement
-if (condition) {
-  doA();
-}
-```
+<Code
+	code={[
+		"{",
+		'  "cease-nonsense/prefer-early-return": ["error", {',
+		'    "maximumStatements": 1',
+		"  }]",
+		"}",
+		"",
+		"// ❌ Flagged - 2 statements",
+		"if (condition) {",
+		"  doA();",
+		"  doB();",
+		"}",
+		"",
+		"// ✅ Not flagged - 1 statement",
+		"if (condition) {",
+		"  doA();",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-6-3ft9vd"
+/>
 
 ### Strict Mode (Maximum 0 Statements)
 
-```typescript
-{
-  "cease-nonsense/prefer-early-return": ["error", {
-    "maximumStatements": 0
-  }]
-}
-
-// ❌ Flagged - even 1 statement
-if (condition) {
-  doA();
-}
-
-// ✅ Use early return
-if (!condition) return;
-doA();
-```
+<Code
+	code={[
+		"{",
+		'  "cease-nonsense/prefer-early-return": ["error", {',
+		'    "maximumStatements": 0',
+		"  }]",
+		"}",
+		"",
+		"// ❌ Flagged - even 1 statement",
+		"if (condition) {",
+		"  doA();",
+		"}",
+		"",
+		"// ✅ Use early return",
+		"if (!condition) return;",
+		"doA();",
+	].join("\n")}
+	lang="typescript"
+	key="block-7-2f9232"
+/>
 
 ### Lenient (Maximum 3 Statements)
 
-```typescript
-{
-  "cease-nonsense/prefer-early-return": ["error", {
-    "maximumStatements": 3
-  }]
-}
-
-// ✅ Not flagged - only 3 statements
-if (condition) {
-  doA();
-  doB();
-  doC();
-}
-
-// ❌ Flagged - 4 statements
-if (condition) {
-  doA();
-  doB();
-  doC();
-  doD();
-}
-```
+<Code
+	code={[
+		"{",
+		'  "cease-nonsense/prefer-early-return": ["error", {',
+		'    "maximumStatements": 3',
+		"  }]",
+		"}",
+		"",
+		"// ✅ Not flagged - only 3 statements",
+		"if (condition) {",
+		"  doA();",
+		"  doB();",
+		"  doC();",
+		"}",
+		"",
+		"// ❌ Flagged - 4 statements",
+		"if (condition) {",
+		"  doA();",
+		"  doB();",
+		"  doC();",
+		"  doD();",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-8-1dr02d"
+/>
 
 ## When NOT to Refactor
 
 ### If-Else Present
 
-```typescript
-// ✅ Don't refactor - has else clause
-function getStatus(active: boolean) {
-	if (active) {
-		return "active";
-	} else {
-		return "inactive";
-	}
-}
-```
+<Code
+	code={[
+		"// ✅ Don't refactor - has else clause",
+		"function getStatus(active: boolean) {",
+		"\tif (active) {",
+		'\t\treturn "active";',
+		"\t} else {",
+		'\t\treturn "inactive";',
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="don-t-refactor-has-e-27lmf8"
+/>
 
 ### Multiple Conditions
 
-```typescript
-// ✅ Don't refactor - multiple independent conditions
-function validate(data: Data) {
-	if (data.hasName) {
-		validateName(data.name);
-	}
-
-	if (data.hasEmail) {
-		validateEmail(data.email);
-	}
-}
-```
+<Code
+	code={[
+		"// ✅ Don't refactor - multiple independent conditions",
+		"function validate(data: Data) {",
+		"\tif (data.hasName) {",
+		"\t\tvalidateName(data.name);",
+		"\t}",
+		"",
+		"\tif (data.hasEmail) {",
+		"\t\tvalidateEmail(data.email);",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="don-t-refactor-multi-1il2i6"
+/>
 
 ### Short Functions
 
-```typescript
-// ✅ Acceptable - function is short anyway
-function log(enabled: boolean, message: string) {
-	if (enabled) {
-		console.log(message);
-	}
-}
-```
+<Code
+	code={[
+		"// ✅ Acceptable - function is short anyway",
+		"function log(enabled: boolean, message: string) {",
+		"\tif (enabled) {",
+		"\t\tconsole.log(message);",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="acceptable-function--d80q9d"
+/>
 
 ## Advanced Examples
 
 ### Arrow Functions
 
-```typescript
-// ❌ Bad
-const process = (data: Data) => {
-	if (data.isValid) {
-		transform(data);
-		save(data);
-	}
-};
-
-// ✅ Good
-const process = (data: Data) => {
-	if (!data.isValid) return;
-
-	transform(data);
-	save(data);
-};
-```
+<Code
+	code={[
+		"// ❌ Bad",
+		"const process = (data: Data) => {",
+		"\tif (data.isValid) {",
+		"\t\ttransform(data);",
+		"\t\tsave(data);",
+		"\t}",
+		"};",
+		"",
+		"// ✅ Good",
+		"const process = (data: Data) => {",
+		"\tif (!data.isValid) return;",
+		"",
+		"\ttransform(data);",
+		"\tsave(data);",
+		"};",
+	].join("\n")}
+	lang="typescript"
+	key="bad-1820id"
+/>
 
 ### Async Functions
 
-```typescript
-// ❌ Bad
-async function fetchUser(id: number) {
-	if (id > 0) {
-		const user = await api.getUser(id);
-		return user;
-	}
-}
-
-// ✅ Good
-async function fetchUser(id: number) {
-	if (id <= 0) return;
-
-	const user = await api.getUser(id);
-	return user;
-}
-```
+<Code
+	code={[
+		"// ❌ Bad",
+		"async function fetchUser(id: number) {",
+		"\tif (id > 0) {",
+		"\t\tconst user = await api.getUser(id);",
+		"\t\treturn user;",
+		"\t}",
+		"}",
+		"",
+		"// ✅ Good",
+		"async function fetchUser(id: number) {",
+		"\tif (id <= 0) return;",
+		"",
+		"\tconst user = await api.getUser(id);",
+		"\treturn user;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="bad-3mnqdu"
+/>
 
 ### With Return Values
 
-```typescript
-// ❌ Bad
-function calculate(x: number): number {
-	if (x > 0) {
-		const result = x * 2;
-		return result;
-	}
-}
-
-// ✅ Good
-function calculate(x: number): number | undefined {
-	if (x <= 0) return undefined;
-
-	const result = x * 2;
-	return result;
-}
-```
+<Code
+	code={[
+		"// ❌ Bad",
+		"function calculate(x: number): number {",
+		"\tif (x > 0) {",
+		"\t\tconst result = x * 2;",
+		"\t\treturn result;",
+		"\t}",
+		"}",
+		"",
+		"// ✅ Good",
+		"function calculate(x: number): number | undefined {",
+		"\tif (x <= 0) return undefined;",
+		"",
+		"\tconst result = x * 2;",
+		"\treturn result;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="bad-2yjj6q"
+/>
 
 ### Guard Clauses Pattern
 
-```typescript
-// ✅ Excellent - multiple guards
-function processPayment(payment: Payment) {
-	if (!payment) return;
-	if (!payment.isValid) return;
-	if (payment.amount <= 0) return;
-	if (!payment.method) return;
-
-	// Main logic clearly separated
-	const processed = chargePayment(payment);
-	sendReceipt(payment);
-	return processed;
-}
-```
+<Code
+	code={[
+		"// ✅ Excellent - multiple guards",
+		"function processPayment(payment: Payment) {",
+		"\tif (!payment) return;",
+		"\tif (!payment.isValid) return;",
+		"\tif (payment.amount <= 0) return;",
+		"\tif (!payment.method) return;",
+		"",
+		"\t// Main logic clearly separated",
+		"\tconst processed = chargePayment(payment);",
+		"\tsendReceipt(payment);",
+		"\treturn processed;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="excellent-multiple-g-3d2q92"
+/>
 
 ## Common Patterns
 
 ### Validation Functions
 
-```typescript
-// Before:
-function validateUser(user: User) {
-	if (user && user.email && user.password) {
-		// Validation logic
-		checkEmail(user.email);
-		checkPassword(user.password);
-		return true;
-	}
-	return false;
-}
-
-// After:
-function validateUser(user: User) {
-	if (!user) return false;
-	if (!user.email) return false;
-	if (!user.password) return false;
-
-	checkEmail(user.email);
-	checkPassword(user.password);
-	return true;
-}
-```
+<Code
+	code={[
+		"// Before:",
+		"function validateUser(user: User) {",
+		"\tif (user && user.email && user.password) {",
+		"\t\t// Validation logic",
+		"\t\tcheckEmail(user.email);",
+		"\t\tcheckPassword(user.password);",
+		"\t\treturn true;",
+		"\t}",
+		"\treturn false;",
+		"}",
+		"",
+		"// After:",
+		"function validateUser(user: User) {",
+		"\tif (!user) return false;",
+		"\tif (!user.email) return false;",
+		"\tif (!user.password) return false;",
+		"",
+		"\tcheckEmail(user.email);",
+		"\tcheckPassword(user.password);",
+		"\treturn true;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="before-342ozf"
+/>
 
 ### Event Handlers
 
-```typescript
-// Before:
-function handleClick(event: Event) {
-	if (!event.defaultPrevented) {
-		event.preventDefault();
-		processClick(event);
-		updateUI();
-	}
-}
-
-// After:
-function handleClick(event: Event) {
-	if (event.defaultPrevented) return;
-
-	event.preventDefault();
-	processClick(event);
-	updateUI();
-}
-```
+<Code
+	code={[
+		"// Before:",
+		"function handleClick(event: Event) {",
+		"\tif (!event.defaultPrevented) {",
+		"\t\tevent.preventDefault();",
+		"\t\tprocessClick(event);",
+		"\t\tupdateUI();",
+		"\t}",
+		"}",
+		"",
+		"// After:",
+		"function handleClick(event: Event) {",
+		"\tif (event.defaultPrevented) return;",
+		"",
+		"\tevent.preventDefault();",
+		"\tprocessClick(event);",
+		"\tupdateUI();",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="before-30xp4e"
+/>
 
 ### API Handlers
 
-```typescript
-// Before:
-async function handleRequest(req: Request) {
-	if (req.method === "POST") {
-		const body = await req.json();
-		validate(body);
-		const result = await process(body);
-		return result;
-	}
-}
-
-// After:
-async function handleRequest(req: Request) {
-	if (req.method !== "POST") return;
-
-	const body = await req.json();
-	validate(body);
-	const result = await process(body);
-	return result;
-}
-```
+<Code
+	code={[
+		"// Before:",
+		"async function handleRequest(req: Request) {",
+		'\tif (req.method === "POST") {',
+		"\t\tconst body = await req.json();",
+		"\t\tvalidate(body);",
+		"\t\tconst result = await process(body);",
+		"\t\treturn result;",
+		"\t}",
+		"}",
+		"",
+		"// After:",
+		"async function handleRequest(req: Request) {",
+		'\tif (req.method !== "POST") return;',
+		"",
+		"\tconst body = await req.json();",
+		"\tvalidate(body);",
+		"\tconst result = await process(body);",
+		"\treturn result;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="before-fw876h"
+/>
 
 ## When Not To Use It
 
@@ -440,29 +518,37 @@ Consider disabling this rule if:
 
 ### Negate Conditions Correctly
 
-```typescript
-// Original condition → Negated condition
-if (x === 5) → if (x !== 5) return;
-if (x > 5) → if (x <= 5) return;
-if (x >= 5) → if (x < 5) return;
-if (isValid) → if (!isValid) return;
-if (a && b) → if (!(a && b)) return; or if (!a || !b) return;
-if (a || b) → if (!(a || b)) return; or if (!a && !b) return;
-```
+<Code
+	code={[
+		"// Original condition → Negated condition",
+		"if (x === 5) → if (x !== 5) return;",
+		"if (x > 5) → if (x <= 5) return;",
+		"if (x >= 5) → if (x < 5) return;",
+		"if (isValid) → if (!isValid) return;",
+		"if (a && b) → if (!(a && b)) return; or if (!a || !b) return;",
+		"if (a || b) → if (!(a || b)) return; or if (!a && !b) return;",
+	].join("\n")}
+	lang="typescript"
+	key="original-condition-n-205ydn"
+/>
 
 ### De Morgan's Laws
 
-```typescript
-// !(A && B) === (!A || !B)
-if (!(user.isActive && user.isPremium)) return;
-// Same as:
-if (!user.isActive || !user.isPremium) return;
-
-// !(A || B) === (!A && !B)
-if (!(x < 0 || x > 100)) return;
-// Same as:
-if (x >= 0 && x <= 100) return;
-```
+<Code
+	code={[
+		"// !(A && B) === (!A || !B)",
+		"if (!(user.isActive && user.isPremium)) return;",
+		"// Same as:",
+		"if (!user.isActive || !user.isPremium) return;",
+		"",
+		"// !(A || B) === (!A && !B)",
+		"if (!(x < 0 || x > 100)) return;",
+		"// Same as:",
+		"if (x >= 0 && x <= 100) return;",
+	].join("\n")}
+	lang="typescript"
+	key="a-b-a-b-2y6h76"
+/>
 
 ## Related Rules
 

@@ -2,6 +2,8 @@
 title: require-paired-calls
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Enforces that paired function calls (opener/closer) are properly balanced across all execution paths with LIFO (Last In, First Out) ordering.
 
 ## Rule Details
@@ -15,28 +17,32 @@ This rule ensures resource management patterns like profiling markers, database 
 
 ## Options
 
-```jsonc
-{
-	"cease-nonsense/require-paired-calls": [
-		"error",
-		{
-			"pairs": [
-				{
-					"opener": "debug.profilebegin",
-					"closer": "debug.profileend",
-					"alternatives": ["db.rollback"],
-					"requireSync": true,
-					"platform": "roblox",
-					"yieldingFunctions": ["task.wait", "*.WaitForChild"],
-				},
-			],
-			"allowConditionalClosers": false,
-			"allowMultipleOpeners": true,
-			"maxNestingDepth": 0,
-		},
-	],
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/require-paired-calls": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"pairs": [',
+		"\t\t\t\t{",
+		'\t\t\t\t\t"opener": "debug.profilebegin",',
+		'\t\t\t\t\t"closer": "debug.profileend",',
+		'\t\t\t\t\t"alternatives": ["db.rollback"],',
+		'\t\t\t\t\t"requireSync": true,',
+		'\t\t\t\t\t"platform": "roblox",',
+		'\t\t\t\t\t"yieldingFunctions": ["task.wait", "*.WaitForChild"],',
+		"\t\t\t\t},",
+		"\t\t\t],",
+		'\t\t\t"allowConditionalClosers": false,',
+		'\t\t\t"allowMultipleOpeners": true,',
+		'\t\t\t"maxNestingDepth": 0,',
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-0-f3izkr"
+/>
 
 ### Pair Configuration
 
@@ -59,165 +65,197 @@ This rule ensures resource management patterns like profiling markers, database 
 
 ### ❌ Incorrect
 
-```typescript
-// Missing closer on early return
-function test() {
-	debug.profilebegin("task");
-	if (error) return; // Never closed!
-	debug.profileend();
-}
-
-// Wrong LIFO order
-function test() {
-	debug.profilebegin("outer");
-	debug.profilebegin("inner");
-	debug.profileend(); // closes inner
-	// outer is never closed
-}
-
-// Async operation with requireSync
-async function test() {
-	debug.profilebegin("task");
-	await fetch("/api"); // Violates requireSync
-	debug.profileend();
-}
-
-// Closer in only one branch
-function test() {
-	debug.profilebegin("task");
-	if (condition) {
-		debug.profileend();
-	}
-	// Missing closer on else branch
-}
-
-// Roblox: yielding call between pairs
-function test() {
-	debug.profilebegin("task");
-	task.wait(1); // Yields, breaks sync requirement
-	debug.profileend();
-}
-```
+<Code
+	code={[
+		"// Missing closer on early return",
+		"function test() {",
+		'\tdebug.profilebegin("task");',
+		"\tif (error) return; // Never closed!",
+		"\tdebug.profileend();",
+		"}",
+		"",
+		"// Wrong LIFO order",
+		"function test() {",
+		'\tdebug.profilebegin("outer");',
+		'\tdebug.profilebegin("inner");',
+		"\tdebug.profileend(); // closes inner",
+		"\t// outer is never closed",
+		"}",
+		"",
+		"// Async operation with requireSync",
+		"async function test() {",
+		'\tdebug.profilebegin("task");',
+		'\tawait fetch("/api"); // Violates requireSync',
+		"\tdebug.profileend();",
+		"}",
+		"",
+		"// Closer in only one branch",
+		"function test() {",
+		'\tdebug.profilebegin("task");',
+		"\tif (condition) {",
+		"\t\tdebug.profileend();",
+		"\t}",
+		"\t// Missing closer on else branch",
+		"}",
+		"",
+		"// Roblox: yielding call between pairs",
+		"function test() {",
+		'\tdebug.profilebegin("task");',
+		"\ttask.wait(1); // Yields, breaks sync requirement",
+		"\tdebug.profileend();",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="missing-closer-on-ea-1xaz48"
+/>
 
 ### ✅ Correct
 
-```typescript
-// Simple pairing
-function test() {
-	debug.profilebegin("task");
-	doWork();
-	debug.profileend();
-}
-
-// Proper LIFO nesting
-function test() {
-	debug.profilebegin("outer");
-	debug.profilebegin("inner");
-	debug.profileend(); // closes inner
-	debug.profileend(); // closes outer
-}
-
-// Try-finally ensures closer on all paths
-function test() {
-	debug.profilebegin("task");
-	try {
-		riskyOperation();
-	} finally {
-		debug.profileend();
-	}
-}
-
-// Alternative closer for error path
-async function test() {
-	await db.transaction();
-	try {
-		await db.query("INSERT ...");
-		await db.commit();
-	} catch {
-		await db.rollback(); // Alternative closer
-	}
-}
-
-// Multiple openers with allowMultipleOpeners
-function test() {
-	debug.profilebegin("task1");
-	debug.profilebegin("task2");
-	debug.profileend();
-	debug.profileend();
-}
-```
+<Code
+	code={[
+		"// Simple pairing",
+		"function test() {",
+		'\tdebug.profilebegin("task");',
+		"\tdoWork();",
+		"\tdebug.profileend();",
+		"}",
+		"",
+		"// Proper LIFO nesting",
+		"function test() {",
+		'\tdebug.profilebegin("outer");',
+		'\tdebug.profilebegin("inner");',
+		"\tdebug.profileend(); // closes inner",
+		"\tdebug.profileend(); // closes outer",
+		"}",
+		"",
+		"// Try-finally ensures closer on all paths",
+		"function test() {",
+		'\tdebug.profilebegin("task");',
+		"\ttry {",
+		"\t\triskyOperation();",
+		"\t} finally {",
+		"\t\tdebug.profileend();",
+		"\t}",
+		"}",
+		"",
+		"// Alternative closer for error path",
+		"async function test() {",
+		"\tawait db.transaction();",
+		"\ttry {",
+		'\t\tawait db.query("INSERT ...");',
+		"\t\tawait db.commit();",
+		"\t} catch {",
+		"\t\tawait db.rollback(); // Alternative closer",
+		"\t}",
+		"}",
+		"",
+		"// Multiple openers with allowMultipleOpeners",
+		"function test() {",
+		'\tdebug.profilebegin("task1");',
+		'\tdebug.profilebegin("task2");',
+		"\tdebug.profileend();",
+		"\tdebug.profileend();",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="simple-pairing-1jji1e"
+/>
 
 ## Real-World Examples
 
 ### Database Transactions
 
-```typescript
-{
-  "pairs": [{
-    "opener": "db.transaction",
-    "closer": "db.commit",
-    "alternatives": ["db.rollback"]
-  }]
-}
-```
+<Code
+	code={[
+		"{",
+		'  "pairs": [{',
+		'    "opener": "db.transaction",',
+		'    "closer": "db.commit",',
+		'    "alternatives": ["db.rollback"]',
+		"  }]",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-3-31akcy"
+/>
 
-```typescript
-async function updateUser(id: number, data: UserData) {
-	await db.transaction();
-	try {
-		await db.query("UPDATE users SET ...", data);
-		await db.commit();
-	} catch (error) {
-		await db.rollback();
-		throw error;
-	}
-}
-```
+<Code
+	code={[
+		"async function updateUser(id: number, data: UserData) {",
+		"\tawait db.transaction();",
+		"\ttry {",
+		'\t\tawait db.query("UPDATE users SET ...", data);',
+		"\t\tawait db.commit();",
+		"\t} catch (error) {",
+		"\t\tawait db.rollback();",
+		"\t\tthrow error;",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="async-function-updat-2w6jds"
+/>
 
 ### Lock Acquire/Release
 
-```typescript
-{
-  "pairs": [{
-    "opener": "lock.acquire",
-    "closer": ["lock.release", "lock.free"]
-  }]
-}
-```
+<Code
+	code={[
+		"{",
+		'  "pairs": [{',
+		'    "opener": "lock.acquire",',
+		'    "closer": ["lock.release", "lock.free"]',
+		"  }]",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-5-121dxd"
+/>
 
-```typescript
-async function criticalSection() {
-	await lock.acquire();
-	try {
-		await modifySharedResource();
-	} finally {
-		lock.release();
-	}
-}
-```
+<Code
+	code={[
+		"async function criticalSection() {",
+		"\tawait lock.acquire();",
+		"\ttry {",
+		"\t\tawait modifySharedResource();",
+		"\t} finally {",
+		"\t\tlock.release();",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="async-function-criti-owcvcz"
+/>
 
 ### Roblox Iris UI
 
-```typescript
-{
-  "pairs": [{
-    "opener": "Iris.CollapsingHeader",
-    "openerAlternatives": ["Iris.Window", "Iris.TreeNode", "Iris.Table"],
-    "closer": "Iris.End",
-    "platform": "roblox",
-    "requireSync": true
-  }]
-}
-```
+<Code
+	code={[
+		"{",
+		'  "pairs": [{',
+		'    "opener": "Iris.CollapsingHeader",',
+		'    "openerAlternatives": ["Iris.Window", "Iris.TreeNode", "Iris.Table"],',
+		'    "closer": "Iris.End",',
+		'    "platform": "roblox",',
+		'    "requireSync": true',
+		"  }]",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-7-2foexk"
+/>
 
-```typescript
-function renderUI() {
-	if (Iris.CollapsingHeader("Section")) {
-		Iris.Text("Content");
-		Iris.End();
-	}
-}
-```
+<Code
+	code={[
+		"function renderUI() {",
+		'\tif (Iris.CollapsingHeader("Section")) {',
+		'\t\tIris.Text("Content");',
+		"\t\tIris.End();",
+		"\t}",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="function-renderui-1c9gx7"
+/>
 
 ## Platform-Specific Behavior
 
@@ -229,21 +267,25 @@ When `platform: "roblox"` is set, the rule detects yielding functions that break
 - Patterns: `*.WaitForChild`, `*.WaitFor*`
 - Custom patterns via `yieldingFunctions` option
 
-```typescript
-// Violates Roblox sync requirement
-function badCode() {
-	debug.profilebegin("task");
-	const part = workspace.WaitForChild("Part"); // Yields!
-	debug.profileend();
-}
-
-// Correct: no yielding
-function goodCode() {
-	debug.profilebegin("task");
-	const part = workspace.FindFirstChild("Part");
-	debug.profileend();
-}
-```
+<Code
+	code={[
+		"// Violates Roblox sync requirement",
+		"function badCode() {",
+		'\tdebug.profilebegin("task");',
+		'\tconst part = workspace.WaitForChild("Part"); // Yields!',
+		"\tdebug.profileend();",
+		"}",
+		"",
+		"// Correct: no yielding",
+		"function goodCode() {",
+		'\tdebug.profilebegin("task");',
+		'\tconst part = workspace.FindFirstChild("Part");',
+		"\tdebug.profileend();",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="violates-roblox-sync-kh47v2"
+/>
 
 ## When Not To Use It
 

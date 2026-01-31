@@ -2,6 +2,8 @@
 title: naming-convention
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Enforce naming conventions for TypeScript constructs.
 
 ## Rule Details
@@ -10,21 +12,25 @@ This rule enforces naming conventions for interfaces, types, and other TypeScrip
 
 ## Options
 
-```jsonc
-{
-	"cease-nonsense/naming-convention": [
-		"error",
-		{
-			"custom": {
-				"match": false,
-				"regex": "^I[A-Z]",
-			},
-			"format": ["PascalCase"],
-			"selector": "interface",
-		},
-	],
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/naming-convention": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"custom": {',
+		'\t\t\t\t"match": false,',
+		'\t\t\t\t"regex": "^I[A-Z]",',
+		"\t\t\t},",
+		'\t\t\t"format": ["PascalCase"],',
+		'\t\t\t"selector": "interface",',
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-0-49ttwx"
+/>
 
 ### Configuration Parameters
 
@@ -38,20 +44,17 @@ This rule enforces naming conventions for interfaces, types, and other TypeScrip
 
 ### ❌ Incorrect
 
-```typescript
-// With custom: { match: false, regex: "^I[A-Z]" }
-interface IUser {
-	name: string;
-}
-```
+<Code
+	code={['// With custom: { match: false, regex: "^I[A-Z]" }', "interface IUser {", "\tname: string;", "}"].join(
+		"\n",
+	)}
+	lang="typescript"
+	key="with-custom-match-fa-2g54hf"
+/>
 
 ### ✅ Correct
 
-```typescript
-interface User {
-	name: string;
-}
-```
+<Code code={["interface User {", "\tname: string;", "}"].join("\n")} lang="typescript" key="interface-user-wv5yyt" />
 
 ## When Not To Use It
 

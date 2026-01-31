@@ -2,6 +2,8 @@
 title: require-serialized-numeric-data-type
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Require specific serialized numeric data types (`DataType.*`) instead of generic `number` for ECS components and other serialization contexts.
 
 ## Rule Details
@@ -38,116 +40,136 @@ Checks all `number` type annotations globally, including:
 
 ## Options
 
-```typescript
-interface RequireSerializedNumericDataTypeOptions {
-	/**
-	 * Check mode:
-	 * - `"type-arguments"` (default): Only check type arguments of function calls
-	 * - `"all"`: Check all `number` type annotations globally
-	 */
-	mode?: "type-arguments" | "all";
-
-	/**
-	 * Function names to check for type arguments when mode is "type-arguments".
-	 * @default ["registerComponent"]
-	 */
-	functionNames?: string[];
-
-	/**
-	 * When true, resolves type aliases using TypeScript's type checker.
-	 * Slower but catches aliased types like `type Foo = number`.
-	 * Requires `parserOptions.project` to be configured.
-	 * @default false
-	 */
-	strict?: boolean;
-}
-```
+<Code
+	code={[
+		"interface RequireSerializedNumericDataTypeOptions {",
+		"\t/**",
+		"\t * Check mode:",
+		'\t * - `"type-arguments"` (default): Only check type arguments of function calls',
+		'\t * - `"all"`: Check all `number` type annotations globally',
+		"\t */",
+		'\tmode?: "type-arguments" | "all";',
+		"",
+		"\t/**",
+		'\t * Function names to check for type arguments when mode is "type-arguments".',
+		'\t * @default ["registerComponent"]',
+		"\t */",
+		"\tfunctionNames?: string[];",
+		"",
+		"\t/**",
+		"\t * When true, resolves type aliases using TypeScript's type checker.",
+		"\t * Slower but catches aliased types like `type Foo = number`.",
+		"\t * Requires `parserOptions.project` to be configured.",
+		"\t * @default false",
+		"\t */",
+		"\tstrict?: boolean;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="interface-requireser-3fvv1y"
+/>
 
 ### Default Configuration
 
-```jsonc
-{
-	"cease-nonsense/require-serialized-numeric-data-type": "error",
-}
-```
+<Code
+	code={["{", '\t"cease-nonsense/require-serialized-numeric-data-type": "error",', "}"].join("\n")}
+	lang="typescript"
+	key="block-1-3k0mts"
+/>
 
 ### Custom Function Names
 
-```jsonc
-{
-	"cease-nonsense/require-serialized-numeric-data-type": [
-		"error",
-		{
-			"functionNames": ["registerComponent", "registerEvent", "createReplicatedValue"],
-		},
-	],
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/require-serialized-numeric-data-type": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"functionNames": ["registerComponent", "registerEvent", "createReplicatedValue"],',
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-2-72bedz"
+/>
 
 ### Global Mode
 
-```jsonc
-{
-	"cease-nonsense/require-serialized-numeric-data-type": ["error", { "mode": "all" }],
-}
-```
+<Code
+	code={["{", '\t"cease-nonsense/require-serialized-numeric-data-type": ["error", { "mode": "all" }],', "}"].join(
+		"\n",
+	)}
+	lang="typescript"
+	key="block-3-15ngjb"
+/>
 
 ### Strict Mode
 
-```jsonc
-{
-	"cease-nonsense/require-serialized-numeric-data-type": ["error", { "strict": true }],
-}
-```
+<Code
+	code={["{", '\t"cease-nonsense/require-serialized-numeric-data-type": ["error", { "strict": true }],', "}"].join(
+		"\n",
+	)}
+	lang="typescript"
+	key="block-4-1qlixz"
+/>
 
 ## Examples
 
 ### Incorrect
 
-```typescript
-// Generic number type
-export const WaveNumber = registerComponent<number>({ replicated: true });
-
-// Object with number property
-export const Timer = registerComponent<{ elapsed: number }>({ replicated: true });
-
-// Union containing number
-export const Value = registerComponent<number | string>({ replicated: true });
-
-// Branded number (still serialized as number)
-export const BrandedId = registerComponent<number & { _brand: "id" }>({ replicated: true });
-
-// Array of numbers
-export const Values = registerComponent<number[]>({ replicated: true });
-```
+<Code
+	code={[
+		"// Generic number type",
+		"export const WaveNumber = registerComponent<number>({ replicated: true });",
+		"",
+		"// Object with number property",
+		"export const Timer = registerComponent<{ elapsed: number }>({ replicated: true });",
+		"",
+		"// Union containing number",
+		"export const Value = registerComponent<number | string>({ replicated: true });",
+		"",
+		"// Branded number (still serialized as number)",
+		'export const BrandedId = registerComponent<number & { _brand: "id" }>({ replicated: true });',
+		"",
+		"// Array of numbers",
+		"export const Values = registerComponent<number[]>({ replicated: true });",
+	].join("\n")}
+	lang="typescript"
+	key="generic-number-type-249e6c"
+/>
 
 ### Correct
 
-```typescript
-import type { DataType } from "@rbxts/flamework-binary-serializer";
-
-// Specific DataType variants
-export const WaveNumber = registerComponent<DataType.u8>({ replicated: true });
-export const Timer = registerComponent<DataType.f32>({ replicated: true });
-export const Money = registerComponent<DataType.u32>({ replicated: true });
-
-// Object with DataType properties
-export const Position = registerComponent<{
-	x: DataType.f32;
-	y: DataType.f32;
-	z: DataType.f32;
-}>({ replicated: true });
-
-// Union of DataTypes (allowed)
-export const Value = registerComponent<DataType.u8 | DataType.u32>({ replicated: true });
-
-// Array of DataType
-export const Values = registerComponent<DataType.u8[]>({ replicated: true });
-
-// Other types (not number)
-export const Name = registerComponent<string>({ replicated: true });
-export const Active = registerComponent<boolean>({ replicated: true });
-```
+<Code
+	code={[
+		'import type { DataType } from "@rbxts/flamework-binary-serializer";',
+		"",
+		"// Specific DataType variants",
+		"export const WaveNumber = registerComponent<DataType.u8>({ replicated: true });",
+		"export const Timer = registerComponent<DataType.f32>({ replicated: true });",
+		"export const Money = registerComponent<DataType.u32>({ replicated: true });",
+		"",
+		"// Object with DataType properties",
+		"export const Position = registerComponent<{",
+		"\tx: DataType.f32;",
+		"\ty: DataType.f32;",
+		"\tz: DataType.f32;",
+		"}>({ replicated: true });",
+		"",
+		"// Union of DataTypes (allowed)",
+		"export const Value = registerComponent<DataType.u8 | DataType.u32>({ replicated: true });",
+		"",
+		"// Array of DataType",
+		"export const Values = registerComponent<DataType.u8[]>({ replicated: true });",
+		"",
+		"// Other types (not number)",
+		"export const Name = registerComponent<string>({ replicated: true });",
+		"export const Active = registerComponent<boolean>({ replicated: true });",
+	].join("\n")}
+	lang="typescript"
+	key="import-type-datatype-16ck84"
+/>
 
 ### Global Mode Examples
 
@@ -155,45 +177,53 @@ When `mode: "all"` is configured:
 
 **Incorrect:**
 
-```typescript
-// Variable declaration
-const health: number = 100;
-
-// Function parameter
-function calculateDamage(base: number, multiplier: number): number {
-	return base * multiplier;
-}
-
-// Interface property
-interface PlayerStats {
-	health: number;
-	mana: number;
-}
-
-// Type alias
-type ScoreValue = number;
-```
+<Code
+	code={[
+		"// Variable declaration",
+		"const health: number = 100;",
+		"",
+		"// Function parameter",
+		"function calculateDamage(base: number, multiplier: number): number {",
+		"\treturn base * multiplier;",
+		"}",
+		"",
+		"// Interface property",
+		"interface PlayerStats {",
+		"\thealth: number;",
+		"\tmana: number;",
+		"}",
+		"",
+		"// Type alias",
+		"type ScoreValue = number;",
+	].join("\n")}
+	lang="typescript"
+	key="variable-declaration-10ga1w"
+/>
 
 **Correct:**
 
-```typescript
-// Variable declaration
-const health: DataType.u16 = 100;
-
-// Function parameter
-function calculateDamage(base: DataType.f32, multiplier: DataType.f32): DataType.f32 {
-	return base * multiplier;
-}
-
-// Interface property
-interface PlayerStats {
-	health: DataType.u16;
-	mana: DataType.u16;
-}
-
-// Type alias
-type ScoreValue = DataType.u32;
-```
+<Code
+	code={[
+		"// Variable declaration",
+		"const health: DataType.u16 = 100;",
+		"",
+		"// Function parameter",
+		"function calculateDamage(base: DataType.f32, multiplier: DataType.f32): DataType.f32 {",
+		"\treturn base * multiplier;",
+		"}",
+		"",
+		"// Interface property",
+		"interface PlayerStats {",
+		"\thealth: DataType.u16;",
+		"\tmana: DataType.u16;",
+		"}",
+		"",
+		"// Type alias",
+		"type ScoreValue = DataType.u32;",
+	].join("\n")}
+	lang="typescript"
+	key="variable-declaration-prj3zj"
+/>
 
 ## When Not To Use It
 

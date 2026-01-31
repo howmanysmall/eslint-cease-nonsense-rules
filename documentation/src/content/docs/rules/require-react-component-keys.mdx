@@ -2,6 +2,8 @@
 title: require-react-component-keys
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Enforces `key` props on all React elements except top-level returns from components.
 
 ## Rule Details
@@ -10,17 +12,21 @@ React requires `key` props on elements in arrays to efficiently track changes. T
 
 ## Options
 
-```jsonc
-{
-	"cease-nonsense/require-react-component-keys": [
-		"error",
-		{
-			"allowRootKeys": false,
-			"ignoreCallExpressions": ["ReactTree.mount"],
-		},
-	],
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/require-react-component-keys": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"allowRootKeys": false,',
+		'\t\t\t"ignoreCallExpressions": ["ReactTree.mount"],',
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-0-9feq8m"
+/>
 
 ### Configuration Parameters
 
@@ -31,90 +37,98 @@ React requires `key` props on elements in arrays to efficiently track changes. T
 
 ### ❌ Incorrect
 
-```typescript
-function UserList({ users }) {
-	return (
-		<div>
-			{users.map((user) => (
-				<UserCard user={user} /> // Missing key!
-			))}
-		</div>
-	);
-}
-
-function ItemGrid({ items }) {
-	return (
-		<>
-			{items.map((item) => (
-				<div> // Missing key!
-					<span>{item.name}</span>
-				</div>
-			))}
-		</>
-	);
-}
-
-// Nested elements also need keys
-function NestedList({ groups }) {
-	return (
-		<div>
-			{groups.map((group) => (
-				<div key={group.id}>
-					{group.items.map((item) => (
-						<span>{item.name}</span> // Missing key!
-					))}
-				</div>
-			))}
-		</div>
-	);
-}
-```
+<Code
+	code={[
+		"function UserList({ users }) {",
+		"\treturn (",
+		"\t\t<div>",
+		"\t\t\t{users.map((user) => (",
+		"\t\t\t\t<UserCard user={user} /> // Missing key!",
+		"\t\t\t))}",
+		"\t\t</div>",
+		"\t);",
+		"}",
+		"",
+		"function ItemGrid({ items }) {",
+		"\treturn (",
+		"\t\t<>",
+		"\t\t\t{items.map((item) => (",
+		"\t\t\t\t<div> // Missing key!",
+		"\t\t\t\t\t<span>{item.name}</span>",
+		"\t\t\t\t</div>",
+		"\t\t\t))}",
+		"\t\t</>",
+		"\t);",
+		"}",
+		"",
+		"// Nested elements also need keys",
+		"function NestedList({ groups }) {",
+		"\treturn (",
+		"\t\t<div>",
+		"\t\t\t{groups.map((group) => (",
+		"\t\t\t\t<div key={group.id}>",
+		"\t\t\t\t\t{group.items.map((item) => (",
+		"\t\t\t\t\t\t<span>{item.name}</span> // Missing key!",
+		"\t\t\t\t\t))}",
+		"\t\t\t\t</div>",
+		"\t\t\t))}",
+		"\t\t</div>",
+		"\t);",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="function-userlist-us-33iazh"
+/>
 
 ### ✅ Correct
 
-```typescript
-function UserList({ users }) {
-	return (
-		<div>
-			{users.map((user) => (
-				<UserCard key={user.id} user={user} />
-			))}
-		</div>
-	);
-}
-
-function ItemGrid({ items }) {
-	return (
-		<>
-			{items.map((item) => (
-				<div key={item.id}>
-					<span>{item.name}</span>
-				</div>
-			))}
-		</>
-	);
-}
-
-// All nested elements have keys
-function NestedList({ groups }) {
-	return (
-		<div>
-			{groups.map((group) => (
-				<div key={group.id}>
-					{group.items.map((item) => (
-						<span key={item.id}>{item.name}</span>
-					))}
-				</div>
-			))}
-		</div>
-	);
-}
-
-// Root return doesn't need key (unless in array)
-function Component() {
-	return <div>Content</div>;
-}
-```
+<Code
+	code={[
+		"function UserList({ users }) {",
+		"\treturn (",
+		"\t\t<div>",
+		"\t\t\t{users.map((user) => (",
+		"\t\t\t\t<UserCard key={user.id} user={user} />",
+		"\t\t\t))}",
+		"\t\t</div>",
+		"\t);",
+		"}",
+		"",
+		"function ItemGrid({ items }) {",
+		"\treturn (",
+		"\t\t<>",
+		"\t\t\t{items.map((item) => (",
+		"\t\t\t\t<div key={item.id}>",
+		"\t\t\t\t\t<span>{item.name}</span>",
+		"\t\t\t\t</div>",
+		"\t\t\t))}",
+		"\t\t</>",
+		"\t);",
+		"}",
+		"",
+		"// All nested elements have keys",
+		"function NestedList({ groups }) {",
+		"\treturn (",
+		"\t\t<div>",
+		"\t\t\t{groups.map((group) => (",
+		"\t\t\t\t<div key={group.id}>",
+		"\t\t\t\t\t{group.items.map((item) => (",
+		"\t\t\t\t\t\t<span key={item.id}>{item.name}</span>",
+		"\t\t\t\t\t))}",
+		"\t\t\t\t</div>",
+		"\t\t\t))}",
+		"\t\t</div>",
+		"\t);",
+		"}",
+		"",
+		"// Root return doesn't need key (unless in array)",
+		"function Component() {",
+		"\treturn <div>Content</div>;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="function-userlist-us-1wew4y"
+/>
 
 ## Why Keys Matter
 
@@ -126,86 +140,106 @@ React uses keys to:
 - Preserve component state across re-renders
 - Optimize DOM updates
 
-```typescript
-// Without keys: React may reuse wrong elements
-{
-	items.map((item) => <Item />); // ❌
-}
-
-// With keys: React knows which Item is which
-{
-	items.map((item) => <Item key={item.id} />); // ✅
-}
-```
+<Code
+	code={[
+		"// Without keys: React may reuse wrong elements",
+		"{",
+		"\titems.map((item) => <Item />); // ❌",
+		"}",
+		"",
+		"// With keys: React knows which Item is which",
+		"{",
+		"\titems.map((item) => <Item key={item.id} />); // ✅",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="without-keys-react-m-2uokc7"
+/>
 
 ### State Preservation
 
-```typescript
-// Bad: state gets mixed up when items reorder
-function TodoList() {
-	return todos.map((todo) => <TodoItem todo={todo} />); // No key!
-}
-
-// Good: each TodoItem keeps its state
-function TodoList() {
-	return todos.map((todo) => <TodoItem key={todo.id} todo={todo} />);
-}
-```
+<Code
+	code={[
+		"// Bad: state gets mixed up when items reorder",
+		"function TodoList() {",
+		"\treturn todos.map((todo) => <TodoItem todo={todo} />); // No key!",
+		"}",
+		"",
+		"// Good: each TodoItem keeps its state",
+		"function TodoList() {",
+		"\treturn todos.map((todo) => <TodoItem key={todo.id} todo={todo} />);",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="bad-state-gets-mixed-2814b3"
+/>
 
 ### Performance
 
 Keys help React avoid unnecessary DOM mutations:
 
-```typescript
-// Without keys: React might destroy and recreate all items
-{
-	items.map((item) => <ExpensiveComponent {...item} />);
-}
-
-// With keys: React only updates changed items
-{
-	items.map((item) => <ExpensiveComponent key={item.id} {...item} />);
-}
-```
+<Code
+	code={[
+		"// Without keys: React might destroy and recreate all items",
+		"{",
+		"\titems.map((item) => <ExpensiveComponent {...item} />);",
+		"}",
+		"",
+		"// With keys: React only updates changed items",
+		"{",
+		"\titems.map((item) => <ExpensiveComponent key={item.id} {...item} />);",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="without-keys-react-m-ymue7s"
+/>
 
 ## Choosing Good Keys
 
 ### Use Stable IDs
 
-```typescript
-// ✅ Good: stable database ID
-{
-	users.map((user) => <User key={user.id} {...user} />);
-}
-
-// ❌ Bad: array index (unstable on reorder)
-{
-	users.map((user, i) => <User key={i} {...user} />);
-}
-
-// ❌ Bad: random value (changes every render)
-{
-	users.map((user) => <User key={Math.random()} {...user} />);
-}
-```
+<Code
+	code={[
+		"// ✅ Good: stable database ID",
+		"{",
+		"\tusers.map((user) => <User key={user.id} {...user} />);",
+		"}",
+		"",
+		"// ❌ Bad: array index (unstable on reorder)",
+		"{",
+		"\tusers.map((user, i) => <User key={i} {...user} />);",
+		"}",
+		"",
+		"// ❌ Bad: random value (changes every render)",
+		"{",
+		"\tusers.map((user) => <User key={Math.random()} {...user} />);",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="good-stable-database-m7jh0k"
+/>
 
 ### Composite Keys
 
 When items don't have unique IDs, combine properties:
 
-```typescript
-// Use multiple properties
-{
-	items.map((item) => <Item key={`${item.category}-${item.name}`} {...item} />);
-}
-
-// Or parent + index
-{
-	groups.map((group) =>
-		group.items.map((item, i) => <Item key={`${group.id}-${i}`} {...item} />),
-	);
-}
-```
+<Code
+	code={[
+		"// Use multiple properties",
+		"{",
+		"\titems.map((item) => <Item key={`${item.category}-${item.name}`} {...item} />);",
+		"}",
+		"",
+		"// Or parent + index",
+		"{",
+		"\tgroups.map((group) =>",
+		"\t\tgroup.items.map((item, i) => <Item key={`${group.id}-${i}`} {...item} />),",
+		"\t);",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="use-multiple-propert-3g76l7"
+/>
 
 ### When Index is OK
 
@@ -216,70 +250,83 @@ Only use index as key when:
 3. List never filters
 4. Items don't have local state
 
-```typescript
-// OK: static list of configuration options
-const COLORS = ["red", "blue", "green"];
-{
-	COLORS.map((color, i) => <ColorOption key={i} color={color} />);
-}
-```
+<Code
+	code={[
+		"// OK: static list of configuration options",
+		'const COLORS = ["red", "blue", "green"];',
+		"{",
+		"\tCOLORS.map((color, i) => <ColorOption key={i} color={color} />);",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="ok-static-list-of-co-1qb7de"
+/>
 
 ## Root Returns
 
 Components' root returns don't need keys:
 
-```typescript
-// ✅ No key needed on root
-function MyComponent() {
-	return <div>Content</div>;
-}
-
-// ✅ Unless returning multiple elements
-function MultiComponent() {
-	return [<div key="first">First</div>, <div key="second">Second</div>];
-}
-```
+<Code
+	code={[
+		"// ✅ No key needed on root",
+		"function MyComponent() {",
+		"\treturn <div>Content</div>;",
+		"}",
+		"",
+		"// ✅ Unless returning multiple elements",
+		"function MultiComponent() {",
+		'\treturn [<div key="first">First</div>, <div key="second">Second</div>];',
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="no-key-needed-on-roo-q8f867"
+/>
 
 ## Fragments
 
 Fragments can have keys when in arrays:
 
-```typescript
-{
-	items.map((item) => (
-		<Fragment key={item.id}>
-			<dt>{item.label}</dt>
-			<dd>{item.value}</dd>
-		</Fragment>
-	));
-}
-
-// Shorthand <> doesn't support keys
-{
-	items.map((item) => (
-		<>
-			// ❌ Can't add key
-			<dt>{item.label}</dt>
-			<dd>{item.value}</dd>
-		</>
-	));
-}
-```
+<Code
+	code={[
+		"{",
+		"\titems.map((item) => (",
+		"\t\t<Fragment key={item.id}>",
+		"\t\t\t<dt>{item.label}</dt>",
+		"\t\t\t<dd>{item.value}</dd>",
+		"\t\t</Fragment>",
+		"\t));",
+		"}",
+		"",
+		"// Shorthand <> doesn't support keys",
+		"{",
+		"\titems.map((item) => (",
+		"\t\t<>",
+		"\t\t\t// ❌ Can't add key",
+		"\t\t\t<dt>{item.label}</dt>",
+		"\t\t\t<dd>{item.value}</dd>",
+		"\t\t</>",
+		"\t));",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-10-29i8rf"
+/>
 
 ## Custom Rendering APIs
 
 Use `ignoreCallExpressions` for non-React rendering:
 
-```typescript
-{
-  "ignoreCallExpressions": ["ReactTree.mount", "CustomRenderer.render"]
-}
-```
+<Code
+	code={["{", '  "ignoreCallExpressions": ["ReactTree.mount", "CustomRenderer.render"]', "}"].join("\n")}
+	lang="typescript"
+	key="block-11-2rpzx3"
+/>
 
-```typescript
-// Won't require keys (ignored)
-ReactTree.mount(<Component />);
-```
+<Code
+	code={["// Won't require keys (ignored)", "ReactTree.mount(<Component />);"].join("\n")}
+	lang="typescript"
+	key="won-t-require-keys-i-1obu2t"
+/>
 
 ## When Not To Use It
 

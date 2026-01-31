@@ -2,6 +2,8 @@
 title: no-god-components
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Flags React components that are too large or complex, encouraging better separation of concerns.
 
 ## Rule Details
@@ -10,23 +12,27 @@ This rule enforces component size and complexity limits inspired by the "Refacto
 
 ## Options
 
-```jsonc
-{
-	"cease-nonsense/no-god-components": [
-		"error",
-		{
-			"targetLines": 120,
-			"maxLines": 200,
-			"maxTsxNesting": 3,
-			"maxStateHooks": 5,
-			"stateHooks": ["useState", "useReducer", "useBinding"],
-			"maxDestructuredProps": 5,
-			"enforceTargetLines": true,
-			"ignoreComponents": ["LegacyComponent"],
-		},
-	],
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/no-god-components": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"targetLines": 120,',
+		'\t\t\t"maxLines": 200,',
+		'\t\t\t"maxTsxNesting": 3,',
+		'\t\t\t"maxStateHooks": 5,',
+		'\t\t\t"stateHooks": ["useState", "useReducer", "useBinding"],',
+		'\t\t\t"maxDestructuredProps": 5,',
+		'\t\t\t"enforceTargetLines": true,',
+		'\t\t\t"ignoreComponents": ["LegacyComponent"],',
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-0-1xwnrz"
+/>
 
 ### Configuration Parameters
 
@@ -46,267 +52,299 @@ This rule enforces component size and complexity limits inspired by the "Refacto
 **Target lines** (soft limit): Warns when component exceeds target size
 **Max lines** (hard limit): Errors when component exceeds maximum size
 
-```typescript
-// ❌ Bad (assuming targetLines: 120, maxLines: 200)
-function LargeComponent() {
-	// ... 150 lines of code
-	// Warning: exceeds target
-}
-
-function HugeComponent() {
-	// ... 250 lines of code
-	// Error: exceeds maximum
-}
-
-// ✅ Good
-function CompactComponent() {
-	// ... 80 lines of code
-}
-```
+<Code
+	code={[
+		"// ❌ Bad (assuming targetLines: 120, maxLines: 200)",
+		"function LargeComponent() {",
+		"\t// ... 150 lines of code",
+		"\t// Warning: exceeds target",
+		"}",
+		"",
+		"function HugeComponent() {",
+		"\t// ... 250 lines of code",
+		"\t// Error: exceeds maximum",
+		"}",
+		"",
+		"// ✅ Good",
+		"function CompactComponent() {",
+		"\t// ... 80 lines of code",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="bad-assuming-targetl-1fad1e"
+/>
 
 ### 2. TSX Nesting Depth
 
 Measures how deeply JSX elements are nested.
 
-```typescript
-// ❌ Bad (maxTsxNesting: 3)
-function DeepComponent() {
-	return (
-		<div>
-			{" "}
-			{/* depth 1 */}
-			<section>
-				{" "}
-				{/* depth 2 */}
-				<article>
-					{" "}
-					{/* depth 3 */}
-					<div>
-						{" "}
-						{/* depth 4 - exceeds limit! */}
-						<span>Content</span>
-					</div>
-				</article>
-			</section>
-		</div>
-	);
-}
-
-// ✅ Good
-function ShallowComponent() {
-	return (
-		<div>
-			{" "}
-			{/* depth 1 */}
-			<Header /> {/* depth 2 */}
-			<Content /> {/* depth 2 */}
-		</div>
-	);
-}
-```
+<Code
+	code={[
+		"// ❌ Bad (maxTsxNesting: 3)",
+		"function DeepComponent() {",
+		"\treturn (",
+		"\t\t<div>",
+		'\t\t\t{" "}',
+		"\t\t\t{/* depth 1 */}",
+		"\t\t\t<section>",
+		'\t\t\t\t{" "}',
+		"\t\t\t\t{/* depth 2 */}",
+		"\t\t\t\t<article>",
+		'\t\t\t\t\t{" "}',
+		"\t\t\t\t\t{/* depth 3 */}",
+		"\t\t\t\t\t<div>",
+		'\t\t\t\t\t\t{" "}',
+		"\t\t\t\t\t\t{/* depth 4 - exceeds limit! */}",
+		"\t\t\t\t\t\t<span>Content</span>",
+		"\t\t\t\t\t</div>",
+		"\t\t\t\t</article>",
+		"\t\t\t</section>",
+		"\t\t</div>",
+		"\t);",
+		"}",
+		"",
+		"// ✅ Good",
+		"function ShallowComponent() {",
+		"\treturn (",
+		"\t\t<div>",
+		'\t\t\t{" "}',
+		"\t\t\t{/* depth 1 */}",
+		"\t\t\t<Header /> {/* depth 2 */}",
+		"\t\t\t<Content /> {/* depth 2 */}",
+		"\t\t</div>",
+		"\t);",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="bad-maxtsxnesting-3-26dbdc"
+/>
 
 ### 3. Stateful Hook Count
 
 Counts uses of stateful hooks like `useState`, `useReducer`, etc.
 
-```typescript
-// ❌ Bad (maxStateHooks: 5)
-function StatefulComponent() {
-	const [name, setName] = useState("");
-	const [email, setEmail] = useState("");
-	const [age, setAge] = useState(0);
-	const [address, setAddress] = useState("");
-	const [phone, setPhone] = useState("");
-	const [notes, setNotes] = useState(""); // 6th state hook!
-
-	return <div>...</div>;
-}
-
-// ✅ Good - group related state
-function BetterComponent() {
-	const [formData, setFormData] = useState({
-		name: "",
-		email: "",
-		age: 0,
-		address: "",
-		phone: "",
-		notes: "",
-	});
-
-	return <div>...</div>;
-}
-
-// ✅ Even better - extract to custom hook
-function useUserForm() {
-	const [formData, setFormData] = useState({
-		name: "",
-		email: "",
-		age: 0,
-		address: "",
-		phone: "",
-		notes: "",
-	});
-
-	return { formData, setFormData };
-}
-
-function CleanComponent() {
-	const { formData, setFormData } = useUserForm();
-	return <div>...</div>;
-}
-```
+<Code
+	code={[
+		"// ❌ Bad (maxStateHooks: 5)",
+		"function StatefulComponent() {",
+		'\tconst [name, setName] = useState("");',
+		'\tconst [email, setEmail] = useState("");',
+		"\tconst [age, setAge] = useState(0);",
+		'\tconst [address, setAddress] = useState("");',
+		'\tconst [phone, setPhone] = useState("");',
+		'\tconst [notes, setNotes] = useState(""); // 6th state hook!',
+		"",
+		"\treturn <div>...</div>;",
+		"}",
+		"",
+		"// ✅ Good - group related state",
+		"function BetterComponent() {",
+		"\tconst [formData, setFormData] = useState({",
+		'\t\tname: "",',
+		'\t\temail: "",',
+		"\t\tage: 0,",
+		'\t\taddress: "",',
+		'\t\tphone: "",',
+		'\t\tnotes: "",',
+		"\t});",
+		"",
+		"\treturn <div>...</div>;",
+		"}",
+		"",
+		"// ✅ Even better - extract to custom hook",
+		"function useUserForm() {",
+		"\tconst [formData, setFormData] = useState({",
+		'\t\tname: "",',
+		'\t\temail: "",',
+		"\t\tage: 0,",
+		'\t\taddress: "",',
+		'\t\tphone: "",',
+		'\t\tnotes: "",',
+		"\t});",
+		"",
+		"\treturn { formData, setFormData };",
+		"}",
+		"",
+		"function CleanComponent() {",
+		"\tconst { formData, setFormData } = useUserForm();",
+		"\treturn <div>...</div>;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="bad-maxstatehooks-5-24txo4"
+/>
 
 ### 4. Destructured Props
 
 Counts props destructured in the component parameter.
 
-```typescript
-// ❌ Bad (maxDestructuredProps: 5)
-function ManyPropsComponent({
-	title,
-	subtitle,
-	description,
-	imageUrl,
-	author,
-	date,
-	tags,
-}) {
-	return <div>...</div>;
-}
-
-// ✅ Good - group props into objects
-interface CardContentProps {
-	title: string;
-	subtitle: string;
-	description: string;
-}
-
-interface CardMetaProps {
-	author: string;
-	date: Date;
-	tags: string[];
-}
-
-function BetterComponent({ content, meta, imageUrl }: Props) {
-	return <div>...</div>;
-}
-```
+<Code
+	code={[
+		"// ❌ Bad (maxDestructuredProps: 5)",
+		"function ManyPropsComponent({",
+		"\ttitle,",
+		"\tsubtitle,",
+		"\tdescription,",
+		"\timageUrl,",
+		"\tauthor,",
+		"\tdate,",
+		"\ttags,",
+		"}) {",
+		"\treturn <div>...</div>;",
+		"}",
+		"",
+		"// ✅ Good - group props into objects",
+		"interface CardContentProps {",
+		"\ttitle: string;",
+		"\tsubtitle: string;",
+		"\tdescription: string;",
+		"}",
+		"",
+		"interface CardMetaProps {",
+		"\tauthor: string;",
+		"\tdate: Date;",
+		"\ttags: string[];",
+		"}",
+		"",
+		"function BetterComponent({ content, meta, imageUrl }: Props) {",
+		"\treturn <div>...</div>;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="bad-maxdestructuredp-v5z94i"
+/>
 
 ### 5. Null Literals (Always Banned)
 
 Runtime `null` literals are always flagged - use `undefined` instead.
 
-```typescript
-// ❌ Bad
-function Component() {
-	const [data, setData] = useState(null); // Error!
-	return null; // Error!
-}
-
-// ✅ Good
-function Component() {
-	const [data, setData] = useState(undefined);
-	return undefined;
-}
-```
+<Code
+	code={[
+		"// ❌ Bad",
+		"function Component() {",
+		"\tconst [data, setData] = useState(null); // Error!",
+		"\treturn null; // Error!",
+		"}",
+		"",
+		"// ✅ Good",
+		"function Component() {",
+		"\tconst [data, setData] = useState(undefined);",
+		"\treturn undefined;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="bad-3583h4"
+/>
 
 **Exception**: Type-only `null` is allowed:
 
-```typescript
-// ✅ Allowed - type annotation only
-type Data = string | null;
-const data: Data | null = fetchData();
-```
+<Code
+	code={[
+		"// ✅ Allowed - type annotation only",
+		"type Data = string | null;",
+		"const data: Data | null = fetchData();",
+	].join("\n")}
+	lang="typescript"
+	key="allowed-type-annotat-37w6wc"
+/>
 
 ## Examples
 
 ### ❌ Incorrect
 
-```typescript
-// Too many destructured props
-function UserProfile({
-	id,
-	name,
-	email,
-	avatar,
-	bio,
-	createdAt,
-	updatedAt,
-}) {
-	const [editing, setEditing] = useState(false);
-	const [name, setName] = useState(name);
-	const [email, setEmail] = useState(email);
-	const [bio, setBio] = useState(bio);
-	const [avatar, setAvatar] = useState(avatar);
-	const [loading, setLoading] = useState(false);
-
-	return (
-		<div>
-			<div>
-				<div>
-					<div>
-						<div>
-							{" "}
-							{/* Deep nesting! */}
-							<span>{name}</span>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	);
-}
-
-// Returns null literal
-function ConditionalComponent({ show }: Props) {
-	if (!show) return null; // Error!
-	return <div>Content</div>;
-}
-```
+<Code
+	code={[
+		"// Too many destructured props",
+		"function UserProfile({",
+		"\tid,",
+		"\tname,",
+		"\temail,",
+		"\tavatar,",
+		"\tbio,",
+		"\tcreatedAt,",
+		"\tupdatedAt,",
+		"}) {",
+		"\tconst [editing, setEditing] = useState(false);",
+		"\tconst [name, setName] = useState(name);",
+		"\tconst [email, setEmail] = useState(email);",
+		"\tconst [bio, setBio] = useState(bio);",
+		"\tconst [avatar, setAvatar] = useState(avatar);",
+		"\tconst [loading, setLoading] = useState(false);",
+		"",
+		"\treturn (",
+		"\t\t<div>",
+		"\t\t\t<div>",
+		"\t\t\t\t<div>",
+		"\t\t\t\t\t<div>",
+		"\t\t\t\t\t\t<div>",
+		'\t\t\t\t\t\t\t{" "}',
+		"\t\t\t\t\t\t\t{/* Deep nesting! */}",
+		"\t\t\t\t\t\t\t<span>{name}</span>",
+		"\t\t\t\t\t\t</div>",
+		"\t\t\t\t\t</div>",
+		"\t\t\t\t</div>",
+		"\t\t\t</div>",
+		"\t\t</div>",
+		"\t);",
+		"}",
+		"",
+		"// Returns null literal",
+		"function ConditionalComponent({ show }: Props) {",
+		"\tif (!show) return null; // Error!",
+		"\treturn <div>Content</div>;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="too-many-destructure-2mtm04"
+/>
 
 ### ✅ Correct
 
-```typescript
-// Split into smaller components
-interface UserData {
-	id: number;
-	name: string;
-	email: string;
-	avatar: string;
-}
-
-interface UserMeta {
-	bio: string;
-	createdAt: Date;
-	updatedAt: Date;
-}
-
-function UserProfile({ user, meta }: Props) {
-	const editor = useUserEditor(user);
-
-	return (
-		<div>
-			<ProfileHeader user={user} editor={editor} />
-			<ProfileContent meta={meta} />
-		</div>
-	);
-}
-
-// Extract editing logic to custom hook
-function useUserEditor(user: UserData) {
-	const [editing, setEditing] = useState(false);
-	const [formData, setFormData] = useState(user);
-	const [loading, setLoading] = useState(false);
-
-	return { editing, setEditing, formData, setFormData, loading };
-}
-
-// Return undefined instead of null
-function ConditionalComponent({ show }: Props) {
-	if (!show) return undefined;
-	return <div>Content</div>;
-}
-```
+<Code
+	code={[
+		"// Split into smaller components",
+		"interface UserData {",
+		"\tid: number;",
+		"\tname: string;",
+		"\temail: string;",
+		"\tavatar: string;",
+		"}",
+		"",
+		"interface UserMeta {",
+		"\tbio: string;",
+		"\tcreatedAt: Date;",
+		"\tupdatedAt: Date;",
+		"}",
+		"",
+		"function UserProfile({ user, meta }: Props) {",
+		"\tconst editor = useUserEditor(user);",
+		"",
+		"\treturn (",
+		"\t\t<div>",
+		"\t\t\t<ProfileHeader user={user} editor={editor} />",
+		"\t\t\t<ProfileContent meta={meta} />",
+		"\t\t</div>",
+		"\t);",
+		"}",
+		"",
+		"// Extract editing logic to custom hook",
+		"function useUserEditor(user: UserData) {",
+		"\tconst [editing, setEditing] = useState(false);",
+		"\tconst [formData, setFormData] = useState(user);",
+		"\tconst [loading, setLoading] = useState(false);",
+		"",
+		"\treturn { editing, setEditing, formData, setFormData, loading };",
+		"}",
+		"",
+		"// Return undefined instead of null",
+		"function ConditionalComponent({ show }: Props) {",
+		"\tif (!show) return undefined;",
+		"\treturn <div>Content</div>;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="split-into-smaller-c-8dcu7x"
+/>
 
 ## Component Detection
 
@@ -317,13 +355,17 @@ The rule detects components by:
 3. **HOC wrappers**: `const Enhanced = memo(Component)`
 4. **Class methods**: `class Container { render() {} }`
 
-```typescript
-// All detected as components:
-function MyComponent() {}
-const AnotherComponent = () => {};
-const Wrapped = forwardRef(() => {});
-const Memoized = React.memo(() => {});
-```
+<Code
+	code={[
+		"// All detected as components:",
+		"function MyComponent() {}",
+		"const AnotherComponent = () => {};",
+		"const Wrapped = forwardRef(() => {});",
+		"const Memoized = React.memo(() => {});",
+	].join("\n")}
+	lang="typescript"
+	key="all-detected-as-comp-1g7fbj"
+/>
 
 ## When Not To Use It
 
@@ -335,119 +377,135 @@ Consider disabling this rule if:
 
 For specific exceptions, use the `ignoreComponents` option:
 
-```jsonc
-{
-	"cease-nonsense/no-god-components": [
-		"error",
-		{
-			"ignoreComponents": ["LegacyDashboard", "AdminPanel"],
-		},
-	],
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/no-god-components": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"ignoreComponents": ["LegacyDashboard", "AdminPanel"],',
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-10-16wtaj"
+/>
 
 ## Refactoring Strategies
 
 ### 1. Extract Child Components
 
-```typescript
-// Before:
-function UserDashboard() {
-	return (
-		<div>
-			<header>...</header>
-			<nav>...</nav>
-			<main>...</main>
-			<aside>...</aside>
-			<footer>...</footer>
-		</div>
-	);
-}
-
-// After:
-function UserDashboard() {
-	return (
-		<div>
-			<DashboardHeader />
-			<DashboardNav />
-			<DashboardMain />
-			<DashboardAside />
-			<DashboardFooter />
-		</div>
-	);
-}
-```
+<Code
+	code={[
+		"// Before:",
+		"function UserDashboard() {",
+		"\treturn (",
+		"\t\t<div>",
+		"\t\t\t<header>...</header>",
+		"\t\t\t<nav>...</nav>",
+		"\t\t\t<main>...</main>",
+		"\t\t\t<aside>...</aside>",
+		"\t\t\t<footer>...</footer>",
+		"\t\t</div>",
+		"\t);",
+		"}",
+		"",
+		"// After:",
+		"function UserDashboard() {",
+		"\treturn (",
+		"\t\t<div>",
+		"\t\t\t<DashboardHeader />",
+		"\t\t\t<DashboardNav />",
+		"\t\t\t<DashboardMain />",
+		"\t\t\t<DashboardAside />",
+		"\t\t\t<DashboardFooter />",
+		"\t\t</div>",
+		"\t);",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="before-ognr4c"
+/>
 
 ### 2. Extract Custom Hooks
 
-```typescript
-// Before:
-function Form() {
-	const [name, setName] = useState("");
-	const [email, setEmail] = useState("");
-	const [loading, setLoading] = useState(false);
-	const [errors, setErrors] = useState({});
-
-	// ... validation logic
-	// ... submission logic
-
-	return <form>...</form>;
-}
-
-// After:
-function useFormState(initialData) {
-	const [data, setData] = useState(initialData);
-	const [loading, setLoading] = useState(false);
-	const [errors, setErrors] = useState({});
-
-	return { data, setData, loading, setErrors, errors };
-}
-
-function Form() {
-	const form = useFormState({ name: "", email: "" });
-	return <form>...</form>;
-}
-```
+<Code
+	code={[
+		"// Before:",
+		"function Form() {",
+		'\tconst [name, setName] = useState("");',
+		'\tconst [email, setEmail] = useState("");',
+		"\tconst [loading, setLoading] = useState(false);",
+		"\tconst [errors, setErrors] = useState({});",
+		"",
+		"\t// ... validation logic",
+		"\t// ... submission logic",
+		"",
+		"\treturn <form>...</form>;",
+		"}",
+		"",
+		"// After:",
+		"function useFormState(initialData) {",
+		"\tconst [data, setData] = useState(initialData);",
+		"\tconst [loading, setLoading] = useState(false);",
+		"\tconst [errors, setErrors] = useState({});",
+		"",
+		"\treturn { data, setData, loading, setErrors, errors };",
+		"}",
+		"",
+		"function Form() {",
+		'\tconst form = useFormState({ name: "", email: "" });',
+		"\treturn <form>...</form>;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="before-2v6r6i"
+/>
 
 ### 3. Group Related Props
 
-```typescript
-// Before:
-interface Props {
-	userId: number;
-	userName: string;
-	userEmail: string;
-	userAvatar: string;
-	showHeader: boolean;
-	showFooter: boolean;
-	onSave: () => void;
-	onCancel: () => void;
-}
-
-// After:
-interface User {
-	id: number;
-	name: string;
-	email: string;
-	avatar: string;
-}
-
-interface DisplayOptions {
-	showHeader: boolean;
-	showFooter: boolean;
-}
-
-interface Callbacks {
-	onSave: () => void;
-	onCancel: () => void;
-}
-
-interface Props {
-	user: User;
-	display: DisplayOptions;
-	callbacks: Callbacks;
-}
-```
+<Code
+	code={[
+		"// Before:",
+		"interface Props {",
+		"\tuserId: number;",
+		"\tuserName: string;",
+		"\tuserEmail: string;",
+		"\tuserAvatar: string;",
+		"\tshowHeader: boolean;",
+		"\tshowFooter: boolean;",
+		"\tonSave: () => void;",
+		"\tonCancel: () => void;",
+		"}",
+		"",
+		"// After:",
+		"interface User {",
+		"\tid: number;",
+		"\tname: string;",
+		"\temail: string;",
+		"\tavatar: string;",
+		"}",
+		"",
+		"interface DisplayOptions {",
+		"\tshowHeader: boolean;",
+		"\tshowFooter: boolean;",
+		"}",
+		"",
+		"interface Callbacks {",
+		"\tonSave: () => void;",
+		"\tonCancel: () => void;",
+		"}",
+		"",
+		"interface Props {",
+		"\tuser: User;",
+		"\tdisplay: DisplayOptions;",
+		"\tcallbacks: Callbacks;",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="before-2nastr"
+/>
 
 ## Related Rules
 

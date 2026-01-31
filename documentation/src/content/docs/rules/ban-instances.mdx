@@ -2,6 +2,8 @@
 title: ban-instances
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Bans specified Roblox Instance classes in `new Instance()` calls and JSX elements.
 
 ## Rule Details
@@ -10,68 +12,98 @@ This rule prevents the creation of specific Roblox Instance classes that may be 
 
 ## Options
 
-```jsonc
-{
-	"cease-nonsense/ban-instances": [
-		"error",
-		{
-			"bannedInstances": ["Part", "Frame", "Script"],
-		},
-	],
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/ban-instances": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"bannedInstances": ["Part", "Frame", "Script"],',
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="json-object-format"
+/>
 
 ### Configuration Formats
 
 **Array format** (uses default message):
 
-```jsonc
-{
-	"bannedInstances": ["Part", "Frame", "Script", "LocalScript"],
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/ban-instances": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"bannedInstances": ["Part", "Frame", "Script", "LocalScript"],',
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	key="json-array-format"
+	lang="typescript"
+/>
 
 **Object format** (custom messages per class):
 
-```jsonc
-{
-	"bannedInstances": {
-		"Part": "Use MeshPart instead for better performance",
-		"Script": "Scripts should not be created at runtime",
-		"Frame": "Use modern UI components instead",
-	},
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/ban-instances": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"bannedInstances": {',
+		'\t\t\t\t"Part": "Use MeshPart instead for better performance",',
+		'\t\t\t\t"Script": "Scripts should not be created at runtime"',
+		'\t\t\t\t"Frame": "Use modern UI components instead",',
+		"\t\t\t},",
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	key="json-object-format"
+	lang="typescript"
+/>
 
 ## Examples
 
 ### ❌ Incorrect
 
-```typescript
-// With config: { bannedInstances: ["Part", "Script"] }
-
-// new Instance() constructor
-const part = new Instance("Part");
-const script = new Instance("Script");
-
-// JSX elements (lowercase = Roblox Instance)
-<part Size={new Vector3(1, 1, 1)} />
-<script Source="print('hello')" />
-<frame Size={UDim2.fromScale(1, 1)} />
-```
+<Code
+	code={[
+		'// With config: { bannedInstances: ["Part", "Script"] }',
+		"",
+		"// new Instance() constructor",
+		'const part = new Instance("Part");',
+		'const script = new Instance("Script");',
+		"",
+		"// JSX elements (lowercase = Roblox Instance)",
+		"<part Size={new Vector3(1, 1, 1)} />",
+		`<script Source="print('hello')" />`,
+		"<frame Size={UDim2.fromScale(1, 1)} />",
+	].join("\n")}
+	key="incorrect-examples"
+	lang="tsx"
+/>
 
 ### ✅ Correct
 
-```typescript
-// Using allowed alternatives
-const meshPart = new Instance("MeshPart");
-const folder = new Instance("Folder");
-
-// JSX with allowed Instances
-<meshpart Size={new Vector3(1, 1, 1)} />
-<folder />
-<textlabel Text="Hello" />
-```
+<Code
+	code={[
+		"// Using allowed alternatives",
+		'const meshPart = new Instance("MeshPart");',
+		'const folder = new Instance("Folder");',
+		"",
+		"// JSX with allowed Instances",
+		"<meshpart Size={new Vector3(1, 1, 1)} />",
+		"<folder />",
+		'<textlabel Text="Hello" />',
+	].join("\n")}
+	key="correct-examples"
+	lang="tsx"
+/>
 
 ## When Not To Use It
 
@@ -81,38 +113,50 @@ If you don't work with Roblox or don't need to restrict specific Instance classe
 
 ### Performance Optimization
 
-```jsonc
-{
-	"bannedInstances": {
-		"Part": "Use MeshPart instead - better performance and more features",
-		"UnionOperation": "Unions are expensive; use MeshParts with optimized meshes",
-	},
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"bannedInstances": {',
+		'\t\t"Part": "Use MeshPart instead - better performance and more features",',
+		'\t\t"UnionOperation": "Unions are expensive; use MeshParts with optimized meshes",',
+		"\t},",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="performance-optimization"
+/>
 
 ### Security Concerns
 
-```jsonc
-{
-	"bannedInstances": {
-		"Script": "Server scripts should not be created at runtime",
-		"LocalScript": "Client scripts should not be created at runtime - security risk",
-		"ModuleScript": "Module scripts should be statically required, not dynamically created",
-	},
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"bannedInstances": {',
+		'\t\t"Script": "Server scripts should not be created at runtime",',
+		'\t\t"LocalScript": "Client scripts should not be created at runtime - security risk",',
+		'\t\t"ModuleScript": "Module scripts should be statically required, not dynamically created",',
+		"\t},",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="security-concerns"
+/>
 
 ### API Migration
 
-```jsonc
-{
-	"bannedInstances": {
-		"Frame": "Migrate to new UI library components",
-		"TextLabel": "Use Text component from UI library instead",
-		"ImageLabel": "Use Image component from UI library instead",
-	},
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"bannedInstances": {',
+		'\t\t"Frame": "Migrate to new UI library components",',
+		'\t\t"TextLabel": "Use Text component from UI library instead",',
+		'\t\t"ImageLabel": "Use Image component from UI library instead",',
+		"\t},",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="api-migration"
+/>
 
 ## Edge Cases
 
@@ -120,31 +164,40 @@ If you don't work with Roblox or don't need to restrict specific Instance classe
 
 The rule detects JSX elements that represent Roblox Instances by checking if the element name starts with a lowercase letter:
 
-```typescript
-// These are checked (lowercase = Roblox Instance)
-<part /> // ❌ Banned if "Part" is in config
-<frame /> // ❌ Banned if "Frame" is in config
-
-// These are NOT checked (uppercase = React components)
-<Part /> // ✅ Allowed - React component
-<Frame /> // ✅ Allowed - React component
-```
+<Code
+	code={[
+		"// These are checked (lowercase = Roblox Instance)",
+		'<part /> // ❌ Banned if "Part" is in config',
+		'<frame /> // ❌ Banned if "Frame" is in config',
+		"",
+		"// These are NOT checked (uppercase = React components)",
+		"<Part /> // ✅ Allowed - React component",
+		"<Frame /> // ✅ Allowed - React component",
+	].join("\n")}
+	lang="tsx"
+	key="jsx-detection"
+/>
 
 ### Case Sensitivity
 
 The rule performs case-insensitive matching:
 
-```typescript
-{
-	"bannedInstances": ["Part"],
-}
-
-// All of these are banned:
-new Instance("Part");
-new Instance("part");
-new Instance("PART");
-<part />
-```
+<Code
+	code={["{", '\t"bannedInstances": ["Part"],', "}"].join("\n")}
+	lang="typescript"
+	key="case-sensitivity-configuration"
+/>
+<Code
+	code={[
+		"// All of these are banned:",
+		'new Instance("Part");',
+		'new Instance("part");',
+		'new Instance("PART");',
+		"<part />",
+	].join("\n")}
+	lang="tsx"
+	key="case-sensitivity-examples"
+/>
 
 ## Related Rules
 

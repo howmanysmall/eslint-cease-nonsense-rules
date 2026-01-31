@@ -2,6 +2,8 @@
 title: prevent-abbreviations
 ---
 
+import { Code } from "@astrojs/starlight/components";
+
 Prevent abbreviations in variable and property names.
 
 ## Rule Details
@@ -10,21 +12,25 @@ This rule discourages the use of abbreviations in favor of more descriptive name
 
 ## Options
 
-```jsonc
-{
-	"cease-nonsense/prevent-abbreviations": [
-		"error",
-		{
-			"checkFilenames": true,
-			"checkProperties": false,
-			"checkVariables": true,
-			"replacements": {},
-			"allowList": {},
-			"ignore": [],
-		},
-	],
-}
-```
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/prevent-abbreviations": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"checkFilenames": true,',
+		'\t\t\t"checkProperties": false,',
+		'\t\t\t"checkVariables": true,',
+		'\t\t\t"replacements": {},',
+		'\t\t\t"allowList": {},',
+		'\t\t\t"ignore": [],',
+		"\t\t},",
+		"\t],",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	key="block-0-2sb8gx"
+/>
 
 ### Configuration Parameters
 
@@ -39,19 +45,19 @@ This rule discourages the use of abbreviations in favor of more descriptive name
 
 ### ❌ Incorrect
 
-```typescript
-const err = new Error();
-const fn = () => {};
-const dist = calculateDistance();
-```
+<Code
+	code={["const err = new Error();", "const fn = () => {};", "const dist = calculateDistance();"].join("\n")}
+	lang="typescript"
+	key="const-err-new-error-agajww"
+/>
 
 ### ✅ Correct
 
-```typescript
-const error = new Error();
-const func = () => {};
-const distance = calculateDistance();
-```
+<Code
+	code={["const error = new Error();", "const func = () => {};", "const distance = calculateDistance();"].join("\n")}
+	lang="typescript"
+	key="const-error-new-erro-3b9kfy"
+/>
 
 ## When Not To Use It
 
