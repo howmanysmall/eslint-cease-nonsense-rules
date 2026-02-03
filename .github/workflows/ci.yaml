@@ -100,7 +100,7 @@ jobs:
       - name: Get shard test files
         id: shard
         run: |
-          SHARD_FILES=$(bun ./scripts/shard-tests.ts ${{ matrix.shard }} ${{ env.TEST_SHARDS }})
+          SHARD_FILES=$(bun run ./scripts/shard-tests.ts ${{ matrix.shard }} ${{ env.TEST_SHARDS }})
           echo "files=$SHARD_FILES" >> $GITHUB_OUTPUT
           echo "Shard ${{ matrix.shard }}/${{ env.TEST_SHARDS }} will run: $SHARD_FILES"
 
@@ -109,7 +109,7 @@ jobs:
         env:
           AGENT: 1
         run: |
-          bun test --bail ${{ steps.shard.outputs.files }}
+          bun run test --bail ${{ steps.shard.outputs.files }}
 
       - name: Upload coverage
         if: steps.shard.outputs.files != ''
@@ -139,7 +139,7 @@ jobs:
 
       - name: Merge coverage
         run: |
-          bun ./scripts/merge-coverage.ts coverage-artifacts/ coverage-final.json
+          bun run ./scripts/merge-coverage.ts coverage-artifacts/ coverage-final.json
 
       - name: Check coverage thresholds
         run: |
