@@ -468,6 +468,26 @@ function Fade({ aspectRatio }) {
 					},
 				},
 			},
+			// Map callback with logical fragment still needs key
+			{
+				code: `
+function BadLogicalFragment(items) {
+    return items.map((item) => item.show && (
+        <>
+            <span key="first" />
+            <span key="second" />
+        </>
+    ));
+}
+`,
+				errors: 1,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
 			// JSX element passed via holder children prop needs key
 			{
 				code: `
@@ -824,6 +844,29 @@ function Good7({ condition }) {
 				code: `
 function Good8({ show }) {
     return show && <Component />;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Logical expression JSX child with fragment
+			{
+				code: `
+function GoodLogicalFragment({ show }) {
+    return (
+        <div>
+            {show && (
+                <>
+                    <span key="first" />
+                    <span key="second" />
+                </>
+            )}
+        </div>
+    );
 }
 `,
 				languageOptions: {

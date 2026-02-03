@@ -12,7 +12,8 @@ Enforces `key` props on all React elements except top-level returns.
 
 ## Rule Details :badge[Best Practice]{variant=success}
 
-React requires `key` props on elements in arrays to efficiently track changes. This rule enforces keys on all JSX elements except the root return of a component, preventing common React warnings, state bugs, and performance issues.
+React requires `key` props on elements in arrays to efficiently track changes. This rule enforces keys on all JSX
+elements except the root return of a component, preventing common React warnings, state bugs, and performance issues.
 
 <Aside type="caution" title="State Preservation">
 	Without keys, React may reuse the wrong elements when items are reordered, leading to "ghost" state from one item
@@ -25,18 +26,20 @@ React requires `key` props on elements in arrays to efficiently track changes. T
 1. **Identify Lists**
    Find `map()` calls or arrays that return JSX elements.
 
-2. **Select a Stable ID**
-   Choose a property that is unique and persistent (like a database ID or UUID). Avoid using the array index.
+2. **Select a Stable ID** Choose a property that is unique and persistent (like a database ID or UUID). Avoid using the
+   array index.
 
-3. **Apply the Key**
-   Add the `key` prop to the outermost element returned for each item.
+3. **Apply the Key** Add the `key` prop to the outermost element returned for each item.
 
-4. **Handle Fragments**
-   If returning multiple elements per item, use a keyed `<Fragment>` instead of the short `<>` syntax.
+4. **Handle Fragments** If returning multiple elements per item, use a keyed `<Fragment>` instead of the short `<>`
+   syntax.
 
 {/* oxfmt-ignore */}
 
 </Steps>
+
+Short fragments used as conditional JSX children (for example with `&&`, `||`, `??`, or ternaries) do not need keys
+unless they are list items in an array literal or iteration callback.
 
 ## Examples
 
@@ -110,7 +113,11 @@ React requires `key` props on elements in arrays to efficiently track changes. T
 		description="Prevents overly complex components"
 		href="/eslint-cease-nonsense-rules/rules/no-god-components/"
 	/>
-	<LinkCard title="ban-react-fc" description="Enforces proper component patterns" href="/eslint-cease-nonsense-rules/rules/ban-react-fc/" />
+	<LinkCard
+		title="ban-react-fc"
+		description="Enforces proper component patterns"
+		href="/eslint-cease-nonsense-rules/rules/ban-react-fc/"
+	/>
 </CardGrid>
 
 ## Further Reading
