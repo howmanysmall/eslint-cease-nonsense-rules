@@ -420,6 +420,32 @@ function isTernaryJSXChild(node: TSESTree.JSXElement | TSESTree.JSXFragment): bo
 	);
 }
 
+function isLogicalJSXChild(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
+	let current: TSESTree.Node | undefined = node.parent;
+	if (!current) return false;
+
+	let foundLogical = false;
+	while (
+		current &&
+		(current.type === TSESTree.AST_NODE_TYPES.LogicalExpression || WRAPPER_PARENT_TYPES.has(current.type))
+	) {
+		if (current.type === TSESTree.AST_NODE_TYPES.LogicalExpression) foundLogical = true;
+		current = current.parent;
+	}
+
+	if (!(foundLogical && current)) return false;
+
+	if (current.type !== TSESTree.AST_NODE_TYPES.JSXExpressionContainer) return false;
+
+	const containerParent = current.parent;
+	if (!containerParent) return false;
+
+	return (
+		containerParent.type === TSESTree.AST_NODE_TYPES.JSXElement ||
+		containerParent.type === TSESTree.AST_NODE_TYPES.JSXFragment
+	);
+}
+
 export default createRule<Options, MessageIds>({
 	create(context) {
 		const options: Required<ReactKeysOptions> = {
@@ -454,6 +480,7 @@ export default createRule<Options, MessageIds>({
 			if (isIgnoredCallExpression(node, options.ignoreCallExpressions)) return;
 			if (isJSXPropValue(node)) return;
 			if (isTernaryJSXChild(node)) return;
+			if (node.type === TSESTree.AST_NODE_TYPES.JSXFragment && isLogicalJSXChild(node)) return;
 
 			if (node.type === TSESTree.AST_NODE_TYPES.JSXFragment) {
 				context.report({
