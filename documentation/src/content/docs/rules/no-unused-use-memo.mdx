@@ -1,0 +1,124 @@
+---
+title: no-unused-use-memo
+badge:
+    text: Best Practice
+    variant: success
+description: Disallow standalone useMemo calls that ignore the memoized value; use useEffect for side effects.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Disallow standalone `useMemo` calls that ignore the memoized value.
+
+## Rule Details :badge[Best Practice]{variant=success}
+
+`useMemo` exists to **return a memoized value**. If the return value is ignored, the hook is being used for side effects
+and should be replaced with `useEffect`.
+
+<Aside type="danger" title="Memo Is Not an Effect">
+	Using `useMemo` for side effects hides intent and can be used to dodge effect rules. This rule enforces the correct
+	hook semantics and keeps effect-related lints honest.
+</Aside>
+
+## Refactoring Workflow
+
+<Steps>
+1. **Find Standalone `useMemo`**
+   Look for `useMemo(...)` used as a statement (no assignment, no return value used).
+2. **Move Side Effects**
+   Replace the call with `useEffect(...)` if the callback performs side effects.
+3. **Keep Memoized Values**
+   If you really need `useMemo`, return a value and use it in the component.
+4. **Name Effects**
+   Use named effect functions where required so related lint rules remain satisfied.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Standalone `useMemo`
+		Using `useMemo` as a statement discards the memoized value.
+
+    	<Code
+    		code={[
+    			"import { useMemo } from \"react\";",
+    			"",
+    			"useMemo(() => {",
+    			"\ttrackAnalytics();",
+    			"}, [eventName]);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Use `useEffect` or Use the Value
+    	Side effects belong in `useEffect`, and memoized values should be read.
+
+    	<Code
+    		code={[
+    			"import { useEffect, useMemo } from \"react\";",
+    			"",
+    			"useEffect(() => {",
+    			"\ttrackAnalytics();",
+    			"}, [eventName]);",
+    			"",
+    			"const config = useMemo(() => buildConfig(eventName), [eventName]);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why is this bad?
+
+<CardGrid stagger>
+	<Card title="No Memo Value" icon="bolt">
+		Ignoring the return value defeats the entire purpose of `useMemo`.
+	</Card>
+	<Card title="Wrong Hook Semantics" icon="list-format">
+		Side effects belong in `useEffect`, not in memoization hooks.
+	</Card>
+	<Card title="Lint Evasion" icon="rocket">
+		Using `useMemo` to bypass effect rules hides intent and makes issues harder to catch.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="require-named-effect-functions"
+		description="Enforces named effect callbacks"
+		href="/eslint-cease-nonsense-rules/rules/require-named-effect-functions/"
+	/>
+	<LinkCard
+		title="use-exhaustive-dependencies"
+		description="Ensures hook dependencies are correct"
+		href="/eslint-cease-nonsense-rules/rules/use-exhaustive-dependencies/"
+	/>
+	<LinkCard
+		title="use-hook-at-top-level"
+		description="Enforces hook placement rules"
+		href="/eslint-cease-nonsense-rules/rules/use-hook-at-top-level/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="React Docs: useMemo"
+		description="Official guide to memoizing values"
+		href="https://react.dev/reference/react/useMemo"
+	/>
+	<LinkCard
+		title="React Docs: useEffect"
+		description="Official guide to side effects"
+		href="https://react.dev/reference/react/useEffect"
+	/>
+</CardGrid>

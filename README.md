@@ -7,14 +7,14 @@ An ESLint plugin that catches common mistakes before they reach production. This
 - [Installation](#installation)
 - [Usage](#usage)
 - [Rules](#rules)
-    - [Type Safety](#type-safety)
-    - [React](#react)
-    - [Logging](#logging)
-    - [Resource Management](#resource-management)
-    - [Code Quality](#code-quality)
-    - [Performance](#performance)
-    - [Module Boundaries](#module-boundaries)
-    - [TypeScript](#typescript)
+  - [Type Safety](#type-safety)
+  - [React](#react)
+  - [Logging](#logging)
+  - [Resource Management](#resource-management)
+  - [Code Quality](#code-quality)
+  - [Performance](#performance)
+  - [Module Boundaries](#module-boundaries)
+  - [TypeScript](#typescript)
 - [License](#license)
 
 ## Installation
@@ -55,6 +55,7 @@ export default [
 			"cease-nonsense/prefer-enum-member": "error",
 			"cease-nonsense/no-shorthand-names": "error",
 			"cease-nonsense/no-unused-imports": "error",
+			"cease-nonsense/no-unused-use-memo": "error",
 			"cease-nonsense/no-useless-use-spring": "error",
 			"cease-nonsense/no-warn": "error",
 			"cease-nonsense/prefer-class-properties": "error",
@@ -420,6 +421,47 @@ interface ListProps<T> {
 const List = memo(<T,>({ items, renderItem }: ListProps<T>) => {
 	return <frame>{items.map(renderItem)}</frame>;
 });
+```
+
+#### `no-unused-use-memo`
+
+Disallow standalone `useMemo` calls that ignore the memoized value.
+
+**Why**
+
+`useMemo` is for deriving values. When you call it as a standalone statement, you are running side effects in the wrong
+hook and often trying to bypass effect-related rules. Use `useEffect` for side effects.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-unused-use-memo": ["error", {
+    "environment": "roblox-ts" // or "standard"
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+import { useMemo } from "react";
+
+useMemo(() => {
+	trackAnalytics();
+}, [eventName]);
+```
+
+**✅ Good**
+
+```typescript
+import { useEffect, useMemo } from "react";
+
+useEffect(() => {
+	trackAnalytics();
+}, [eventName]);
+
+const config = useMemo(() => buildConfig(eventName), [eventName]);
 ```
 
 #### `no-god-components`

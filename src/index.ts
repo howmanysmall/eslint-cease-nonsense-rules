@@ -15,6 +15,7 @@ import noMemoChildren from "./rules/no-memo-children";
 import noPrint from "./rules/no-print";
 import noShorthandNames from "./rules/no-shorthand-names";
 import noUnusedImports from "./rules/no-unused-imports";
+import noUnusedUseMemo from "./rules/no-unused-use-memo";
 import noUselessUseSpring from "./rules/no-useless-use-spring";
 import noWarn from "./rules/no-warn";
 import preferClassProperties from "./rules/prefer-class-properties";
@@ -51,6 +52,7 @@ export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-witho
 export type { NoMemoChildrenOptions } from "./rules/no-memo-children";
 export type { NoShorthandOptions } from "./rules/no-shorthand-names";
 export type { NoUnusedImportsOptions } from "./rules/no-unused-imports";
+export type { NoUnusedUseMemoOptions } from "./rules/no-unused-use-memo";
 export type { NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
 export type { PreferEnumItemOptions } from "./rules/prefer-enum-item";
 export type { PreventAbbreviationsOptions } from "./rules/prevent-abbreviations";
@@ -73,6 +75,7 @@ export {
 	createNoMemoChildrenOptions,
 	createNoShorthandOptions,
 	createNoUnusedImportsOptions,
+	createNoUnusedUseMemoOptions,
 	createNoUselessUseSpringOptions,
 	createPairConfiguration,
 	createPreferEnumItemOptions,
@@ -112,6 +115,7 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"no-print": noPrint,
 	"no-shorthand-names": noShorthandNames,
 	"no-unused-imports": noUnusedImports,
+	"no-unused-use-memo": noUnusedUseMemo,
 	"no-useless-use-spring": noUselessUseSpring,
 	"no-warn": noWarn,
 	"prefer-class-properties": preferClassProperties,
@@ -173,6 +177,7 @@ export const recommended = {
 		"cease-nonsense/no-print": "error",
 		"cease-nonsense/no-shorthand-names": "error",
 		"cease-nonsense/no-unused-imports": "error",
+		"cease-nonsense/no-unused-use-memo": "error",
 		"cease-nonsense/no-warn": "error",
 		"cease-nonsense/prefer-enum-member": "error",
 		"cease-nonsense/prefer-read-only-props": "error",
