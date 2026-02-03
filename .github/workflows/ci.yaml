@@ -24,8 +24,11 @@ on:
       - ".oxlintrc.json"
       - "biome.jsonc"
 
+env:
+  TEST_SHARDS: 8
+
 jobs:
-  build-and-test:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -67,5 +70,84 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Test
-        run: bun run test --bail
+  test:
+    runs-on: ubuntu-latest
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install
+        run: bun ci
+
+      - name: Get shard test files
+        id: shard
+        run: |
+          SHARD_FILES=$(bun ./scripts/shard-tests.ts ${{ matrix.shard }} ${{ env.TEST_SHARDS }})
+          echo "files=$SHARD_FILES" >> $GITHUB_OUTPUT
+          echo "Shard ${{ matrix.shard }}/${{ env.TEST_SHARDS }} will run: $SHARD_FILES"
+
+      - name: Run tests for shard
+        if: steps.shard.outputs.files != ''
+        env:
+          AGENT: 1
+        run: |
+          bun test --bail ${{ steps.shard.outputs.files }}
+
+      - name: Upload coverage
+        if: steps.shard.outputs.files != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-shard-${{ matrix.shard }}
+          path: coverage/
+          retention-days: 1
+
+  aggregate-coverage:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-shard-*
+          path: coverage-artifacts/
+
+      - name: Merge coverage
+        run: |
+          bun ./scripts/merge-coverage.ts coverage-artifacts/ coverage-final.json
+
+      - name: Check coverage thresholds
+        run: |
+          echo "Coverage merge complete. Checking thresholds..."
+          # Note: Coverage threshold checking will be implemented in a future iteration
+          # For now, we just verify the merged file exists
+          if [ ! -f coverage-final.json ]; then
+            echo "Error: Merged coverage file not found"
+            exit 1
+          fi
+          echo "Merged coverage file created successfully"
