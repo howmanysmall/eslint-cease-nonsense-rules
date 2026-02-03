@@ -6,6 +6,7 @@ import type { NoInstanceMethodsOptions } from "../rules/no-instance-methods-with
 import type { NoMemoChildrenOptions } from "../rules/no-memo-children";
 import type { NoShorthandOptions } from "../rules/no-shorthand-names";
 import type { NoUnusedImportsOptions } from "../rules/no-unused-imports";
+import type { NoUnusedUseMemoOptions } from "../rules/no-unused-use-memo";
 import type { NoUselessUseSpringOptions } from "../rules/no-useless-use-spring";
 import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../rules/no-useless-use-spring";
 import type { PreferEnumItemOptions } from "../rules/prefer-enum-item";
@@ -288,6 +289,15 @@ export function createNamingConventionOptions(options: Partial<NamingConventionO
  */
 export function createNoUnusedImportsOptions(options: Partial<NoUnusedImportsOptions> = {}): NoUnusedImportsOptions {
 	return { checkJSDoc: true, ...options };
+}
+
+/**
+ * Creates options for no-unused-use-memo rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNoUnusedUseMemoOptions(options: Partial<NoUnusedUseMemoOptions> = {}): NoUnusedUseMemoOptions {
+	return { environment: "roblox-ts", ...options };
 }
 
 /**
