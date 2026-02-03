@@ -68,4 +68,4 @@ jobs:
         run: bun run build
 
       - name: Test
-        run: bun test --randomize --bail
+        run: bun run test --bail
