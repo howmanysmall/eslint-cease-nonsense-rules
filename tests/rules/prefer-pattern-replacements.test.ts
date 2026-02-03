@@ -8,6 +8,9 @@ const ruleTester = new RuleTester({
 	languageOptions: {
 		ecmaVersion: 2022,
 		parser,
+		parserOptions: {
+			ecmaFeatures: { jsx: true },
+		},
 		sourceType: "module",
 	},
 });
@@ -131,6 +134,27 @@ describe("prefer-pattern-replacements", () => {
 				errors: [{ messageId: "preferReplacement" }],
 				options: [{ patterns: [pattern({ match: "UDim2.fromScale(1, 1)", replacement: "oneScale" })] }],
 				output: "const x = oneScale;",
+			},
+			{
+				code: "const x = <Glow nativeProperties={{ Size: UDim2.fromScale(1.22, 1.22) }} />;",
+				errors: [{ messageId: "preferReplacement" }],
+				options: [
+					{
+						patterns: [
+							pattern({ match: "UDim2.fromScale(1, 1)", replacement: "oneScale" }),
+							pattern({ match: "UDim2.fromOffset(1, 1)", replacement: "oneOffset" }),
+							pattern({ match: "UDim2.fromScale(0.5, 0.5)", replacement: "centerScale" }),
+							pattern({ match: "UDim2.fromScale(0, 0)", replacement: "zero" }),
+							pattern({ match: "UDim2.fromScale(1, 0?)", replacement: "xScale" }),
+							pattern({ match: "UDim2.fromScale(0, 1)", replacement: "yScale" }),
+							pattern({ match: "UDim2.fromOffset(1, 0?)", replacement: "xOffset" }),
+							pattern({ match: "UDim2.fromOffset(0, 1)", replacement: "yOffset" }),
+							pattern({ match: "UDim2.fromOffset(0, 0)", replacement: "zero" }),
+							pattern({ match: "UDim2.fromScale($x, $x)", replacement: "scale($x)" }),
+						],
+					},
+				],
+				output: "const x = <Glow nativeProperties={{ Size: scale(1.22) }} />;",
 			},
 			{
 				code: "const x = new Vector2(0.5, 0);",

@@ -1372,6 +1372,10 @@ import { pattern } from "@pobammer-ts/eslint-cease-nonsense-rules";
         match: "UDim2.fromScale(1, 1)",
         replacement: "oneScale"
       }),
+      pattern({
+        match: "UDim2.fromScale($x, $x)",
+        replacement: "scale($x)"
+      }),
 
       // Captures and conditions
       pattern({
@@ -1402,6 +1406,12 @@ import { pattern } from "@pobammer-ts/eslint-cease-nonsense-rules";
 - `0?` - Optional: matches literal `0` or missing argument
 - `_` - Wildcard: matches any value, not captured
 - `when` clause - Conditions on captures (`== 0`, `!= 0`, `> 5`, etc.)
+
+**Ordering tip**
+
+Put the most specific patterns first. For example, keep exact shorthands like
+`UDim2.fromScale(1, 1)` before the general fallback
+`UDim2.fromScale($x, $x)` so the specific ones win.
 
 **Replacement types**
 
