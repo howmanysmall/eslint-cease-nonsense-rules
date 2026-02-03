@@ -379,8 +379,7 @@ function isStaticExpression(
 				isStaticExpression(context, unwrapped.object, seen, options) &&
 				(!unwrapped.computed || isStaticMemberProperty(unwrapped.property, seen, options))
 			);
-		case AST_NODE_TYPES.ChainExpression:
-			return isStaticExpression(context, unwrapped.expression, seen, options);
+		// Note: ChainExpression is unwrapped by unwrapExpression(), so no case needed here
 		case AST_NODE_TYPES.CallExpression:
 			return checkStaticCallOrNewExpression(context, unwrapped.arguments, unwrapped.callee, seen, options);
 		case AST_NODE_TYPES.NewExpression:

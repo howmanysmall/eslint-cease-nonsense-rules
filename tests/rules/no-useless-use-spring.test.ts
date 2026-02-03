@@ -163,6 +163,52 @@ const spring = useSpring({ value: Numbers["ONE"] }, []);
 `,
 				errors: [{ messageId: "uselessSpring" }],
 			},
+			// TSTypeAssertion unwrapping
+			{
+				code: `
+const spring = useSpring({ value: <number>1 }, []);
+`,
+				errors: [{ messageId: "uselessSpring" }],
+			},
+			// TSNonNullExpression unwrapping
+			{
+				code: `
+const CONFIG = { opacity: 1 } as const;
+const spring = useSpring({ value: CONFIG!.opacity }, []);
+`,
+				errors: [{ messageId: "uselessSpring" }],
+			},
+			// TSSatisfiesExpression unwrapping
+			{
+				code: `
+const spring = useSpring({ value: (1 satisfies number) }, []);
+`,
+				errors: [{ messageId: "uselessSpring" }],
+			},
+			// TSInstantiationExpression unwrapping (call with type args)
+			{
+				code: `
+import { makeValue } from "./utils";
+const spring = useSpring({ value: makeValue<number>(1) }, []);
+`,
+				errors: [{ messageId: "uselessSpring" }],
+			},
+			// ChainExpression unwrapping in static config
+			{
+				code: `
+const CONFIG = { nested: { opacity: 1 } } as const;
+const spring = useSpring({ value: CONFIG?.nested?.opacity }, []);
+`,
+				errors: [{ messageId: "uselessSpring" }],
+			},
+			// Assignment expression - right side is static
+			{
+				code: `
+let x;
+const spring = useSpring({ value: (x = 1) }, []);
+`,
+				errors: [{ messageId: "uselessSpring" }],
+			},
 			{
 				code: `
 const colorSpring = useSpring(

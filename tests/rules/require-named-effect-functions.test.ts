@@ -102,7 +102,7 @@ useEffect(function() {
 `,
 				errors: [{ messageId: "anonymousFunction" }],
 			},
-			// Identifier referencing function expression with inferred name (roblox-ts mode)
+			// Identifier referencing anonymous function expression
 			{
 				code: `
 const anonymousFunc = function() {
@@ -110,7 +110,7 @@ const anonymousFunc = function() {
 };
 useEffect(anonymousFunc, []);
 `,
-				errors: [{ messageId: "functionExpression" }],
+				errors: [{ messageId: "anonymousFunction" }],
 			},
 			// Arrow function assigned to variable is invalid (doesn't have a real name)
 			{

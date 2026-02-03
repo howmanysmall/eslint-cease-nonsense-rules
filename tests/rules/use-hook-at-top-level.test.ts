@@ -230,6 +230,17 @@ function useRecursive() {
 				errors: [{ messageId: "recursiveHookCall" }],
 			},
 
+			// Recursive call after nested function (edge case: function name tracking)
+			{
+				code: `
+function useRecursiveAfterNested() {
+    function helper() {}
+    useRecursiveAfterNested();
+}
+`,
+				errors: [{ messageId: "recursiveHookCall" }],
+			},
+
 			// Custom hook - arrow function
 			{
 				code: `

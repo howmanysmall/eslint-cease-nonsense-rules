@@ -37,7 +37,6 @@ interface HookConfig {
 type StableResult = boolean | ReadonlySet<number> | ReadonlySet<string>;
 
 const testingMetrics = {
-	moduleLevelStableConst: 0,
 	outerScopeSkip: 0,
 };
 
@@ -334,18 +333,8 @@ function isStableValue(
 				}
 			}
 
-			const variableDefinition = variable.defs.find((definition) => definition.node === node);
-			if (variableDefinition && variableDefinition.node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator) {
-				const declarationParent = (variableDefinition.node as TSESTree.VariableDeclarator).parent?.parent;
-				if (
-					declarationParent &&
-					(declarationParent.type === TSESTree.AST_NODE_TYPES.Program ||
-						declarationParent.type === TSESTree.AST_NODE_TYPES.ExportNamedDeclaration)
-				) {
-					testingMetrics.moduleLevelStableConst += 1;
-					return true;
-				}
-			}
+			// Note: Module-level constants are already filtered out by isDeclaredInComponentBody
+			// In collectCaptures, so no need to check for Program/ExportNamedDeclaration parents
 		}
 	}
 

@@ -118,22 +118,22 @@ function isIterationOrMemoCallback(
 		const { name } = callee.property;
 		if (iterationMethods.has(name)) return true;
 
+		// Array.from(iterable, mapFn) - second argument is a mapping callback
 		if (
 			name === "from" &&
-			callee.object.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-			callee.object.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
-			callee.object.object.name === "Array" &&
+			callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
+			callee.object.name === "Array" &&
 			callExpression.arguments.length >= 2
 		) {
 			return true;
 		}
 
+		// Array.prototype.map.call(array, callback) pattern
 		if (
 			name === "call" &&
 			callee.object.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-			callee.object.object.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-			callee.object.object.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
-			iterationMethods.has(callee.object.object.property.name)
+			callee.object.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
+			iterationMethods.has(callee.object.property.name)
 		) {
 			return true;
 		}
@@ -149,10 +149,9 @@ function findEnclosingCallExpression(node: TSESTree.Node): TSESTree.CallExpressi
 	while (parent) {
 		if (parent.type === TSESTree.AST_NODE_TYPES.CallExpression) {
 			for (const argument of parent.arguments) {
+				// SpreadElement is in ARGUMENT_WRAPPER_TYPES, so if we started inside a spread,
+				// Current would already be set to the SpreadElement itself, not its argument
 				if (argument === current) return parent;
-				if (argument.type === TSESTree.AST_NODE_TYPES.SpreadElement && argument.argument === current) {
-					return parent;
-				}
 			}
 			return undefined;
 		}

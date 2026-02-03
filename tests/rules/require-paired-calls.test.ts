@@ -628,6 +628,68 @@ function test() {
 					},
 				],
 			},
+
+			// Wrong LIFO order - trying to close outer before inner
+			{
+				code: `
+function test() {
+    lock.acquireRead();
+    lock.acquireWrite();
+    lock.releaseRead(); // wrong - should release write first
+    lock.releaseWrite();
+}
+`,
+				errors: [{ messageId: "wrongOrder" }],
+				options: [
+					{
+						pairs: [
+							{
+								closer: "lock.releaseRead",
+								opener: "lock.acquireRead",
+								requireSync: false,
+							},
+							{
+								closer: "lock.releaseWrite",
+								opener: "lock.acquireWrite",
+								requireSync: false,
+							},
+						],
+					},
+				],
+			},
+
+			// Switch with allowConditionalClosers false - partial closers
+			{
+				code: `
+function test(val) {
+    debug.profilebegin("task");
+    switch (val) {
+        case 1:
+            debug.profileend();
+            break;
+        case 2:
+            // missing closer
+            break;
+        default:
+            debug.profileend();
+    }
+}
+`,
+				errors: [{ messageId: "unpairedOpener" }],
+				options: [
+					{
+						allowConditionalClosers: false,
+						pairs: [
+							{
+								closer: "debug.profileend",
+								opener: "debug.profilebegin",
+								platform: "roblox",
+								requireSync: true,
+							},
+						],
+					},
+				],
+			},
 		],
 		valid: [
 			// Basic pairing - valid
@@ -751,6 +813,19 @@ function test(value) {
                 value--;
         }
         value--;
+    }
+    debug.profileend();
+}
+`,
+			},
+
+			// Labeled break to non-loop (label on block statement) - should not trigger
+			{
+				code: `
+function test() {
+    debug.profilebegin("task");
+    block: {
+        if (condition) break block;
     }
     debug.profileend();
 }

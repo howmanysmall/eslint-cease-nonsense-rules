@@ -153,9 +153,13 @@ const useHookAtTopLevel: Rule.RuleModule = {
 	create(context) {
 		const configuration = (context.options[0] ?? {}) as UseHookAtTopLevelOptions;
 		const contextStack = new Array<ControlFlowContext>();
-		let currentFunctionName: string | undefined;
+		const functionNameStack = new Array<string | undefined>();
 
 		const importSourceMap = new Map<string, string>();
+
+		function getCurrentFunctionName(): string | undefined {
+			return functionNameStack.length > 0 ? functionNameStack.at(-1) : undefined;
+		}
 
 		function getCurrentContext(): ControlFlowContext | undefined {
 			return contextStack.length > 0 ? contextStack.at(-1) : undefined;
@@ -206,11 +210,15 @@ const useHookAtTopLevel: Rule.RuleModule = {
 			const depth = current ? current.functionDepth + 1 : 0;
 
 			const isComponentOrHookFlag = isComponentOrHook(functionNode);
-			if (functionNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration && functionNode.id) {
-				currentFunctionName = functionNode.id.name;
-			}
+
+			// Track function name for recursive call detection (only for top-level component/hooks)
+			const functionName =
+				functionNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration && functionNode.id
+					? functionNode.id.name
+					: undefined;
 
 			if (current?.isComponentOrHook) {
+				// Nested function - don't update function name stack (keep parent's name for recursive detection)
 				pushContext({
 					afterEarlyReturn: false,
 					functionDepth: depth,
@@ -221,6 +229,7 @@ const useHookAtTopLevel: Rule.RuleModule = {
 					isComponentOrHook: false,
 				});
 			} else if (isComponentOrHookFlag) {
+				// Top-level component/hook - track its name for recursive call detection
 				pushContext({
 					afterEarlyReturn: false,
 					functionDepth: depth,
@@ -230,12 +239,18 @@ const useHookAtTopLevel: Rule.RuleModule = {
 					inTryBlock: false,
 					isComponentOrHook: true,
 				});
+				functionNameStack.push(functionName);
 			}
 		}
 		function handleFunctionExit(): void {
 			const current = getCurrentContext();
-			if (current) popContext();
-			currentFunctionName = undefined;
+			if (current) {
+				popContext();
+				// Only pop function name if this was a top-level component/hook (not a nested function)
+				if (current.isComponentOrHook) {
+					functionNameStack.pop();
+				}
+			}
 		}
 
 		return {
@@ -263,7 +278,7 @@ const useHookAtTopLevel: Rule.RuleModule = {
 				if (!(current.isComponentOrHook || current.inNestedFunction)) return;
 				if (isInFinallyBlock(callNode)) return;
 
-				if (isRecursiveCall(callNode, currentFunctionName)) {
+				if (isRecursiveCall(callNode, getCurrentFunctionName())) {
 					context.report({
 						messageId: "recursiveHookCall",
 						node: callNode,

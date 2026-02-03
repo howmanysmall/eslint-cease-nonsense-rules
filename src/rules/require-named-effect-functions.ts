@@ -1,9 +1,6 @@
 import { TSESTree } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
-import Typebox from "typebox";
-import { Compile } from "typebox/compile";
 import type { EnvironmentMode } from "../types/environment-mode";
-import { isEnvironmentMode } from "../types/environment-mode";
 
 export interface HookConfiguration {
 	readonly allowAsync: boolean;
@@ -20,39 +17,24 @@ export interface EffectFunctionOptions {
 	readonly environment: EnvironmentMode;
 	readonly hooks: ReadonlyArray<HookConfiguration>;
 }
-const isHookConfiguration = Typebox.Object({
-	allowAsync: Typebox.Boolean(),
-	name: Typebox.String(),
-});
 
-const isRuleOptions = Compile(
-	Typebox.Object(
-		{
-			environment: isEnvironmentMode,
-			hooks: Typebox.Array(isHookConfiguration),
-		},
-		{ additionalProperties: true },
-	),
-);
+interface RawOptions {
+	readonly environment?: string;
+	readonly hooks?: ReadonlyArray<HookConfiguration>;
+}
 
 function parseOptions(options: unknown): EffectFunctionOptions {
-	if (options === undefined) {
+	if (!options) {
 		return {
 			environment: "roblox-ts",
 			hooks: DEFAULT_HOOKS,
 		};
 	}
 
-	if (!isRuleOptions.Check(options)) {
-		return {
-			environment: "roblox-ts",
-			hooks: DEFAULT_HOOKS,
-		};
-	}
-
+	const rawOptions = options as RawOptions;
 	return {
-		environment: options.environment === "standard" ? "standard" : "roblox-ts",
-		hooks: options.hooks,
+		environment: rawOptions.environment === "standard" ? "standard" : "roblox-ts",
+		hooks: rawOptions.hooks ?? DEFAULT_HOOKS,
 	};
 }
 
@@ -291,7 +273,7 @@ const requireNamedEffectFunctions: Rule.RuleModule = {
 						}
 					} else if (resolved.type === "function-expression") {
 						const castNode = resolved.node as unknown as { id?: unknown };
-						if (castNode.id === undefined) {
+						if (!castNode.id) {
 							context.report({
 								data: { hook: hookName },
 								messageId: "anonymousFunction",

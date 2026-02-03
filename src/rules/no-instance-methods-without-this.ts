@@ -44,30 +44,50 @@ function isNode(value: unknown): value is TSESTree.Node {
 	return typeof value === "object" && value !== null && "type" in value;
 }
 
+// Properties that should not be traversed when looking for this/super usage
+const NON_TRAVERSABLE_KEYS = new Set(["parent", "range", "loc", "tokens", "comments"]);
+
 // Widen node to allow safe enumeration without producing implicit any values
 function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & ReadonlyRecord<string, unknown> {
 	return true;
 }
 
-function traverseForThis(currentNode: TSESTree.Node, visited: WeakSet<TSESTree.Node>): boolean {
+function traverseForThis(
+	currentNode: TSESTree.Node,
+	visited: WeakSet<TSESTree.Node>,
+	isRoot: boolean,
+): boolean {
 	if (visited.has(currentNode)) return false;
 	visited.add(currentNode);
 	if (currentNode.type === AST_NODE_TYPES.ThisExpression || currentNode.type === AST_NODE_TYPES.Super) return true;
+
+	// Stop at function boundaries that create their own `this` binding.
+	// FunctionExpression and FunctionDeclaration have their own `this`.
+	// ArrowFunctionExpression inherits `this` from the enclosing scope, so we continue through it.
+	// Skip the root node check since the method itself is a FunctionExpression.
+	if (
+		!isRoot &&
+		(currentNode.type === AST_NODE_TYPES.FunctionExpression ||
+			currentNode.type === AST_NODE_TYPES.FunctionDeclaration)
+	) {
+		return false;
+	}
 
 	if (!hasDynamicProperties(currentNode)) return false;
 
 	for (const key in currentNode) {
 		if (!Object.hasOwn(currentNode, key)) continue;
+		if (NON_TRAVERSABLE_KEYS.has(key)) continue;
 
 		const childValue = currentNode[key];
 		if (childValue === null || childValue === undefined) continue;
 
 		if (Array.isArray(childValue)) {
-			for (const item of childValue) if (isNode(item) && traverseForThis(item, visited)) return true;
+			for (const item of childValue) if (isNode(item) && traverseForThis(item, visited, false)) return true;
 			continue;
 		}
 
-		if (isNode(childValue) && traverseForThis(childValue, visited)) return true;
+		if (isNode(childValue) && traverseForThis(childValue, visited, false)) return true;
 	}
 
 	return false;
@@ -76,7 +96,7 @@ function traverseForThis(currentNode: TSESTree.Node, visited: WeakSet<TSESTree.N
 function methodUsesThis(node: TSESTree.MethodDefinition): boolean {
 	const { value } = node;
 	if (value === undefined || value.type !== AST_NODE_TYPES.FunctionExpression) return false;
-	return traverseForThis(value, new WeakSet());
+	return traverseForThis(value, new WeakSet(), true);
 }
 
 export default createRule<[NoInstanceMethodsOptions | undefined], MessageIds>({
@@ -89,7 +109,12 @@ export default createRule<[NoInstanceMethodsOptions | undefined], MessageIds>({
 				if (!shouldCheckMethod(node, options)) return;
 				if (methodUsesThis(node)) return;
 
-				const methodName = node.key.type === AST_NODE_TYPES.Identifier ? node.key.name : "unknown";
+				const methodName =
+				node.key.type === AST_NODE_TYPES.Identifier
+					? node.key.name
+					: node.key.type === AST_NODE_TYPES.PrivateIdentifier
+						? `#${node.key.name}`
+						: "unknown";
 
 				context.report({
 					data: { methodName },

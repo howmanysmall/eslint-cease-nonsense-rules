@@ -142,7 +142,7 @@ interface ParsedStatement {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== undefined;
+	return typeof value === "object" && value !== null;
 }
 
 function isParsedStatement(value: unknown): value is ParsedStatement {
@@ -248,7 +248,7 @@ const noCommentedCode: Rule.RuleModule = {
 					if (trimmedValue === "}") continue;
 
 					const balanced = injectMissingBraces(trimmedValue);
-					if (!containsCode(balanced, context.filename)) return;
+					if (!containsCode(balanced, context.filename)) continue;
 
 					const firstComment = group.comments.at(0);
 					const lastComment = group.comments.at(-1);

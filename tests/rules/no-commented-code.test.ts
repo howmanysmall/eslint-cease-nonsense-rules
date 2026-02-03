@@ -191,6 +191,20 @@ let x = 0;`,
 					},
 				],
 			},
+			// Non-code comment followed by code comment - tests that we continue checking after non-code
+			{
+				code: `// This is just a regular comment
+const x = 1;
+// if (something) {}`,
+				errors: [
+					{
+						messageId: "commentedCode",
+						suggestions: [{ desc: "Remove this commented out code", output: `// This is just a regular comment
+const x = 1;
+` }],
+					},
+				],
+			},
 		],
 		valid: [
 			// Empty and whitespace comments

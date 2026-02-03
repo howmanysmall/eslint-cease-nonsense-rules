@@ -111,6 +111,46 @@ class MyClass {
 `,
 				errors: [{ messageId: "noInstanceMethodWithoutThis" }, { messageId: "noInstanceMethodWithoutThis" }],
 			},
+			// Method with `this` inside nested regular function - should still be invalid
+			// Because regular functions have their own `this` binding
+			{
+				code: `
+class MyClass {
+    process(): void {
+        const inner = function() {
+            console.log(this);
+        };
+        inner();
+    }
+}
+`,
+				errors: [{ messageId: "noInstanceMethodWithoutThis" }],
+			},
+			// Method with nested function declaration - should still be invalid
+			{
+				code: `
+class MyClass {
+    process(): void {
+        function helper() {
+            return this;
+        }
+        helper();
+    }
+}
+`,
+				errors: [{ messageId: "noInstanceMethodWithoutThis" }],
+			},
+			// Private method using # syntax without this
+			{
+				code: `
+class MyClass {
+    #privateMethod() {
+        return 42;
+    }
+}
+`,
+				errors: [{ messageId: "noInstanceMethodWithoutThis" }],
+			},
 		],
 		valid: [
 			// Static methods are skipped
@@ -119,6 +159,18 @@ class MyClass {
 class MyClass {
     static helper(): void {
         console.log("static");
+    }
+}
+`,
+			},
+			// Private method using # syntax with this
+			{
+				code: `
+class MyClass {
+    #value = 0;
+
+    #getValue() {
+        return this.#value;
     }
 }
 `,
@@ -139,7 +191,11 @@ class MyClass {
 			{
 				code: `
 class MyClass {
-    private notify(): void {}
+    private value = 0;
+
+    private notify(): void {
+        console.log(this.value);
+    }
 
     private process(): void {
         this.notify();

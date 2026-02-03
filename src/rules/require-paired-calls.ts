@@ -280,25 +280,7 @@ const rule: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRec
 		const contextStack = new Array<ControlFlowContext>();
 		const stackSnapshots = new Map<TSESTree.Node, Array<OpenerStackEntry>>();
 		const branchStacks = new Map<TSESTree.Node, Array<Array<OpenerStackEntry>>>();
-		const closerToOpenersCache = new Map<string, ReadonlyArray<string>>();
 		const openerToClosersCache = new Map<string, ReadonlyArray<string>>();
-
-		function getConfiguredOpenersForCloser(closer: string): ReadonlyArray<string> {
-			if (closerToOpenersCache.has(closer)) return closerToOpenersCache.get(closer) ?? [];
-
-			const names = new Array<string>();
-			let size = 0;
-			for (const pair of options.pairs) {
-				if (!getValidClosers(pair).includes(closer)) continue;
-
-				for (const openerName of getAllOpeners(pair)) {
-					if (!names.includes(openerName)) names[size++] = openerName;
-				}
-			}
-
-			closerToOpenersCache.set(closer, names);
-			return names;
-		}
 
 		function getExpectedClosersForOpener(opener: string): ReadonlyArray<string> {
 			if (openerToClosersCache.has(opener)) return openerToClosersCache.get(opener) ?? [];
@@ -865,32 +847,21 @@ const rule: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRec
 					return;
 				}
 
+				// Stack is non-empty so topEntry is guaranteed to exist
 				const topEntry = openerStack.at(-1);
-				if (topEntry) {
-					const expectedClosers = getExpectedClosersForOpener(topEntry.opener);
-					const closerDescription = formatOpenerList(expectedClosers);
+				if (!topEntry) return;
 
-					context.report({
-						data: {
-							closer,
-							expected: closerDescription,
-						},
-						messageId: "unexpectedCloser",
-						node,
-					});
-				} else {
-					const openerCandidates = getConfiguredOpenersForCloser(closer);
-					const openerDescription = formatOpenerList(openerCandidates);
+				const expectedClosers = getExpectedClosersForOpener(topEntry.opener);
+				const closerDescription = formatOpenerList(expectedClosers);
 
-					context.report({
-						data: {
-							closer,
-							opener: openerDescription,
-						},
-						messageId: "unpairedCloser",
-						node,
-					});
-				}
+				context.report({
+					data: {
+						closer,
+						expected: closerDescription,
+					},
+					messageId: "unexpectedCloser",
+					node,
+				});
 
 				return;
 			}

@@ -237,6 +237,18 @@ interface PropsWithKids {
 const MemoizedComponent = memoize<PropsWithKids>((props) => null);`,
 				errors: [{ messageId: "memoWithChildren" }],
 			},
+			// Namespace import pattern with children
+			{
+				code: `
+import * as React from "@rbxts/react";
+
+interface PropsWithKids {
+    readonly children?: React.ReactNode;
+}
+
+const MemoizedComponent = React.memo<PropsWithKids>((props) => null);`,
+				errors: [{ messageId: "memoWithChildren" }],
+			},
 		],
 		valid: [
 			// No children - should be allowed
@@ -337,6 +349,26 @@ interface PropsWithKids {
 }
 
 const MemoizedComponent = memo<PropsWithKids>((props) => null);`,
+			},
+			// Non-React namespace with memo method
+			{
+				code: `
+interface PropsWithKids {
+    readonly children?: unknown;
+}
+
+const MemoizedComponent = Utils.memo<PropsWithKids>((props) => null);`,
+			},
+			// Computed property access - not recognized as memo call
+			{
+				code: `
+import React from "@rbxts/react";
+
+interface PropsWithKids {
+    readonly children?: unknown;
+}
+
+const MemoizedComponent = React["memo"]<PropsWithKids>((props) => null);`,
 			},
 			// Nested children property (not direct children prop)
 			{
