@@ -7,6 +7,7 @@ import { RuleTester } from "eslint";
 import vueParser from "vue-eslint-parser";
 
 import rule from "../../src/rules/prevent-abbreviations";
+import { shardCases } from "../utilities/shard-cases";
 
 type Variant = "default" | "babel" | "typescript" | "vue";
 
@@ -183,4 +184,4 @@ for (const group of collected) {
 	}
 }
 
-ruleTester.run("prevent-abbreviations", rule, { invalid, valid });
+ruleTester.run("prevent-abbreviations", rule, { invalid: shardCases(invalid), valid: shardCases(valid) });

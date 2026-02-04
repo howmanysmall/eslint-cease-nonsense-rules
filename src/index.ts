@@ -195,11 +195,11 @@ export const recommended = {
 	},
 } as const;
 
-type PluginConfig = typeof recommended;
+type PluginConfiguration = typeof recommended;
 
 interface Plugin {
 	readonly rules: ReadonlyRecord<string, LooseRuleDefinition>;
-	readonly configs: { readonly recommended: PluginConfig };
+	readonly configs: { readonly recommended: PluginConfiguration };
 }
 
 const plugin: Plugin = {
