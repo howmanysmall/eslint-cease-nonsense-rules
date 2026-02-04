@@ -1,3 +1,4 @@
+import { shardCases } from "../../../utilities/shard-cases";
 import { accessorCases } from "./accessor.test";
 import { autoAccessorCases } from "./auto-accessor.test";
 import { classCases } from "./class.test";
@@ -38,4 +39,5 @@ const allCases = [
 
 const processed: NamingConventionCases = processTestCases(allCases);
 
-export const { invalid, valid } = processed;
+export const invalid = shardCases(processed.invalid);
+export const valid = shardCases(processed.valid);
