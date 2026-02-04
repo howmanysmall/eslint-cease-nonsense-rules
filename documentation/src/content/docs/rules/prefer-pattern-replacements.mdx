@@ -67,6 +67,24 @@ Add constraints on captured values:
 	lang="typescript"
 />
 
+### Ordering
+
+Put the most specific patterns first so they win over general fallbacks. For example:
+
+<Code
+	code={[
+		"pattern({",
+		'\tmatch: "UDim2.fromScale(1, 1)",',
+		'\treplacement: "oneScale",',
+		"}),",
+		"pattern({",
+		'\tmatch: "UDim2.fromScale($x, $x)",',
+		'\treplacement: "scale($x)",',
+		"}),",
+	].join("\n")}
+	lang="typescript"
+/>
+
 ## Common Use Cases
 
 <Tabs>
