@@ -464,6 +464,86 @@ useEffect(() => {
 const config = useMemo(() => buildConfig(eventName), [eventName]);
 ```
 
+#### `no-useless-use-effect` (Experimental)
+
+Disallow effects that only derive state, reset or adjust state from properties, notify parents, or route event flags.
+
+**Why**
+
+`useEffect` is for synchronizing with external systems. If an effect only sets local state based on properties or state,
+only calls a property callback, or only runs because a state flag was toggled, it adds extra renders without providing
+real synchronization.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-useless-use-effect": ["error", {
+    "environment": "roblox-ts", // or "standard"
+    "hooks": ["useEffect", "useLayoutEffect", "useInsertionEffect"],
+    "reportDerivedState": true,
+    "reportNotifyParent": true,
+    "reportEventFlag": true,
+    "propertyCallbackPrefixes": ["on"]
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+import { useEffect, useState } from "@rbxts/react";
+
+function Profile(properties) {
+  const [fullName, setFullName] = useState("");
+
+  useEffect(() => {
+    setFullName(`${properties.first} ${properties.last}`);
+  }, [properties.first, properties.last]);
+}
+
+function Form(properties) {
+  useEffect(() => {
+    properties.onChange(properties.value);
+  }, [properties.value, properties.onChange]);
+}
+
+function SubmitButton() {
+  const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (!submitted) return;
+    submitForm();
+    setSubmitted(false);
+  }, [submitted]);
+}
+```
+
+**✅ Good**
+
+```typescript
+function Profile(properties) {
+  const fullName = `${properties.first} ${properties.last}`;
+  return <textlabel Text={fullName} />;
+}
+
+function Form(properties) {
+  function handleSubmit() {
+    properties.onChange(properties.value);
+  }
+
+  return <textbutton Event={{ Activated: handleSubmit }} />;
+}
+
+function SubmitButton() {
+  function handleSubmit() {
+    submitForm();
+  }
+
+  return <textbutton Event={{ Activated: handleSubmit }} />;
+}
+```
+
 #### `no-god-components`
 
 Flags React components that are too large or doing too much, encouraging better separation of concerns.
