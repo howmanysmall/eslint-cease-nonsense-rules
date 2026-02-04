@@ -1,0 +1,101 @@
+---
+title: memoized-effect-dependencies
+badge:
+    text: Experimental
+    variant: caution
+description:
+    Experimental: Flags effect dependencies that are not memoized to avoid re-render loops and compiler bailouts.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+
+Experimental rule that flags effect dependencies which are not memoized.
+
+## Rule Details :badge[Experimental]{variant=caution}
+
+This rule detects clearly un-memoized values inside effect dependency arrays. Unmemoized dependencies can cause
+unnecessary re-renders or trigger infinite loops when effects update values that are recreated every render.
+
+<Aside type="caution" title="Experimental">
+	This rule uses fast AST heuristics instead of the React Compiler. It intentionally favors performance and
+	may miss edge cases.
+</Aside>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Unmemoized dependencies
+		<Code
+			code={[
+				'import { useEffect } from "@rbxts/react";',
+				"",
+				"function Component() {",
+				"\tconst dep = {}; // new object every render",
+				"\tuseEffect(() => {}, [dep]);",
+				"}",
+			].join("\n")}
+			lang="tsx"
+		/>
+	</TabItem>
+	<TabItem label="✅ Correct" icon="check">
+		### Memoized dependencies
+		<Code
+			code={[
+				'import { useEffect, useMemo } from "@rbxts/react";',
+				"",
+				"function Component() {",
+				"\tconst dep = useMemo(() => ({}), []);",
+				"\tuseEffect(() => {}, [dep]);",
+				"}",
+			].join("\n")}
+			lang="tsx"
+		/>
+	</TabItem>
+</Tabs>
+
+## Configuration
+
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/memoized-effect-dependencies": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"environment": "roblox-ts",',
+		'\t\t\t"mode": "definite",',
+		"\t\t\t\"hooks\": [",
+		"\t\t\t\t{ \"name\": \"useEffect\", \"dependenciesIndex\": 1 }",
+		"\t\t\t]",
+		"\t\t}",
+		"\t]",
+		"}",
+	].join("\n")}
+	lang="json"
+	title="eslint.config.js"
+/>
+
+### Modes
+
+<Steps>
+1. **definite** Only report obviously unstable dependencies (objects, arrays, functions, classes, `new`).
+2. **moderate** Also report dependencies from unknown call expressions or non-`const` bindings.
+3. **aggressive** Report any non-module, non-memoized binding.
+
+{/* oxfmt-ignore */}
+</Steps>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="use-exhaustive-dependencies"
+		description="Ensure dependency arrays are exhaustive"
+		href="/eslint-cease-nonsense-rules/rules/use-exhaustive-dependencies/"
+	/>
+	<LinkCard
+		title="require-named-effect-functions"
+		description="Require named effect callbacks for better debugging"
+		href="/eslint-cease-nonsense-rules/rules/require-named-effect-functions/"
+	/>
+</CardGrid>
