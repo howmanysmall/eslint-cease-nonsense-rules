@@ -3,6 +3,7 @@ import banInstances from "./rules/ban-instances";
 import banReactFC from "./rules/ban-react-fc";
 import enforceIanitorCheckType from "./rules/enforce-ianitor-check-type";
 import fastFormat from "./rules/fast-format";
+import memoizedEffectDependencies from "./rules/memoized-effect-dependencies";
 import misleadingLuaTupleChecks from "./rules/misleading-lua-tuple-checks";
 import namingConvention from "./rules/naming-convention";
 import noAsyncConstructor from "./rules/no-async-constructor";
@@ -45,6 +46,7 @@ import type { ReadonlyRecord } from "./types/utility-types.d";
 
 export type { BanInstancesOptions } from "./rules/ban-instances";
 export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
+export type { MemoizedEffectDependenciesOptions } from "./rules/memoized-effect-dependencies";
 export type { NamingConventionOptions } from "./rules/naming-convention";
 export type { NoGodComponentsOptions } from "./rules/no-god-components";
 export type { NoIdentityMapOptions } from "./rules/no-identity-map";
@@ -103,6 +105,7 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"ban-react-fc": banReactFC,
 	"enforce-ianitor-check-type": enforceIanitorCheckType,
 	"fast-format": fastFormat,
+	"memoized-effect-dependencies": memoizedEffectDependencies,
 	"misleading-lua-tuple-checks": misleadingLuaTupleChecks,
 	"naming-convention": namingConvention,
 	"no-async-constructor": noAsyncConstructor,

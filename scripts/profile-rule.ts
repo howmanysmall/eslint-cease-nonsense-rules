@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 import tsParser from "@typescript-eslint/parser";
 import type { Rule } from "eslint";
 import { Linter } from "eslint";
-
+import memoizedEffectDependencies from "../src/rules/memoized-effect-dependencies";
 import noCommentedCode from "../src/rules/no-commented-code";
 import noShorthandNames from "../src/rules/no-shorthand-names";
 import requirePairedCalls from "../src/rules/require-paired-calls";
@@ -22,6 +22,7 @@ import useExhaustiveDependencies from "../src/rules/use-exhaustive-dependencies"
 import useHookAtTopLevel from "../src/rules/use-hook-at-top-level";
 
 const RULES_TO_PROFILE: Record<string, Rule.RuleModule> = {
+	"memoized-effect-dependencies": memoizedEffectDependencies,
 	"no-commented-code": noCommentedCode,
 	"no-shorthand-names": noShorthandNames,
 	// @ts-expect-error -- Shut up
