@@ -252,6 +252,18 @@ describe("prefer-pattern-replacements", () => {
 				output: "const x = fromValues(1, 0);",
 			},
 			{
+				code: 'import { centerScale } from "udim2-utilities"; const x = UDim2.fromScale(0.5, 0.5);',
+				errors: [{ messageId: "preferReplacement" }],
+				options: [
+					{
+						patterns: [
+							pattern({ match: "UDim2.fromScale(0.5, 0.5)", replacement: "centerScale" }),
+						],
+					},
+				],
+				output: 'import { centerScale } from "udim2-utilities"; const x = centerScale;',
+			},
+			{
 				code: "const scale = 5; const x = UDim2.fromScale(1.2, 1.2);",
 				errors: [{ data: { conflict: "scale", replacement: "scale(1.2)" }, messageId: "skippedDueToConflict" }],
 				options: [{ patterns: [pattern({ match: "UDim2.fromScale($x, $x)", replacement: "scale($x)" })] }],

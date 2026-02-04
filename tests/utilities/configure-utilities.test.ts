@@ -5,14 +5,17 @@ import {
 	createComplexityConfiguration,
 	createEffectFunctionOptions,
 	createHookConfiguration,
+	createNamingConventionOptions,
 	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
 	createNoMemoChildrenOptions,
 	createNoShorthandOptions,
+	createNoUnusedImportsOptions,
 	createNoUselessUseSpringOptions,
 	createPairConfiguration,
 	createPreferEnumItemOptions,
 	createPreferPatternReplacementsOptions,
+	createPreventAbbreviationsOptions,
 	createReactKeysOptions,
 	createRequireModuleLevelInstantiationOptions,
 	createRequirePairedCallsOptions,
@@ -22,6 +25,8 @@ import {
 	defaultRobloxProfilePair,
 } from "../../src/utilities/configure-utilities";
 import { pattern } from "../../src/utilities/pattern-replacement";
+
+const TEST_IGNORE_REGEX = /^_/;
 
 describe("configure-utilities", () => {
 	describe("createBanInstancesOptions", () => {
@@ -393,6 +398,136 @@ describe("configure-utilities", () => {
 				Server: "@rbxts/net",
 			});
 			expect(Object.keys(configuration.classes)).toHaveLength(2);
+		});
+	});
+
+	describe("createNamingConventionOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createNamingConventionOptions();
+			expect(configuration).toEqual({
+				format: ["PascalCase"],
+				selector: "interface",
+			});
+		});
+
+		it("should override format", () => {
+			expect.assertions(1);
+			const configuration = createNamingConventionOptions({ format: ["camelCase", "PascalCase"] });
+			expect(configuration.format).toEqual(["camelCase", "PascalCase"]);
+		});
+
+		it("should override selector", () => {
+			expect.assertions(1);
+			const configuration = createNamingConventionOptions({ selector: "typeAlias" });
+			expect(configuration.selector).toBe("typeAlias");
+		});
+
+		it("should override custom", () => {
+			expect.assertions(1);
+			const configuration = createNamingConventionOptions({
+				custom: { match: true, regex: "^[A-Z]" },
+			});
+			expect(configuration.custom).toEqual({ match: true, regex: "^[A-Z]" });
+		});
+
+		it("should override multiple fields", () => {
+			expect.assertions(3);
+			const configuration = createNamingConventionOptions({
+				custom: { match: false },
+				format: ["camelCase"],
+				selector: "class",
+			});
+			expect(configuration.format).toEqual(["camelCase"]);
+			expect(configuration.selector).toBe("class");
+			expect(configuration.custom).toEqual({ match: false });
+		});
+	});
+
+	describe("createNoUnusedImportsOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createNoUnusedImportsOptions();
+			expect(configuration).toEqual({ checkJSDoc: true });
+		});
+
+		it("should override defaults", () => {
+			expect.assertions(1);
+			const configuration = createNoUnusedImportsOptions({ checkJSDoc: false });
+			expect(configuration.checkJSDoc).toBe(false);
+		});
+
+		it("should merge partial overrides", () => {
+			expect.assertions(1);
+			const configuration = createNoUnusedImportsOptions({ checkJSDoc: false });
+			expect(configuration).toEqual({ checkJSDoc: false });
+		});
+	});
+
+	describe("createPreventAbbreviationsOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createPreventAbbreviationsOptions();
+			expect(configuration).toEqual({
+				allowList: {},
+				checkFilenames: true,
+				checkProperties: false,
+				checkVariables: true,
+				ignore: [],
+				replacements: {},
+			});
+		});
+
+		it("should override allowList", () => {
+			expect.assertions(1);
+			const configuration = createPreventAbbreviationsOptions({ allowList: { err: true } });
+			expect(configuration.allowList).toEqual({ err: true });
+		});
+
+		it("should override checkFilenames", () => {
+			expect.assertions(1);
+			const configuration = createPreventAbbreviationsOptions({ checkFilenames: false });
+			expect(configuration.checkFilenames).toBe(false);
+		});
+
+		it("should override checkProperties", () => {
+			expect.assertions(1);
+			const configuration = createPreventAbbreviationsOptions({ checkProperties: true });
+			expect(configuration.checkProperties).toBe(true);
+		});
+
+		it("should override checkVariables", () => {
+			expect.assertions(1);
+			const configuration = createPreventAbbreviationsOptions({ checkVariables: false });
+			expect(configuration.checkVariables).toBe(false);
+		});
+
+		it("should override ignore", () => {
+			expect.assertions(1);
+			const configuration = createPreventAbbreviationsOptions({ ignore: ["test", TEST_IGNORE_REGEX] });
+			expect(configuration.ignore).toEqual(["test", TEST_IGNORE_REGEX]);
+		});
+
+		it("should override replacements", () => {
+			expect.assertions(1);
+			const configuration = createPreventAbbreviationsOptions({
+				replacements: { err: { error: true } },
+			});
+			expect(configuration.replacements).toEqual({ err: { error: true } });
+		});
+
+		it("should override multiple fields together", () => {
+			expect.assertions(4);
+			const configuration = createPreventAbbreviationsOptions({
+				allowList: { fn: true },
+				checkFilenames: false,
+				checkProperties: true,
+				ignore: ["test"],
+			});
+			expect(configuration.allowList).toEqual({ fn: true });
+			expect(configuration.checkFilenames).toBe(false);
+			expect(configuration.checkProperties).toBe(true);
+			expect(configuration.ignore).toEqual(["test"]);
 		});
 	});
 });

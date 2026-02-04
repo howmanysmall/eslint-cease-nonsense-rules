@@ -1,12 +1,15 @@
 import type { BanInstancesOptions } from "../rules/ban-instances";
 import type { ComplexityConfiguration } from "../rules/enforce-ianitor-check-type";
+import type { NamingConventionOptions } from "../rules/naming-convention";
 import type { NoGodComponentsOptions } from "../rules/no-god-components";
 import type { NoInstanceMethodsOptions } from "../rules/no-instance-methods-without-this";
 import type { NoMemoChildrenOptions } from "../rules/no-memo-children";
 import type { NoShorthandOptions } from "../rules/no-shorthand-names";
+import type { NoUnusedImportsOptions } from "../rules/no-unused-imports";
 import type { NoUselessUseSpringOptions } from "../rules/no-useless-use-spring";
 import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../rules/no-useless-use-spring";
 import type { PreferEnumItemOptions } from "../rules/prefer-enum-item";
+import type { PreventAbbreviationsOptions } from "../rules/prevent-abbreviations";
 import type { RequireModuleLevelInstantiationOptions } from "../rules/require-module-level-instantiation";
 import type { EffectFunctionOptions, HookConfiguration } from "../rules/require-named-effect-functions";
 import type { PairConfiguration, RequirePairedCallsOptions } from "../rules/require-paired-calls";
@@ -262,4 +265,45 @@ export function createRequireModuleLevelInstantiationOptions(
 	options: Partial<RequireModuleLevelInstantiationOptions> = {},
 ): RequireModuleLevelInstantiationOptions {
 	return { classes: {}, ...options };
+}
+
+/**
+ * Creates options for naming-convention rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNamingConventionOptions(options: Partial<NamingConventionOptions> = {}): NamingConventionOptions {
+	return {
+		format: ["PascalCase"],
+		selector: "interface",
+		...options,
+	};
+}
+
+/**
+ * Creates options for no-unused-imports rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNoUnusedImportsOptions(options: Partial<NoUnusedImportsOptions> = {}): NoUnusedImportsOptions {
+	return { checkJSDoc: true, ...options };
+}
+
+/**
+ * Creates options for prevent-abbreviations rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createPreventAbbreviationsOptions(
+	options: Partial<PreventAbbreviationsOptions> = {},
+): PreventAbbreviationsOptions {
+	return {
+		allowList: {},
+		checkFilenames: true,
+		checkProperties: false,
+		checkVariables: true,
+		ignore: [],
+		replacements: {},
+		...options,
+	};
 }

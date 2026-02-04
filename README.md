@@ -53,6 +53,7 @@ export default [
 			"cease-nonsense/no-print": "error",
 			"cease-nonsense/prefer-enum-item": "error",
 			"cease-nonsense/no-shorthand-names": "error",
+			"cease-nonsense/no-unused-imports": "error",
 			"cease-nonsense/no-useless-use-spring": "error",
 			"cease-nonsense/no-warn": "error",
 			"cease-nonsense/prefer-class-properties": "error",
@@ -69,6 +70,7 @@ export default [
 			"cease-nonsense/require-paired-calls": "error",
 			"cease-nonsense/require-react-component-keys": "error",
 			"cease-nonsense/require-react-display-names": "error",
+			"cease-nonsense/prefer-read-only-props": "error",
 			"cease-nonsense/strict-component-boundaries": "error",
 			"cease-nonsense/use-exhaustive-dependencies": "error",
 			"cease-nonsense/use-hook-at-top-level": "error",
@@ -172,7 +174,50 @@ const props: ImageProps = { ScaleType: 1 };
 <uiflexitem FlexMode={Enum.UIFlexMode.Fill} />
 
 // Explicit enum in object
-const props: ImageProps = { ScaleType: Enum.ScaleType.Slice };
+	const props: ImageProps = { ScaleType: Enum.ScaleType.Slice };
+```
+
+#### `no-unused-imports`
+
+Disallow unused imports. Uses ESLint's scope analysis to detect unused imports and optionally checks JSDoc comments for references.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-unused-imports": ["error", {
+    "checkJSDoc": true  // Check if imports are referenced in JSDoc comments
+  }]
+}
+```
+
+**Features**
+
+- ✨ Has auto-fix
+- Cached JSDoc comment parsing per file
+- Pre-compiled regex patterns
+- Efficient scope analysis using ESLint's built-in mechanisms
+
+**❌ Bad**
+
+```typescript
+import { unusedFunction } from "./utils";
+import { AnotherUnused } from "./types";
+
+// unusedFunction and AnotherUnused are never used
+```
+
+**✅ Good**
+
+```typescript
+import { usedFunction } from "./utils";
+
+usedFunction();
+
+// Or used in JSDoc
+/**
+ * @see {usedFunction}
+ */
 ```
 
 ### React
@@ -595,6 +640,43 @@ ErrorBoundaryContext.displayName = "ErrorBoundaryContext";
 export default ErrorBoundaryContext;
 ```
 
+#### `prefer-read-only-props`
+
+Enforce that React component props are typed as `readonly` in TypeScript, preventing accidental mutation of props.
+
+**Features**
+
+- ✨ Has auto-fix
+- Direct AST pattern matching (no global component analysis)
+- Component detection caching
+- Focused on common React component patterns
+
+**❌ Bad**
+
+```typescript
+interface Props {
+  name: string;
+  age: number;
+}
+
+function Component({ name, age }: Props) {
+  // ...
+}
+```
+
+**✅ Good**
+
+```typescript
+interface Props {
+  readonly name: string;
+  readonly age: number;
+}
+
+function Component({ name, age }: Props) {
+  // ...
+}
+```
+
 #### `react-hooks-strict-return`
 
 React hooks must return a tuple of ≤2 elements or a single object. Prevents unwieldy hook return types.
@@ -1000,6 +1082,48 @@ const doubled = items.map((x) => x * 2);
     "bindingPatterns": ["binding"]  // Case-insensitive patterns
   }]
 }
+```
+
+#### `prevent-abbreviations`
+
+Prevent abbreviations in variable and property names. Provides suggestions for replacements and can automatically fix single-replacement cases.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/prevent-abbreviations": ["error", {
+    "checkFilenames": true,
+    "checkProperties": false,
+    "checkVariables": true,
+    "replacements": {},
+    "allowList": {},
+    "ignore": []
+  }]
+}
+```
+
+**Features**
+
+- ✨ Has auto-fix (for single replacements)
+- Aggressive caching of word and name replacements
+- Pre-compiled regex patterns
+- Early exits for constants and allow-listed names
+
+**❌ Bad**
+
+```typescript
+const err = new Error();
+const fn = () => {};
+const dist = calculateDistance();
+```
+
+**✅ Good**
+
+```typescript
+const error = new Error();
+const func = () => {};
+const distance = calculateDistance();
 ```
 
 #### `no-shorthand-names`
@@ -1492,6 +1616,83 @@ import { Foo } from "./components/Foo";
 ```
 
 ### TypeScript
+
+#### `naming-convention`
+
+Enforce naming conventions for TypeScript constructs. Optimized for common use cases like interface prefix checking without requiring type checking.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/naming-convention": ["error", {
+    "custom": {
+      "match": false,
+      "regex": "^I[A-Z]"
+    },
+    "format": ["PascalCase"],
+    "selector": "interface"
+  }]
+}
+```
+
+**Features**
+
+- No type checking required (fast AST-only analysis)
+- Pre-compiled regex patterns
+- Focused on common use cases
+
+**❌ Bad**
+
+```typescript
+// With custom: { match: false, regex: "^I[A-Z]" }
+interface IUser {
+  name: string;
+}
+```
+
+**✅ Good**
+
+```typescript
+interface User {
+  name: string;
+}
+```
+
+#### `misleading-lua-tuple-checks`
+
+Disallow the use of `LuaTuple` types directly in conditional expressions, which can be misleading. Requires explicit indexing (`[0]`) or array destructuring.
+
+**Features**
+
+- ✨ Has auto-fix
+- Cached type queries per node
+- WeakMap-based caching for `isLuaTuple` checks
+- Cached constrained type lookups
+
+**❌ Bad**
+
+```typescript
+// Direct LuaTuple in conditional
+if (getLuaTuple()) {
+  // ...
+}
+
+// LuaTuple in variable declaration
+const result = getLuaTuple();
+```
+
+**✅ Good**
+
+```typescript
+// Explicit indexing
+if (getLuaTuple()[0]) {
+  // ...
+}
+
+// Array destructuring
+const [result] = getLuaTuple();
+```
 
 #### `prefer-pascal-case-enums`
 

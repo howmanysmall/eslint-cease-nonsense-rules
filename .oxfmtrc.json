@@ -6,7 +6,7 @@
 	"embeddedLanguageFormatting": "auto",
 	"endOfLine": "lf",
 	"experimentalSortImports": null,
-	"ignorePatterns": ["dist/**", "node_modules/**", "**/*.{jsonc,json,md,yaml,yml}", "package.json"],
+	"ignorePatterns": ["dist/**", "node_modules/**", "**/*.{jsonc,json,md,yaml,yml}", "package.json", ".context/**"],
 	"insertFinalNewline": true,
 	"jsxSingleQuote": false,
 	"objectWrap": "preserve",

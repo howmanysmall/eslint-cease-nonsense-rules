@@ -1,0 +1,1226 @@
+import parser from "@typescript-eslint/parser";
+import { RuleTester } from "eslint";
+
+import rule from "../../src/rules/prefer-read-only-props";
+
+const ruleTester = new RuleTester({
+	languageOptions: {
+		ecmaVersion: 2022,
+		parser,
+		parserOptions: {
+			ecmaFeatures: { jsx: true },
+			projectService: {
+				allowDefaultProject: ["*.ts", "*.tsx"],
+			},
+			tsconfigRootDir: __dirname,
+		},
+		sourceType: "module",
+	},
+});
+
+function tsx(strings: TemplateStringsArray, ...values: ReadonlyArray<string>): string {
+	return String.raw(strings, ...values).trim();
+}
+
+const allComponents = [
+	"const CreateElementComponent = () => React.createElement('div', null, null)",
+	"const FunctionComponent = () => <div></div>",
+	tsx`
+	  /// <reference types="react" />
+	  /// <reference types="react-dom" />
+
+	  function FunctionComponent() {
+	      return <div></div>
+	  }
+	`,
+	tsx`
+	  /// <reference types="react" />
+	  /// <reference types="react-dom" />
+
+	  import { memo } from 'react'
+
+	  const MemoComponent = memo(() => <div></div>)
+	`,
+	tsx`
+	  /// <reference types="react" />
+	  /// <reference types="react-dom" />
+
+	  import { forwardRef } from 'react'
+
+	  const ForwardRefComponent = forwardRef((props, ref) => <div></div>)
+	`,
+	tsx`
+	  /// <reference types="react" />
+	  /// <reference types="react-dom" />
+
+	  import { memo, forwardRef } from 'react'
+
+	  const MemoForwardRefComponent = memo(forwardRef((props, ref) => <div></div>))
+	`,
+];
+
+const allFunctions = [
+	"const fn = () => null",
+	tsx`
+	  function fnWithReturn() {
+	      return null
+	  }
+	`,
+	"const footer = () => <div />",
+	"const renderFunction = (id: string, name: string) => <div key={id} id={id}>{name}</div>",
+	tsx`
+	  function renderFunctionWithReturn(id: string, name: string) {
+	      return <div key={id} id={id}>{name}</div>
+	  }
+	`,
+	tsx`
+	  function renderFunctionWithNestedRenderFunction(id: string, name: string) {
+	      return <Component footer={() => <div />} />
+	  }
+	`,
+];
+
+const allValid = [...allComponents, ...allFunctions];
+
+const invalid = [
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        const App = (props: { id: string; className: string }) => {
+            return <div id={props.id} className={props.className} />
+        }
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	// ObjectPattern with type annotation
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        function App({ id }: { id: string }) {
+            return <div id={id} />
+        }
+      `,
+		errors: [{ messageId: "preferReadOnlyProps" }],
+	},
+	// ArrayPattern with type annotation
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        function App([first]: [string]) {
+            return <div>{first}</div>
+        }
+      `,
+		errors: [{ messageId: "preferReadOnlyProps" }],
+	},
+	// AssignmentPattern (default parameter value)
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        function App({ id = "default" }: { id: string }) {
+            return <div id={id} />
+        }
+      `,
+		errors: [{ messageId: "preferReadOnlyProps" }],
+	},
+	// TSIndexSignature in interface (non-readonly)
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        interface Props {
+            [key: string]: string;
+        }
+
+        function App(props: Props) {
+            return <div id={props.id} />
+        }
+      `,
+		errors: [{ messageId: "preferReadOnlyProps" }],
+	},
+	// TSIndexSignature in type literal (non-readonly)
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        function App(props: { [key: string]: string }) {
+            return <div id={props.id} />
+        }
+      `,
+		errors: [{ messageId: "preferReadOnlyProps" }],
+	},
+	// Interface extending non-readonly interface
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        interface BaseProps {
+            id: string;
+        }
+        interface Props extends BaseProps {
+            readonly className: string;
+        }
+
+        function App(props: Props) {
+            return <div id={props.id} className={props.className} />
+        }
+      `,
+		errors: [{ messageId: "preferReadOnlyProps" }],
+	},
+	// TSTypeQuery with non-const variable
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        const defaultProps = { id: "test" };
+
+        function App(props: typeof defaultProps) {
+            return <div id={props.id} />
+        }
+      `,
+		errors: [{ messageId: "preferReadOnlyProps" }],
+	},
+	// Nested module declaration
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        namespace Outer {
+            export namespace Inner {
+                export interface Props {
+                    id: string;
+                }
+            }
+        }
+
+        function App(props: Outer.Inner.Props) {
+            return <div id={props.id} />
+        }
+      `,
+		errors: [{ messageId: "preferReadOnlyProps" }],
+	},
+	// VFC type
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        const App: React.VFC<{ id: string }> = (props) => {
+            return <div id={props.id} />
+        }
+      `,
+		errors: [{ messageId: "preferReadOnlyProps" }],
+	},
+	// FunctionComponent type
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        const App: React.FunctionComponent<{ id: string }> = (props) => {
+            return <div id={props.id} />
+        }
+      `,
+		errors: [{ messageId: "preferReadOnlyProps" }],
+	},
+	// VoidFunctionComponent type
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        const App: React.VoidFunctionComponent<{ id: string }> = (props) => {
+            return <div id={props.id} />
+        }
+      `,
+		errors: [{ messageId: "preferReadOnlyProps" }],
+	},
+	// FC without React prefix
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import { FC } from "react";
+
+        const App: FC<{ id: string }> = (props) => {
+            return <div id={props.id} />
+        }
+      `,
+		errors: [{ messageId: "preferReadOnlyProps" }],
+	},
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        function App(props: { id: string; className: string }) {
+            return <div id={props.id} className={props.className} />
+        }
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        const App = function (props: { id: string; className: string }) {
+            return <div id={props.id} className={props.className} />
+        }
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        const App = function ({ id, className }: { id: string; className: string }) {
+            return <div id={id} className={className} />
+        }
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        const App = function ({ id, className }: { readonly id: string; className: string }) {
+            return <div id={id} className={className} />
+        }
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        const App: React.FC<{ id: string; className: string }> = (props) => {
+            return <div id={props.id} className={props.className} />
+        }
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        const App: React.FC<{ id: string; className: string }> = ({ id, className }) => {
+            return <div id={id} className={className} />
+        }
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        export const App: React.FC<{ id: string; className: string }> = (props) => {
+          return <div className={props.className} id={props.id} />
+        }
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        export const App: React.FC<{ readonly id: string; readonly className: string } | { id: string; className: string }> = (props) => {
+          return <div className={props.className} id={props.id} />
+        }
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        const defaultProps = { id: "default-id", className: "default-class" };
+        type Props = typeof defaultProps;
+
+        function App({ id, className }: Props) {
+            return <div id={id} className={className} />
+        }
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        interface HSV {
+          h: number;
+          s: number;
+          v: number;
+        }
+        interface ValuePickerProps {
+          Disabled: boolean;
+          readonly Hsv: HSV
+          readonly onChange: () => void;
+        }
+        export function ValuePicker({ Disabled, Hsv, onChange }: ValuePickerProps) {
+          return <div />
+        }
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        interface HSV {
+          h: number;
+          s: number;
+          v: number;
+        }
+        interface ValuePickerProps {
+          readonly Disabled: boolean;
+          Hsv: HSV
+          onChange: () => void;
+        }
+        export function ValuePicker({ Disabled, Hsv, onChange }: ValuePickerProps) {
+          return <div />
+        }
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	{
+		// Memo with generic
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        const App = React.memo(({ id, className }: { id: string; className: string }) => {
+            return <div id={id} className={className} />
+        });
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	{
+		// Memo with generic and default props
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        const defaultProps = { id: "default-id", className: "default-class" };
+        type Props = typeof defaultProps;
+        const App = React.memo(({ id, className }: Props) => {
+            return <div id={id} className={className} />
+        });
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	{
+		// ForwardRef with generic
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        const App = React.forwardRef<HTMLDivElement, { id: string; className: string }>(({ id, className }, ref) => {
+            return <div id={id} className={className} ref={ref} />
+        });
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	{
+		// ForwardRef with generic and default props
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        const defaultProps = { id: "default-id", className: "default-class" };
+        type Props = typeof defaultProps;
+        const App = React.forwardRef<HTMLDivElement, Props>(({ id, className }, ref) => {
+            return <div id={id} className={className} ref={ref} />
+        });
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	{
+		// Memo and forwardRef with generic
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        const App = React.memo(React.forwardRef<HTMLDivElement, { id: string; className: string }>(({ id, className }, ref) => {
+            return <div id={id} className={className} ref={ref} />
+        }));
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	// Union type with readonly and non-readonly variants
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        type ReadonlyProps = { readonly id: string; readonly className: string };
+        type WritableProps = { id: string, className: string };
+        type Props = ReadonlyProps | WritableProps;
+        const App: React.FC<Props> = (props) => {
+            return <div id={props.id} className={props.className} />
+        }
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	// Union type with readonly and non-readonly variants
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        type ReadonlyProps = { readonly id: string; readonly className: string };
+        type WritableProps = { title: string, description: string };
+        type Props = ReadonlyProps | WritableProps;
+        const App: React.FC<Props> = (props) => {
+            return <div id={props.id} className={props.className} />
+        }
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	// Intersection type with readonly and non-readonly variants
+	{
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        import * as React from "react";
+
+        type ReadonlyProps = { readonly id: string; readonly className: string };
+        type WritableProps = { title: string, description: string };
+        type Props = ReadonlyProps & WritableProps;
+        const App: React.FC<Props> = (props) => {
+            return <div id={props.id} className={props.className} />
+        }
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+	{
+		// Types inside namespace
+		code: tsx`
+        /// <reference types="react" />
+        /// <reference types="react-dom" />
+
+        namespace ItemsListElementSkeleton {
+          export interface Props {
+           withArtists?: boolean
+           withPlayedAt?: boolean
+           position?: number
+           positionSize?: ItemPosition.Props['size']
+           positionClassName?: string
+           withPlaysOrPlayTime?: boolean
+          }
+        }
+
+        function ItemsListElementSkeleton({
+          position,
+          positionSize,
+          positionClassName,
+          withArtists,
+          withPlayedAt,
+          withPlaysOrPlayTime,
+        }: ItemsListElementSkeleton.Props) {
+          // ...
+          return null;
+        }
+
+        export { ItemsListElementSkeleton }
+      `,
+		errors: [
+			{
+				messageId: "preferReadOnlyProps",
+			},
+		],
+	},
+];
+
+const valid = [
+	...allValid,
+	// React.createContext should not be treated as a component factory
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      interface DevicePlatform {
+        name: string;
+        version: number;
+      }
+
+      export const ForcedPlatformContext = React.createContext<DevicePlatform | undefined>(undefined);
+      ForcedPlatformContext.displayName = "ForcedPlatformContext";
+    `,
+	// Arbitrary functions with type args should not be treated as component factories
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      interface ModelWithPrimaryPart {
+        primaryPart: unknown;
+      }
+
+      declare function registerComponent<T>(): T;
+
+      export const Visual = registerComponent<ModelWithPrimaryPart>();
+    `,
+	// SCREAMING_SNAKE_CASE functions are not components
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      function DEFAULT_FIND_FIRST_CHILD(parent: Instance, name: string): Instance | undefined {
+        return parent.FindFirstChild(name);
+      }
+    `,
+	// Functions that don't return React elements are not components
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      interface EnumList<T> {
+        Type: string;
+        List: Record<string, T>;
+      }
+
+      type ChooseOptionType = string | number;
+
+      function EnumListButGood<T extends ChooseOptionType>(
+        list: Record<string, T>,
+        defaultKey: string,
+      ): EnumList<T> {
+        return {
+          Type: "EnumList",
+          List: list,
+        };
+      }
+    `,
+	// CreateContext with function type arg
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import { createContext } from "react";
+
+      type ThemeContextValue = {
+        theme: string;
+        setTheme: (theme: string) => void;
+      };
+
+      export const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+    `,
+	// TSTypeOperator readonly
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      function App(props: readonly string[]) {
+          return <div>{props.join(", ")}</div>
+      }
+    `,
+	// TSIndexSignature readonly in interface
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      interface Props {
+          readonly [key: string]: string;
+      }
+
+      function App(props: Props) {
+          return <div id={props.id} />
+      }
+    `,
+	// TSIndexSignature readonly in type literal
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      function App(props: { readonly [key: string]: string }) {
+          return <div id={props.id} />
+      }
+    `,
+	// ReadonlyArray
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      function App(props: ReadonlyArray<string>) {
+          return <div>{props.join(", ")}</div>
+      }
+    `,
+	// Nested module declaration with readonly
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      namespace Outer {
+          export namespace Inner {
+              export interface Props {
+                  readonly id: string;
+              }
+          }
+      }
+
+      function App(props: Outer.Inner.Props) {
+          return <div id={props.id} />
+      }
+    `,
+	// AssignmentPattern with readonly
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      function App({ id = "default" }: { readonly id: string }) {
+          return <div id={id} />
+      }
+    `,
+	// Interface extending readonly interface
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      interface BaseProps {
+          readonly id: string;
+      }
+      interface Props extends BaseProps {
+          readonly className: string;
+      }
+
+      function App(props: Props) {
+          return <div id={props.id} className={props.className} />
+      }
+    `,
+	// ForwardRef without type arguments (function inference)
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      const App = React.forwardRef(({ id }: { readonly id: string }, ref) => {
+          return <div id={id} ref={ref} />
+      });
+    `,
+	// Multiple component types with same name (FC variations)
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import { VFC, VoidFunctionComponent, FunctionComponent } from "react";
+
+      const App1: VFC<{ readonly id: string }> = (props) => {
+          return <div id={props.id} />
+      }
+      const App2: VoidFunctionComponent<{ readonly id: string }> = (props) => {
+          return <div id={props.id} />
+      }
+      const App3: FunctionComponent<{ readonly id: string }> = (props) => {
+          return <div id={props.id} />
+      }
+    `,
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import { useState } from 'react';
+      import './App.css';
+
+      export default function App(
+        props: Readonly<React.HTMLAttributes<HTMLDivElement>>
+      ) {
+        const [count, setCount] = useState(0);
+
+        return (
+          <>
+            <div className="card" id={props.id}>
+              <button type="button" onClick={() => setCount((count) => count + 1)}>
+                count is {count}
+              </button>
+            </div>
+          </>
+        );
+      }
+    `,
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      type DeepReadonly<T> = Readonly<{[K in keyof T]: T[K] extends (number | string | symbol) ? Readonly<T[K]> : T[K] extends Array<infer A> ? Readonly<Array<DeepReadonly<A>>> : DeepReadonly<T[K]>;}>;
+
+      export const App: React.FC<DeepReadonly<{ id: string; className: string }>> = (props) => {
+        return <div className={props.className} id={props.id} />
+      }
+    `,
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+      import type { ReadonlyDeep } from "type-fest";
+
+      export const App: React.FC<ReadonlyDeep<{ id: string; className: string }>> = (props) => {
+        return <div className={props.className} id={props.id} />
+      }
+    `,
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      const App = function ({ id, className }: { readonly id: string; readonly className: string }) {
+          return <div id={id} className={className} />
+      }
+    `,
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      const App: React.FC<{ readonly id: string; readonly className: string }> = (props) => {
+          return <div id={props.id} className={props.className} />
+      }
+    `,
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      const App: React.FC<{ readonly id: string; readonly className: string }> = ({ id, className }) => {
+          return <div id={id} className={className} />
+      }
+    `,
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      const defaultProps = { id: "default-id", className: "default-class" } as const;
+      type Props = typeof defaultProps;
+
+      function App({ id, className }: Props) {
+          return <div id={id} className={className} />
+      }
+    `,
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      const defaultProps = { id: "default-id", className: "default-class" } as const;
+      type Props = typeof defaultProps;
+      const App: React.FC<Props> = ({ id, className }) => {
+          return <div id={id} className={className} />
+      }
+    `,
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      const defaultProps = { id: "default-id", className: "default-class" } as const;
+      const App: React.FC<typeof defaultProps> = ({ id, className }) => {
+          return <div id={id} className={className} />
+      }
+    `,
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      const defaultProps = { id: "default-id", className: "default-class" } as const;
+      const App = ({ id, className }: typeof defaultProps) => {
+          return <div id={id} className={className} />
+      }
+    `,
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      interface HSV {
+        readonly h: number;
+        readonly s: number;
+        readonly v: number;
+      }
+      interface ValuePickerProps {
+        readonly Disabled: boolean;
+        readonly Hsv: HSV
+        readonly onChange: () => void;
+      }
+      export function ValuePicker({ Disabled, Hsv, onChange }: ValuePickerProps) {
+        return <div />
+      }
+    `,
+	// Memo with generic
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      type Props = { readonly id: string; readonly className: string };
+      const App = React.memo<Props>(({ id, className }) => {
+          return <div id={id} className={className} />
+      });
+    `,
+	// Memo with generic and default props
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      const defaultProps = { id: "default-id", className: "default-class" } as const;
+      type Props = typeof defaultProps;
+      const App = React.memo<Props>(({ id, className }) => {
+          return <div id={id} className={className} />
+      });
+    `,
+	// ForwardRef with generic
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      type Props = { readonly id: string; readonly className: string };
+      const App = React.forwardRef<HTMLDivElement, Props>(({ id, className }, ref) => {
+          return <div id={id} className={className} ref={ref} />
+      });
+    `,
+	// ForwardRef with generic and default props
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      const defaultProps = { id: "default-id", className: "default-class" } as const;
+      type Props = typeof defaultProps;
+      const App = React.forwardRef<HTMLDivElement, Props>(({ id, className }, ref) => {
+          return <div id={id} className={className} ref={ref} />
+      });
+    `,
+	// Memo and forwardRef with generic
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      type Props = { readonly id: string; readonly className: string };
+      const App = React.memo(React.forwardRef<HTMLDivElement, Props>(({ id, className }, ref) => {
+          return <div id={id} className={className} ref={ref} />
+      }));
+    `,
+	// Union type with readonly and non-readonly variants
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      type ReadonlyProps1 = { readonly id: string; readonly className: string };
+      type ReadonlyProps2 = { readonly title: string; readonly description: string };
+      type Props = ReadonlyProps1 | ReadonlyProps2;
+      const App: React.FC<Props> = (props) => {
+          return <div id={props.id} className={props.className} />
+      }
+    `,
+	// Intersection type with readonly and non-readonly variants
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      import * as React from "react";
+
+      type ReadonlyProps1 = { readonly id: string; readonly className: string };
+      type ReadonlyProps2 = { readonly title: string; readonly description: string };
+      type Props = ReadonlyProps1 & ReadonlyProps2;
+      const App: React.FC<Props> = (props) => {
+          return <div id={props.id} className={props.className} />
+      }
+    `,
+	// Types inside namespace
+	tsx`
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
+
+      namespace ItemsListElementSkeleton {
+        export interface Props {
+         readonly withArtists?: boolean
+         readonly withPlayedAt?: boolean
+         readonly position?: number
+         readonly positionSize?: ItemPosition.Props['size']
+         readonly positionClassName?: string
+         readonly withPlaysOrPlayTime?: boolean
+        }
+      }
+
+      function ItemsListElementSkeleton({
+        position,
+        positionSize,
+        positionClassName,
+        withArtists,
+        withPlayedAt,
+        withPlaysOrPlayTime,
+      }: ItemsListElementSkeleton.Props) {
+        // ...
+        return null;
+      }
+
+      export { ItemsListElementSkeleton }
+    `,
+	// https://github.com/Rel1cx/eslint-react/issues/1122
+	tsx`
+      import { useState } from 'react';
+
+          type Book = {
+            title: string,
+            author: string,
+          }
+          export default function MyComponent() {
+            const [books, setBooks] = useState<Book[]>([]);
+            const dropFirstBook = () => {
+              setBooks(
+                // Error in next line: A function component's props should be read-only.
+                // Source: @eslint-react/prefer-read-only-props
+                (currentBooks: Book[]) => {
+                  const newBooks: Book[] = [];
+                  // Considerable additional logic is found here in a non-toy example;
+                  // suggestions to just rewrite this as e.g.,
+                  // return [...currentBooks.slice(1)];
+                  // which gets the above line reported as compliant with the rule
+                  // are not nearly as helpful as they might seem,
+                  // though knowing about them might help find the root cause of the bug.
+                  newBooks.push(...currentBooks.slice(1));
+                  return newBooks;
+                }
+              );
+            };
+            //Please assume there's more that was simplified away for this bug demonstration.
+            if(books.length > 0) {
+              return(<>
+                The first book is {books[0].title}.
+                <button
+                  type='button'
+                  onClick={dropFirstBook}
+                > Remove it. </button>
+              </>);
+            } else {
+              return null;
+            }
+          }
+    `,
+	tsx`
+      type DeepReadOnly<T> = {
+        readonly [P in keyof T]: T[P] extends (infer U)[]
+          ? ReadonlyArray<DeepReadOnly<U>>
+          : T[P] extends ReadonlyArray<infer U>
+            ? ReadonlyArray<DeepReadOnly<U>>
+            : T[P] extends object
+              ? DeepReadOnly<T[P]>
+              : T[P];
+      };
+
+      interface PressableProps {
+        testID: string;
+      }
+
+      type ReadonlyPressableProps = DeepReadOnly<PressableProps>;
+
+      interface ComponentProps extends ReadonlyPressableProps {
+        readonly name: string;
+      }
+
+      export function Component(props: ComponentProps) {
+        const { name, testID } = props;
+
+        return <div data-testid={testID}>{name}</div>
+      }
+    `,
+];
+
+ruleTester.run("prefer-read-only-props", rule, { invalid, valid });
