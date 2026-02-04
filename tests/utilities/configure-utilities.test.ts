@@ -11,6 +11,7 @@ import {
 	createNoMemoChildrenOptions,
 	createNoShorthandOptions,
 	createNoUnusedImportsOptions,
+	createNoUselessUseEffectOptions,
 	createNoUselessUseSpringOptions,
 	createPairConfiguration,
 	createPreferEnumItemOptions,
@@ -461,6 +462,35 @@ describe("configure-utilities", () => {
 			expect.assertions(1);
 			const configuration = createNoUnusedImportsOptions({ checkJSDoc: false });
 			expect(configuration).toEqual({ checkJSDoc: false });
+		});
+	});
+
+	describe("createNoUselessUseEffectOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createNoUselessUseEffectOptions();
+			expect(configuration).toEqual({
+				environment: "roblox-ts",
+				hooks: ["useEffect", "useLayoutEffect", "useInsertionEffect"],
+				propertyCallbackPrefixes: ["on"],
+				reportDerivedState: true,
+				reportEventFlag: true,
+				reportNotifyParent: true,
+			});
+		});
+
+		it("should override defaults", () => {
+			expect.assertions(4);
+			const configuration = createNoUselessUseEffectOptions({
+				environment: "standard",
+				hooks: ["useEffect"],
+				propertyCallbackPrefixes: ["handle"],
+				reportNotifyParent: false,
+			});
+			expect(configuration.environment).toBe("standard");
+			expect(configuration.hooks).toEqual(["useEffect"]);
+			expect(configuration.propertyCallbackPrefixes).toEqual(["handle"]);
+			expect(configuration.reportNotifyParent).toBe(false);
 		});
 	});
 

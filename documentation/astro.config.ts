@@ -54,6 +54,7 @@ export default defineConfig({
 						"rules/no-god-components",
 						"rules/no-memo-children",
 						"rules/no-unused-use-memo",
+						"rules/no-useless-use-effect",
 						"rules/no-useless-use-spring",
 						"rules/prefer-read-only-props",
 						"rules/react-hooks-strict-return",

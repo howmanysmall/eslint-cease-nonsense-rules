@@ -7,6 +7,7 @@ import type { NoMemoChildrenOptions } from "../rules/no-memo-children";
 import type { NoShorthandOptions } from "../rules/no-shorthand-names";
 import type { NoUnusedImportsOptions } from "../rules/no-unused-imports";
 import type { NoUnusedUseMemoOptions } from "../rules/no-unused-use-memo";
+import type { NoUselessUseEffectOptions } from "../rules/no-useless-use-effect";
 import type { NoUselessUseSpringOptions } from "../rules/no-useless-use-spring";
 import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../rules/no-useless-use-spring";
 import type { PreferEnumItemOptions } from "../rules/prefer-enum-item";
@@ -298,6 +299,25 @@ export function createNoUnusedImportsOptions(options: Partial<NoUnusedImportsOpt
  */
 export function createNoUnusedUseMemoOptions(options: Partial<NoUnusedUseMemoOptions> = {}): NoUnusedUseMemoOptions {
 	return { environment: "roblox-ts", ...options };
+}
+
+/**
+ * Creates options for no-useless-use-effect rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNoUselessUseEffectOptions(
+	options: Partial<NoUselessUseEffectOptions> = {},
+): NoUselessUseEffectOptions {
+	return {
+		environment: "roblox-ts",
+		hooks: ["useEffect", "useLayoutEffect", "useInsertionEffect"],
+		propertyCallbackPrefixes: ["on"],
+		reportDerivedState: true,
+		reportEventFlag: true,
+		reportNotifyParent: true,
+		...options,
+	};
 }
 
 /**

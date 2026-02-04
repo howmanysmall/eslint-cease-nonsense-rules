@@ -1,0 +1,158 @@
+---
+title: no-useless-use-effect
+badge:
+    text: Experimental
+    variant: warning
+description: Disallow effects that only derive state, notify parent callbacks, or route event flags through state.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+
+Disallow `useEffect` patterns that only derive state, notify parents, or route event flags. Effects should synchronize with
+external systems, not compute values that are already available during rendering.
+
+## Rule Details :badge[Best Practice]{variant=success}
+
+This rule flags effects that do not synchronize with an external system:
+
+- **Derived state**: `useEffect` only sets state based on properties or other state.
+- **Notify parent**: `useEffect` only calls a property callback like `onChange`.
+- **Event flag**: a state flag is toggled just to trigger an effect that performs a side effect.
+
+<Aside type="danger" title="Effects Are Not Computed State">
+	If the logic can run during rendering or directly inside an event handler, it should not be in an effect.
+</Aside>
+
+## Refactoring Workflow
+
+<Steps>
+1. **Identify the effect body**
+   Check whether the effect only sets local state or only calls a property callback.
+2. **Move derived values into rendering**
+   Compute values directly from properties and state during render.
+3. **Move callbacks into event handlers**
+   Call property callbacks in the event handler that triggers the change.
+4. **Remove event flags**
+   Call the side effect directly instead of toggling state to trigger it.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Configuration
+
+<Code
+\tcode={[\n\t\t\"{\",\n\t\t\"  \\\"cease-nonsense/no-useless-use-effect\\\": [\\\"error\\\", {\",\n\t\t\"    \\\"environment\\\": \\\"roblox-ts\\\",\",\n\t\t\"    \\\"hooks\\\": [\\\"useEffect\\\", \\\"useLayoutEffect\\\", \\\"useInsertionEffect\\\"],\",\n\t\t\"    \\\"reportDerivedState\\\": true,\",\n\t\t\"    \\\"reportNotifyParent\\\": true,\",\n\t\t\"    \\\"reportEventFlag\\\": true,\",\n\t\t\"    \\\"propertyCallbackPrefixes\\\": [\\\"on\\\"]\",\n\t\t\"  }]\",\n\t\t\"}\",\n\t].join(\"\\n\")}\n\tlang=\"json\"\n/>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Derived State and Notify Parent
+
+    	<Code
+    		code={[
+    			"import { useEffect, useState } from \"@rbxts/react\";",
+    			"",
+    			"function Profile(properties) {",
+    			"\tconst [fullName, setFullName] = useState(\"\");",
+    			"\tuseEffect(() => {",
+    			"\t\tsetFullName(`${properties.first} ${properties.last}`);",
+    			"\t}, [properties.first, properties.last]);",
+    			"}",
+    			"",
+    			"function Form(properties) {",
+    			"\tuseEffect(() => {",
+    			"\t\tproperties.onChange(properties.value);",
+    			"\t}, [properties.value, properties.onChange]);",
+    			"}",
+    			"",
+    			"function SubmitButton() {",
+    			"\tconst [submitted, setSubmitted] = useState(false);",
+    			"\tuseEffect(() => {",
+    			"\t\tif (!submitted) return;",
+    			"\t\tsubmitForm();",
+    			"\t\tsetSubmitted(false);",
+    			"\t}, [submitted]);",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Compute During Render and Call in Events
+
+    	<Code
+    		code={[
+    			"function Profile(properties) {",
+    			"\tconst fullName = `${properties.first} ${properties.last}`;",
+    			"\treturn <textlabel Text={fullName} />;",
+    			"}",
+    			"",
+    			"function Form(properties) {",
+    			"\tfunction handleSubmit() {",
+    			"\t\tproperties.onChange(properties.value);",
+    			"\t}",
+    			"\treturn <textbutton Event={{ Activated: handleSubmit }} />;",
+    			"}",
+    			"",
+    			"function SubmitButton() {",
+    			"\tfunction handleSubmit() {",
+    			"\t\tsubmitForm();",
+    			"\t}",
+    			"\treturn <textbutton Event={{ Activated: handleSubmit }} />;",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+</Tabs>
+
+## Why is this bad?
+
+<CardGrid stagger>
+	<Card title="Extra Renders" icon="bolt">
+		Deriving state in effects causes an extra render cycle for every update.
+	</Card>
+	<Card title="Hidden Side Effects" icon="list-format">
+		Using effects for property callbacks hides real data flow and complicates debugging.
+	</Card>
+	<Card title="Unnecessary Indirection" icon="rocket">
+		Event flags add state churn and delay actions that should happen immediately.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="require-named-effect-functions"
+		description="Enforces named effect callbacks"
+		href="/eslint-cease-nonsense-rules/rules/require-named-effect-functions/"
+	/>
+	<LinkCard
+		title="use-exhaustive-dependencies"
+		description="Ensures hook dependencies are correct"
+		href="/eslint-cease-nonsense-rules/rules/use-exhaustive-dependencies/"
+	/>
+	<LinkCard
+		title="use-hook-at-top-level"
+		description="Enforces hook placement rules"
+		href="/eslint-cease-nonsense-rules/rules/use-hook-at-top-level/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="React Docs: You Might Not Need An Effect"
+		description="Guidance on avoiding unnecessary effects"
+		href="https://react.dev/learn/you-might-not-need-an-effect"
+	/>
+	<LinkCard
+		title="React Docs: useEffect"
+		description="Official guide to effect usage"
+		href="https://react.dev/reference/react/useEffect"
+	/>
+</CardGrid>
