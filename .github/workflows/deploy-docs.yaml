@@ -1,12 +1,8 @@
 name: Deploy Documentation
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "documentation/**"
-      - ".github/workflows/deploy-docs.yaml"
+  release:
+    types: [published]
 
 permissions:
   contents: read
