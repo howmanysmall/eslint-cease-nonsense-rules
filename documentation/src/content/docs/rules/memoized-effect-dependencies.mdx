@@ -4,7 +4,7 @@ badge:
     text: Experimental
     variant: caution
 description:
-    Experimental: Flags effect dependencies that are not memoized to avoid re-render loops and compiler bailouts.
+    "Experimental: Flags effect dependencies that are not memoized to avoid re-render loops and compiler bailouts."
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
@@ -17,8 +17,8 @@ This rule detects clearly un-memoized values inside effect dependency arrays. Un
 unnecessary re-renders or trigger infinite loops when effects update values that are recreated every render.
 
 <Aside type="caution" title="Experimental">
-	This rule uses fast AST heuristics instead of the React Compiler. It intentionally favors performance and
-	may miss edge cases.
+	This rule uses fast AST heuristics instead of the React Compiler. It intentionally favors performance and may miss
+	edge cases.
 </Aside>
 
 ## Examples
@@ -64,8 +64,8 @@ unnecessary re-renders or trigger infinite loops when effects update values that
 		"\t\t{",
 		'\t\t\t"environment": "roblox-ts",',
 		'\t\t\t"mode": "definite",',
-		"\t\t\t\"hooks\": [",
-		"\t\t\t\t{ \"name\": \"useEffect\", \"dependenciesIndex\": 1 }",
+		'\t\t\t"hooks": [',
+		'\t\t\t\t{ "name": "useEffect", "dependenciesIndex": 1 }',
 		"\t\t\t]",
 		"\t\t}",
 		"\t]",
@@ -83,6 +83,7 @@ unnecessary re-renders or trigger infinite loops when effects update values that
 3. **aggressive** Report any non-module, non-memoized binding.
 
 {/* oxfmt-ignore */}
+
 </Steps>
 
 ## Related Rules
