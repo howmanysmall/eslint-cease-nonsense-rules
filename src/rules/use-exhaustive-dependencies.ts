@@ -352,7 +352,39 @@ function isStableValue(
 	return false;
 }
 
-function findTopmostMemberExpression(node: TSESTree.Node): TSESTree.Node {
+function isIdentifierDefinedInClosure(
+	identifier: TSESTree.Identifier,
+	closureNode: TSESTree.Node,
+	sourceCode: TSESLint.SourceCode,
+): boolean {
+	const { name } = identifier;
+	let variable: TSESLint.Scope.Variable | undefined;
+	let currentScope: TSESLint.Scope.Scope | null = sourceCode.getScope(identifier);
+
+	while (currentScope) {
+		variable = currentScope.set.get(name);
+		if (variable) break;
+		currentScope = currentScope.upper;
+	}
+
+	if (!variable) return false;
+
+	// Check if the variable is defined within the closure (parameter or local var)
+	return variable.defs.some((definition) => {
+		let definitionNode: TSESTree.Node | undefined = definition.node;
+		while (definitionNode) {
+			if (definitionNode === closureNode) return true;
+			definitionNode = definitionNode.parent;
+		}
+		return false;
+	});
+}
+
+function findTopmostMemberExpression(
+	node: TSESTree.Node,
+	closureNode: TSESTree.Node | undefined,
+	sourceCode: TSESLint.SourceCode | undefined,
+): TSESTree.Node {
 	let current: TSESTree.Node = node;
 	let { parent } = node;
 
@@ -369,6 +401,20 @@ function findTopmostMemberExpression(node: TSESTree.Node): TSESTree.Node {
 		const isNonNullParent = parent.type === TSESTree.AST_NODE_TYPES.TSNonNullExpression;
 
 		if (!(isMemberParent || isChainParent || isNonNullParent)) break;
+
+		// For computed member expressions, stop if the computed key is a local variable
+		// (parameter or locally defined) - it shouldn't be part of the dependency path
+		if (isMemberParent && closureNode && sourceCode) {
+			const memberExpr = parent as TSESTree.MemberExpression;
+			if (
+				memberExpr.computed &&
+				memberExpr.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
+				isIdentifierDefinedInClosure(memberExpr.property, closureNode, sourceCode)
+			) {
+				// Stop here - the computed key is a local variable, not a capture
+				break;
+			}
+		}
 
 		current = parent;
 		({ parent } = parent);
@@ -481,13 +527,14 @@ function resolveFunctionReference(
 
 function collectCaptures(node: TSESTree.Node, sourceCode: TSESLint.SourceCode): ReadonlyArray<CaptureInfo> {
 	const captures = new Array<CaptureInfo>();
-	const captureSet = new Set<string>();
+	const capturedPaths = new Set<string>();
 
 	function visit(current: TSESTree.Node): void {
 		if (current.type === TSESTree.AST_NODE_TYPES.Identifier) {
 			const { name } = current;
 
-			if (captureSet.has(name) || GLOBAL_BUILTINS.has(name) || isInTypePosition(current)) return;
+			// Skip global builtins and type positions early
+			if (GLOBAL_BUILTINS.has(name) || isInTypePosition(current)) return;
 
 			let variable: TSESLint.Scope.Variable | undefined;
 			let currentScope: TSESLint.Scope.Scope | null = sourceCode.getScope(current);
@@ -514,9 +561,13 @@ function collectCaptures(node: TSESTree.Node, sourceCode: TSESLint.SourceCode): 
 						return;
 					}
 
-					captureSet.add(name);
-					const depthNode = findTopmostMemberExpression(current);
+					const depthNode = findTopmostMemberExpression(current, node, sourceCode);
 					const usagePath = nodeToSafeDependencyPath(depthNode, sourceCode);
+
+					// Skip if we've already captured this exact usage path
+					if (capturedPaths.has(usagePath)) return;
+					capturedPaths.add(usagePath);
+
 					const depth = getMemberExpressionDepth(depthNode);
 					captures.push({
 						depth,
