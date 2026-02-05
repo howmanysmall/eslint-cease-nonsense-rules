@@ -806,6 +806,28 @@ function Component() {
 					},
 				},
 			},
+			// React.useMemo root shorthand fragment cannot be keyed
+			{
+				code: `
+function Component() {
+    const decorations = React.useMemo(
+        () => (
+            <>
+                <Frame key="shadow" />
+                <Halftones key="halftones" />
+            </>
+        ),
+        [],
+    );
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
 			// Expression container sibling with keys
 			{
 				code: `

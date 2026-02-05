@@ -6,6 +6,7 @@ import fastFormat from "./rules/fast-format";
 import memoizedEffectDependencies from "./rules/memoized-effect-dependencies";
 import misleadingLuaTupleChecks from "./rules/misleading-lua-tuple-checks";
 import namingConvention from "./rules/naming-convention";
+import noArraySizeAssignment from "./rules/no-array-size-assignment";
 import noAsyncConstructor from "./rules/no-async-constructor";
 import noColor3Constructor from "./rules/no-color3-constructor";
 import noCommentedCode from "./rules/no-commented-code";
@@ -49,6 +50,7 @@ export type { BanInstancesOptions } from "./rules/ban-instances";
 export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
 export type { MemoizedEffectDependenciesOptions } from "./rules/memoized-effect-dependencies";
 export type { NamingConventionOptions } from "./rules/naming-convention";
+export type { NoArraySizeAssignmentOptions } from "./rules/no-array-size-assignment";
 export type { NoGodComponentsOptions } from "./rules/no-god-components";
 export type { NoIdentityMapOptions } from "./rules/no-identity-map";
 export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
@@ -111,6 +113,7 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"memoized-effect-dependencies": memoizedEffectDependencies,
 	"misleading-lua-tuple-checks": misleadingLuaTupleChecks,
 	"naming-convention": namingConvention,
+	"no-array-size-assignment": noArraySizeAssignment,
 	"no-async-constructor": noAsyncConstructor,
 	"no-color3-constructor": noColor3Constructor,
 	"no-commented-code": noCommentedCode,
@@ -175,6 +178,7 @@ export const recommended = {
 		"cease-nonsense/enforce-ianitor-check-type": "error",
 		"cease-nonsense/fast-format": "error",
 		"cease-nonsense/misleading-lua-tuple-checks": "error",
+		"cease-nonsense/no-array-size-assignment": "error",
 		"cease-nonsense/no-async-constructor": "error",
 		"cease-nonsense/no-color3-constructor": "error",
 		"cease-nonsense/no-god-components": "error",

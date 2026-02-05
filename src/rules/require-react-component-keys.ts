@@ -50,6 +50,15 @@ const ARGUMENT_WRAPPER_TYPES = new Set([
 ]);
 
 type FunctionLike = TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression | TSESTree.FunctionDeclaration;
+interface CallbackUsage {
+	iteration: boolean;
+	memoization: boolean;
+}
+
+const EMPTY_CALLBACK_USAGE: CallbackUsage = {
+	iteration: false,
+	memoization: false,
+};
 
 function ascendPastWrappers(node: TSESTree.Node | undefined): TSESTree.Node | undefined {
 	let current = node;
@@ -102,21 +111,35 @@ function getEnclosingFunctionLike(node: TSESTree.Node): FunctionLike | undefined
 	return undefined;
 }
 
-function isIterationOrMemoCallback(
+function getCallbackUsageFromCallExpression(
 	callExpression: TSESTree.CallExpression,
 	iterationMethods: Set<string>,
 	memoizationHooks: Set<string>,
-): boolean {
+): CallbackUsage {
 	const { callee } = callExpression;
+	let usage: CallbackUsage = {
+		iteration: false,
+		memoization: false,
+	};
 
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier && memoizationHooks.has(callee.name)) return true;
+	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
+		usage = {
+			iteration: iterationMethods.has(callee.name),
+			memoization: memoizationHooks.has(callee.name),
+		};
+
+		return usage;
+	}
 
 	if (
 		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
 	) {
 		const { name } = callee.property;
-		if (iterationMethods.has(name)) return true;
+		usage = {
+			iteration: iterationMethods.has(name),
+			memoization: memoizationHooks.has(name),
+		};
 
 		if (
 			name === "from" &&
@@ -125,7 +148,10 @@ function isIterationOrMemoCallback(
 			callee.object.object.name === "Array" &&
 			callExpression.arguments.length >= 2
 		) {
-			return true;
+			return {
+				...usage,
+				iteration: true,
+			};
 		}
 
 		if (
@@ -135,11 +161,14 @@ function isIterationOrMemoCallback(
 			callee.object.object.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
 			iterationMethods.has(callee.object.object.property.name)
 		) {
-			return true;
+			return {
+				...usage,
+				iteration: true,
+			};
 		}
 	}
 
-	return false;
+	return usage;
 }
 
 function findEnclosingCallExpression(node: TSESTree.Node): TSESTree.CallExpression | undefined {
@@ -193,41 +222,52 @@ function getVariableForFunction(
 	return undefined;
 }
 
-function referenceActsAsCallback(
+function mergeCallbackUsage(target: CallbackUsage, usage: CallbackUsage): void {
+	target.iteration ||= usage.iteration;
+	target.memoization ||= usage.memoization;
+}
+
+function getCallbackUsageFromReference(
 	reference: TSESLint.Scope.Reference,
 	iterationMethods: Set<string>,
 	memoizationHooks: Set<string>,
-): boolean {
-	if (!reference.isRead()) return false;
+): CallbackUsage {
+	if (!reference.isRead()) return EMPTY_CALLBACK_USAGE;
 
 	const callExpression = findEnclosingCallExpression(reference.identifier);
-	if (!callExpression) return false;
+	if (!callExpression) return EMPTY_CALLBACK_USAGE;
 
-	if (isHigherOrderComponent(callExpression)) return false;
+	if (isHigherOrderComponent(callExpression)) return EMPTY_CALLBACK_USAGE;
 
-	return isIterationOrMemoCallback(callExpression, iterationMethods, memoizationHooks);
+	return getCallbackUsageFromCallExpression(callExpression, iterationMethods, memoizationHooks);
 }
 
-function isFunctionUsedAsCallback(
+function getFunctionCallbackUsage(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	functionLike: FunctionLike,
 	iterationMethods: Set<string>,
 	memoizationHooks: Set<string>,
-): boolean {
+): CallbackUsage {
 	const inlineCall = findEnclosingCallExpression(functionLike);
 	if (inlineCall) {
-		if (isHigherOrderComponent(inlineCall)) return false;
-		return isIterationOrMemoCallback(inlineCall, iterationMethods, memoizationHooks);
+		if (isHigherOrderComponent(inlineCall)) return EMPTY_CALLBACK_USAGE;
+		return getCallbackUsageFromCallExpression(inlineCall, iterationMethods, memoizationHooks);
 	}
 
 	const variable = getVariableForFunction(context, functionLike);
-	if (!variable) return false;
+	if (!variable) return EMPTY_CALLBACK_USAGE;
+
+	const usage: CallbackUsage = {
+		iteration: false,
+		memoization: false,
+	};
 
 	for (const reference of variable.references) {
-		if (referenceActsAsCallback(reference, iterationMethods, memoizationHooks)) return true;
+		mergeCallbackUsage(usage, getCallbackUsageFromReference(reference, iterationMethods, memoizationHooks));
+		if (usage.iteration && usage.memoization) return usage;
 	}
 
-	return false;
+	return usage;
 }
 
 const SHOULD_ASCEND_TYPES = new Set<TSESTree.AST_NODE_TYPES>([
@@ -256,7 +296,7 @@ const CONTROL_FLOW_TYPES = new Set<TSESTree.AST_NODE_TYPES>([
 
 const CHILD_PROP_NAME_SUFFIX = "children";
 
-function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
+function isTopLevelFunctionReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
 	let parent = ascendPastWrappers(node.parent);
 	if (!parent) return false;
 
@@ -278,26 +318,24 @@ function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boo
 
 		if (!currentNode) return false;
 
-		if (IS_FUNCTION_EXPRESSION.has(currentNode.type)) {
-			const functionParent = ascendPastWrappers(currentNode.parent);
-			if (functionParent?.type === TSESTree.AST_NODE_TYPES.CallExpression) {
-				return isHigherOrderComponent(functionParent);
-			}
-			return true;
-		}
-
-		return currentNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration;
+		return IS_FUNCTION_EXPRESSION.has(currentNode.type) || currentNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration;
 	}
 
-	if (parent.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression) {
-		const functionParent = ascendPastWrappers(parent.parent);
-		if (functionParent?.type === TSESTree.AST_NODE_TYPES.CallExpression) {
-			return isHigherOrderComponent(functionParent);
-		}
-		return true;
+	return parent.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression;
+}
+
+function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
+	if (!isTopLevelFunctionReturn(node)) return false;
+
+	const functionLike = getEnclosingFunctionLike(node);
+	if (!functionLike) return false;
+
+	const functionParent = ascendPastWrappers(functionLike.parent);
+	if (functionParent?.type === TSESTree.AST_NODE_TYPES.CallExpression) {
+		return isHigherOrderComponent(functionParent);
 	}
 
-	return false;
+	return true;
 }
 
 function isIgnoredCallExpression(
@@ -458,9 +496,10 @@ export default createRule<Options, MessageIds>({
 
 		function checkElement(node: TSESTree.JSXElement | TSESTree.JSXFragment): void {
 			const functionLike = getEnclosingFunctionLike(node);
-			const isCallback = functionLike
-				? isFunctionUsedAsCallback(context, functionLike, iterationMethods, memoizationHooks)
-				: false;
+			const callbackUsage = functionLike
+				? getFunctionCallbackUsage(context, functionLike, iterationMethods, memoizationHooks)
+				: EMPTY_CALLBACK_USAGE;
+			const isCallback = callbackUsage.iteration || callbackUsage.memoization;
 			const isRoot = isTopLevelReturn(node);
 
 			if (isRoot && !isCallback) {
@@ -481,6 +520,14 @@ export default createRule<Options, MessageIds>({
 			if (isJSXPropValue(node)) return;
 			if (isTernaryJSXChild(node)) return;
 			if (node.type === TSESTree.AST_NODE_TYPES.JSXFragment && isLogicalJSXChild(node)) return;
+			if (
+				node.type === TSESTree.AST_NODE_TYPES.JSXFragment &&
+				callbackUsage.memoization &&
+				!callbackUsage.iteration &&
+				isTopLevelFunctionReturn(node)
+			) {
+				return;
+			}
 
 			if (node.type === TSESTree.AST_NODE_TYPES.JSXFragment) {
 				context.report({

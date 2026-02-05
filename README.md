@@ -43,6 +43,7 @@ export default [
 			"cease-nonsense/ban-react-fc": "error",
 			"cease-nonsense/enforce-ianitor-check-type": "error",
 			"cease-nonsense/fast-format": "error",
+			"cease-nonsense/no-array-size-assignment": "error",
 			"cease-nonsense/no-async-constructor": "error",
 			"cease-nonsense/no-color3-constructor": "error",
 			"cease-nonsense/no-commented-code": "error",
@@ -1628,6 +1629,34 @@ const blue = new Color3(0.5, 0.5, 1);
 const red = Color3.fromRGB(255, 0, 0);
 const blue = Color3.fromRGB(127, 127, 255);
 const black = new Color3(0, 0, 0); // Allowed
+```
+
+#### `no-array-size-assignment`
+
+Disallow Roblox-style append assignment with `.size()` indexing. Prefer explicit append operations.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-array-size-assignment": ["error", {
+    "allowAutofix": false // When true, rewrites safe expression statements to .push(...)
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+inventory[inventory.size()] = item;
+state.items[state.items.size()] = next;
+```
+
+**✅ Good**
+
+```typescript
+inventory.push(item);
+state.items.push(next);
 ```
 
 #### `prefer-udim2-shorthand`

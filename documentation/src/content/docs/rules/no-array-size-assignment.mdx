@@ -1,0 +1,105 @@
+---
+title: no-array-size-assignment
+badge:
+    text: Roblox
+    variant: note
+description: Disallow append assignment patterns like array[array.size()] = value in roblox-ts code.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+
+Disallow append-style writes that use `.size()` as an index in assignment expressions.
+
+## Rule Details :badge[Roblox]{variant=note}
+
+In roblox-ts code, `array[array.size()] = value` is an append pattern that is easy to miss during review and harder to
+search for. This rule enforces explicit append semantics and reports these assignments.
+
+<Aside type="tip" title="Clear Append Intent">
+	Using `array.push(value)` makes append intent obvious and avoids index math in write sites.
+</Aside>
+
+## Configuration
+
+<Code
+	code={[
+		'{',
+		'\t"cease-nonsense/no-array-size-assignment": ["error", {',
+		'\t\t"allowAutofix": false',
+		"\t}]",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	title="eslint.config.ts"
+/>
+
+## Autofix Behavior
+
+<Steps>
+1. **Enable autofix** Set `allowAutofix: true`.
+2. **Expression statement only** Autofix runs only when the append assignment is a direct statement.
+3. **Safe target only** The array target must be a side-effect-free reference chain (no calls or optional chaining).
+4. **Rewrite** The rule rewrites to `array.push(value)`.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Size Index Append
+		Avoid append assignment via `.size()` index.
+
+    	<Code
+    		code={[
+    			"inventory[inventory.size()] = item;",
+    			"state.items[state.items.size()] = nextItem;",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Explicit Append
+    	Use `push` for append operations.
+
+    	<Code
+    		code={[
+    			"inventory.push(item);",
+    			"state.items.push(nextItem);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why enforce this?
+
+<CardGrid stagger>
+	<Card title="Intent" icon="magnifier">
+		`push` communicates append semantics directly without hidden index math.
+	</Card>
+	<Card title="Consistency" icon="list-format">
+		Enforces one append style across the codebase for easier searching and review.
+	</Card>
+	<Card title="Safer Fixes" icon="bolt">
+		Autofix runs only when the target can be safely evaluated once.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="prefer-sequence-overloads"
+		description="Performance-focused Roblox constructor rule"
+		href="/eslint-cease-nonsense-rules/rules/prefer-sequence-overloads/"
+	/>
+	<LinkCard
+		title="prefer-udim2-shorthand"
+		description="Another Roblox shorthand performance rule"
+		href="/eslint-cease-nonsense-rules/rules/prefer-udim2-shorthand/"
+	/>
+</CardGrid>

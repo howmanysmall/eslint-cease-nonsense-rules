@@ -72,6 +72,7 @@ export default defineConfig({
 						"rules/ban-instances",
 						"rules/enforce-ianitor-check-type",
 						"rules/misleading-lua-tuple-checks",
+						"rules/no-array-size-assignment",
 						"rules/no-color3-constructor",
 						"rules/no-instance-methods-without-this",
 						"rules/no-print",
