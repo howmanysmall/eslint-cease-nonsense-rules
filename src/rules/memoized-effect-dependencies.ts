@@ -141,7 +141,7 @@ function isModuleScope(variable: TSESLint.Scope.Variable): boolean {
 	return scopeType === ScopeType.module || scopeType === ScopeType.global;
 }
 
-export default createRule<Options, MessageIds>({
+const memoizedEffectDependencies = createRule<Options, MessageIds>({
 	create(context) {
 		const options: Required<MemoizedEffectDependenciesOptions> = {
 			...DEFAULT_OPTIONS,
@@ -419,3 +419,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "memoized-effect-dependencies",
 });
+
+export default memoizedEffectDependencies;

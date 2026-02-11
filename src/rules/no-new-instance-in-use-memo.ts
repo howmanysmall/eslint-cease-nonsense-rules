@@ -23,7 +23,7 @@ const DEFAULT_OPTIONS: Required<NoNewInstanceInUseMemoOptions> = {
 	environment: "roblox-ts",
 };
 
-function normalizeOptions(raw: NoNewInstanceInUseMemoOptions | undefined): NormalizedOptions {
+function normalizeOptions(raw?: NoNewInstanceInUseMemoOptions): NormalizedOptions {
 	return {
 		constructors: new Set(raw?.constructors ?? DEFAULT_OPTIONS.constructors),
 		environment: raw?.environment ?? DEFAULT_OPTIONS.environment,
@@ -90,7 +90,7 @@ function isInsideUseMemoCallback(
 	return false;
 }
 
-export default createRule<Options, MessageIds>({
+const noNewInstanceInUseMemo = createRule<Options, MessageIds>({
 	create(context) {
 		const options = normalizeOptions(context.options[0]);
 		if (options.constructors.size === 0) return {};
@@ -165,3 +165,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "no-new-instance-in-use-memo",
 });
+
+export default noNewInstanceInUseMemo;

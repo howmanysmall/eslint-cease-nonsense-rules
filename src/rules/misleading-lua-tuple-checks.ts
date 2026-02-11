@@ -275,7 +275,7 @@ function validateVariableDeclarator(
 	}
 }
 
-export default createRule<Options, MessageIds>({
+const misleadingLuaTupleChecks = createRule<Options, MessageIds>({
 	create(context) {
 		const parserServices = ESLintUtils.getParserServices(context);
 
@@ -349,3 +349,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "misleading-lua-tuple-checks",
 });
+
+export default misleadingLuaTupleChecks;

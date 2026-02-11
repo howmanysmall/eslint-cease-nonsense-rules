@@ -217,12 +217,11 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 					break;
 
 				case TSESTree.AST_NODE_TYPES.TSInterfaceDeclaration: {
-					const iface = node;
 					score = config.interfacePenalty;
-					const extendsLength = iface.extends?.length;
+					const extendsLength = node.extends?.length;
 					if (extendsLength) score = addScore(score, extendsLength * 5);
 
-					const { body } = iface.body;
+					const { body } = node.body;
 					score = addScore(score, body.length * 2);
 					for (const member of body) {
 						const typeAnnotation = "typeAnnotation" in member ? member.typeAnnotation : undefined;
