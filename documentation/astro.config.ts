@@ -53,6 +53,7 @@ export default defineConfig({
 						"rules/ban-react-fc",
 						"rules/no-god-components",
 						"rules/no-memo-children",
+						"rules/no-new-instance-in-use-memo",
 						"rules/no-unused-use-memo",
 						"rules/no-useless-use-effect",
 						"rules/no-useless-use-spring",

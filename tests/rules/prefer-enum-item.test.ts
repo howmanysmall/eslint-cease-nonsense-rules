@@ -18,6 +18,7 @@ const ruleTester = new RuleTester({
 			projectService: {
 				allowDefaultProject: ["*.ts", "*.tsx"],
 				defaultProject: join(fixturesDir, "tsconfig.json"),
+				maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 64,
 			},
 			tsconfigRootDir: fixturesDir,
 		},

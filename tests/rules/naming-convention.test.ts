@@ -18,6 +18,7 @@ const ruleTesterWithTypes = new RuleTester({
 		parserOptions: {
 			projectService: {
 				allowDefaultProject: ["*.ts", "*.tsx"],
+				maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 64,
 			},
 			tsconfigRootDir: __dirname,
 		},

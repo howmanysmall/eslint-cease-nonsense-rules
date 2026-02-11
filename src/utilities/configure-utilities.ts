@@ -4,6 +4,7 @@ import type { NamingConventionOptions } from "../rules/naming-convention";
 import type { NoGodComponentsOptions } from "../rules/no-god-components";
 import type { NoInstanceMethodsOptions } from "../rules/no-instance-methods-without-this";
 import type { NoMemoChildrenOptions } from "../rules/no-memo-children";
+import type { NoNewInstanceInUseMemoOptions } from "../rules/no-new-instance-in-use-memo";
 import type { NoShorthandOptions } from "../rules/no-shorthand-names";
 import type { NoUnusedImportsOptions } from "../rules/no-unused-imports";
 import type { NoUnusedUseMemoOptions } from "../rules/no-unused-use-memo";
@@ -290,6 +291,17 @@ export function createNamingConventionOptions(options: Partial<NamingConventionO
  */
 export function createNoUnusedImportsOptions(options: Partial<NoUnusedImportsOptions> = {}): NoUnusedImportsOptions {
 	return { checkJSDoc: true, ...options };
+}
+
+/**
+ * Creates options for no-new-instance-in-use-memo rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNoNewInstanceInUseMemoOptions(
+	options: Partial<NoNewInstanceInUseMemoOptions> = {},
+): NoNewInstanceInUseMemoOptions {
+	return { constructors: ["Instance"], environment: "roblox-ts", ...options };
 }
 
 /**

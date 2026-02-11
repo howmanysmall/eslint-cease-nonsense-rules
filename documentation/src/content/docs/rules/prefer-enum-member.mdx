@@ -12,7 +12,9 @@ Enforce using TypeScript enum members instead of raw string or number values.
 
 ## Rule Details :badge[Clean Code]{variant=success}
 
-Enums provide a single source of truth for values. Passing raw literals or using bare keys hides intent and creates drift when enum values change. This rule requires enum member references for both `enum` and `const enum`, including object literal keys where the expected type is a mapped enum type.
+Enums provide a single source of truth for values. Passing raw literals or using bare keys hides intent and creates
+drift when enum values change. This rule requires enum member references for both `enum` and `const enum`, including
+object literal keys where the expected type is a mapped enum type.
 
 <Aside type="caution" title="Avoid Drift">
 	If you change an enum value but use raw strings in several places, those strings will become invalid. Using the
@@ -25,14 +27,11 @@ Enums provide a single source of truth for values. Passing raw literals or using
 1. **Locate Literals**
    Find raw strings or numbers being used in places where an Enum type is expected.
 
-2. **Check Member Existence**
-   Ensure the value you are using is actually defined in the Enum.
+2. **Check Member Existence** Ensure the value you are using is actually defined in the Enum.
 
-3. **Convert Call**
-   Replace the literal with the member access (e.g., `Color.Red`).
+3. **Convert Call** Replace the literal with the member access (e.g., `Color.Red`).
 
-4. **Object Keys**
-   For object keys derived from enums, use computed properties: `[Color.Red]: value`.
+4. **Object Keys** For object keys derived from enums, use computed properties: `[Color.Red]: value`.
 
 {/* oxfmt-ignore */}
 

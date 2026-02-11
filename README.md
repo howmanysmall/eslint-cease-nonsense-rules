@@ -1,6 +1,7 @@
 # eslint-cease-nonsense-rules
 
-An ESLint plugin that catches common mistakes before they reach production. This collection of rules helps prevent patterns that lead to bugs, performance issues, and maintainability problems.
+An ESLint plugin that catches common mistakes before they reach production. This collection of rules helps prevent
+patterns that lead to bugs, performance issues, and maintainability problems.
 
 ## Table of Contents
 
@@ -51,6 +52,7 @@ export default [
 			"cease-nonsense/no-identity-map": "error",
 			"cease-nonsense/no-instance-methods-without-this": "error",
 			"cease-nonsense/no-memo-children": "error",
+			"cease-nonsense/no-new-instance-in-use-memo": "error",
 			"cease-nonsense/no-print": "error",
 			"cease-nonsense/prefer-enum-item": "error",
 			"cease-nonsense/prefer-enum-member": "error",
@@ -147,7 +149,8 @@ const config = userConfigValidator.check(getUserConfig());
 
 #### `prefer-enum-item`
 
-Enforce using EnumItem values instead of string or number literals when the type expects an EnumItem. Provides type safety and avoids magic values in roblox-ts code.
+Enforce using EnumItem values instead of string or number literals when the type expects an EnumItem. Provides type
+safety and avoids magic values in roblox-ts code.
 
 **Configuration**
 
@@ -182,7 +185,8 @@ const props: ImageProps = { ScaleType: 1 };
 
 #### `prefer-enum-member`
 
-Enforce using enum member references instead of raw string or number values when the type expects a TypeScript enum. Covers both `enum` and `const enum`, including object literal keys used with mapped types like `Record<Color, T>`.
+Enforce using enum member references instead of raw string or number values when the type expects a TypeScript enum.
+Covers both `enum` and `const enum`, including object literal keys used with mapped types like `Record<Color, T>`.
 
 **Configuration**
 
@@ -226,7 +230,8 @@ const selected: Color = Color.Blue;
 
 #### `require-serialized-numeric-data-type`
 
-Require specific serialized numeric data types (`DataType.*`) instead of generic `number` for ECS components and other serialization contexts.
+Require specific serialized numeric data types (`DataType.*`) instead of generic `number` for ECS components and other
+serialization contexts.
 
 **Configuration**
 
@@ -270,7 +275,8 @@ export const Position = registerComponent<{
 
 #### `no-unused-imports`
 
-Disallow unused imports. Uses ESLint's scope analysis to detect unused imports and optionally checks JSDoc comments for references.
+Disallow unused imports. Uses ESLint's scope analysis to detect unused imports and optionally checks JSDoc comments for
+references.
 
 **Configuration**
 
@@ -355,11 +361,14 @@ function Input() {
 
 #### `no-memo-children`
 
-Disallow `React.memo` on components that accept a `children` prop, since children typically change on every render and defeat memoization.
+Disallow `React.memo` on components that accept a `children` prop, since children typically change on every render and
+defeat memoization.
 
 **Why**
 
-`React.memo` performs a shallow comparison of props. When a component accepts `children`, the `children` prop is typically a new JSX element on every parent render. This causes the shallow comparison to fail every time, making `memo` useless while adding overhead.
+`React.memo` performs a shallow comparison of props. When a component accepts `children`, the `children` prop is
+typically a new JSX element on every parent render. This causes the shallow comparison to fail every time, making `memo`
+useless while adding overhead.
 
 **Configuration**
 
@@ -465,6 +474,56 @@ useEffect(() => {
 const config = useMemo(() => buildConfig(eventName), [eventName]);
 ```
 
+#### `no-new-instance-in-use-memo`
+
+Disallow configured constructor calls (default: `new Instance(...)`) inside `useMemo` callbacks.
+
+**Why**
+
+`useMemo` callbacks should stay pure and deterministic. Allocating objects like Roblox Instances inside `useMemo`
+creates resources during render flow and can hide lifecycle work that belongs in an effect or dedicated setup path.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-new-instance-in-use-memo": ["error", {
+    "constructors": ["Instance"],     // Defaults to ["Instance"]
+    "environment": "roblox-ts"        // or "standard"
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+import { useMemo } from "@rbxts/react";
+
+const itemModel = useMemo(() => {
+	const model = new Instance("Model");
+	model.Name = "ItemPreview";
+	return model;
+}, [itemId]);
+```
+
+**✅ Good**
+
+```typescript
+import { useEffect, useMemo, useState } from "@rbxts/react";
+
+const [itemModel, setItemModel] = useState<Model | undefined>(undefined);
+
+useEffect(() => {
+	const model = new Instance("Model");
+	model.Name = "ItemPreview";
+	setItemModel(model);
+
+	return () => model.Destroy();
+}, [itemId]);
+
+const texture = useMemo(() => lookupTexture(itemId), [itemId]);
+```
+
 #### `no-useless-use-effect` (Experimental)
 
 Disallow effects that only derive state, reset or adjust state from properties, notify parents, or route event flags.
@@ -496,27 +555,27 @@ real synchronization.
 import { useEffect, useState } from "@rbxts/react";
 
 function Profile(properties) {
-  const [fullName, setFullName] = useState("");
+	const [fullName, setFullName] = useState("");
 
-  useEffect(() => {
-    setFullName(`${properties.first} ${properties.last}`);
-  }, [properties.first, properties.last]);
+	useEffect(() => {
+		setFullName(`${properties.first} ${properties.last}`);
+	}, [properties.first, properties.last]);
 }
 
 function Form(properties) {
-  useEffect(() => {
-    properties.onChange(properties.value);
-  }, [properties.value, properties.onChange]);
+	useEffect(() => {
+		properties.onChange(properties.value);
+	}, [properties.value, properties.onChange]);
 }
 
 function SubmitButton() {
-  const [submitted, setSubmitted] = useState(false);
+	const [submitted, setSubmitted] = useState(false);
 
-  useEffect(() => {
-    if (!submitted) return;
-    submitForm();
-    setSubmitted(false);
-  }, [submitted]);
+	useEffect(() => {
+		if (!submitted) return;
+		submitForm();
+		setSubmitted(false);
+	}, [submitted]);
 }
 ```
 
@@ -619,7 +678,8 @@ function UserList({ users }) {
 
 #### `require-named-effect-functions`
 
-Enforce named effect functions for better debuggability. Prevent inline arrow functions in `useEffect` and similar hooks.
+Enforce named effect functions for better debuggability. Prevent inline arrow functions in `useEffect` and similar
+hooks.
 
 **Behavior by environment**
 
@@ -674,7 +734,8 @@ useEffect(
 
 #### `use-exhaustive-dependencies`
 
-Enforces exhaustive and correct dependency specification in React hooks to prevent stale closures and unnecessary re-renders.
+Enforces exhaustive and correct dependency specification in React hooks to prevent stale closures and unnecessary
+re-renders.
 
 **Configuration**
 
@@ -748,7 +809,8 @@ const spring = useSpring({ opacity: isOpen ? 1 : 0 }, [isOpen]);
 
 #### `use-hook-at-top-level`
 
-Enforces that React hooks are only called at the top level of components or custom hooks, never conditionally or in nested functions.
+Enforces that React hooks are only called at the top level of components or custom hooks, never conditionally or in
+nested functions.
 
 **Configuration**
 
@@ -797,7 +859,8 @@ function UserProfile({ userId }) {
 
 #### `require-react-display-names`
 
-Require `displayName` property on exported `React.memo` components and `React.createContext` contexts for better debugging.
+Require `displayName` property on exported `React.memo` components and `React.createContext` contexts for better
+debugging.
 
 **Configuration**
 
@@ -1161,7 +1224,8 @@ Disallows asynchronous operations inside class constructors.
 
 **Why**
 
-Constructors return immediately, so async work causes race conditions, unhandled rejections, and incomplete object states.
+Constructors return immediately, so async work causes race conditions, unhandled rejections, and incomplete object
+states.
 
 **Detected violations**
 
@@ -1298,7 +1362,8 @@ const doubled = items.map((x) => x * 2);
 
 #### `prevent-abbreviations`
 
-Prevent abbreviations in variable and property names. Provides suggestions for replacements and can automatically fix single-replacement cases.
+Prevent abbreviations in variable and property names. Provides suggestions for replacements and can automatically fix
+single-replacement cases.
 
 **Configuration**
 
@@ -1490,9 +1555,8 @@ import { pattern } from "@pobammer-ts/eslint-cease-nonsense-rules";
 
 **Ordering tip**
 
-Put the most specific patterns first. For example, keep exact shorthands like
-`UDim2.fromScale(1, 1)` before the general fallback
-`UDim2.fromScale($x, $x)` so the specific ones win.
+Put the most specific patterns first. For example, keep exact shorthands like `UDim2.fromScale(1, 1)` before the general
+fallback `UDim2.fromScale($x, $x)` so the specific ones win.
 
 **Replacement types**
 
@@ -1685,7 +1749,8 @@ new UDim2(0, 0, 0, 0); // Allowed
 
 #### `prefer-sequence-overloads`
 
-Prefer the optimized `ColorSequence` and `NumberSequence` constructor overloads instead of building an array of `*SequenceKeypoint`s.
+Prefer the optimized `ColorSequence` and `NumberSequence` constructor overloads instead of building an array of
+`*SequenceKeypoint`s.
 
 **Features**
 
@@ -1721,7 +1786,8 @@ Detects instance methods that don't use `this` and should be converted to standa
 
 **Why**
 
-In roblox-ts, instance methods create metatable objects with significant performance overhead. Methods that don't use `this` can be moved outside the class.
+In roblox-ts, instance methods create metatable objects with significant performance overhead. Methods that don't use
+`this` can be moved outside the class.
 
 **Configuration**
 
@@ -1827,11 +1893,13 @@ function useStoryModesState() {
 
 #### `prefer-single-world-query`
 
-Enforces combining multiple `world.get()` or `world.has()` calls on the same entity into a single call for better Jecs performance.
+Enforces combining multiple `world.get()` or `world.has()` calls on the same entity into a single call for better Jecs
+performance.
 
 **Why**
 
-In Jecs (a Roblox ECS library), calling `world.get()` or `world.has()` multiple times on the same entity results in multiple archetype lookups. Combining these calls improves performance by reducing lookups and cache misses.
+In Jecs (a Roblox ECS library), calling `world.get()` or `world.has()` multiple times on the same entity results in
+multiple archetype lookups. Combining these calls improves performance by reducing lookups and cache misses.
 
 **Features**
 
@@ -1898,7 +1966,8 @@ import { Foo } from "./components/Foo";
 
 #### `naming-convention`
 
-Enforce naming conventions for TypeScript constructs. Optimized for common use cases like interface prefix checking without requiring type checking.
+Enforce naming conventions for TypeScript constructs. Optimized for common use cases like interface prefix checking
+without requiring type checking.
 
 **Configuration**
 
@@ -1940,7 +2009,8 @@ interface User {
 
 #### `misleading-lua-tuple-checks`
 
-Disallow the use of `LuaTuple` types directly in conditional expressions, which can be misleading. Requires explicit indexing (`[0]`) or array destructuring.
+Disallow the use of `LuaTuple` types directly in conditional expressions, which can be misleading. Requires explicit
+indexing (`[0]`) or array destructuring.
 
 **Features**
 

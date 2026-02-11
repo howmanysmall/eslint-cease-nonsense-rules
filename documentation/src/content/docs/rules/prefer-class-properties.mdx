@@ -12,7 +12,9 @@ Prefer class properties over assignment of literals in constructors.
 
 ## Rule Details :badge[Clean Code]{variant=success}
 
-This rule enforces using class property declarations for literal values instead of assigning them in the constructor. Class properties are more concise, provide better type inference in TypeScript, and make the class's state structure visible at a glance.
+This rule enforces using class property declarations for literal values instead of assigning them in the constructor.
+Class properties are more concise, provide better type inference in TypeScript, and make the class's state structure
+visible at a glance.
 
 <Aside type="tip" title="Modern Standards">
 	Class properties (fields) are a standard part of modern JavaScript (ES2022) and TypeScript. They eliminate
@@ -25,14 +27,12 @@ This rule enforces using class property declarations for literal values instead 
 1. **Identify Constructors**
    Find classes with a `constructor` that performs `this.prop = ...` assignments.
 
-2. **Check for Literals**
-   Verify if the assigned values are simple strings, numbers, arrays, or objects that don't depend on parameters.
+2. **Check for Literals** Verify if the assigned values are simple strings, numbers, arrays, or objects that don't
+   depend on parameters.
 
-3. **Lift to Properties**
-   Move the assignment from the constructor body to a top-level property declaration.
+3. **Lift to Properties** Move the assignment from the constructor body to a top-level property declaration.
 
-4. **Clean Up**
-   If the `constructor` is now empty (or only calls `super()`), it can be removed entirely.
+4. **Clean Up** If the `constructor` is now empty (or only calls `super()`), it can be removed entirely.
 
 {/* oxfmt-ignore */}
 

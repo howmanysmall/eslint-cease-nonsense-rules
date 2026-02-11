@@ -8,7 +8,7 @@
 	"experimentalSortImports": null,
 	"experimentalTailwindcss": null,
 	"htmlWhitespaceSensitivity": "css",
-	"ignorePatterns": ["**/dist/**", "node_modules/**", "**/*.{jsonc,json,yaml,yml}", "package.json", ".context/**"],
+	"ignorePatterns": ["**/dist/**", "node_modules/**", "**/*.{jsonc,json,yaml,yml,md}", "package.json", ".context/**"],
 	"insertFinalNewline": true,
 	"jsxSingleQuote": false,
 	"objectWrap": "preserve",
