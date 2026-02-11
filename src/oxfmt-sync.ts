@@ -16,11 +16,11 @@ let workerState: OxfmtWorkerState | undefined;
 
 export function __testingResolveWorkerPath(baseUrl: string | URL, exists: (path: string) => boolean): URL {
 	// Try .js first (production/dist), then .ts (development/source)
-	const jsPath = new URL("./oxfmt-worker.js", baseUrl);
+	const jsPath = new URL("oxfmt-worker.js", baseUrl);
 	const jsFilePath = fileURLToPath(jsPath);
 	if (exists(jsFilePath)) return jsPath;
 
-	const tsPath = new URL("./oxfmt-worker.ts", baseUrl);
+	const tsPath = new URL("oxfmt-worker.ts", baseUrl);
 	const tsFilePath = fileURLToPath(tsPath);
 	if (exists(tsFilePath)) return tsPath;
 

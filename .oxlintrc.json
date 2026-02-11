@@ -144,13 +144,7 @@
 	"rules": {
 		"arrow-body-style": ["error", "as-needed"],
 		"complexity": "off",
-		"curly": [
-			"off",
-			{
-				"consistent": false,
-				"curlyType": "multi",
-			},
-		],
+		"curly": "off",
 		"default-case": "off",
 		"eqeqeq": "error",
 		"eslint/max-lines-per-function": [
@@ -199,6 +193,8 @@
 		"import/no-default-export": "off",
 		"import/no-named-as-default": "error",
 		"import/no-named-export": "off",
+		"import/no-nodejs-modules": "off",
+		"import/no-relative-parent-imports": "off",
 		"import/prefer-default-export": "off",
 		"init-declarations": "off",
 		"jsdoc/require-param-type": "off",
