@@ -6,7 +6,7 @@
 			"description": "General Q&A - ask questions about code, concepts, debugging strategies without executing anything",
 			"disable": false,
 			"mode": "all",
-			"model": "openai/gpt-5.2-codex",
+			"model": "openai/gpt-5.3-codex",
 			"permission": {
 				"bash": {
 					"*": "ask",
@@ -51,7 +51,7 @@
 		"build": {
 			"description": "Used after creating a plan or just whenever.",
 			"mode": "all",
-			"model": "openai/gpt-5.2-codex",
+			"model": "openai/gpt-5.3-codex",
 			"permission": {
 				"bash": {
 					"*": "ask",
@@ -116,7 +116,7 @@
 		},
 		"plan": {
 			"description": "Used to generate a plan.",
-			"model": "openai/gpt-5.2-codex",
+			"model": "openai/gpt-5.3-codex",
 			"permission": {
 				"bash": {
 					"*": "ask",
