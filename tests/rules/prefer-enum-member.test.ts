@@ -1,6 +1,7 @@
 import { describe, setDefaultTimeout } from "bun:test";
 import { join } from "node:path";
 import parser from "@typescript-eslint/parser";
+import type { InvalidTestCase, ValidTestCase } from "@typescript-eslint/rule-tester";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 import rule from "../../src/rules/prefer-enum-member";
 
@@ -18,6 +19,7 @@ const ruleTester = new RuleTester({
 			projectService: {
 				allowDefaultProject: ["*.ts", "*.tsx"],
 				defaultProject: join(fixturesDir, "tsconfig.json"),
+				"maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING": 64,
 			},
 			tsconfigRootDir: fixturesDir,
 		},
@@ -46,9 +48,28 @@ declare function useState<T>(value: T): [T, (value: T) => void];
 declare function setStatus(status: Status): void;
 `;
 
+type MessageIds = "preferEnumMember";
+type RuleOptions = [];
+type RuleInvalidCase = InvalidTestCase<MessageIds, RuleOptions>;
+type RuleValidCase = ValidTestCase<RuleOptions>;
+
+interface RuleTestCase {
+	readonly filename?: string;
+}
+
+function withStableFilenames<TTestCase extends RuleTestCase>(
+	cases: ReadonlyArray<TTestCase>,
+	prefix: string,
+): Array<TTestCase> {
+	return cases.map((testCase, index) => ({
+		...testCase,
+		filename: `${prefix}-${index}.tsx`,
+	}));
+}
+
 describe("prefer-enum-member", () => {
 	ruleTester.run("prefer-enum-member", rule, {
-		invalid: [
+		invalid: withStableFilenames<RuleInvalidCase>([
 			{
 				code: `${declarations}
 const palette: Record<Color, string> = {
@@ -203,8 +224,8 @@ const values: ColorMap<Color> = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]
 				errors: [{ messageId: "preferEnumMember" }],
 				output: `${declarations}\ndeclare const Swatch: (props: { color: Color }) => unknown;\n<Swatch color={Color.Blue} />;`,
 			},
-		],
-		valid: [
+		], "prefer-enum-member-invalid"),
+		valid: withStableFilenames<RuleValidCase>([
 			{
 				code: `${declarations}
 const palette: Record<Color, string> = {
@@ -270,6 +291,6 @@ enum AltColor {
 type Mix = Color | AltColor;
 const shade: Mix = "Blue";`,
 			},
-		],
+		], "prefer-enum-member-valid"),
 	});
 });
