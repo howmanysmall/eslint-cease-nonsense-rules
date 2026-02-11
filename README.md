@@ -51,6 +51,7 @@ export default [
 			"cease-nonsense/no-identity-map": "error",
 			"cease-nonsense/no-instance-methods-without-this": "error",
 			"cease-nonsense/no-memo-children": "error",
+			"cease-nonsense/no-new-instance-in-use-memo": "error",
 			"cease-nonsense/no-print": "error",
 			"cease-nonsense/prefer-enum-item": "error",
 			"cease-nonsense/prefer-enum-member": "error",
@@ -463,6 +464,56 @@ useEffect(() => {
 }, [eventName]);
 
 const config = useMemo(() => buildConfig(eventName), [eventName]);
+```
+
+#### `no-new-instance-in-use-memo`
+
+Disallow configured constructor calls (default: `new Instance(...)`) inside `useMemo` callbacks.
+
+**Why**
+
+`useMemo` callbacks should stay pure and deterministic. Allocating objects like Roblox Instances inside `useMemo` creates
+resources during render flow and can hide lifecycle work that belongs in an effect or dedicated setup path.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-new-instance-in-use-memo": ["error", {
+    "constructors": ["Instance"],     // Defaults to ["Instance"]
+    "environment": "roblox-ts"        // or "standard"
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+import { useMemo } from "@rbxts/react";
+
+const itemModel = useMemo(() => {
+	const model = new Instance("Model");
+	model.Name = "ItemPreview";
+	return model;
+}, [itemId]);
+```
+
+**✅ Good**
+
+```typescript
+import { useEffect, useMemo, useState } from "@rbxts/react";
+
+const [itemModel, setItemModel] = useState<Model | undefined>(undefined);
+
+useEffect(() => {
+	const model = new Instance("Model");
+	model.Name = "ItemPreview";
+	setItemModel(model);
+
+	return () => model.Destroy();
+}, [itemId]);
+
+const texture = useMemo(() => lookupTexture(itemId), [itemId]);
 ```
 
 #### `no-useless-use-effect` (Experimental)

@@ -1,0 +1,147 @@
+---
+title: no-new-instance-in-use-memo
+badge:
+    text: React
+    variant: note
+description: Disallow configured constructor calls (default: new Instance) inside React useMemo callbacks.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+
+Disallow configured constructor calls (default: `new Instance(...)`) inside `useMemo` callbacks.
+
+## Rule Details :badge[React]{variant=note}
+
+`useMemo` should stay pure. Constructing objects inside the callback (especially runtime resources like Roblox Instances)
+mixes allocation and lifecycle work into memoization, which makes component behavior harder to reason about.
+
+<Aside type="caution" title="Render-Phase Allocation">
+	If you need to create and clean up runtime objects, prefer explicit lifecycle management (`useEffect`, refs, or module
+	scope factories) over constructor calls inside `useMemo`.
+</Aside>
+
+## Refactoring Workflow
+
+<Steps>
+1. **Find `new` Inside `useMemo`**
+   Look for `new Instance(...)` (or other configured constructors) inside memo callbacks.
+2. **Move Creation**
+   Move constructor logic to `useEffect`, a ref-backed initializer, or module-level code depending on lifecycle needs.
+3. **Keep `useMemo` Pure**
+   Use `useMemo` for deterministic value derivation only.
+4. **Clean Up Resources**
+   Ensure objects created in effects are cleaned up in the effect return function.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Configuration
+
+The rule accepts these options:
+
+- `constructors` (default: `["Instance"]`): Constructor identifiers to disallow inside `useMemo`.
+- `environment` (default: `"roblox-ts"`): React import source mode (`"roblox-ts"` or `"standard"`).
+
+```typescript
+{
+  "cease-nonsense/no-new-instance-in-use-memo": ["error", {
+    "constructors": ["Instance", "Vector3"],
+    "environment": "roblox-ts"
+  }]
+}
+```
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Constructor Call in `useMemo`
+		Allocating runtime objects inside memo callbacks is disallowed.
+
+		<Code
+			code={[
+				"import { useMemo } from \"@rbxts/react\";",
+				"",
+				"const model = useMemo(() => {",
+				"\tconst value = new Instance(\"Model\");",
+				"\tvalue.Name = \"Preview\";",
+				"\treturn value;",
+				"}, [itemId]);",
+			].join("\n")}
+			lang="tsx"
+		/>
+	</TabItem>
+	<TabItem label="✅ Correct" icon="check">
+		### Explicit Lifecycle + Pure Memo
+		Create resources in effects and keep memo for pure computation.
+
+		<Code
+			code={[
+				"import { useEffect, useMemo, useState } from \"@rbxts/react\";",
+				"",
+				"const [model, setModel] = useState<Model | undefined>(undefined);",
+				"",
+				"useEffect(() => {",
+				"\tconst next = new Instance(\"Model\");",
+				"\tnext.Name = \"Preview\";",
+				"\tsetModel(next);",
+				"",
+				"\treturn () => next.Destroy();",
+				"}, [itemId]);",
+				"",
+				"const texture = useMemo(() => resolveTexture(itemId), [itemId]);",
+			].join("\n")}
+			lang="tsx"
+		/>
+	</TabItem>
+</Tabs>
+
+## Detection Strategy
+
+<CardGrid stagger>
+	<Card title="Import Aware" icon="magnifier">
+		Only checks real React `useMemo` calls resolved from configured React import sources.
+	</Card>
+	<Card title="Constructor Matching" icon="setting">
+		Flags configured constructor identifiers (`new Foo()`), defaulting to `Instance`.
+	</Card>
+	<Card title="Deep Traversal" icon="list-format">
+		Reports constructor calls anywhere inside the memo callback subtree, including nested callbacks.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="no-unused-use-memo"
+		description="Disallows standalone useMemo side-effect patterns"
+		href="/eslint-cease-nonsense-rules/rules/no-unused-use-memo/"
+	/>
+	<LinkCard
+		title="no-useless-use-effect"
+		description="Detects effects that are not synchronizing external systems"
+		href="/eslint-cease-nonsense-rules/rules/no-useless-use-effect/"
+	/>
+	<LinkCard
+		title="require-named-effect-functions"
+		description="Enforces named effect callbacks"
+		href="/eslint-cease-nonsense-rules/rules/require-named-effect-functions/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="React Docs: useMemo"
+		description="Memoization guidance and caveats"
+		href="https://react.dev/reference/react/useMemo"
+	/>
+	<LinkCard
+		title="React Docs: useEffect"
+		description="Managing effects and cleanup"
+		href="https://react.dev/reference/react/useEffect"
+	/>
+</CardGrid>

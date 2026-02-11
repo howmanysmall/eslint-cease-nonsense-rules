@@ -9,6 +9,7 @@ import {
 	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
 	createNoMemoChildrenOptions,
+	createNoNewInstanceInUseMemoOptions,
 	createNoShorthandOptions,
 	createNoUnusedImportsOptions,
 	createNoUselessUseEffectOptions,
@@ -462,6 +463,29 @@ describe("configure-utilities", () => {
 			expect.assertions(1);
 			const configuration = createNoUnusedImportsOptions({ checkJSDoc: false });
 			expect(configuration).toEqual({ checkJSDoc: false });
+		});
+	});
+
+	describe("createNoNewInstanceInUseMemoOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createNoNewInstanceInUseMemoOptions();
+			expect(configuration).toEqual({
+				constructors: ["Instance"],
+				environment: "roblox-ts",
+			});
+		});
+
+		it("should override constructors", () => {
+			expect.assertions(1);
+			const configuration = createNoNewInstanceInUseMemoOptions({ constructors: ["Vector3"] });
+			expect(configuration.constructors).toEqual(["Vector3"]);
+		});
+
+		it("should override environment", () => {
+			expect.assertions(1);
+			const configuration = createNoNewInstanceInUseMemoOptions({ environment: "standard" });
+			expect(configuration.environment).toBe("standard");
 		});
 	});
 

@@ -1,0 +1,152 @@
+import { describe } from "bun:test";
+import parser from "@typescript-eslint/parser";
+import { RuleTester } from "@typescript-eslint/rule-tester";
+import rule from "../../src/rules/no-new-instance-in-use-memo";
+
+const ruleTester = new RuleTester({
+	languageOptions: {
+		ecmaVersion: 2022,
+		parser,
+		sourceType: "module",
+	},
+});
+
+describe("no-new-instance-in-use-memo", () => {
+	ruleTester.run("no-new-instance-in-use-memo", rule, {
+		invalid: [
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const model = useMemo(() => {
+    return new Instance("Model");
+}, []);
+`,
+				errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const value = useMemo(() => {
+    const model = new Instance("Model");
+    const part = new Instance("Part");
+    return [model, part];
+}, []);
+`,
+				errors: [
+					{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" },
+					{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" },
+				],
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const parts = useMemo(() => {
+    return [1, 2, 3].map(() => new Instance("Part"));
+}, []);
+`,
+				errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
+			},
+			{
+				code: `
+import * as React from "@rbxts/react";
+
+const model = React.useMemo(() => new Instance("Model"), []);
+`,
+				errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
+			},
+			{
+				code: `
+import { useMemo as memo } from "@rbxts/react";
+
+const model = memo(() => new Instance("Model"), []);
+`,
+				errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const value = useMemo(() => new Vector3(1, 2, 3), []);
+`,
+				errors: [{ data: { constructorName: "Vector3" }, messageId: "noNewInUseMemo" }],
+				options: [{ constructors: ["Vector3"] }],
+			},
+			{
+				code: `
+import { useMemo } from "react";
+
+const model = useMemo(() => new Instance("Model"), []);
+`,
+				errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
+				options: [{ environment: "standard" }],
+			},
+		],
+		valid: [
+			{
+				code: `
+function useMemo(factory) {
+    return factory();
+}
+
+const model = useMemo(() => new Instance("Model"), []);
+`,
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const model = new Instance("Model");
+const memoized = useMemo(() => model, []);
+`,
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const size = useMemo(() => new Vector3(1, 2, 3), []);
+`,
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const model = useMemo(() => new Instance("Model"), []);
+`,
+				options: [{ constructors: [] }],
+			},
+			{
+				code: `
+import { useMemo } from "react";
+
+const model = useMemo(() => new Instance("Model"), []);
+`,
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const model = useMemo(() => new Instance("Model"), []);
+`,
+				options: [{ environment: "standard" }],
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const createPart = () => new Instance("Part");
+const part = useMemo(createPart, []);
+`,
+			},
+			{
+				code: `
+import React from "@rbxts/react";
+
+const value = React.useMemo(() => ({ value: 1 }), []);
+`,
+			},
+		],
+	});
+});
