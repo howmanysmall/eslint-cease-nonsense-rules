@@ -205,6 +205,34 @@ const values: ColorMap<Color> = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]
 				},
 				{
 					code: `${declarations}
+	type Mixed = Record<Color, string> | Record<Color, number>;
+	type MixedAlias = Mixed;
+	const values: MixedAlias = { Blue: 1, Green: 2, Red: 3 };`,
+					errors: [
+						{ messageId: "preferEnumMember" },
+						{ messageId: "preferEnumMember" },
+						{ messageId: "preferEnumMember" },
+					],
+					output: `${declarations}
+	type Mixed = Record<Color, string> | Record<Color, number>;
+	type MixedAlias = Mixed;
+	const values: MixedAlias = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]: 3 };`,
+				},
+				{
+					code: `${declarations}
+	type Wrapped = Readonly<Record<Color, string> | Record<Color, number>>;
+	const values: Wrapped = { Blue: 1, Green: 2, Red: 3 };`,
+					errors: [
+						{ messageId: "preferEnumMember" },
+						{ messageId: "preferEnumMember" },
+						{ messageId: "preferEnumMember" },
+					],
+					output: `${declarations}
+	type Wrapped = Readonly<Record<Color, string> | Record<Color, number>>;
+	const values: Wrapped = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]: 3 };`,
+				},
+				{
+					code: `${declarations}
 	type Narrow = Record<Color.Blue, number>;
 	type Wide = Record<Color, number>;
 	type MixedNarrow = Narrow | Wide;
@@ -294,6 +322,16 @@ enum AltColor {
 }
 type Mix = Color | AltColor;
 const shade: Mix = "Blue";`,
+				},
+				{
+					code: `${declarations}
+enum AltColor {
+    Blue = "Blue",
+    Green = "Green",
+    Red = "Red",
+}
+type Ambiguous = Record<Color, number> | Record<AltColor, number>;
+const values: Ambiguous = { Blue: 1, Green: 2, Red: 3 };`,
 				},
 			],
 			"prefer-enum-member-valid",
