@@ -1,5 +1,5 @@
 import { describe, setDefaultTimeout } from "bun:test";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import parser from "@typescript-eslint/parser";
 import type { InvalidTestCase, ValidTestCase } from "@typescript-eslint/rule-tester";
 import { RuleTester } from "@typescript-eslint/rule-tester";
@@ -8,7 +8,9 @@ import rule from "../../src/rules/prefer-enum-member";
 // Type-aware tests have cold-start overhead from TypeScript project service initialization
 setDefaultTimeout(30_000);
 
-const fixturesDir = join(__dirname, "../fixtures/prefer-enum-member");
+const testsDir = resolve(__dirname, "..");
+const eslintProjectPath = join(testsDir, "tsconfig.eslint.json");
+const fixturesRelativeDir = "fixtures/prefer-enum-member";
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -16,12 +18,8 @@ const ruleTester = new RuleTester({
 		parser,
 		parserOptions: {
 			ecmaFeatures: { jsx: true },
-			projectService: {
-				allowDefaultProject: ["*.ts", "*.tsx"],
-				defaultProject: join(fixturesDir, "tsconfig.json"),
-				maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 64,
-			},
-			tsconfigRootDir: fixturesDir,
+			project: eslintProjectPath,
+			tsconfigRootDir: testsDir,
 		},
 		sourceType: "module",
 	},
@@ -61,9 +59,9 @@ function withStableFilenames<TTestCase extends RuleTestCase>(
 	cases: ReadonlyArray<TTestCase>,
 	prefix: string,
 ): Array<TTestCase> {
-	return cases.map((testCase, index) => ({
+	return cases.map((testCase) => ({
 		...testCase,
-		filename: join(fixturesDir, `${prefix}-${index}.tsx`),
+		filename: join(fixturesRelativeDir, `${prefix}.tsx`),
 	}));
 }
 
