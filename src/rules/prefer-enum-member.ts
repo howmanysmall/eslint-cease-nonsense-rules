@@ -649,6 +649,13 @@ export default createRule<Options, MessageIds>({
 						return resolved;
 					}
 				}
+
+				const tsIdNode = services.esTreeNodeToTSNodeMap.get(parent.id);
+				if (tsIdNode) {
+					const resolved = checker.getTypeAtLocation(tsIdNode);
+					declaredTypeCache.set(node, resolved);
+					return resolved;
+				}
 			}
 
 			if (parent.type === AST_NODE_TYPES.AssignmentExpression && parent.right === node) {
@@ -741,7 +748,15 @@ export default createRule<Options, MessageIds>({
 			const declaredKeyType = declaredType ? getObjectKeyType(declaredType) : undefined;
 			const contextualType = declaredKeyType ? undefined : getContextualType(node.parent);
 			const contextualKeyType = contextualType ? getObjectKeyType(contextualType) : undefined;
-			const keyType = declaredKeyType ?? contextualKeyType;
+			let locationKeyType: Type | undefined;
+			if (!(declaredKeyType || contextualKeyType)) {
+				const tsObjectExpression = services.esTreeNodeToTSNodeMap.get(node.parent);
+				if (tsObjectExpression) {
+					const locationType = checker.getTypeAtLocation(tsObjectExpression);
+					locationKeyType = getObjectKeyType(locationType);
+				}
+			}
+			const keyType = declaredKeyType ?? contextualKeyType ?? locationKeyType;
 			if (!keyType) return;
 
 			const match = getEnumMemberMatch(keyType, keyValue.value);
