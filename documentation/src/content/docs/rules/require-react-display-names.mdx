@@ -3,7 +3,9 @@ title: require-react-display-names
 badge:
     text: Best Practice
     variant: success
-description: Require displayName property on exported React.memo components and React.createContext contexts for better debugging.
+description:
+    Require displayName property on exported React.memo components and React.createContext contexts for better
+    debugging.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
@@ -12,7 +14,9 @@ Require `displayName` on exported `React.memo` and `React.createContext`.
 
 ## Rule Details :badge[Best Practice]{variant=success}
 
-React components wrapped in `memo` and contexts created with `createContext` lose their names in React DevTools unless you explicitly set `displayName`. This rule enforces proper naming patterns to ensure your component tree remains readable during production debugging and profiling.
+React components wrapped in `memo` and contexts created with `createContext` lose their names in React DevTools unless
+you explicitly set `displayName`. This rule enforces proper naming patterns to ensure your component tree remains
+readable during production debugging and profiling.
 
 <Aside type="tip" title="Production Debugging">
 	Minification often strips function names. `displayName` is a string literal that survives obfuscation, making it
@@ -25,14 +29,12 @@ React components wrapped in `memo` and contexts created with `createContext` los
 1. **Locate Exports**
    Find `export default memo(...)` or `export const MyContext = createContext(...)` calls.
 
-2. **Assign to Constant**
-   Instead of exporting the result directly, assign it to a named variable (e.g., `const MyComponent = memo(...)`).
+2. **Assign to Constant** Instead of exporting the result directly, assign it to a named variable (e.g.,
+   `const MyComponent = memo(...)`).
 
-3. **Set Display Name**
-   Append a `.displayName` assignment: `MyComponent.displayName = "MyComponent"`.
+3. **Set Display Name** Append a `.displayName` assignment: `MyComponent.displayName = "MyComponent"`.
 
-4. **Export Named**
-   Export the named variable. You can still use `export default` for the named variable afterwards.
+4. **Export Named** Export the named variable. You can still use `export default` for the named variable afterwards.
 
 {/* oxfmt-ignore */}
 
@@ -100,7 +102,11 @@ React components wrapped in `memo` and contexts created with `createContext` los
 ## Related Rules
 
 <CardGrid>
-	<LinkCard title="ban-react-fc" description="Bans React.FC for better type clarity" href="/eslint-cease-nonsense-rules/rules/ban-react-fc/" />
+	<LinkCard
+		title="ban-react-fc"
+		description="Bans React.FC for better type clarity"
+		href="/eslint-cease-nonsense-rules/rules/ban-react-fc/"
+	/>
 </CardGrid>
 
 ## Further Reading

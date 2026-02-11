@@ -3,7 +3,9 @@ title: require-named-effect-functions
 badge:
     text: Best Practice
     variant: caution
-description: Enforce named effect functions for better debuggability. Prevent inline arrow functions in useEffect and similar hooks.
+description:
+    Enforce named effect functions for better debuggability. Prevent inline arrow functions in useEffect and similar
+    hooks.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
@@ -12,7 +14,9 @@ Enforce named effect functions for better debuggability.
 
 ## Rule Details :badge[Best Practice]{variant=caution}
 
-Inline arrow functions in hooks like `useEffect` are convenient but problematic. Stack traces show them as `(anonymous)`, DevTools cannot label them helpfully, and complex logic becomes hard to read. This rule requires that effect callbacks have a name, either as a separate function definition or a named function expression.
+Inline arrow functions in hooks like `useEffect` are convenient but problematic. Stack traces show them as
+`(anonymous)`, DevTools cannot label them helpfully, and complex logic becomes hard to read. This rule requires that
+effect callbacks have a name, either as a separate function definition or a named function expression.
 
 <Aside type="tip" title="Self-Documenting Effects">
 	`useEffect(onUserIdChange, [userId])` is immediately understandable, whereas
@@ -28,7 +32,8 @@ Inline arrow functions in hooks like `useEffect` are convenient but problematic.
 
 2. **Extract Logic** Move the function body into a named function defined above the hook call.
 
-3. **Name the Action** Choose a name that describes _why_ the effect is running (e.g., `onMount`, `onDataUpdate`, `clearTimers`).
+3. **Name the Action** Choose a name that describes _why_ the effect is running (e.g., `onMount`, `onDataUpdate`,
+   `clearTimers`).
 
 4. **Replace with Identifier** Pass the function by name to the hook: `useEffect(onMount, [])`.
 

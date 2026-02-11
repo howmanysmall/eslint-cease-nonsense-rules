@@ -86,7 +86,8 @@ function getImportedName(specifier: TSESTree.ImportSpecifier): string | undefine
 	return imported.type === TSESTree.AST_NODE_TYPES.Identifier
 		? imported.name
 		: imported.type === TSESTree.AST_NODE_TYPES.Literal && typeof imported.value === "string"
-			? imported.value : undefined;
+			? imported.value
+			: undefined;
 }
 
 function isHookCall(
@@ -202,7 +203,10 @@ function getCallExpressionFromStatement(statement: TSESTree.Statement): TSESTree
 	return expression.type === TSESTree.AST_NODE_TYPES.CallExpression ? expression : undefined;
 }
 
-function isStateSetterCall(callExpression: TSESTree.CallExpression, stateSetterIdentifiers: ReadonlySet<string>): boolean {
+function isStateSetterCall(
+	callExpression: TSESTree.CallExpression,
+	stateSetterIdentifiers: ReadonlySet<string>,
+): boolean {
 	return (
 		callExpression.callee.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		stateSetterIdentifiers.has(callExpression.callee.name)
@@ -271,13 +275,19 @@ function matchEventFlagPattern(
 		const secondFlag = getResetFlagNameFromStatement(second, stateSetterToValue);
 
 		if (firstFlag && !secondFlag) {
-			if (!(isNegativeFlagTest(guard.test, firstFlag) && isReturnWithoutArgument(guard.consequent))) return undefined;
+			if (!(isNegativeFlagTest(guard.test, firstFlag) && isReturnWithoutArgument(guard.consequent))) {
+				return undefined;
+			}
+
 			if (!getSideEffectCall(second, stateSetterIdentifiers)) return undefined;
 			return firstFlag;
 		}
 
 		if (secondFlag && !firstFlag) {
-			if (!(isNegativeFlagTest(guard.test, secondFlag) && isReturnWithoutArgument(guard.consequent))) return undefined;
+			if (!(isNegativeFlagTest(guard.test, secondFlag) && isReturnWithoutArgument(guard.consequent))) {
+				return undefined;
+			}
+
 			if (!getSideEffectCall(first, stateSetterIdentifiers)) return undefined;
 			return secondFlag;
 		}
@@ -308,7 +318,9 @@ function matchEventFlagPattern(
 			!firstFlag &&
 			isPositiveFlagTest(test, secondFlag) &&
 			getSideEffectCall(first, stateSetterIdentifiers)
-		) return secondFlag;
+		) {
+			return secondFlag;
+		}
 	}
 
 	return undefined;

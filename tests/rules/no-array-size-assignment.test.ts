@@ -10,6 +10,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("no-array-size-assignment", () => {
+	// @ts-expect-error -- Stupid.
 	ruleTester.run("no-array-size-assignment", rule, {
 		invalid: [
 			{
@@ -96,7 +97,7 @@ describe("no-array-size-assignment", () => {
 			"array[other.size()] = value;",
 			"array[array.size()] += value;",
 			'array[array["size"]()] = value;',
-			'[item][[item].size()] = item;',
+			"[item][[item].size()] = item;",
 			"store[\"items\"][store['items'].size()] = item;",
 		],
 	});

@@ -12,7 +12,9 @@ Prefer `UDim2.fromScale()` or `UDim2.fromOffset()` over the 4-argument construct
 
 ## Rule Details :badge[Roblox]{variant=note}
 
-When creating a `UDim2` with all scales or all offsets set to zero, the shorthand constructors are clearer and more concise. This rule avoids the noise of redundant zeros and explicitly signals whether you are working in coordinate scale or pixel offsets.
+When creating a `UDim2` with all scales or all offsets set to zero, the shorthand constructors are clearer and more
+concise. This rule avoids the noise of redundant zeros and explicitly signals whether you are working in coordinate
+scale or pixel offsets.
 
 <Aside type="tip" title="Readability">
 	`UDim2.fromScale(1, 0.5)` is instantly recognizable as a layout operation, whereas `new UDim2(1, 0, 0.5, 0)`
@@ -29,9 +31,11 @@ When creating a `UDim2` with all scales or all offsets set to zero, the shorthan
     - If offsets are zero: use `UDim2.fromScale(Sx, Sy)`.
     - If scales are zero: use `UDim2.fromOffset(Ox, Oy)`.
 
-3. **Replace Call** Update the code to use the static method. Note that the shorthand methods only take 2 arguments instead of 4.
+3. **Replace Call** Update the code to use the static method. Note that the shorthand methods only take 2 arguments
+   instead of 4.
 
-4. **Preserve Mixed** If you have a mix (e.g., `new UDim2(1, 5, 0, 0)`), keep the full constructor as shorthands don't support mixed modes easily.
+4. **Preserve Mixed** If you have a mix (e.g., `new UDim2(1, 5, 0, 0)`), keep the full constructor as shorthands don't
+   support mixed modes easily.
 
 {/* oxfmt-ignore */}
 

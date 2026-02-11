@@ -109,11 +109,7 @@ nav.sidebar a:hover {
 
 /* Cards and decorative elements */
 .card {
-	background: linear-gradient(
-		145deg,
-		var(--glass-bg) 0%,
-		rgba(78, 191, 255, 0.05) 100%
-	) !important;
+	background: linear-gradient(145deg, var(--glass-bg) 0%, rgba(78, 191, 255, 0.05) 100%) !important;
 	border: 1px solid var(--glass-border) !important;
 	border-radius: 12px !important;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);

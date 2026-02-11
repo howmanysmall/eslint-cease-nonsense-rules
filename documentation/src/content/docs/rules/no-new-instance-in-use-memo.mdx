@@ -12,12 +12,12 @@ Disallow configured constructor calls (default: `new Instance(...)`) inside `use
 
 ## Rule Details :badge[React]{variant=note}
 
-`useMemo` should stay pure. Constructing objects inside the callback (especially runtime resources like Roblox Instances)
-mixes allocation and lifecycle work into memoization, which makes component behavior harder to reason about.
+`useMemo` should stay pure. Constructing objects inside the callback (especially runtime resources like Roblox
+Instances) mixes allocation and lifecycle work into memoization, which makes component behavior harder to reason about.
 
 <Aside type="caution" title="Render-Phase Allocation">
-	If you need to create and clean up runtime objects, prefer explicit lifecycle management (`useEffect`, refs, or module
-	scope factories) over constructor calls inside `useMemo`.
+	If you need to create and clean up runtime objects, prefer explicit lifecycle management (`useEffect`, refs, or
+	module scope factories) over constructor calls inside `useMemo`.
 </Aside>
 
 ## Refactoring Workflow
@@ -59,42 +59,43 @@ The rule accepts these options:
 		### Constructor Call in `useMemo`
 		Allocating runtime objects inside memo callbacks is disallowed.
 
-		<Code
-			code={[
-				"import { useMemo } from \"@rbxts/react\";",
-				"",
-				"const model = useMemo(() => {",
-				"\tconst value = new Instance(\"Model\");",
-				"\tvalue.Name = \"Preview\";",
-				"\treturn value;",
-				"}, [itemId]);",
-			].join("\n")}
-			lang="tsx"
-		/>
-	</TabItem>
-	<TabItem label="✅ Correct" icon="check">
-		### Explicit Lifecycle + Pure Memo
-		Create resources in effects and keep memo for pure computation.
+    	<Code
+    		code={[
+    			"import { useMemo } from \"@rbxts/react\";",
+    			"",
+    			"const model = useMemo(() => {",
+    			"\tconst value = new Instance(\"Model\");",
+    			"\tvalue.Name = \"Preview\";",
+    			"\treturn value;",
+    			"}, [itemId]);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Explicit Lifecycle + Pure Memo
+    	Create resources in effects and keep memo for pure computation.
 
-		<Code
-			code={[
-				"import { useEffect, useMemo, useState } from \"@rbxts/react\";",
-				"",
-				"const [model, setModel] = useState<Model | undefined>(undefined);",
-				"",
-				"useEffect(() => {",
-				"\tconst next = new Instance(\"Model\");",
-				"\tnext.Name = \"Preview\";",
-				"\tsetModel(next);",
-				"",
-				"\treturn () => next.Destroy();",
-				"}, [itemId]);",
-				"",
-				"const texture = useMemo(() => resolveTexture(itemId), [itemId]);",
-			].join("\n")}
-			lang="tsx"
-		/>
-	</TabItem>
+    	<Code
+    		code={[
+    			"import { useEffect, useMemo, useState } from \"@rbxts/react\";",
+    			"",
+    			"const [model, setModel] = useState<Model | undefined>(undefined);",
+    			"",
+    			"useEffect(() => {",
+    			"\tconst next = new Instance(\"Model\");",
+    			"\tnext.Name = \"Preview\";",
+    			"\tsetModel(next);",
+    			"",
+    			"\treturn () => next.Destroy();",
+    			"}, [itemId]);",
+    			"",
+    			"const texture = useMemo(() => resolveTexture(itemId), [itemId]);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
 </Tabs>
 
 ## Detection Strategy

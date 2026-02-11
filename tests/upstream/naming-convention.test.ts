@@ -11,7 +11,7 @@ const ruleTester = new RuleTester({
 		parserOptions: {
 			projectService: {
 				allowDefaultProject: ["*.ts", "*.tsx"],
-				"maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING": 64,
+				maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 64,
 			},
 			tsconfigRootDir: __dirname,
 		},
@@ -19,4 +19,5 @@ const ruleTester = new RuleTester({
 	},
 });
 
+// @ts-expect-error -- Stupid.
 ruleTester.run("naming-convention", rule, { invalid, valid });

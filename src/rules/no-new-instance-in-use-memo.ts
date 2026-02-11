@@ -53,9 +53,7 @@ function isUseMemoCall(
 	return reactNamespaces.has(callee.object.name) && callee.property.name === "useMemo";
 }
 
-function isFunctionLike(
-	node: TSESTree.Node,
-): node is TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression {
+function isFunctionLike(node: TSESTree.Node): node is TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression {
 	return (
 		node.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression ||
 		node.type === TSESTree.AST_NODE_TYPES.FunctionExpression
@@ -137,7 +135,8 @@ export default createRule<Options, MessageIds>({
 	defaultOptions: [{}],
 	meta: {
 		docs: {
-			description: "Disallow configured constructor calls (default: new Instance) inside React useMemo callbacks.",
+			description:
+				"Disallow configured constructor calls (default: new Instance) inside React useMemo callbacks.",
 		},
 		messages: {
 			noNewInUseMemo:

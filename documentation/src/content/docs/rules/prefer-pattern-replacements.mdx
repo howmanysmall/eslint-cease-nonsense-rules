@@ -3,7 +3,8 @@ title: prefer-pattern-replacements
 badge:
     text: Advanced
     variant: caution
-description: Enforces replacement of verbose constructor/method patterns with simpler alternatives using a capture system.
+description:
+    Enforces replacement of verbose constructor/method patterns with simpler alternatives using a capture system.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
@@ -12,7 +13,8 @@ Enforces replacement of verbose constructor/method patterns with simpler alterna
 
 ## Rule Details :badge[Advanced]{variant=caution}
 
-This rule uses a type-safe pattern matching system to detect verbose constructor or method calls that have simpler equivalents. It supports captures, optional arguments, wildcards, and scope-aware fixes.
+This rule uses a type-safe pattern matching system to detect verbose constructor or method calls that have simpler
+equivalents. It supports captures, optional arguments, wildcards, and scope-aware fixes.
 
 <Aside type="caution" title="Complexity Note">
 	This is a high-level orchestration rule. It allows you to define custom "shorthands" for complex object creation
@@ -129,7 +131,11 @@ Put the most specific patterns first so they win over general fallbacks. For exa
 		description="Bans Color3 constructor specifically"
 		href="/eslint-cease-nonsense-rules/rules/no-color3-constructor/"
 	/>
-	<LinkCard title="prefer-udim2-shorthand" description="Simpler UDim2 logic" href="/eslint-cease-nonsense-rules/rules/prefer-udim2-shorthand/" />
+	<LinkCard
+		title="prefer-udim2-shorthand"
+		description="Simpler UDim2 logic"
+		href="/eslint-cease-nonsense-rules/rules/prefer-udim2-shorthand/"
+	/>
 </CardGrid>
 
 ## Further Reading

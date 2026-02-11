@@ -318,7 +318,10 @@ function isTopLevelFunctionReturn(node: TSESTree.JSXElement | TSESTree.JSXFragme
 
 		if (!currentNode) return false;
 
-		return IS_FUNCTION_EXPRESSION.has(currentNode.type) || currentNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration;
+		return (
+			IS_FUNCTION_EXPRESSION.has(currentNode.type) ||
+			currentNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration
+		);
 	}
 
 	return parent.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression;
@@ -416,19 +419,6 @@ function isJSXPropValue(node: TSESTree.JSXElement | TSESTree.JSXFragment): boole
 	return !isChildrenAttributeName(attributeName);
 }
 
-/**
- * Checks if node is inside a ternary expression that's a direct child of a JSX
- * element. Ternary branches are mutually exclusive alternatives (only one
- * renders), so they don't need keys.
- *
- * Example: `{condition ? <A /> : <B />}` - A and B don't need keys
- *
- * Note: Logical AND (`&&`) is NOT included because those elements can
- * appear/disappear, affecting sibling positions and requiring keys.
- *
- * @param node - The JSX element or fragment to check.
- * @returns Whether the node is inside a ternary expression as a JSX child.
- */
 function isTernaryJSXChild(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
 	let current: TSESTree.Node | undefined = node.parent;
 	if (!current) return false;

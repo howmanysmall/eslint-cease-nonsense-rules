@@ -83,10 +83,7 @@ function unwrapExpression(node: TSESTree.Node): TSESTree.Node {
 	return current;
 }
 
-function getMemberHookName(
-	callee: TSESTree.MemberExpression,
-	reactNamespaces: Set<string>,
-): string | undefined {
+function getMemberHookName(callee: TSESTree.MemberExpression, reactNamespaces: Set<string>): string | undefined {
 	if (callee.computed) return undefined;
 	if (callee.object.type !== TSESTree.AST_NODE_TYPES.Identifier) return undefined;
 	if (!reactNamespaces.has(callee.object.name)) return undefined;
@@ -116,9 +113,7 @@ function getImportedName(specifier: TSESTree.ImportSpecifier): string | undefine
 	return undefined;
 }
 
-function getPatternElementName(
-	element: TSESTree.ArrayPattern["elements"][number] | undefined,
-): string | undefined {
+function getPatternElementName(element: TSESTree.ArrayPattern["elements"][number] | undefined): string | undefined {
 	if (!element) return undefined;
 	if (element.type === TSESTree.AST_NODE_TYPES.Identifier) return element.name;
 	if (
@@ -127,17 +122,16 @@ function getPatternElementName(
 	) {
 		return element.left.name;
 	}
-	if (element.type === TSESTree.AST_NODE_TYPES.RestElement && element.argument.type === TSESTree.AST_NODE_TYPES.Identifier) {
+	if (
+		element.type === TSESTree.AST_NODE_TYPES.RestElement &&
+		element.argument.type === TSESTree.AST_NODE_TYPES.Identifier
+	) {
 		return element.argument.name;
 	}
 	return undefined;
 }
 
-function isIdentifierAtArrayIndex(
-	pattern: TSESTree.ArrayPattern,
-	identifierName: string,
-	index: number,
-): boolean {
+function isIdentifierAtArrayIndex(pattern: TSESTree.ArrayPattern, identifierName: string, index: number): boolean {
 	const element = pattern.elements[index];
 	return getPatternElementName(element) === identifierName;
 }
@@ -219,10 +213,7 @@ export default createRule<Options, MessageIds>({
 			return undefined;
 		}
 
-		function getDefinitionStability(
-			definition: TSESLint.Scope.Definition,
-			variableName: string,
-		): Stability {
+		function getDefinitionStability(definition: TSESLint.Scope.Definition, variableName: string): Stability {
 			if (definition.type === DefinitionType.Parameter) return "unknown";
 			if (definition.type === DefinitionType.ImportBinding) return "memoized";
 
@@ -366,10 +357,7 @@ export default createRule<Options, MessageIds>({
 					if (!importedName) continue;
 
 					if (effectHookNameToIndex.has(importedName)) {
-						effectHookIdentifiers.set(
-							specifier.local.name,
-							effectHookNameToIndex.get(importedName) ?? 1,
-						);
+						effectHookIdentifiers.set(specifier.local.name, effectHookNameToIndex.get(importedName) ?? 1);
 					}
 					if (MEMO_HOOKS.has(importedName)) memoHookIdentifiers.add(specifier.local.name);
 					if (STABLE_HOOKS.has(importedName)) stableHookIdentifiers.set(specifier.local.name, importedName);

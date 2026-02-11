@@ -12,7 +12,9 @@ Prevent cryptic abbreviations in variable and property names.
 
 ## Rule Details :badge[Clean Code]{variant=success}
 
-This rule discourages the use of abbreviations in favor of more descriptive names. It provides suggestions for replacements and can automatically fix single-replacement cases. By using full words, your code becomes more accessible to contributors and easier to maintain over time.
+This rule discourages the use of abbreviations in favor of more descriptive names. It provides suggestions for
+replacements and can automatically fix single-replacement cases. By using full words, your code becomes more accessible
+to contributors and easier to maintain over time.
 
 <Aside type="tip" title="Self-Documenting Code">
 	Abbreviations like `fn` or `dist` are ambiguous. Using `function` or `distance` immediately clarifies the purpose of
@@ -25,9 +27,11 @@ This rule discourages the use of abbreviations in favor of more descriptive name
 1. **Identify Abbreviations**
    The linter will flag common abbreviations like `err`, `acc`, or `idx`.
 
-2. **Evaluate Context** Determine the full name that best describes the variable's role (e.g., `error`, `accumulator`, `index`).
+2. **Evaluate Context** Determine the full name that best describes the variable's role (e.g., `error`, `accumulator`,
+   `index`).
 
-3. **Check Allow-List** If an abbreviation is a widely accepted industry standard (like `props` in React), add it to your `allowList` configuration.
+3. **Check Allow-List** If an abbreviation is a widely accepted industry standard (like `props` in React), add it to
+   your `allowList` configuration.
 
 4. **Auto-Fix** Run `eslint --fix` to automatically convert simple abbreviations to their full-word equivalents.
 
@@ -107,7 +111,11 @@ This rule discourages the use of abbreviations in favor of more descriptive name
 		description="Bans Roblox-specific shorthands"
 		href="/eslint-cease-nonsense-rules/rules/no-shorthand-names/"
 	/>
-	<LinkCard title="naming-convention" description="General naming standards" href="/eslint-cease-nonsense-rules/rules/naming-convention/" />
+	<LinkCard
+		title="naming-convention"
+		description="General naming standards"
+		href="/eslint-cease-nonsense-rules/rules/naming-convention/"
+	/>
 </CardGrid>
 
 ## Further Reading
