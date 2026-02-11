@@ -48,13 +48,14 @@ export default [
 			"cease-nonsense/no-async-constructor": "error",
 			"cease-nonsense/no-color3-constructor": "error",
 			"cease-nonsense/no-commented-code": "error",
-			"cease-nonsense/no-god-components": "error",
-			"cease-nonsense/no-identity-map": "error",
-			"cease-nonsense/no-instance-methods-without-this": "error",
-			"cease-nonsense/no-memo-children": "error",
-			"cease-nonsense/no-new-instance-in-use-memo": "error",
-			"cease-nonsense/no-print": "error",
-			"cease-nonsense/prefer-enum-item": "error",
+				"cease-nonsense/no-god-components": "error",
+				"cease-nonsense/no-identity-map": "error",
+				"cease-nonsense/no-instance-methods-without-this": "error",
+				"cease-nonsense/no-memo-children": "error",
+				"cease-nonsense/no-new-instance-in-use-memo": "error",
+				"cease-nonsense/no-underscore-react-props": "error",
+				"cease-nonsense/no-print": "error",
+				"cease-nonsense/prefer-enum-item": "error",
 			"cease-nonsense/prefer-enum-member": "error",
 			"cease-nonsense/no-shorthand-names": "error",
 			"cease-nonsense/no-unused-imports": "error",
@@ -523,6 +524,33 @@ useEffect(() => {
 }, [itemId]);
 
 const texture = useMemo(() => lookupTexture(itemId), [itemId]);
+```
+
+#### `no-underscore-react-props`
+
+Ban React prop names that begin with `_`.
+
+**Why**
+
+Props are part of a component's public API. Leading underscores usually imply private/internal fields, which makes prop
+contracts harder to read and inconsistent across components.
+
+**❌ Bad**
+
+```tsx
+<InventoryItemTooltip
+	key="inventory-tooltip"
+	_tooltipGradient={tooltipGradient}
+/>
+```
+
+**✅ Good**
+
+```tsx
+<InventoryItemTooltip
+	key="inventory-tooltip"
+	tooltipGradient={tooltipGradient}
+/>
 ```
 
 #### `no-useless-use-effect` (Experimental)
