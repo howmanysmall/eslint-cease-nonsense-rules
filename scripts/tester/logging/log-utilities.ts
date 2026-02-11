@@ -1,7 +1,7 @@
 import type { ConsolaInstance } from "consola";
 import log from "./log";
 
-export interface Context {
+interface Context {
 	readonly namespace?: string;
 	readonly scope?: string;
 	readonly tag?: string;
