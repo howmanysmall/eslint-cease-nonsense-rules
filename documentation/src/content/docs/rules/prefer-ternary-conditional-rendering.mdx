@@ -1,0 +1,108 @@
+---
+title: prefer-ternary-conditional-rendering
+badge:
+    text: React
+    variant: success
+description:
+    Prefer a single ternary expression when JSX conditional rendering uses complementary && branches.
+---
+
+import { Aside, Code, Tabs, TabItem, CardGrid, Card, LinkCard } from "@astrojs/starlight/components";
+
+Prefer a single ternary expression when two JSX `&&` branches are complements.
+
+## Rule Details :badge[React]{variant=success}
+
+This rule detects sibling JSX branches like `condition && <A />` and `!condition && <B />` (or strict
+`===`/`!==` complements) and recommends replacing them with one ternary expression.
+
+<Aside type="note" title="Why this helps">
+	A single ternary keeps mutually exclusive rendering logic in one place and avoids duplicating the condition logic
+	across sibling nodes.
+</Aside>
+
+The rule always reports the pattern when conditions are complementary.
+
+Auto-fix is conservative and only applies when the condition shape is provably safe:
+
+- Negation complements: `!x` vs `x`, where `x` is an identifier, `this`, or literal.
+- Strict comparison complements: `x === y` vs `x !== y` (including swapped operands), where both operands are safe atoms.
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		<Code
+			code={[
+				"function Component({ gradient, gradientToUse, rarityStyle }) {",
+				"\treturn (",
+				"\t\t<>",
+				'\t\t\t{gradient !== undefined && <uigradient key="ui-gradient" Color={gradient} />}',
+				"\t\t\t{gradient === undefined && (",
+				"\t\t\t\t<AnimatedGradient",
+				'\t\t\t\t\tkey="animated-gradient"',
+				"\t\t\t\t\tcolorValue={gradientToUse}",
+				"\t\t\t\t\trotation={45}",
+				"\t\t\t\t\tsweepingSpeed={rarityStyle?.sweepingSpeed ?? 0}",
+				"\t\t\t\t/>",
+				"\t\t\t)}",
+				"\t\t</>",
+				"\t);",
+				"}",
+			].join("\n")}
+			lang="tsx"
+		/>
+	</TabItem>
+	<TabItem label="✅ Correct" icon="check">
+		<Code
+			code={[
+				"function Component({ gradient, gradientToUse, rarityStyle }) {",
+				"\treturn (",
+				"\t\t<>",
+				"\t\t\t{gradient !== undefined ? (",
+				'\t\t\t\t<uigradient key="ui-gradient" Color={gradient} />',
+				"\t\t\t) : (",
+				"\t\t\t\t<AnimatedGradient",
+				'\t\t\t\t\tkey="animated-gradient"',
+				"\t\t\t\t\tcolorValue={gradientToUse}",
+				"\t\t\t\t\trotation={45}",
+				"\t\t\t\t\tsweepingSpeed={rarityStyle?.sweepingSpeed ?? 0}",
+				"\t\t\t\t/>",
+				"\t\t\t)}",
+				"\t\t</>",
+				"\t);",
+				"}",
+			].join("\n")}
+			lang="tsx"
+		/>
+	</TabItem>
+</Tabs>
+
+## Notes
+
+<CardGrid stagger>
+	<Card title="Reported Even Without Fix" icon="warning">
+		Unsafe complements like `isReady() && <A />` and `!isReady() && <B />` are reported but not auto-fixed.
+	</Card>
+	<Card title="Whitespace Only Pairing" icon="list-format">
+		Only sibling JSX expression containers separated by whitespace JSX text are paired.
+	</Card>
+	<Card title="First Condition Preserved" icon="seti:typescript">
+		When fixed, the ternary test uses the first branch condition to keep diffs stable.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="use-hook-at-top-level"
+		description="Keep hook calls in predictable top-level positions"
+		href="/eslint-cease-nonsense-rules/rules/use-hook-at-top-level/"
+	/>
+	<LinkCard
+		title="prefer-read-only-props"
+		description="Prevent accidental prop mutation in React components"
+		href="/eslint-cease-nonsense-rules/rules/prefer-read-only-props/"
+	/>
+</CardGrid>

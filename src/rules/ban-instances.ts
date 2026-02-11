@@ -66,7 +66,7 @@ function normalizeConfig(options: unknown): NormalizedConfig {
 	return { bannedClasses };
 }
 
-export default createRule<Options, MessageIds>({
+const banInstances = createRule<Options, MessageIds>({
 	create(context) {
 		const config = normalizeConfig(context.options[0]);
 
@@ -159,3 +159,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "ban-instances",
 });
+
+export default banInstances;

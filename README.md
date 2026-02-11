@@ -69,6 +69,7 @@ export default [
 			"cease-nonsense/prefer-pattern-replacements": "error",
 			"cease-nonsense/prefer-sequence-overloads": "error",
 			"cease-nonsense/prefer-singular-enums": "error",
+			"cease-nonsense/prefer-ternary-conditional-rendering": "error",
 			"cease-nonsense/prefer-udim2-shorthand": "error",
 			"cease-nonsense/react-hooks-strict-return": "error",
 			"cease-nonsense/require-module-level-instantiation": "error",
@@ -977,6 +978,59 @@ interface Props {
 
 function Component({ name, age }: Props) {
 	// ...
+}
+```
+
+#### `prefer-ternary-conditional-rendering`
+
+Prefer a single ternary expression when two JSX `&&` branches are complements.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/prefer-ternary-conditional-rendering": "error"
+}
+```
+
+**❌ Bad**
+
+```typescript
+function Component({ gradient, gradientToUse, rarityStyle }) {
+	return (
+		<>
+			{gradient !== undefined && <uigradient key="ui-gradient" Color={gradient} />}
+			{gradient === undefined && (
+				<AnimatedGradient
+					key="animated-gradient"
+					colorValue={gradientToUse}
+					rotation={45}
+					sweepingSpeed={rarityStyle?.sweepingSpeed ?? 0}
+				/>
+			)}
+		</>
+	);
+}
+```
+
+**✅ Good**
+
+```typescript
+function Component({ gradient, gradientToUse, rarityStyle }) {
+	return (
+		<>
+			{gradient !== undefined ? (
+				<uigradient key="ui-gradient" Color={gradient} />
+			) : (
+				<AnimatedGradient
+					key="animated-gradient"
+					colorValue={gradientToUse}
+					rotation={45}
+					sweepingSpeed={rarityStyle?.sweepingSpeed ?? 0}
+				/>
+			)}
+		</>
+	);
 }
 ```
 

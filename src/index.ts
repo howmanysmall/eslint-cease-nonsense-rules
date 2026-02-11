@@ -34,6 +34,7 @@ import preferReadOnlyProps from "./rules/prefer-read-only-props";
 import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
 import preferSingleWorldQuery from "./rules/prefer-single-world-query";
 import preferSingularEnums from "./rules/prefer-singular-enums";
+import preferTernaryConditionalRendering from "./rules/prefer-ternary-conditional-rendering";
 import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
 import preventAbbreviations from "./rules/prevent-abbreviations";
 import reactHooksStrictReturn from "./rules/react-hooks-strict-return";
@@ -145,6 +146,7 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"prefer-sequence-overloads": preferSequenceOverloads,
 	"prefer-single-world-query": preferSingleWorldQuery,
 	"prefer-singular-enums": preferSingularEnums,
+	"prefer-ternary-conditional-rendering": preferTernaryConditionalRendering,
 	"prefer-udim2-shorthand": preferUDim2Shorthand,
 	"prevent-abbreviations": preventAbbreviations,
 	"react-hooks-strict-return": reactHooksStrictReturn,
@@ -201,6 +203,7 @@ export const recommended = {
 		"cease-nonsense/prefer-enum-member": "error",
 		"cease-nonsense/prefer-read-only-props": "error",
 		"cease-nonsense/prefer-sequence-overloads": "error",
+		"cease-nonsense/prefer-ternary-conditional-rendering": "error",
 		"cease-nonsense/prefer-udim2-shorthand": "error",
 		"cease-nonsense/require-named-effect-functions": "error",
 		"cease-nonsense/require-react-component-keys": "error",

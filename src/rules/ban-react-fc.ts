@@ -5,7 +5,7 @@ type MessageIds = "banReactFC";
 
 const BANNED_FC_NAMES = new Set(["FC", "FunctionComponent", "VFC", "VoidFunctionComponent"]);
 
-export default createRule<[], MessageIds>({
+const banReactFc = createRule<[], MessageIds>({
 	create(context) {
 		return {
 			VariableDeclarator(node: TSESTree.VariableDeclarator): void {
@@ -48,3 +48,5 @@ export default createRule<[], MessageIds>({
 	},
 	name: "ban-react-fc",
 });
+
+export default banReactFc;

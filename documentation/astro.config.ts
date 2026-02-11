@@ -59,6 +59,7 @@ export default defineConfig({
 						"rules/no-useless-use-effect",
 						"rules/no-useless-use-spring",
 						"rules/prefer-read-only-props",
+						"rules/prefer-ternary-conditional-rendering",
 						"rules/react-hooks-strict-return",
 						"rules/require-named-effect-functions",
 						"rules/require-react-component-keys",
