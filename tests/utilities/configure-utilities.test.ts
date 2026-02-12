@@ -473,6 +473,7 @@ describe("configure-utilities", () => {
 			expect(configuration).toEqual({
 				constructors: ["Instance"],
 				environment: "roblox-ts",
+				maxHelperTraceDepth: 4,
 			});
 		});
 
@@ -486,6 +487,12 @@ describe("configure-utilities", () => {
 			expect.assertions(1);
 			const configuration = createNoNewInstanceInUseMemoOptions({ environment: "standard" });
 			expect(configuration.environment).toBe("standard");
+		});
+
+		it("should override maxHelperTraceDepth", () => {
+			expect.assertions(1);
+			const configuration = createNoNewInstanceInUseMemoOptions({ maxHelperTraceDepth: 1 });
+			expect(configuration.maxHelperTraceDepth).toBe(1);
 		});
 	});
 

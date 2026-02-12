@@ -301,7 +301,7 @@ export function createNoUnusedImportsOptions(options: Partial<NoUnusedImportsOpt
 export function createNoNewInstanceInUseMemoOptions(
 	options: Partial<NoNewInstanceInUseMemoOptions> = {},
 ): NoNewInstanceInUseMemoOptions {
-	return { constructors: ["Instance"], environment: "roblox-ts", ...options };
+	return { constructors: ["Instance"], environment: "roblox-ts", maxHelperTraceDepth: 4, ...options };
 }
 
 /**

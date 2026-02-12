@@ -65,17 +65,56 @@ const model = memo(() => new Instance("Model"), []);
 `,
 				errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
 			},
-			{
-				code: `
+				{
+					code: `
 import { useMemo } from "@rbxts/react";
 
 const value = useMemo(() => new Vector3(1, 2, 3), []);
 `,
-				errors: [{ data: { constructorName: "Vector3" }, messageId: "noNewInUseMemo" }],
-				options: [{ constructors: ["Vector3"] }],
-			},
-			{
-				code: `
+					errors: [{ data: { constructorName: "Vector3" }, messageId: "noNewInUseMemo" }],
+					options: [{ constructors: ["Vector3"] }],
+				},
+				{
+					code: `
+import { useMemo } from "@rbxts/react";
+
+function createUnitModel(unitId: string) {
+    const model = new Instance("Model");
+    model.Name = unitId;
+    return model;
+}
+
+const unitModel = useMemo(() => createUnitModel("abc"), []);
+`,
+					errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
+				},
+				{
+					code: `
+import { useMemo } from "@rbxts/react";
+
+const createPart = () => new Instance("Part");
+const part = useMemo(createPart, []);
+`,
+					errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
+				},
+				{
+					code: `
+import { useMemo } from "@rbxts/react";
+
+function makeLeaf() {
+    return new Instance("Part");
+}
+
+function makeBranch() {
+    return makeLeaf();
+}
+
+const value = useMemo(() => makeBranch(), []);
+`,
+					errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
+				},
+				{
+					code: `
 import { useMemo } from "react";
 
 const model = useMemo(() => new Instance("Model"), []);
@@ -124,24 +163,56 @@ import { useMemo } from "react";
 const model = useMemo(() => new Instance("Model"), []);
 `,
 			},
-			{
-				code: `
+				{
+					code: `
 import { useMemo } from "@rbxts/react";
 
 const model = useMemo(() => new Instance("Model"), []);
 `,
-				options: [{ environment: "standard" }],
-			},
-			{
-				code: `
+					options: [{ environment: "standard" }],
+				},
+				{
+					code: `
 import { useMemo } from "@rbxts/react";
 
 const createPart = () => new Instance("Part");
-const part = useMemo(createPart, []);
+const part = createPart();
 `,
-			},
-			{
-				code: `
+				},
+				{
+					code: `
+import { useMemo } from "@rbxts/react";
+
+function makeLeaf() {
+    return new Instance("Part");
+}
+
+function makeBranch() {
+    return makeLeaf();
+}
+
+const value = useMemo(() => makeBranch(), []);
+`,
+					options: [{ maxHelperTraceDepth: 0 }],
+				},
+				{
+					code: `
+import { useMemo } from "@rbxts/react";
+
+function makeLeaf() {
+    return new Instance("Part");
+}
+
+function makeBranch() {
+    return makeLeaf();
+}
+
+const value = useMemo(() => makeBranch(), []);
+`,
+					options: [{ maxHelperTraceDepth: 1 }],
+				},
+				{
+					code: `
 import React from "@rbxts/react";
 
 const value = React.useMemo(() => ({ value: 1 }), []);
