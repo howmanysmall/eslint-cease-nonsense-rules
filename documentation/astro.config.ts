@@ -79,6 +79,7 @@ export default defineConfig({
 						"rules/no-color3-constructor",
 						"rules/no-instance-methods-without-this",
 						"rules/no-print",
+						"rules/no-table-create-map",
 						"rules/no-warn",
 						"rules/prefer-enum-item",
 						"rules/prefer-sequence-overloads",
