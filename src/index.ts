@@ -17,6 +17,7 @@ import noMemoChildren from "./rules/no-memo-children";
 import noNewInstanceInUseMemo from "./rules/no-new-instance-in-use-memo";
 import noPrint from "./rules/no-print";
 import noShorthandNames from "./rules/no-shorthand-names";
+import noTableCreateMap from "./rules/no-table-create-map";
 import noUnderscoreReactProps from "./rules/no-underscore-react-props";
 import noUnusedImports from "./rules/no-unused-imports";
 import noUnusedUseMemo from "./rules/no-unused-use-memo";
@@ -129,6 +130,7 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"no-new-instance-in-use-memo": noNewInstanceInUseMemo,
 	"no-print": noPrint,
 	"no-shorthand-names": noShorthandNames,
+	"no-table-create-map": noTableCreateMap,
 	"no-underscore-react-props": noUnderscoreReactProps,
 	"no-unused-imports": noUnusedImports,
 	"no-unused-use-memo": noUnusedUseMemo,
@@ -196,6 +198,7 @@ export const recommended = {
 		"cease-nonsense/no-new-instance-in-use-memo": "error",
 		"cease-nonsense/no-print": "error",
 		"cease-nonsense/no-shorthand-names": "error",
+		"cease-nonsense/no-table-create-map": "error",
 		"cease-nonsense/no-underscore-react-props": "error",
 		"cease-nonsense/no-unused-imports": "error",
 		"cease-nonsense/no-unused-use-memo": "error",

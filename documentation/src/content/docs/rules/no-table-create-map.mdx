@@ -1,0 +1,106 @@
+---
+title: no-table-create-map
+badge:
+    text: Roblox
+    variant: note
+description:
+    Disallow mapping directly on table.create(...) and new Array(...) constructor patterns in roblox-ts.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+
+Disallow direct `.map(...)` calls on `table.create(...)` and `new Array(...)` constructors.
+
+## Rule Details :badge[Roblox]{variant=note}
+
+This rule reports constructor chains where `map` is called immediately after `table.create(...)` or `new Array(...)`.
+In roblox-ts code, this pattern is harder to reason about and hides fill semantics.
+
+<Aside type="tip" title="Use Explicit Indexed Writes">
+	Allocate once, iterate once, and assign by index so reviewers can see exactly how values are produced.
+</Aside>
+
+## Configuration
+
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/no-table-create-map": "error"',
+		"}",
+	].join("\n")}
+	lang="typescript"
+	title="eslint.config.ts"
+/>
+
+## Refactor Steps
+
+<Steps>
+1. **Allocate the output array** with `new Array<T>(size)`.
+2. **Iterate explicitly** with a range loop.
+3. **Assign by index** (`result[index - 1] = value`) inside the loop.
+4. **Remove constructor `.map(...)` chains**.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Construct Then Map
+		Avoid map directly on preallocation constructors.
+
+    	<Code
+    		code={[
+    			"const rewards = table.create(entries, ItemId.Bp1Crate).map(() => buildReward());",
+    			"const values = new Array<number>(entries, 0).map((value) => value + 1);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Explicit Fill Loop
+    	Allocate then fill with indexed assignments.
+
+    	<Code
+    		code={[
+    			"const rewards = new Array<RewardData<RewardType.Item>>(entries);",
+    			"for (const index of $range(1, entries)) {",
+    			"\trewards[index - 1] = buildReward();",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Why enforce this?
+
+<CardGrid stagger>
+	<Card title="Clarity" icon="magnifier">
+		Loop-based writes make value generation explicit and reviewable.
+	</Card>
+	<Card title="Consistency" icon="list-format">
+		Keeps preallocation and transformation logic separate across the codebase.
+	</Card>
+	<Card title="Roblox Focus" icon="bolt">
+		Targets a roblox-ts constructor style that often leads to confusing output.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="no-array-size-assignment"
+		description="Bans append-by-size indexing"
+		href="/eslint-cease-nonsense-rules/rules/no-array-size-assignment/"
+	/>
+	<LinkCard
+		title="prefer-sequence-overloads"
+		description="Performance-focused Roblox constructor rule"
+		href="/eslint-cease-nonsense-rules/rules/prefer-sequence-overloads/"
+	/>
+</CardGrid>

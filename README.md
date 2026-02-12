@@ -1818,6 +1818,34 @@ inventory.push(item);
 state.items.push(next);
 ```
 
+#### `no-table-create-map`
+
+Disallow mapping directly on `table.create(...)` and `new Array(...)` constructor chains.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-table-create-map": "error"
+}
+```
+
+**❌ Bad**
+
+```typescript
+const rewards = table.create(entries, ItemId.Bp1Crate).map(() => buildReward());
+const values = new Array<number>(entries, 0).map((value) => value + 1);
+```
+
+**✅ Good**
+
+```typescript
+const rewards = new Array<RewardData<RewardType.Item>>(entries);
+for (const index of $range(1, entries)) {
+	rewards[index - 1] = buildReward();
+}
+```
+
 #### `prefer-udim2-shorthand`
 
 Prefer `UDim2.fromScale()` or `UDim2.fromOffset()` when all offsets or all scales are zero.
