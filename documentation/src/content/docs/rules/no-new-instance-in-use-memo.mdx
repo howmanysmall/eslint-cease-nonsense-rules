@@ -42,12 +42,14 @@ The rule accepts these options:
 
 - `constructors` (default: `["Instance"]`): Constructor identifiers to disallow inside `useMemo`.
 - `environment` (default: `"roblox-ts"`): React import source mode (`"roblox-ts"` or `"standard"`).
+- `maxHelperTraceDepth` (default: `4`): Maximum local helper-call depth traced from `useMemo` callbacks.
 
 ```typescript
 {
   "cease-nonsense/no-new-instance-in-use-memo": ["error", {
-    "constructors": ["Instance", "Vector3"],
-    "environment": "roblox-ts"
+    constructors: ["Instance", "Vector3"],
+    environment: "roblox-ts",
+    maxHelperTraceDepth: 4,
   }]
 }
 ```
@@ -108,7 +110,7 @@ The rule accepts these options:
 		Flags configured constructor identifiers (`new Foo()`), defaulting to `Instance`.
 	</Card>
 	<Card title="Deep Traversal" icon="list-format">
-		Reports constructor calls anywhere inside the memo callback subtree, including nested callbacks.
+		Reports constructor calls in memo callbacks and traced local helper chains up to `maxHelperTraceDepth`.
 	</Card>
 </CardGrid>
 

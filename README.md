@@ -491,7 +491,8 @@ creates resources during render flow and can hide lifecycle work that belongs in
 {
   "cease-nonsense/no-new-instance-in-use-memo": ["error", {
     "constructors": ["Instance"],     // Defaults to ["Instance"]
-    "environment": "roblox-ts"        // or "standard"
+    "environment": "roblox-ts",       // or "standard"
+    "maxHelperTraceDepth": 4          // Trace depth for local helper calls from useMemo
   }]
 }
 ```
@@ -506,6 +507,18 @@ const itemModel = useMemo(() => {
 	model.Name = "ItemPreview";
 	return model;
 }, [itemId]);
+```
+
+```typescript
+import { useMemo } from "@rbxts/react";
+
+function createItemModel(id: string) {
+	const model = new Instance("Model");
+	model.Name = id;
+	return model;
+}
+
+const itemModel = useMemo(() => createItemModel(itemId), [itemId]);
 ```
 
 **✅ Good**
