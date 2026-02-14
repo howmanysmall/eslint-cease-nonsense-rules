@@ -10,6 +10,8 @@ import noArraySizeAssignment from "./rules/no-array-size-assignment";
 import noAsyncConstructor from "./rules/no-async-constructor";
 import noColor3Constructor from "./rules/no-color3-constructor";
 import noCommentedCode from "./rules/no-commented-code";
+import noConstantConditionWithBreak from "./rules/no-constant-condition-with-break";
+import noEventsInEventsCallback from "./rules/no-events-in-events-callback";
 import noGodComponents from "./rules/no-god-components";
 import noIdentityMap from "./rules/no-identity-map";
 import noInstanceMethodsWithoutThis from "./rules/no-instance-methods-without-this";
@@ -55,6 +57,7 @@ export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type
 export type { MemoizedEffectDependenciesOptions } from "./rules/memoized-effect-dependencies";
 export type { NamingConventionOptions } from "./rules/naming-convention";
 export type { NoArraySizeAssignmentOptions } from "./rules/no-array-size-assignment";
+export type { NoEventsInEventsCallbackOptions } from "./rules/no-events-in-events-callback";
 export type { NoGodComponentsOptions } from "./rules/no-god-components";
 export type { NoIdentityMapOptions } from "./rules/no-identity-map";
 export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
@@ -81,6 +84,7 @@ export {
 	createEffectFunctionOptions,
 	createHookConfiguration,
 	createNamingConventionOptions,
+	createNoEventsInEventsCallbackOptions,
 	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
 	createNoMemoChildrenOptions,
@@ -123,6 +127,8 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"no-async-constructor": noAsyncConstructor,
 	"no-color3-constructor": noColor3Constructor,
 	"no-commented-code": noCommentedCode,
+	"no-constant-condition-with-break": noConstantConditionWithBreak,
+	"no-events-in-events-callback": noEventsInEventsCallback,
 	"no-god-components": noGodComponents,
 	"no-identity-map": noIdentityMap,
 	"no-instance-methods-without-this": noInstanceMethodsWithoutThis,

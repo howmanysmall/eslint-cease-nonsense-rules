@@ -1,0 +1,113 @@
+---
+title: no-constant-condition-with-break
+description: Disallow constant conditions, but allow constant loops that include a break targeting the same loop.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Disallow constant conditions, but allow constant loops that include a `break` targeting the same loop.
+
+## Rule Details
+
+This rule is similar to ESLint's built-in `no-constant-condition` rule, but it makes an exception for constant loops
+(like `while (true)`) that contain a `break` statement that exits the same loop. This pattern is commonly used for game
+loops, event loops, and other intentional infinite loops with exit conditions.
+
+<Aside type="tip" title="When to use this rule">
+	Use this rule when you want to catch accidental constant conditions in `if` statements and loops without `break`,
+	while allowing intentional infinite loops with proper exit mechanisms.
+</Aside>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Constant Conditions Without Break
+		These patterns are flagged because they are likely bugs or missing exit conditions.
+
+    	<Code
+    		code={[
+    			"// if statement with constant condition",
+    			'if (true) { doSomething(); }',
+    			'',
+    			"// while loop without break",
+    			'while (true) { doSomething(); }',
+    			'',
+    			"// for loop with constant condition and no break",
+    			'for (;; true) { doSomething(); }',
+    			'',
+    			"// do-while loop without break",
+    			'do { doSomething(); } while (true);',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Valid Patterns
+    	These patterns are allowed because they either have proper exit conditions or intentional breaks.
+
+    	<Code
+    		code={[
+    			"// Variable condition is fine",
+    			'while (condition) { doSomething(); }',
+    			'',
+    			"// Loop with break is allowed",
+    			'while (true) {',
+    			'\tif (shouldStop) break;',
+    			'\tdoSomething();',
+    			'}',
+    			'',
+    			"// Labeled break targeting this loop",
+    			'outer: while (true) {',
+    			'\tif (done) break outer;',
+    			'\tdoSomething();',
+    			'}',
+    			'',
+    			"// For loop with break",
+    			'for (;; true) {',
+    			'\tif (condition) break;',
+    			'\tdoSomething();',
+    			'}',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Detection Strategy
+
+<CardGrid stagger>
+	<Card title="Constant Evaluation" icon="magnifier">
+		Evaluates expressions to determine if they always result in the same value.
+	</Card>
+	<Card title="Break Target Analysis" icon="target">
+		Traces break statements to verify they target the same loop (not an inner loop or switch).
+	</Card>
+	<Card title="Nested Loop Aware" icon="seti:folder">
+		Correctly handles nested loops and labeled breaks.
+	</Card>
+	<Card title="Function Boundary" icon="seti:lock">
+		Respects function boundaries—breaks inside callbacks don't count as exiting the outer loop.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="no-useless-use-effect"
+		description="Prevents unnecessary useEffect patterns"
+		href="/eslint-cease-nonsense-rules/rules/no-useless-use-effect/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="ESLint no-constant-condition"
+		description="Original ESLint rule documentation"
+		href="https://eslint.org/docs/latest/rules/no-constant-condition"
+	/>
+</CardGrid>
