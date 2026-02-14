@@ -683,11 +683,7 @@ function Component() {
 	}, [doubled]);
 }
 `,
-				errors: [
-					{ messageId: "derivedState" },
-					{ messageId: "effectChain" },
-					{ messageId: "derivedState" },
-				],
+				errors: [{ messageId: "derivedState" }, { messageId: "effectChain" }, { messageId: "derivedState" }],
 			},
 		],
 		valid: [
@@ -1099,6 +1095,192 @@ function Component({ userId }) {
 	}, [data]);
 }
 `,
+			},
+
+			// ========== REGRESSION: False-positive guards ==========
+
+			// Duplicate deps across separate hooks should be valid
+			{
+				code: `
+import { useEffect } from "react";
+
+export function usePrimary(total: number, sync?: (value: number) => void): void {
+	function runPrimarySync(): void {
+		sync?.(total + 1);
+	}
+	useEffect(runPrimarySync, [total, sync]);
+}
+
+export function useSecondary(total: number, sync?: (value: number) => void): void {
+	function runSecondarySync(): void {
+		sync?.(total + 2);
+	}
+	useEffect(runSecondarySync, [total, sync]);
+}
+`,
+				options: [{ environment: "standard" }],
+			},
+
+			// Subscription lifecycle with cleanup
+			{
+				code: `
+import { useEffect, useState } from "react";
+
+type Channel = {
+	listen: (listener: (next: string) => void) => () => void;
+};
+
+export function useChannelValue(channel: Channel): string {
+	const [value, setValue] = useState("");
+
+	useEffect(() => {
+		return channel.listen((next) => {
+			setValue(next);
+		});
+	}, [channel]);
+
+	return value;
+}
+`,
+				options: [{ environment: "standard" }],
+			},
+
+			// Async resolution with cancellation guard
+			{
+				code: `
+import { useEffect, useState } from "react";
+
+export function useAsyncTitle(task: Promise<string>): string | undefined {
+	const [title, setTitle] = useState<string | undefined>(undefined);
+
+	function syncAsyncTitle(): () => void {
+		let cancelled = false;
+
+		task.then((nextTitle) => {
+			if (cancelled) return;
+			setTitle(nextTitle);
+		});
+
+		return () => {
+			cancelled = true;
+		};
+	}
+
+	useEffect(syncAsyncTitle, [task]);
+	return title;
+}
+`,
+				options: [{ environment: "standard" }],
+			},
+
+			// Timer orchestration with cleanup
+			{
+				code: `
+import { useEffect, useRef, useState } from "react";
+
+export function useStaggeredVisibility(isVisible: boolean, waitMs: number): boolean {
+	const [shown, setShown] = useState(isVisible);
+	const pendingTimer = useRef<number | undefined>(undefined);
+
+	function applyVisibility(): () => void {
+		if (isVisible) {
+			if (pendingTimer.current !== undefined) {
+				clearTimeout(pendingTimer.current);
+				pendingTimer.current = undefined;
+			}
+			setShown(true);
+			return () => {};
+		}
+
+		pendingTimer.current = window.setTimeout(() => {
+			setShown(false);
+			pendingTimer.current = undefined;
+		}, waitMs);
+
+		return () => {
+			if (pendingTimer.current !== undefined) {
+				clearTimeout(pendingTimer.current);
+				pendingTimer.current = undefined;
+			}
+		};
+	}
+
+	useEffect(applyVisibility, [isVisible, waitMs]);
+	return shown;
+}
+`,
+				options: [{ environment: "standard" }],
+			},
+
+			// Imperative animation bridge
+			{
+				code: `
+import { useEffect } from "react";
+
+type MotionController = {
+	pushTarget: (next: number) => void;
+};
+
+export function useMotionBridge(goal: number, controller: MotionController): void {
+	useEffect(() => {
+		controller.pushTarget(goal);
+	}, [goal, controller]);
+}
+`,
+				options: [{ environment: "standard" }],
+			},
+
+			// Observer registration with teardown
+			{
+				code: `
+import { useEffect, useState } from "react";
+
+type Watch = (key: "focus" | "hover", listener: (value: boolean) => void) => () => void;
+
+export function useFocusHoverState(watch: Watch): boolean {
+	const [active, setActive] = useState(false);
+
+	function bindObservers(): () => void {
+		const stopFocus = watch("focus", (value) => {
+			setActive(value);
+		});
+		const stopHover = watch("hover", (value) => {
+			setActive(value);
+		});
+
+		return () => {
+			stopFocus();
+			stopHover();
+		};
+	}
+
+	useEffect(bindObservers, [watch]);
+	return active;
+}
+`,
+				options: [{ environment: "standard" }],
+			},
+
+			// Custom hook callback notification
+			{
+				code: `
+import { useEffect } from "react";
+
+interface ReadySignalInput {
+	readonly ready: boolean;
+	readonly onReady?: () => void;
+}
+
+export function useReadySignal({ ready, onReady }: ReadySignalInput): void {
+	function notifyReady(): void {
+		if (!ready) return;
+		onReady?.();
+	}
+
+	useEffect(notifyReady, [ready, onReady]);
+}
+`,
+				options: [{ environment: "standard" }],
 			},
 
 			// InitializeState disabled via options

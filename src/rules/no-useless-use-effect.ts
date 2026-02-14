@@ -184,11 +184,14 @@ const DEFAULT_OPTIONS: Required<NoUselessUseEffectOptions> = {
 type FunctionNode = TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression;
 
 interface FunctionContext {
+	readonly functionId: number;
+	readonly isCustomHook: boolean;
 	propertyObjectName?: string;
 	readonly propertyCallbackIdentifiers: Set<string>;
 }
 
 interface EffectInfo {
+	readonly ownerFunctionId: number;
 	readonly node: TSESTree.CallExpression;
 	readonly setterCalls: Set<string>;
 	readonly depIdentifiers: Set<string>;
@@ -257,6 +260,47 @@ function isFunctionLike(node: TSESTree.Node | null | undefined): node is Functio
 	);
 }
 
+function getFunctionName(node: FunctionNode): string | undefined {
+	if (
+		(node.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration ||
+			node.type === TSESTree.AST_NODE_TYPES.FunctionExpression) &&
+		node.id
+	) {
+		return node.id.name;
+	}
+
+	const { parent } = node;
+	if (!parent) return undefined;
+
+	if (
+		parent.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
+		parent.id.type === TSESTree.AST_NODE_TYPES.Identifier
+	) {
+		return parent.id.name;
+	}
+
+	if (
+		parent.type === TSESTree.AST_NODE_TYPES.Property &&
+		!parent.computed &&
+		parent.key.type === TSESTree.AST_NODE_TYPES.Identifier
+	) {
+		return parent.key.name;
+	}
+
+	if (
+		parent.type === TSESTree.AST_NODE_TYPES.MethodDefinition &&
+		parent.key.type === TSESTree.AST_NODE_TYPES.Identifier
+	) {
+		return parent.key.name;
+	}
+
+	return undefined;
+}
+
+function isCustomHookName(name: string | undefined): boolean {
+	return typeof name === "string" && name.startsWith("use");
+}
+
 function isBlockBody(
 	node: TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
 ): node is (TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression) & { body: TSESTree.BlockStatement } {
@@ -286,8 +330,8 @@ function hasReturnWithArgument(body: TSESTree.BlockStatement): boolean {
 
 			case TSESTree.AST_NODE_TYPES.ReturnStatement:
 				if (current.argument) return true;
-
 				continue;
+
 			case TSESTree.AST_NODE_TYPES.BlockStatement:
 				stack.push(...current.body);
 				continue;
@@ -596,9 +640,11 @@ function countSetterCalls(
 	for (const statement of statements) {
 		if (statement.type === TSESTree.AST_NODE_TYPES.IfStatement) {
 			if (statement.alternate) return undefined;
+
 			const innerStatements = getStatementsFromConsequent(statement.consequent);
 			const innerCount = countSetterCalls(innerStatements, stateSetterIdentifiers);
 			if (innerCount === undefined || innerCount === 0) return undefined;
+
 			count += innerCount;
 			continue;
 		}
@@ -608,9 +654,9 @@ function countSetterCalls(
 
 		// Check that at least one argument contains an identifier reference
 		// (i.e., the value is derived from something, not just a constant)
-		const hasDerivedArgument = callExpression.arguments.some((arg) => {
-			if (arg.type === TSESTree.AST_NODE_TYPES.SpreadElement) return false;
-			return expressionContainsIdentifier(arg);
+		const hasDerivedArgument = callExpression.arguments.some((argument) => {
+			if (argument.type === TSESTree.AST_NODE_TYPES.SpreadElement) return false;
+			return expressionContainsIdentifier(argument);
 		});
 
 		if (!hasDerivedArgument) return undefined;
@@ -630,9 +676,11 @@ function countPropertyCallbackCalls(
 	for (const statement of statements) {
 		if (statement.type === TSESTree.AST_NODE_TYPES.IfStatement) {
 			if (statement.alternate) return undefined;
+
 			const innerStatements = getStatementsFromConsequent(statement.consequent);
 			const innerCount = countPropertyCallbackCalls(innerStatements, functionContext, propertyCallbackPrefixes);
 			if (innerCount === undefined || innerCount === 0) return undefined;
+
 			count += innerCount;
 			continue;
 		}
@@ -647,9 +695,7 @@ function countPropertyCallbackCalls(
 }
 
 function hasPrefix(value: string, prefixes: ReadonlySet<string>): boolean {
-	for (const prefix of prefixes) {
-		if (value.startsWith(prefix)) return true;
-	}
+	for (const prefix of prefixes) if (value.startsWith(prefix)) return true;
 	return false;
 }
 
@@ -680,8 +726,14 @@ function unwrapParameter(parameter: TSESTree.Parameter): TSESTree.Parameter {
 function buildFunctionContext(
 	node: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
 	propertyCallbackPrefixes: ReadonlySet<string>,
+	functionId: number,
+	isCustomHook: boolean,
 ): FunctionContext {
-	const context: FunctionContext = { propertyCallbackIdentifiers: new Set<string>() };
+	const context: FunctionContext = {
+		functionId,
+		isCustomHook,
+		propertyCallbackIdentifiers: new Set<string>(),
+	};
 	const [firstParameter] = node.params;
 	if (!firstParameter) return context;
 
@@ -695,8 +747,10 @@ function buildFunctionContext(
 
 	for (const property of parameter.properties) {
 		if (property.type !== TSESTree.AST_NODE_TYPES.Property) continue;
+
 		const propertyName = getPropertyName(property);
 		if (!(propertyName && hasPrefix(propertyName, propertyCallbackPrefixes))) continue;
+
 		const valueIdentifier = getPropertyValueIdentifier(property);
 		if (valueIdentifier) context.propertyCallbackIdentifiers.add(valueIdentifier.name);
 	}
@@ -770,9 +824,7 @@ function collectSetterCalls(
 	for (const statement of statements) {
 		if (statement.type === TSESTree.AST_NODE_TYPES.IfStatement) {
 			const innerStatements = getStatementsFromConsequent(statement.consequent);
-			for (const setter of collectSetterCalls(innerStatements, stateSetterIdentifiers)) {
-				setters.add(setter);
-			}
+			for (const setter of collectSetterCalls(innerStatements, stateSetterIdentifiers)) setters.add(setter);
 			continue;
 		}
 
@@ -1046,8 +1098,8 @@ function collectIdentifiers(node: TSESTree.Node): Set<string> {
 
 		if (current.type === TSESTree.AST_NODE_TYPES.CallExpression) {
 			stack.push(current.callee);
-			for (const arg of current.arguments) {
-				if (arg.type !== TSESTree.AST_NODE_TYPES.SpreadElement) stack.push(arg);
+			for (const argument of current.arguments) {
+				if (argument.type !== TSESTree.AST_NODE_TYPES.SpreadElement) stack.push(argument);
 			}
 			continue;
 		}
@@ -1129,9 +1181,7 @@ function hasEventSpecificLogic(
 						call.callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
 					) {
 						const method = call.callee.property.name.toLowerCase();
-						for (const prefix of EVENT_SIDE_EFFECT_PREFIXES) {
-							if (method.startsWith(prefix)) return true;
-						}
+						for (const prefix of EVENT_SIDE_EFFECT_PREFIXES) if (method.startsWith(prefix)) return true;
 					}
 
 					return false;
@@ -1145,6 +1195,7 @@ function hasEventSpecificLogic(
 					statement.alternate.type === TSESTree.AST_NODE_TYPES.BlockStatement
 						? statement.alternate.body
 						: [statement.alternate];
+
 				if (hasEventSpecificLogic(alternateStatements, stateSetterIdentifiers, stateValueIdentifiers)) {
 					return true;
 				}
@@ -1161,6 +1212,10 @@ function depArraysAreIdentical(ids1: ReadonlySet<string>, ids2: ReadonlySet<stri
 	return true;
 }
 
+function getOwnerStateKey(ownerFunctionId: number, stateValue: string): string {
+	return `${ownerFunctionId}:${stateValue}`;
+}
+
 function getFunctionBody(node: FunctionNode): TSESTree.BlockStatement | undefined {
 	if (node.body.type === TSESTree.AST_NODE_TYPES.BlockStatement) return node.body;
 	return undefined;
@@ -1170,6 +1225,7 @@ export default createRule<Options, MessageIds>({
 	create(context) {
 		const options = normalizeOptions(context.options[0]);
 		const reactSources = getReactSources(options.environment);
+		const PROGRAM_FUNCTION_ID = 0;
 
 		const reactNamespaces = new Set<string>();
 		const effectIdentifiers = new Set<string>();
@@ -1179,13 +1235,14 @@ export default createRule<Options, MessageIds>({
 		const stateSetterToValue = new Map<string, string>();
 		const refHookIdentifiers = new Set<string>();
 		const refIdentifiers = new Set<string>();
-		const functionContextStack: Array<FunctionContext> = [];
+		const functionContextStack = new Array<FunctionContext>();
+		let nextFunctionId = 1;
 
 		// Named function resolution
 		const namedFunctions = new Map<string, FunctionNode>();
 
 		// Effect tracking for cross-effect analysis
-		const componentEffects: Array<EffectInfo> = [];
+		const componentEffects = new Array<EffectInfo>();
 
 		function isEffectCall(node: TSESTree.CallExpression): boolean {
 			return isHookCall(node, effectIdentifiers, reactNamespaces, options.hooks);
@@ -1237,7 +1294,17 @@ export default createRule<Options, MessageIds>({
 		}
 
 		function enterFunction(node: FunctionNode): void {
-			functionContextStack.push(buildFunctionContext(node, options.propertyCallbackPrefixes));
+			const functionId = nextFunctionId;
+			nextFunctionId += 1;
+			const functionName = getFunctionName(node);
+			functionContextStack.push(
+				buildFunctionContext(
+					node,
+					options.propertyCallbackPrefixes,
+					functionId,
+					isCustomHookName(functionName),
+				),
+			);
 
 			if (node.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration && node.id) {
 				namedFunctions.set(node.id.name, node);
@@ -1254,6 +1321,12 @@ export default createRule<Options, MessageIds>({
 			"error",
 			"info",
 			"debug",
+			"setTimeout",
+			"clearTimeout",
+			"setInterval",
+			"clearInterval",
+			"requestAnimationFrame",
+			"cancelAnimationFrame",
 			"fetch",
 			"navigate",
 			"navigateTo",
@@ -1273,6 +1346,14 @@ export default createRule<Options, MessageIds>({
 			"alert",
 			"confirm",
 			"prompt",
+			"subscribe",
+			"unsubscribe",
+			"observe",
+			"unobserve",
+			"addEventListener",
+			"removeEventListener",
+			"addListener",
+			"removeListener",
 		]);
 
 		function hasRealExternalSideEffect(
@@ -1341,7 +1422,24 @@ export default createRule<Options, MessageIds>({
 						method.startsWith("fetch") ||
 						method.startsWith("send") ||
 						method.startsWith("post") ||
-						method.startsWith("track")
+						method.startsWith("track") ||
+						method === "setTimeout" ||
+						method === "clearTimeout" ||
+						method === "setInterval" ||
+						method === "clearInterval" ||
+						method === "requestAnimationFrame" ||
+						method === "cancelAnimationFrame" ||
+						method === "subscribe" ||
+						method === "unsubscribe" ||
+						method === "observe" ||
+						method === "unobserve" ||
+						method === "addEventListener" ||
+						method === "removeEventListener" ||
+						method === "addListener" ||
+						method === "removeListener" ||
+						method === "then" ||
+						method === "catch" ||
+						method === "finally"
 					)
 						return true;
 				}
@@ -1373,6 +1471,7 @@ export default createRule<Options, MessageIds>({
 				hasNonSetterSideEffect: hasNonSetter,
 				hasReturnWithCleanup: hasReturnCleanup,
 				node,
+				ownerFunctionId: functionContext?.functionId ?? PROGRAM_FUNCTION_ID,
 				setterCalls,
 				statements,
 			});
@@ -1455,7 +1554,7 @@ export default createRule<Options, MessageIds>({
 
 			// 8. mixedDerivedState - setters mixed with non-setter calls
 			// Only flag if the non-setter calls don't appear to be real external side effects
-			if (options.reportMixedDerivedState && setterCalls.size > 0 && hasNonSetter) {
+			if (options.reportMixedDerivedState && setterCalls.size > 0 && hasNonSetter && !hasReturnCleanup) {
 				const hasRealSideEffect = hasRealExternalSideEffect(
 					statements,
 					stateSetterIdentifiers,
@@ -1478,7 +1577,7 @@ export default createRule<Options, MessageIds>({
 			}
 
 			// 10. notifyParent - existing pattern
-			if (options.reportNotifyParent && functionContext) {
+			if (options.reportNotifyParent && functionContext && !functionContext.isCustomHook) {
 				const callbackCount = countPropertyCallbackCalls(
 					coreStatements,
 					functionContext,
@@ -1507,18 +1606,19 @@ export default createRule<Options, MessageIds>({
 
 			// Build mapping: state value -> effects that set it
 			const stateSetByEffect = new Map<string, Set<number>>();
-			for (let i = 0; i < componentEffects.length; i++) {
-				const effect = componentEffects[i];
+			for (let index = 0; index < componentEffects.length; index += 1) {
+				const effect = componentEffects[index];
 				if (!effect) continue;
 				for (const setter of effect.setterCalls) {
 					const stateValue = stateSetterToValue.get(setter);
 					if (stateValue) {
-						let setters = stateSetByEffect.get(stateValue);
+						const ownerStateKey = getOwnerStateKey(effect.ownerFunctionId, stateValue);
+						let setters = stateSetByEffect.get(ownerStateKey);
 						if (!setters) {
 							setters = new Set();
-							stateSetByEffect.set(stateValue, setters);
+							stateSetByEffect.set(ownerStateKey, setters);
 						}
-						setters.add(i);
+						setters.add(index);
 					}
 				}
 			}
@@ -1531,7 +1631,8 @@ export default createRule<Options, MessageIds>({
 				if (effect.hasNonSetterSideEffect || effect.hasReturnWithCleanup) continue;
 
 				for (const dep of effect.depIdentifiers) {
-					const setterEffectIndices = stateSetByEffect.get(dep);
+					const ownerStateKey = getOwnerStateKey(effect.ownerFunctionId, dep);
+					const setterEffectIndices = stateSetByEffect.get(ownerStateKey);
 					if (setterEffectIndices && setterEffectIndices.size > 0) {
 						// This effect depends on state that is set by other effects
 						// Check if all setter effects are pure state-setters
@@ -1560,30 +1661,27 @@ export default createRule<Options, MessageIds>({
 
 			const reported = new Set<number>();
 
-			for (let i = 0; i < componentEffects.length; i++) {
-				if (reported.has(i)) continue;
-				const effect1 = componentEffects[i];
+			for (let index = 0; index < componentEffects.length; index += 1) {
+				if (reported.has(index)) continue;
+				const effect1 = componentEffects[index];
 				if (!effect1 || effect1.depIdentifiers.size === 0) continue;
 
-				const duplicates: Array<number> = [i];
+				const duplicates = [index];
 
-				for (let j = i + 1; j < componentEffects.length; j++) {
-					if (reported.has(j)) continue;
-					const effect2 = componentEffects[j];
+				for (let jndex = index + 1; jndex < componentEffects.length; jndex += 1) {
+					if (reported.has(jndex)) continue;
+					const effect2 = componentEffects[jndex];
 					if (!effect2) continue;
+					if (effect2.ownerFunctionId !== effect1.ownerFunctionId) continue;
 
-					if (depArraysAreIdentical(effect1.depIdentifiers, effect2.depIdentifiers)) {
-						duplicates.push(j);
-					}
+					if (depArraysAreIdentical(effect1.depIdentifiers, effect2.depIdentifiers)) duplicates.push(jndex);
 				}
 
 				if (duplicates.length > 1) {
 					for (const idx of duplicates) {
 						reported.add(idx);
 						const effect = componentEffects[idx];
-						if (effect) {
-							context.report({ messageId: "duplicateDeps", node: effect.node });
-						}
+						if (effect) context.report({ messageId: "duplicateDeps", node: effect.node });
 					}
 				}
 			}
