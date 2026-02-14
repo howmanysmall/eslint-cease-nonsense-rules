@@ -3,22 +3,21 @@ title: prefer-enum-item
 badge:
     text: Roblox
     variant: note
-description: Enforce using EnumItem values instead of string or number literals when the type expects an EnumItem.
+description: Prefer EnumItem values over magic strings/numbers in roblox-ts.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Enforce using EnumItem values instead of string or number literals when the type expects an EnumItem.
+Prefer EnumItem values over magic strings/numbers.
 
 ## Rule Details :badge[Roblox]{variant=note}
 
-In `roblox-ts`, EnumItem values can often be passed as their string name or numeric value for convenience. While this
-works at runtime, it sacrifices type safety and IDE features like "Go to Definition" or "Find References". This rule
-ensures you use the explicit form (`Enum.ScaleType.Slice`) instead of magic strings (`"Slice"`) or numbers (`1`).
+In `roblox-ts`, you can often pass an enum value as its string name or numeric value. It works at runtime, but you lose
+type safety and IDE features like "Go to Definition" and "Find References". This rule prefers the explicit form
+(`Enum.ScaleType.Slice`) over magic strings (`"Slice"`) or numbers (`1`).
 
 <Aside type="tip" title="Self-Documenting Code">
-	Explicit enums tell you exactly what kind of value is expected. `Enum.UIFlexMode.Fill` is much clearer than just
-	`"Fill"`.
+	`Enum.UIFlexMode.Fill` is clearer than `"Fill"`.
 </Aside>
 
 ## Refactoring Steps

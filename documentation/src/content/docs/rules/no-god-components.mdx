@@ -3,32 +3,32 @@ title: no-god-components
 badge:
     text: Complex
     variant: danger
-description: Flags React components that are too large or complex, encouraging better separation of concerns.
+description: Reports React components that have grown too large or too tangled.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Flags React components that are too large or complex.
+Reports React components that are doing too much in one place.
 
 ## Rule Details :badge[Complex]{variant=danger}
 
-A "God Component" is one that does too much, knows too much, and is a nightmare to test or maintain. This rule enforces
-component size and complexity limits based on a strict checklist. If a component exceeds these limits, it's a strong
-signal that you should split it into smaller, logically isolated pieces.
+A "god component" tries to own an entire screen: state, data, rendering, and every edge case. This rule puts hard
+limits on a few signals (line count, TSX nesting, and stateful hooks). If you trip them, split the component into
+smaller pieces with clearer responsibilities.
 
 <Aside type="caution" title="Complexity Signals">
-	Deeply nested JSX, dozens of separate `useState` hooks, and components spanning hundreds of lines are warning signs
-	of poor architectural health.
+	Deeply nested TSX, lots of local state, and components that run for hundreds of lines are usually telling you the same
+	thing: split it.
 </Aside>
 
 ## Refactoring Workflow
 
 <Steps>
-1. **Identify the Core Concern**
-   Determine the primary responsibility of the component. Anything not strictly related should be moved.
-2. **Extract Logic to Hooks** Move state management, API calls, and complex event handlers into custom `use*` hooks.
-3. **Slice the UI** Identify independent UI sections (Headers, Lists, Sidebars) and extract them into sub-components.
-4. **Flatten JSX** If you have more than 3 levels of nesting, extract the inner levels into a dedicated component.
+1. **Pick the main job**
+   Decide what the component is responsible for. Everything else moves out.
+2. **Extract logic** Move state management, data fetching, and event handlers into `use*` hooks.
+3. **Split the UI** Pull independent sections (header, list, sidebar) into sub-components.
+4. **Flatten TSX** If you have more than 3 levels of nesting, extract the inner block into its own component.
 {/* oxfmt-ignore */}
 
 </Steps>
@@ -38,7 +38,7 @@ signal that you should split it into smaller, logically isolated pieces.
 <Tabs>
 	<TabItem label="❌ Incorrect" icon="close">
 		### Bloated Components
-		Bans components that attempt to manage an entire screen's worth of logic and UI.
+		Bans components that try to own an entire screen's worth of logic and UI.
 
     	<Code
     		code={[
@@ -68,7 +68,7 @@ signal that you should split it into smaller, logically isolated pieces.
     </TabItem>
     <TabItem label="✅ Correct" icon="check">
     	### Composed Dashboard
-    	Break the screen into tiny, focused, and testable units.
+		Split the screen into small, focused pieces you can test.
 
     	<Code
     		code={[
@@ -97,16 +97,16 @@ signal that you should split it into smaller, logically isolated pieces.
 
 <CardGrid stagger>
 	<Card title="Line Count" icon="list-format">
-		Hard limit of 200 lines. Components should ideally stay under 120 lines.
+		Hard limit: 200 lines. Aim for under 120.
 	</Card>
 	<Card title="TSX Nesting" icon="magnifier">
-		Max depth of 3. Deeply nested HTML belongs in a sub-component.
+		Max depth: 3. If it goes deeper, extract a component.
 	</Card>
 	<Card title="State Hooks" icon="bolt">
-		Max 5 stateful hooks (`useState`, etc.). More suggests a need for a Reducer or Custom Hook.
+		Max 5 stateful hooks. More usually wants a reducer or custom hook.
 	</Card>
 	<Card title="Explicit Undefined" icon="warning">
-		Bans `null` literals in favor of `undefined` to keep types clean and idiomatic.
+		Prefer `undefined` over `null` to keep types simple.
 	</Card>
 </CardGrid>
 

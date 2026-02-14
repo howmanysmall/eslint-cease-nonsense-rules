@@ -3,7 +3,21 @@ import { getReactSources, isReactImport } from "../constants/react-sources";
 import type { EnvironmentMode } from "../types/environment-mode";
 import { createRule } from "../utilities/create-rule";
 
-type MessageIds = "derivedState" | "notifyParent" | "eventFlag";
+type MessageIds =
+	| "adjustState"
+	| "derivedState"
+	| "duplicateDeps"
+	| "effectChain"
+	| "emptyEffect"
+	| "eventFlag"
+	| "eventSpecificLogic"
+	| "externalStore"
+	| "initializeState"
+	| "logOnly"
+	| "mixedDerivedState"
+	| "notifyParent"
+	| "passRefToParent"
+	| "resetState";
 
 export interface NoUselessUseEffectOptions {
 	/**
@@ -19,16 +33,52 @@ export interface NoUselessUseEffectOptions {
 	readonly hooks?: ReadonlyArray<string>;
 
 	/**
+	 * Prefixes for property callback names.
+	 * @default ["on"]
+	 */
+	readonly propertyCallbackPrefixes?: ReadonlyArray<string>;
+
+	/**
+	 * State hook names that return [value, setter] pairs.
+	 * @default ["useState", "useReducer"]
+	 */
+	readonly stateHooks?: ReadonlyArray<string>;
+
+	/**
+	 * Ref hook names that return mutable ref objects.
+	 * @default ["useRef"]
+	 */
+	readonly refHooks?: ReadonlyArray<string>;
+
+	/**
+	 * Report effects that conditionally set state based on prop values.
+	 * @default true
+	 */
+	readonly reportAdjustState?: boolean;
+
+	/**
 	 * Report effects that only derive state from properties or state.
 	 * @default true
 	 */
 	readonly reportDerivedState?: boolean;
 
 	/**
-	 * Report effects that only notify a parent via a property callback.
+	 * Report multiple effects with identical dependency arrays.
 	 * @default true
 	 */
-	readonly reportNotifyParent?: boolean;
+	readonly reportDuplicateDeps?: boolean;
+
+	/**
+	 * Report chains of effects that set state triggering other effects.
+	 * @default true
+	 */
+	readonly reportEffectChain?: boolean;
+
+	/**
+	 * Report effects with empty callback bodies.
+	 * @default true
+	 */
+	readonly reportEmptyEffect?: boolean;
 
 	/**
 	 * Report effects that route event side effects through a state flag.
@@ -37,10 +87,52 @@ export interface NoUselessUseEffectOptions {
 	readonly reportEventFlag?: boolean;
 
 	/**
-	 * Prefixes for property callback names.
-	 * @default ["on"]
+	 * Report effects that run event-specific logic based on state.
+	 * @default true
 	 */
-	readonly propertyCallbackPrefixes?: ReadonlyArray<string>;
+	readonly reportEventSpecificLogic?: boolean;
+
+	/**
+	 * Report effects that subscribe to external stores and sync to state.
+	 * @default true
+	 */
+	readonly reportExternalStore?: boolean;
+
+	/**
+	 * Report effects that initialize state with constant values.
+	 * @default true
+	 */
+	readonly reportInitializeState?: boolean;
+
+	/**
+	 * Report effects that only contain console.log calls.
+	 * @default true
+	 */
+	readonly reportLogOnly?: boolean;
+
+	/**
+	 * Report effects that contain state setters mixed with non-setter calls.
+	 * @default true
+	 */
+	readonly reportMixedDerivedState?: boolean;
+
+	/**
+	 * Report effects that only notify a parent via a property callback.
+	 * @default true
+	 */
+	readonly reportNotifyParent?: boolean;
+
+	/**
+	 * Report effects that pass refs to parent callbacks.
+	 * @default true
+	 */
+	readonly reportPassRefToParent?: boolean;
+
+	/**
+	 * Report effects that reset state to constant values when props change.
+	 * @default true
+	 */
+	readonly reportResetState?: boolean;
 }
 
 type Options = [NoUselessUseEffectOptions?];
@@ -48,26 +140,61 @@ type Options = [NoUselessUseEffectOptions?];
 interface NormalizedOptions {
 	readonly environment: EnvironmentMode;
 	readonly hooks: ReadonlySet<string>;
-	readonly reportDerivedState: boolean;
-	readonly reportNotifyParent: boolean;
-	readonly reportEventFlag: boolean;
 	readonly propertyCallbackPrefixes: ReadonlySet<string>;
+	readonly stateHooks: ReadonlySet<string>;
+	readonly refHooks: ReadonlySet<string>;
+	readonly reportAdjustState: boolean;
+	readonly reportDerivedState: boolean;
+	readonly reportDuplicateDeps: boolean;
+	readonly reportEffectChain: boolean;
+	readonly reportEmptyEffect: boolean;
+	readonly reportEventFlag: boolean;
+	readonly reportEventSpecificLogic: boolean;
+	readonly reportExternalStore: boolean;
+	readonly reportInitializeState: boolean;
+	readonly reportLogOnly: boolean;
+	readonly reportMixedDerivedState: boolean;
+	readonly reportNotifyParent: boolean;
+	readonly reportPassRefToParent: boolean;
+	readonly reportResetState: boolean;
 }
 
 const DEFAULT_OPTIONS: Required<NoUselessUseEffectOptions> = {
 	environment: "roblox-ts",
 	hooks: ["useEffect", "useLayoutEffect", "useInsertionEffect"],
 	propertyCallbackPrefixes: ["on"],
+	refHooks: ["useRef"],
+	reportAdjustState: true,
 	reportDerivedState: true,
+	reportDuplicateDeps: true,
+	reportEffectChain: true,
+	reportEmptyEffect: true,
 	reportEventFlag: true,
+	reportEventSpecificLogic: true,
+	reportExternalStore: true,
+	reportInitializeState: true,
+	reportLogOnly: true,
+	reportMixedDerivedState: true,
 	reportNotifyParent: true,
+	reportPassRefToParent: true,
+	reportResetState: true,
+	stateHooks: ["useState", "useReducer"],
 };
 
-const STATE_HOOKS = new Set(["useState", "useReducer"]);
+type FunctionNode = TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression;
 
 interface FunctionContext {
 	propertyObjectName?: string;
 	readonly propertyCallbackIdentifiers: Set<string>;
+}
+
+interface EffectInfo {
+	readonly node: TSESTree.CallExpression;
+	readonly setterCalls: Set<string>;
+	readonly depIdentifiers: Set<string>;
+	readonly statements: ReadonlyArray<TSESTree.Statement>;
+	readonly hasNonSetterSideEffect: boolean;
+	readonly hasReturnWithCleanup: boolean;
 }
 
 function normalizeOptions(raw: NoUselessUseEffectOptions | undefined): NormalizedOptions {
@@ -75,9 +202,22 @@ function normalizeOptions(raw: NoUselessUseEffectOptions | undefined): Normalize
 		environment: raw?.environment ?? DEFAULT_OPTIONS.environment,
 		hooks: new Set(raw?.hooks ?? DEFAULT_OPTIONS.hooks),
 		propertyCallbackPrefixes: new Set(raw?.propertyCallbackPrefixes ?? DEFAULT_OPTIONS.propertyCallbackPrefixes),
+		refHooks: new Set(raw?.refHooks ?? DEFAULT_OPTIONS.refHooks),
+		reportAdjustState: raw?.reportAdjustState ?? DEFAULT_OPTIONS.reportAdjustState,
 		reportDerivedState: raw?.reportDerivedState ?? DEFAULT_OPTIONS.reportDerivedState,
+		reportDuplicateDeps: raw?.reportDuplicateDeps ?? DEFAULT_OPTIONS.reportDuplicateDeps,
+		reportEffectChain: raw?.reportEffectChain ?? DEFAULT_OPTIONS.reportEffectChain,
+		reportEmptyEffect: raw?.reportEmptyEffect ?? DEFAULT_OPTIONS.reportEmptyEffect,
 		reportEventFlag: raw?.reportEventFlag ?? DEFAULT_OPTIONS.reportEventFlag,
+		reportEventSpecificLogic: raw?.reportEventSpecificLogic ?? DEFAULT_OPTIONS.reportEventSpecificLogic,
+		reportExternalStore: raw?.reportExternalStore ?? DEFAULT_OPTIONS.reportExternalStore,
+		reportInitializeState: raw?.reportInitializeState ?? DEFAULT_OPTIONS.reportInitializeState,
+		reportLogOnly: raw?.reportLogOnly ?? DEFAULT_OPTIONS.reportLogOnly,
+		reportMixedDerivedState: raw?.reportMixedDerivedState ?? DEFAULT_OPTIONS.reportMixedDerivedState,
 		reportNotifyParent: raw?.reportNotifyParent ?? DEFAULT_OPTIONS.reportNotifyParent,
+		reportPassRefToParent: raw?.reportPassRefToParent ?? DEFAULT_OPTIONS.reportPassRefToParent,
+		reportResetState: raw?.reportResetState ?? DEFAULT_OPTIONS.reportResetState,
+		stateHooks: new Set(raw?.stateHooks ?? DEFAULT_OPTIONS.stateHooks),
 	};
 }
 
@@ -109,12 +249,11 @@ function isHookCall(
 	return false;
 }
 
-function isFunctionLike(
-	node: TSESTree.Node | null | undefined,
-): node is TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression {
+function isFunctionLike(node: TSESTree.Node | null | undefined): node is FunctionNode {
 	return (
 		node?.type === TSESTree.AST_NODE_TYPES.FunctionExpression ||
-		node?.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression
+		node?.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression ||
+		node?.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration
 	);
 }
 
@@ -215,6 +354,40 @@ function isStateSetterCall(
 
 function isFalseLiteral(node: TSESTree.Node): boolean {
 	return node.type === TSESTree.AST_NODE_TYPES.Literal && node.value === false;
+}
+
+function isConstantLiteral(node: TSESTree.Node): boolean {
+	if (node.type === TSESTree.AST_NODE_TYPES.Literal) {
+		return node.value === null || node.value === undefined;
+	}
+	if (
+		node.type === TSESTree.AST_NODE_TYPES.UnaryExpression &&
+		node.operator === "void" &&
+		node.argument.type === TSESTree.AST_NODE_TYPES.Literal &&
+		node.argument.value === 0
+	) {
+		return true;
+	}
+	return false;
+}
+
+function isEmptyArrayExpression(node: TSESTree.Node): boolean {
+	return node.type === TSESTree.AST_NODE_TYPES.ArrayExpression && node.elements.length === 0;
+}
+
+function isEmptyObjectExpression(node: TSESTree.Node): boolean {
+	return node.type === TSESTree.AST_NODE_TYPES.ObjectExpression && node.properties.length === 0;
+}
+
+function isResetValue(node: TSESTree.Node): boolean {
+	if (isConstantLiteral(node)) return true;
+	if (node.type === TSESTree.AST_NODE_TYPES.Literal) {
+		const { value } = node;
+		return value === "" || value === 0 || value === false;
+	}
+	if (isEmptyArrayExpression(node)) return true;
+	if (isEmptyObjectExpression(node)) return true;
+	return false;
 }
 
 function getResetFlagNameFromStatement(
@@ -326,6 +499,92 @@ function matchEventFlagPattern(
 	return undefined;
 }
 
+function expressionContainsIdentifier(node: TSESTree.Expression): boolean {
+	const stack: Array<TSESTree.Expression | TSESTree.PrivateIdentifier> = [node];
+	const visited = new Set<TSESTree.Node>();
+
+	while (stack.length > 0) {
+		const current = stack.pop();
+		if (!current || visited.has(current)) continue;
+		visited.add(current);
+
+		if (current.type === TSESTree.AST_NODE_TYPES.Identifier) {
+			return true;
+		}
+
+		if (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
+			stack.push(current.object);
+			if (!current.computed) {
+				stack.push(current.property);
+			}
+			continue;
+		}
+
+		if (current.type === TSESTree.AST_NODE_TYPES.CallExpression) {
+			stack.push(current.callee);
+			for (const arg of current.arguments) {
+				if (arg.type !== TSESTree.AST_NODE_TYPES.SpreadElement) {
+					stack.push(arg);
+				}
+			}
+			continue;
+		}
+
+		if (
+			current.type === TSESTree.AST_NODE_TYPES.BinaryExpression ||
+			current.type === TSESTree.AST_NODE_TYPES.LogicalExpression
+		) {
+			stack.push(current.left);
+			stack.push(current.right);
+			continue;
+		}
+
+		if (current.type === TSESTree.AST_NODE_TYPES.UnaryExpression) {
+			stack.push(current.argument);
+			continue;
+		}
+
+		if (current.type === TSESTree.AST_NODE_TYPES.ConditionalExpression) {
+			stack.push(current.test);
+			stack.push(current.consequent);
+			stack.push(current.alternate);
+			continue;
+		}
+
+		if (current.type === TSESTree.AST_NODE_TYPES.TemplateLiteral) {
+			for (const expr of current.expressions) {
+				stack.push(expr);
+			}
+			continue;
+		}
+
+		if (current.type === TSESTree.AST_NODE_TYPES.ArrayExpression) {
+			for (const el of current.elements) {
+				if (el && el.type !== TSESTree.AST_NODE_TYPES.SpreadElement) {
+					stack.push(el);
+				}
+			}
+			continue;
+		}
+
+		if (current.type === TSESTree.AST_NODE_TYPES.ObjectExpression) {
+			for (const prop of current.properties) {
+				if (prop.type === TSESTree.AST_NODE_TYPES.Property) {
+					stack.push(prop.value as TSESTree.Expression);
+				}
+			}
+			continue;
+		}
+
+		if (current.type === TSESTree.AST_NODE_TYPES.ChainExpression) {
+			stack.push(current.expression);
+			continue;
+		}
+	}
+
+	return false;
+}
+
 function countSetterCalls(
 	statements: ReadonlyArray<TSESTree.Statement>,
 	stateSetterIdentifiers: ReadonlySet<string>,
@@ -344,6 +603,15 @@ function countSetterCalls(
 
 		const callExpression = getCallExpressionFromStatement(statement);
 		if (!(callExpression && isStateSetterCall(callExpression, stateSetterIdentifiers))) return undefined;
+
+		// Check that at least one argument contains an identifier reference
+		// (i.e., the value is derived from something, not just a constant)
+		const hasDerivedArgument = callExpression.arguments.some((arg) => {
+			if (arg.type === TSESTree.AST_NODE_TYPES.SpreadElement) return false;
+			return expressionContainsIdentifier(arg);
+		});
+
+		if (!hasDerivedArgument) return undefined;
 		count += 1;
 	}
 
@@ -470,6 +738,436 @@ function hasDependencyIdentifier(callExpression: TSESTree.CallExpression, name: 
 	return false;
 }
 
+function getDependencyIdentifiers(callExpression: TSESTree.CallExpression): Set<string> {
+	const identifiers = new Set<string>();
+	const [, dependencyArgument] = callExpression.arguments;
+	if (!dependencyArgument || dependencyArgument.type !== TSESTree.AST_NODE_TYPES.ArrayExpression) return identifiers;
+
+	for (const element of dependencyArgument.elements) {
+		if (element?.type === TSESTree.AST_NODE_TYPES.Identifier) {
+			identifiers.add(element.name);
+		}
+	}
+
+	return identifiers;
+}
+
+function isEmptyDependencyArray(callExpression: TSESTree.CallExpression): boolean {
+	const [, dependencyArgument] = callExpression.arguments;
+	if (!dependencyArgument) return true;
+	if (dependencyArgument.type !== TSESTree.AST_NODE_TYPES.ArrayExpression) return false;
+	return dependencyArgument.elements.length === 0;
+}
+
+function collectSetterCalls(
+	statements: ReadonlyArray<TSESTree.Statement>,
+	stateSetterIdentifiers: ReadonlySet<string>,
+): Set<string> {
+	const setters = new Set<string>();
+
+	for (const statement of statements) {
+		if (statement.type === TSESTree.AST_NODE_TYPES.IfStatement) {
+			const innerStatements = getStatementsFromConsequent(statement.consequent);
+			for (const setter of collectSetterCalls(innerStatements, stateSetterIdentifiers)) {
+				setters.add(setter);
+			}
+			continue;
+		}
+
+		const callExpression = getCallExpressionFromStatement(statement);
+		if (
+			callExpression &&
+			isStateSetterCall(callExpression, stateSetterIdentifiers) &&
+			callExpression.callee.type === TSESTree.AST_NODE_TYPES.Identifier
+		) {
+			setters.add(callExpression.callee.name);
+		}
+	}
+
+	return setters;
+}
+
+function hasNonSetterSideEffect(
+	statements: ReadonlyArray<TSESTree.Statement>,
+	stateSetterIdentifiers: ReadonlySet<string>,
+	propertyCallbackIdentifiers: ReadonlySet<string>,
+): boolean {
+	for (const statement of statements) {
+		if (statement.type === TSESTree.AST_NODE_TYPES.IfStatement) {
+			const innerStatements = getStatementsFromConsequent(statement.consequent);
+			if (hasNonSetterSideEffect(innerStatements, stateSetterIdentifiers, propertyCallbackIdentifiers)) {
+				return true;
+			}
+			continue;
+		}
+
+		const callExpression = getCallExpressionFromStatement(statement);
+		if (!callExpression) continue;
+
+		if (isStateSetterCall(callExpression, stateSetterIdentifiers)) continue;
+		if (
+			callExpression.callee.type === TSESTree.AST_NODE_TYPES.Identifier &&
+			propertyCallbackIdentifiers.has(callExpression.callee.name)
+		) {
+			continue;
+		}
+		if (
+			callExpression.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+			!callExpression.callee.computed &&
+			callExpression.callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
+			callExpression.callee.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
+			propertyCallbackIdentifiers.has(callExpression.callee.object.name)
+		) {
+			continue;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+function hasOnlyResetValueSetterCalls(
+	statements: ReadonlyArray<TSESTree.Statement>,
+	stateSetterIdentifiers: ReadonlySet<string>,
+): boolean {
+	if (statements.length === 0) return false;
+
+	for (const statement of statements) {
+		if (statement.type === TSESTree.AST_NODE_TYPES.IfStatement) {
+			if (statement.alternate) return false;
+			const innerStatements = getStatementsFromConsequent(statement.consequent);
+			if (!hasOnlyResetValueSetterCalls(innerStatements, stateSetterIdentifiers)) return false;
+			continue;
+		}
+
+		const callExpression = getCallExpressionFromStatement(statement);
+		if (!callExpression) return false;
+		if (!isStateSetterCall(callExpression, stateSetterIdentifiers)) return false;
+		if (callExpression.arguments.length !== 1) return false;
+		const [argument] = callExpression.arguments;
+		if (!(argument && isResetValue(argument))) return false;
+	}
+
+	return true;
+}
+
+function hasOnlyConstantSetterCalls(
+	statements: ReadonlyArray<TSESTree.Statement>,
+	stateSetterIdentifiers: ReadonlySet<string>,
+): boolean {
+	if (statements.length === 0) return false;
+
+	for (const statement of statements) {
+		if (statement.type === TSESTree.AST_NODE_TYPES.IfStatement) {
+			if (statement.alternate) return false;
+			const innerStatements = getStatementsFromConsequent(statement.consequent);
+			if (!hasOnlyConstantSetterCalls(innerStatements, stateSetterIdentifiers)) return false;
+			continue;
+		}
+
+		const callExpression = getCallExpressionFromStatement(statement);
+		if (!callExpression) return false;
+		if (!isStateSetterCall(callExpression, stateSetterIdentifiers)) return false;
+		if (callExpression.arguments.length !== 1) return false;
+		const [argument] = callExpression.arguments;
+		if (!argument) return false;
+
+		if (
+			argument.type === TSESTree.AST_NODE_TYPES.Literal &&
+			typeof argument.value !== "object" &&
+			argument.value !== null
+		) {
+			continue;
+		}
+		if (isEmptyArrayExpression(argument)) continue;
+		if (isEmptyObjectExpression(argument)) continue;
+
+		return false;
+	}
+
+	return true;
+}
+
+function hasOnlyLogCalls(statements: ReadonlyArray<TSESTree.Statement>): boolean {
+	if (statements.length === 0) return false;
+
+	for (const statement of statements) {
+		if (statement.type === TSESTree.AST_NODE_TYPES.IfStatement) {
+			if (statement.alternate) return false;
+			const innerStatements = getStatementsFromConsequent(statement.consequent);
+			if (!hasOnlyLogCalls(innerStatements)) return false;
+			continue;
+		}
+
+		const callExpression = getCallExpressionFromStatement(statement);
+		if (!callExpression) return false;
+
+		if (
+			callExpression.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+			!callExpression.callee.computed &&
+			callExpression.callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
+			callExpression.callee.object.name === "console" &&
+			callExpression.callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
+		) {
+			continue;
+		}
+
+		return false;
+	}
+
+	return true;
+}
+
+function hasExternalStorePattern(statements: ReadonlyArray<TSESTree.Statement>): boolean {
+	const subscribeMethods = new Set(["addEventListener", "subscribe", "on", "addListener"]);
+	const hasSubscription = statements.some((statement) => {
+		const callExpression = getCallExpressionFromStatement(statement);
+		if (!callExpression) return false;
+
+		if (
+			callExpression.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+			!callExpression.callee.computed &&
+			callExpression.callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
+		) {
+			return subscribeMethods.has(callExpression.callee.property.name);
+		}
+
+		return false;
+	});
+
+	return hasSubscription;
+}
+
+function hasRefPassedToParent(
+	statements: ReadonlyArray<TSESTree.Statement>,
+	refIdentifiers: ReadonlySet<string>,
+	propertyCallbackIdentifiers: ReadonlySet<string>,
+): boolean {
+	for (const statement of statements) {
+		if (statement.type === TSESTree.AST_NODE_TYPES.IfStatement) {
+			const innerStatements = getStatementsFromConsequent(statement.consequent);
+			if (hasRefPassedToParent(innerStatements, refIdentifiers, propertyCallbackIdentifiers)) return true;
+			continue;
+		}
+
+		const callExpression = getCallExpressionFromStatement(statement);
+		if (!callExpression) continue;
+
+		if (
+			callExpression.callee.type === TSESTree.AST_NODE_TYPES.Identifier &&
+			propertyCallbackIdentifiers.has(callExpression.callee.name)
+		) {
+			for (const argument of callExpression.arguments) {
+				if (
+					argument.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+					!argument.computed &&
+					argument.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
+					argument.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
+					argument.property.name === "current" &&
+					refIdentifiers.has(argument.object.name)
+				) {
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+function hasConditionalSetterBasedOnProp(
+	statements: ReadonlyArray<TSESTree.Statement>,
+	stateSetterIdentifiers: ReadonlySet<string>,
+	stateValueIdentifiers: ReadonlySet<string>,
+	depIdentifiers: ReadonlySet<string>,
+): boolean {
+	for (const statement of statements) {
+		if (statement.type === TSESTree.AST_NODE_TYPES.IfStatement) {
+			const conditionIdentifiers = collectIdentifiers(statement.test);
+			const hasPropInCondition = [...conditionIdentifiers].some(
+				(id) => depIdentifiers.has(id) && !stateValueIdentifiers.has(id),
+			);
+
+			if (hasPropInCondition) {
+				const consequentStatements = getStatementsFromConsequent(statement.consequent);
+				const hasSetterInConsequent = consequentStatements.some((stmt) => {
+					const call = getCallExpressionFromStatement(stmt);
+					return call !== undefined && isStateSetterCall(call, stateSetterIdentifiers);
+				});
+
+				if (hasSetterInConsequent) return true;
+			}
+
+			if (statement.alternate) {
+				const alternateStatements =
+					statement.alternate.type === TSESTree.AST_NODE_TYPES.BlockStatement
+						? statement.alternate.body
+						: [statement.alternate];
+				if (
+					hasConditionalSetterBasedOnProp(
+						alternateStatements,
+						stateSetterIdentifiers,
+						stateValueIdentifiers,
+						depIdentifiers,
+					)
+				) {
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+function collectIdentifiers(node: TSESTree.Node): Set<string> {
+	const identifiers = new Set<string>();
+	const visited = new Set<TSESTree.Node>();
+	const stack: Array<TSESTree.Node> = [node];
+
+	while (stack.length > 0) {
+		const current = stack.pop();
+		if (!current || visited.has(current)) continue;
+		visited.add(current);
+
+		if (current.type === TSESTree.AST_NODE_TYPES.Identifier) {
+			identifiers.add(current.name);
+			continue;
+		}
+
+		if (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
+			stack.push(current.object);
+			if (!current.computed) stack.push(current.property);
+			continue;
+		}
+
+		if (current.type === TSESTree.AST_NODE_TYPES.CallExpression) {
+			stack.push(current.callee);
+			for (const arg of current.arguments) {
+				if (arg.type !== TSESTree.AST_NODE_TYPES.SpreadElement) stack.push(arg);
+			}
+			continue;
+		}
+
+		if (
+			current.type === TSESTree.AST_NODE_TYPES.BinaryExpression ||
+			current.type === TSESTree.AST_NODE_TYPES.LogicalExpression
+		) {
+			stack.push(current.left);
+			stack.push(current.right);
+			continue;
+		}
+
+		if (current.type === TSESTree.AST_NODE_TYPES.UnaryExpression) {
+			stack.push(current.argument);
+			continue;
+		}
+
+		if (current.type === TSESTree.AST_NODE_TYPES.ConditionalExpression) {
+			stack.push(current.test);
+			stack.push(current.consequent);
+			stack.push(current.alternate);
+			continue;
+		}
+
+		if (current.type === TSESTree.AST_NODE_TYPES.ChainExpression) {
+			stack.push(current.expression);
+			continue;
+		}
+	}
+
+	return identifiers;
+}
+
+const EVENT_SIDE_EFFECT_PREFIXES = new Set([
+	"show",
+	"hide",
+	"display",
+	"navigate",
+	"redirect",
+	"submit",
+	"send",
+	"post",
+	"notify",
+	"alert",
+	"confirm",
+	"prompt",
+	"track",
+	"log",
+	"report",
+]);
+
+function hasEventSpecificLogic(
+	statements: ReadonlyArray<TSESTree.Statement>,
+	stateSetterIdentifiers: ReadonlySet<string>,
+	stateValueIdentifiers: ReadonlySet<string>,
+): boolean {
+	for (const statement of statements) {
+		if (statement.type === TSESTree.AST_NODE_TYPES.IfStatement) {
+			const conditionIdentifiers = collectIdentifiers(statement.test);
+			const stateInCondition = [...conditionIdentifiers].filter((id) => stateValueIdentifiers.has(id));
+
+			if (stateInCondition.length > 0) {
+				const consequentStatements = getStatementsFromConsequent(statement.consequent);
+				const hasEventSideEffect = consequentStatements.some((stmt) => {
+					const call = getCallExpressionFromStatement(stmt);
+					if (!call || isStateSetterCall(call, stateSetterIdentifiers)) return false;
+
+					if (call.callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
+						const { name } = call.callee;
+						for (const prefix of EVENT_SIDE_EFFECT_PREFIXES) {
+							if (name.toLowerCase().startsWith(prefix)) return true;
+						}
+					}
+
+					if (
+						call.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+						!call.callee.computed &&
+						call.callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
+					) {
+						const method = call.callee.property.name.toLowerCase();
+						for (const prefix of EVENT_SIDE_EFFECT_PREFIXES) {
+							if (method.startsWith(prefix)) return true;
+						}
+					}
+
+					return false;
+				});
+
+				if (hasEventSideEffect) return true;
+			}
+
+			if (statement.alternate) {
+				const alternateStatements =
+					statement.alternate.type === TSESTree.AST_NODE_TYPES.BlockStatement
+						? statement.alternate.body
+						: [statement.alternate];
+				if (hasEventSpecificLogic(alternateStatements, stateSetterIdentifiers, stateValueIdentifiers)) {
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+function depArraysAreIdentical(ids1: ReadonlySet<string>, ids2: ReadonlySet<string>): boolean {
+	if (ids1.size !== ids2.size) return false;
+	for (const id of ids1) {
+		if (!ids2.has(id)) return false;
+	}
+	return true;
+}
+
+function getFunctionBody(node: FunctionNode): TSESTree.BlockStatement | undefined {
+	if (node.body.type === TSESTree.AST_NODE_TYPES.BlockStatement) {
+		return node.body;
+	}
+	return undefined;
+}
+
 export default createRule<Options, MessageIds>({
 	create(context) {
 		const options = normalizeOptions(context.options[0]);
@@ -479,15 +1177,28 @@ export default createRule<Options, MessageIds>({
 		const effectIdentifiers = new Set<string>();
 		const stateHookIdentifiers = new Set<string>();
 		const stateSetterIdentifiers = new Set<string>();
+		const stateValueIdentifiers = new Set<string>();
 		const stateSetterToValue = new Map<string, string>();
+		const refHookIdentifiers = new Set<string>();
+		const refIdentifiers = new Set<string>();
 		const functionContextStack: Array<FunctionContext> = [];
+
+		// Named function resolution
+		const namedFunctions = new Map<string, FunctionNode>();
+
+		// Effect tracking for cross-effect analysis
+		const componentEffects: Array<EffectInfo> = [];
 
 		function isEffectCall(node: TSESTree.CallExpression): boolean {
 			return isHookCall(node, effectIdentifiers, reactNamespaces, options.hooks);
 		}
 
 		function isStateHookCall(node: TSESTree.CallExpression): boolean {
-			return isHookCall(node, stateHookIdentifiers, reactNamespaces, STATE_HOOKS);
+			return isHookCall(node, stateHookIdentifiers, reactNamespaces, options.stateHooks);
+		}
+
+		function isRefHookCall(node: TSESTree.CallExpression): boolean {
+			return isHookCall(node, refHookIdentifiers, reactNamespaces, options.refHooks);
 		}
 
 		function recordStateSetter(node: TSESTree.VariableDeclarator): void {
@@ -503,18 +1214,381 @@ export default createRule<Options, MessageIds>({
 
 			const [stateElement] = elements;
 			if (stateElement && stateElement.type === TSESTree.AST_NODE_TYPES.Identifier) {
+				stateValueIdentifiers.add(stateElement.name);
 				stateSetterToValue.set(setterElement.name, stateElement.name);
 			}
 		}
 
-		function enterFunction(
-			node: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
-		): void {
+		function recordRef(node: TSESTree.VariableDeclarator): void {
+			if (!node.init || node.init.type !== TSESTree.AST_NODE_TYPES.CallExpression) return;
+			if (!isRefHookCall(node.init)) return;
+			if (node.id.type !== TSESTree.AST_NODE_TYPES.Identifier) return;
+			refIdentifiers.add(node.id.name);
+		}
+
+		function recordNamedFunction(node: TSESTree.VariableDeclarator): void {
+			if (node.id.type !== TSESTree.AST_NODE_TYPES.Identifier) return;
+			if (!node.init) return;
+
+			if (
+				node.init.type === TSESTree.AST_NODE_TYPES.FunctionExpression ||
+				node.init.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression
+			) {
+				namedFunctions.set(node.id.name, node.init);
+			}
+		}
+
+		function enterFunction(node: FunctionNode): void {
 			functionContextStack.push(buildFunctionContext(node, options.propertyCallbackPrefixes));
+
+			if (node.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration && node.id) {
+				namedFunctions.set(node.id.name, node);
+			}
 		}
 
 		function exitFunction(): void {
 			functionContextStack.pop();
+		}
+
+		const KNOWN_EXTERNAL_PATTERNS = new Set([
+			"log",
+			"warn",
+			"error",
+			"info",
+			"debug",
+			"fetch",
+			"navigate",
+			"navigateTo",
+			"redirect",
+			"post",
+			"get",
+			"put",
+			"delete",
+			"patch",
+			"send",
+			"submit",
+			"track",
+			"analytics",
+			"report",
+			"notify",
+			"showNotification",
+			"alert",
+			"confirm",
+			"prompt",
+		]);
+
+		function hasRealExternalSideEffect(
+			statements: ReadonlyArray<TSESTree.Statement>,
+			setterIds: ReadonlySet<string>,
+			callbackIds: ReadonlySet<string>,
+		): boolean {
+			for (const statement of statements) {
+				if (statement.type === TSESTree.AST_NODE_TYPES.IfStatement) {
+					const inner = getStatementsFromConsequent(statement.consequent);
+					if (hasRealExternalSideEffect(inner, setterIds, callbackIds)) return true;
+					continue;
+				}
+
+				const call = getCallExpressionFromStatement(statement);
+				if (!call) continue;
+
+				if (isStateSetterCall(call, setterIds)) continue;
+
+				if (call.callee.type === TSESTree.AST_NODE_TYPES.Identifier && callbackIds.has(call.callee.name))
+					continue;
+
+				if (call.callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
+					const { name } = call.callee;
+					if (KNOWN_EXTERNAL_PATTERNS.has(name)) return true;
+					if (
+						name.startsWith("log") ||
+						name.startsWith("fetch") ||
+						name.startsWith("send") ||
+						name.startsWith("track") ||
+						name.startsWith("report") ||
+						name.startsWith("show") ||
+						name.startsWith("navigate") ||
+						name.startsWith("submit") ||
+						name.startsWith("post") ||
+						name.startsWith("notify")
+					) {
+						return true;
+					}
+				}
+
+				if (
+					call.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+					!call.callee.computed &&
+					call.callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
+				) {
+					if (
+						call.callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
+						callbackIds.has(call.callee.object.name)
+					)
+						continue;
+
+					const method = call.callee.property.name;
+					// Only consider console.log/warn/error as real side effects
+					if (
+						(method === "log" ||
+							method === "warn" ||
+							method === "error" ||
+							method === "info" ||
+							method === "debug") &&
+						call.callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
+						call.callee.object.name === "console"
+					)
+						return true;
+					if (
+						method.startsWith("fetch") ||
+						method.startsWith("send") ||
+						method.startsWith("post") ||
+						method.startsWith("track")
+					)
+						return true;
+				}
+			}
+
+			return false;
+		}
+
+		function analyzeEffect(
+			node: TSESTree.CallExpression,
+			statements: ReadonlyArray<TSESTree.Statement>,
+			body: TSESTree.BlockStatement | undefined,
+		): void {
+			const functionContext = functionContextStack.at(-1);
+			const coreStatements = stripLeadingGuard(statements);
+			const depIdentifiers = getDependencyIdentifiers(node);
+
+			const setterCalls = collectSetterCalls(statements, stateSetterIdentifiers);
+			const hasNonSetter = hasNonSetterSideEffect(
+				statements,
+				stateSetterIdentifiers,
+				functionContext?.propertyCallbackIdentifiers ?? new Set(),
+			);
+			const hasReturnCleanup = body !== undefined && hasReturnWithArgument(body);
+
+			// Track effect for cross-effect analysis
+			componentEffects.push({
+				depIdentifiers,
+				hasNonSetterSideEffect: hasNonSetter,
+				hasReturnWithCleanup: hasReturnCleanup,
+				node,
+				setterCalls,
+				statements,
+			});
+
+			// 1. emptyEffect - empty body or only return statement
+			if (options.reportEmptyEffect) {
+				if (statements.length === 0) {
+					context.report({ messageId: "emptyEffect", node });
+					return;
+				}
+				const [firstStatement] = statements;
+				if (firstStatement && isReturnWithoutArgument(firstStatement)) {
+					context.report({ messageId: "emptyEffect", node });
+					return;
+				}
+			}
+
+			// 2. initializeState - empty deps + constant setter
+			if (
+				options.reportInitializeState &&
+				isEmptyDependencyArray(node) &&
+				hasOnlyConstantSetterCalls(statements, stateSetterIdentifiers)
+			) {
+				context.report({ messageId: "initializeState", node });
+				return;
+			}
+
+			// 3. resetState - constant/reset value setters + prop deps
+			if (options.reportResetState && hasOnlyResetValueSetterCalls(statements, stateSetterIdentifiers)) {
+				const hasPropDeps = [...depIdentifiers].some(
+					(id) => !(stateValueIdentifiers.has(id) || stateSetterIdentifiers.has(id)),
+				);
+				if (hasPropDeps) {
+					context.report({ messageId: "resetState", node });
+					return;
+				}
+			}
+
+			// 4. eventFlag - existing pattern
+			if (options.reportEventFlag) {
+				const flagName = matchEventFlagPattern(statements, stateSetterToValue, stateSetterIdentifiers);
+				if (flagName && hasDependencyIdentifier(node, flagName)) {
+					context.report({ messageId: "eventFlag", node });
+					return;
+				}
+			}
+
+			// 5. eventSpecificLogic - broader pattern
+			if (
+				options.reportEventSpecificLogic &&
+				hasEventSpecificLogic(statements, stateSetterIdentifiers, stateValueIdentifiers)
+			) {
+				context.report({ messageId: "eventSpecificLogic", node });
+				return;
+			}
+
+			// 6. adjustState - conditional setter on prop change (check BEFORE derivedState)
+			if (
+				options.reportAdjustState &&
+				hasConditionalSetterBasedOnProp(
+					statements,
+					stateSetterIdentifiers,
+					stateValueIdentifiers,
+					depIdentifiers,
+				) &&
+				!hasNonSetter
+			) {
+				context.report({ messageId: "adjustState", node });
+				return;
+			}
+
+			// 7. derivedState - existing pattern
+			if (options.reportDerivedState) {
+				const setterCount = countSetterCalls(coreStatements, stateSetterIdentifiers);
+				if (setterCount !== undefined) {
+					context.report({ messageId: "derivedState", node });
+					return;
+				}
+			}
+
+			// 8. mixedDerivedState - setters mixed with non-setter calls
+			// Only flag if the non-setter calls don't appear to be real external side effects
+			if (options.reportMixedDerivedState && setterCalls.size > 0 && hasNonSetter) {
+				const hasRealSideEffect = hasRealExternalSideEffect(
+					statements,
+					stateSetterIdentifiers,
+					functionContext?.propertyCallbackIdentifiers ?? new Set(),
+				);
+				if (!hasRealSideEffect) {
+					context.report({ messageId: "mixedDerivedState", node });
+					return;
+				}
+			}
+
+			// 9. passRefToParent - check BEFORE notifyParent (more specific pattern)
+			if (
+				options.reportPassRefToParent &&
+				functionContext &&
+				hasRefPassedToParent(statements, refIdentifiers, functionContext.propertyCallbackIdentifiers)
+			) {
+				context.report({ messageId: "passRefToParent", node });
+				return;
+			}
+
+			// 10. notifyParent - existing pattern
+			if (options.reportNotifyParent && functionContext) {
+				const callbackCount = countPropertyCallbackCalls(
+					coreStatements,
+					functionContext,
+					options.propertyCallbackPrefixes,
+				);
+				if (callbackCount !== undefined) {
+					context.report({ messageId: "notifyParent", node });
+					return;
+				}
+			}
+
+			// 11. externalStore
+			if (options.reportExternalStore && hasExternalStorePattern(statements) && hasReturnCleanup) {
+				context.report({ messageId: "externalStore", node });
+				return;
+			}
+
+			// 12. logOnly
+			if (options.reportLogOnly && hasOnlyLogCalls(statements)) {
+				context.report({ messageId: "logOnly", node });
+			}
+		}
+
+		function analyzeEffectChains(): void {
+			if (!options.reportEffectChain) return;
+
+			// Build mapping: state value -> effects that set it
+			const stateSetByEffect = new Map<string, Set<number>>();
+			for (let i = 0; i < componentEffects.length; i++) {
+				const effect = componentEffects[i];
+				if (!effect) continue;
+				for (const setter of effect.setterCalls) {
+					const stateValue = stateSetterToValue.get(setter);
+					if (stateValue) {
+						let setters = stateSetByEffect.get(stateValue);
+						if (!setters) {
+							setters = new Set();
+							stateSetByEffect.set(stateValue, setters);
+						}
+						setters.add(i);
+					}
+				}
+			}
+
+			// Check if any effect depends on state set only by other effects
+			for (const effect of componentEffects) {
+				if (!effect) continue;
+
+				// Skip effects with actual side effects (not just state setting)
+				if (effect.hasNonSetterSideEffect || effect.hasReturnWithCleanup) continue;
+
+				for (const dep of effect.depIdentifiers) {
+					const setterEffectIndices = stateSetByEffect.get(dep);
+					if (setterEffectIndices && setterEffectIndices.size > 0) {
+						// This effect depends on state that is set by other effects
+						// Check if all setter effects are pure state-setters
+						const allSettersArePure = [...setterEffectIndices].every((idx) => {
+							const setterEffect = componentEffects[idx];
+							return (
+								setterEffect &&
+								!setterEffect.hasNonSetterSideEffect &&
+								!setterEffect.hasReturnWithCleanup
+							);
+						});
+
+						if (allSettersArePure) {
+							context.report({ messageId: "effectChain", node: effect.node });
+							// Only report once per effect
+							return;
+						}
+					}
+				}
+			}
+		}
+
+		function analyzeDuplicateDeps(): void {
+			if (!options.reportDuplicateDeps) return;
+			if (componentEffects.length < 2) return;
+
+			const reported = new Set<number>();
+
+			for (let i = 0; i < componentEffects.length; i++) {
+				if (reported.has(i)) continue;
+				const effect1 = componentEffects[i];
+				if (!effect1 || effect1.depIdentifiers.size === 0) continue;
+
+				const duplicates: Array<number> = [i];
+
+				for (let j = i + 1; j < componentEffects.length; j++) {
+					if (reported.has(j)) continue;
+					const effect2 = componentEffects[j];
+					if (!effect2) continue;
+
+					if (depArraysAreIdentical(effect1.depIdentifiers, effect2.depIdentifiers)) {
+						duplicates.push(j);
+					}
+				}
+
+				if (duplicates.length > 1) {
+					for (const idx of duplicates) {
+						reported.add(idx);
+						const effect = componentEffects[idx];
+						if (effect) {
+							context.report({ messageId: "duplicateDeps", node: effect.node });
+						}
+					}
+				}
+			}
 		}
 
 		return {
@@ -522,46 +1596,37 @@ export default createRule<Options, MessageIds>({
 			"ArrowFunctionExpression:exit": exitFunction,
 			CallExpression(node): void {
 				if (!isEffectCall(node)) return;
+
 				const [callback] = node.arguments;
+				if (!callback) return;
+
+				// Handle named function reference
+				if (callback.type === TSESTree.AST_NODE_TYPES.Identifier) {
+					const namedFunc = namedFunctions.get(callback.name);
+					if (namedFunc) {
+						const body = getFunctionBody(namedFunc);
+						if (body) {
+							if (namedFunc.async) return;
+
+							const statements = body.body.filter(
+								(statement) => statement.type !== TSESTree.AST_NODE_TYPES.EmptyStatement,
+							);
+
+							analyzeEffect(node, statements, body);
+						}
+					}
+					return;
+				}
+
 				if (!isFunctionLike(callback)) return;
 				if (callback.async) return;
 				if (!isBlockBody(callback)) return;
-				if (hasReturnWithArgument(callback.body)) return;
 
 				const statements = callback.body.body.filter(
 					(statement) => statement.type !== TSESTree.AST_NODE_TYPES.EmptyStatement,
 				);
-				if (statements.length === 0) return;
 
-				const functionContext = functionContextStack.at(-1);
-				const coreStatements = stripLeadingGuard(statements);
-
-				if (options.reportEventFlag) {
-					const flagName = matchEventFlagPattern(statements, stateSetterToValue, stateSetterIdentifiers);
-					if (flagName && hasDependencyIdentifier(node, flagName)) {
-						context.report({ messageId: "eventFlag", node });
-						return;
-					}
-				}
-
-				if (options.reportDerivedState) {
-					const setterCount = countSetterCalls(coreStatements, stateSetterIdentifiers);
-					if (setterCount !== undefined) {
-						context.report({ messageId: "derivedState", node });
-						return;
-					}
-				}
-
-				if (options.reportNotifyParent && functionContext) {
-					const callbackCount = countPropertyCallbackCalls(
-						coreStatements,
-						functionContext,
-						options.propertyCallbackPrefixes,
-					);
-					if (callbackCount !== undefined) {
-						context.report({ messageId: "notifyParent", node });
-					}
-				}
+				analyzeEffect(node, statements, callback.body);
 			},
 			FunctionDeclaration: enterFunction,
 			"FunctionDeclaration:exit": exitFunction,
@@ -584,25 +1649,56 @@ export default createRule<Options, MessageIds>({
 					if (!importedName) continue;
 
 					if (options.hooks.has(importedName)) effectIdentifiers.add(specifier.local.name);
-					if (STATE_HOOKS.has(importedName)) stateHookIdentifiers.add(specifier.local.name);
+					if (options.stateHooks.has(importedName)) stateHookIdentifiers.add(specifier.local.name);
+					if (options.refHooks.has(importedName)) refHookIdentifiers.add(specifier.local.name);
 				}
 			},
-			VariableDeclarator: recordStateSetter,
+			// Cross-effect analysis on component exit
+			"Program:exit"(): void {
+				analyzeEffectChains();
+				analyzeDuplicateDeps();
+			},
+			VariableDeclarator(node): void {
+				recordStateSetter(node);
+				recordRef(node);
+				recordNamedFunction(node);
+			},
 		};
 	},
 	defaultOptions: [{}],
 	meta: {
 		docs: {
 			description:
-				"Disallow effects that only derive state, notify parent callbacks, or route event flags through state.",
+				"Disallow effects that only derive state, notify parent callbacks, reset state on prop changes, or route event side effects through state.",
 		},
 		messages: {
+			adjustState:
+				"This effect adjusts state when a prop changes. Adjust the state directly during rendering or restructure to avoid this need.",
 			derivedState:
 				"This effect only derives state from properties or state. Compute the value during rendering instead of useEffect.",
+			duplicateDeps:
+				"Multiple effects have identical dependency arrays. Combine them into a single effect for better performance.",
+			effectChain:
+				"This effect is part of a chain of effects that only derive state from other effects. Consolidate the logic into event handlers or compute during rendering.",
+			emptyEffect: "This effect has an empty body and should be removed.",
 			eventFlag:
 				"This effect only reacts to a state flag. Call the side effect directly in the event handler instead of toggling state.",
+			eventSpecificLogic:
+				"This effect runs event-specific logic based on state. Move this logic to the event handler that triggers the state change.",
+			externalStore:
+				"This effect subscribes to an external store and syncs to state. Use `useSyncExternalStore` instead.",
+			initializeState:
+				"This effect initializes state with a constant value. Pass the value as the useState initializer instead.",
+			logOnly:
+				"This effect only contains console.log calls. Remove it (debug leftover) or move the logging to an event handler.",
+			mixedDerivedState:
+				"This effect contains state setter calls that derive values from props or state mixed with other operations. Extract the setter calls and compute values during rendering.",
 			notifyParent:
 				"This effect only notifies a parent via a property callback. Call the callback in the event handler instead of useEffect.",
+			passRefToParent:
+				"This effect passes a ref to a parent callback. Use `forwardRef` or `useImperativeHandle` instead.",
+			resetState:
+				"This effect resets state when a prop changes. Pass a `key` prop to the component instead to reset all state automatically.",
 		},
 		schema: [
 			{
@@ -624,7 +1720,29 @@ export default createRule<Options, MessageIds>({
 						items: { type: "string" },
 						type: "array",
 					},
+					refHooks: {
+						default: [...DEFAULT_OPTIONS.refHooks],
+						description: "Ref hook names that return mutable ref objects.",
+						items: { type: "string" },
+						type: "array",
+					},
+					reportAdjustState: {
+						default: true,
+						type: "boolean",
+					},
 					reportDerivedState: {
+						default: true,
+						type: "boolean",
+					},
+					reportDuplicateDeps: {
+						default: true,
+						type: "boolean",
+					},
+					reportEffectChain: {
+						default: true,
+						type: "boolean",
+					},
+					reportEmptyEffect: {
 						default: true,
 						type: "boolean",
 					},
@@ -632,9 +1750,43 @@ export default createRule<Options, MessageIds>({
 						default: true,
 						type: "boolean",
 					},
+					reportEventSpecificLogic: {
+						default: true,
+						type: "boolean",
+					},
+					reportExternalStore: {
+						default: true,
+						type: "boolean",
+					},
+					reportInitializeState: {
+						default: true,
+						type: "boolean",
+					},
+					reportLogOnly: {
+						default: true,
+						type: "boolean",
+					},
+					reportMixedDerivedState: {
+						default: true,
+						type: "boolean",
+					},
 					reportNotifyParent: {
 						default: true,
 						type: "boolean",
+					},
+					reportPassRefToParent: {
+						default: true,
+						type: "boolean",
+					},
+					reportResetState: {
+						default: true,
+						type: "boolean",
+					},
+					stateHooks: {
+						default: [...DEFAULT_OPTIONS.stateHooks],
+						description: "State hook names that return [value, setter] pairs.",
+						items: { type: "string" },
+						type: "array",
 					},
 				},
 				type: "object",

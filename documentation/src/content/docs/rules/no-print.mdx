@@ -3,22 +3,20 @@ title: no-print
 badge:
     text: Best Practice
     variant: caution
-description: Bans use of print() function calls. Use log instead for structured logging.
+description: Prefer structured logging over raw print() calls.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
 
-Bans use of `print()` function calls. Use `log` instead for structured logging.
+Prefer structured logging over the global `print()`.
 
 ## Rule Details :badge[Best Practice]{variant=caution}
 
-The global `print()` function is a low-level logging mechanism that lacks structure and severity levels. Using a proper
-logging system (like `Log` from `RbxUtil`) provides better debugging capabilities, production log filtering, and
-consistent formatting.
+The global `print()` call is fine for quick local debugging, but it doesn't scale. A logging wrapper (like `Log` from
+`RbxUtil`) gives you levels, consistent output, and a way to filter in production.
 
 <Aside type="tip" title="Why Structured Logging?">
-	Structured logging helps you filter, search, and analyze logs in production. It provides timestamps, log levels, and
-	context that raw `print()` calls simply cannot offer.
+	If you care about logs later (filtering, searching, routing), use your logger instead of raw `print()`.
 </Aside>
 
 ## Migration Path
@@ -76,13 +74,13 @@ consistent formatting.
 		Filter by `Debug`, `Info`, `Warning`, or `Error` to reduce noise in production.
 	</Card>
 	<Card title="Timestamps" icon="bolt">
-		Unified logging systems automatically attach high-resolution timestamps to every entry.
+		Many logging systems attach timestamps automatically.
 	</Card>
 	<Card title="Remote Telemetry" icon="rocket">
 		Logging libraries often support sending critical errors to external services like Sentry.
 	</Card>
 	<Card title="Formatting" icon="setting">
-		Consistent prefixing and color coding make the developer console much easier to scan.
+		Consistent formatting makes the developer console easier to scan.
 	</Card>
 </CardGrid>
 

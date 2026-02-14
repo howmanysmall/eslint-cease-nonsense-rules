@@ -3,23 +3,20 @@ title: no-async-constructor
 badge:
     text: Safety
     variant: danger
-description:
-    Disallow async operations in class constructors to prevent race conditions and partially initialized objects.
+description: Disallow async work in constructors; use a factory instead.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Disallow async operations in class constructors.
+Don't do async work in constructors.
 
 ## Rule Details :badge[Safety]{variant=danger}
 
-Class constructors in JavaScript/TypeScript cannot be `async`. Attempting to perform asynchronous work (via `then()` or
-direct `await` inside a wrapper) in a constructor leads to objects being used before they are fully initialized. This
-creates difficult-to-debug race conditions and breaks the guarantee that a constructor returns a valid, usable instance.
+Constructors can't be `async`. If you kick off async work in a constructor (via `then()` or an internal async wrapper),
+callers can use the instance before it's initialized. That's a race condition waiting to happen.
 
 <Aside type="danger" title="Architectural Risk">
-	A constructor should always be synchronous and return a fully formed instance. If you need async initialization, you
-	must use the Static Factory pattern.
+	Keep constructors synchronous. If you need async initialization, use a static factory.
 </Aside>
 
 ## Refactoring Workflow
@@ -27,7 +24,7 @@ creates difficult-to-debug race conditions and breaks the guarantee that a const
 <Steps>
 1. **Identify Async Work**
    Locate `this.init().then(...)` or other async callbacks inside your constructor.
-2. **Private Constructor** Make the constructor `private` or `protected` to prevent external un-safe instantiation.
+2. **Private Constructor** Make the constructor `private` or `protected` to prevent external unsafe instantiation.
 3. **Create Static Factory** Define a `static async create(...)` method that performs the initialization logic.
 4. **Return Instance** Construct the object inside the factory, `await` its async needs, and return the finished result.
 

@@ -9,19 +9,19 @@ description:
 
 import { Aside, Code, Tabs, TabItem, CardGrid, Card, LinkCard } from "@astrojs/starlight/components";
 
-Prefer a single ternary expression when two JSX `&&` branches are complements.
+Prefer a single ternary expression when two sibling JSX `&&` branches are complements.
 
 ## Rule Details :badge[React]{variant=success}
 
-This rule detects sibling JSX branches like `condition && <A />` and `!condition && <B />` (or strict
-`===`/`!==` complements) and recommends replacing them with one ternary expression.
+This rule finds sibling JSX branches like `condition && <A />` and `!condition && <B />` (or strict `===`/`!==`
+complements) and recommends replacing them with a single ternary.
 
-<Aside type="note" title="Why this helps">
-	A single ternary keeps mutually exclusive rendering logic in one place and avoids duplicating the condition logic
-	across sibling nodes.
-</Aside>
+	<Aside type="note" title="Why this helps">
+		A single ternary keeps mutually exclusive rendering in one place and avoids repeating the condition across two
+		sibling nodes.
+	</Aside>
 
-The rule always reports the pattern when conditions are complementary.
+The rule reports whenever it can prove the two conditions are complementary.
 
 Auto-fix is conservative and only applies when the condition shape is provably safe:
 
@@ -81,7 +81,7 @@ Auto-fix is conservative and only applies when the condition shape is provably s
 ## Notes
 
 <CardGrid stagger>
-	<Card title="Reported Even Without Fix" icon="warning">
+	<Card title="Reported Without Fix" icon="warning">
 		Unsafe complements like `isReady() && <A />` and `!isReady() && <B />` are reported but not auto-fixed.
 	</Card>
 	<Card title="Whitespace Only Pairing" icon="list-format">

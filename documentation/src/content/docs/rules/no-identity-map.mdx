@@ -3,22 +3,21 @@ title: no-identity-map
 badge:
     text: Maintenance
     variant: note
-description: Bans pointless identity .map() calls that return the parameter unchanged. Prevents wasteful array clones.
+description: Ban identity map calls like items.map(x => x).
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Bans pointless identity `.map()` calls.
+Ban identity `.map()` calls.
 
 ## Rule Details :badge[Maintenance]{variant=note}
 
-This rule flags `.map()` calls where the callback function simply returns the input argument without any modification.
-These calls are redundant and negatively impact performance by creating unnecessary array copies and executing useless
-callbacks.
+Reports `.map()` calls where the callback just returns its input. These calls are redundant and create unnecessary array
+copies and callbacks.
 
 <Aside type="caution" title="Performance Impact">
-	Every `.map()` call creates a new array and iterates over the entire collection. Identity maps
-	like `items.map(x => x)` waste CPU cycles and memory for a 1-to-1 shallow copy.
+	Every `.map()` call allocates a new array and iterates the whole collection. `items.map((x) => x)` is just a shallow
+	copy with extra work.
 </Aside>
 
 ## Refactoring Steps
@@ -29,11 +28,10 @@ callbacks.
 
 2. **Remove Redundancy** If the copy isn't needed, simply remove the `.map()` call and use the original variable.
 
-3. **Use Spread for Copies** If a shallow copy IS required, use the spread operator `[...original]` which is more
-   idiomatic and performant.
+3. **Use spread for copies** If you need a shallow copy, use `[...original]`.
 
-4. **Verify Type Assertions** If mapping was used for a type cast (e.g., `x => x as Type`), move the assertion to the
-   entire array instead: `original as Type[]`.
+4. **Fix the type at the source** If mapping was only used to coerce types, fix the typing where the array is created
+   (or use a proper type guard).
 
 {/* oxfmt-ignore */}
 

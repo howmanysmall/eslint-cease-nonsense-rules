@@ -3,32 +3,32 @@ title: fast-format
 badge:
     text: Performance
     variant: success
-description: Enforces oxfmt code formatting with auto-fix support and intelligent caching.
+description: Runs oxfmt during linting and can apply fixes with --fix.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Enforces oxfmt code formatting with auto-fix support and intelligent caching.
+Formats code with `oxfmt` as part of linting.
 
 ## Rule Details :badge[Performance]{variant=success}
 
-This rule integrates `oxfmt` (a high-performance Rust-based formatter) directly into ESLint. It reports formatting
-differences as `INSERT`, `DELETE`, and `REPLACE` operations, providing near-instant feedback even in massive monorepos.
+This rule runs `oxfmt` during linting. When your file doesn't match the formatter output, it reports a small set of
+edits (`INSERT`, `DELETE`, `REPLACE`) and can apply them with `--fix`.
 
-<Aside type="tip" title="Blazing Fast">
-	`oxfmt` is 10-100x faster than Prettier. By integrating it into ESLint, you get unified tooling without sacrificing
-	performance.
+<Aside type="tip" title="Fast enough for every save">
+	`oxfmt` is usually much faster than Prettier. Wiring it into ESLint keeps formatting in the same pass as the rest of
+	your lint rules.
 </Aside>
 
 ## How it Works
 
 <Steps>
 1. **Source Analysis**
-   The rule reads your file content and identifies its language (TS, JS, TSX, JSX).
+   The rule reads your file and identifies its language (TS, JS, TSX, JSX).
 
-2. **Oxfmt Execution** It passes the source to the Rust-powered `oxfmt` engine via an internal bridge.
+2. **Oxfmt Execution** It runs `oxfmt` on the file content.
 
-3. **Diff Generation** Determines the minimum set of edits (Insert/Delete/Replace) needed to match the ideal format.
+3. **Diff Generation** It computes a minimal diff (Insert/Delete/Replace) to match the formatted output.
 
 4. **Auto-Fix** ESLint applies these edits automatically when running with the `--fix` flag.
 
@@ -40,16 +40,16 @@ differences as `INSERT`, `DELETE`, and `REPLACE` operations, providing near-inst
 
 <CardGrid stagger>
 	<Card title="Rust-Powered" icon="bolt">
-		Leverages the performance of Rust for extremely fast parsing and formatting.
+		`oxfmt` is written in Rust and runs fast.
 	</Card>
 	<Card title="LRU Caching" icon="setting">
-		Avoids redundant formatting for unchanged files using an intelligent caching system.
+		Skips unchanged files using a small LRU cache.
 	</Card>
 	<Card title="Auto-Fix" icon="approve-check">
 		Fully compatible with `eslint --fix` and `bun run lint:fix`.
 	</Card>
 	<Card title="Unified Tooling" icon="rocket">
-		No need for separate Prettier runs; everything happens in your standard linting pass.
+		No separate formatter step; it runs with your normal lint command.
 	</Card>
 </CardGrid>
 
@@ -91,12 +91,11 @@ differences as `INSERT`, `DELETE`, and `REPLACE` operations, providing near-inst
 
 ### LRU Cache Strategy
 
-The rule maintains a Least Recently Used (LRU) cache (default capacity: 32 files) to skip processing for files that
-haven't changed:
+The rule keeps a Least Recently Used (LRU) cache (default capacity: 32 files) so it can skip unchanged files:
 
-- **Cache Keys**: Combination of filename and hashed source content.
-- **Eviction**: Automatically removes the oldest entries to maintain a low memory footprint.
-- **Support**: Runs on `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs`, and `.cjs`.
+- **Cache keys**: Filename + hashed source content.
+- **Eviction**: Drops older entries to keep memory down.
+- **Support**: Works on `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs`, `.cjs`.
 
 ## Message Types
 

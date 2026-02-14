@@ -3,21 +3,32 @@ title: no-useless-use-effect
 badge:
     text: Experimental
     variant: warning
-description: Disallow effects that only derive state, notify parent callbacks, or route event flags through state.
+description: Flags useEffect that only moves data around inside React (derived state, resets, parent notifications, event flags, duplicates, and chains).
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
 
-Disallow `useEffect` patterns that only derive state, notify parents, or route event flags. Effects should synchronize
-with external systems, not compute values that are already available during rendering.
+Flags `useEffect` calls that only move data around inside React. If the logic can run during render or in an event
+handler, it usually shouldn't be an effect.
 
 ## Rule Details :badge[Best Practice]{variant=success}
 
-This rule flags effects that do not synchronize with an external system:
+Reports these patterns (each can be toggled):
 
-- **Derived state**: `useEffect` only sets state based on properties or other state.
-- **Notify parent**: `useEffect` only calls a property callback like `onChange`.
-- **Event flag**: a state flag is toggled just to trigger an effect that performs a side effect.
+- `adjustState` (`reportAdjustState`): Conditionally sets state based on prop values.
+- `derivedState` (`reportDerivedState`): Only derives state from props/state.
+- `duplicateDeps` (`reportDuplicateDeps`): Multiple effects with identical deps.
+- `effectChain` (`reportEffectChain`): Chains where effects trigger other effects via state.
+- `emptyEffect` (`reportEmptyEffect`): Empty callback bodies.
+- `eventFlag` (`reportEventFlag`): Routes events through state flags.
+- `eventSpecificLogic` (`reportEventSpecificLogic`): Event logic based on state flags.
+- `externalStore` (`reportExternalStore`): Subscribes to external stores and syncs to state.
+- `initializeState` (`reportInitializeState`): Initializes state with constants on mount.
+- `logOnly` (`reportLogOnly`): Only console logging.
+- `mixedDerivedState` (`reportMixedDerivedState`): Derived state mixed with non-side-effect calls.
+- `notifyParent` (`reportNotifyParent`): Only notifies parent via callbacks.
+- `passRefToParent` (`reportPassRefToParent`): Passes refs to parent callbacks.
+- `resetState` (`reportResetState`): Resets state to constants on prop change.
 
 <Aside type="danger" title="Effects Are Not Computed State">
 	If the logic can run during rendering or directly inside an event handler, it should not be in an effect.
@@ -47,15 +58,18 @@ This rule flags effects that do not synchronize with an external system:
 		'\t"cease-nonsense/no-useless-use-effect": ["error", {',
 		'\t\t"environment": "roblox-ts",',
 		'\t\t"hooks": ["useEffect", "useLayoutEffect", "useInsertionEffect"],',
+		'\t\t"propertyCallbackPrefixes": ["on"],',
 		'\t\t"reportDerivedState": true,',
 		'\t\t"reportNotifyParent": true,',
-		'\t\t"reportEventFlag": true,',
-		'\t\t"propertyCallbackPrefixes": ["on"]',
+		'\t\t"reportEventFlag": true',
 		"\t}]",
 		"}",
 	].join("\n")}
 	lang="json"
+	title="eslint.config.js"
 />
+
+All `report*` options default to `true` unless you turn them off.
 
 ## Examples
 

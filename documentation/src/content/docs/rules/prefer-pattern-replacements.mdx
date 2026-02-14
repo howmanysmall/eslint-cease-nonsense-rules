@@ -9,32 +9,32 @@ description:
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Enforces replacement of verbose constructor/method patterns with simpler alternatives.
+Replace verbose constructor/method patterns with configured shorthands.
 
 ## Rule Details :badge[Advanced]{variant=caution}
 
-This rule uses a type-safe pattern matching system to detect verbose constructor or method calls that have simpler
-equivalents. It supports captures, optional arguments, wildcards, and scope-aware fixes.
+This rule matches constructor or method calls against patterns you define and rewrites them to simpler equivalents.
+It supports captures, optional arguments, wildcards, and scope-aware fixes.
 
 <Aside type="caution" title="Complexity Note">
-	This is a high-level orchestration rule. It allows you to define custom "shorthands" for complex object creation
-	logic across your entire codebase.
+	This is an orchestration rule. You define the patterns and replacements, and the rule keeps the rewrite consistent
+	across the codebase.
 </Aside>
 
 ## Features
 
 <CardGrid stagger>
 	<Card title="Auto-Fix" icon="rocket">
-		Automatically replaces verbose patterns with their simpler equivalents during linting.
+		Rewrites matched patterns during linting.
 	</Card>
 	<Card title="Captures" icon="magnifier">
-		Use `$x` or `$name` to capture values from the source and inject them into the replacement.
+		Use `$x` or `$name` to capture values and reuse them in the replacement.
 	</Card>
 	<Card title="Wildcards" icon="bolt">
-		Use `_` to match any value without capturing it, useful for ignoring unneeded arguments.
+		Use `_` to match any value without capturing it.
 	</Card>
 	<Card title="Scope Aware" icon="warning">
-		Intelligently skips fixes if the replacement name would shadow an existing local variable.
+		Skips fixes if the replacement name would shadow an existing local variable.
 	</Card>
 </CardGrid>
 
@@ -42,14 +42,14 @@ equivalents. It supports captures, optional arguments, wildcards, and scope-awar
 
 ### Capture System
 
-Capture a value to use in the replacement:
+Capture a value and reuse it in the replacement:
 
 - **Match**: `new Vector2($x, $y)`
 - **Replacement**: `Vector2.create($x, $y)`
 
 ### Optional Arguments
 
-Match literal `0` or missing arguments using `?`:
+Use `?` to treat a literal `0` as optional (or allow the argument to be omitted):
 
 - **Match**: `new Vector2($x, 0?)`
 - **Replacement**: `fromX($x)`
@@ -92,7 +92,7 @@ Put the most specific patterns first so they win over general fallbacks. For exa
 <Tabs>
 	<TabItem label="Roblox UDim2" icon="laptop">
 		### Simplifying UDim2
-		Replace full constructors with shorthand methods.
+		Replace full constructors with your preferred shorthands.
 
     	<Code
     		code={[
@@ -105,9 +105,9 @@ Put the most specific patterns first so they win over general fallbacks. For exa
     		lang="tsx"
     	/>
     </TabItem>
-    <TabItem label="Vector2/3" icon="bolt">
-    	### Uniform Vectors
-    	Replace identical coordinates with uniform methods.
+	<TabItem label="Vector2/3" icon="bolt">
+		### Uniform Vectors
+		Replace identical coordinates with a uniform helper.
 
     	<Code
     		code={[

@@ -8,15 +8,15 @@ description: Ban React prop names that start with an underscore in JSX.
 
 import { Aside, Code, LinkCard, CardGrid, Tabs, TabItem } from "@astrojs/starlight/components";
 
-Ban JSX prop names that start with `_`.
+Disallow JSX prop names that start with `_`.
 
 ## Rule Details :badge[Best Practice]{variant=success}
 
-This rule enforces clean, explicit prop naming by rejecting attributes like `_tooltipGradient` in JSX.
+This rule bans underscore-prefixed props like `_tooltipGradient` in JSX.
 
-<Aside type="danger" title="Public API Should Look Public">
-	Component props are part of the component API. Leading underscores imply "internal/private" and make call sites harder
-	to scan.
+<Aside type="danger" title="Props Are Public API">
+	Component props are part of the component API. A leading underscore reads as "internal/private" and makes call sites
+	harder to scan.
 </Aside>
 
 ## Examples
@@ -25,29 +25,29 @@ This rule enforces clean, explicit prop naming by rejecting attributes like `_to
 	<TabItem label="❌ Incorrect" icon="close">
 		### Underscore-Prefixed Props
 
-    	<Code
-    		code={[
-    			"<InventoryItemTooltip",
-    			'\tkey="inventory-tooltip"',
-    			"\t_tooltipGradient={tooltipGradient}",
-    			"/>",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
-    	### Standard Prop Names
+		<Code
+			code={[
+				"<InventoryItemTooltip",
+				'\tkey="inventory-tooltip"',
+				"\t_tooltipGradient={tooltipGradient}",
+				"/>",
+			].join("\n")}
+			lang="tsx"
+		/>
+	</TabItem>
+	<TabItem label="✅ Correct" icon="check">
+		### Standard Prop Names
 
-    	<Code
-    		code={[
-    			"<InventoryItemTooltip",
-    			'\tkey="inventory-tooltip"',
-    			"\ttooltipGradient={tooltipGradient}",
-    			"/>",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </TabItem>
+		<Code
+			code={[
+				"<InventoryItemTooltip",
+				'\tkey="inventory-tooltip"',
+				"\ttooltipGradient={tooltipGradient}",
+				"/>",
+			].join("\n")}
+			lang="tsx"
+		/>
+	</TabItem>
 </Tabs>
 
 ## Related Rules

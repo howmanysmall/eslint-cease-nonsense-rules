@@ -3,9 +3,7 @@ title: prefer-module-scope-constants
 badge:
     text: Clean Code
     variant: success
-description:
-    SCREAMING_SNAKE_CASE variables must be const at module scope. Enforces consistent naming and prevents accidental
-    mutations.
+description: SCREAMING_SNAKE_CASE should be module-level const (not local or mutable).
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
@@ -14,13 +12,12 @@ SCREAMING_SNAKE_CASE variables must be `const` at module scope.
 
 ## Rule Details :badge[Clean Code]{variant=success}
 
-Variables in `SCREAMING_SNAKE_CASE` indicate global constants that should never change. This rule enforces that such
-variables are defined at the module (top) level using the `const` keyword. This prevents accidental mutations and
-ensures that constants are defined in a way that is easily reusable across the file.
+`SCREAMING_SNAKE_CASE` is usually a promise: "this is a constant". This rule enforces that the binding is a module-level
+`const`, not a local variable or a `let`.
 
 <Aside type="tip" title="Naming as a Signal">
-	`SCREAMING_SNAKE_CASE` is a visual signal to other developers that "this value is a fixed constant." Defining it
-	locally or with `let` breaks that mental model.
+	`SCREAMING_SNAKE_CASE` is a visual signal that the value shouldn't be reassigned. Defining it locally or with `let`
+	breaks that signal.
 </Aside>
 
 ## Refactoring Path
@@ -62,7 +59,7 @@ ensures that constants are defined in a way that is easily reusable across the f
     </TabItem>
     <TabItem label="✅ Correct" icon="check">
     	### Module-Level Constants
-    	Defined once at the file's root for maximum clarity and reuse.
+		Define once at the file's root so it's obvious and reusable.
 
     	<Code
     		code={[
@@ -85,7 +82,7 @@ ensures that constants are defined in a way that is easily reusable across the f
 
 <CardGrid stagger>
 	<Card title="Immutability" icon="lock">
-		Using `const` at module scope ensures the value cannot be tampered with at runtime.
+		A module-level `const` binding can't be reassigned.
 	</Card>
 	<Card title="Reusability" icon="rocket">
 		Top-level constants can be easily exported and shared across your entire project.

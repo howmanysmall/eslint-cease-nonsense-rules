@@ -3,18 +3,17 @@ title: ban-react-fc
 badge:
     text: Best Practice
     variant: success
-description: Bans React.FC and similar component type annotations in favor of explicit function declarations.
+description: Prefer function components with typed props over React.FC.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Bans `React.FC` and similar component type annotations.
+Prefer function components with typed props over `React.FC`.
 
 ## Rule Details :badge[Best Practice]{variant=success}
 
-`React.FC` and similar type annotations break debug information in React DevTools, hide component display names, and
-encourage poor patterns like implicit children typing. Use explicit function declarations with typed props instead to
-ensure maximum type safety and a clean debugging experience.
+`React.FC` looks convenient, but it comes with baggage: implicit `children`, awkward generics, and components that tend
+to end up anonymous in stack traces and DevTools. Prefer plain function declarations with typed props.
 
 <Aside type="danger" title="Why Ban React.FC?">
 	`React.FC` makes your components harder to debug and less type-safe. It encourages using arrow functions which often

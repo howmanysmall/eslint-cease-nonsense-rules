@@ -3,7 +3,7 @@ title: prefer-pascal-case-enums
 badge:
     text: Clean Code
     variant: success
-description: Enum names and members must be PascalCase to align with TypeScript conventions and improve readability.
+description: Enforce PascalCase for enum names and members.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
@@ -12,9 +12,8 @@ Enum names and members must be PascalCase.
 
 ## Rule Details :badge[Clean Code]{variant=success}
 
-TypeScript enums should use PascalCase for both the enum name and all members. This enforces consistency with TypeScript
-type conventions and makes usages like `Color.Red` immediately distinguishable from constants like `MAX_SIZE` or
-variables like `activePlayer`.
+TypeScript enums should use PascalCase for both the enum name and all members. It keeps usages like `Color.Red`
+distinct from constants like `MAX_SIZE` and variables like `activePlayer`.
 
 <Aside type="tip" title="Type Convention">
 	Enums define new types in TypeScript, so they should follow the same PascalCase convention as interfaces and

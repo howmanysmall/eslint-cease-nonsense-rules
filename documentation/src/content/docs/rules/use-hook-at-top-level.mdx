@@ -3,24 +3,20 @@ title: use-hook-at-top-level
 badge:
     text: Best Practice
     variant: success
-description:
-    Enforces that React hooks are only called at the top level of components or custom hooks, never conditionally or in
-    nested functions.
+description: "Enforce the Rules of Hooks: call hooks unconditionally at the top level."
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Enforces that React hooks are only called at the top level.
+Call hooks at the top level. No conditions, no loops, no nested functions.
 
 ## Rule Details :badge[Best Practice]{variant=success}
 
-React's Rules of Hooks require that hooks are called at the top level of your function. They must never be called inside
-loops, conditions, or nested functions. This ensures that hooks are called in the same order each time a component
-renders, which is how React preserves state between re-renderings.
+React matches hook calls to state by call order. If you call hooks conditionally or inside loops, that order changes and
+you get weird bugs. This rule enforces the basic constraint: call hooks unconditionally at the top level.
 
 <Aside type="tip" title="State Corruption">
-	If a hook call is skipped during a re-render due to a condition, the internal state mapping for every subsequent
-	hook call will be misaligned, leading to unpredictable crashes and data corruption.
+	Once hook order shifts, React starts pairing state with the wrong call site. The failure mode is usually confusing.
 </Aside>
 
 ## Refactoring Workflow

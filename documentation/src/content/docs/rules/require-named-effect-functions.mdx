@@ -3,25 +3,21 @@ title: require-named-effect-functions
 badge:
     text: Best Practice
     variant: caution
-description:
-    Enforce named effect functions for better debuggability. Prevent inline arrow functions in useEffect and similar
-    hooks.
+description: Require named effect callbacks so stack traces and DevTools stay readable.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Enforce named effect functions for better debuggability.
+Require named effect callbacks for `useEffect` and friends.
 
 ## Rule Details :badge[Best Practice]{variant=caution}
 
-Inline arrow functions in hooks like `useEffect` are convenient but problematic. Stack traces show them as
-`(anonymous)`, DevTools cannot label them helpfully, and complex logic becomes hard to read. This rule requires that
-effect callbacks have a name, either as a separate function definition or a named function expression.
+Inline callbacks are convenient, but they show up as `(anonymous)` in stack traces and make effects harder to scan. This
+rule requires a named callback (and in `standard` mode, allows named function expressions).
 
 <Aside type="tip" title="Self-Documenting Effects">
-	`useEffect(onUserIdChange, [userId])` is immediately understandable, whereas
-	`useEffect(() => { ... }, [userId])` requires reading the implementation to understand the
-	intent.
+	A name carries intent. `useEffect(onUserIdChange, [userId])` tells you what's happening without opening the
+	implementation.
 </Aside>
 
 ## Refactoring Workflow

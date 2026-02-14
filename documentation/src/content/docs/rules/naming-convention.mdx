@@ -3,22 +3,20 @@ title: naming-convention
 badge:
     text: Performance
     variant: success
-description: Enforce naming conventions for TypeScript constructs with high performance and zero type checking.
+description: Fast naming convention checks for TypeScript (AST-only, no type checker).
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Enforce naming conventions for TypeScript constructs.
+Fast naming convention checks for TypeScript code.
 
 ## Rule Details :badge[Performance]{variant=success}
 
-This rule enforces naming conventions for interfaces, types, and other TypeScript constructs. Unlike the standard
-`typescript-eslint` rule, this one is optimized for extreme speed by using AST-only analysis. This makes it ideal for
-large codebases where full type-checking during linting is too slow.
+Checks casing and naming for interfaces, type aliases, enums, variables, and more. It stays AST-only (no type graph), so
+it runs quickly even on large projects. If you need type-aware behavior, use the `@typescript-eslint` naming rule.
 
 <Aside type="note" title="Design Philosophy">
-	We believe naming conventions should be fast and simple. By avoiding full type checking, this rule provides nearly
-	instantaneous feedback as you type.
+	Naming rules shouldn't make your editor crawl. This one avoids type-checking, so it can run on every save.
 </Aside>
 
 ## Configuration Workflow
@@ -28,7 +26,7 @@ large codebases where full type-checking during linting is too slow.
    Choose which constructs to check (e.g., `interface`, `typeAlias`, `enum`).
 2. **Select Formats** Define allowed casing formats (e.g., `PascalCase`, `camelCase`, `UPPER_CASE`).
 3. **Define Custom Rules** Use regex to add specific constraints, like banning the `I` prefix on interfaces.
-4. **Verify Performance** Ensure your lint times remain low; this rule handles thousands of nodes in milliseconds.
+4. **Keep it cheap** This rule is meant to stay fast; save heavy checks for CI.
 {/* oxfmt-ignore */}
 
 </Steps>
@@ -53,7 +51,7 @@ large codebases where full type-checking during linting is too slow.
     </TabItem>
     <TabItem label="✅ Correct" icon="check">
     	### Standardized Names
-    	Consistent naming improves codebase grep-ability and professionalism.
+		Consistent naming makes search and refactors easier.
 
     	<Code
     		code={[
@@ -82,13 +80,13 @@ large codebases where full type-checking during linting is too slow.
 
 <CardGrid stagger>
 	<Card title="No Type Graph" icon="bolt">
-		Analyzes raw code without waiting for the TypeScript compiler to build a complex type graph.
+		Reads the AST only; it doesn't build the TypeScript program.
 	</Card>
 	<Card title="Regex Engine" icon="setting">
-		Pre-compiles and caches all regular expressions for maximum execution speed.
+		Compiles regex up front and reuses it.
 	</Card>
 	<Card title="Memory Light" icon="rocket">
-		Consumes significantly less RAM than type-aware linting rules.
+		Uses less memory than type-aware linting rules.
 	</Card>
 </CardGrid>
 

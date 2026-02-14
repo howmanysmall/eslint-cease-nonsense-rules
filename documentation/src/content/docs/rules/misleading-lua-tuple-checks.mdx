@@ -8,13 +8,13 @@ description: Disallow the use of LuaTuple in conditional expressions to prevent 
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Disallow the use of `LuaTuple` in conditional expressions.
+Disallow using `LuaTuple` in conditional expressions.
 
 ## Rule Details :badge[Roblox]{variant=note}
 
-In `roblox-ts`, a `LuaTuple` represents multiple return values from Lua. Using a `LuaTuple` directly in a conditional
-expression (like an `if` statement) is almost always a bug. Because `LuaTuple` is implemented as an array at runtime,
-the object itself is always truthy in JavaScript/TypeScript, even if the first Lua return value is `false` or `nil`.
+In `roblox-ts`, a `LuaTuple` represents multiple return values from Luau. Using a `LuaTuple` directly in a conditional
+is almost always a bug. At runtime it's an array, so the value is always truthy in JavaScript/TypeScript, even if the
+first Luau return value is `false` or `nil`.
 
 <Aside type="danger" title="Confusing Behavior">
 	In Lua, `if getTuple() then` checks the first return value. In TypeScript, `if (getTuple())` checks if the *array*
@@ -23,13 +23,13 @@ the object itself is always truthy in JavaScript/TypeScript, even if the first L
 
 ## Refactoring Steps
 
-<Steps>
-1. **Identify Tuple Checks**
-   Locate `if`, `while`, or ternary expressions that use a variable of type `LuaTuple`.
-2. **Destructure Results** Assign the tuple to a local array-style destructuring:
-   `const [success, result] = getTuple()`.
-3. **Check the Variable** Perform your truthiness check on the specific destructured variable: `if (success) { ... }`.
-4. **Explicit Indexing** Alternatively, if you only need the first value, use explicit indexing: `if (getTuple()[0])`.
+    <Steps>
+    1. **Identify Tuple Checks**
+       Locate `if`, `while`, or ternary expressions that use a variable of type `LuaTuple`.
+    2. **Destructure Results** Assign the tuple to a local destructuring:
+       `const [success, result] = getTuple()`.
+    3. **Check the Variable** Perform your truthiness check on the specific destructured variable: `if (success) { ... }`.
+    4. **Explicit Indexing** Alternatively, if you only need the first value, use explicit indexing: `if (getTuple()[0])`.
 
 {/* oxfmt-ignore */}
 
@@ -40,31 +40,31 @@ the object itself is always truthy in JavaScript/TypeScript, even if the first L
 <Tabs>
 	<TabItem label="❌ Incorrect" icon="close">
 		### Ambiguous Truthiness
-		Bans direct tuple checks that don't inspect the first element.
+		A tuple value is always truthy, even when the first return value is falsey.
 
     	<Code
     		code={[
     			"const result = getLuaTuple();",
     			"",
-    			"// ❌ Always true! Even if the first return is false.",
-    			"if (result) {",
-    			"\tprint(\"This always prints\");",
-    			"}",
+    		"// ❌ Always true! Even if the first return is false.",
+    		"if (result) {",
+    		"\tprint(\"This always prints\");",
+    		"}",
     		].join("\n")}
     		lang="tsx"
     	/>
     </TabItem>
     <TabItem label="✅ Correct" icon="check">
     	### Explicit Content Checks
-    	Inspect the specific values within the tuple or use destructuring.
+    	Destructure and check the specific value you care about.
 
     	<Code
     		code={[
-    			"// ✅ Destructuring (Recommended)",
-    			"const [success, data] = getLuaTuple();",
-    			"if (success) {",
-    			"\tprint(\"Action succeeded!\");",
-    			"}",
+    		"// ✅ Destructuring (Recommended)",
+    		"const [success, data] = getLuaTuple();",
+    		"if (success) {",
+    		"\tprint(\"Action succeeded\");",
+    		"}",
     			"",
     			"// ✅ Explicit indexing",
     			"if (getLuaTuple()[0]) {",
@@ -81,13 +81,13 @@ the object itself is always truthy in JavaScript/TypeScript, even if the first L
 
 <CardGrid stagger>
 	<Card title="Runtime Mismatch" icon="bolt">
-		Mental models from Lua don't translate; `LuaTuple` is a JS object (array), not raw values.
+		Lua mental models don't translate; `LuaTuple` is a JS object (array), not a raw return value.
 	</Card>
 	<Card title="Silent Failures" icon="warning">
-		Logic blocks may execute when they shouldn't, leading to difficult-to-track state bugs.
+		Logic blocks can run when they shouldn't, leading to hard-to-track state bugs.
 	</Card>
 	<Card title="Type Clarity" icon="magnifier">
-		Destructuring tells other developers exactly what each returned value represents.
+		Destructuring makes it obvious what each returned value represents.
 	</Card>
 </CardGrid>
 

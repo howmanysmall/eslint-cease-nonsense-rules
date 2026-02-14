@@ -3,24 +3,21 @@ title: require-paired-calls
 badge:
     text: Safety
     variant: danger
-description:
-    Enforces that paired function calls (opener/closer) are properly balanced across all execution paths with LIFO
-    ordering.
+description: Ensure opener/closer call pairs are balanced (LIFO) across all code paths.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Enforces that paired function calls are properly balanced.
+Ensure opener/closer call pairs are balanced.
 
 ## Rule Details :badge[Safety]{variant=danger}
 
-This rule ensures that resource management patterns like profiling markers, database transactions, and mutex locks are
-properly paired. It validates that every "opener" (e.g., `debug.profilebegin`) has exactly one matching "closer" (e.g.,
-`debug.profileend`) and that they occur in the correct LIFO (Last In, First Out) order.
+This rule checks resource-style call pairs (profiling markers, transactions, mutex locks, etc.). Every opener (for
+example `debug.profilebegin`) must have a matching closer (for example `debug.profileend`), and they must be closed in
+LIFO order.
 
 <Aside type="danger" title="Resource Leaks">
-	Unpaired calls are a major source of memory leaks, deadlocks, and corrupted engine states. This rule ensures your
-	resources are always cleaned up, even in complex branching logic.
+	Unpaired calls leak resources and cause hard-to-reproduce bugs. Use a `try...finally` so cleanup always runs.
 </Aside>
 
 ## Resource Management Workflow

@@ -3,22 +3,20 @@ title: prevent-abbreviations
 badge:
     text: Clean Code
     variant: success
-description: Prevent cryptic abbreviations in variable and property names to improve code self-documentation.
+description: Ban cryptic abbreviations and suggest readable replacements.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Prevent cryptic abbreviations in variable and property names.
+Ban cryptic abbreviations in names.
 
 ## Rule Details :badge[Clean Code]{variant=success}
 
-This rule discourages the use of abbreviations in favor of more descriptive names. It provides suggestions for
-replacements and can automatically fix single-replacement cases. By using full words, your code becomes more accessible
-to contributors and easier to maintain over time.
+Reports abbreviations like `err`, `idx`, and `dist` and suggests replacements. If there's one obvious replacement, it can
+auto-fix it.
 
 <Aside type="tip" title="Self-Documenting Code">
-	Abbreviations like `fn` or `dist` are ambiguous. Using `function` or `distance` immediately clarifies the purpose of
-	the identifier.
+	Abbreviations like `fn` or `dist` are ambiguous. Use full words when the extra characters buy clarity.
 </Aside>
 
 ## Refactoring Steps

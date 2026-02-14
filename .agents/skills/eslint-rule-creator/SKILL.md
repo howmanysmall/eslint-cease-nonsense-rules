@@ -7,7 +7,7 @@ description: Use when creating a new ESLint rule for eslint-cease-nonsense-rules
 
 ## Overview
 
-Creates complete ESLint rules with all required files: rule implementation, tests, documentation, and registry updates.
+Creates complete ESLint rules with all required files: rule implementation, tests, documentation, and registry updates. You must ALWAYS use test driven development.
 
 ## When to Use
 
