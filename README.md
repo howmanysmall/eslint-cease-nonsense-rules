@@ -1304,6 +1304,48 @@ const meshPart = new Instance("MeshPart");
 <meshpart Size={new Vector3(1, 1, 1)} />
 ```
 
+#### `no-constant-condition-with-break`
+
+Disallows constant conditions, but allows constant loops that include a `break` targeting the same loop. This is useful for game loops and event loops that have intentional exit conditions.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-constant-condition-with-break": "error"
+}
+```
+
+**❌ Bad**
+
+```typescript
+// Constant condition in if statement
+if (true) { doSomething(); }
+
+// Infinite loop without break
+while (true) { doSomething(); }
+for (;; true) { doSomething(); }
+```
+
+**✅ Good**
+
+```typescript
+// Variable condition
+while (condition) { doSomething(); }
+
+// Loop with proper break
+while (true) {
+  if (shouldStop) break;
+  doSomething();
+}
+
+// Labeled break
+outer: while (true) {
+  if (done) break outer;
+  doSomething();
+}
+```
+
 #### `fast-format`
 
 Enforces oxfmt code formatting. Reports INSERT, DELETE, and REPLACE operations for formatting differences.
@@ -2128,6 +2170,46 @@ interface IUser {
 interface User {
 	name: string;
 }
+```
+
+#### `no-events-in-events-callback`
+
+Disallow sending Events back to the same player inside an `Events.connect()` callback. For Flamework networking, this prevents the anti-pattern of using Events for request/response when Functions should be used instead.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-events-in-events-callback": ["error", {
+    "eventsImportPaths": ["shared/networking", "server/events"]
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+import { Events } from "server/networking";
+
+// Using Events for request/response
+Events.units.unequipUnit.connect((player, unitKey) => {
+  if (unitKey.size() > 0) {
+    Events.promptNotification.fire(player, "error");
+  }
+});
+```
+
+**✅ Good**
+
+```typescript
+import { Events, Functions } from "server/networking";
+
+// Use Functions for request/response
+Events.units.unequipUnit.connect((player, unitKey) => {
+  if (unitKey.size() > 0) {
+    Functions.units.notifyPlayer(player, "error");
+  }
+});
 ```
 
 #### `misleading-lua-tuple-checks`

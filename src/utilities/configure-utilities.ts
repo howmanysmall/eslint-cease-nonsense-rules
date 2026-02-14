@@ -1,6 +1,7 @@
 import type { BanInstancesOptions } from "../rules/ban-instances";
 import type { ComplexityConfiguration } from "../rules/enforce-ianitor-check-type";
 import type { NamingConventionOptions } from "../rules/naming-convention";
+import type { NoEventsInEventsCallbackOptions } from "../rules/no-events-in-events-callback";
 import type { NoGodComponentsOptions } from "../rules/no-god-components";
 import type { NoInstanceMethodsOptions } from "../rules/no-instance-methods-without-this";
 import type { NoMemoChildrenOptions } from "../rules/no-memo-children";
@@ -291,6 +292,17 @@ export function createNamingConventionOptions(options: Partial<NamingConventionO
  */
 export function createNoUnusedImportsOptions(options: Partial<NoUnusedImportsOptions> = {}): NoUnusedImportsOptions {
 	return { checkJSDoc: true, ...options };
+}
+
+/**
+ * Creates options for no-events-in-events-callback rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNoEventsInEventsCallbackOptions(
+	options: Partial<NoEventsInEventsCallbackOptions> = {},
+): NoEventsInEventsCallbackOptions {
+	return { eventsImportPaths: [], ...options };
 }
 
 /**

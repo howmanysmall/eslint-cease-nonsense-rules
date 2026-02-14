@@ -6,6 +6,7 @@ import {
 	createEffectFunctionOptions,
 	createHookConfiguration,
 	createNamingConventionOptions,
+	createNoEventsInEventsCallbackOptions,
 	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
 	createNoMemoChildrenOptions,
@@ -436,12 +437,14 @@ describe("configure-utilities", () => {
 		it("should override multiple fields", () => {
 			expect.assertions(3);
 			const configuration = createNamingConventionOptions({
+				// @ts-expect-error Testing purposes
 				custom: { match: false },
 				format: ["camelCase"],
 				selector: "class",
 			});
 			expect(configuration.format).toEqual(["camelCase"]);
 			expect(configuration.selector).toBe("class");
+			// @ts-expect-error Testing purposes
 			expect(configuration.custom).toEqual({ match: false });
 		});
 	});
@@ -463,6 +466,22 @@ describe("configure-utilities", () => {
 			expect.assertions(1);
 			const configuration = createNoUnusedImportsOptions({ checkJSDoc: false });
 			expect(configuration).toEqual({ checkJSDoc: false });
+		});
+	});
+
+	describe("createNoEventsInEventsCallbackOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createNoEventsInEventsCallbackOptions();
+			expect(configuration).toEqual({ eventsImportPaths: [] });
+		});
+
+		it("should override defaults", () => {
+			expect.assertions(1);
+			const configuration = createNoEventsInEventsCallbackOptions({
+				eventsImportPaths: ["server/networking", "client/networking"],
+			});
+			expect(configuration.eventsImportPaths).toEqual(["server/networking", "client/networking"]);
 		});
 	});
 

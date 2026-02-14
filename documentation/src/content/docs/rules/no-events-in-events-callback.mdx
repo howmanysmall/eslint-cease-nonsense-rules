@@ -1,0 +1,136 @@
+---
+title: no-events-in-events-callback
+badge:
+    text: Flamework
+    variant: caution
+description:
+    Disallow sending Events back to the same player inside an Events.connect callback; use Functions for
+    request/response.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+
+Disallow sending Events back to the same player inside an `Events.connect()` callback.
+
+## Rule Details :badge[Flamework]{variant=caution}
+
+In Flamework networking, when you receive an event via `Events.connect()`, calling `Events` back to the same player is
+an anti-pattern. For request/response scenarios, you should use `Functions` instead, which are designed for this purpose
+and provide better type safety and clearer semantics.
+
+<Aside type="caution" title="Why This Matters">
+	Using Events for request/response creates spaghetti code and makes it harder to track the flow of data. Functions
+	provide explicit return types and better error handling.
+</Aside>
+
+## Configuration Guide
+
+<Steps>
+1. **Identify Import Paths**
+   Add your Flamework Events import paths to the `eventsImportPaths` option.
+
+2. **Update Handlers** Replace `Events.fire(player, ...)` with `Functions.call(player, ...)` in your request/response
+   handlers.
+
+3. **Verify Types** Ensure your Functions are properly typed with request and response types.
+
+</Steps>
+
+## Configuration Options
+
+The rule requires an `eventsImportPaths` array to identify which Events imports should be tracked.
+
+<Code code={["{", '\t"eventsImportPaths": ["shared/networking", "server/events"]', "}"].join("\n")} lang="json" />
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Events Callback Calling Events
+		These patterns are flagged because they use Events for request/response.
+
+    	<Code
+    		code={[
+    			'import { Events } from "server/networking";',
+    			'',
+    			'// Bad: Calling Events inside Events.connect callback',
+    			'Events.units.unequipUnit.connect((player, unitKey) => {',
+    			'\tif (unitKey.size() > 0) {',
+    			'\t\tEvents.promptNotification.fire(player, "error");',
+    			'\t}',
+    			'});',
+    			'',
+    			'// Bad: Same player via alias',
+    			'Events.connect((player) => {',
+    			'\tconst samePlayer = player;',
+    			'\tEvents.someEvent.fire(samePlayer, data);',
+    			'});',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Using Functions for Request/Response
+    	These patterns are correct because they use the right abstraction.
+
+    	<Code
+    		code={[
+    			'import { Events, Functions } from "server/networking";',
+    			'',
+    			'// Good: Use Functions for request/response',
+    			'Events.units.unequipUnit.connect((player, unitKey) => {',
+    			'\tif (unitKey.size() > 0) {',
+    			'\t\tFunctions.units.notifyPlayer(player, "error");',
+    			'\t}',
+    			'});',
+    			'',
+    			'// Good: Events to different player is fine',
+    			'Events.connect((player, otherPlayer) => {',
+    			'\tEvents.someEvent.fire(otherPlayer, data);',
+    			'});',
+    			'',
+    			'// Good: Outside of connect callback is fine',
+    			'Events.someEvent.fire(player, data);',
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Detection Strategy
+
+<CardGrid stagger>
+	<Card title="Import Tracking" icon="seti:import">
+		Only tracks Events from configured import paths to avoid false positives.
+	</Card>
+	<Card title="Taint Analysis" icon="seti:flow">
+		Tracks the player parameter through aliases, destructuring, and assignments.
+	</Card>
+	<Card title="Same Player Detection" icon="target">
+		Detects when the same player is passed as the first argument to Events methods.
+	</Card>
+	<Card title="Import Aliases" icon="seti:config">
+		Supports renamed imports like `import { Events as ServerEvents }`.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="require-paired-calls"
+		description="Ensures proper cleanup of paired function calls"
+		href="/eslint-cease-nonsense-rules/rules/require-paired-calls/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Flamework Documentation"
+		description="Official Flamework networking guide"
+		href="https://flamework.rbxts.dev/docs/introduction"
+	/>
+</CardGrid>
