@@ -26,8 +26,30 @@ describe("no-constant-condition-with-break", () => {
 				errors: [{ messageId: "unexpected" }],
 			},
 			{
+				code: "while (true) { if (done) continue; doThing(); }",
+				errors: [{ messageId: "unexpected" }],
+			},
+			{
 				code: "while (true) { switch (value) { case 1: break; default: doThing(); } }",
 				errors: [{ messageId: "unexpected" }],
+			},
+			{
+				code: "while (true) { const stop = () => { return; }; stop(); doThing(); }",
+				errors: [{ messageId: "unexpected" }],
+			},
+			{
+				code: "while (true) { coroutine.yield(); doThing(); }",
+				errors: [{ messageId: "unexpected" }],
+			},
+			{
+				code: "while (true) { task.wait(); doThing(); }",
+				errors: [{ messageId: "unexpected" }],
+				options: [{ loopExitCalls: ["coroutine.yield"] }],
+			},
+			{
+				code: "while (true) { const pause = () => coroutine.yield(); pause(); doThing(); }",
+				errors: [{ messageId: "unexpected" }],
+				options: [{ loopExitCalls: ["coroutine.yield"] }],
 			},
 			{
 				code: "while (false) { break; }",
@@ -43,7 +65,17 @@ describe("no-constant-condition-with-break", () => {
 			"while (true) { if (done) break; doThing(); }",
 			"for (; true;) { if (done) break; doThing(); }",
 			"outer: while (true) { if (done) break outer; doThing(); }",
+			"function run() { while (true) { if (done) return; doThing(); } }",
+			"function run() { while (true) { switch (value) { case 1: return; default: doThing(); } } }",
 			"while (value) { doThing(); }",
+			{
+				code: "while (true) { coroutine.yield(); doThing(); }",
+				options: [{ loopExitCalls: ["coroutine.yield"] }],
+			},
+			{
+				code: "while (true) { task.wait(); doThing(); }",
+				options: [{ loopExitCalls: ["task.wait"] }],
+			},
 		],
 	});
 });

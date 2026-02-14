@@ -1306,7 +1306,7 @@ const meshPart = new Instance("MeshPart");
 
 #### `no-constant-condition-with-break`
 
-Disallows constant conditions, but allows constant loops that include a `break` targeting the same loop. This is useful for game loops and event loops that have intentional exit conditions.
+Disallows constant conditions, but allows constant loops that include exits like `break`, `return`, or configured exit calls. This is useful for game loops and event loops that have intentional exit conditions.
 
 **Configuration**
 
@@ -1316,13 +1316,21 @@ Disallows constant conditions, but allows constant loops that include a `break` 
 }
 ```
 
+```typescript
+{
+  "cease-nonsense/no-constant-condition-with-break": ["error", {
+    loopExitCalls: ["coroutine.yield", "task.wait"]
+  }]
+}
+```
+
 **❌ Bad**
 
 ```typescript
 // Constant condition in if statement
 if (true) { doSomething(); }
 
-// Infinite loop without break
+// Infinite loop without a loop exit
 while (true) { doSomething(); }
 for (;; true) { doSomething(); }
 ```
@@ -1342,6 +1350,20 @@ while (true) {
 // Labeled break
 outer: while (true) {
   if (done) break outer;
+  doSomething();
+}
+
+// Function-scoped loop with return
+function run() {
+  while (true) {
+    if (done) return;
+    doSomething();
+  }
+}
+
+// Configured exit call
+while (true) {
+  coroutine.yield();
   doSomething();
 }
 ```

@@ -3,7 +3,12 @@ import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "unexpected";
-type Options = [];
+
+export interface NoConstantConditionWithBreakOptions {
+	readonly loopExitCalls?: ReadonlyArray<string>;
+}
+
+type Options = [NoConstantConditionWithBreakOptions?];
 
 interface ConstantValueResult {
 	readonly constant: boolean;
@@ -40,25 +45,212 @@ function unwrapExpression(expression: TSESTree.Expression): TSESTree.Expression 
 	return expression;
 }
 
+function unwrapNode(node: TSESTree.Node): TSESTree.Node {
+	if (node.type === AST_NODE_TYPES.ChainExpression) return unwrapNode(node.expression);
+	if (node.type === AST_NODE_TYPES.TSAsExpression) return unwrapNode(node.expression);
+	if (node.type === AST_NODE_TYPES.TSInstantiationExpression) return unwrapNode(node.expression);
+	if (node.type === AST_NODE_TYPES.TSNonNullExpression) return unwrapNode(node.expression);
+	if (node.type === AST_NODE_TYPES.TSTypeAssertion) return unwrapNode(node.expression);
+	return node;
+}
+
+function isNonEmptyString(value: unknown): value is string {
+	return typeof value === "string" && value.length > 0;
+}
+
+function normalizeLoopExitCalls(options: NoConstantConditionWithBreakOptions | undefined): ReadonlySet<string> {
+	const loopExitCalls = new Set<string>();
+	if (!options?.loopExitCalls) return loopExitCalls;
+
+	for (const loopExitCall of options.loopExitCalls) {
+		if (isNonEmptyString(loopExitCall)) loopExitCalls.add(loopExitCall);
+	}
+
+	return loopExitCalls;
+}
+
+function getMemberPropertyName(node: TSESTree.MemberExpression): string | undefined {
+	if (!node.computed && node.property.type === AST_NODE_TYPES.Identifier) return node.property.name;
+	if (node.computed && node.property.type === AST_NODE_TYPES.Literal && typeof node.property.value === "string") {
+		return node.property.value;
+	}
+
+	return undefined;
+}
+
+function getNodePath(node: TSESTree.Node): string | undefined {
+	const unwrapped = unwrapNode(node);
+	if (unwrapped.type === AST_NODE_TYPES.Identifier) return unwrapped.name;
+	if (unwrapped.type !== AST_NODE_TYPES.MemberExpression) return undefined;
+
+	const objectPath = getNodePath(unwrapped.object);
+	if (!objectPath) return undefined;
+
+	const propertyName = getMemberPropertyName(unwrapped);
+	if (!propertyName) return undefined;
+
+	return `${objectPath}.${propertyName}`;
+}
+
+function isConfiguredLoopExitCall(
+	callExpression: TSESTree.CallExpression,
+	loopExitCalls: ReadonlySet<string>,
+): boolean {
+	if (loopExitCalls.size === 0) return false;
+
+	const calleePath = getNodePath(callExpression.callee);
+	if (!calleePath) return false;
+
+	return loopExitCalls.has(calleePath);
+}
+
+function expressionContainsConfiguredLoopExit(
+	expression: TSESTree.Expression,
+	loopExitCalls: ReadonlySet<string>,
+): boolean {
+	if (loopExitCalls.size === 0) return false;
+	const unwrapped = unwrapExpression(expression);
+
+	switch (unwrapped.type) {
+		case AST_NODE_TYPES.ArrayExpression:
+			for (const element of unwrapped.elements) {
+				if (!element) continue;
+				if (element.type === AST_NODE_TYPES.SpreadElement) {
+					if (expressionContainsConfiguredLoopExit(element.argument, loopExitCalls)) return true;
+					continue;
+				}
+
+				if (expressionContainsConfiguredLoopExit(element, loopExitCalls)) return true;
+			}
+
+			return false;
+
+		case AST_NODE_TYPES.AssignmentExpression:
+			return expressionContainsConfiguredLoopExit(unwrapped.right, loopExitCalls);
+
+		case AST_NODE_TYPES.AwaitExpression:
+			return expressionContainsConfiguredLoopExit(unwrapped.argument, loopExitCalls);
+
+		case AST_NODE_TYPES.BinaryExpression:
+			if (
+				unwrapped.left.type !== AST_NODE_TYPES.PrivateIdentifier &&
+				expressionContainsConfiguredLoopExit(unwrapped.left, loopExitCalls)
+			)
+				return true;
+			return expressionContainsConfiguredLoopExit(unwrapped.right, loopExitCalls);
+
+		case AST_NODE_TYPES.LogicalExpression:
+			return (
+				expressionContainsConfiguredLoopExit(unwrapped.left, loopExitCalls) ||
+				expressionContainsConfiguredLoopExit(unwrapped.right, loopExitCalls)
+			);
+
+		case AST_NODE_TYPES.CallExpression: {
+			if (isConfiguredLoopExitCall(unwrapped, loopExitCalls)) return true;
+
+			if (
+				unwrapped.callee.type !== AST_NODE_TYPES.Super &&
+				expressionContainsConfiguredLoopExit(unwrapped.callee, loopExitCalls)
+			)
+				return true;
+
+			for (const argument of unwrapped.arguments) {
+				if (argument.type === AST_NODE_TYPES.SpreadElement) {
+					if (expressionContainsConfiguredLoopExit(argument.argument, loopExitCalls)) return true;
+					continue;
+				}
+
+				if (expressionContainsConfiguredLoopExit(argument, loopExitCalls)) return true;
+			}
+
+			return false;
+		}
+
+		case AST_NODE_TYPES.ConditionalExpression:
+			return (
+				expressionContainsConfiguredLoopExit(unwrapped.test, loopExitCalls) ||
+				expressionContainsConfiguredLoopExit(unwrapped.consequent, loopExitCalls) ||
+				expressionContainsConfiguredLoopExit(unwrapped.alternate, loopExitCalls)
+			);
+
+		case AST_NODE_TYPES.MemberExpression:
+			if (
+				unwrapped.object.type !== AST_NODE_TYPES.Super &&
+				expressionContainsConfiguredLoopExit(unwrapped.object, loopExitCalls)
+			) {
+				return true;
+			}
+
+			if (unwrapped.computed) {
+				return expressionContainsConfiguredLoopExit(unwrapped.property, loopExitCalls);
+			}
+
+			return false;
+
+		case AST_NODE_TYPES.NewExpression:
+			if (expressionContainsConfiguredLoopExit(unwrapped.callee, loopExitCalls)) return true;
+
+			for (const argument of unwrapped.arguments) {
+				if (argument.type === AST_NODE_TYPES.SpreadElement) {
+					if (expressionContainsConfiguredLoopExit(argument.argument, loopExitCalls)) return true;
+					continue;
+				}
+
+				if (expressionContainsConfiguredLoopExit(argument, loopExitCalls)) return true;
+			}
+
+			return false;
+
+		case AST_NODE_TYPES.SequenceExpression:
+			return unwrapped.expressions.some((part) => expressionContainsConfiguredLoopExit(part, loopExitCalls));
+
+		case AST_NODE_TYPES.TaggedTemplateExpression:
+			if (expressionContainsConfiguredLoopExit(unwrapped.tag, loopExitCalls)) return true;
+			return unwrapped.quasi.expressions.some((part) =>
+				expressionContainsConfiguredLoopExit(part, loopExitCalls),
+			);
+
+		case AST_NODE_TYPES.TemplateLiteral:
+			return unwrapped.expressions.some((part) => expressionContainsConfiguredLoopExit(part, loopExitCalls));
+
+		case AST_NODE_TYPES.UnaryExpression:
+		case AST_NODE_TYPES.UpdateExpression:
+			return expressionContainsConfiguredLoopExit(unwrapped.argument, loopExitCalls);
+
+		case AST_NODE_TYPES.YieldExpression:
+			return unwrapped.argument ? expressionContainsConfiguredLoopExit(unwrapped.argument, loopExitCalls) : false;
+
+		case AST_NODE_TYPES.ArrowFunctionExpression:
+		case AST_NODE_TYPES.ClassExpression:
+		case AST_NODE_TYPES.FunctionExpression:
+			return false;
+
+		default:
+			return false;
+	}
+}
+
 function getConstantValue(expression: TSESTree.Expression): ConstantValueResult {
 	const unwrapped = unwrapExpression(expression);
 
 	switch (unwrapped.type) {
 		case AST_NODE_TYPES.ArrayExpression:
 			return toConstantValue([]);
+
 		case AST_NODE_TYPES.ArrowFunctionExpression:
-			return toConstantValue(true);
 		case AST_NODE_TYPES.ClassExpression:
-			return toConstantValue(true);
 		case AST_NODE_TYPES.FunctionExpression:
 			return toConstantValue(true);
+
 		case AST_NODE_TYPES.Identifier:
 			if (unwrapped.name === "undefined") return toConstantValue(undefined);
 			if (unwrapped.name === "NaN") return toConstantValue(Number.NaN);
 			if (unwrapped.name === "Infinity") return toConstantValue(Number.POSITIVE_INFINITY);
 			return toNonConstantValue();
+
 		case AST_NODE_TYPES.Literal:
 			return toConstantValue(unwrapped.value);
+
 		case AST_NODE_TYPES.LogicalExpression: {
 			const left = getConstantValue(unwrapped.left);
 			if (!left.constant) return toNonConstantValue();
@@ -76,17 +268,21 @@ function getConstantValue(expression: TSESTree.Expression): ConstantValueResult 
 			if (left.value !== null && left.value !== undefined) return toConstantValue(left.value);
 			return getConstantValue(unwrapped.right);
 		}
+
 		case AST_NODE_TYPES.ObjectExpression:
 			return toConstantValue({});
+
 		case AST_NODE_TYPES.SequenceExpression: {
 			const lastExpression = unwrapped.expressions.at(-1);
 			if (!lastExpression) return toNonConstantValue();
 			return getConstantValue(lastExpression);
 		}
+
 		case AST_NODE_TYPES.TemplateLiteral:
 			if (unwrapped.expressions.length > 0) return toNonConstantValue();
 			if (unwrapped.quasis.length === 0) return toConstantValue("");
 			return toConstantValue(unwrapped.quasis[0]?.value.cooked ?? "");
+
 		case AST_NODE_TYPES.UnaryExpression: {
 			if (unwrapped.operator === "typeof") return toConstantValue("string");
 			if (unwrapped.operator === "void") return toConstantValue(undefined);
@@ -98,10 +294,14 @@ function getConstantValue(expression: TSESTree.Expression): ConstantValueResult 
 			if (unwrapped.operator === "+" && typeof argument.value === "number") {
 				return toConstantValue(Number(argument.value));
 			}
-			if (unwrapped.operator === "-" && typeof argument.value === "number")
+
+			if (unwrapped.operator === "-" && typeof argument.value === "number") {
 				return toConstantValue(-argument.value);
-			if (unwrapped.operator === "~" && typeof argument.value === "number")
+			}
+
+			if (unwrapped.operator === "~" && typeof argument.value === "number") {
 				return toConstantValue(~argument.value);
+			}
 
 			return toNonConstantValue();
 		}
@@ -115,8 +315,9 @@ function getConstantBoolean(expression: TSESTree.Expression): ConstantBooleanRes
 
 	if (unwrapped.type === AST_NODE_TYPES.ConditionalExpression) {
 		const test = getConstantBoolean(unwrapped.test);
-		if (test.constant)
+		if (test.constant) {
 			return test.value ? getConstantBoolean(unwrapped.consequent) : getConstantBoolean(unwrapped.alternate);
+		}
 
 		const consequent = getConstantBoolean(unwrapped.consequent);
 		const alternate = getConstantBoolean(unwrapped.alternate);
@@ -141,8 +342,10 @@ function getConstantBoolean(expression: TSESTree.Expression): ConstantBooleanRes
 
 		const leftValue = getConstantValue(unwrapped.left);
 		if (!leftValue.constant) return toNonConstantBoolean();
-		if (leftValue.value !== null && leftValue.value !== undefined)
+		if (leftValue.value !== null && leftValue.value !== undefined) {
 			return toConstantBoolean(Boolean(leftValue.value));
+		}
+
 		return getConstantBoolean(unwrapped.right);
 	}
 
@@ -213,47 +416,131 @@ function breaksTargetLoop(statement: TSESTree.BreakStatement, loopNode: LoopNode
 	return false;
 }
 
-function statementContainsLoopBreak(statement: TSESTree.Statement, loopNode: LoopNode): boolean {
-	switch (statement.type) {
-		case AST_NODE_TYPES.BlockStatement:
-			return statement.body.some((bodyStatement) => statementContainsLoopBreak(bodyStatement, loopNode));
-		case AST_NODE_TYPES.BreakStatement:
-			return breaksTargetLoop(statement, loopNode);
+function forStatementInitContainsConfiguredLoopExit(
+	initialization: TSESTree.ForStatement["init"],
+	loopExitCalls: ReadonlySet<string>,
+): boolean {
+	if (!initialization) return false;
+
+	if (initialization.type === AST_NODE_TYPES.VariableDeclaration) {
+		return initialization.declarations.some((declaration) =>
+			declaration.init ? expressionContainsConfiguredLoopExit(declaration.init, loopExitCalls) : false,
+		);
+	}
+
+	return expressionContainsConfiguredLoopExit(initialization, loopExitCalls);
+}
+
+function loopHeaderContainsConfiguredLoopExit(loopNode: LoopNode, loopExitCalls: ReadonlySet<string>): boolean {
+	switch (loopNode.type) {
 		case AST_NODE_TYPES.DoWhileStatement:
-			return statementContainsLoopBreak(statement.body, loopNode);
-		case AST_NODE_TYPES.ForInStatement:
-			return statementContainsLoopBreak(statement.body, loopNode);
-		case AST_NODE_TYPES.ForOfStatement:
-			return statementContainsLoopBreak(statement.body, loopNode);
-		case AST_NODE_TYPES.ForStatement:
-			return statementContainsLoopBreak(statement.body, loopNode);
-		case AST_NODE_TYPES.IfStatement:
-			if (statementContainsLoopBreak(statement.consequent, loopNode)) return true;
-			return statement.alternate ? statementContainsLoopBreak(statement.alternate, loopNode) : false;
-		case AST_NODE_TYPES.LabeledStatement:
-			return statementContainsLoopBreak(statement.body, loopNode);
-		case AST_NODE_TYPES.SwitchStatement:
-			return statement.cases.some((switchCase) =>
-				switchCase.consequent.some((consequent) => statementContainsLoopBreak(consequent, loopNode)),
-			);
-		case AST_NODE_TYPES.TryStatement:
-			if (statementContainsLoopBreak(statement.block, loopNode)) return true;
-			if (statement.handler && statementContainsLoopBreak(statement.handler.body, loopNode)) return true;
-			if (statement.finalizer && statementContainsLoopBreak(statement.finalizer, loopNode)) return true;
-			return false;
 		case AST_NODE_TYPES.WhileStatement:
-			return statementContainsLoopBreak(statement.body, loopNode);
-		case AST_NODE_TYPES.WithStatement:
-			return statementContainsLoopBreak(statement.body, loopNode);
+			return expressionContainsConfiguredLoopExit(loopNode.test, loopExitCalls);
+
+		case AST_NODE_TYPES.ForStatement:
+			if (forStatementInitContainsConfiguredLoopExit(loopNode.init, loopExitCalls)) return true;
+			if (loopNode.test && expressionContainsConfiguredLoopExit(loopNode.test, loopExitCalls)) return true;
+			if (loopNode.update && expressionContainsConfiguredLoopExit(loopNode.update, loopExitCalls)) return true;
+			return false;
+
+		case AST_NODE_TYPES.ForInStatement:
+		case AST_NODE_TYPES.ForOfStatement:
+			return expressionContainsConfiguredLoopExit(loopNode.right, loopExitCalls);
+
 		default:
 			return false;
 	}
 }
 
-function shouldReportLoop(testResult: ConstantBooleanResult, loopNode: LoopNode): boolean {
+function statementContainsLoopExit(
+	statement: TSESTree.Statement,
+	loopNode: LoopNode,
+	loopExitCalls: ReadonlySet<string>,
+): boolean {
+	switch (statement.type) {
+		case AST_NODE_TYPES.BlockStatement:
+			return statement.body.some((bodyStatement) =>
+				statementContainsLoopExit(bodyStatement, loopNode, loopExitCalls),
+			);
+
+		case AST_NODE_TYPES.BreakStatement:
+			return breaksTargetLoop(statement, loopNode);
+
+		case AST_NODE_TYPES.ReturnStatement:
+			return true;
+
+		case AST_NODE_TYPES.DoWhileStatement:
+			if (expressionContainsConfiguredLoopExit(statement.test, loopExitCalls)) return true;
+			return statementContainsLoopExit(statement.body, loopNode, loopExitCalls);
+
+		case AST_NODE_TYPES.ExpressionStatement:
+			return expressionContainsConfiguredLoopExit(statement.expression, loopExitCalls);
+
+		case AST_NODE_TYPES.ForInStatement:
+			if (expressionContainsConfiguredLoopExit(statement.right, loopExitCalls)) return true;
+			return statementContainsLoopExit(statement.body, loopNode, loopExitCalls);
+
+		case AST_NODE_TYPES.ForOfStatement:
+			if (expressionContainsConfiguredLoopExit(statement.right, loopExitCalls)) return true;
+			return statementContainsLoopExit(statement.body, loopNode, loopExitCalls);
+
+		case AST_NODE_TYPES.ForStatement:
+			if (forStatementInitContainsConfiguredLoopExit(statement.init, loopExitCalls)) return true;
+			if (statement.test && expressionContainsConfiguredLoopExit(statement.test, loopExitCalls)) return true;
+			if (statement.update && expressionContainsConfiguredLoopExit(statement.update, loopExitCalls)) return true;
+			return statementContainsLoopExit(statement.body, loopNode, loopExitCalls);
+
+		case AST_NODE_TYPES.IfStatement:
+			if (statementContainsLoopExit(statement.consequent, loopNode, loopExitCalls)) return true;
+			return statement.alternate
+				? statementContainsLoopExit(statement.alternate, loopNode, loopExitCalls)
+				: false;
+
+		case AST_NODE_TYPES.LabeledStatement:
+			return statementContainsLoopExit(statement.body, loopNode, loopExitCalls);
+
+		case AST_NODE_TYPES.SwitchStatement:
+			return statement.cases.some((switchCase) =>
+				switchCase.consequent.some((consequent) =>
+					statementContainsLoopExit(consequent, loopNode, loopExitCalls),
+				),
+			);
+
+		case AST_NODE_TYPES.TryStatement:
+			if (statementContainsLoopExit(statement.block, loopNode, loopExitCalls)) return true;
+			if (statement.handler && statementContainsLoopExit(statement.handler.body, loopNode, loopExitCalls))
+				return true;
+			if (statement.finalizer && statementContainsLoopExit(statement.finalizer, loopNode, loopExitCalls))
+				return true;
+			return false;
+
+		case AST_NODE_TYPES.VariableDeclaration:
+			return statement.declarations.some((declaration) =>
+				declaration.init ? expressionContainsConfiguredLoopExit(declaration.init, loopExitCalls) : false,
+			);
+
+		case AST_NODE_TYPES.WhileStatement:
+			if (expressionContainsConfiguredLoopExit(statement.test, loopExitCalls)) return true;
+			return statementContainsLoopExit(statement.body, loopNode, loopExitCalls);
+
+		case AST_NODE_TYPES.WithStatement:
+			if (expressionContainsConfiguredLoopExit(statement.object, loopExitCalls)) return true;
+			return statementContainsLoopExit(statement.body, loopNode, loopExitCalls);
+
+		default:
+			return false;
+	}
+}
+
+function shouldReportLoop(
+	testResult: ConstantBooleanResult,
+	loopNode: LoopNode,
+	loopExitCalls: ReadonlySet<string>,
+): boolean {
 	if (!testResult.constant) return false;
 	if (!testResult.value) return true;
-	return !statementContainsLoopBreak(loopNode.body, loopNode);
+	if (loopHeaderContainsConfiguredLoopExit(loopNode, loopExitCalls)) return false;
+	return !statementContainsLoopExit(loopNode.body, loopNode, loopExitCalls);
 }
 
 function reportConstantCondition(
@@ -271,13 +558,15 @@ function reportConstantCondition(
 
 export default createRule<Options, MessageIds>({
 	create(context) {
+		const loopExitCalls = normalizeLoopExitCalls(context.options[0]);
+
 		return {
 			ConditionalExpression(node): void {
 				reportConstantCondition(context, node.test);
 			},
 			DoWhileStatement(node): void {
 				const testResult = getConstantBoolean(node.test);
-				if (!shouldReportLoop(testResult, node)) return;
+				if (!shouldReportLoop(testResult, node, loopExitCalls)) return;
 
 				context.report({
 					messageId: "unexpected",
@@ -287,7 +576,7 @@ export default createRule<Options, MessageIds>({
 			ForStatement(node): void {
 				if (!node.test) return;
 				const testResult = getConstantBoolean(node.test);
-				if (!shouldReportLoop(testResult, node)) return;
+				if (!shouldReportLoop(testResult, node, loopExitCalls)) return;
 
 				context.report({
 					messageId: "unexpected",
@@ -299,7 +588,7 @@ export default createRule<Options, MessageIds>({
 			},
 			WhileStatement(node): void {
 				const testResult = getConstantBoolean(node.test);
-				if (!shouldReportLoop(testResult, node)) return;
+				if (!shouldReportLoop(testResult, node, loopExitCalls)) return;
 
 				context.report({
 					messageId: "unexpected",
@@ -308,16 +597,30 @@ export default createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [],
+	defaultOptions: [{ loopExitCalls: [] }],
 	meta: {
 		docs: {
 			description:
-				"Disallow constant conditions, but allow constant loops that include a break targeting the same loop.",
+				"Disallow constant conditions, but allow constant loops that include loop exits such as break, return, or configured calls.",
 		},
 		messages: {
 			unexpected: "Unexpected constant condition.",
 		},
-		schema: [],
+		schema: [
+			{
+				additionalProperties: false,
+				properties: {
+					loopExitCalls: {
+						items: {
+							minLength: 1,
+							type: "string",
+						},
+						type: "array",
+					},
+				},
+				type: "object",
+			},
+		],
 		type: "problem",
 	},
 	name: "no-constant-condition-with-break",

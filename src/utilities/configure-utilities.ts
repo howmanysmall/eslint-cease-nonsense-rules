@@ -1,6 +1,7 @@
 import type { BanInstancesOptions } from "../rules/ban-instances";
 import type { ComplexityConfiguration } from "../rules/enforce-ianitor-check-type";
 import type { NamingConventionOptions } from "../rules/naming-convention";
+import type { NoConstantConditionWithBreakOptions } from "../rules/no-constant-condition-with-break";
 import type { NoEventsInEventsCallbackOptions } from "../rules/no-events-in-events-callback";
 import type { NoGodComponentsOptions } from "../rules/no-god-components";
 import type { NoInstanceMethodsOptions } from "../rules/no-instance-methods-without-this";
@@ -303,6 +304,17 @@ export function createNoEventsInEventsCallbackOptions(
 	options: Partial<NoEventsInEventsCallbackOptions> = {},
 ): NoEventsInEventsCallbackOptions {
 	return { eventsImportPaths: [], ...options };
+}
+
+/**
+ * Creates options for no-constant-condition-with-break rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNoConstantConditionWithBreakOptions(
+	options: Partial<NoConstantConditionWithBreakOptions> = {},
+): NoConstantConditionWithBreakOptions {
+	return { loopExitCalls: [], ...options };
 }
 
 /**

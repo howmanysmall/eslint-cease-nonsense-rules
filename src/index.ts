@@ -57,6 +57,7 @@ export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type
 export type { MemoizedEffectDependenciesOptions } from "./rules/memoized-effect-dependencies";
 export type { NamingConventionOptions } from "./rules/naming-convention";
 export type { NoArraySizeAssignmentOptions } from "./rules/no-array-size-assignment";
+export type { NoConstantConditionWithBreakOptions } from "./rules/no-constant-condition-with-break";
 export type { NoEventsInEventsCallbackOptions } from "./rules/no-events-in-events-callback";
 export type { NoGodComponentsOptions } from "./rules/no-god-components";
 export type { NoIdentityMapOptions } from "./rules/no-identity-map";
@@ -84,6 +85,7 @@ export {
 	createEffectFunctionOptions,
 	createHookConfiguration,
 	createNamingConventionOptions,
+	createNoConstantConditionWithBreakOptions,
 	createNoEventsInEventsCallbackOptions,
 	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,

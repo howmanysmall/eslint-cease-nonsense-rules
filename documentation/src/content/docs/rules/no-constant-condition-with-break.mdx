@@ -1,28 +1,43 @@
 ---
 title: no-constant-condition-with-break
-description: Disallow constant conditions, but allow constant loops that include a break targeting the same loop.
+description: Disallow constant conditions, but allow constant loops with break, return, or configured exit calls.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem } from "@astrojs/starlight/components";
 
-Disallow constant conditions, but allow constant loops that include a `break` targeting the same loop.
+Disallow constant conditions, but allow constant loops that include exits like `break`, `return`, or configured calls.
 
 ## Rule Details
 
 This rule is similar to ESLint's built-in `no-constant-condition` rule, but it makes an exception for constant loops
-(like `while (true)`) that contain a `break` statement that exits the same loop. This pattern is commonly used for game
-loops, event loops, and other intentional infinite loops with exit conditions.
+(like `while (true)`) that contain an exit path (for example `break` or `return`). You can also configure additional
+call expressions (for example `coroutine.yield`) as loop exits via `loopExitCalls`.
 
 <Aside type="tip" title="When to use this rule">
-	Use this rule when you want to catch accidental constant conditions in `if` statements and loops without `break`,
+	Use this rule when you want to catch accidental constant conditions in `if` statements and loops without a loop exit,
 	while allowing intentional infinite loops with proper exit mechanisms.
 </Aside>
+
+## Options
+
+```typescript
+{
+	"cease-nonsense/no-constant-condition-with-break": [
+		"error",
+		{
+			loopExitCalls: ["coroutine.yield", "task.wait"]
+		}
+	]
+}
+```
+
+- `loopExitCalls` (`string[]`) - Fully-qualified call paths treated as loop exits inside constant loops.
 
 ## Examples
 
 <Tabs>
 	<TabItem label="❌ Incorrect" icon="close">
-		### Constant Conditions Without Break
+		### Constant Conditions Without Loop Exit
 		These patterns are flagged because they are likely bugs or missing exit conditions.
 
     	<Code
@@ -30,44 +45,58 @@ loops, event loops, and other intentional infinite loops with exit conditions.
     			"// if statement with constant condition",
     			'if (true) { doSomething(); }',
     			'',
-    			"// while loop without break",
-    			'while (true) { doSomething(); }',
+			"// while loop without a loop exit",
+			'while (true) { doSomething(); }',
     			'',
-    			"// for loop with constant condition and no break",
-    			'for (;; true) { doSomething(); }',
+			"// for loop with constant condition and no loop exit",
+			'for (;; true) { doSomething(); }',
     			'',
-    			"// do-while loop without break",
-    			'do { doSomething(); } while (true);',
+			"// do-while loop without a loop exit",
+			'do { doSomething(); } while (true);',
     		].join("\n")}
     		lang="tsx"
     	/>
     </TabItem>
     <TabItem label="✅ Correct" icon="check">
     	### Valid Patterns
-    	These patterns are allowed because they either have proper exit conditions or intentional breaks.
+		These patterns are allowed because they either have proper exit conditions or intentional loop exits.
 
     	<Code
     		code={[
     			"// Variable condition is fine",
     			'while (condition) { doSomething(); }',
     			'',
-    			"// Loop with break is allowed",
-    			'while (true) {',
-    			'\tif (shouldStop) break;',
-    			'\tdoSomething();',
-    			'}',
-    			'',
-    			"// Labeled break targeting this loop",
-    			'outer: while (true) {',
-    			'\tif (done) break outer;',
-    			'\tdoSomething();',
-    			'}',
-    			'',
-    			"// For loop with break",
-    			'for (;; true) {',
-    			'\tif (condition) break;',
-    			'\tdoSomething();',
-    			'}',
+			"// Loop with break is allowed",
+			'while (true) {',
+			'\tif (shouldStop) break;',
+			'\tdoSomething();',
+			'}',
+			'',
+			"// Loop with return is allowed",
+			'function run() {',
+			'\twhile (true) {',
+			'\t\tif (shouldStop) return;',
+			'\t\tdoSomething();',
+			'\t}',
+			'}',
+			'',
+			"// Configured exit call (with loopExitCalls)",
+			'while (true) {',
+			'\tcoroutine.yield();',
+			'\tdoSomething();',
+			'}',
+			'',
+			"// Labeled break targeting this loop",
+			'outer: while (true) {',
+			'\tif (done) break outer;',
+			'\tdoSomething();',
+			'}',
+			'',
+			"// For loop with break",
+			'for (;; true) {',
+			'\tif (condition) break;',
+			'\tdoSomething();',
+			'}',
     		].join("\n")}
     		lang="tsx"
     	/>
@@ -81,8 +110,8 @@ loops, event loops, and other intentional infinite loops with exit conditions.
 	<Card title="Constant Evaluation" icon="magnifier">
 		Evaluates expressions to determine if they always result in the same value.
 	</Card>
-	<Card title="Break Target Analysis" icon="target">
-		Traces break statements to verify they target the same loop (not an inner loop or switch).
+	<Card title="Exit Path Analysis" icon="target">
+		Traces loop exits (`break`, `return`) and configurable exit calls, and verifies labeled breaks target the same loop.
 	</Card>
 	<Card title="Nested Loop Aware" icon="seti:folder">
 		Correctly handles nested loops and labeled breaks.

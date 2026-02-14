@@ -283,16 +283,20 @@ function hasReturnWithArgument(body: TSESTree.BlockStatement): boolean {
 			case TSESTree.AST_NODE_TYPES.FunctionExpression:
 			case TSESTree.AST_NODE_TYPES.ArrowFunctionExpression:
 				continue;
+
 			case TSESTree.AST_NODE_TYPES.ReturnStatement:
 				if (current.argument) return true;
+
 				continue;
 			case TSESTree.AST_NODE_TYPES.BlockStatement:
 				stack.push(...current.body);
 				continue;
+
 			case TSESTree.AST_NODE_TYPES.IfStatement:
 				stack.push(current.consequent);
 				if (current.alternate) stack.push(current.alternate);
 				continue;
+
 			case TSESTree.AST_NODE_TYPES.ForStatement:
 			case TSESTree.AST_NODE_TYPES.ForInStatement:
 			case TSESTree.AST_NODE_TYPES.ForOfStatement:
@@ -300,20 +304,25 @@ function hasReturnWithArgument(body: TSESTree.BlockStatement): boolean {
 			case TSESTree.AST_NODE_TYPES.DoWhileStatement:
 				stack.push(current.body);
 				continue;
+
 			case TSESTree.AST_NODE_TYPES.SwitchStatement:
 				for (const switchCase of current.cases) stack.push(...switchCase.consequent);
 				continue;
+
 			case TSESTree.AST_NODE_TYPES.TryStatement:
 				stack.push(current.block);
 				if (current.handler?.body) stack.push(current.handler.body);
 				if (current.finalizer) stack.push(current.finalizer);
 				continue;
+
 			case TSESTree.AST_NODE_TYPES.LabeledStatement:
 				stack.push(current.body);
 				continue;
+
 			case TSESTree.AST_NODE_TYPES.WithStatement:
 				stack.push(current.body);
 				continue;
+
 			default:
 				continue;
 		}
@@ -357,9 +366,8 @@ function isFalseLiteral(node: TSESTree.Node): boolean {
 }
 
 function isConstantLiteral(node: TSESTree.Node): boolean {
-	if (node.type === TSESTree.AST_NODE_TYPES.Literal) {
-		return node.value === null || node.value === undefined;
-	}
+	if (node.type === TSESTree.AST_NODE_TYPES.Literal) return node.value === null || node.value === undefined;
+
 	if (
 		node.type === TSESTree.AST_NODE_TYPES.UnaryExpression &&
 		node.operator === "void" &&
@@ -368,6 +376,7 @@ function isConstantLiteral(node: TSESTree.Node): boolean {
 	) {
 		return true;
 	}
+
 	return false;
 }
 
@@ -385,6 +394,7 @@ function isResetValue(node: TSESTree.Node): boolean {
 		const { value } = node;
 		return value === "" || value === 0 || value === false;
 	}
+
 	if (isEmptyArrayExpression(node)) return true;
 	if (isEmptyObjectExpression(node)) return true;
 	return false;
@@ -395,11 +405,11 @@ function getResetFlagNameFromStatement(
 	stateSetterToValue: ReadonlyMap<string, string>,
 ): string | undefined {
 	const callExpression = getCallExpressionFromStatement(statement);
-	if (!callExpression) return undefined;
-	if (callExpression.callee.type !== TSESTree.AST_NODE_TYPES.Identifier) return undefined;
+	if (!callExpression || callExpression.callee.type !== TSESTree.AST_NODE_TYPES.Identifier) return undefined;
+
 	const flagName = stateSetterToValue.get(callExpression.callee.name);
-	if (!flagName) return undefined;
-	if (callExpression.arguments.length !== 1) return undefined;
+	if (!flagName || callExpression.arguments.length !== 1) return undefined;
+
 	const [argument] = callExpression.arguments;
 	if (!(argument && isFalseLiteral(argument))) return undefined;
 	return flagName;
@@ -410,8 +420,7 @@ function getSideEffectCall(
 	stateSetterIdentifiers: ReadonlySet<string>,
 ): TSESTree.CallExpression | undefined {
 	const callExpression = getCallExpressionFromStatement(statement);
-	if (!callExpression) return undefined;
-	if (isStateSetterCall(callExpression, stateSetterIdentifiers)) return undefined;
+	if (!callExpression || isStateSetterCall(callExpression, stateSetterIdentifiers)) return undefined;
 	return callExpression;
 }
 
@@ -477,6 +486,7 @@ function matchEventFlagPattern(
 
 		const [first, second] = consequentStatements;
 		if (!(first && second)) return undefined;
+
 		const firstFlag = getResetFlagNameFromStatement(first, stateSetterToValue);
 		const secondFlag = getResetFlagNameFromStatement(second, stateSetterToValue);
 
@@ -508,25 +518,21 @@ function expressionContainsIdentifier(node: TSESTree.Expression): boolean {
 		if (!current || visited.has(current)) continue;
 		visited.add(current);
 
-		if (current.type === TSESTree.AST_NODE_TYPES.Identifier) {
-			return true;
-		}
+		if (current.type === TSESTree.AST_NODE_TYPES.Identifier) return true;
 
 		if (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
 			stack.push(current.object);
-			if (!current.computed) {
-				stack.push(current.property);
-			}
+			if (!current.computed) stack.push(current.property);
+
 			continue;
 		}
 
 		if (current.type === TSESTree.AST_NODE_TYPES.CallExpression) {
 			stack.push(current.callee);
 			for (const arg of current.arguments) {
-				if (arg.type !== TSESTree.AST_NODE_TYPES.SpreadElement) {
-					stack.push(arg);
-				}
+				if (arg.type !== TSESTree.AST_NODE_TYPES.SpreadElement) stack.push(arg);
 			}
+
 			continue;
 		}
 
@@ -552,25 +558,21 @@ function expressionContainsIdentifier(node: TSESTree.Expression): boolean {
 		}
 
 		if (current.type === TSESTree.AST_NODE_TYPES.TemplateLiteral) {
-			for (const expr of current.expressions) {
-				stack.push(expr);
-			}
+			for (const expression of current.expressions) stack.push(expression);
 			continue;
 		}
 
 		if (current.type === TSESTree.AST_NODE_TYPES.ArrayExpression) {
-			for (const el of current.elements) {
-				if (el && el.type !== TSESTree.AST_NODE_TYPES.SpreadElement) {
-					stack.push(el);
-				}
+			for (const element of current.elements) {
+				if (element && element.type !== TSESTree.AST_NODE_TYPES.SpreadElement) stack.push(element);
 			}
 			continue;
 		}
 
 		if (current.type === TSESTree.AST_NODE_TYPES.ObjectExpression) {
-			for (const prop of current.properties) {
-				if (prop.type === TSESTree.AST_NODE_TYPES.Property) {
-					stack.push(prop.value as TSESTree.Expression);
+			for (const property of current.properties) {
+				if (property.type === TSESTree.AST_NODE_TYPES.Property) {
+					stack.push(property.value as TSESTree.Expression);
 				}
 			}
 			continue;
@@ -1155,16 +1157,12 @@ function hasEventSpecificLogic(
 
 function depArraysAreIdentical(ids1: ReadonlySet<string>, ids2: ReadonlySet<string>): boolean {
 	if (ids1.size !== ids2.size) return false;
-	for (const id of ids1) {
-		if (!ids2.has(id)) return false;
-	}
+	for (const id of ids1) if (!ids2.has(id)) return false;
 	return true;
 }
 
 function getFunctionBody(node: FunctionNode): TSESTree.BlockStatement | undefined {
-	if (node.body.type === TSESTree.AST_NODE_TYPES.BlockStatement) {
-		return node.body;
-	}
+	if (node.body.type === TSESTree.AST_NODE_TYPES.BlockStatement) return node.body;
 	return undefined;
 }
 

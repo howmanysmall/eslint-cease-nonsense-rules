@@ -6,6 +6,7 @@ import {
 	createEffectFunctionOptions,
 	createHookConfiguration,
 	createNamingConventionOptions,
+	createNoConstantConditionWithBreakOptions,
 	createNoEventsInEventsCallbackOptions,
 	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
@@ -482,6 +483,22 @@ describe("configure-utilities", () => {
 				eventsImportPaths: ["server/networking", "client/networking"],
 			});
 			expect(configuration.eventsImportPaths).toEqual(["server/networking", "client/networking"]);
+		});
+	});
+
+	describe("createNoConstantConditionWithBreakOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createNoConstantConditionWithBreakOptions();
+			expect(configuration).toEqual({ loopExitCalls: [] });
+		});
+
+		it("should override defaults", () => {
+			expect.assertions(1);
+			const configuration = createNoConstantConditionWithBreakOptions({
+				loopExitCalls: ["coroutine.yield", "task.wait"],
+			});
+			expect(configuration.loopExitCalls).toEqual(["coroutine.yield", "task.wait"]);
 		});
 	});
 
