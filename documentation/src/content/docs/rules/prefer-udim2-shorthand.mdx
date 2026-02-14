@@ -3,7 +3,7 @@ title: prefer-udim2-shorthand
 badge:
     text: Roblox
     variant: note
-description: Prefer UDim2.fromScale() or UDim2.fromOffset() when all offsets or all scales are zero.
+description: Prefer UDim2.fromScale()/fromOffset() when half the constructor is zeros.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
@@ -12,13 +12,11 @@ Prefer `UDim2.fromScale()` or `UDim2.fromOffset()` over the 4-argument construct
 
 ## Rule Details :badge[Roblox]{variant=note}
 
-When creating a `UDim2` with all scales or all offsets set to zero, the shorthand constructors are clearer and more
-concise. This rule avoids the noise of redundant zeros and explicitly signals whether you are working in coordinate
-scale or pixel offsets.
+When creating a `UDim2` with all scales or all offsets set to zero, the shorthand constructors are clearer. This rule
+avoids redundant zeros and makes it obvious whether you're working in scale or offset space.
 
 <Aside type="tip" title="Readability">
-	`UDim2.fromScale(1, 0.5)` is instantly recognizable as a layout operation, whereas `new UDim2(1, 0, 0.5, 0)`
-	requires mental parsing to verify which components are zero.
+	`UDim2.fromScale(1, 0.5)` reads like "scale". `new UDim2(1, 0, 0.5, 0)` makes you double-check the zeros.
 </Aside>
 
 ## Refactoring Steps
@@ -84,7 +82,7 @@ scale or pixel offsets.
 
 <CardGrid stagger>
 	<Card title="Intent" icon="magnifier">
-		Clearly signals to other developers whether you are doing relative scaling or constant padding.
+		Makes it obvious whether you're doing relative scaling or pixel offsets.
 	</Card>
 	<Card title="Error Prevention" icon="bolt">
 		Reduces the chance of accidentally putting a scale value into an offset parameter.

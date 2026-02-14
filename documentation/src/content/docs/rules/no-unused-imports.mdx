@@ -3,37 +3,35 @@ title: no-unused-imports
 badge:
     text: Maintenance
     variant: note
-description: Disallow unused imports to keep your codebase clean and reduce technical debt.
+description: Reports unused imports (including references that only appear in JSDoc).
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Disallow unused imports to keep your codebase clean.
+Reports imports you don't actually use.
 
 ## Rule Details :badge[Maintenance]{variant=note}
 
-This rule reports when an import is defined but never used in the code. Unused imports clutter the top of your files,
-increase build times (slightly), and make it harder to see what a module actually depends on. This rule is enhanced with
-scope analysis to detect usage even within JSDoc comments.
+Reports when an import is defined but never referenced. Unused imports add noise at the top of the file and make it
+harder to see what a module depends on. The rule also counts references inside JSDoc tags.
 
 <Aside type="note" title="JSDoc Support">
-	Unlike the standard `no-unused-vars` rule, this one can check if an import is used within a JSDoc comment (e.g.,
-	`@see`, `@link`), preventing accidental deletion of symbols used only for documentation.
+	Some imports only exist for JSDoc tags like `@see` or `@link`. This rule counts those so you don't delete them by
+	accident.
 </Aside>
 
 ## Cleanup Workflow
 
 <Steps>
-1. **Identify Unused Links**
-   The linter flags import statements that have no references in your file's logic or JSDoc.
+1. **Find unused imports**
+   The linter flags import statements with no references in code or JSDoc.
 
 2. **Check for Intentional Side-Effects** Rarely, an import is needed only for its side-effects (e.g.,
    `import "./init"`). If so, use the bare import syntax without binding variables.
 
 3. **Delete the Reference** Remove the specific named import or the entire import line.
 
-4. **Verify Dependencies** Running this cleanup often reveals nested packages that are no longer needed at the
-   `package.json` level.
+4. **Check dependencies** Sometimes this reveals a package you can remove.
 
 {/* oxfmt-ignore */}
 

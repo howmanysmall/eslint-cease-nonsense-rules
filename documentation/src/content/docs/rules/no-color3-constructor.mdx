@@ -3,22 +3,20 @@ title: no-color3-constructor
 badge:
     text: Roblox
     variant: note
-description: Bans new Color3(...) except for zero-value constructors. Use Color3.fromRGB() instead.
+description: Prefer Color3.fromRGB() over new Color3(r, g, b) for non-zero values.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Bans `new Color3(...)` except for `new Color3()` or `new Color3(0, 0, 0)`. Use `Color3.fromRGB()` instead.
+Prefer `Color3.fromRGB()` over `new Color3(r, g, b)` for non-zero values.
 
 ## Rule Details :badge[Roblox]{variant=note}
 
-The `new Color3()` constructor uses floating-point values in the range [0-1] and performs worse than `Color3.fromRGB()`
-which uses integer values [0-255]. This rule enforces the use of the more performant `Color3.fromRGB()` method while
-allowing the zero-argument constructor and explicit zero values.
+`new Color3(r, g, b)` takes floats in the range 0-1. `Color3.fromRGB(r, g, b)` takes 0-255 integers and is a better fit
+for most UI work. This rule prefers `fromRGB` while still allowing `new Color3()` and explicit zero values.
 
 <Aside type="tip" title="Why Color3.fromRGB?">
-	`Color3.fromRGB()` is faster because it avoids the internal float-to-int conversion performed by the engine. Most UI
-	designs use 0-255 values anyway, so this is more intuitive and performant.
+	Most UI palettes are specified as 0-255. `fromRGB` matches that and avoids extra conversion work.
 </Aside>
 
 ## Refactoring Path
@@ -79,13 +77,13 @@ allowing the zero-argument constructor and explicit zero values.
 
 <CardGrid stagger>
 	<Card title="No Conversion" icon="bolt">
-		Roblox stores colors as integers. `fromRGB` skips the float-to-int math required by the standard constructor.
+		`fromRGB` avoids the float-to-int conversion work that comes with `new Color3(r, g, b)`.
 	</Card>
 	<Card title="Direct Storage" icon="setting">
 		Integers are stored directly, reducing the memory and CPU cycles spent on representation.
 	</Card>
 	<Card title="Optimized Path" icon="rocket">
-		The internal C++ implementation for `fromRGB` is specifically optimized for common UI work.
+		The engine has a fast path for `fromRGB`.
 	</Card>
 </CardGrid>
 

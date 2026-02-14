@@ -3,33 +3,30 @@ title: no-commented-code
 badge:
     text: Maintenance
     variant: note
-description: Detects and reports commented-out code blocks to keep your codebase clean and readable.
+description: Reports commented-out code blocks. Delete them or move the intent to a ticket.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Detects and reports commented-out code blocks.
+Reports commented-out code blocks.
 
 ## Rule Details :badge[Maintenance]{variant=note}
 
-Commented-out code clutters the codebase, causes confusion, and suggests a lack of confidence in your version control
-system. This rule uses heuristic detection combined with parsing to identify commented code while distinguishing it from
-actual documentation or explanatory comments.
+Commented-out code clutters the codebase and gets stale fast. This rule looks for comments that are really code, while
+trying to ignore real documentation and explanatory notes.
 
 <Aside type="tip" title="Trust Version Control">
-	Don't be afraid to delete code! If you ever need it back, you can find it in your Git history. Commented code often
-	becomes stale and misleading within weeks.
+	Delete it. Git has it. If the old behavior matters, write down why in a ticket or a short comment.
 </Aside>
 
 ## Cleanup Path
 
 <Steps>
-1. **Identify Violations**
-   The linter will flag blocks of comments that look like valid JavaScript or TypeScript (e.g., lines containing `const`, `if`, or `() =>`).
-2. **Evaluate Importance** If the code is genuinely valuable for the future, move it to a task description or a feature
-   request document.
-3. **Delete the Block** Literally just delete the commented lines.
-4. **Add Context (Optional)** If the comment was meant to explain a complex decision, rewrite it as a "Why" comment rather than keeping the old code.
+1. **Identify violations**
+   The linter flags comment blocks that look like valid JavaScript/TypeScript.
+2. **Decide what you actually want** If the behavior matters later, move it to a task description.
+3. **Delete the block** Remove the commented lines.
+4. **Keep the reasoning** If the comment was trying to explain a decision, rewrite it as a short "why" comment.
 
 {/* oxfmt-ignore */}
 

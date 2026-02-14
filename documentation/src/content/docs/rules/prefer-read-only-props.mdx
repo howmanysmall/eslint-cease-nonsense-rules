@@ -3,22 +3,20 @@ title: prefer-read-only-props
 badge:
     text: Safety
     variant: success
-description: Enforce that React component props are typed as read-only to prevent accidental mutation.
+description: "Treat props as inputs: require readonly prop types."
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
 
-Enforce that React component props are typed as read-only.
+Require `readonly` on prop types.
 
 ## Rule Details :badge[Safety]{variant=success}
 
-React props should be treated as immutable. Mutating props directly can lead to unpredictable behavior,
-difficult-to-debug UI bugs, and performance regressions. This rule ensures that all component prop interfaces are marked
-with the `readonly` modifier in TypeScript.
+Props are inputs. Mutating them is a bug waiting to happen. This rule requires prop types to use `readonly` so
+accidental mutation fails at compile time.
 
 <Aside type="tip" title="Immutability">
-	React's reconciliation process relies on the assumption that props do not change within a render cycle. Enforcing
-	`readonly` at the type level prevents bugs before they reach the runtime.
+	`readonly` makes it harder to accidentally "fix" a value by mutating it inside a component.
 </Aside>
 
 ## Refactoring Steps

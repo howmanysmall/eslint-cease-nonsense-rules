@@ -3,9 +3,7 @@ title: prefer-early-return
 badge:
     text: Clean Code
     variant: success
-description:
-    Prefer early returns over full-body conditional wrapping in function declarations. Reduces nesting and cognitive
-    load.
+description: Prefer early returns over wrapping the whole function body in an if.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
@@ -14,13 +12,11 @@ Prefer early returns over full-body conditional wrapping.
 
 ## Rule Details :badge[Clean Code]{variant=success}
 
-Functions wrapped entirely in a single `if` statement should use an early return (guard clause) with a negated condition
-instead. This avoids unnecessary indentation, reduces cognitive load, and makes the "happy path" of your logic visually
-distinct.
+If a function is wrapped almost entirely in a single `if`, flip the condition and return early instead. It keeps the
+main path at the top level and avoids pointless indentation.
 
 <Aside type="note" title="Cognitive Load">
-	Every level of indentation adds a mental "depth counter." Early returns keep your functions flat, allowing
-	developers to scan the main logic without entering nested blocks.
+	Deep nesting makes code harder to scan. Guard clauses keep functions flat.
 </Aside>
 
 ## Refactoring Workflow

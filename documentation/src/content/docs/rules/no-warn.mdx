@@ -3,22 +3,20 @@ title: no-warn
 badge:
     text: Best Practice
     variant: caution
-description: Bans use of warn() function calls. Use log.Warning instead for structured logging.
+description: Prefer structured logging over raw warn() calls.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
 
-Bans use of `warn()` function calls. Use `log.Warning` instead for structured logging.
+Prefer structured logging over the global `warn()`.
 
 ## Rule Details :badge[Best Practice]{variant=caution}
 
-The global `warn()` function is a low-level mechanism that lacks context and centralized control. Using a proper logging
-system (like `Log` from `RbxUtil`) allows you to route warnings to different services, suppress them in certain
-environments, and maintain a consistent look in the developer console.
+The global `warn()` call is fine for quick local debugging, but it doesn't scale. A logging wrapper (like `Log` from
+`RbxUtil`) gives you levels, consistent output, and an easy way to filter in production.
 
 <Aside type="tip" title="Consistent Output">
-	Using `log.Warning` instead of `warn()` ensures all your logs follow a unified format, making the developer console
-	significantly easier to read and filter.
+	If you care about logs later (filtering, searching, routing), use your logging wrapper instead of raw `warn()`.
 </Aside>
 
 ## Refactoring Workflow
@@ -27,13 +25,11 @@ environments, and maintain a consistent look in the developer console.
 1. **Audit Warnings**
    Determine if the warning is still relevant or if it should be an `Error` (halting) or `Info` (informational).
 
-2. **Select severity** Verify that your logging system is configured to display warnings in both development and staging
-   environments.
+2. **Pick severity** Make sure warnings are visible where you expect them (dev, staging, etc.).
 
-3. **Convert Call** Replace the global `warn(...)` with `log.Warning(...)` to capture high-quality telemetry.
+3. **Convert the call** Replace `warn(...)` with `log.Warning(...)`.
 
-4. **Verify Suppressions** Ensure your production build properly handles log filtering so that non-critical warnings
-   don't leak into player consoles.
+4. **Verify filtering** Confirm your production build handles log filtering the way you want.
 
 {/* oxfmt-ignore */}
 
@@ -78,7 +74,7 @@ environments, and maintain a consistent look in the developer console.
 		Easily suppress warnings in production while keeping them enabled in your staging builds.
 	</Card>
 	<Card title="Meta Data" icon="bolt">
-		Attach extra context objects that your logging system can parse and format intelligently.
+		Attach extra context that your logger can format.
 	</Card>
 	<Card title="Unified Handling" icon="setting">
 		Handle all application events (Info, Debug, Error) through a single, testable interface.

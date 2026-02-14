@@ -3,21 +3,20 @@ title: require-react-component-keys
 badge:
     text: Best Practice
     variant: success
-description: Enforces key props on all React elements except top-level returns from components.
+description: Require stable keys for JSX elements that are part of a list.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Enforces `key` props on all React elements except top-level returns.
+Require stable `key` props for list items.
 
 ## Rule Details :badge[Best Practice]{variant=success}
 
-React requires `key` props on elements in arrays to efficiently track changes. This rule enforces keys on all JSX
-elements except the root return of a component, preventing common React warnings, state bugs, and performance issues.
+React uses `key` to track list items across renders. This rule requires keys on JSX elements that are used as list items
+(while ignoring the top-level return of a component).
 
 <Aside type="caution" title="State Preservation">
-	Without keys, React may reuse the wrong elements when items are reordered, leading to "ghost" state from one item
-	appearing on another.
+	Without stable keys, React can attach the wrong state to the wrong item when a list is reordered.
 </Aside>
 
 ## Key Implementation Path

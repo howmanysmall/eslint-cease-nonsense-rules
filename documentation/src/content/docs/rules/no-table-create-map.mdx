@@ -3,8 +3,7 @@ title: no-table-create-map
 badge:
     text: Roblox
     variant: note
-description:
-    Disallow mapping directly on table.create(...) and new Array(...) constructor patterns in roblox-ts.
+description: Disallow calling map() directly on table.create(...) and new Array(...).
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
@@ -13,8 +12,8 @@ Disallow direct `.map(...)` calls on `table.create(...)` and `new Array(...)` co
 
 ## Rule Details :badge[Roblox]{variant=note}
 
-This rule reports constructor chains where `map` is called immediately after `table.create(...)` or `new Array(...)`.
-In roblox-ts code, this pattern is harder to reason about and hides fill semantics.
+Reports constructor chains where `map` is called immediately after `table.create(...)` or `new Array(...)`. In roblox-ts,
+this hides fill semantics and makes the code harder to follow.
 
 <Aside type="tip" title="Use Explicit Indexed Writes">
 	Allocate once, iterate once, and assign by index so reviewers can see exactly how values are produced.

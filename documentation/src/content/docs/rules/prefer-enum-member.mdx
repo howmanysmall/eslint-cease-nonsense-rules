@@ -3,22 +3,21 @@ title: prefer-enum-member
 badge:
     text: Clean Code
     variant: success
-description: Enforce using TypeScript enum members instead of raw string or number values for better consistency.
+description: Prefer enum members over raw strings/numbers.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Enforce using TypeScript enum members instead of raw string or number values.
+Prefer enum members over raw strings/numbers.
 
 ## Rule Details :badge[Clean Code]{variant=success}
 
-Enums provide a single source of truth for values. Passing raw literals or using bare keys hides intent and creates
-drift when enum values change. This rule requires enum member references for both `enum` and `const enum`, including
-object literal keys where the expected type is a mapped enum type.
+Enums are the source of truth for their values. Raw literals hide intent and tend to drift when enum definitions change.
+This rule requires member references for both `enum` and `const enum`, including object keys when the expected type is a
+mapped enum type.
 
 <Aside type="caution" title="Avoid Drift">
-	If you change an enum value but use raw strings in several places, those strings will become invalid. Using the
-	member reference ensures the value is always correct.
+	If you change an enum definition, raw strings don't update. Member references do.
 </Aside>
 
 ## Refactoring Steps

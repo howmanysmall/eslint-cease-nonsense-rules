@@ -3,22 +3,20 @@ title: memoized-effect-dependencies
 badge:
     text: Experimental
     variant: caution
-description:
-    "Experimental: Flags effect dependencies that are not memoized to avoid re-render loops and compiler bailouts."
+description: "Experimental: flags unstable effect dependencies that should be memoized."
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
 
-Experimental rule that flags effect dependencies which are not memoized.
+Experimental rule that flags obviously unstable effect dependencies.
 
 ## Rule Details :badge[Experimental]{variant=caution}
 
-This rule detects clearly un-memoized values inside effect dependency arrays. Unmemoized dependencies can cause
-unnecessary re-renders or trigger infinite loops when effects update values that are recreated every render.
+This rule detects clearly un-memoized values inside effect dependency arrays. Unstable deps can cause unnecessary
+rerenders or even loops when an effect updates something that gets recreated every render.
 
 <Aside type="caution" title="Experimental">
-	This rule uses fast AST heuristics instead of the React Compiler. It intentionally favors performance and may miss
-	edge cases.
+	This rule is AST-only heuristics, not the React Compiler. Treat it as a hint and expect missed edge cases.
 </Aside>
 
 ## Examples

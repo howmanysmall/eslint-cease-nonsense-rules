@@ -3,22 +3,21 @@ title: react-hooks-strict-return
 badge:
     text: Best Practice
     variant: success
-description: Custom React hooks must return a tuple of ≤2 elements or a single object. Prevents positional ambiguity.
+description: Custom hooks must return a pair or an object to avoid positional tuples.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Custom React hooks must return a tuple of ≤2 elements or an object.
+Custom hooks should return a pair or an object.
 
 ## Rule Details :badge[Best Practice]{variant=success}
 
-Custom hooks should return either a tuple with at most 2 elements (mirroring `useState`), a single object, or a single
-primitive value. Returning large tuples makes destructuring awkward and error-prone due to mandatory positional
-ordering. Objects are preferred for 3+ values as they provide named context and allow skipping properties.
+Custom hooks should return either a tuple with at most 2 elements (mirroring `useState`) or a single object. Returning
+large tuples makes destructuring awkward and error-prone because everything is positional.
 
 <Aside type="tip" title="Positional Clarity">
-	When a hook returns more than 2 elements, it's hard for callers to remember what `[a, b, c, d]` represent. Objects
-	allow the IDE to provide autocompletion for named properties.
+	If a hook returns more than 2 values, callers end up guessing what `[a, b, c, d]` means. Objects make the meaning
+	explicit and let the IDE autocomplete names.
 </Aside>
 
 ## Refactoring Workflow

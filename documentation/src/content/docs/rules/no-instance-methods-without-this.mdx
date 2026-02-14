@@ -3,23 +3,20 @@ title: no-instance-methods-without-this
 badge:
     text: Performance
     variant: success
-description:
-    Detects instance methods that don't use this and should be converted to standalone functions. Optimizes metatables.
+description: Move instance methods that don't use this into module-level functions.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Detects instance methods that don't use `this`.
+Detect instance methods that don't use `this`.
 
 ## Rule Details :badge[Performance]{variant=success}
 
-In `roblox-ts`, instance methods carry significant metatable overhead. If a method doesn't access any instance state
-(via `this`), it should be extracted as a standalone function. This reduces memory usage and improves lookup speed for
-every instance of the class in the Roblox engine.
+In `roblox-ts`, instance methods add metatable overhead. If a method doesn't touch instance state (via `this`), it can
+usually live as a module-level function instead.
 
 <Aside type="danger" title="Metatable Overhead">
-	Each instance method in a class increases the size of the metatable. In games with thousands of instances, this
-	overhead compounds, impacting both per-frame performance and total memory.
+	Each instance method increases the metatable. In games with lots of instances, that overhead adds up.
 </Aside>
 
 ## Refactoring Workflow
@@ -87,7 +84,7 @@ every instance of the class in the Roblox engine.
 		Module-level functions are resolved faster than methods that require Lua index traversal.
 	</Card>
 	<Card title="Memory Scale" icon="list-format">
-		Removing 5 methods from a class with 1,000 instances significantly reduces heap fragmentation.
+		Removing unused instance methods reduces per-class overhead.
 	</Card>
 	<Card title="Testability" icon="rocket">
 		Pure standalone functions can be tested without the overhead of instantiating whole classes.

@@ -3,22 +3,21 @@ title: ban-instances
 badge:
     text: Roblox
     variant: caution
-description: Bans specified Roblox Instance classes in new Instance() calls and JSX elements.
+description: Ban specific Roblox Instances in new Instance() and JSX (configurable).
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
 
-Bans specified Roblox Instance classes in `new Instance()` calls and JSX elements.
+Ban specific Roblox Instance classes in `new Instance()` and JSX.
 
 ## Rule Details :badge[Roblox]{variant=caution}
 
-This rule prevents the creation of specific Roblox Instance classes that may be problematic, deprecated, or should be
-replaced with better alternatives. You can configure which Instance classes are banned and provide custom messages
-explaining why.
+Stops you from creating specific Roblox Instance classes. Configure the banned list and (optionally) attach a short
+reason so the error message tells people what to use instead.
 
 <Aside type="note" title="Architectural Control">
-	Use this rule to enforce design decisions across your team, such as banning `Part` in favor of `MeshPart` or
-	preventing runtime `Script` creation.
+	Use this rule to enforce project-level choices, like banning `Part` in favor of `MeshPart` or disallowing runtime
+	`Script` creation.
 </Aside>
 
 ## Configuration Guide

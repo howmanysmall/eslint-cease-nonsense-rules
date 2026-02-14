@@ -10,13 +10,13 @@ description:
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Enforces combining multiple `world.get()` or `world.has()` calls.
+Prefer combining multiple `world.get()` or `world.has()` calls on the same entity.
 
 ## Rule Details :badge[Performance]{variant=success}
 
-In Jecs (a Roblox ECS library), calling `world.get()` or `world.has()` multiple times on the same entity results in
-multiple archetype lookups. Combining these calls into a single call improves performance by reducing lookups and cache
-misses. This rule detects consecutive lookups on the same entity and merges them automatically.
+In Jecs (a Roblox ECS library), calling `world.get()` or `world.has()` multiple times on the same entity triggers
+multiple archetype lookups. Combining these calls reduces lookups and cache misses. This rule detects consecutive
+lookups on the same entity and merges them.
 
 <Aside type="tip" title="Archetype Lookups">
 	Each lookup requires the engine to find the entity's storage location. By grouping queries, Jecs can find the
@@ -25,13 +25,13 @@ misses. This rule detects consecutive lookups on the same entity and merges them
 
 ## Optimization Path
 
-<Steps>
-1. **Identify Consecutive Calls**
-   Locate multiple `world.get(entity, Component)` or `world.has(entity, Component)` calls in the same block.
-2. **Verify Entity & World** Ensure all calls are targeting the exact same `world` and `entity` expressions.
-3. **Check Usage (for .has)** For `has()` calls, verify they are used together (e.g., `hasA && hasB`).
-4. **Merge calls** Replace the multiple lines with a single destructuring call:
-   `const [a, b] = world.get(entity, CompA, CompB)`. {/* oxfmt-ignore */}
+	<Steps>
+	1. **Identify Consecutive Calls**
+	   Locate multiple `world.get(entity, Component)` or `world.has(entity, Component)` calls in the same block.
+	2. **Verify Entity & World** Ensure all calls are targeting the exact same `world` and `entity` expressions.
+	3. **Check Usage (for .has)** For `has()` calls, verify they are used together (e.g., `hasA && hasB`).
+	4. **Merge Calls** Replace the multiple lines with a single destructuring call:
+	   `const [a, b] = world.get(entity, CompA, CompB)`. {/* oxfmt-ignore */}
 
 </Steps>
 
@@ -40,13 +40,13 @@ misses. This rule detects consecutive lookups on the same entity and merges them
 <Tabs>
 	<TabItem label="❌ Incorrect" icon="close">
 		### Redundant Lookups
-		Bans separate calls that can be efficiently batched.
+		Separate calls on the same entity force extra lookups.
 
     	<Code
     		code={[
-    			"// Multiple lookups - inefficient",
-    			"const position = world.get(entity, Position);",
-    			"const velocity = world.get(entity, Velocity);",
+			"// Multiple lookups",
+			"const position = world.get(entity, Position);",
+			"const velocity = world.get(entity, Velocity);",
     			"",
     			"const hasHealth = world.has(entity, Health);",
     			"const hasMana = world.has(entity, Mana);",
@@ -55,14 +55,14 @@ misses. This rule detects consecutive lookups on the same entity and merges them
     		lang="tsx"
     	/>
     </TabItem>
-    <TabItem label="✅ Correct" icon="check">
-    	### Grouped Queries
-    	Use the multi-argument overloads to minimize archetype traversals.
+	<TabItem label="✅ Correct" icon="check">
+		### Grouped Queries
+		Use the multi-argument overloads to keep it to one lookup.
 
     	<Code
     		code={[
-    			"// Single lookup - efficient",
-    			"const [position, velocity] = world.get(entity, Position, Velocity);",
+			"// Single lookup",
+			"const [position, velocity] = world.get(entity, Position, Velocity);",
     			"",
     			"// Combined existence check",
     			"const hasBoth = world.has(entity, Health, Mana);",
@@ -84,7 +84,7 @@ misses. This rule detects consecutive lookups on the same entity and merges them
 		Accessing multiple components at once improves CPU cache usage as they are often stored together.
 	</Card>
 	<Card title="Jecs Limits" icon="setting">
-		Automatically respects Jecs limits (up to 4 components) by only merging valid counts.
+		Respects Jecs limits (up to 4 components) by only merging valid counts.
 	</Card>
 </CardGrid>
 

@@ -3,21 +3,21 @@ title: no-new-instance-in-use-memo
 badge:
     text: React
     variant: note
-description: "Disallow configured constructor calls (default: new Instance) inside React useMemo callbacks."
+description: "Disallow configured constructor calls (default: new Instance) inside useMemo callbacks."
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
 
-Disallow configured constructor calls (default: `new Instance(...)`) inside `useMemo` callbacks.
+Disallow configured constructor calls inside `useMemo` callbacks.
 
 ## Rule Details :badge[React]{variant=note}
 
-`useMemo` should stay pure. Constructing objects inside the callback (especially runtime resources like Roblox
-Instances) mixes allocation and lifecycle work into memoization, which makes component behavior harder to reason about.
+`useMemo` should stay pure. Constructing runtime objects in the callback (especially Roblox Instances) mixes allocation
+and lifecycle work into memoization.
 
 <Aside type="caution" title="Render-Phase Allocation">
-	If you need to create and clean up runtime objects, prefer explicit lifecycle management (`useEffect`, refs, or
-	module scope factories) over constructor calls inside `useMemo`.
+	If you need to create and clean up runtime objects, manage the lifecycle explicitly (`useEffect`, refs, or module
+	scope factories) instead of constructing inside `useMemo`.
 </Aside>
 
 ## Refactoring Workflow

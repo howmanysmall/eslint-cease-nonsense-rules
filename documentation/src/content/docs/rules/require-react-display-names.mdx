@@ -3,24 +3,21 @@ title: require-react-display-names
 badge:
     text: Best Practice
     variant: success
-description:
-    Require displayName property on exported React.memo components and React.createContext contexts for better
-    debugging.
+description: Require displayName on exported memo/context values so DevTools stays readable.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Require `displayName` on exported `React.memo` and `React.createContext`.
+Require `displayName` on exported `memo(...)` and `createContext(...)` values.
 
 ## Rule Details :badge[Best Practice]{variant=success}
 
-React components wrapped in `memo` and contexts created with `createContext` lose their names in React DevTools unless
-you explicitly set `displayName`. This rule enforces proper naming patterns to ensure your component tree remains
-readable during production debugging and profiling.
+Components wrapped in `memo` and contexts from `createContext` can lose useful names in React DevTools unless you set
+`displayName`. This rule makes you keep that name.
 
 <Aside type="tip" title="Production Debugging">
-	Minification often strips function names. `displayName` is a string literal that survives obfuscation, making it
-	invaluable for reading stack traces in production.
+	Minification often strips function names. `displayName` is a string literal that survives, so you can still read
+	DevTools and stack traces.
 </Aside>
 
 ## Refactoring Path
@@ -60,7 +57,7 @@ readable during production debugging and profiling.
     </TabItem>
     <TabItem label="✅ Correct" icon="check">
     	### Labeled Components
-    	Explicitly name your exported units for better telemetry.
+		Name your exports so DevTools and stack traces stay readable.
 
     	<Code
     		code={[

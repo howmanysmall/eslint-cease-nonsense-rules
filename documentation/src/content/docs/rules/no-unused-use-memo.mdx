@@ -3,21 +3,20 @@ title: no-unused-use-memo
 badge:
     text: Best Practice
     variant: success
-description: Disallow standalone useMemo calls that ignore the memoized value; use useEffect for side effects.
+description: Don't use useMemo for side effects; if you ignore the value, useEffect.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Disallow standalone `useMemo` calls that ignore the memoized value.
+Don't use `useMemo` as a standalone statement.
 
 ## Rule Details :badge[Best Practice]{variant=success}
 
-`useMemo` exists to **return a memoized value**. If the return value is ignored, the hook is being used for side effects
-and should be replaced with `useEffect`.
+`useMemo` is for producing a value. If you call it as a statement and ignore the return value, you're using it for side
+effects. Use `useEffect` instead.
 
 <Aside type="danger" title="Memo Is Not an Effect">
-	Using `useMemo` for side effects hides intent and can be used to dodge effect rules. This rule enforces the correct
-	hook semantics and keeps effect-related lints honest.
+	Using `useMemo` for side effects hides intent and dodges effect-related rules. Use the right hook.
 </Aside>
 
 ## Refactoring Workflow

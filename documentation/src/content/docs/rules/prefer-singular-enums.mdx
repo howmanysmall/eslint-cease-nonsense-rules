@@ -3,7 +3,7 @@ title: prefer-singular-enums
 badge:
     text: Clean Code
     variant: success
-description: Enum names should be singular, not plural, to align with TypeScript conventions and improve readability.
+description: Prefer singular enum names (Color, not Colors).
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
@@ -12,9 +12,8 @@ Enum names should be singular, not plural.
 
 ## Rule Details :badge[Clean Code]{variant=success}
 
-Enum type names represent a single choice from a set, not the entire collection. Using plural names (like `Colors`)
-makes code misleading, as it suggests the variable holds multiple values. This rule enforces singular names (like
-`Color`) to align with standard TypeScript and C# conventions.
+Enum types represent a single choice from a set, not the whole collection. Plural names like `Colors` make code read as
+if the variable holds multiple values. This rule prefers singular names like `Color`.
 
 <Aside type="tip" title="Natural Language">
 	`const theme: Color = Color.DeepSea` reads much more naturally than `const theme: Colors = Colors.DeepSea`.
@@ -99,7 +98,7 @@ makes code misleading, as it suggests the variable holds multiple values. This r
 
 ## Detectable Plurals
 
-This rule includes a robust detection engine for:
+The rule can spot a few common plural patterns:
 
 - **Regular**: `Commands`, `Statuses`, `Types`.
 - **Irregular**: `Children`, `People`, `Feet`, `Teeth`, `Mice`.

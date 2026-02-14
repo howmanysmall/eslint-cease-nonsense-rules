@@ -3,20 +3,20 @@ title: no-array-size-assignment
 badge:
     text: Roblox
     variant: note
-description: Disallow append assignment patterns like array[array.size()] = value in roblox-ts code.
+description: Prefer push() over array[array.size()] = value.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
 
-Disallow append-style writes that use `.size()` as an index in assignment expressions.
+Prefer `push` over append-by-size indexing.
 
 ## Rule Details :badge[Roblox]{variant=note}
 
-In roblox-ts code, `array[array.size()] = value` is an append pattern that is easy to miss during review and harder to
-search for. This rule enforces explicit append semantics and reports these assignments.
+In roblox-ts, `array[array.size()] = value` is an append pattern that's easy to miss in review and awkward to search for.
+This rule reports it and nudges you toward `array.push(value)`.
 
 <Aside type="tip" title="Clear Append Intent">
-	Using `array.push(value)` makes append intent obvious and avoids index math in write sites.
+	`array.push(value)` makes append intent obvious.
 </Aside>
 
 ## Configuration

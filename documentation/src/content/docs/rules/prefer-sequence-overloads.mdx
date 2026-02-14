@@ -3,9 +3,7 @@ title: prefer-sequence-overloads
 badge:
     text: Roblox
     variant: success
-description:
-    Prefer the optimized ColorSequence and NumberSequence constructor overloads instead of building an array of
-    Keypoints.
+description: Prefer ColorSequence/NumberSequence overloads over manual keypoint arrays.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
@@ -14,13 +12,11 @@ Prefer optimized `ColorSequence` and `NumberSequence` constructors.
 
 ## Rule Details :badge[Roblox]{variant=success}
 
-Roblox provides optimized constructor overloads for `ColorSequence` and `NumberSequence` that are significantly faster
-and cleaner than manually creating an array of `Keypoint` objects. This rule enforces these overloads for simple linear
-gradients and uniform sequences.
+Roblox has constructor overloads for `ColorSequence` and `NumberSequence` that cover the common two-keypoint case. This
+rule prefers those overloads over manually building arrays of keypoints.
 
 <Aside type="tip" title="Performance">
-	The optimized overloads avoid allocating a temporary array and creating two `SequenceKeypoint` objects, reducing
-	garbage collection pressure in performance-critical code.
+	The overloads avoid allocating a temporary array and keypoint objects.
 </Aside>
 
 ## Optimization Steps

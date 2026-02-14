@@ -3,21 +3,20 @@ title: no-shorthand-names
 badge:
     text: Clean Code
     variant: success
-description: Bans shorthand variable names in favor of descriptive full names for better readability.
+description: Ban shorthand names like plr/dt/args and prefer full words.
 ---
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
 
-Bans shorthand variable names in favor of descriptive full names.
+Ban shorthand names like `plr`, `dt`, and `args`.
 
 ## Rule Details :badge[Clean Code]{variant=success}
 
-Shorthand names (like `plr`, `dt`, or `args`) reduce code readability and make it harder for newcomers to understand the
-intent of your logic. This rule enforces full, descriptive names by detecting shorthands even within compound
-identifiers (like `plrData` → `playerData`).
+Shorthand names like `plr`, `dt`, and `args` make code harder to scan, especially for people who didn't write it. The
+rule prefers full words and also catches shorthands inside compound identifiers (for example `plrData` → `playerData`).
 
 <Aside type="tip" title="Self-Documenting Code">
-	Descriptive names reduce the need for comments. `playerScore` is much clearer than `plrScr`.
+	Descriptive names reduce the need for comments. `playerScore` is clearer than `plrScr`.
 </Aside>
 
 ## Migration Workflow
