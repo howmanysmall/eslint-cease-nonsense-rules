@@ -773,7 +773,7 @@ const rule: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRec
 				const closer = validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
 
 				const statementType = statementNode.type === AST_NODE_TYPES.BreakStatement ? "break" : "continue";
-				const lineNumber = statementNode.loc?.start.line ?? 0;
+				const lineNumber = statementNode.loc.start.line;
 
 				context.report({
 					data: {
@@ -794,11 +794,13 @@ const rule: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRec
 
 			const openerConfig = findPairConfiguration(callName, true);
 			if (openerConfig) {
+				// oxlint-disable-next-line typescript/no-use-before-define
 				handleOpener(callNode, callName, openerConfig);
 				return;
 			}
 
 			if (findPairConfiguration(callName, false)) {
+				// oxlint-disable-next-line typescript/no-use-before-define
 				handleCloser(callNode, callName);
 				return;
 			}
@@ -806,6 +808,7 @@ const rule: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRec
 			for (const entry of openerStack) {
 				if (!isRobloxYieldingFunction(callName, entry.config)) continue;
 
+				// oxlint-disable-next-line typescript/no-use-before-define
 				handleRobloxYield(callNode, callName, entry);
 				openerStack.length = 0;
 				yieldingAutoClosed = true;
