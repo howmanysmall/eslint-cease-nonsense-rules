@@ -18,6 +18,7 @@ import noInstanceMethodsWithoutThis from "./rules/no-instance-methods-without-th
 import noMemoChildren from "./rules/no-memo-children";
 import noNewInstanceInUseMemo from "./rules/no-new-instance-in-use-memo";
 import noPrint from "./rules/no-print";
+import noRenderHelperFunctions from "./rules/no-render-helper-functions";
 import noShorthandNames from "./rules/no-shorthand-names";
 import noTableCreateMap from "./rules/no-table-create-map";
 import noUnderscoreReactProps from "./rules/no-underscore-react-props";
@@ -137,6 +138,7 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"no-memo-children": noMemoChildren,
 	"no-new-instance-in-use-memo": noNewInstanceInUseMemo,
 	"no-print": noPrint,
+	"no-render-helper-functions": noRenderHelperFunctions,
 	"no-shorthand-names": noShorthandNames,
 	"no-table-create-map": noTableCreateMap,
 	"no-underscore-react-props": noUnderscoreReactProps,
@@ -205,6 +207,7 @@ export const recommended = {
 		"cease-nonsense/no-memo-children": "error",
 		"cease-nonsense/no-new-instance-in-use-memo": "error",
 		"cease-nonsense/no-print": "error",
+		"cease-nonsense/no-render-helper-functions": "error",
 		"cease-nonsense/no-shorthand-names": "error",
 		"cease-nonsense/no-table-create-map": "error",
 		"cease-nonsense/no-underscore-react-props": "error",

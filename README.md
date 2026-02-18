@@ -539,6 +539,78 @@ useEffect(() => {
 const texture = useMemo(() => lookupTexture(itemId), [itemId]);
 ```
 
+#### `no-render-helper-functions`
+
+Disallow non-component functions that return JSX or React elements.
+
+**Why**
+
+Functions that return JSX should be proper React components (PascalCase) with a single props parameter, not camelCase
+helper functions. Render helpers break component tree visibility in DevTools, don't follow React conventions, and
+encourage spreading component logic across utility functions instead of composing components properly.
+
+**❌ Bad**
+
+```tsx
+function createLeftLabel(text: string, gradient: ColorSequence): React.ReactNode {
+	return (
+		<TextLabel
+			nativeProperties={{ Text: text }}
+			textGradientNativeProperties={{ Color: gradient }}
+		/>
+	);
+}
+
+function createRightLabel(text: string, rotation: number): React.ReactNode {
+	return <TextLabel nativeProperties={{ Text: text, Rotation: rotation }} />;
+}
+
+export function TimeChamberRow() {
+	return (
+		<frame>
+			{createLeftLabel("Boost", GRADIENT)}
+			{createRightLabel("+50%", 90)}
+		</frame>
+	);
+}
+```
+
+**✅ Good**
+
+```tsx
+interface LabelProps {
+	readonly text: string;
+	readonly gradient: ColorSequence;
+}
+
+function LeftLabel({ text, gradient }: LabelProps) {
+	return (
+		<TextLabel
+			nativeProperties={{ Text: text }}
+			textGradientNativeProperties={{ Color: gradient }}
+		/>
+	);
+}
+
+interface RightLabelProps {
+	readonly text: string;
+	readonly rotation: number;
+}
+
+function RightLabel({ text, rotation }: RightLabelProps) {
+	return <TextLabel nativeProperties={{ Text: text, Rotation: rotation }} />;
+}
+
+export function TimeChamberRow() {
+	return (
+		<frame>
+			<LeftLabel text="Boost" gradient={GRADIENT} />
+			<RightLabel text="+50%" rotation={90} />
+		</frame>
+	);
+}
+```
+
 #### `no-underscore-react-props`
 
 Ban React prop names that begin with `_`.
