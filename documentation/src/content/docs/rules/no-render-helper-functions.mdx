@@ -1,0 +1,167 @@
+---
+title: no-render-helper-functions
+badge:
+    text: Best Practice
+    variant: success
+description: Prefer React components over render helper functions that return JSX.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+
+Disallow non-component functions that return JSX or React elements. Functions that return JSX should be proper React
+components.
+
+## Rule Details :badge[Best Practice]{variant=success}
+
+Helper functions like `createLabel()` or `renderButton()` that return JSX break React conventions and DevTools
+visibility. They encourage splitting component logic into scattered utility functions instead of composing proper
+components with clear props interfaces.
+
+<Aside type="danger" title="Why Ban Render Helpers?">
+	Render helpers don't appear in React DevTools, can't be profiled or debugged like components, and bypass React's
+	component model. Convert them to proper PascalCase components with typed props.
+</Aside>
+
+## Refactoring Steps
+
+<Steps>
+1. **Identify Render Helpers** Look for camelCase functions returning JSX elements or annotated with `React.ReactNode`
+   / `ReactElement`.
+2. **Convert to Component** Rename the function to PascalCase (e.g., `createLabel` → `Label`).
+3. **Define Props Interface** Convert function parameters to a props interface with `readonly` fields.
+4. **Update Call Sites** Replace function calls `createLabel(text, color)` with JSX elements `<Label text={text}
+   color={color} />`.
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		### Render Helper Functions
+		camelCase functions that return JSX should be components instead.
+
+    	<Code
+    		code={[
+    			"function createLeftLabel(text: string, gradient: ColorSequence): React.ReactNode {",
+    			"\treturn (",
+    			"\t\t<TextLabel",
+    			'\t\t\tnativeProperties={{ Text: text }}',
+    			"\t\t\ttextGradientNativeProperties={{ Color: gradient }}",
+    			"\t\t/>",
+    			"\t);",
+    			"}",
+    			"",
+    			"function renderButton() {",
+    			"\treturn <button>Click</button>;",
+    			"}",
+    			"",
+    			"const buildPanel = (): JSX.Element => <div>Panel</div>;",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Proper React Components
+    	Use PascalCase components with typed props interfaces.
+
+    	<Code
+    		code={[
+    			"interface LeftLabelProps {",
+    			"\treadonly text: string;",
+    			"\treadonly gradient: ColorSequence;",
+    			"}",
+    			"",
+    			"function LeftLabel({ text, gradient }: LeftLabelProps) {",
+    			"\treturn (",
+    			"\t\t<TextLabel",
+    			'\t\t\tnativeProperties={{ Text: text }}',
+    			"\t\t\ttextGradientNativeProperties={{ Color: gradient }}",
+    			"\t\t/>",
+    			"\t);",
+    			"}",
+    			"",
+    			"function Button() {",
+    			"\treturn <button>Click</button>;",
+    			"}",
+    			"",
+    			"function Panel(): JSX.Element {",
+    			"\treturn <div>Panel</div>;",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
+</Tabs>
+
+## Exceptions
+
+<CardGrid stagger>
+	<Card title="React Hooks" icon="seti:clock">
+		Functions prefixed with `use` are exempt. Hooks like `useCustomElement()` can legitimately return JSX for
+		composition.
+	</Card>
+	<Card title="Inline Callbacks" icon="seti:javascript">
+		Arrow functions used inline (e.g., `.map(item => <Item />)`) are exempt. These are local rendering logic, not
+		reusable helpers.
+	</Card>
+	<Card title="Component Internals" icon="seti:folder">
+		Helper functions defined inside component bodies are exempt. They're private implementation details scoped to
+		that component.
+	</Card>
+</CardGrid>
+
+## Problems with Render Helpers
+
+<CardGrid stagger>
+	<Card title="DevTools Invisible" icon="warning">
+		Render helpers don't appear in React DevTools component tree, making debugging and profiling impossible.
+	</Card>
+	<Card title="Breaks Conventions" icon="close">
+		React components are PascalCase with props objects. camelCase functions with multiple parameters bypass this
+		contract.
+	</Card>
+	<Card title="Poor Composition" icon="puzzle">
+		Encourages scattering logic across utility functions instead of building composable component hierarchies.
+	</Card>
+	<Card title="No Hooks" icon="error">
+		Helper functions can't use React hooks safely. Only components follow the Rules of Hooks.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="ban-react-fc"
+		description="Prefer function components over React.FC"
+		href="/eslint-cease-nonsense-rules/rules/ban-react-fc/"
+	/>
+	<LinkCard
+		title="require-react-display-names"
+		description="Ensures components have names in DevTools"
+		href="/eslint-cease-nonsense-rules/rules/require-react-display-names/"
+	/>
+	<LinkCard
+		title="no-god-components"
+		description="Prevents overly complex components"
+		href="/eslint-cease-nonsense-rules/rules/no-god-components/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="Thinking in React"
+		description="React's official guide to component composition"
+		href="https://react.dev/learn/thinking-in-react"
+	/>
+	<LinkCard
+		title="React DevTools"
+		description="Understanding the component tree in DevTools"
+		href="https://react.dev/learn/react-developer-tools"
+	/>
+</CardGrid>
