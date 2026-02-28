@@ -14,6 +14,9 @@ export default defineConfig({
 	base: "/eslint-cease-nonsense-rules",
 	integrations: [
 		starlight({
+			components: {
+				Head: "./src/components/starlight-head.astro",
+			},
 			customCss: ["./src/styles/custom.css"],
 			editLink: {
 				baseUrl: "https://github.com/howmanysmall/eslint-cease-nonsense-rules/edit/main/documentation/",

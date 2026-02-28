@@ -1,7 +1,6 @@
 /* src/styles/custom.css */
 
-/* Google Fonts */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+/* Inter is self-hosted and preloaded from src/components/starlight-head.astro */
 
 :root {
 	--sl-color-accent-low: #e0f2ff;
