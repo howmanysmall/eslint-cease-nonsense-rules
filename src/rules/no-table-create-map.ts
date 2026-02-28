@@ -60,7 +60,10 @@ function hasShadowedBinding(
 	return false;
 }
 
-function isTableCreateBase(context: TSESLint.RuleContext<MessageIds, Options>, expression: TSESTree.Expression): boolean {
+function isTableCreateBase(
+	context: TSESLint.RuleContext<MessageIds, Options>,
+	expression: TSESTree.Expression,
+): boolean {
 	const unwrapped = unwrapExpression(expression);
 	if (unwrapped.type !== AST_NODE_TYPES.CallExpression || unwrapped.optional) return false;
 	if (unwrapped.callee.type === AST_NODE_TYPES.Super) return false;

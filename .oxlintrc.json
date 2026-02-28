@@ -18,9 +18,22 @@
 	"globals": {
 		"Bun": "readonly",
 	},
-	"ignorePatterns": ["dist", "do-not-sync-ever/**", "**/node_modules/**", "tests/fixtures/**/*.d.ts", ".context/**"],
+	"ignorePatterns": [
+		"dist",
+		"**/do-not-sync-ever/**",
+		"**/scripts-local/**",
+		"**/node_modules/**",
+		"tests/fixtures/**/*.d.ts",
+		".context/**",
+	],
 	"jsPlugins": [],
 	"overrides": [
+		{
+			"files": [".opencode/**/*.{ts,tsx,js,jsx}"],
+			"rules": {
+				"typescript/require-await": "off",
+			},
+		},
 		{
 			"env": {},
 			"files": ["tests/*.test.ts", "src/**/*.test.ts"],
@@ -156,6 +169,7 @@
 				"skipComments": false,
 			},
 		],
+		"eslint/no-use-before-define": "off",
 		"eslint/require-await": "off",
 		"for-direction": "error",
 		"func-names": ["off", "never", { "generators": "never" }],
@@ -185,6 +199,7 @@
 					"i",
 					"j",
 					"maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING",
+					"$",
 				],
 				"max": 45,
 			},
@@ -334,8 +349,14 @@
 				"readonly": "generic",
 			},
 		],
+		// nursery... obviously. because it doesn't work.
+		"typescript/consistent-return": "off",
+		"typescript/no-unnecessary-condition": "off",
 		"typescript/no-unsafe-type-assertion": "off",
+		// types can be wrong.
+		"typescript/no-useless-default-assignment": "off",
 		"typescript/prefer-optional-chain": "off",
+		"typescript/prefer-readonly-parameter-types": "off",
 		"typescript/strict-boolean-expressions": "off",
 		"typescript/use-unknown-in-catch-callback-variable": "error",
 		"unicorn/catch-error-name": "error",

@@ -23,15 +23,13 @@ and fragments state.
 
 ## Refactoring Workflow
 
-	<Steps>
-	1. **Identify Target Classes**
-	   Configure the linter with classes that must be shared globally (e.g., `Log`, `Server`).
+    <Steps>
+    1. **Identify Target Classes**
+       Configure the linter with classes that must be shared globally (e.g., `Log`, `Server`).
 
-2. **Locate Local Instances** Find `new ClassName()` calls that are nested inside functions, loops, or class methods.
-
-	3. **Lift to Module Scope** Move the instantiation to the top of the file, outside of all functions.
-
-	4. **Verify References** Use the shared instance from your functions. Ensure it is initialized before first use.
+2. **Locate Local Instances** Find `new ClassName()` calls that are nested inside functions, loops, or class methods. 3.
+   **Lift to Module Scope** Move the instantiation to the top of the file, outside of all functions.
+    4. **Verify References** Use the shared instance from your functions. Ensure it is initialized before first use.
 
 {/* oxfmt-ignore */}
 
@@ -57,16 +55,16 @@ and fragments state.
     		lang="tsx"
     	/>
     </TabItem>
-	<TabItem label="✅ Correct" icon="check">
-		### Static Global Instance
-		Instantiate once at the top level and reuse the reference everywhere.
+    <TabItem label="✅ Correct" icon="check">
+    	### Static Global Instance
+    	Instantiate once at the top level and reuse the reference everywhere.
 
     	<Code
     		code={[
     			'import Log from "@rbxts/rbxts-sleitnick-log";',
     			"",
-			"// ✅ Created once when the module loads",
-			"const log = new Log();",
+    		"// ✅ Created once when the module loads",
+    		"const log = new Log();",
     			"",
     			"function useData() {",
     			'\tlog.Info("Loading data...");',

@@ -3,10 +3,10 @@ import { ESLintUtils } from "@typescript-eslint/utils";
 
 export interface ComplexityConfiguration {
 	readonly baseThreshold: number;
-	readonly warnThreshold: number;
 	readonly errorThreshold: number;
 	readonly interfacePenalty: number;
 	readonly performanceMode: boolean;
+	readonly warnThreshold: number;
 }
 
 interface ComplexityCache {

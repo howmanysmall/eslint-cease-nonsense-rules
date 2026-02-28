@@ -16,6 +16,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("use-exhaustive-dependencies", () => {
+	// @ts-expect-error - RuleTester types are incorrect for suggestions
 	ruleTester.run("use-exhaustive-dependencies", rule, {
 		invalid: [
 			// Missing dependency
@@ -1286,6 +1287,7 @@ function Component() {
 		],
 	});
 
+	// @ts-expect-error - RuleTester types are incorrect for suggestions
 	ruleTester.run("use-exhaustive-dependencies", rule, {
 		invalid: [
 			// Custom hook with missing dependency

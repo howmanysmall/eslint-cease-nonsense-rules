@@ -49,9 +49,9 @@ const SINGLE_ARGUMENT_OBJECT_WRAPPERS = new Set(["Readonly"]);
 const RECORD_ALIAS_NAME = "Record";
 
 interface EnumValueIndex {
-	readonly stringSet: Set<string>;
-	readonly numberSet: Set<number>;
 	readonly isComplete: boolean;
+	readonly numberSet: Set<number>;
+	readonly stringSet: Set<string>;
 }
 
 function resolveAliasSymbol(checker: TypeChecker, symbol: TypeScriptSymbol): TypeScriptSymbol {
@@ -124,8 +124,8 @@ function getRecordKeyType(type: Type): Type | undefined {
 }
 
 interface PropertyKeyInfo {
-	readonly value: string | number;
 	readonly isComputed: boolean;
+	readonly value: string | number;
 }
 
 function getPropertyKeyInfo(node: TSESTree.Property): PropertyKeyInfo | undefined {

@@ -72,11 +72,7 @@ function areEquivalentExpressionOrSuper(
 	return areEquivalentExpression(left, right, sourceCode);
 }
 
-function areEquivalentArgument(
-	left: CallArgument,
-	right: CallArgument,
-	sourceCode: SourceCode,
-): boolean {
+function areEquivalentArgument(left: CallArgument, right: CallArgument, sourceCode: SourceCode): boolean {
 	if (left.type === AST_NODE_TYPES.SpreadElement || right.type === AST_NODE_TYPES.SpreadElement) {
 		if (left.type !== AST_NODE_TYPES.SpreadElement || right.type !== AST_NODE_TYPES.SpreadElement) return false;
 		return areEquivalentExpression(left.argument, right.argument, sourceCode);
@@ -85,11 +81,7 @@ function areEquivalentArgument(
 	return areEquivalentExpression(left, right, sourceCode);
 }
 
-function areEquivalentOperand(
-	left: BinaryOperand,
-	right: BinaryOperand,
-	sourceCode: SourceCode,
-): boolean {
+function areEquivalentOperand(left: BinaryOperand, right: BinaryOperand, sourceCode: SourceCode): boolean {
 	if (left.type === AST_NODE_TYPES.PrivateIdentifier || right.type === AST_NODE_TYPES.PrivateIdentifier) {
 		return (
 			left.type === AST_NODE_TYPES.PrivateIdentifier &&
@@ -146,10 +138,14 @@ function areEquivalentExpression(
 
 		case AST_NODE_TYPES.MemberExpression:
 			if (normalizedRight.type !== AST_NODE_TYPES.MemberExpression) return false;
-			if (normalizedLeft.computed !== normalizedRight.computed || normalizedLeft.optional !== normalizedRight.optional) {
+			if (
+				normalizedLeft.computed !== normalizedRight.computed ||
+				normalizedLeft.optional !== normalizedRight.optional
+			) {
 				return false;
 			}
-			if (!areEquivalentExpressionOrSuper(normalizedLeft.object, normalizedRight.object, sourceCode)) return false;
+			if (!areEquivalentExpressionOrSuper(normalizedLeft.object, normalizedRight.object, sourceCode))
+				return false;
 
 			if (normalizedLeft.computed) {
 				return areEquivalentOperand(normalizedLeft.property, normalizedRight.property, sourceCode);
@@ -171,7 +167,8 @@ function areEquivalentExpression(
 		case AST_NODE_TYPES.CallExpression:
 			if (normalizedRight.type !== AST_NODE_TYPES.CallExpression) return false;
 			if (normalizedLeft.optional !== normalizedRight.optional) return false;
-			if (!areEquivalentExpressionOrSuper(normalizedLeft.callee, normalizedRight.callee, sourceCode)) return false;
+			if (!areEquivalentExpressionOrSuper(normalizedLeft.callee, normalizedRight.callee, sourceCode))
+				return false;
 			if (normalizedLeft.arguments.length !== normalizedRight.arguments.length) return false;
 
 			for (let index = 0; index < normalizedLeft.arguments.length; index += 1) {
@@ -315,7 +312,10 @@ export default createRule<Options, MessageIds>({
 							const secondBranchText = sourceCode.getText(secondBranch.renderBranch);
 							const replacement = `{${firstConditionText} ? ${firstBranchText} : ${secondBranchText}}`;
 
-							return fixer.replaceTextRange([firstBranch.node.range[0], secondBranch.node.range[1]], replacement);
+							return fixer.replaceTextRange(
+								[firstBranch.node.range[0], secondBranch.node.range[1]],
+								replacement,
+							);
 						},
 						messageId: "preferTernaryConditionalRendering",
 						node: firstBranch.logical,

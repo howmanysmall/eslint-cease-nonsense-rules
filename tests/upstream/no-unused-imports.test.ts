@@ -13,13 +13,13 @@ interface UpstreamValidCase {
 interface UpstreamInvalidCase {
 	readonly code: string;
 	readonly errors: ReadonlyArray<string>;
-	readonly output: string;
 	readonly options?: ReadonlyArray<Record<string, unknown>>;
+	readonly output: string;
 }
 
 interface UpstreamCases {
-	readonly valid: ReadonlyArray<UpstreamValidCase>;
 	readonly invalid: ReadonlyArray<UpstreamInvalidCase>;
+	readonly valid: ReadonlyArray<UpstreamValidCase>;
 }
 
 const ruleTester = new RuleTester({
@@ -33,6 +33,7 @@ const ruleTester = new RuleTester({
 function toInvalidCases(
 	cases: UpstreamCases,
 ): ReadonlyArray<UpstreamInvalidCase & { errors: ReadonlyArray<{ messageId: string }> }> {
+	// @ts-expect-error - The types for RuleTester are very broken and don't allow for the actual structure of the test cases.
 	return cases.invalid.map((testCase) => ({
 		...testCase,
 		errors: testCase.errors.map(() => ({ messageId: "unusedImport" })),
@@ -40,7 +41,7 @@ function toInvalidCases(
 }
 
 function getValidCaseKey(testCase: UpstreamValidCase): string {
-	const optionsKey = testCase.options ? (JSON.stringify(testCase.options) ?? "") : "";
+	const optionsKey = testCase.options ? JSON.stringify(testCase.options) : "";
 	return `${testCase.code}|${optionsKey}`;
 }
 
@@ -61,4 +62,5 @@ function dedupeValidCases(cases: ReadonlyArray<UpstreamValidCase>): ReadonlyArra
 const invalid = [...toInvalidCases(casesJs), ...toInvalidCases(casesTs)];
 const valid = dedupeValidCases([...casesJs.valid, ...casesTs.valid]);
 
+// @ts-expect-error - The types for RuleTester are very broken and don't allow for the actual structure of the test cases.
 ruleTester.run("no-unused-imports", rule, { invalid, valid });

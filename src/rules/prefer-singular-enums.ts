@@ -88,8 +88,8 @@ function tokenizeIdentifier(name: string): ReadonlyArray<string> {
 const INTEGER_REGEXP = regex("^\\d+$");
 
 interface AlphaToken {
-	readonly original: string;
 	readonly lower: string;
+	readonly original: string;
 }
 
 function getLastAlphaToken(name: string): AlphaToken | undefined {

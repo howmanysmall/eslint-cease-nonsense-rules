@@ -2,14 +2,14 @@ import { TSESTree } from "@typescript-eslint/types";
 import type { Rule } from "eslint";
 
 export interface NoGodComponentsOptions {
-	readonly targetLines?: number;
-	readonly maxLines?: number;
 	readonly enforceTargetLines?: boolean;
-	readonly maxTsxNesting?: number;
-	readonly maxStateHooks?: number;
-	readonly stateHooks?: ReadonlyArray<string>;
-	readonly maxDestructuredProps?: number;
 	readonly ignoreComponents?: ReadonlyArray<string>;
+	readonly maxDestructuredProps?: number;
+	readonly maxLines?: number;
+	readonly maxStateHooks?: number;
+	readonly maxTsxNesting?: number;
+	readonly stateHooks?: ReadonlyArray<string>;
+	readonly targetLines?: number;
 }
 
 const COMPONENT_NAME_PATTERN = /^[A-Z]/;
@@ -168,8 +168,8 @@ function isTypeOnlyNullLiteral(node: TSESTree.Literal): boolean {
 
 interface BodyAnalysis {
 	readonly maxJsxDepth: number;
-	readonly stateHookCount: number;
 	readonly nullLiterals: ReadonlyArray<TSESTree.Literal>;
+	readonly stateHookCount: number;
 }
 
 function analyzeComponentBody(

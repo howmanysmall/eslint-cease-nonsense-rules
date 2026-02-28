@@ -10,6 +10,9 @@ export function formatSeverity(level: 0 | 1 | 2): string {
 
 		case 2:
 			return red("error");
+
+		default:
+			throw new Error("certified oxlint coal");
 	}
 }
 

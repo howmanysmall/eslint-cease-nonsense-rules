@@ -191,10 +191,10 @@ function ensureArrayDestructuring(
 	if (isArrayBindingOrAssignmentPattern(esNode)) return;
 
 	const { sourceCode } = context;
-	function fixer(fixer: TSESLint.RuleFixer): TSESLint.RuleFix {
+	function fixer(ruleFixer: TSESLint.RuleFixer): TSESLint.RuleFix {
 		let replacement = `[${leftNode.name}]`;
 		if (leftNode.typeAnnotation) replacement += sourceCode.getText(leftNode.typeAnnotation);
-		return fixer.replaceText(leftNode, replacement);
+		return ruleFixer.replaceText(leftNode, replacement);
 	}
 
 	context.report({

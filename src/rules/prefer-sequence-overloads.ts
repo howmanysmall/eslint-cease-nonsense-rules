@@ -5,8 +5,8 @@ import { Compile } from "typebox/compile";
 import { createRule } from "../utilities/create-rule";
 
 interface SequenceDescriptor {
-	readonly sequenceName: "ColorSequence" | "NumberSequence";
 	readonly keypointName: "ColorSequenceKeypoint" | "NumberSequenceKeypoint";
+	readonly sequenceName: "ColorSequence" | "NumberSequence";
 }
 
 interface KeypointData {

@@ -1,7 +1,11 @@
 import { describe } from "bun:test";
+import { dirname } from "node:path";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
+import { fileURLToPath } from "bun";
 import rule from "../../src/rules/naming-convention";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const ruleTester = new RuleTester({
 	languageOptions: {

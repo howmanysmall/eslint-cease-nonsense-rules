@@ -12,8 +12,8 @@ Prefer `push` over append-by-size indexing.
 
 ## Rule Details :badge[Roblox]{variant=note}
 
-In roblox-ts, `array[array.size()] = value` is an append pattern that's easy to miss in review and awkward to search for.
-This rule reports it and nudges you toward `array.push(value)`.
+In roblox-ts, `array[array.size()] = value` is an append pattern that's easy to miss in review and awkward to search
+for. This rule reports it and nudges you toward `array.push(value)`.
 
 <Aside type="tip" title="Clear Append Intent">
 	`array.push(value)` makes append intent obvious.

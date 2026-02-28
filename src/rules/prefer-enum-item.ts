@@ -49,13 +49,13 @@ interface EnumItemInfo {
 }
 
 interface EnumLookup {
-	readonly stringMap: Map<string, string>;
 	readonly numberMap: Map<number, string>;
+	readonly stringMap: Map<string, string>;
 }
 
 interface EnumLiteralIndex {
-	readonly stringSet: Set<string>;
 	readonly numberSet: Set<number>;
+	readonly stringSet: Set<string>;
 }
 
 export interface PreferEnumItemOptions {

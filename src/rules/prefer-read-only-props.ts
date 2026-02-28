@@ -25,7 +25,7 @@ function isPropertyReadonlyInTypeOrBase(checker: TypeChecker, type: Type, proper
 	const baseTypes = type.getBaseTypes?.() ?? [];
 	for (const baseType of baseTypes) {
 		const baseProperties = checker.getPropertiesOfType(baseType);
-		const baseProperty = baseProperties.find((property) => property.getEscapedName() === escapedName);
+		const baseProperty = baseProperties.find((base) => base.getEscapedName() === escapedName);
 		if (baseProperty && isPropertyReadonlyInType(baseType, escapedName, checker)) return true;
 	}
 

@@ -13,8 +13,8 @@ interface CommentWithLocation extends Comment {
 }
 
 interface CommentGroup {
-	readonly value: string;
 	readonly comments: ReadonlyArray<CommentWithLocation>;
+	readonly value: string;
 }
 
 const detectors = createJavaScriptDetectors();
@@ -131,15 +131,15 @@ function isExcludedLiteral(expression: { type: string; value?: unknown }): boole
 }
 
 interface ParsedExpression {
-	type: string;
 	operator?: string;
+	type: string;
 	value?: unknown;
 }
 
 interface ParsedStatement {
-	type: string;
 	argument?: { type: string } | undefined;
 	expression?: ParsedExpression;
+	type: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

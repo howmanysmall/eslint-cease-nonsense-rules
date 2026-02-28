@@ -22,16 +22,16 @@ function nextValue(): unknown {
 
 		case 3: {
 			const length = nextInteger(0, 10);
-			let value = "";
-			for (let index = 0; index < length; index += 1) value += String.fromCodePoint(nextInteger(97, 122));
-			return value;
+			let string = "";
+			for (let index = 0; index < length; index += 1) string += String.fromCodePoint(nextInteger(97, 122));
+			return string;
 		}
 
 		case 4: {
 			const length = nextInteger(0, 5);
-			const value = new Array<unknown>(length);
-			for (let index = 0; index < length; index += 1) value[index] = nextValue();
-			return value;
+			const array = new Array<unknown>(length);
+			for (let index = 0; index < length; index += 1) array[index] = nextValue();
+			return array;
 		}
 
 		case 5: {

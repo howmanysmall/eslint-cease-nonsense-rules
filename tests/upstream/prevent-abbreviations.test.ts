@@ -40,12 +40,12 @@ interface UpstreamInvalidCase {
 }
 
 interface CollectedTests {
-	readonly variant: Variant;
 	readonly tests: {
 		readonly testerOptions?: TesterOptions;
 		readonly valid: ReadonlyArray<UpstreamValidCase>;
 		readonly invalid: ReadonlyArray<UpstreamInvalidCase>;
 	};
+	readonly variant: Variant;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

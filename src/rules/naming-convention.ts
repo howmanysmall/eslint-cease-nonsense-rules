@@ -585,7 +585,9 @@ export default createRule<Options, MessageIds>({
 
 function getIdentifiersFromPattern(pattern: TSESTree.DestructuringPattern): Array<TSESTree.Identifier> {
 	const identifiers: Array<TSESTree.Identifier> = [];
-	const visitor = new PatternVisitor({}, pattern, (identifier) => identifiers.push(identifier));
+	const visitor = new PatternVisitor({}, pattern, (identifier) => {
+		identifiers.push(identifier);
+	});
 	visitor.visit(pattern);
 	return identifiers;
 }

@@ -84,9 +84,9 @@ function isExpressionStatement(parent: TSESTree.Node | undefined): boolean {
 }
 
 interface ConstructorViolation {
-	node: TSESTree.Node;
-	messageId: MessageIds;
 	data?: Record<string, string>;
+	messageId: MessageIds;
+	node: TSESTree.Node;
 }
 
 function checkAsyncMethodCall(

@@ -1,8 +1,8 @@
 export interface InspectOptions extends Record<string, unknown> {
-	readonly colors?: boolean;
-	readonly depth?: number | null;
 	readonly breakLength?: number;
+	readonly colors?: boolean;
 	readonly compact?: boolean;
+	readonly depth?: number | null;
 }
 export type InspectFunction = (value: unknown, options?: InspectOptions) => string;
 

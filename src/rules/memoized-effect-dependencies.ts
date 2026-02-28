@@ -8,8 +8,8 @@ import { createRule } from "../utilities/create-rule";
 type Mode = "definite" | "moderate" | "aggressive";
 
 interface HookEntry {
-	readonly name: string;
 	readonly dependenciesIndex?: number;
+	readonly name: string;
 }
 
 export interface MemoizedEffectDependenciesOptions {

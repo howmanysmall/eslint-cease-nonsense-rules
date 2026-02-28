@@ -39,8 +39,8 @@ const isOptionsObject = Compile(
 );
 
 interface BannedClassEntry {
-	readonly originalName: string;
 	readonly message: string | undefined;
+	readonly originalName: string;
 }
 
 interface NormalizedConfig {

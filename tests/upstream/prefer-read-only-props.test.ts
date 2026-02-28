@@ -1,7 +1,11 @@
+import { dirname } from "node:path";
 import parser from "@typescript-eslint/parser";
+import { fileURLToPath } from "bun";
 import { RuleTester } from "eslint";
 
 import rule from "../../src/rules/prefer-read-only-props";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const ruleTester = new RuleTester({
 	languageOptions: {

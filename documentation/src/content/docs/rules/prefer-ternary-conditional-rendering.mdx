@@ -3,8 +3,7 @@ title: prefer-ternary-conditional-rendering
 badge:
     text: React
     variant: success
-description:
-    Prefer a single ternary expression when JSX conditional rendering uses complementary && branches.
+description: Prefer a single ternary expression when JSX conditional rendering uses complementary && branches.
 ---
 
 import { Aside, Code, Tabs, TabItem, CardGrid, Card, LinkCard } from "@astrojs/starlight/components";
@@ -16,17 +15,18 @@ Prefer a single ternary expression when two sibling JSX `&&` branches are comple
 This rule finds sibling JSX branches like `condition && <A />` and `!condition && <B />` (or strict `===`/`!==`
 complements) and recommends replacing them with a single ternary.
 
-	<Aside type="note" title="Why this helps">
-		A single ternary keeps mutually exclusive rendering in one place and avoids repeating the condition across two
-		sibling nodes.
-	</Aside>
+    <Aside type="note" title="Why this helps">
+    	A single ternary keeps mutually exclusive rendering in one place and avoids repeating the condition across two
+    	sibling nodes.
+    </Aside>
 
 The rule reports whenever it can prove the two conditions are complementary.
 
 Auto-fix is conservative and only applies when the condition shape is provably safe:
 
 - Negation complements: `!x` vs `x`, where `x` is an identifier, `this`, or literal.
-- Strict comparison complements: `x === y` vs `x !== y` (including swapped operands), where both operands are safe atoms.
+- Strict comparison complements: `x === y` vs `x !== y` (including swapped operands), where both operands are safe
+  atoms.
 
 ## Examples
 

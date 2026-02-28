@@ -23,18 +23,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 interface ShorthandMatcher {
+	readonly original: string;
 	readonly pattern: RegExp;
 	readonly replacement: string;
-	readonly original: string;
 	readonly replacementPatterns: ReadonlyArray<RegExp>;
 }
 
 interface NormalizedOptions {
-	readonly matchers: ReadonlyArray<ShorthandMatcher>;
-	readonly exactMatchers: Map<string, string>;
 	readonly allowPropertyAccess: ReadonlySet<string>;
-	readonly ignoreMatchers: ReadonlyArray<ShorthandMatcher>;
+	readonly exactMatchers: Map<string, string>;
 	readonly ignoreExact: ReadonlySet<string>;
+	readonly ignoreMatchers: ReadonlyArray<ShorthandMatcher>;
+	readonly matchers: ReadonlyArray<ShorthandMatcher>;
 	readonly selector: string;
 }
 
@@ -52,14 +52,14 @@ const DEFAULT_OPTIONS: Required<NoShorthandOptions> = {
 const REGEX_PATTERN_MATCHER = regex("^/(?<first>.+)/(?<second>[gimsuy]*)$");
 
 interface ShorthandMatch {
-	readonly shorthand: string;
 	readonly matchedWord: string;
 	readonly replacement: string;
+	readonly shorthand: string;
 }
 
 interface ReplacementResult {
-	readonly replaced: string;
 	readonly matches: ReadonlyArray<ShorthandMatch>;
+	readonly replaced: string;
 }
 
 const WORD_BOUNDARY_REGEX = /(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])/;

@@ -29,6 +29,8 @@ function getFormatter(format: OutputFormat): (entries: ReadonlyArray<RuleEntry>)
 			return formatRulesAsMinimal;
 		case OutputFormat.Table:
 			return formatRulesAsTable;
+		default:
+			throw new Error(`Unsupported output format: ${String(format)}`);
 	}
 }
 

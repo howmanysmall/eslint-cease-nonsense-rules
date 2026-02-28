@@ -125,6 +125,7 @@ const testLiveCommand = new Command()
 		await $`bun run build`.quiet();
 
 		const nodePackages = resolve(directory, "patches", "node");
+		// oxlint-disable-next-line unicorn/prefer-ternary
 		if (useLink) await $`bun link`;
 		else await $`npm pack --pack-destination ${nodePackages}`.quiet();
 
@@ -137,6 +138,7 @@ const testLiveCommand = new Command()
 			log.success(picocolors.green("Dependencies installed successfully."));
 
 			const duration = await profileAsync(async () => {
+				// oxlint-disable-next-line unicorn/prefer-ternary
 				if (cache) await shell`bun x --bun eslint --cache --max-warnings=0 ./src`;
 				else await shell`bun x --bun eslint --max-warnings=0 ./src`;
 			});

@@ -85,8 +85,7 @@ export function captureParameter(node: TSESTree.Expression, sourceCode: SourceCo
 	if (expression.type === AST_NODE_TYPES.Literal && typeof expression.value === "number") {
 		expressionKey = `literal:${normalizeZero(expression.value)}`;
 	} else if (expression.type === AST_NODE_TYPES.Identifier) {
-		if (expression.name === "undefined") expressionKey = "undefined";
-		else expressionKey = `id:${expression.name}`;
+		expressionKey = expression.name === "undefined" ? "undefined" : `id:${expression.name}`;
 	} else if (constValue === undefined) {
 		expressionKey = `complex:${sourceText}`;
 		isComplex = true;

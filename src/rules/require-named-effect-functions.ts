@@ -88,9 +88,9 @@ function getHookName(callExpression: CallExpression): string | undefined {
 }
 
 interface ResolvedFunction {
+	readonly isAsync: boolean;
 	readonly node: TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression | TSESTree.FunctionDeclaration;
 	readonly type: "arrow" | "function-expression" | "function-declaration";
-	readonly isAsync: boolean;
 }
 
 function findVariableInScope(identifier: TSESTree.Identifier, scope: unknown): unknown {

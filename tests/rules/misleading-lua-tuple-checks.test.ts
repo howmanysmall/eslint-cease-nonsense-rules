@@ -1,8 +1,11 @@
 import { describe, setDefaultTimeout } from "bun:test";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import tsParser from "@typescript-eslint/parser";
+import { fileURLToPath } from "bun";
 import { RuleTester } from "eslint";
 import rule from "../../src/rules/misleading-lua-tuple-checks";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 setDefaultTimeout(30_000);
 

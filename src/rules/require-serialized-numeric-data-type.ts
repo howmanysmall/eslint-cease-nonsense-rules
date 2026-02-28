@@ -7,17 +7,16 @@ import { createRule } from "../utilities/create-rule";
  */
 export interface RequireSerializedNumericDataTypeOptions {
 	/**
+	 * Function names to check for type arguments when mode is "type-arguments".
+	 * @default ["registerComponent"]
+	 */
+	readonly functionNames?: ReadonlyArray<string>;
+	/**
 	 * Check mode:
 	 * - `"type-arguments"` (default): Only check type arguments of function calls
 	 * - `"all"`: Check all `number` type annotations globally
 	 */
 	readonly mode?: "type-arguments" | "all";
-
-	/**
-	 * Function names to check for type arguments when mode is "type-arguments".
-	 * @default ["registerComponent"]
-	 */
-	readonly functionNames?: ReadonlyArray<string>;
 
 	/**
 	 * When true, resolves type aliases using TypeScript's type checker.

@@ -10,10 +10,10 @@ import { selectorTypeToMessageString } from "./shared";
 import type { Context, NormalizedSelector, ValidatorFunction } from "./types";
 
 interface ParserServicesWithTypeInformation {
+	getTypeAtLocation: (node: TSESTree.Node) => Type;
 	program: {
 		getTypeChecker: () => TypeChecker;
 	};
-	getTypeAtLocation: (node: TSESTree.Node) => Type;
 }
 
 interface TypeInfo {

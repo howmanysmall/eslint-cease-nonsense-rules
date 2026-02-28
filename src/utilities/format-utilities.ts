@@ -7,10 +7,10 @@ import { formatSync } from "../oxfmt-sync";
 import type { FormatOptions } from "../oxfmt-worker";
 
 export interface Difference {
-	readonly operation: "INSERT" | "DELETE" | "REPLACE";
-	readonly offset: number;
 	readonly deleteText?: string;
 	readonly insertText?: string;
+	readonly offset: number;
+	readonly operation: "INSERT" | "DELETE" | "REPLACE";
 }
 
 let cachedConfig: FormatOptions | undefined;

@@ -39,12 +39,6 @@ export interface NoUselessUseEffectOptions {
 	readonly propertyCallbackPrefixes?: ReadonlyArray<string>;
 
 	/**
-	 * State hook names that return [value, setter] pairs.
-	 * @default ["useState", "useReducer"]
-	 */
-	readonly stateHooks?: ReadonlyArray<string>;
-
-	/**
 	 * Ref hook names that return mutable ref objects.
 	 * @default ["useRef"]
 	 */
@@ -133,6 +127,12 @@ export interface NoUselessUseEffectOptions {
 	 * @default true
 	 */
 	readonly reportResetState?: boolean;
+
+	/**
+	 * State hook names that return [value, setter] pairs.
+	 * @default ["useState", "useReducer"]
+	 */
+	readonly stateHooks?: ReadonlyArray<string>;
 }
 
 type Options = [NoUselessUseEffectOptions?];
@@ -141,7 +141,6 @@ interface NormalizedOptions {
 	readonly environment: EnvironmentMode;
 	readonly hooks: ReadonlySet<string>;
 	readonly propertyCallbackPrefixes: ReadonlySet<string>;
-	readonly stateHooks: ReadonlySet<string>;
 	readonly refHooks: ReadonlySet<string>;
 	readonly reportAdjustState: boolean;
 	readonly reportDerivedState: boolean;
@@ -157,6 +156,7 @@ interface NormalizedOptions {
 	readonly reportNotifyParent: boolean;
 	readonly reportPassRefToParent: boolean;
 	readonly reportResetState: boolean;
+	readonly stateHooks: ReadonlySet<string>;
 }
 
 const DEFAULT_OPTIONS: Required<NoUselessUseEffectOptions> = {
@@ -186,18 +186,18 @@ type FunctionNode = TSESTree.FunctionDeclaration | TSESTree.FunctionExpression |
 interface FunctionContext {
 	readonly functionId: number;
 	readonly isCustomHook: boolean;
-	propertyObjectName?: string;
 	readonly propertyCallbackIdentifiers: Set<string>;
+	propertyObjectName?: string;
 }
 
 interface EffectInfo {
-	readonly ownerFunctionId: number;
-	readonly node: TSESTree.CallExpression;
-	readonly setterCalls: Set<string>;
 	readonly depIdentifiers: Set<string>;
-	readonly statements: ReadonlyArray<TSESTree.Statement>;
 	readonly hasNonSetterSideEffect: boolean;
 	readonly hasReturnWithCleanup: boolean;
+	readonly node: TSESTree.CallExpression;
+	readonly ownerFunctionId: number;
+	readonly setterCalls: Set<string>;
+	readonly statements: ReadonlyArray<TSESTree.Statement>;
 }
 
 function normalizeOptions(raw: NoUselessUseEffectOptions | undefined): NormalizedOptions {

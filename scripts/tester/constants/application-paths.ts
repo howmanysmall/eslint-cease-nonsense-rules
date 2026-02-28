@@ -9,8 +9,8 @@ const WHITESPACE_REGEXP = /\s+/g;
 
 const USE_UNNAMED = new Set(["", ".", ".."]);
 
-function makeSafeFileName(name: string): string {
-	const out = name.trim().replaceAll(NULL_REGEXP, "-").replaceAll(WHITESPACE_REGEXP, " ").trim();
+function makeSafeFileName(fileName: string): string {
+	const out = fileName.trim().replaceAll(NULL_REGEXP, "-").replaceAll(WHITESPACE_REGEXP, " ").trim();
 	if (USE_UNNAMED.has(out) || out.includes("/") || out.includes("\\") || out.includes("\0")) return "unnamed";
 	return out;
 }

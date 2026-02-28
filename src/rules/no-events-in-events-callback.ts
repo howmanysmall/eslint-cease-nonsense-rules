@@ -18,8 +18,8 @@ interface CallbackState {
 }
 
 interface FunctionState {
-	readonly callbackState: CallbackState | undefined;
 	readonly callbackDepth: number;
+	readonly callbackState: CallbackState | undefined;
 }
 
 type CallbackFunction = TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression;
