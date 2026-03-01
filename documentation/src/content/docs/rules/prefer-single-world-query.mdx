@@ -25,13 +25,13 @@ lookups on the same entity and merges them.
 
 ## Optimization Path
 
-	<Steps>
-	1. **Identify Consecutive Calls**
-	   Locate multiple `world.get(entity, Component)` or `world.has(entity, Component)` calls in the same block.
-	2. **Verify Entity & World** Ensure all calls are targeting the exact same `world` and `entity` expressions.
-	3. **Check Usage (for .has)** For `has()` calls, verify they are used together (e.g., `hasA && hasB`).
-	4. **Merge Calls** Replace the multiple lines with a single destructuring call:
-	   `const [a, b] = world.get(entity, CompA, CompB)`. {/* oxfmt-ignore */}
+    <Steps>
+    1. **Identify Consecutive Calls**
+       Locate multiple `world.get(entity, Component)` or `world.has(entity, Component)` calls in the same block.
+    2. **Verify Entity & World** Ensure all calls are targeting the exact same `world` and `entity` expressions.
+    3. **Check Usage (for .has)** For `has()` calls, verify they are used together (e.g., `hasA && hasB`).
+    4. **Merge Calls** Replace the multiple lines with a single destructuring call:
+       `const [a, b] = world.get(entity, CompA, CompB)`. {/* oxfmt-ignore */}
 
 </Steps>
 
@@ -44,9 +44,9 @@ lookups on the same entity and merges them.
 
     	<Code
     		code={[
-			"// Multiple lookups",
-			"const position = world.get(entity, Position);",
-			"const velocity = world.get(entity, Velocity);",
+    		"// Multiple lookups",
+    		"const position = world.get(entity, Position);",
+    		"const velocity = world.get(entity, Velocity);",
     			"",
     			"const hasHealth = world.has(entity, Health);",
     			"const hasMana = world.has(entity, Mana);",
@@ -55,14 +55,14 @@ lookups on the same entity and merges them.
     		lang="tsx"
     	/>
     </TabItem>
-	<TabItem label="✅ Correct" icon="check">
-		### Grouped Queries
-		Use the multi-argument overloads to keep it to one lookup.
+    <TabItem label="✅ Correct" icon="check">
+    	### Grouped Queries
+    	Use the multi-argument overloads to keep it to one lookup.
 
     	<Code
     		code={[
-			"// Single lookup",
-			"const [position, velocity] = world.get(entity, Position, Velocity);",
+    		"// Single lookup",
+    		"const [position, velocity] = world.get(entity, Position, Velocity);",
     			"",
     			"// Combined existence check",
     			"const hasBoth = world.has(entity, Health, Mana);",

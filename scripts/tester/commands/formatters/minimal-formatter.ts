@@ -1,6 +1,8 @@
 // oxlint-disable no-array-callback-reference
 import { blue, bold, cyan, dim, green, magenta, yellow } from "picocolors";
+
 import { formatSeverity, isRecord } from "./reused";
+
 import type { RuleEntry, RuleFormatter } from "./types";
 
 function mapEntries([key, value]: [string, unknown]): string {

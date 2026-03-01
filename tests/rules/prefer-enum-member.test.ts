@@ -1,9 +1,14 @@
 import { describe, setDefaultTimeout } from "bun:test";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import parser from "@typescript-eslint/parser";
-import type { InvalidTestCase, ValidTestCase } from "@typescript-eslint/rule-tester";
 import { RuleTester } from "@typescript-eslint/rule-tester";
+import { fileURLToPath } from "bun";
+
 import rule from "../../src/rules/prefer-enum-member";
+
+import type { InvalidTestCase, ValidTestCase } from "@typescript-eslint/rule-tester";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Type-aware tests have cold-start overhead from TypeScript project service initialization
 setDefaultTimeout(30_000);

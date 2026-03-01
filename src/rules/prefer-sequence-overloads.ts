@@ -1,12 +1,14 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import type { TSESTree } from "@typescript-eslint/utils";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
+
 import { createRule } from "../utilities/create-rule";
 
+import type { TSESTree } from "@typescript-eslint/utils";
+
 interface SequenceDescriptor {
-	readonly sequenceName: "ColorSequence" | "NumberSequence";
 	readonly keypointName: "ColorSequenceKeypoint" | "NumberSequenceKeypoint";
+	readonly sequenceName: "ColorSequence" | "NumberSequence";
 }
 
 interface KeypointData {

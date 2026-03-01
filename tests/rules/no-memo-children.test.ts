@@ -1,8 +1,12 @@
 import { describe, setDefaultTimeout } from "bun:test";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import tsParser from "@typescript-eslint/parser";
+import { fileURLToPath } from "bun";
 import { RuleTester } from "eslint";
+
 import rule from "../../src/rules/no-memo-children";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Type-aware tests have cold-start overhead from TypeScript project service initialization
 setDefaultTimeout(30_000);

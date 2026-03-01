@@ -1,9 +1,11 @@
 import path from "node:path";
-import type { Rule } from "eslint";
-import type { Comment } from "estree";
 import { parseSync } from "oxc-parser";
+
 import { hasCodeLines } from "../recognizers/code-recognizer";
 import { createJavaScriptDetectors } from "../recognizers/javascript-footprint";
+
+import type { Rule } from "eslint";
+import type { Comment } from "estree";
 
 const EXCLUDED_STATEMENTS = new Set(["BreakStatement", "LabeledStatement", "ContinueStatement"]);
 
@@ -13,8 +15,8 @@ interface CommentWithLocation extends Comment {
 }
 
 interface CommentGroup {
-	readonly value: string;
 	readonly comments: ReadonlyArray<CommentWithLocation>;
+	readonly value: string;
 }
 
 const detectors = createJavaScriptDetectors();
@@ -131,15 +133,15 @@ function isExcludedLiteral(expression: { type: string; value?: unknown }): boole
 }
 
 interface ParsedExpression {
-	type: string;
 	operator?: string;
+	type: string;
 	value?: unknown;
 }
 
 interface ParsedStatement {
-	type: string;
 	argument?: { type: string } | undefined;
 	expression?: ParsedExpression;
+	type: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

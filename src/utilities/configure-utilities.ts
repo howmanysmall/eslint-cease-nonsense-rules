@@ -1,3 +1,5 @@
+import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../rules/no-useless-use-spring";
+
 import type { BanInstancesOptions } from "../rules/ban-instances";
 import type { ComplexityConfiguration } from "../rules/enforce-ianitor-check-type";
 import type { NamingConventionOptions } from "../rules/naming-convention";
@@ -12,7 +14,6 @@ import type { NoUnusedImportsOptions } from "../rules/no-unused-imports";
 import type { NoUnusedUseMemoOptions } from "../rules/no-unused-use-memo";
 import type { NoUselessUseEffectOptions } from "../rules/no-useless-use-effect";
 import type { NoUselessUseSpringOptions } from "../rules/no-useless-use-spring";
-import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../rules/no-useless-use-spring";
 import type { PreferEnumItemOptions } from "../rules/prefer-enum-item";
 import type { PreventAbbreviationsOptions } from "../rules/prevent-abbreviations";
 import type { RequireModuleLevelInstantiationOptions } from "../rules/require-module-level-instantiation";

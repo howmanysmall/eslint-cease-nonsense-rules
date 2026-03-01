@@ -1,23 +1,24 @@
 import { TSESTree } from "@typescript-eslint/types";
-import type { TypeChecker, TypeNode } from "typescript";
+
 import { createRule } from "../utilities/create-rule";
+
+import type { TypeChecker, TypeNode } from "typescript";
 
 /**
  * Configuration options for the require-serialized-numeric-data-type rule.
  */
 export interface RequireSerializedNumericDataTypeOptions {
 	/**
+	 * Function names to check for type arguments when mode is "type-arguments".
+	 * @default ["registerComponent"]
+	 */
+	readonly functionNames?: ReadonlyArray<string>;
+	/**
 	 * Check mode:
 	 * - `"type-arguments"` (default): Only check type arguments of function calls
 	 * - `"all"`: Check all `number` type annotations globally
 	 */
 	readonly mode?: "type-arguments" | "all";
-
-	/**
-	 * Function names to check for type arguments when mode is "type-arguments".
-	 * @default ["registerComponent"]
-	 */
-	readonly functionNames?: ReadonlyArray<string>;
 
 	/**
 	 * When true, resolves type aliases using TypeScript's type checker.

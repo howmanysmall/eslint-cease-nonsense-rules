@@ -1,10 +1,12 @@
 import { DefinitionType } from "@typescript-eslint/scope-manager";
 import { TSESTree } from "@typescript-eslint/types";
-import type { TSESLint } from "@typescript-eslint/utils";
 
 import { getReactSources, isReactImport } from "../constants/react-sources";
-import type { EnvironmentMode } from "../types/environment-mode";
 import { createRule } from "../utilities/create-rule";
+
+import type { TSESLint } from "@typescript-eslint/utils";
+
+import type { EnvironmentMode } from "../types/environment-mode";
 
 type MessageIds = "noNewInUseMemo";
 
@@ -26,9 +28,9 @@ interface NormalizedOptions {
 }
 
 interface FunctionInfo {
-	readonly id: number;
 	readonly callees: Set<number>;
 	readonly callIdentifiers: Array<TSESTree.Identifier>;
+	readonly id: number;
 }
 
 interface TrackedNewExpression {
@@ -196,7 +198,13 @@ function resolveIdentifierToFunctionIds(
 	const variable = findVariable(context, identifier);
 	if (variable === undefined) return new Set<number>();
 
-	return resolveVariableToFunctionIds(context, variable, functionInfosByNode, cache, new Set<TSESLint.Scope.Variable>());
+	return resolveVariableToFunctionIds(
+		context,
+		variable,
+		functionInfosByNode,
+		cache,
+		new Set<TSESLint.Scope.Variable>(),
+	);
 }
 
 function collectReachableFunctions(
@@ -370,12 +378,12 @@ const noNewInstanceInUseMemo = createRule<Options, MessageIds>({
 				exitFunction();
 			},
 
-				CallExpression(node): void {
-					if (node.callee.type === TSESTree.AST_NODE_TYPES.Identifier) recordFunctionCall(node.callee);
+			CallExpression(node): void {
+				if (node.callee.type === TSESTree.AST_NODE_TYPES.Identifier) recordFunctionCall(node.callee);
 
-					if (!isUseMemoCall(node, memoIdentifiers, reactNamespaces)) return;
-					const [callback] = node.arguments;
-					if (callback === undefined) return;
+				if (!isUseMemoCall(node, memoIdentifiers, reactNamespaces)) return;
+				const [callback] = node.arguments;
+				if (callback === undefined) return;
 
 				if (callback.type === TSESTree.AST_NODE_TYPES.Identifier) {
 					useMemoCallbackIdentifiers.push(callback);

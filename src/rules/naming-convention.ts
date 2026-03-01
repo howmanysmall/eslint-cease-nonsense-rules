@@ -1,10 +1,13 @@
 import { PatternVisitor, ScopeType } from "@typescript-eslint/scope-manager";
-import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { isIdentifierPart, isIdentifierStart, ScriptTarget } from "typescript";
+
 import { createRule } from "../utilities/create-rule";
-import type { Context, Selector, ValidatorFunction } from "../utilities/naming-convention-utilities";
 import { Modifiers, parseOptions, SCHEMA } from "../utilities/naming-convention-utilities";
+
+import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+
+import type { Context, Selector, ValidatorFunction } from "../utilities/naming-convention-utilities";
 
 export type MessageIds =
 	| "doesNotMatchFormat"
@@ -585,7 +588,9 @@ export default createRule<Options, MessageIds>({
 
 function getIdentifiersFromPattern(pattern: TSESTree.DestructuringPattern): Array<TSESTree.Identifier> {
 	const identifiers: Array<TSESTree.Identifier> = [];
-	const visitor = new PatternVisitor({}, pattern, (identifier) => identifiers.push(identifier));
+	const visitor = new PatternVisitor({}, pattern, (identifier) => {
+		identifiers.push(identifier);
+	});
 	visitor.visit(pattern);
 	return identifiers;
 }

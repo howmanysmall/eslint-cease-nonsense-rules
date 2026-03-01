@@ -1,8 +1,10 @@
 import { TSESTree } from "@typescript-eslint/types";
-import type { TSESLint } from "@typescript-eslint/utils";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
+
 import { createRule } from "../utilities/create-rule";
+
+import type { TSESLint } from "@typescript-eslint/utils";
 
 const FUNCTION_DECLARATIONS = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.FunctionExpression,
@@ -17,9 +19,9 @@ const UNSTABLE_VALUES = new Set<TSESTree.AST_NODE_TYPES>([
 ]);
 
 export interface HookEntry {
-	readonly name: string;
 	readonly closureIndex?: number;
 	readonly dependenciesIndex?: number;
+	readonly name: string;
 	readonly stableResult?: boolean | number | ReadonlyArray<number> | ReadonlyArray<string>;
 }
 
@@ -51,18 +53,18 @@ interface VariableLike {
 }
 
 interface DependencyInfo {
+	readonly depth: number;
 	readonly name: string;
 	readonly node: TSESTree.Node;
-	readonly depth: number;
 }
 
 interface CaptureInfo {
+	readonly depth: number;
 	readonly forceDependency: boolean;
 	readonly name: string;
 	readonly node: TSESTree.Node;
 	readonly usagePath: string;
 	readonly variable: VariableLike | undefined;
-	readonly depth: number;
 }
 
 const DEFAULT_HOOKS = new Map<string, HookConfig>([
@@ -191,8 +193,7 @@ function getRootIdentifier(node: TSESTree.Node): TSESTree.Identifier | undefined
 		current.type === TSESTree.AST_NODE_TYPES.MemberExpression ||
 		current.type === TSESTree.AST_NODE_TYPES.TSNonNullExpression
 	) {
-		if (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) current = current.object;
-		else current = current.expression;
+		current = current.type === TSESTree.AST_NODE_TYPES.MemberExpression ? current.object : current.expression;
 	}
 
 	return current.type === TSESTree.AST_NODE_TYPES.Identifier ? current : undefined;
@@ -334,7 +335,7 @@ function isStableValue(
 				}
 			}
 
-			const variableDefinition = variable.defs.find((definition) => definition.node === node);
+			const variableDefinition = variable.defs.find((matchedDefinition) => matchedDefinition.node === node);
 			if (variableDefinition && variableDefinition.node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator) {
 				const declarationParent = (variableDefinition.node as TSESTree.VariableDeclarator).parent?.parent;
 				if (
@@ -755,7 +756,7 @@ const useExhaustiveDependencies = createRule<Options, MessageIds>({
 					const dependencyName = dependencyRootIdentifier.name;
 
 					const matchingCaptures = captures.filter(
-						({ node }) => getRootIdentifier(node)?.name === dependencyName,
+						(capture) => getRootIdentifier(capture.node)?.name === dependencyName,
 					);
 
 					if (matchingCaptures.length === 0) {

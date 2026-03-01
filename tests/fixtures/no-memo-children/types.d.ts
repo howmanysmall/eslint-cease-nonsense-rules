@@ -4,9 +4,9 @@ declare module "@rbxts/react" {
 	export type ReactNode = Element | string | number | boolean | null | undefined;
 
 	export interface Element {
-		type: unknown;
-		props: unknown;
 		key: unknown;
+		props: unknown;
+		type: unknown;
 	}
 
 	export type ComponentType<Props = object> = (props: Props) => Element | null;
@@ -26,9 +26,9 @@ declare module "react" {
 	export type ReactNode = Element | string | number | boolean | null | undefined;
 
 	export interface Element {
-		type: unknown;
-		props: unknown;
 		key: unknown;
+		props: unknown;
+		type: unknown;
 	}
 
 	export type ComponentType<Props = object> = (props: Props) => Element | null;

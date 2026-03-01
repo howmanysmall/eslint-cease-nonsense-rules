@@ -1,8 +1,9 @@
+import { MetaSelectors, Modifiers, PredefinedFormats, Selectors, TypeModifiers, UnderscoreOptions } from "./enums";
+import { getEnumNames } from "./get-enum-names";
+
 import type { JSONSchema } from "@typescript-eslint/utils";
 
 import type { IndividualAndMetaSelectorsString, ModifiersString } from "./enums";
-import { MetaSelectors, Modifiers, PredefinedFormats, Selectors, TypeModifiers, UnderscoreOptions } from "./enums";
-import { getEnumNames } from "./get-enum-names";
 
 const $DEFS: Record<string, JSONSchema.JSONSchema4> = {
 	formatOptionsConfig: {

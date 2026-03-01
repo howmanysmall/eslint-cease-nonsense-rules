@@ -1,4 +1,5 @@
 import { workerData } from "node:worker_threads";
+
 import type { FormatOptions } from "oxfmt";
 
 export type { FormatOptions } from "oxfmt";

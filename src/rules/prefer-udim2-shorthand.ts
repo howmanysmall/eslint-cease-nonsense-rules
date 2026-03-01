@@ -1,11 +1,12 @@
 import { TSESTree } from "@typescript-eslint/utils";
+
 import type { Rule } from "eslint";
 
 interface ArgumentsCollection {
-	readonly scaleXText: string;
 	readonly offsetXText: string;
-	readonly scaleYText: string;
 	readonly offsetYText: string;
+	readonly scaleXText: string;
+	readonly scaleYText: string;
 }
 
 type RuleContext = Rule.RuleContext;

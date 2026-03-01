@@ -4,6 +4,7 @@ import { exit, platform } from "node:process";
 import { Command } from "@jsr/cliffy__command";
 import console from "consola";
 import { cyan, gray, green, magenta, red, yellow } from "picocolors";
+
 import getRulesCommand from "./tester/commands/get-rules-command";
 import listRulesCommand from "./tester/commands/list-rules-command";
 import testLiveCommand from "./tester/commands/test-live-command";

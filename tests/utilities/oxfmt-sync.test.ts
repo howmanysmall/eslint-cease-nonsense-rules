@@ -1,4 +1,5 @@
 import { afterAll, describe, expect, it } from "bun:test";
+
 import { __testingResolveWorkerPath, formatSync, terminateWorker } from "../../src/oxfmt-sync";
 
 describe("oxfmt-sync", () => {

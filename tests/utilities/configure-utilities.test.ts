@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+
 import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../../src/rules/no-useless-use-spring";
 import {
 	createBanInstancesOptions,

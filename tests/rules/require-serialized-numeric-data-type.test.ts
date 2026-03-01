@@ -1,6 +1,7 @@
 import { describe } from "bun:test";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
+
 import rule from "../../src/rules/require-serialized-numeric-data-type";
 
 const ruleTester = new RuleTester({

@@ -14,8 +14,8 @@ This rule is similar to ESLint's built-in `no-constant-condition` rule, but it m
 call expressions (for example `coroutine.yield`) as loop exits via `loopExitCalls`.
 
 <Aside type="tip" title="When to use this rule">
-	Use this rule when you want to catch accidental constant conditions in `if` statements and loops without a loop exit,
-	while allowing intentional infinite loops with proper exit mechanisms.
+	Use this rule when you want to catch accidental constant conditions in `if` statements and loops without a loop
+	exit, while allowing intentional infinite loops with proper exit mechanisms.
 </Aside>
 
 ## Options
@@ -45,58 +45,58 @@ call expressions (for example `coroutine.yield`) as loop exits via `loopExitCall
     			"// if statement with constant condition",
     			'if (true) { doSomething(); }',
     			'',
-			"// while loop without a loop exit",
-			'while (true) { doSomething(); }',
+    		"// while loop without a loop exit",
+    		'while (true) { doSomething(); }',
     			'',
-			"// for loop with constant condition and no loop exit",
-			'for (;; true) { doSomething(); }',
+    		"// for loop with constant condition and no loop exit",
+    		'for (;; true) { doSomething(); }',
     			'',
-			"// do-while loop without a loop exit",
-			'do { doSomething(); } while (true);',
+    		"// do-while loop without a loop exit",
+    		'do { doSomething(); } while (true);',
     		].join("\n")}
     		lang="tsx"
     	/>
     </TabItem>
     <TabItem label="✅ Correct" icon="check">
     	### Valid Patterns
-		These patterns are allowed because they either have proper exit conditions or intentional loop exits.
+    	These patterns are allowed because they either have proper exit conditions or intentional loop exits.
 
     	<Code
     		code={[
     			"// Variable condition is fine",
     			'while (condition) { doSomething(); }',
     			'',
-			"// Loop with break is allowed",
-			'while (true) {',
-			'\tif (shouldStop) break;',
-			'\tdoSomething();',
-			'}',
-			'',
-			"// Loop with return is allowed",
-			'function run() {',
-			'\twhile (true) {',
-			'\t\tif (shouldStop) return;',
-			'\t\tdoSomething();',
-			'\t}',
-			'}',
-			'',
-			"// Configured exit call (with loopExitCalls)",
-			'while (true) {',
-			'\tcoroutine.yield();',
-			'\tdoSomething();',
-			'}',
-			'',
-			"// Labeled break targeting this loop",
-			'outer: while (true) {',
-			'\tif (done) break outer;',
-			'\tdoSomething();',
-			'}',
-			'',
-			"// For loop with break",
-			'for (;; true) {',
-			'\tif (condition) break;',
-			'\tdoSomething();',
-			'}',
+    		"// Loop with break is allowed",
+    		'while (true) {',
+    		'\tif (shouldStop) break;',
+    		'\tdoSomething();',
+    		'}',
+    		'',
+    		"// Loop with return is allowed",
+    		'function run() {',
+    		'\twhile (true) {',
+    		'\t\tif (shouldStop) return;',
+    		'\t\tdoSomething();',
+    		'\t}',
+    		'}',
+    		'',
+    		"// Configured exit call (with loopExitCalls)",
+    		'while (true) {',
+    		'\tcoroutine.yield();',
+    		'\tdoSomething();',
+    		'}',
+    		'',
+    		"// Labeled break targeting this loop",
+    		'outer: while (true) {',
+    		'\tif (done) break outer;',
+    		'\tdoSomething();',
+    		'}',
+    		'',
+    		"// For loop with break",
+    		'for (;; true) {',
+    		'\tif (condition) break;',
+    		'\tdoSomething();',
+    		'}',
     		].join("\n")}
     		lang="tsx"
     	/>
@@ -111,7 +111,8 @@ call expressions (for example `coroutine.yield`) as loop exits via `loopExitCall
 		Evaluates expressions to determine if they always result in the same value.
 	</Card>
 	<Card title="Exit Path Analysis" icon="target">
-		Traces loop exits (`break`, `return`) and configurable exit calls, and verifies labeled breaks target the same loop.
+		Traces loop exits (`break`, `return`) and configurable exit calls, and verifies labeled breaks target the same
+		loop.
 	</Card>
 	<Card title="Nested Loop Aware" icon="seti:folder">
 		Correctly handles nested loops and labeled breaks.

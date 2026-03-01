@@ -69,7 +69,6 @@
 			"editor.formatOnSave": true,
 		},
 
-		"biome.configurationPath": "./biome.jsonc",
 		"biome.enabled": true,
 		"biome.requireConfiguration": true,
 		"biome.suggestInstallingGlobally": true,
@@ -100,6 +99,9 @@
 			"*.code-workspace": "jsonc",
 		},
 
+		"js/ts.experimental.useTsgo": true,
+		"js/ts.tsserver.experimental.enableProjectDiagnostics": true,
+
 		"material-icon-theme.activeIconPack": "react",
 		"material-icon-theme.files.customClones": [],
 		"material-icon-theme.folders.associations": {
@@ -121,8 +123,5 @@
 		"oxc.lint.run": "onType",
 		"oxc.typeAware": true,
 		"oxc.unusedDisableDirectives": "deny",
-
-		"typescript.experimental.useTsgo": true,
-		"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	},
 }

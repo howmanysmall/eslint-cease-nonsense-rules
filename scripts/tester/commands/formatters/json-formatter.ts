@@ -1,5 +1,7 @@
 import { blue, bold, cyan, dim, green, magenta, yellow } from "picocolors";
+
 import { formatSeverity } from "./reused";
+
 import type { RuleEntry, RuleFormatter } from "./types";
 
 function colorizeValue(value: unknown, indent: string): string {

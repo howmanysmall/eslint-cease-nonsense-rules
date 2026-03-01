@@ -13,8 +13,8 @@ Replace verbose constructor/method patterns with configured shorthands.
 
 ## Rule Details :badge[Advanced]{variant=caution}
 
-This rule matches constructor or method calls against patterns you define and rewrites them to simpler equivalents.
-It supports captures, optional arguments, wildcards, and scope-aware fixes.
+This rule matches constructor or method calls against patterns you define and rewrites them to simpler equivalents. It
+supports captures, optional arguments, wildcards, and scope-aware fixes.
 
 <Aside type="caution" title="Complexity Note">
 	This is an orchestration rule. You define the patterns and replacements, and the rule keeps the rewrite consistent
@@ -105,9 +105,9 @@ Put the most specific patterns first so they win over general fallbacks. For exa
     		lang="tsx"
     	/>
     </TabItem>
-	<TabItem label="Vector2/3" icon="bolt">
-		### Uniform Vectors
-		Replace identical coordinates with a uniform helper.
+    <TabItem label="Vector2/3" icon="bolt">
+    	### Uniform Vectors
+    	Replace identical coordinates with a uniform helper.
 
     	<Code
     		code={[

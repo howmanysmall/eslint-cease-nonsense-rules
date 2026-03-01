@@ -1,6 +1,7 @@
 import { describe } from "bun:test";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
+
 import rule from "../../src/rules/no-underscore-react-props";
 
 const ruleTester = new RuleTester({

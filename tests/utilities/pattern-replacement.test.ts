@@ -1,7 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import type { TSESTree } from "@typescript-eslint/types";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
+
 import { generateReplacement, getReplacementIdentifier } from "../../src/utilities/pattern-replacement";
+
+import type { TSESTree } from "@typescript-eslint/types";
+
 import type { CapturedValue, ParsedReplacement } from "../../src/utilities/pattern-replacement/pattern-types";
 
 describe("pattern-replacement utilities", () => {

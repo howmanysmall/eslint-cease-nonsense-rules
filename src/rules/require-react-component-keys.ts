@@ -1,6 +1,8 @@
 import { TSESTree } from "@typescript-eslint/types";
-import type { TSESLint } from "@typescript-eslint/utils";
+
 import { createRule } from "../utilities/create-rule";
+
+import type { TSESLint } from "@typescript-eslint/utils";
 
 export interface ReactKeysOptions {
 	readonly allowRootKeys?: boolean;

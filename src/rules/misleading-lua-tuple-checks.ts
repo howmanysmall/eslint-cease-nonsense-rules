@@ -1,8 +1,10 @@
-import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { isArrayBindingOrAssignmentPattern, isTypeReference } from "ts-api-utils";
-import type { Type, TypeChecker } from "typescript";
+
 import { createRule } from "../utilities/create-rule";
+
+import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+import type { Type, TypeChecker } from "typescript";
 
 type MessageIds = "misleadingLuaTupleCheck" | "luaTupleDeclaration";
 
@@ -191,10 +193,10 @@ function ensureArrayDestructuring(
 	if (isArrayBindingOrAssignmentPattern(esNode)) return;
 
 	const { sourceCode } = context;
-	function fixer(fixer: TSESLint.RuleFixer): TSESLint.RuleFix {
+	function fixer(ruleFixer: TSESLint.RuleFixer): TSESLint.RuleFix {
 		let replacement = `[${leftNode.name}]`;
 		if (leftNode.typeAnnotation) replacement += sourceCode.getText(leftNode.typeAnnotation);
-		return fixer.replaceText(leftNode, replacement);
+		return ruleFixer.replaceText(leftNode, replacement);
 	}
 
 	context.report({

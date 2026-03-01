@@ -1,6 +1,8 @@
 import { regex } from "arktype";
-import type { IndividualAndMetaSelectorsString, MetaSelectorsString } from "./enums";
+
 import { MetaSelectors } from "./enums";
+
+import type { IndividualAndMetaSelectorsString, MetaSelectorsString } from "./enums";
 
 const ALPHABETICAL = regex("([A-Z])", "g");
 

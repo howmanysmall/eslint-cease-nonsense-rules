@@ -1,6 +1,7 @@
 import { describe } from "bun:test";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
+
 import rule from "../../src/rules/use-exhaustive-dependencies";
 
 const ruleTester = new RuleTester({
@@ -16,6 +17,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("use-exhaustive-dependencies", () => {
+	// @ts-expect-error - RuleTester types are incorrect for suggestions
 	ruleTester.run("use-exhaustive-dependencies", rule, {
 		invalid: [
 			// Missing dependency
@@ -1286,6 +1288,7 @@ function Component() {
 		],
 	});
 
+	// @ts-expect-error - RuleTester types are incorrect for suggestions
 	ruleTester.run("use-exhaustive-dependencies", rule, {
 		invalid: [
 			// Custom hook with missing dependency

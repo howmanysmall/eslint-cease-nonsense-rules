@@ -44,10 +44,10 @@ type ValidateWhenClause<Match extends string, When> = {
 
 // Branded pattern type - requires going through pattern()
 export interface Pattern<Match extends string = string> {
-	readonly [PatternBrand]: Match;
 	readonly match: Match;
 	readonly replacement: string;
 	readonly when?: Readonly<Partial<Record<ExtractCaptures<Match>, WhenCondition>>>;
+	readonly [PatternBrand]: Match;
 }
 
 // // Input type for pattern() helper (without brand)

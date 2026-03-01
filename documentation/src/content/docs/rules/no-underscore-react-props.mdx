@@ -25,29 +25,30 @@ This rule bans underscore-prefixed props like `_tooltipGradient` in JSX.
 	<TabItem label="❌ Incorrect" icon="close">
 		### Underscore-Prefixed Props
 
-		<Code
-			code={[
-				"<InventoryItemTooltip",
-				'\tkey="inventory-tooltip"',
-				"\t_tooltipGradient={tooltipGradient}",
-				"/>",
-			].join("\n")}
-			lang="tsx"
-		/>
-	</TabItem>
-	<TabItem label="✅ Correct" icon="check">
-		### Standard Prop Names
+    	<Code
+    		code={[
+    			"<InventoryItemTooltip",
+    			'\tkey="inventory-tooltip"',
+    			"\t_tooltipGradient={tooltipGradient}",
+    			"/>",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+    <TabItem label="✅ Correct" icon="check">
+    	### Standard Prop Names
 
-		<Code
-			code={[
-				"<InventoryItemTooltip",
-				'\tkey="inventory-tooltip"',
-				"\ttooltipGradient={tooltipGradient}",
-				"/>",
-			].join("\n")}
-			lang="tsx"
-		/>
-	</TabItem>
+    	<Code
+    		code={[
+    			"<InventoryItemTooltip",
+    			'\tkey="inventory-tooltip"',
+    			"\ttooltipGradient={tooltipGradient}",
+    			"/>",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </TabItem>
+
 </Tabs>
 
 ## Related Rules

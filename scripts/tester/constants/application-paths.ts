@@ -1,7 +1,8 @@
-import type { Paths } from "env-paths";
 import envPaths from "env-paths";
 
 import { name } from "./package-constants";
+
+import type { Paths } from "env-paths";
 
 // oxlint-disable-next-line no-control-regex
 const NULL_REGEXP = /[/\\\0]/g;
@@ -9,8 +10,8 @@ const WHITESPACE_REGEXP = /\s+/g;
 
 const USE_UNNAMED = new Set(["", ".", ".."]);
 
-function makeSafeFileName(name: string): string {
-	const out = name.trim().replaceAll(NULL_REGEXP, "-").replaceAll(WHITESPACE_REGEXP, " ").trim();
+function makeSafeFileName(fileName: string): string {
+	const out = fileName.trim().replaceAll(NULL_REGEXP, "-").replaceAll(WHITESPACE_REGEXP, " ").trim();
 	if (USE_UNNAMED.has(out) || out.includes("/") || out.includes("\\") || out.includes("\0")) return "unnamed";
 	return out;
 }

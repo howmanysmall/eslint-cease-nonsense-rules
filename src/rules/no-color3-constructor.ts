@@ -1,6 +1,7 @@
 import { TSESTree } from "@typescript-eslint/types";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
+
 import { createRule } from "../utilities/create-rule";
 
 const isNumericLiteralNode = Compile(
@@ -15,8 +16,8 @@ function mapComponentToRgbRange(value: number): number {
 }
 
 interface NumericComponentCollection {
-	readonly components: ReadonlyArray<number>;
 	readonly allZero: boolean;
+	readonly components: ReadonlyArray<number>;
 }
 
 function collectNumericComponents(parameters: ReadonlyArray<unknown>): NumericComponentCollection | undefined {

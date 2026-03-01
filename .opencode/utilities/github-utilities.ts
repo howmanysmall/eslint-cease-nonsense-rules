@@ -4,15 +4,19 @@ import arkenv from "arkenv";
 import { type } from "arktype";
 import { stringifyINI, stringifyJSON5, stringifyTOML } from "confbox";
 import { XMLBuilder } from "fast-xml-parser";
-import type { ObjectToCamel } from "ts-case-convert";
 import { objectToCamel } from "ts-case-convert";
+
+import type { ObjectToCamel } from "ts-case-convert";
 
 const environment = arkenv(
 	{
 		"GITHUB_TOKEN?": "/^gh[pousr]_|^github_pat_/",
 		"NODE_ENV?": "string",
 	},
-	Bun.env,
+	{
+		env: Bun.env,
+		onUndeclaredKey: "ignore",
+	},
 );
 
 const IS_DEVELOPMENT = environment.NODE_ENV !== "production";
@@ -182,6 +186,9 @@ function stringify(data: object, formatType: NonRawFormatType): string {
 
 		case FormatType.Json5:
 			return stringifyJSON5(data);
+
+		default:
+			throw new Error(`Unsupported format type: ${String(formatType)}`);
 	}
 }
 

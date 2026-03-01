@@ -23,10 +23,10 @@ function detectIndentation(content: string): string {
  * @param callback - A function that modifies the parsed JSONC data.
  * @returns The edited JSONC string.
  */
-export function editJsonc<TInput extends object, TOutput extends TInput>(
+export function editJsonc<TInput extends object>(
 	content: string,
 	validator: (data: unknown) => TInput,
-	callback: (draft: TInput) => TOutput,
+	callback: (draft: TInput) => TInput,
 ): string {
 	const parsed = validator(parse(content));
 	const indentation = detectIndentation(content);

@@ -1,6 +1,8 @@
-import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+
 import { createRule } from "../utilities/create-rule";
+
+import type { TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds = "preferFunctions";
 
@@ -18,8 +20,8 @@ interface CallbackState {
 }
 
 interface FunctionState {
-	readonly callbackState: CallbackState | undefined;
 	readonly callbackDepth: number;
+	readonly callbackState: CallbackState | undefined;
 }
 
 type CallbackFunction = TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression;

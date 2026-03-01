@@ -1,9 +1,12 @@
+import { AST_NODE_TYPES } from "@typescript-eslint/types";
+import { regex } from "arktype";
+
+import { evaluateConstant, normalizeZero, unwrap } from "./constant-folder";
+
 // oxlint-disable prefer-string-raw
 import type { TSESTree } from "@typescript-eslint/types";
-import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import type { SourceCode } from "@typescript-eslint/utils/ts-eslint";
-import { regex } from "arktype";
-import { evaluateConstant, normalizeZero, unwrap } from "./constant-folder";
+
 import type { CapturedValue, ParsedParameter, ParsedPattern, WhenCondition } from "./pattern-types";
 
 export type PatternIndex = ReadonlyMap<string, ReadonlyArray<ParsedPattern>>;
@@ -85,8 +88,7 @@ export function captureParameter(node: TSESTree.Expression, sourceCode: SourceCo
 	if (expression.type === AST_NODE_TYPES.Literal && typeof expression.value === "number") {
 		expressionKey = `literal:${normalizeZero(expression.value)}`;
 	} else if (expression.type === AST_NODE_TYPES.Identifier) {
-		if (expression.name === "undefined") expressionKey = "undefined";
-		else expressionKey = `id:${expression.name}`;
+		expressionKey = expression.name === "undefined" ? "undefined" : `id:${expression.name}`;
 	} else if (constValue === undefined) {
 		expressionKey = `complex:${sourceText}`;
 		isComplex = true;

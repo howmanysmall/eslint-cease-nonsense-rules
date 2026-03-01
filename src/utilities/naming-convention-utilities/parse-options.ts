@@ -1,9 +1,10 @@
-import type { MetaSelectorsString } from "./enums";
 import { MetaSelectors, ModifierWeights, Selectors, TypeModifierWeights } from "./enums";
 import { getEnumNames } from "./get-enum-names";
 import { isMetaSelector, isMethodOrPropertySelector } from "./shared";
-import type { Context, NormalizedMatchRegex, NormalizedSelector, ParsedOptions, Selector } from "./types";
 import { createValidator } from "./validator";
+
+import type { MetaSelectorsString } from "./enums";
+import type { Context, NormalizedMatchRegex, NormalizedSelector, ParsedOptions, Selector } from "./types";
 
 const META_SELECTOR_MAP: Record<MetaSelectorsString, Array<keyof typeof Selectors>> = {
 	accessor: ["classicAccessor", "autoAccessor"],

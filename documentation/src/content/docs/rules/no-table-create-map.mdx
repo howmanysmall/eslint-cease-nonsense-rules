@@ -12,8 +12,8 @@ Disallow direct `.map(...)` calls on `table.create(...)` and `new Array(...)` co
 
 ## Rule Details :badge[Roblox]{variant=note}
 
-Reports constructor chains where `map` is called immediately after `table.create(...)` or `new Array(...)`. In roblox-ts,
-this hides fill semantics and makes the code harder to follow.
+Reports constructor chains where `map` is called immediately after `table.create(...)` or `new Array(...)`. In
+roblox-ts, this hides fill semantics and makes the code harder to follow.
 
 <Aside type="tip" title="Use Explicit Indexed Writes">
 	Allocate once, iterate once, and assign by index so reviewers can see exactly how values are produced.
@@ -22,11 +22,7 @@ this hides fill semantics and makes the code harder to follow.
 ## Configuration
 
 <Code
-	code={[
-		"{",
-		'\t"cease-nonsense/no-table-create-map": "error"',
-		"}",
-	].join("\n")}
+	code={["{", '\t"cease-nonsense/no-table-create-map": "error"', "}"].join("\n")}
 	lang="typescript"
 	title="eslint.config.ts"
 />

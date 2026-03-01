@@ -1,5 +1,6 @@
 import { describe } from "bun:test";
 import { RuleTester } from "eslint";
+
 import rule from "../../src/rules/prefer-early-return";
 
 const ruleTester = new RuleTester({

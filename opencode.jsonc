@@ -223,9 +223,6 @@
 		"zig": { "disabled": true },
 	},
 	"instructions": ["./AGENTS.md"],
-	"keybinds": {
-		"model_list": "ctrl+m",
-	},
 	"layout": "stretch",
 	"lsp": {},
 	"mcp": {
@@ -277,6 +274,5 @@
 	"plugin": ["opencode-wakatime"],
 	"share": "manual",
 	"tools": {},
-	"tui": {},
 	"username": "small-eslint",
 }

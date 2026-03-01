@@ -1,8 +1,9 @@
 import { createCamelCaseDetector } from "./camel-case-detector";
 import { createContainsDetector } from "./contains-detector";
-import type { Detector } from "./detector";
 import { createEndWithDetector } from "./end-with-detector";
 import { createKeywordsDetector } from "./keywords-detector";
+
+import type { Detector } from "./detector";
 
 const JS_KEYWORDS = [
 	"public",

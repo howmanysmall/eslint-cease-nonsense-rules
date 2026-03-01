@@ -1,4 +1,5 @@
 import { createConsola } from "consola";
+
 import applicationPaths from "../constants/application-paths";
 import createDailyFileRotateReporter from "./reports/create-daily-file-rotate-reporter";
 

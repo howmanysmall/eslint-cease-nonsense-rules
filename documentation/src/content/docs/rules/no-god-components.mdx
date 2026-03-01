@@ -12,13 +12,13 @@ Reports React components that are doing too much in one place.
 
 ## Rule Details :badge[Complex]{variant=danger}
 
-A "god component" tries to own an entire screen: state, data, rendering, and every edge case. This rule puts hard
-limits on a few signals (line count, TSX nesting, and stateful hooks). If you trip them, split the component into
-smaller pieces with clearer responsibilities.
+A "god component" tries to own an entire screen: state, data, rendering, and every edge case. This rule puts hard limits
+on a few signals (line count, TSX nesting, and stateful hooks). If you trip them, split the component into smaller
+pieces with clearer responsibilities.
 
 <Aside type="caution" title="Complexity Signals">
-	Deeply nested TSX, lots of local state, and components that run for hundreds of lines are usually telling you the same
-	thing: split it.
+	Deeply nested TSX, lots of local state, and components that run for hundreds of lines are usually telling you the
+	same thing: split it.
 </Aside>
 
 ## Refactoring Workflow
@@ -68,7 +68,7 @@ smaller pieces with clearer responsibilities.
     </TabItem>
     <TabItem label="✅ Correct" icon="check">
     	### Composed Dashboard
-		Split the screen into small, focused pieces you can test.
+    	Split the screen into small, focused pieces you can test.
 
     	<Code
     		code={[

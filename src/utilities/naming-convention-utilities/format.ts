@@ -33,6 +33,7 @@ function isStrictCamelCase(name: string): boolean {
 function hasStrictCamelHumps(name: string, isUpper: boolean): boolean {
 	if (name.startsWith("_")) return false;
 
+	// oxlint-disable-next-line no-shadow
 	let isUpperCase = isUpper;
 	for (let index = 1; index < name.length; index += 1) {
 		const character = name[index];

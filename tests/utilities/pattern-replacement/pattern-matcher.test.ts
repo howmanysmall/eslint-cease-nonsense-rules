@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import type { TSESTree } from "@typescript-eslint/types";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
+
 import {
 	buildPatternIndex,
 	canSafelySubstitute,
@@ -10,6 +10,8 @@ import {
 	resolveCallee,
 } from "../../../src/utilities/pattern-replacement/pattern-matcher";
 import { parsePattern } from "../../../src/utilities/pattern-replacement/pattern-parser";
+
+import type { TSESTree } from "@typescript-eslint/types";
 
 describe("buildPatternIndex", () => {
 	it("should index patterns by type and name", () => {

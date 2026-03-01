@@ -3,6 +3,7 @@
 import { regex } from "arktype";
 import { barplot, bench, do_not_optimize, run } from "mitata";
 import { toPascal } from "ts-case-convert";
+
 import { toPascalCase } from "../src/utilities/casing-utilities";
 
 const RUNS = 1000;

@@ -1,6 +1,8 @@
 // oxlint-disable no-array-callback-reference
 import { blue, bold, dim, green, magenta, yellow } from "picocolors";
+
 import { formatSeverity, isRecord } from "./reused";
+
 import type { RuleEntry, RuleFormatter } from "./types";
 
 function colorizeValue(value: unknown): string {

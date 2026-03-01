@@ -1,9 +1,12 @@
 import { TSESTree } from "@typescript-eslint/types";
-import type { Rule } from "eslint";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
-import type { EnvironmentMode } from "../types/environment-mode";
+
 import { isEnvironmentMode } from "../types/environment-mode";
+
+import type { Rule } from "eslint";
+
+import type { EnvironmentMode } from "../types/environment-mode";
 
 export interface HookConfiguration {
 	readonly allowAsync: boolean;
@@ -88,9 +91,9 @@ function getHookName(callExpression: CallExpression): string | undefined {
 }
 
 interface ResolvedFunction {
+	readonly isAsync: boolean;
 	readonly node: TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression | TSESTree.FunctionDeclaration;
 	readonly type: "arrow" | "function-expression" | "function-declaration";
-	readonly isAsync: boolean;
 }
 
 function findVariableInScope(identifier: TSESTree.Identifier, scope: unknown): unknown {

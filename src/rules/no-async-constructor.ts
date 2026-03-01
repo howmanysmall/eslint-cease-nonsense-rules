@@ -1,7 +1,10 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
-import type { ReadonlyRecord } from "../types/utility-types";
+
 import { createRule } from "../utilities/create-rule";
+
+import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
+
+import type { ReadonlyRecord } from "../types/utility-types";
 
 type MessageIds =
 	| "awaitInConstructor"
@@ -84,9 +87,9 @@ function isExpressionStatement(parent: TSESTree.Node | undefined): boolean {
 }
 
 interface ConstructorViolation {
-	node: TSESTree.Node;
-	messageId: MessageIds;
 	data?: Record<string, string>;
+	messageId: MessageIds;
+	node: TSESTree.Node;
 }
 
 function checkAsyncMethodCall(

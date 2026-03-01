@@ -3,14 +3,16 @@ import { resolve } from "node:path";
 import { regex } from "arktype";
 import { parseJSONC } from "confbox";
 import fastDiff from "fast-diff";
+
 import { formatSync } from "../oxfmt-sync";
+
 import type { FormatOptions } from "../oxfmt-worker";
 
 export interface Difference {
-	readonly operation: "INSERT" | "DELETE" | "REPLACE";
-	readonly offset: number;
 	readonly deleteText?: string;
 	readonly insertText?: string;
+	readonly offset: number;
+	readonly operation: "INSERT" | "DELETE" | "REPLACE";
 }
 
 let cachedConfig: FormatOptions | undefined;

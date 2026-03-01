@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { RuleTester } from "eslint";
+
 import rule, { createFastFormatRule, createFormatCache, getLocFromIndex } from "../../src/rules/fast-format";
 import { generateDifferences, showInvisibles } from "../../src/utilities/format-utilities";
 

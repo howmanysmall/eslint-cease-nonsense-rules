@@ -1,8 +1,12 @@
 import { describe, setDefaultTimeout } from "bun:test";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import parser from "@typescript-eslint/parser";
+import { fileURLToPath } from "bun";
 import { RuleTester } from "eslint";
+
 import rule from "../../src/rules/prefer-read-only-props";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Type-aware tests have cold-start overhead from TypeScript project service initialization
 setDefaultTimeout(30_000);
@@ -172,6 +176,7 @@ describe("prefer-read-only-props", () => {
 		],
 	});
 
+	// @ts-expect-error -- this thing is dumb.
 	ruleTesterWithTypes.run("prefer-read-only-props-types", rule, {
 		invalid: [
 			{

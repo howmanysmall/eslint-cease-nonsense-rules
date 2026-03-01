@@ -2,14 +2,16 @@ import { resolve } from "node:path";
 import { cwd, exit } from "node:process";
 import { Command, EnumType } from "@jsr/cliffy__command";
 import { type } from "arktype";
+
 import { withContext } from "../logging/log-utilities";
 import { getConfigurationPathAsync } from "../utilities/eslint-utilities";
 import { isDirectorySimpleAsync } from "../utilities/fs-utilities";
 import { formatRulesAsJson } from "./formatters/json-formatter";
 import { formatRulesAsMinimal } from "./formatters/minimal-formatter";
 import { formatRulesAsTable } from "./formatters/table-formatter";
-import type { RuleEntry } from "./formatters/types";
 import { isValidRules } from "./formatters/types";
+
+import type { RuleEntry } from "./formatters/types";
 
 const log = withContext({ namespace: "tester", scope: "get-rules" });
 
@@ -29,6 +31,8 @@ function getFormatter(format: OutputFormat): (entries: ReadonlyArray<RuleEntry>)
 			return formatRulesAsMinimal;
 		case OutputFormat.Table:
 			return formatRulesAsTable;
+		default:
+			throw new Error(`Unsupported output format: ${String(format)}`);
 	}
 }
 

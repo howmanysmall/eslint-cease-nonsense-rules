@@ -40,8 +40,8 @@ export interface NormalizedSelector {
 	modifiers?: Array<ModifiersString> | undefined;
 	modifierWeight: number;
 	prefix?: Array<string> | undefined;
-	selectors: Array<string>;
 	selectorPriority: number;
+	selectors: Array<string>;
 	suffix?: Array<string> | undefined;
 	trailingUnderscore?: UnderscoreOptionsString | undefined;
 	types?: Array<TypeModifiersString> | undefined;

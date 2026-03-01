@@ -1,5 +1,6 @@
-import type { TSESTree } from "@typescript-eslint/types";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
+
+import type { TSESTree } from "@typescript-eslint/types";
 
 /**
  * Normalize -0 to 0 for consistent comparisons

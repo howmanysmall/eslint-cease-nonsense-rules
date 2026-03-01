@@ -4,13 +4,15 @@ import { resolve } from "node:path";
 import { exit } from "node:process";
 import { Command } from "@jsr/cliffy__command";
 import { type } from "arktype";
-import type { BunFile } from "bun";
 import { $, file, nanoseconds } from "bun";
 import picocolors from "picocolors";
 import prettyMilliseconds from "pretty-ms";
+
 import { withContext } from "../logging/log-utilities";
 import { isDirectorySimpleAsync } from "../utilities/fs-utilities";
 import { editJsonc } from "../utilities/jsonc-utilities";
+
+import type { BunFile } from "bun";
 
 const log = withContext({ namespace: "tester", scope: "test-live" });
 
@@ -125,6 +127,7 @@ const testLiveCommand = new Command()
 		await $`bun run build`.quiet();
 
 		const nodePackages = resolve(directory, "patches", "node");
+		// oxlint-disable-next-line unicorn/prefer-ternary
 		if (useLink) await $`bun link`;
 		else await $`npm pack --pack-destination ${nodePackages}`.quiet();
 
@@ -137,6 +140,7 @@ const testLiveCommand = new Command()
 			log.success(picocolors.green("Dependencies installed successfully."));
 
 			const duration = await profileAsync(async () => {
+				// oxlint-disable-next-line unicorn/prefer-ternary
 				if (cache) await shell`bun x --bun eslint --cache --max-warnings=0 ./src`;
 				else await shell`bun x --bun eslint --max-warnings=0 ./src`;
 			});

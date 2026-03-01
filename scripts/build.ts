@@ -10,6 +10,7 @@ import console from "consola";
 import { bold, cyan, gray, green, magenta, red, yellow } from "picocolors";
 import prettyBytes from "pretty-bytes";
 import prettyMilliseconds from "pretty-ms";
+
 import buildMetadata from "./plugins/build-metadata";
 
 if (typeof Bun === "undefined") {
@@ -139,11 +140,11 @@ async function cleanDistDirectoryAsync(verbose: boolean): Promise<void> {
 async function getOutputFilesAsync(directory: string): Promise<ReadonlyArray<OutputFile>> {
 	const resolvedDirectory = resolve(directory);
 
-	async function walk(directory: string): Promise<ReadonlyArray<OutputFile>> {
-		const entries = await readdir(directory, { withFileTypes: true });
+	async function walk(walkDirectory: string): Promise<ReadonlyArray<OutputFile>> {
+		const entries = await readdir(walkDirectory, { withFileTypes: true });
 		const results: ReadonlyArray<ReadonlyArray<OutputFile>> = await Promise.all(
 			entries.map(async (entry): Promise<ReadonlyArray<OutputFile>> => {
-				const fullPath = resolve(directory, entry.name);
+				const fullPath = resolve(walkDirectory, entry.name);
 				if (entry.isDirectory()) return walk(fullPath);
 				if (entry.isFile()) {
 					const stats = await stat(fullPath);

@@ -1,6 +1,8 @@
-import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+
 import { createRule } from "../utilities/create-rule";
+
+import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds = "avoidConstructThenMap";
 
@@ -60,7 +62,10 @@ function hasShadowedBinding(
 	return false;
 }
 
-function isTableCreateBase(context: TSESLint.RuleContext<MessageIds, Options>, expression: TSESTree.Expression): boolean {
+function isTableCreateBase(
+	context: TSESLint.RuleContext<MessageIds, Options>,
+	expression: TSESTree.Expression,
+): boolean {
 	const unwrapped = unwrapExpression(expression);
 	if (unwrapped.type !== AST_NODE_TYPES.CallExpression || unwrapped.optional) return false;
 	if (unwrapped.callee.type === AST_NODE_TYPES.Super) return false;

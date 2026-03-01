@@ -1,8 +1,9 @@
 import { TSESTree } from "@typescript-eslint/types";
 
 import { getReactSources, isReactImport } from "../constants/react-sources";
-import type { EnvironmentMode } from "../types/environment-mode";
 import { createRule } from "../utilities/create-rule";
+
+import type { EnvironmentMode } from "../types/environment-mode";
 
 type MessageIds = "unusedUseMemo";
 

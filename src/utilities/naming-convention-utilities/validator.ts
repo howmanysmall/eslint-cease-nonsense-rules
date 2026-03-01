@@ -1,19 +1,21 @@
-import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
-import type { Type, TypeChecker } from "typescript";
 import { TypeFlags } from "typescript";
 
-import type { ModifiersString, SelectorsString } from "./enums";
 import { TypeModifiers } from "./enums";
 import { PredefinedFormatToCheckFunction } from "./format";
 import { selectorTypeToMessageString } from "./shared";
+
+import type { TSESTree } from "@typescript-eslint/utils";
+import type { Type, TypeChecker } from "typescript";
+
+import type { ModifiersString, SelectorsString } from "./enums";
 import type { Context, NormalizedSelector, ValidatorFunction } from "./types";
 
 interface ParserServicesWithTypeInformation {
+	getTypeAtLocation: (node: TSESTree.Node) => Type;
 	program: {
 		getTypeChecker: () => TypeChecker;
 	};
-	getTypeAtLocation: (node: TSESTree.Node) => Type;
 }
 
 interface TypeInfo {

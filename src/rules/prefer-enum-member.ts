@@ -1,14 +1,5 @@
-import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { isUnionType, unionConstituents } from "ts-api-utils";
-import type {
-	Program,
-	Type,
-	TypeChecker,
-	TypeNode,
-	Node as TypeScriptNode,
-	Symbol as TypeScriptSymbol,
-} from "typescript";
 import {
 	forEachChild,
 	isEnumDeclaration,
@@ -23,7 +14,18 @@ import {
 	isUnionTypeNode,
 	SymbolFlags,
 } from "typescript";
+
 import { createRule } from "../utilities/create-rule";
+
+import type { TSESTree } from "@typescript-eslint/utils";
+import type {
+	Program,
+	Type,
+	TypeChecker,
+	TypeNode,
+	Node as TypeScriptNode,
+	Symbol as TypeScriptSymbol,
+} from "typescript";
 
 type MessageIds = "preferEnumMember";
 
@@ -49,9 +51,9 @@ const SINGLE_ARGUMENT_OBJECT_WRAPPERS = new Set(["Readonly"]);
 const RECORD_ALIAS_NAME = "Record";
 
 interface EnumValueIndex {
-	readonly stringSet: Set<string>;
-	readonly numberSet: Set<number>;
 	readonly isComplete: boolean;
+	readonly numberSet: Set<number>;
+	readonly stringSet: Set<string>;
 }
 
 function resolveAliasSymbol(checker: TypeChecker, symbol: TypeScriptSymbol): TypeScriptSymbol {
@@ -124,8 +126,8 @@ function getRecordKeyType(type: Type): Type | undefined {
 }
 
 interface PropertyKeyInfo {
-	readonly value: string | number;
 	readonly isComputed: boolean;
+	readonly value: string | number;
 }
 
 function getPropertyKeyInfo(node: TSESTree.Property): PropertyKeyInfo | undefined {

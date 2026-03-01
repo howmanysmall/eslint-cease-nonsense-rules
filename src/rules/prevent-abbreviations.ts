@@ -1,26 +1,28 @@
 import path from "node:path";
 import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
-import type { JSONSchema, TSESLint, TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { regex } from "arktype";
 import { isIdentifierPart, isIdentifierStart, ScriptTarget } from "typescript";
+
 import { createRule } from "../utilities/create-rule";
+
+import type { JSONSchema, TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds = "replace" | "suggestion";
 type ImportCheckOption = boolean | "internal";
 
 export interface PreventAbbreviationsOptions {
-	readonly checkProperties?: boolean;
-	readonly checkVariables?: boolean;
+	readonly allowList?: Record<string, boolean>;
 	readonly checkDefaultAndNamespaceImports?: ImportCheckOption;
+	readonly checkFilenames?: boolean;
+	readonly checkProperties?: boolean;
 	readonly checkShorthandImports?: ImportCheckOption;
 	readonly checkShorthandProperties?: boolean;
-	readonly checkFilenames?: boolean;
-	readonly extendDefaultReplacements?: boolean;
-	readonly replacements?: Record<string, Record<string, boolean> | false>;
+	readonly checkVariables?: boolean;
 	readonly extendDefaultAllowList?: boolean;
-	readonly allowList?: Record<string, boolean>;
+	readonly extendDefaultReplacements?: boolean;
 	readonly ignore?: ReadonlyArray<string | RegExp>;
+	readonly replacements?: Record<string, Record<string, boolean> | false>;
 }
 
 type Options = [PreventAbbreviationsOptions?];
@@ -357,28 +359,28 @@ const typescriptReservedWords = new Set([
 ]);
 
 interface PreparedOptions {
-	checkProperties: boolean;
-	checkVariables: boolean;
+	allowList: Map<string, boolean>;
 	checkDefaultAndNamespaceImports: ImportCheckOption;
+	checkFilenames: boolean;
+	checkProperties: boolean;
 	checkShorthandImports: ImportCheckOption;
 	checkShorthandProperties: boolean;
-	checkFilenames: boolean;
-	replacements: Map<string, Map<string, boolean>>;
-	allowList: Map<string, boolean>;
+	checkVariables: boolean;
 	ignore: ReadonlyArray<RegExp>;
+	replacements: Map<string, Map<string, boolean>>;
 }
 
 interface NameReplacements {
-	total: number;
 	samples?: ReadonlyArray<string>;
+	total: number;
 }
 
 type IdentifierLike = TSESTree.Identifier | TSESTree.JSXIdentifier;
 type StringLiteral = TSESTree.Literal & { value: string };
 interface VariableLike {
-	readonly name: string;
 	readonly defs: ReadonlyArray<TSESLint.Scope.Definition>;
 	readonly identifiers: ReadonlyArray<IdentifierLike>;
+	readonly name: string;
 	readonly references: ReadonlyArray<TSESLint.Scope.Reference>;
 	readonly scope: TSESLint.Scope.Scope;
 }

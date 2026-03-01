@@ -1,10 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import parser from "@typescript-eslint/parser";
-import type { TSESTree } from "@typescript-eslint/types";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import type { Rule } from "eslint";
 import { RuleTester } from "eslint";
+
 import rule from "../../src/rules/enforce-ianitor-check-type";
+
+import type { TSESTree } from "@typescript-eslint/types";
+import type { Rule } from "eslint";
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -345,8 +347,8 @@ export type SpinOptions = Readonly<Ianitor.Static<typeof isSpinOptions>>;
 
 	it("reports complex types without Ianitor checks", () => {
 		expect.assertions(1);
-		const originalLog2 = Math.log2;
-		Math.log2 = (value: number): number => (value === 1 ? 1 : originalLog2(value));
+		const originalLog2Local = Math.log2;
+		Math.log2 = (value: number): number => (value === 1 ? 1 : originalLog2Local(value));
 		try {
 			const reports: Array<{ messageId: string }> = [];
 			const fakeContext = {
@@ -400,7 +402,7 @@ interface ComplexService extends Base {
 				{ messageId: "complexInterfaceNeedsCheck" },
 			]);
 		} finally {
-			Math.log2 = originalLog2;
+			Math.log2 = originalLog2Local;
 		}
 	});
 });

@@ -1,4 +1,5 @@
 import { regex } from "arktype";
+
 import type { Detector } from "./detector";
 
 // oxlint-disable-next-line prefer-string-raw

@@ -1,9 +1,10 @@
-import type { TSESTree } from "@typescript-eslint/types";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import type { TSESLint } from "@typescript-eslint/utils";
-import type { Writable } from "type-fest";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
+
+import type { TSESTree } from "@typescript-eslint/types";
+import type { TSESLint } from "@typescript-eslint/utils";
+import type { Writable } from "type-fest";
 
 const isStringArray = Compile(Typebox.Readonly(Typebox.Array(Typebox.String())));
 
@@ -11,18 +12,18 @@ const isStringArray = Compile(Typebox.Readonly(Typebox.Array(Typebox.String())))
  * Configuration for a single opener/closer pair
  */
 export interface PairConfiguration {
+	/** Alternative closers (any one satisfies) */
+	readonly alternatives?: ReadonlyArray<string>;
+	/** Closer function name(s) - single or alternatives */
+	readonly closer: string | ReadonlyArray<string>;
 	/** Opener function name (e.g., "debug.profilebegin") */
 	readonly opener: string;
 	/** Additional opener names that share this closer */
 	readonly openerAlternatives?: ReadonlyArray<string>;
-	/** Closer function name(s) - single or alternatives */
-	readonly closer: string | ReadonlyArray<string>;
-	/** Alternative closers (any one satisfies) */
-	readonly alternatives?: ReadonlyArray<string>;
-	/** Disallow await/yield between opener and closer */
-	readonly requireSync?: boolean;
 	/** Platform-specific behavior */
 	readonly platform?: "roblox";
+	/** Disallow await/yield between opener and closer */
+	readonly requireSync?: boolean;
 	/** Custom yielding function patterns (for Roblox) */
 	readonly yieldingFunctions?: ReadonlyArray<string>;
 }
@@ -44,14 +45,14 @@ const isPairConfiguration = Compile(
  * Rule options schema
  */
 export interface RequirePairedCallsOptions {
-	/** Array of paired function configurations */
-	readonly pairs: ReadonlyArray<PairConfiguration>;
 	/** Allow conditional closers */
 	readonly allowConditionalClosers?: boolean;
 	/** Allow multiple consecutive openers */
 	readonly allowMultipleOpeners?: boolean;
 	/** Maximum nesting depth (0 = unlimited) */
 	readonly maxNestingDepth?: number;
+	/** Array of paired function configurations */
+	readonly pairs: ReadonlyArray<PairConfiguration>;
 }
 
 const isRuleOptions = Compile(
@@ -71,18 +72,18 @@ const isRuleOptions = Compile(
  * Entry in the opener stack
  */
 interface OpenerStackEntry {
-	/** Opener function name */
-	readonly opener: string;
-	/** Source location */
-	readonly location: TSESTree.SourceLocation;
-	/** AST node */
-	readonly node: TSESTree.Node;
-	/** Active loops when opener was called */
-	readonly loopAncestors: ReadonlyArray<LoopLikeStatement>;
 	/** Configuration for this pair */
 	readonly config: PairConfiguration;
 	/** Index in stack (for LIFO validation) */
 	readonly index: number;
+	/** Source location */
+	readonly location: TSESTree.SourceLocation;
+	/** Active loops when opener was called */
+	readonly loopAncestors: ReadonlyArray<LoopLikeStatement>;
+	/** AST node */
+	readonly node: TSESTree.Node;
+	/** Opener function name */
+	readonly opener: string;
 }
 
 type LoopLikeStatement =
@@ -104,22 +105,22 @@ const LOOP_NODE_TYPES = new Set([
  * Control flow context tracking
  */
 interface ControlFlowContext {
-	/** Inside a conditional branch (if/else/switch) */
-	readonly inConditional: boolean;
-	/** Inside a loop (for/while/do-while) */
-	readonly inLoop: boolean;
-	/** Inside try block */
-	readonly inTry: boolean;
-	/** Inside catch block */
-	readonly inCatch: boolean;
-	/** Inside finally block */
-	readonly inFinally: boolean;
-	/** Has early exit (return/throw/break/continue) */
-	readonly hasEarlyExit: boolean;
 	/** Inside async context */
 	readonly asyncContext: boolean;
 	/** Current function node */
 	readonly currentFunction: TSESTree.Node | undefined;
+	/** Has early exit (return/throw/break/continue) */
+	readonly hasEarlyExit: boolean;
+	/** Inside catch block */
+	readonly inCatch: boolean;
+	/** Inside a conditional branch (if/else/switch) */
+	readonly inConditional: boolean;
+	/** Inside finally block */
+	readonly inFinally: boolean;
+	/** Inside a loop (for/while/do-while) */
+	readonly inLoop: boolean;
+	/** Inside try block */
+	readonly inTry: boolean;
 }
 
 const DEFAULT_ROBLOX_YIELDING_FUNCTIONS = ["task.wait", "wait", "*.WaitForChild", "*.*Async"] as const;
@@ -428,14 +429,12 @@ const rule: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRec
 			popContext();
 		}
 
-		function onIfStatementEnter(node: unknown): void {
-			const ifNode = node as TSESTree.IfStatement;
+		function onIfStatementEnter(ifNode: TSESTree.IfStatement): void {
 			pushContext({ inConditional: true });
 			saveSnapshot(ifNode);
 		}
 
-		function onIfStatementExit(node: unknown): void {
-			const ifNode = node as TSESTree.IfStatement;
+		function onIfStatementExit(ifNode: TSESTree.IfStatement): void {
 			popContext();
 
 			const originalStack = stackSnapshots.get(ifNode);
@@ -729,8 +728,7 @@ const rule: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRec
 			popContext();
 		}
 
-		function onEarlyExit(node: unknown): void {
-			const statementNode = node as TSESTree.ReturnStatement | TSESTree.ThrowStatement;
+		function onEarlyExit(statementNode: TSESTree.ReturnStatement | TSESTree.ThrowStatement): void {
 			updateContext({ hasEarlyExit: true });
 
 			const currentContext = getCurrentContext();
@@ -794,13 +792,11 @@ const rule: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRec
 
 			const openerConfig = findPairConfiguration(callName, true);
 			if (openerConfig) {
-				// oxlint-disable-next-line typescript/no-use-before-define
 				handleOpener(callNode, callName, openerConfig);
 				return;
 			}
 
 			if (findPairConfiguration(callName, false)) {
-				// oxlint-disable-next-line typescript/no-use-before-define
 				handleCloser(callNode, callName);
 				return;
 			}
@@ -808,7 +804,6 @@ const rule: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRec
 			for (const entry of openerStack) {
 				if (!isRobloxYieldingFunction(callName, entry.config)) continue;
 
-				// oxlint-disable-next-line typescript/no-use-before-define
 				handleRobloxYield(callNode, callName, entry);
 				openerStack.length = 0;
 				yieldingAutoClosed = true;

@@ -1,4 +1,5 @@
 import { TSESTree } from "@typescript-eslint/types";
+
 import type { Rule } from "eslint";
 
 /*
@@ -11,12 +12,12 @@ import type { Rule } from "eslint";
  */
 
 interface ControlFlowContext {
-	readonly inConditional: boolean;
 	readonly afterEarlyReturn: boolean;
+	readonly functionDepth: number;
+	readonly inConditional: boolean;
 	readonly inLoop: boolean;
 	readonly inNestedFunction: boolean;
 	readonly inTryBlock: boolean;
-	readonly functionDepth: number;
 	readonly isComponentOrHook: boolean;
 }
 
