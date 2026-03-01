@@ -1,7 +1,10 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import type { TSESTree } from "@typescript-eslint/utils";
-import type { ReadonlyRecord } from "../types/utility-types";
+
 import { createRule } from "../utilities/create-rule";
+
+import type { TSESTree } from "@typescript-eslint/utils";
+
+import type { ReadonlyRecord } from "../types/utility-types";
 
 type MessageIds = "noInstanceMethodWithoutThis";
 

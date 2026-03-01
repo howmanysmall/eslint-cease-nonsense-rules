@@ -1,4 +1,3 @@
-import type { LooseRuleDefinition } from "@typescript-eslint/utils/ts-eslint";
 import banInstances from "./rules/ban-instances";
 import banReactFC from "./rules/ban-react-fc";
 import enforceIanitorCheckType from "./rules/enforce-ianitor-check-type";
@@ -51,6 +50,9 @@ import requireSerializedNumericDataType from "./rules/require-serialized-numeric
 import strictComponentBoundaries from "./rules/strict-component-boundaries";
 import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
 import useHookAtTopLevel from "./rules/use-hook-at-top-level";
+
+import type { LooseRuleDefinition } from "@typescript-eslint/utils/ts-eslint";
+
 import type { ReadonlyRecord } from "./types/utility-types.d";
 
 export type { BanInstancesOptions } from "./rules/ban-instances";

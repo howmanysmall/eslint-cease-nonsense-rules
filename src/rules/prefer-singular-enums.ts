@@ -1,7 +1,9 @@
+import { regex } from "arktype";
+
+import { createRule } from "../utilities/create-rule";
+
 // oxlint-disable prefer-string-raw
 import type { TSESTree } from "@typescript-eslint/utils";
-import { regex } from "arktype";
-import { createRule } from "../utilities/create-rule";
 
 // Irregular plurals, using lowercase for matching against tokens
 const IRREGULAR_PLURALS = new Set<string>([

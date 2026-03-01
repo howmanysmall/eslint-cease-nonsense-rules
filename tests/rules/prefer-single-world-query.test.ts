@@ -1,6 +1,7 @@
 import { describe } from "bun:test";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
+
 import rule from "../../src/rules/prefer-single-world-query";
 
 const ruleTester = new RuleTester({

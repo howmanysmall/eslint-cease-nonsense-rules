@@ -1,14 +1,5 @@
-import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { isUnionType, unionConstituents } from "ts-api-utils";
-import type {
-	Program,
-	Type,
-	TypeChecker,
-	TypeNode,
-	Node as TypeScriptNode,
-	Symbol as TypeScriptSymbol,
-} from "typescript";
 import {
 	forEachChild,
 	isEnumDeclaration,
@@ -23,7 +14,18 @@ import {
 	isUnionTypeNode,
 	SymbolFlags,
 } from "typescript";
+
 import { createRule } from "../utilities/create-rule";
+
+import type { TSESTree } from "@typescript-eslint/utils";
+import type {
+	Program,
+	Type,
+	TypeChecker,
+	TypeNode,
+	Node as TypeScriptNode,
+	Symbol as TypeScriptSymbol,
+} from "typescript";
 
 type MessageIds = "preferEnumMember";
 

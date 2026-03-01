@@ -4,8 +4,9 @@ import arkenv from "arkenv";
 import { type } from "arktype";
 import { stringifyINI, stringifyJSON5, stringifyTOML } from "confbox";
 import { XMLBuilder } from "fast-xml-parser";
-import type { ObjectToCamel } from "ts-case-convert";
 import { objectToCamel } from "ts-case-convert";
+
+import type { ObjectToCamel } from "ts-case-convert";
 
 const environment = arkenv(
 	{

@@ -1,9 +1,11 @@
-import type { TSESTree } from "@typescript-eslint/utils";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { regex } from "arktype";
 import { isPropertyReadonlyInType } from "ts-api-utils";
-import type { IndexInfo, Symbol as TSSymbol, Type, TypeChecker } from "typescript";
+
 import { createRule } from "../utilities/create-rule";
+
+import type { TSESTree } from "@typescript-eslint/utils";
+import type { IndexInfo, Symbol as TSSymbol, Type, TypeChecker } from "typescript";
 
 type MessageIds = "preferReadOnlyProps" | "readOnlyProp";
 type Options = [];

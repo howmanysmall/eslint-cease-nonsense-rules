@@ -1,7 +1,8 @@
-import type { Paths } from "env-paths";
 import envPaths from "env-paths";
 
 import { name } from "./package-constants";
+
+import type { Paths } from "env-paths";
 
 // oxlint-disable-next-line no-control-regex
 const NULL_REGEXP = /[/\\\0]/g;

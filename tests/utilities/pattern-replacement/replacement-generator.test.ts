@@ -1,9 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import type { CapturedValue, ParsedReplacement } from "../../../src/utilities/pattern-replacement/pattern-types";
+
 import {
 	generateReplacement,
 	getReplacementIdentifier,
 } from "../../../src/utilities/pattern-replacement/replacement-generator";
+
+import type { CapturedValue, ParsedReplacement } from "../../../src/utilities/pattern-replacement/pattern-types";
 
 describe("getReplacementIdentifier", () => {
 	it("should return name for identifier replacement", () => {

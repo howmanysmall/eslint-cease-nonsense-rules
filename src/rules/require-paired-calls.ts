@@ -1,9 +1,10 @@
-import type { TSESTree } from "@typescript-eslint/types";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import type { TSESLint } from "@typescript-eslint/utils";
-import type { Writable } from "type-fest";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
+
+import type { TSESTree } from "@typescript-eslint/types";
+import type { TSESLint } from "@typescript-eslint/utils";
+import type { Writable } from "type-fest";
 
 const isStringArray = Compile(Typebox.Readonly(Typebox.Array(Typebox.String())));
 

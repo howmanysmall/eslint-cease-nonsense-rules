@@ -1,8 +1,8 @@
 import mdx from "@astrojs/mdx";
 import react from "@astrojs/react";
 import starlight from "@astrojs/starlight";
-import { defineConfig } from "astro/config";
 import viewTransitions from "astro-vtbot";
+import { defineConfig } from "astro/config";
 import starlightCodeblockFullscreen from "starlight-codeblock-fullscreen";
 import starlightContextualMenu from "starlight-contextual-menu";
 import starlightHeadingBadges from "starlight-heading-badges";

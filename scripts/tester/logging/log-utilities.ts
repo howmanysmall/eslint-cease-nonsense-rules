@@ -1,5 +1,6 @@
-import type { ConsolaInstance } from "consola";
 import log from "./log";
+
+import type { ConsolaInstance } from "consola";
 
 interface Context {
 	readonly namespace?: string;

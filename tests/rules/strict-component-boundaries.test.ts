@@ -1,6 +1,7 @@
 import { describe } from "bun:test";
 import { join } from "node:path";
 import { RuleTester } from "eslint";
+
 import rule from "../../src/rules/strict-component-boundaries";
 
 const ruleTester = new RuleTester({

@@ -1,4 +1,5 @@
 import { TSESTree } from "@typescript-eslint/utils";
+
 import type { Rule } from "eslint";
 
 interface ArgumentsCollection {

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, mock, spyOn } from "bun:test";
 // oxlint-disable-next-line no-namespace
 import * as fs from "node:fs";
+
 import { __testing, generateDifferences, getExtension } from "../../src/utilities/format-utilities";
 
 describe("format-utilities", () => {

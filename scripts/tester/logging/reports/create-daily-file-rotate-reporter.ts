@@ -1,6 +1,7 @@
+import { createStream } from "rotating-file-stream";
+
 import type { ConsolaReporter, LogObject } from "consola";
 import type { FileSize, Interval } from "rotating-file-stream";
-import { createStream } from "rotating-file-stream";
 
 function alwaysTrue(): boolean {
 	return true;

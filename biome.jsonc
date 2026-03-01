@@ -6,7 +6,7 @@
 		"actions": {
 			"source": {
 				"noDuplicateClasses": "on",
-				"organizeImports": "on",
+				"organizeImports": "off",
 				"recommended": true,
 				"useSortedAttributes": "on",
 				"useSortedInterfaceMembers": "on",

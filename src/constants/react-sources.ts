@@ -1,4 +1,5 @@
 import type { TSESTree } from "@typescript-eslint/types";
+
 import type { EnvironmentMode } from "../types/environment-mode";
 
 const REACT_SOURCES_ROBLOX = new Set(["@rbxts/react", "@rbxts/roact"]);

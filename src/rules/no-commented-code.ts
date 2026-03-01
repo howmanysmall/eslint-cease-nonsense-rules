@@ -1,9 +1,11 @@
 import path from "node:path";
-import type { Rule } from "eslint";
-import type { Comment } from "estree";
 import { parseSync } from "oxc-parser";
+
 import { hasCodeLines } from "../recognizers/code-recognizer";
 import { createJavaScriptDetectors } from "../recognizers/javascript-footprint";
+
+import type { Rule } from "eslint";
+import type { Comment } from "estree";
 
 const EXCLUDED_STATEMENTS = new Set(["BreakStatement", "LabeledStatement", "ContinueStatement"]);
 

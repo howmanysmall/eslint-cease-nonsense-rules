@@ -1,8 +1,11 @@
 import { TSESTree } from "@typescript-eslint/types";
-import type { Scope } from "@typescript-eslint/utils/ts-eslint";
+
 import { getReactSources, isReactImport } from "../constants/react-sources";
-import type { EnvironmentMode } from "../types/environment-mode";
 import { createRule } from "../utilities/create-rule";
+
+import type { Scope } from "@typescript-eslint/utils/ts-eslint";
+
+import type { EnvironmentMode } from "../types/environment-mode";
 
 export interface RequireReactDisplayNamesOptions {
 	readonly environment?: EnvironmentMode;

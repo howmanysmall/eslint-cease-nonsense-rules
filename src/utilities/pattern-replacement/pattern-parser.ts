@@ -1,6 +1,7 @@
 // oxlint-disable prefer-string-raw
 
 import { regex } from "arktype";
+
 import type { ParsedParameter, ParsedPattern, ParsedReplacement, WhenCondition } from "./pattern-types";
 
 const CONSTRUCTOR_PATTERN = regex("^new\\s+(?<typeName>\\w+)\\((?<argumentsString>.*)\\)$");

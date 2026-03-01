@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
+
 import { resolveRelativeImport } from "../../src/utilities/resolve-import";
 
 const FIXTURES_DIR = join(import.meta.dir, "..", "fixtures");

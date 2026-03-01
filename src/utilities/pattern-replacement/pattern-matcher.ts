@@ -1,9 +1,12 @@
+import { AST_NODE_TYPES } from "@typescript-eslint/types";
+import { regex } from "arktype";
+
+import { evaluateConstant, normalizeZero, unwrap } from "./constant-folder";
+
 // oxlint-disable prefer-string-raw
 import type { TSESTree } from "@typescript-eslint/types";
-import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import type { SourceCode } from "@typescript-eslint/utils/ts-eslint";
-import { regex } from "arktype";
-import { evaluateConstant, normalizeZero, unwrap } from "./constant-folder";
+
 import type { CapturedValue, ParsedParameter, ParsedPattern, WhenCondition } from "./pattern-types";
 
 export type PatternIndex = ReadonlyMap<string, ReadonlyArray<ParsedPattern>>;

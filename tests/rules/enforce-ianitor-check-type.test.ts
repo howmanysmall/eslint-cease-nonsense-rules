@@ -1,10 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import parser from "@typescript-eslint/parser";
-import type { TSESTree } from "@typescript-eslint/types";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import type { Rule } from "eslint";
 import { RuleTester } from "eslint";
+
 import rule from "../../src/rules/enforce-ianitor-check-type";
+
+import type { TSESTree } from "@typescript-eslint/types";
+import type { Rule } from "eslint";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

@@ -4,13 +4,15 @@ import { resolve } from "node:path";
 import { exit } from "node:process";
 import { Command } from "@jsr/cliffy__command";
 import { type } from "arktype";
-import type { BunFile } from "bun";
 import { $, file, nanoseconds } from "bun";
 import picocolors from "picocolors";
 import prettyMilliseconds from "pretty-ms";
+
 import { withContext } from "../logging/log-utilities";
 import { isDirectorySimpleAsync } from "../utilities/fs-utilities";
 import { editJsonc } from "../utilities/jsonc-utilities";
+
+import type { BunFile } from "bun";
 
 const log = withContext({ namespace: "tester", scope: "test-live" });
 

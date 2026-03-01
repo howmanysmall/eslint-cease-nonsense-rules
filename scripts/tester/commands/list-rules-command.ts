@@ -3,6 +3,7 @@ import { cwd, exit } from "node:process";
 import { Command } from "@jsr/cliffy__command";
 import { type } from "arktype";
 import picocolors from "picocolors";
+
 import { withContext } from "../logging/log-utilities";
 import { getConfigurationPathAsync } from "../utilities/eslint-utilities";
 import { isDirectorySimpleAsync } from "../utilities/fs-utilities";

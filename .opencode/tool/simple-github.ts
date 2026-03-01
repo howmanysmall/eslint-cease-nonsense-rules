@@ -1,4 +1,5 @@
 import { tool } from "@opencode-ai/plugin";
+
 import { FormatType, getContentsAsync, searchCodeAsync, searchRepositoriesAsync } from "../utilities/github-utilities";
 
 const isFormat = tool.schema

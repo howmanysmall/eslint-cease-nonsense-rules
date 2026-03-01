@@ -1,9 +1,12 @@
 import { TSESTree } from "@typescript-eslint/types";
 import { ESLintUtils } from "@typescript-eslint/utils";
-import type { Type, TypeChecker } from "typescript";
+
 import { getReactSources, isReactImport } from "../constants/react-sources";
-import type { EnvironmentMode } from "../types/environment-mode";
 import { createRule } from "../utilities/create-rule";
+
+import type { Type, TypeChecker } from "typescript";
+
+import type { EnvironmentMode } from "../types/environment-mode";
 
 type MessageIds = "memoWithChildren";
 

@@ -1,5 +1,6 @@
 import { describe } from "bun:test";
 import { RuleTester } from "eslint";
+
 import rule from "../../src/rules/use-hook-at-top-level";
 
 const ruleTester = new RuleTester({

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+
 import { evaluateConstant, normalizeZero } from "../../../src/utilities/pattern-replacement/constant-folder";
 
 describe("normalizeZero", () => {

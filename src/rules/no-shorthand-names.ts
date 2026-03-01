@@ -1,8 +1,9 @@
 import { TSESTree } from "@typescript-eslint/types";
 import { regex } from "arktype";
-import type { Rule } from "eslint";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
+
+import type { Rule } from "eslint";
 
 export interface NoShorthandOptions {
 	readonly allowPropertyAccess?: ReadonlyArray<string>;

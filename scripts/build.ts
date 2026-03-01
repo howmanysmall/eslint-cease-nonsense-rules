@@ -10,6 +10,7 @@ import console from "consola";
 import { bold, cyan, gray, green, magenta, red, yellow } from "picocolors";
 import prettyBytes from "pretty-bytes";
 import prettyMilliseconds from "pretty-ms";
+
 import buildMetadata from "./plugins/build-metadata";
 
 if (typeof Bun === "undefined") {

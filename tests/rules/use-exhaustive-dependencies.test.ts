@@ -1,6 +1,7 @@
 import { describe } from "bun:test";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
+
 import rule from "../../src/rules/use-exhaustive-dependencies";
 
 const ruleTester = new RuleTester({

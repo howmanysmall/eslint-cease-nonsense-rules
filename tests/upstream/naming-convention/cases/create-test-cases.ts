@@ -1,6 +1,6 @@
-import type { InvalidTestCase, ValidTestCase } from "@typescript-eslint/rule-tester";
-
 import { selectorTypeToMessageString } from "../../../../src/utilities/naming-convention-utilities";
+
+import type { InvalidTestCase, ValidTestCase } from "@typescript-eslint/rule-tester";
 
 type RuleOptions = ReadonlyArray<Record<string, unknown>>;
 

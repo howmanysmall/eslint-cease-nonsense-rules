@@ -1,4 +1,5 @@
 import { TSESTree } from "@typescript-eslint/types";
+
 import type { Rule } from "eslint";
 
 /*

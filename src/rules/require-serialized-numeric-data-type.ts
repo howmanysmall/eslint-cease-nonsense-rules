@@ -1,6 +1,8 @@
 import { TSESTree } from "@typescript-eslint/types";
-import type { TypeChecker, TypeNode } from "typescript";
+
 import { createRule } from "../utilities/create-rule";
+
+import type { TypeChecker, TypeNode } from "typescript";
 
 /**
  * Configuration options for the require-serialized-numeric-data-type rule.

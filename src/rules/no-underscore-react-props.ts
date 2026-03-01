@@ -1,4 +1,5 @@
 import { TSESTree } from "@typescript-eslint/types";
+
 import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "noUnderscoreReactProp";

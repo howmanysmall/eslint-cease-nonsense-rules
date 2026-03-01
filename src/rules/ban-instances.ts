@@ -1,8 +1,10 @@
 import { TSESTree } from "@typescript-eslint/types";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
-import type { ReadonlyRecord } from "../types/utility-types";
+
 import { createRule } from "../utilities/create-rule";
+
+import type { ReadonlyRecord } from "../types/utility-types";
 
 /**
  * Configuration for banned Roblox Instance classes.

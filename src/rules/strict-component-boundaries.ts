@@ -1,8 +1,10 @@
 import { basename, extname, relative } from "node:path";
-import type { TSESTree } from "@typescript-eslint/utils";
+
 import { toPascalCase } from "../utilities/casing-utilities";
 import { createRule } from "../utilities/create-rule";
 import { resolveRelativeImport } from "../utilities/resolve-import";
+
+import type { TSESTree } from "@typescript-eslint/utils";
 
 interface Options {
 	readonly allow?: ReadonlyArray<string>;

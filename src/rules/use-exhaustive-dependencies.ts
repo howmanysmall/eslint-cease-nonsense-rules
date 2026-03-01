@@ -1,8 +1,10 @@
 import { TSESTree } from "@typescript-eslint/types";
-import type { TSESLint } from "@typescript-eslint/utils";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
+
 import { createRule } from "../utilities/create-rule";
+
+import type { TSESLint } from "@typescript-eslint/utils";
 
 const FUNCTION_DECLARATIONS = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.FunctionExpression,

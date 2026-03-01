@@ -1,10 +1,12 @@
 import { DefinitionType } from "@typescript-eslint/scope-manager";
 import { TSESTree } from "@typescript-eslint/types";
-import type { TSESLint } from "@typescript-eslint/utils";
 
 import { getReactSources, isReactImport } from "../constants/react-sources";
-import type { EnvironmentMode } from "../types/environment-mode";
 import { createRule } from "../utilities/create-rule";
+
+import type { TSESLint } from "@typescript-eslint/utils";
+
+import type { EnvironmentMode } from "../types/environment-mode";
 
 type MessageIds = "noNewInUseMemo";
 

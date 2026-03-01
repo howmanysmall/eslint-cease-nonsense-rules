@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import vueParser from "vue-eslint-parser";
 import babelParser from "@babel/eslint-parser";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-import vueParser from "vue-eslint-parser";
 
 import rule from "../../src/rules/prevent-abbreviations";
 import { shardCases } from "../utilities/shard-cases";

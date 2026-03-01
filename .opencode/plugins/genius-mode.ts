@@ -1,6 +1,7 @@
-import type { Hooks, Plugin } from "@opencode-ai/plugin";
 import { isBashOutput, isReadOutput } from "./types/outputs";
 import { sendNotificationAsync } from "./utilities/send-notification-async";
+
+import type { Hooks, Plugin } from "@opencode-ai/plugin";
 
 function definePlugin<THooks extends Hooks>(
 	plugin: (input: Parameters<Plugin>[0]) => Promise<THooks>,
