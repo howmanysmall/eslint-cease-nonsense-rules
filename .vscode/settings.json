@@ -137,6 +137,7 @@
 		"source.addMissingImports.ts": "explicit",
 		"source.fixAll.biome": "explicit",
 		"source.fixAll.oxc": "explicit",
+		"source.fixAll.rumdl": "explicit",
 		"source.organizeImports": "never",
 		"source.organizeImports.biome": "explicit",
 		"source.removeUnusedImports": "explicit",
@@ -147,8 +148,8 @@
 		"strings": "on",
 	},
 
+	"js/ts.preferences.autoImportSpecifierExcludeRegexes": ["^(node:)?os$"],
+
 	"oxc.lint.run": "onType",
 	"oxc.typeAware": true,
-
-	"typescript.preferences.autoImportSpecifierExcludeRegexes": ["^(node:)?os$"],
 }
