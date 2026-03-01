@@ -28,6 +28,9 @@
 		"editor.quickSuggestions": { "strings": true },
 		"editor.suggest.insertMode": "replace",
 	},
+	"[toml]": {
+		"editor.defaultFormatter": "tombi-toml.tombi",
+	},
 	"[typescript]": {
 		"editor.defaultFormatter": "oxc.oxc-vscode",
 		"editor.formatOnSave": true,
@@ -40,6 +43,7 @@
 		"editor.defaultFormatter": "redhat.vscode-yaml",
 		"editor.formatOnSave": true,
 	},
+
 	"chat.mcp.serverSampling": {
 		"Small ESLint/.vscode/mcp.json: context7": {
 			"allowedModels": [

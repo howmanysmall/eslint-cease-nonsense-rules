@@ -44,7 +44,9 @@ workspace-diagnostic.enabled = true
 [schema]
 enabled = true
 strict = true
-catalog = { paths = [
-	"tombi://www.schemastore.org/api/json/catalog.json",
-	"https://www.schemastore.org/api/json/catalog.json",
-] }
+catalog = {
+	paths = [
+		"tombi://www.schemastore.org/api/json/catalog.json",
+		"https://www.schemastore.org/api/json/catalog.json",
+	]
+}

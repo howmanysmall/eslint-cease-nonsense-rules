@@ -28,8 +28,8 @@ and fragments state.
        Configure the linter with classes that must be shared globally (e.g., `Log`, `Server`).
 
 2. **Locate Local Instances** Find `new ClassName()` calls that are nested inside functions, loops, or class methods. 3.
-   **Lift to Module Scope** Move the instantiation to the top of the file, outside of all functions.
-    4. **Verify References** Use the shared instance from your functions. Ensure it is initialized before first use.
+   **Lift to Module Scope** Move the instantiation to the top of the file, outside of all functions. 4. **Verify
+   References** Use the shared instance from your functions. Ensure it is initialized before first use.
 
 {/* oxfmt-ignore */}
 

@@ -11,5 +11,4 @@ const configuration = {
 	"*.toml": ["tombi lint", "tombi format"],
 };
 
-// oxlint-disable-next-line import/no-default-export
 export default configuration;
