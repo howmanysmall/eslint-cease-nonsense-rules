@@ -1,6 +1,5 @@
 import { resolve } from "node:path";
-
-import { file } from "./node-file";
+import { file } from "bun";
 
 export async function getConfigurationPathAsync(directory: string): Promise<string | undefined> {
 	const typescriptPath = resolve(directory, "eslint.config.ts");
