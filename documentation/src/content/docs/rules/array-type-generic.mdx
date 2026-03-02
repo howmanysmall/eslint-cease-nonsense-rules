@@ -1,0 +1,91 @@
+---
+title: array-type-generic
+badge:
+    text: TypeScript
+    variant: note
+description: Disallow T[] / readonly T[] type syntax and require Array<T> / ReadonlyArray<T>.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Use one array type style everywhere: `Array<T>` / `ReadonlyArray<T>`.
+
+## Rule Details :badge[TypeScript]{variant=note}
+
+This rule reports bracket array syntax and fixes it to generic syntax.
+
+1. `T[]` -> `Array<T>`
+2. `readonly T[]` -> `ReadonlyArray<T>`
+3. Nested arrays (`string[][]`) -> nested generic forms (`Array<Array<string>>`)
+4. Tuple arrays (`[A, B][]`) -> `Array<[A, B]>`
+
+Standalone tuples remain valid.
+
+<Aside type="tip" title="Tuple Types Stay Intact">
+	`[x: number, y: number]` is valid and stays unchanged. Only array wrappers are rewritten.
+</Aside>
+
+## Configuration
+
+<Code
+	code={["{", '\t"cease-nonsense/array-type-generic": "error"', "}"].join("\n")}
+	lang="typescript"
+	title="eslint.config.ts"
+/>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		<Code
+			code={[
+				"type Names = string[];",
+				"type Values = readonly number[];",
+				"type Pairs = [number, string][];",
+				"type Grid = string[][];",
+			].join("\n")}
+			lang="tsx"
+		/>
+	</TabItem>
+	<TabItem label="✅ Correct" icon="check">
+		<Code
+			code={[
+				"type Names = Array<string>;",
+				"type Values = ReadonlyArray<number>;",
+				"type Pairs = Array<[number, string]>;",
+				"type Grid = Array<Array<string>>;",
+				"type Point = [x: number, y: number];",
+			].join("\n")}
+			lang="tsx"
+		/>
+	</TabItem>
+</Tabs>
+
+## Why use this?
+
+<CardGrid stagger>
+	<Card title="Single Style" icon="list-format">
+		Review is faster when the codebase only has one array type format.
+	</Card>
+	<Card title="Clear Nesting" icon="magnifier">
+		Nested arrays and readonly arrays are easier to read in generic form.
+	</Card>
+	<Card title="Safe Autofix" icon="bolt">
+		The fixer rewrites the full type chain and keeps tuple semantics intact.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="no-empty-array-literal"
+		description="Disallow [] for empty array values"
+		href="/eslint-cease-nonsense-rules/rules/no-empty-array-literal/"
+	/>
+	<LinkCard
+		title="no-array-constructor-elements"
+		description="Controls new Array(...) value-construction forms"
+		href="/eslint-cease-nonsense-rules/rules/no-array-constructor-elements/"
+	/>
+</CardGrid>

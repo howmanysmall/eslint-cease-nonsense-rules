@@ -1,10 +1,8 @@
-#!/usr/bin/env bun
-
 import { resolve } from "node:path";
-import { exit } from "node:process";
+import { exit, hrtime } from "node:process";
 import { Command } from "@jsr/cliffy__command";
 import { type } from "arktype";
-import { $, file, nanoseconds } from "bun";
+import { $, file } from "bun";
 import picocolors from "picocolors";
 import prettyMilliseconds from "pretty-ms";
 
@@ -95,6 +93,7 @@ const testLiveCommand = new Command()
 	.option("--ci", "Enables CI mode.")
 	.arguments("<directory:string>")
 	.action(async ({ ci, useLink, cache }, directoryUnresolved) => {
+		log.info("Starting live test...");
 		const directory = resolve(directoryUnresolved);
 		const isDirectoryReal = await isDirectorySimpleAsync(directory);
 		if (!isDirectoryReal) {
@@ -135,14 +134,19 @@ const testLiveCommand = new Command()
 			const customEnv: Record<string, string> = { TIMING: "2000" };
 			if (ci) customEnv.CI = "true";
 
-			const shell = $.env(customEnv).cwd(directory);
+			const shell = $.cwd(directory).env(customEnv);
+
 			await shell`bun install`.quiet();
 			log.success(picocolors.green("Dependencies installed successfully."));
 
 			const duration = await profileAsync(async () => {
-				// oxlint-disable-next-line unicorn/prefer-ternary
-				if (cache) await shell`bun x --bun eslint --cache --max-warnings=0 ./src`;
-				else await shell`bun x --bun eslint --max-warnings=0 ./src`;
+				if (cache) {
+					log.info(picocolors.yellow("bun x --bun eslint --cache --max-warnings=0 ./src"));
+					await shell`bun x --bun eslint --cache --max-warnings=0 ./src`;
+				} else {
+					log.info(picocolors.yellow("bun x --bun eslint --max-warnings=0 ./src"));
+					await shell`bun x --bun eslint --max-warnings=0 ./src`;
+				}
 			});
 
 			log.success(picocolors.green(`ESLint took ${picocolors.bold(prettyMilliseconds(duration))}.`));
@@ -159,12 +163,12 @@ const testLiveCommand = new Command()
 export default testLiveCommand;
 
 async function profileAsync(callback: () => Promise<void>): Promise<number> {
-	const startTime = nanoseconds();
+	const startTime = hrtime.bigint();
 	try {
 		await callback();
 	} catch {
 		// Don't care
 	}
-	const finishTime = nanoseconds();
-	return (finishTime - startTime) / 1_000_000;
+	const finishTime = hrtime.bigint();
+	return Number((finishTime - startTime) / 1_000_000n);
 }

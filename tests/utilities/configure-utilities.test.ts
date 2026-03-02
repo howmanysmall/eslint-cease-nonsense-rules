@@ -7,7 +7,9 @@ import {
 	createEffectFunctionOptions,
 	createHookConfiguration,
 	createNamingConventionOptions,
+	createNoArrayConstructorElementsOptions,
 	createNoConstantConditionWithBreakOptions,
+	createNoEmptyArrayLiteralOptions,
 	createNoEventsInEventsCallbackOptions,
 	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
@@ -500,6 +502,51 @@ describe("configure-utilities", () => {
 				loopExitCalls: ["coroutine.yield", "task.wait"],
 			});
 			expect(configuration.loopExitCalls).toEqual(["coroutine.yield", "task.wait"]);
+		});
+	});
+
+	describe("createNoEmptyArrayLiteralOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createNoEmptyArrayLiteralOptions();
+			expect(configuration).toEqual({
+				ignoreInferredNonEmptyLiterals: true,
+				inferTypeForEmptyArrayFix: false,
+				requireExplicitGenericOnNewArray: true,
+			});
+		});
+
+		it("should override defaults", () => {
+			expect.assertions(3);
+			const configuration = createNoEmptyArrayLiteralOptions({
+				ignoreInferredNonEmptyLiterals: false,
+				inferTypeForEmptyArrayFix: true,
+				requireExplicitGenericOnNewArray: false,
+			});
+			expect(configuration.ignoreInferredNonEmptyLiterals).toBe(false);
+			expect(configuration.inferTypeForEmptyArrayFix).toBe(true);
+			expect(configuration.requireExplicitGenericOnNewArray).toBe(false);
+		});
+	});
+
+	describe("createNoArrayConstructorElementsOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createNoArrayConstructorElementsOptions();
+			expect(configuration).toEqual({
+				environment: "roblox-ts",
+				requireExplicitGenericOnNewArray: true,
+			});
+		});
+
+		it("should override defaults", () => {
+			expect.assertions(2);
+			const configuration = createNoArrayConstructorElementsOptions({
+				environment: "standard",
+				requireExplicitGenericOnNewArray: false,
+			});
+			expect(configuration.environment).toBe("standard");
+			expect(configuration.requireExplicitGenericOnNewArray).toBe(false);
 		});
 	});
 

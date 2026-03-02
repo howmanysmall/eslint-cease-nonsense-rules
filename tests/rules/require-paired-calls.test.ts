@@ -11,6 +11,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("require-paired-calls", () => {
+	// @ts-expect-error - This is dumb
 	ruleTester.run("require-paired-calls", rule, {
 		invalid: [
 			// Basic unpaired opener

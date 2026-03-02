@@ -13,6 +13,7 @@ const ruleTester = new RuleTester({
 const errors = [{ messageId: "hooksStrictReturn" }];
 
 describe("react-hooks-strict-return", () => {
+	// @ts-expect-error - This is dumb
 	ruleTester.run("react-hooks-strict-return", rule, {
 		invalid: [
 			// Direct array with 3+ elements

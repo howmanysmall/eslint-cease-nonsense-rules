@@ -11,6 +11,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("no-warn", () => {
+	// @ts-expect-error -- Shut up
 	ruleTester.run("no-warn", rule, {
 		invalid: [
 			{

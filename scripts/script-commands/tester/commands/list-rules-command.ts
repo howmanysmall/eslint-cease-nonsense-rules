@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 import { cwd, exit } from "node:process";
 import { Command } from "@jsr/cliffy__command";
 import { type } from "arktype";
+import { $ } from "bun";
 import picocolors from "picocolors";
 
 import { withContext } from "../logging/log-utilities";
@@ -34,7 +35,7 @@ const getRulesCommand = new Command()
 		log.verbose("Loading ESLint configuration...");
 
 		process.chdir(directory);
-		const text = await Bun.$`bun x --bun eslint --print-config ${configurationPath}`.quiet().text();
+		const text = await $`bun x --bun eslint --print-config ${configurationPath}`.quiet(true).text();
 		process.chdir(CURRENT_WORKING_DIRECTORY);
 
 		const json = isValidRules(JSON.parse(text));

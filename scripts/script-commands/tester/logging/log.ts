@@ -20,7 +20,8 @@ const log = createConsola({
 		compact: false,
 		date: true,
 	},
-	reporters: [errorReporter, combinedReporter],
-});
+})
+	.addReporter(errorReporter)
+	.addReporter(combinedReporter);
 
 export default log;

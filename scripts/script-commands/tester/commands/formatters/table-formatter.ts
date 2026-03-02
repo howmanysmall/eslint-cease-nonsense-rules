@@ -1,4 +1,5 @@
 // oxlint-disable no-array-callback-reference
+import { stripVTControlCharacters as stripANSI } from "node:util";
 import { blue, bold, dim, green, magenta, yellow } from "picocolors";
 
 import { formatSeverity, isRecord } from "./reused";
@@ -21,7 +22,7 @@ function formatConfigurationLine(key: string, value: unknown): string {
 }
 
 function padEnd(value: string, length: number): string {
-	return value + " ".repeat(Math.max(0, length - Bun.stripANSI(value).length));
+	return value + " ".repeat(Math.max(0, length - stripANSI(value).length));
 }
 
 function formatRecordConfiguration(
@@ -54,7 +55,7 @@ export function formatRulesAsTable(entries: ReadonlyArray<RuleEntry>): ReturnTyp
 		maxRuleWidth = Math.max(maxRuleWidth, entry.name.length);
 		if (entry.rule !== undefined) {
 			const severity = formatSeverity(entry.rule[0]);
-			maxSeverityWidth = Math.max(maxSeverityWidth, Bun.stripANSI(severity).length);
+			maxSeverityWidth = Math.max(maxSeverityWidth, stripANSI(severity).length);
 		}
 	}
 

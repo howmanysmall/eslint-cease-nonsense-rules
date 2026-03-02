@@ -22,7 +22,11 @@ import useHookAtTopLevel from "../src/rules/use-hook-at-top-level";
 
 import type { Rule } from "eslint";
 
-const RULES_TO_PROFILE: Record<string, Rule.RuleModule> = {
+import type { createRule } from "../src/utilities/create-rule";
+
+type RuleModule = Rule.RuleModule | ReturnType<typeof createRule>;
+
+const RULES_TO_PROFILE: Record<string, RuleModule> = {
 	"memoized-effect-dependencies": memoizedEffectDependencies,
 	"no-commented-code": noCommentedCode,
 	"no-shorthand-names": noShorthandNames,
@@ -67,12 +71,7 @@ function loadSourceFiles(): ReadonlyArray<SourceFile> {
 	return collectTsFiles(srcDir, "src");
 }
 
-function profileRule(
-	ruleName: string,
-	rule: Rule.RuleModule,
-	files: ReadonlyArray<SourceFile>,
-	iterations: number,
-): void {
+function profileRule(ruleName: string, rule: RuleModule, files: ReadonlyArray<SourceFile>, iterations: number): void {
 	const linter = new Linter();
 
 	const config: Linter.Config = {
@@ -85,6 +84,7 @@ function profileRule(
 			sourceType: "module",
 		},
 		plugins: {
+			// @ts-expect-error -- Shut up
 			profile: { rules: { [ruleName]: rule } },
 		},
 		rules: {

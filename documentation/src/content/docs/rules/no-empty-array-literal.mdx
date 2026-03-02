@@ -1,0 +1,83 @@
+---
+title: no-empty-array-literal
+badge:
+    text: TypeScript
+    variant: note
+description: Disallow [] when creating empty arrays.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Disallow empty array literals. Use constructor form for empty arrays instead.
+
+## Rule Details :badge[TypeScript]{variant=note}
+
+This rule reports `[]` when it has zero elements.
+
+- If the array element type is explicit, the fixer uses `new Array<T>()`.
+- If `inferTypeForEmptyArrayFix` is enabled, it can infer `T` from contextual typing.
+- If no type is available, the rule reports and offers `new Array()` as a suggestion.
+- Non-empty literals like `[1, 2, 3]` are allowed.
+
+<Aside type="tip" title="Works Well With array-type-generic">
+	Use this rule together with `array-type-generic` if you want consistent type/value array conventions.
+</Aside>
+
+## Configuration
+
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/no-empty-array-literal": ["error", {',
+		'\t\t"inferTypeForEmptyArrayFix": false,',
+		'\t\t"requireExplicitGenericOnNewArray": true,',
+		'\t\t"ignoreInferredNonEmptyLiterals": true',
+		"\t}]",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	title="eslint.config.ts"
+/>
+
+## Examples
+
+<Tabs>
+	<TabItem label="❌ Incorrect" icon="close">
+		<Code
+			code={[
+				"const values: Array<string> = [];",
+				"function readAll(input: Array<number> = []) {",
+				"\treturn input;",
+				"}",
+			].join("\n")}
+			lang="tsx"
+		/>
+	</TabItem>
+	<TabItem label="✅ Correct" icon="check">
+		<Code
+			code={[
+				"const values: Array<string> = new Array<string>();",
+				"function readAll(input: Array<number> = new Array<number>()) {",
+				"\treturn input;",
+				"}",
+				"const seeded = [1, 2, 3];",
+			].join("\n")}
+			lang="tsx"
+		/>
+	</TabItem>
+</Tabs>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="array-type-generic"
+		description="Enforce Array<T> / ReadonlyArray<T> type syntax"
+		href="/eslint-cease-nonsense-rules/rules/array-type-generic/"
+	/>
+	<LinkCard
+		title="no-array-constructor-elements"
+		description="Enforce constructor argument conventions for new Array(...)"
+		href="/eslint-cease-nonsense-rules/rules/no-array-constructor-elements/"
+	/>
+</CardGrid>

@@ -3,7 +3,9 @@ import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../rules/no-useless-use-spring"
 import type { BanInstancesOptions } from "../rules/ban-instances";
 import type { ComplexityConfiguration } from "../rules/enforce-ianitor-check-type";
 import type { NamingConventionOptions } from "../rules/naming-convention";
+import type { NoArrayConstructorElementsOptions } from "../rules/no-array-constructor-elements";
 import type { NoConstantConditionWithBreakOptions } from "../rules/no-constant-condition-with-break";
+import type { NoEmptyArrayLiteralOptions } from "../rules/no-empty-array-literal";
 import type { NoEventsInEventsCallbackOptions } from "../rules/no-events-in-events-callback";
 import type { NoGodComponentsOptions } from "../rules/no-god-components";
 import type { NoInstanceMethodsOptions } from "../rules/no-instance-methods-without-this";
@@ -316,6 +318,37 @@ export function createNoConstantConditionWithBreakOptions(
 	options: Partial<NoConstantConditionWithBreakOptions> = {},
 ): NoConstantConditionWithBreakOptions {
 	return { loopExitCalls: [], ...options };
+}
+
+/**
+ * Creates options for no-empty-array-literal rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNoEmptyArrayLiteralOptions(
+	options: Partial<NoEmptyArrayLiteralOptions> = {},
+): NoEmptyArrayLiteralOptions {
+	return {
+		ignoreInferredNonEmptyLiterals: true,
+		inferTypeForEmptyArrayFix: false,
+		requireExplicitGenericOnNewArray: true,
+		...options,
+	};
+}
+
+/**
+ * Creates options for no-array-constructor-elements rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNoArrayConstructorElementsOptions(
+	options: Partial<NoArrayConstructorElementsOptions> = {},
+): NoArrayConstructorElementsOptions {
+	return {
+		environment: "roblox-ts",
+		requireExplicitGenericOnNewArray: true,
+		...options,
+	};
 }
 
 /**
