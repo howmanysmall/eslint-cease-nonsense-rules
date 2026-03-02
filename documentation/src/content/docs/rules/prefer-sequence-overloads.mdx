@@ -6,7 +6,9 @@ badge:
 description: Prefer ColorSequence/NumberSequence overloads over manual keypoint arrays.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Prefer optimized `ColorSequence` and `NumberSequence` constructors.
 
@@ -34,8 +36,7 @@ rule prefers those overloads over manually building arrays of keypoints.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Verbose Keypoints
 		Avoid creating arrays for simple 0→1 linear sequences.
 
@@ -51,8 +52,9 @@ rule prefers those overloads over manually building arrays of keypoints.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Linear Overloads
     	Use the simplified constructors for linear or uniform sequences.
 
@@ -69,9 +71,7 @@ rule prefers those overloads over manually building arrays of keypoints.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why optimize sequences?
 

@@ -6,7 +6,9 @@ badge:
 description: Require stable keys for JSX elements that are part of a list.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Require stable `key` props for list items.
 
@@ -42,8 +44,7 @@ unless they are list items in an array literal or iteration callback.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Missing Keys
 		Bans elements inside maps that don't have a unique identifier.
 
@@ -61,8 +62,9 @@ unless they are list items in an array literal or iteration callback.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Keyed Elements
     	Use stable identifiers for every list item.
 
@@ -80,9 +82,7 @@ unless they are list items in an array literal or iteration callback.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why Keys Matter
 

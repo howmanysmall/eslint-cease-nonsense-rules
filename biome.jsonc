@@ -38,7 +38,7 @@
 		"expand": "auto",
 		"formatWithErrors": true,
 		"includes": [
-			"**/*.{json,jsonc,grit,ts,tsx,js,jsx,code-workspace}",
+			"**/*.{json,jsonc,grit,ts,tsx,js,jsx,code-workspace,astro}",
 			"!**/dist/**",
 			"!**/do-not-sync-ever/**",
 			"!**/garbage/**",

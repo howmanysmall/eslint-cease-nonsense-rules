@@ -6,7 +6,9 @@ badge:
 description: Require named effect callbacks so stack traces and DevTools stay readable.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Require named effect callbacks for `useEffect` and friends.
 
@@ -39,8 +41,7 @@ rule requires a named callback (and in `standard` mode, allows named function ex
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Anonymous Callbacks
 		Bans inline arrow functions that hide intent and clutter stack traces.
 
@@ -58,8 +59,9 @@ rule requires a named callback (and in `standard` mode, allows named function ex
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Named Effect Functions
     	Use descriptive names to label your side effects.
 
@@ -77,9 +79,7 @@ rule requires a named callback (and in `standard` mode, allows named function ex
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why named functions?
 

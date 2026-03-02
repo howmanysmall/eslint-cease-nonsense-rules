@@ -6,7 +6,9 @@ badge:
 description: Prefer React components over render helper functions that return JSX.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Disallow non-component functions that return JSX or React elements. Functions that return JSX should be proper React
 components.
@@ -37,8 +39,7 @@ components with clear props interfaces.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Render Helper Functions
 		camelCase functions that return JSX should be components instead.
 
@@ -61,8 +62,9 @@ components with clear props interfaces.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Proper React Components
     	Use PascalCase components with typed props interfaces.
 
@@ -92,9 +94,7 @@ components with clear props interfaces.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Exceptions
 

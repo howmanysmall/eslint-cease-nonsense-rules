@@ -6,7 +6,9 @@ badge:
 description: Disallow calling map() directly on table.create(...) and new Array(...).
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Disallow direct `.map(...)` calls on `table.create(...)` and `new Array(...)` constructors.
 
@@ -41,8 +43,7 @@ roblox-ts, this hides fill semantics and makes the code harder to follow.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Construct Then Map
 		Avoid map directly on preallocation constructors.
 
@@ -53,8 +54,9 @@ roblox-ts, this hides fill semantics and makes the code harder to follow.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Explicit Fill Loop
     	Allocate then fill with indexed assignments.
 
@@ -67,9 +69,7 @@ roblox-ts, this hides fill semantics and makes the code harder to follow.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why enforce this?
 

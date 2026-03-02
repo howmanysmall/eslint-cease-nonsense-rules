@@ -6,7 +6,9 @@ badge:
 description: Move instance methods that don't use this into module-level functions.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Detect instance methods that don't use `this`.
 
@@ -38,8 +40,7 @@ usually live as a module-level function instead.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Bound Pure Functions
 		Bans instance methods that act as pure functions but are tied to class instances.
 
@@ -54,8 +55,9 @@ usually live as a module-level function instead.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Standalone Utils
     	Extract stateless logic to module scope for maximum performance.
 
@@ -73,9 +75,7 @@ usually live as a module-level function instead.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why is this important?
 

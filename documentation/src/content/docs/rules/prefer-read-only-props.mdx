@@ -6,7 +6,9 @@ badge:
 description: "Treat props as inputs: require readonly prop types."
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Require `readonly` on prop types.
 
@@ -39,8 +41,7 @@ accidental mutation fails at compile time.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Mutable Props
 		Bans prop definitions that allow re-assignment.
 
@@ -57,8 +58,9 @@ accidental mutation fails at compile time.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Read-Only Props
     	Use the `readonly` modifier for every property in your interface.
 
@@ -75,9 +77,7 @@ accidental mutation fails at compile time.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why Enforce This?
 

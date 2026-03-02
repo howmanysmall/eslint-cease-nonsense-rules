@@ -16,6 +16,7 @@
 	},
 	"extends": [],
 	"globals": {
+		"Astro": "readonly",
 		"Bun": "readonly",
 	},
 	"ignorePatterns": [

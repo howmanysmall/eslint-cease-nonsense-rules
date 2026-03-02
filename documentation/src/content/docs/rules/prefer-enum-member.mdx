@@ -6,7 +6,9 @@ badge:
 description: Prefer enum members over raw strings/numbers.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Prefer enum members over raw strings/numbers.
 
@@ -38,8 +40,7 @@ mapped enum type.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Raw Values
 		Bans passing raw literals where an enum is expected.
 
@@ -57,8 +58,9 @@ mapped enum type.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Member References
     	Use the enum name followed by the member for all usages.
 
@@ -76,9 +78,7 @@ mapped enum type.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why Use Members?
 

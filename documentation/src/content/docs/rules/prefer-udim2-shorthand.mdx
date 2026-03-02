@@ -6,7 +6,9 @@ badge:
 description: Prefer UDim2.fromScale()/fromOffset() when half the constructor is zeros.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Prefer `UDim2.fromScale()` or `UDim2.fromOffset()` over the 4-argument constructor.
 
@@ -41,8 +43,7 @@ avoids redundant zeros and makes it obvious whether you're working in scale or o
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Verbose Constructors
 		Bans the 4-argument version when 2 arguments are just zeros.
 
@@ -56,8 +57,9 @@ avoids redundant zeros and makes it obvious whether you're working in scale or o
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Descriptive Shorthands
     	Use the specific static methods for scale or offset operations.
 
@@ -74,9 +76,7 @@ avoids redundant zeros and makes it obvious whether you're working in scale or o
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why use shorthands?
 

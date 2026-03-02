@@ -72,6 +72,7 @@ describe("pattern-replacement utilities", () => {
 				name: "fromValues",
 				parameters: ["$x", "$y"],
 			};
+			// @ts-expect-error - We only need the properties used by generateReplacement, so we can mock the node with a partial
 			const mockNode: TSESTree.Literal = {
 				loc: {
 					end: { column: 2, line: 1 },

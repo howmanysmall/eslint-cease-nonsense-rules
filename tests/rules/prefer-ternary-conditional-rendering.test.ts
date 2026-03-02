@@ -16,6 +16,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("prefer-ternary-conditional-rendering", () => {
+	// @ts-expect-error - This is dumb
 	ruleTester.run("prefer-ternary-conditional-rendering", rule, {
 		invalid: [
 			{

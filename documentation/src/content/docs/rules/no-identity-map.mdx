@@ -6,7 +6,9 @@ badge:
 description: Ban identity map calls like items.map(x => x).
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Ban identity `.map()` calls.
 
@@ -39,8 +41,7 @@ copies and callbacks.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Identity Maps
 		Bans patterns that return the item unchanged.
 
@@ -59,8 +60,9 @@ copies and callbacks.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Efficient Alternatives
     	Use the original reference if no change is needed, or use proper cloning methods.
 
@@ -77,9 +79,7 @@ copies and callbacks.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why is this wasteful?
 

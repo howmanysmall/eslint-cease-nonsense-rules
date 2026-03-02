@@ -6,7 +6,9 @@ badge:
 description: Disallow async work in constructors; use a factory instead.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Don't do async work in constructors.
 
@@ -34,8 +36,7 @@ callers can use the instance before it's initialized. That's a race condition wa
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Async in Constructor
 		Bans patterns that leave the object in a "loading" state after construction.
 
@@ -52,8 +53,9 @@ callers can use the instance before it's initialized. That's a race condition wa
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Static Factory Method
     	Use a dedicated async method to handle setup and return the instance.
 
@@ -76,9 +78,7 @@ callers can use the instance before it's initialized. That's a race condition wa
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why avoid async constructors?
 

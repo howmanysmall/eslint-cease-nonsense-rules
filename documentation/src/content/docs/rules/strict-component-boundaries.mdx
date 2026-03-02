@@ -6,7 +6,9 @@ badge:
 description: Don't import from a sibling component's internals. Use its public API.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Don't import from a sibling component's internals.
 
@@ -39,8 +41,7 @@ folder layout. This rule pushes you toward a public API (usually `index.ts`) ins
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Deep Sibling Imports
 		Bans reaching past the component's root into its subfolders.
 
@@ -54,8 +55,9 @@ folder layout. This rule pushes you toward a public API (usually `index.ts`) ins
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Public API & Shared Utils
     	Import from a public API or move shared logic to a shared folder.
 
@@ -72,9 +74,7 @@ folder layout. This rule pushes you toward a public API (usually `index.ts`) ins
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why Enforce Boundaries?
 

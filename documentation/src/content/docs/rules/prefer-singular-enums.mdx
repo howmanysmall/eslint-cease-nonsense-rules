@@ -6,7 +6,9 @@ badge:
 description: Prefer singular enum names (Color, not Colors).
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Enum names should be singular, not plural.
 
@@ -21,8 +23,7 @@ if the variable holds multiple values. This rule prefers singular names like `Co
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Plural Names
 		Bans enums named with plural suffixes or irregular plural forms.
 
@@ -41,8 +42,9 @@ if the variable holds multiple values. This rule prefers singular names like `Co
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Singular Names
     	Use singular forms for all enum declarations.
 
@@ -60,9 +62,7 @@ if the variable holds multiple values. This rule prefers singular names like `Co
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Refactoring Path
 

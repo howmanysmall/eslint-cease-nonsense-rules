@@ -6,7 +6,15 @@ badge:
 description: Prefer function components with typed props over React.FC.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import RuleExample from "../../../components/rule-example.astro";
+import { Type, generic } from "arktype";
+import { title } from "process";
+import React, { use } from "react";
+import { to, safe } from "sury";
+import { Convert, Clean, Check } from "typebox/value";
+import { types } from "util";
+import { variant, includes, is, description } from "valibot";
 
 Prefer function components with typed props over `React.FC`.
 
@@ -36,41 +44,43 @@ to end up anonymous in stack traces and DevTools. Prefer plain function declarat
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Type Annotations
 		Bans the use of generic wrapper types for component variables.
 
-    	<Code
-    		code={[
-    			"export const MyComponent: React.FC<Props> = ({ children }) => {",
-    			"\treturn <div>{children}</div>;",
-    			"};",
-    			"",
-    			"const Button: FC<ButtonProps> = ({ label }) => <button>{label}</button>;",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    	<RuleExample type="fail" title="Incorrect">
+    		<Code
+    			code={[
+    				"export const MyComponent: React.FC<Props> = ({ children }) => {",
+    				"\treturn <div>{children}</div>;",
+    				"};",
+    				"",
+    				"const Button: FC<ButtonProps> = ({ label }) => <button>{label}</button>;",
+    				].join("\n")}
+    			lang="tsx"
+    		/>
+    	</RuleExample>
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Function Declarations
     	Use standard TypeScript function signatures for your components.
 
-    	<Code
-    		code={[
-    			"export function MyComponent({ children }: Props) {",
-    			"\treturn <div>{children}</div>;",
-    			"}",
-    			"",
-    			"function Button({ label }: ButtonProps) {",
-    			"\treturn <button>{label}</button>;",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </TabItem>
-
-</Tabs>
+    	<RuleExample type="pass" title="Correct">
+    		<Code
+    			code={[
+    				"export function MyComponent({ children }: Props) {",
+    				"\treturn <div>{children}</div>;",
+    				"}",
+    				"",
+    				"function Button({ label }: ButtonProps) {",
+    				"\treturn <button>{label}</button>;",
+    				"}",
+    			].join("\n")}
+    			lang="tsx"
+    		/>
+    	</RuleExample>
+    </RuleExample>
 
 ## Problems with React.FC
 

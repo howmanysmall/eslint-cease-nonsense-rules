@@ -8,7 +8,9 @@ description:
     request/response.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Disallow sending Events back to the same player inside an `Events.connect()` callback.
 
@@ -44,8 +46,7 @@ The rule requires an `eventsImportPaths` array to identify which Events imports 
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Events Callback Calling Events
 		These patterns are flagged because they use Events for request/response.
 
@@ -68,8 +69,9 @@ The rule requires an `eventsImportPaths` array to identify which Events imports 
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Using Functions for Request/Response
     	These patterns are correct because they use the right abstraction.
 
@@ -94,9 +96,7 @@ The rule requires an `eventsImportPaths` array to identify which Events imports 
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Detection Strategy
 

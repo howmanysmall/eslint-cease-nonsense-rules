@@ -8,6 +8,8 @@ description: Ban specific Roblox Instances in new Instance() and JSX (configurab
 
 import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
 
+import RuleExample from "../../../components/rule-example.astro";
+
 Ban specific Roblox Instance classes in `new Instance()` and JSX.
 
 ## Rule Details :badge[Roblox]{variant=caution}
@@ -39,8 +41,7 @@ reason so the error message tells people what to use instead.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Banned Instances
 		Bans creation of instances specified in your configuration.
 
@@ -55,8 +56,9 @@ reason so the error message tells people what to use instead.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Allowed Alternatives
     	Use modern or specialized instances that satisfy your project requirements.
 
@@ -68,9 +70,7 @@ reason so the error message tells people what to use instead.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Configuration Options
 

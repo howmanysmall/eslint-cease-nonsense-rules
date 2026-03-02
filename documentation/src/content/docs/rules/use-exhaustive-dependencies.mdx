@@ -6,7 +6,9 @@ badge:
 description: Make hook dependency arrays match what the callback actually uses.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Make dependency arrays match what the callback uses.
 
@@ -36,8 +38,7 @@ stale closures. Extra deps lead to unnecessary reruns.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Stale Closures
 		Bans missing or incorrect dependencies that lead to out-of-sync state.
 
@@ -52,8 +53,9 @@ stale closures. Extra deps lead to unnecessary reruns.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Exhaustive Dependencies
     	Ensure every external value used is present in the array.
 
@@ -67,9 +69,7 @@ stale closures. Extra deps lead to unnecessary reruns.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Common Solutions
 

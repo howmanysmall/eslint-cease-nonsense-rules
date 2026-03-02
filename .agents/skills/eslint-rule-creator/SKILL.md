@@ -22,13 +22,14 @@ Creates complete ESLint rules with all required files: rule implementation, test
 
 1. `src/rules/{rule-name}.ts` - Rule implementation
 2. `tests/rules/{rule-name}.test.ts` - Test file (100% coverage required)
-3. `docs/rules/{rule-name}.md` - Documentation
+3. `documentation/src/content/docs/rules/{rule-name}.mdx` - Documentation
 4. `README.md` - Add rule to appropriate category
 5. `src/index.ts` - Register rule and export types
 
 **CONDITIONALLY update:**
 
 1. `src/utilities/configure-utilities.ts` - Only if rule has configurable options
+2. `documentation/astro.config.ts` - If docs sidebar is manually curated (this repo is), add the new rule slug to the correct sidebar section in alphabetical position
 
 ## Gathering Requirements
 
@@ -75,11 +76,10 @@ See `templates/docs.md.template` for the pattern.
 
 Key points:
 
-- Start with `# rule-name` and description
-- Include `## Rule Details` explanation
-- Include `## Options` section if applicable
-- Include `## Examples` with `### Incorrect` and `### Correct`
-- End with `## When Not To Use It` and `## Related Rules`
+- Use MDX frontmatter and components consistent with `documentation/src/content/docs/rules/*.mdx`
+- Keep examples aligned with tested behavior (messages, suggestions, autofixes)
+- Ensure links/hrefs use the docs base path format already used in existing rule docs
+- If adding a new rule page, add its slug to `documentation/astro.config.ts` in the correct sidebar section and verify it appears in that section before finishing.
 
 ### README.md Update
 
@@ -136,6 +136,9 @@ Before declaring done:
 - [ ] `bun run lint` passes
 - [ ] `bun test` passes with 100% coverage for new rule
 - [ ] `bun run build` succeeds
+- [ ] `bun run docs:build` succeeds
 - [ ] All 5+ files created/updated
 - [ ] Rule appears in README under correct category
 - [ ] Examples in docs match the actual rule behavior
+- [ ] Rule slug is present in `documentation/astro.config.ts`
+- [ ] Rule route is reachable (`/rules/{rule-name}/`) after `bun run docs:build`

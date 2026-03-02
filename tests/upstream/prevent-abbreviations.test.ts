@@ -184,4 +184,5 @@ for (const group of collected) {
 	}
 }
 
+// @ts-expect-error -- Shut up
 ruleTester.run("prevent-abbreviations", rule, { invalid: shardCases(invalid), valid: shardCases(valid) });

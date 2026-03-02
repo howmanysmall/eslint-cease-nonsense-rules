@@ -6,7 +6,9 @@ badge:
 description: Enforce PascalCase for enum names and members.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Enum names and members must be PascalCase.
 
@@ -22,8 +24,7 @@ from constants like `MAX_SIZE` and variables like `activePlayer`.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Mixed Casing
 		Bans non-PascalCase casing for enums and their members.
 
@@ -40,8 +41,9 @@ from constants like `MAX_SIZE` and variables like `activePlayer`.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Strict PascalCase
     	Use capitalized words without underscores for both names and members.
 
@@ -59,9 +61,7 @@ from constants like `MAX_SIZE` and variables like `activePlayer`.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why PascalCase?
 

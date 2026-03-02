@@ -6,7 +6,9 @@ badge:
 description: "Disallow configured constructor calls (default: new Instance) inside useMemo callbacks."
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Disallow configured constructor calls inside `useMemo` callbacks.
 
@@ -56,8 +58,7 @@ The rule accepts these options:
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Constructor Call in `useMemo`
 		Allocating runtime objects inside memo callbacks is disallowed.
 
@@ -73,8 +74,9 @@ The rule accepts these options:
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Explicit Lifecycle + Pure Memo
     	Create resources in effects and keep memo for pure computation.
 
@@ -96,9 +98,7 @@ The rule accepts these options:
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Detection Strategy
 

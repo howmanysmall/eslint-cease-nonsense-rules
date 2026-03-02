@@ -1,3 +1,4 @@
+import arrayTypeGeneric from "./rules/array-type-generic";
 import banInstances from "./rules/ban-instances";
 import banReactFC from "./rules/ban-react-fc";
 import enforceIanitorCheckType from "./rules/enforce-ianitor-check-type";
@@ -5,11 +6,13 @@ import fastFormat from "./rules/fast-format";
 import memoizedEffectDependencies from "./rules/memoized-effect-dependencies";
 import misleadingLuaTupleChecks from "./rules/misleading-lua-tuple-checks";
 import namingConvention from "./rules/naming-convention";
+import noArrayConstructorElements from "./rules/no-array-constructor-elements";
 import noArraySizeAssignment from "./rules/no-array-size-assignment";
 import noAsyncConstructor from "./rules/no-async-constructor";
 import noColor3Constructor from "./rules/no-color3-constructor";
 import noCommentedCode from "./rules/no-commented-code";
 import noConstantConditionWithBreak from "./rules/no-constant-condition-with-break";
+import noEmptyArrayLiteral from "./rules/no-empty-array-literal";
 import noEventsInEventsCallback from "./rules/no-events-in-events-callback";
 import noGodComponents from "./rules/no-god-components";
 import noIdentityMap from "./rules/no-identity-map";
@@ -59,8 +62,10 @@ export type { BanInstancesOptions } from "./rules/ban-instances";
 export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
 export type { MemoizedEffectDependenciesOptions } from "./rules/memoized-effect-dependencies";
 export type { NamingConventionOptions } from "./rules/naming-convention";
+export type { NoArrayConstructorElementsOptions } from "./rules/no-array-constructor-elements";
 export type { NoArraySizeAssignmentOptions } from "./rules/no-array-size-assignment";
 export type { NoConstantConditionWithBreakOptions } from "./rules/no-constant-condition-with-break";
+export type { NoEmptyArrayLiteralOptions } from "./rules/no-empty-array-literal";
 export type { NoEventsInEventsCallbackOptions } from "./rules/no-events-in-events-callback";
 export type { NoGodComponentsOptions } from "./rules/no-god-components";
 export type { NoIdentityMapOptions } from "./rules/no-identity-map";
@@ -88,7 +93,9 @@ export {
 	createEffectFunctionOptions,
 	createHookConfiguration,
 	createNamingConventionOptions,
+	createNoArrayConstructorElementsOptions,
 	createNoConstantConditionWithBreakOptions,
+	createNoEmptyArrayLiteralOptions,
 	createNoEventsInEventsCallbackOptions,
 	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
@@ -121,6 +128,7 @@ export { pattern } from "./utilities/pattern-replacement";
  * Exposes rule implementations and configuration presets for ESLint flat config.
  */
 export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
+	"array-type-generic": arrayTypeGeneric,
 	"ban-instances": banInstances,
 	"ban-react-fc": banReactFC,
 	"enforce-ianitor-check-type": enforceIanitorCheckType,
@@ -128,11 +136,13 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"memoized-effect-dependencies": memoizedEffectDependencies,
 	"misleading-lua-tuple-checks": misleadingLuaTupleChecks,
 	"naming-convention": namingConvention,
+	"no-array-constructor-elements": noArrayConstructorElements,
 	"no-array-size-assignment": noArraySizeAssignment,
 	"no-async-constructor": noAsyncConstructor,
 	"no-color3-constructor": noColor3Constructor,
 	"no-commented-code": noCommentedCode,
 	"no-constant-condition-with-break": noConstantConditionWithBreak,
+	"no-empty-array-literal": noEmptyArrayLiteral,
 	"no-events-in-events-callback": noEventsInEventsCallback,
 	"no-god-components": noGodComponents,
 	"no-identity-map": noIdentityMap,
@@ -196,13 +206,16 @@ export const recommended = {
 		"cease-nonsense": { rules },
 	},
 	rules: {
+		"cease-nonsense/array-type-generic": "error",
 		"cease-nonsense/ban-react-fc": "error",
 		"cease-nonsense/enforce-ianitor-check-type": "error",
 		"cease-nonsense/fast-format": "error",
 		"cease-nonsense/misleading-lua-tuple-checks": "error",
+		"cease-nonsense/no-array-constructor-elements": "error",
 		"cease-nonsense/no-array-size-assignment": "error",
 		"cease-nonsense/no-async-constructor": "error",
 		"cease-nonsense/no-color3-constructor": "error",
+		"cease-nonsense/no-empty-array-literal": "error",
 		"cease-nonsense/no-god-components": "error",
 		"cease-nonsense/no-identity-map": "error",
 		"cease-nonsense/no-instance-methods-without-this": "error",

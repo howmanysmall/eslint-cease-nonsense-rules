@@ -34,6 +34,7 @@ const nonConstErrors = [
 ];
 
 describe("prefer-module-scope-constants", () => {
+	// @ts-expect-error - This is dumb
 	ruleTester.run("prefer-module-scope-constants", rule, {
 		invalid: [
 			// Not using const
@@ -75,7 +76,7 @@ describe("prefer-module-scope-constants", () => {
 		],
 	});
 
-	// Script mode tests (CommonJS)
+	// @ts-expect-error - This is dumb
 	scriptRuleTester.run("prefer-module-scope-constants (script)", rule, {
 		invalid: [
 			// Deeply nested in script mode - not at module scope

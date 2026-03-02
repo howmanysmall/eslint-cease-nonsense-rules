@@ -8,7 +8,9 @@ description:
     performance.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Prefer combining multiple `world.get()` or `world.has()` calls on the same entity.
 
@@ -37,8 +39,7 @@ lookups on the same entity and merges them.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Redundant Lookups
 		Separate calls on the same entity force extra lookups.
 
@@ -54,8 +55,9 @@ lookups on the same entity and merges them.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Grouped Queries
     	Use the multi-argument overloads to keep it to one lookup.
 
@@ -70,9 +72,7 @@ lookups on the same entity and merges them.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Performance Benefits
 

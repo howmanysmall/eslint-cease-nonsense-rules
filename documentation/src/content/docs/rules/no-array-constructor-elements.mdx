@@ -1,0 +1,99 @@
+---
+title: no-array-constructor-elements
+badge:
+    text: Roblox
+    variant: note
+description: Enforce safe, explicit new Array(...) constructor patterns.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
+
+Disallow element-style `new Array(...)` construction and enforce environment-aware constructor behavior.
+
+## Rule Details :badge[Roblox]{variant=note}
+
+This rule enforces four behaviors:
+
+1. `new Array("a", "b")` is reported and rewritten to `["a", "b"]`.
+2. `new Array("a")` is reported and rewritten/suggested as `["a"]`.
+3. `new Array(3)` is allowed in `roblox-ts` mode and reported in `standard` mode.
+4. `new Array<T>()` + consecutive `.push(...)` calls can collapse into one literal initializer.
+
+<Aside type="tip" title="Length Constructor Safety">
+	In `standard` mode, length constructor reports include an `Array.from({ length: n })` suggestion.
+	The rule never rewrites length form to `[n]`.
+</Aside>
+
+## Configuration
+
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/no-array-constructor-elements": ["error", {',
+		'\t\t"environment": "roblox-ts",',
+		'\t\t"requireExplicitGenericOnNewArray": true',
+		"\t}]",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	title="eslint.config.ts"
+/>
+
+## Push-Collapse Behavior
+
+<Steps>
+1. Detect `const/let arr = new Array<T>()`.
+2. Collect immediate consecutive `arr.push(...)` statements in the same block.
+3. If arguments are side-effect-safe, auto-fix to one literal initializer.
+4. If not side-effect-safe, report and offer a suggestion instead.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<RuleExample type="fail" title="Incorrect">
+	<Code
+		code={[
+			'const letters = new Array("a", "b");',
+			'const one = new Array("a");',
+			"",
+			"const array = new Array<string>();",
+			'array.push("a");',
+			'array.push("b");',
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
+
+<RuleExample type="pass" title="Correct">
+	<Code
+		code={[
+			'const letters = ["a", "b"];',
+			'const one = ["a"];',
+			"",
+			'const array = ["a", "b"];',
+			"const empty = new Array<string>();",
+			"const sized = new Array(10); // allowed in roblox-ts mode",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="no-empty-array-literal"
+		description="Disallow [] for empty arrays"
+		href="/eslint-cease-nonsense-rules/rules/no-empty-array-literal/"
+	/>
+	<LinkCard
+		title="no-array-size-assignment"
+		description="Prefer push over append-by-size indexing"
+		href="/eslint-cease-nonsense-rules/rules/no-array-size-assignment/"
+	/>
+</CardGrid>

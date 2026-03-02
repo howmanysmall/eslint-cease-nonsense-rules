@@ -6,7 +6,9 @@ badge:
 description: Prefer structured logging over raw print() calls.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Prefer structured logging over the global `print()`.
 
@@ -37,8 +39,7 @@ The global `print()` call is fine for quick local debugging, but it doesn't scal
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Raw Print Calls
 		Avoid using the global `print` for debugging or telemetry.
 
@@ -50,8 +51,9 @@ The global `print()` call is fine for quick local debugging, but it doesn't scal
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Structured Logging
     	Use a logging library with appropriate severity levels.
 
@@ -63,9 +65,7 @@ The global `print()` call is fine for quick local debugging, but it doesn't scal
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why use Log instead?
 

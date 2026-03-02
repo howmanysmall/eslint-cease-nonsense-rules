@@ -11,6 +11,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("no-print", () => {
+	// @ts-expect-error -- Shut up
 	ruleTester.run("no-print", rule, {
 		invalid: [
 			{

@@ -75,6 +75,7 @@ export default defineConfig({
 						"rules/ban-instances",
 						"rules/enforce-ianitor-check-type",
 						"rules/misleading-lua-tuple-checks",
+						"rules/no-array-constructor-elements",
 						"rules/no-array-size-assignment",
 						"rules/no-color3-constructor",
 						"rules/no-instance-methods-without-this",
@@ -92,7 +93,9 @@ export default defineConfig({
 				},
 				{
 					items: [
+						"rules/array-type-generic",
 						"rules/naming-convention",
+						"rules/no-empty-array-literal",
 						"rules/no-shorthand-names",
 						"rules/prefer-pascal-case-enums",
 						"rules/prefer-singular-enums",

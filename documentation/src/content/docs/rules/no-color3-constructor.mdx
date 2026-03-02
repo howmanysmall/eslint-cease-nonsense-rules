@@ -6,7 +6,9 @@ badge:
 description: Prefer Color3.fromRGB() over new Color3(r, g, b) for non-zero values.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Prefer `Color3.fromRGB()` over `new Color3(r, g, b)` for non-zero values.
 
@@ -37,8 +39,7 @@ for most UI work. This rule prefers `fromRGB` while still allowing `new Color3()
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Floating Point Constructors
 		Using `new Color3` with non-zero values triggers an error.
 
@@ -53,8 +54,9 @@ for most UI work. This rule prefers `fromRGB` while still allowing `new Color3()
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Optimized Static Methods
     	Use `fromRGB` for colors or keep `new Color3()` for zero-initialization.
 
@@ -69,9 +71,7 @@ for most UI work. This rule prefers `fromRGB` while still allowing `new Color3()
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Performance Benefits
 

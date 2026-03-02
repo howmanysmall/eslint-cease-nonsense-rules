@@ -11,6 +11,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("no-color3-constructor", () => {
+	// @ts-expect-error -- Shut up
 	ruleTester.run("no-color3-constructor", rule, {
 		invalid: [
 			{

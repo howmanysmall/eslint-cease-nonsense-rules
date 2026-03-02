@@ -6,7 +6,9 @@ badge:
 description: Prefer EnumItem values over magic strings/numbers in roblox-ts.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Prefer EnumItem values over magic strings/numbers.
 
@@ -39,8 +41,7 @@ type safety and IDE features like "Go to Definition" and "Find References". This
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Magic Values
 		Bans patterns that use strings or numbers where enums are expected.
 
@@ -57,8 +58,9 @@ type safety and IDE features like "Go to Definition" and "Find References". This
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Explicit Enums
     	Use the built-in `Enum` global for all property assignments and arguments.
 
@@ -75,9 +77,7 @@ type safety and IDE features like "Go to Definition" and "Find References". This
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Configuration
 

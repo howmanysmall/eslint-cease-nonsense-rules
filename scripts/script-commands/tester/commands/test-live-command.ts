@@ -1,10 +1,9 @@
-#!/usr/bin/env bun
-
+import { rename } from "node:fs/promises";
 import { resolve } from "node:path";
 import { exit } from "node:process";
 import { Command } from "@jsr/cliffy__command";
 import { type } from "arktype";
-import { $, file, nanoseconds } from "bun";
+import { $, env, file, nanoseconds } from "bun";
 import picocolors from "picocolors";
 import prettyMilliseconds from "pretty-ms";
 
@@ -46,10 +45,51 @@ interface Parameters {
 	readonly packageContents: string;
 	readonly packageFileName: string;
 	readonly thisPackageJson: BasePackageJson;
+	readonly useLink: boolean;
 }
 
 function sanitizeForPath(name: string): string {
 	return name.replaceAll("@", "").replaceAll("/", "-");
+}
+
+function expandDirectory(directory: string): string {
+	if (!directory.startsWith("~/")) return directory;
+	const home = env.HOME;
+	if (!home) return directory;
+	return directory.replace(/^~\//u, `${home}/`);
+}
+
+function createPackageFileName(name: string, version: string): string {
+	return `${sanitizeForPath(`${name}-${version}`)}-${Date.now()}.tgz`;
+}
+
+const isValidJson = type({
+	filename: "string",
+})
+	.readonly()
+	.array()
+	.readonly();
+type PackOutput = typeof isValidJson.infer;
+
+function parsePackOutput(output: string): PackOutput {
+	const trimmed = output.trim();
+	const matches = [...trimmed.matchAll(/(?:^|\n)\[/gu)];
+	if (matches.length === 0) {
+		throw new Error("npm pack output did not include JSON metadata.");
+	}
+
+	const { index: start } = matches.at(-1) as RegExpMatchArray;
+	if (start === undefined) {
+		throw new Error("npm pack output did not include JSON metadata.");
+	}
+
+	const jsonText = trimmed.slice(start).trim();
+	const parsed = isValidJson(JSON.parse(jsonText));
+	if (parsed instanceof type.errors) {
+		throw new TypeError(`Unexpected npm pack JSON payload shape - ${parsed.summary}`);
+	}
+
+	return parsed;
 }
 
 async function replacePackageJsonAsync({
@@ -59,14 +99,15 @@ async function replacePackageJsonAsync({
 	packageContents,
 	packageFileName,
 	thisPackageJson,
+	useLink,
 }: Parameters): Promise<() => Promise<void>> {
 	const { name } = thisPackageJson;
 	const { dependencies, devDependencies } = livePackageJson;
 
 	const pathToUse = `./patches/node/${packageFileName}`;
 
-	if (name in dependencies) dependencies[name] = pathToUse;
-	else if (name in devDependencies) devDependencies[name] = pathToUse;
+	if (name in dependencies) dependencies[name] = useLink ? `link:${name}` : pathToUse;
+	else if (name in devDependencies) devDependencies[name] = useLink ? `link:${name}` : pathToUse;
 	else {
 		log.fail(`Package ${name} not found in dependencies or devDependencies.`);
 		exit(1);
@@ -95,7 +136,8 @@ const testLiveCommand = new Command()
 	.option("--ci", "Enables CI mode.")
 	.arguments("<directory:string>")
 	.action(async ({ ci, useLink, cache }, directoryUnresolved) => {
-		const directory = resolve(directoryUnresolved);
+		log.info("Starting live test...");
+		const directory = resolve(expandDirectory(directoryUnresolved));
 		const isDirectoryReal = await isDirectorySimpleAsync(directory);
 		if (!isDirectoryReal) {
 			log.fail(picocolors.red(`The directory "${picocolors.bold(directory)}" does not exist.`));
@@ -113,7 +155,7 @@ const testLiveCommand = new Command()
 		const [thisPackageJson] = await readPackageJsonAsync(file(resolve(".", "package.json")));
 		const [livePackageJson, packageContents] = await readPackageJsonAsync(livePackageFile);
 
-		const packageFileName = sanitizeForPath(`${thisPackageJson.name}-${thisPackageJson.version}.tgz`);
+		const packageFileName = createPackageFileName(thisPackageJson.name, thisPackageJson.version);
 
 		const cleanupAsync = await replacePackageJsonAsync({
 			directory,
@@ -122,27 +164,41 @@ const testLiveCommand = new Command()
 			packageContents,
 			packageFileName,
 			thisPackageJson,
+			useLink,
 		});
 
 		await $`bun run build`.quiet();
 
 		const nodePackages = resolve(directory, "patches", "node");
-		// oxlint-disable-next-line unicorn/prefer-ternary
+		await $`mkdir -p ${nodePackages}`.quiet();
+		//
 		if (useLink) await $`bun link`;
-		else await $`npm pack --pack-destination ${nodePackages}`.quiet();
+
+		if (!useLink) {
+			const output = await $`npm pack --ignore-scripts --json --pack-destination ${nodePackages}`.text();
+			const packMetadata = parsePackOutput(output);
+			const [packData] = packMetadata;
+			const packedFile = packData?.filename;
+			if (!packedFile) {
+				log.fail("Failed to produce plugin package for live test.");
+				exit(1);
+			}
+			await rename(resolve(nodePackages, packedFile), resolve(nodePackages, packageFileName));
+		}
 
 		try {
-			const customEnv: Record<string, string> = { TIMING: "2000" };
+			const customEnv: Record<string, string> = { ...Bun.env, TIMING: "2000" };
 			if (ci) customEnv.CI = "true";
 
-			const shell = $.env(customEnv).cwd(directory);
+			const shell = $.cwd(directory).env(customEnv);
+
 			await shell`bun install`.quiet();
 			log.success(picocolors.green("Dependencies installed successfully."));
 
 			const duration = await profileAsync(async () => {
 				// oxlint-disable-next-line unicorn/prefer-ternary
-				if (cache) await shell`bun x --bun eslint --cache --max-warnings=0 ./src`;
-				else await shell`bun x --bun eslint --max-warnings=0 ./src`;
+				if (cache) await shell`bun run eslint --cache ./src`;
+				else await shell`bun run eslint ./src`;
 			});
 
 			log.success(picocolors.green(`ESLint took ${picocolors.bold(prettyMilliseconds(duration))}.`));
@@ -162,8 +218,8 @@ async function profileAsync(callback: () => Promise<void>): Promise<number> {
 	const startTime = nanoseconds();
 	try {
 		await callback();
-	} catch {
-		// Don't care
+	} catch (error) {
+		log.fail(picocolors.red(`Error during profiling: ${error instanceof Error ? error.message : String(error)}`));
 	}
 	const finishTime = nanoseconds();
 	return (finishTime - startTime) / 1_000_000;

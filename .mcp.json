@@ -6,13 +6,8 @@
 			"type": "stdio"
 		},
 		"npm-registry": {
-			"args": ["run", "github.com/howmanysmall/npm-registry-mcp/src@main"],
-			"command": "go",
+			"command": "npm-registry-mcp",
 			"type": "stdio"
-		},
-		"uniprof": {
-			"args": ["x", "uniprof", "mcp", "run"],
-			"command": "bun"
 		}
 	}
 }

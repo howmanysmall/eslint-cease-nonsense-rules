@@ -6,7 +6,9 @@ badge:
 description: Reports unused imports (including references that only appear in JSDoc).
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Reports imports you don't actually use.
 
@@ -39,8 +41,7 @@ harder to see what a module depends on. The rule also counts references inside J
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Ghost Imports
 		Bans imports that don't contribute to the logic or documentation of the file.
 
@@ -53,8 +54,9 @@ harder to see what a module depends on. The rule also counts references inside J
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Lean Imports
     	Every import line corresponds to an active symbol in the file.
 
@@ -71,9 +73,7 @@ harder to see what a module depends on. The rule also counts references inside J
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why remove unused imports?
 

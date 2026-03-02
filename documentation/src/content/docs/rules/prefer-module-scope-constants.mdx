@@ -6,7 +6,9 @@ badge:
 description: SCREAMING_SNAKE_CASE should be module-level const (not local or mutable).
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 SCREAMING_SNAKE_CASE variables must be `const` at module scope.
 
@@ -39,8 +41,7 @@ SCREAMING_SNAKE_CASE variables must be `const` at module scope.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Local or Mutable Constants
 		Bans uppercase naming for variables that are local or can be reassigned.
 
@@ -56,8 +57,9 @@ SCREAMING_SNAKE_CASE variables must be `const` at module scope.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Module-Level Constants
     	Define once at the file's root so it's obvious and reusable.
 
@@ -74,9 +76,7 @@ SCREAMING_SNAKE_CASE variables must be `const` at module scope.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why use module scope?
 

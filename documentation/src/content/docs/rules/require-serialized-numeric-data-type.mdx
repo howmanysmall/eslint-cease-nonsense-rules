@@ -6,7 +6,9 @@ badge:
 description: Require DataType.* instead of number in serialization contexts.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Require `DataType.*` instead of `number` in serialization contexts.
 
@@ -38,8 +40,7 @@ This rule enforces explicit `DataType` variants so the serializer knows how to p
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Ambiguous Numbers
 		Bans generic `number` in serialization contexts.
 
@@ -54,8 +55,9 @@ This rule enforces explicit `DataType` variants so the serializer knows how to p
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Explicit Variants
     	Use the `DataType` enum to specify the exact binary format.
 
@@ -72,9 +74,7 @@ This rule enforces explicit `DataType` variants so the serializer knows how to p
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Supported Types
 

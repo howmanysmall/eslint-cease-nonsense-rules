@@ -6,7 +6,9 @@ badge:
 description: Ensure that singletons and utility classes are instantiated once at module scope.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Require certain classes to be instantiated at module scope rather than inside functions.
 
@@ -37,8 +39,7 @@ and fragments state.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Local Instantiation
 		Recreating heavier objects inside frequently executed code adds churn.
 
@@ -54,8 +55,9 @@ and fragments state.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Static Global Instance
     	Instantiate once at the top level and reuse the reference everywhere.
 
@@ -72,9 +74,7 @@ and fragments state.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why Avoid Local Instantiations?
 

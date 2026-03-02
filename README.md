@@ -2223,6 +2223,116 @@ import { Foo } from "./components/Foo";
 
 ### TypeScript
 
+#### `array-type-generic`
+
+Disallow bracket array type syntax (`T[]`, `readonly T[]`) and require generic array types.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/array-type-generic": "error"
+}
+```
+
+**❌ Bad**
+
+```typescript
+type Names = string[];
+type Values = readonly number[];
+type Pairs = [number, string][];
+type Grid = string[][];
+```
+
+**✅ Good**
+
+```typescript
+type Names = Array<string>;
+type Values = ReadonlyArray<number>;
+type Pairs = Array<[number, string]>;
+type Grid = Array<Array<string>>;
+```
+
+#### `no-empty-array-literal`
+
+Disallow empty array literals (`[]`). Use `new Array<T>()` (or `new Array()` where contextual typing is accepted).
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-empty-array-literal": ["error", {
+    "inferTypeForEmptyArrayFix": false,
+    "requireExplicitGenericOnNewArray": true,
+    "ignoreInferredNonEmptyLiterals": true,
+    "allowedEmptyArrayContexts": {
+      "assignmentExpressions": true,
+      "assignmentPatterns": true,
+      "arrowFunctionBody": true,
+      "callArguments": true,
+      "forOfStatements": true,
+      "logicalExpressions": true,
+      "conditionalExpressions": true,
+      "typeAssertions": true,
+      "propertyValues": true,
+      "returnStatements": true,
+      "jsxAttributes": true
+    }
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+const values: Array<string> = [];
+function build(input: Array<number> = []) {
+  return input;
+}
+```
+
+**✅ Good**
+
+```typescript
+const values: Array<string> = new Array<string>();
+function build(input: Array<number> = new Array<number>()) {
+  return input;
+}
+const seeded = [1, 2, 3];
+```
+
+#### `no-array-constructor-elements`
+
+Disallow element-style `new Array(...)` constructors and enforce environment-aware length constructor behavior.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-array-constructor-elements": ["error", {
+    "environment": "roblox-ts",
+    "requireExplicitGenericOnNewArray": true
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+const letters = new Array("a", "b");
+const first = new Array("a");
+const list = new Array();
+```
+
+**✅ Good**
+
+```typescript
+const letters = ["a", "b"];
+const first = ["a"];
+const list = new Array<string>();
+const sized = new Array(10); // allowed in roblox-ts mode
+```
+
 #### `naming-convention`
 
 Enforce naming conventions for TypeScript constructs. Optimized for common use cases like interface prefix checking

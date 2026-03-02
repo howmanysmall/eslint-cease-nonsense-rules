@@ -6,7 +6,9 @@ badge:
 description: "Experimental: flags unstable effect dependencies that should be memoized."
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Experimental rule that flags obviously unstable effect dependencies.
 
@@ -21,36 +23,35 @@ rerenders or even loops when an effect updates something that gets recreated eve
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
-		### Unmemoized dependencies
-		<Code
-			code={[
-				'import { useEffect } from "@rbxts/react";',
-				"",
-				"function Component() {",
-				"\tconst dep = {}; // new object every render",
-				"\tuseEffect(() => {}, [dep]);",
-				"}",
-			].join("\n")}
-			lang="tsx"
-		/>
-	</TabItem>
-	<TabItem label="✅ Correct" icon="check">
-		### Memoized dependencies
-		<Code
-			code={[
-				'import { useEffect, useMemo } from "@rbxts/react";',
-				"",
-				"function Component() {",
-				"\tconst dep = useMemo(() => ({}), []);",
-				"\tuseEffect(() => {}, [dep]);",
-				"}",
-			].join("\n")}
-			lang="tsx"
-		/>
-	</TabItem>
-</Tabs>
+<RuleExample type="fail" title="Incorrect">
+	### Unmemoized dependencies
+	<Code
+		code={[
+			'import { useEffect } from "@rbxts/react";',
+			"",
+			"function Component() {",
+			"\tconst dep = {}; // new object every render",
+			"\tuseEffect(() => {}, [dep]);",
+			"}",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
+
+<RuleExample type="pass" title="Correct">
+	### Memoized dependencies
+	<Code
+		code={[
+			'import { useEffect, useMemo } from "@rbxts/react";',
+			"",
+			"function Component() {",
+			"\tconst dep = useMemo(() => ({}), []);",
+			"\tuseEffect(() => {}, [dep]);",
+			"}",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
 ## Configuration
 
