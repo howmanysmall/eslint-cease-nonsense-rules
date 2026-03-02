@@ -1,8 +1,8 @@
 import { resolve } from "node:path";
-import { exit, hrtime } from "node:process";
+import { exit } from "node:process";
 import { Command } from "@jsr/cliffy__command";
 import { type } from "arktype";
-import { $, file } from "bun";
+import { $, file, nanoseconds } from "bun";
 import picocolors from "picocolors";
 import prettyMilliseconds from "pretty-ms";
 
@@ -163,12 +163,12 @@ const testLiveCommand = new Command()
 export default testLiveCommand;
 
 async function profileAsync(callback: () => Promise<void>): Promise<number> {
-	const startTime = hrtime.bigint();
+	const startTime = nanoseconds();
 	try {
 		await callback();
 	} catch {
 		// Don't care
 	}
-	const finishTime = hrtime.bigint();
-	return Number((finishTime - startTime) / 1_000_000n);
+	const finishTime = nanoseconds();
+	return (finishTime - startTime) / 1_000_000;
 }
