@@ -28,6 +28,8 @@ function toGenericArrayType(typeNode: TSESTree.TypeNode, sourceCode: TSESLint.So
 
 function isTopLevelArrayType(node: TSESTree.TypeNode): boolean {
 	const { parent } = node;
+	if (parent?.type === AST_NODE_TYPES.TSRestType && parent.parent?.type === AST_NODE_TYPES.TSTupleType) return false;
+	if (parent?.type === AST_NODE_TYPES.TSTupleType) return false;
 	if (parent?.type === AST_NODE_TYPES.TSArrayType) return false;
 	if (parent?.type === AST_NODE_TYPES.TSTypeOperator && parent.operator === "readonly") return false;
 	return true;

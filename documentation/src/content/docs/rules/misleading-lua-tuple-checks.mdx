@@ -6,7 +6,9 @@ badge:
 description: Disallow the use of LuaTuple in conditional expressions to prevent confusing truthiness bugs.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Disallow using `LuaTuple` in conditional expressions.
 
@@ -37,8 +39,7 @@ first Luau return value is `false` or `nil`.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Ambiguous Truthiness
 		A tuple value is always truthy, even when the first return value is falsey.
 
@@ -53,8 +54,9 @@ first Luau return value is `false` or `nil`.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Explicit Content Checks
     	Destructure and check the specific value you care about.
 
@@ -73,9 +75,7 @@ first Luau return value is `false` or `nil`.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why is this bad?
 

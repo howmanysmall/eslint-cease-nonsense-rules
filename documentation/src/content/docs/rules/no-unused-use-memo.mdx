@@ -6,7 +6,9 @@ badge:
 description: Don't use useMemo for side effects; if you ignore the value, useEffect.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Don't use `useMemo` as a standalone statement.
 
@@ -37,8 +39,7 @@ effects. Use `useEffect` instead.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Standalone `useMemo`
 		Using `useMemo` as a statement discards the memoized value.
 
@@ -52,8 +53,9 @@ effects. Use `useEffect` instead.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Use `useEffect` or Use the Value
     	Side effects belong in `useEffect`, and memoized values should be read.
 
@@ -69,9 +71,7 @@ effects. Use `useEffect` instead.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why is this bad?
 

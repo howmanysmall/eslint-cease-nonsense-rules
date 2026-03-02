@@ -6,7 +6,9 @@ badge:
 description: Prefer early returns over wrapping the whole function body in an if.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Prefer early returns over full-body conditional wrapping.
 
@@ -33,8 +35,7 @@ main path at the top level and avoids pointless indentation.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Deep Nesting
 		Bans wrapping the primary function logic in a single large conditional block.
 
@@ -50,8 +51,9 @@ main path at the top level and avoids pointless indentation.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Flat Logic
     	Use guard clauses at the top to filter out invalid states early.
 
@@ -67,9 +69,7 @@ main path at the top level and avoids pointless indentation.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why use early returns?
 

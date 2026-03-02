@@ -6,7 +6,9 @@ badge:
 description: Flags useSpring-style hooks that can never change.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Flags `useSpring`-style hooks that can never change.
 
@@ -39,8 +41,7 @@ state).
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Static Springs
 		Bans springs that have no way to react to anything.
 
@@ -55,8 +56,9 @@ state).
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Dynamic or Entry Anims
     	Use springs when they actually react to state or provide entry transitions.
 
@@ -73,9 +75,7 @@ state).
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why is it wasteful?
 

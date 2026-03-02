@@ -6,7 +6,9 @@ badge:
 description: Prefer class fields over assigning literals in constructors.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Prefer class properties over assignment of literals in constructors.
 
@@ -38,8 +40,7 @@ class shape obvious at a glance.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Constructor Assignments
 		Avoid manually assigning static literals inside the `constructor`.
 
@@ -55,8 +56,9 @@ class shape obvious at a glance.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Class Properties
     	Declare properties directly at the class level for a cleaner structure.
 
@@ -77,9 +79,7 @@ class shape obvious at a glance.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Benefits
 

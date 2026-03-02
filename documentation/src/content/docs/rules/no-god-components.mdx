@@ -6,7 +6,9 @@ badge:
 description: Reports React components that have grown too large or too tangled.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Reports React components that are doing too much in one place.
 
@@ -35,8 +37,7 @@ pieces with clearer responsibilities.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Bloated Components
 		Bans components that try to own an entire screen's worth of logic and UI.
 
@@ -65,8 +66,9 @@ pieces with clearer responsibilities.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Composed Dashboard
     	Split the screen into small, focused pieces you can test.
 
@@ -89,9 +91,7 @@ pieces with clearer responsibilities.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Complexity Metrics
 

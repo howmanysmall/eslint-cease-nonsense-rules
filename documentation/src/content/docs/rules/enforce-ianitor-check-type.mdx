@@ -6,7 +6,9 @@ badge:
 description: Require Ianitor validators for complex types (runtime validation).
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Require `Ianitor.Check<T>` validators for complex types.
 
@@ -35,8 +37,7 @@ TypeScript can't prove the data is shaped correctly.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Dangerous Types
 		Bans complex, deeply nested types that lack a runtime validation schema.
 
@@ -55,8 +56,9 @@ TypeScript can't prove the data is shaped correctly.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Schema-Derived Types
     	Define the schema once and use `Ianitor.Static` to get the TypeScript type.
 
@@ -74,9 +76,7 @@ TypeScript can't prove the data is shaped correctly.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Complexity Factors
 

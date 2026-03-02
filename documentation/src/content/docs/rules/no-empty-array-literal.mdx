@@ -6,7 +6,9 @@ badge:
 description: Disallow [] when creating empty arrays.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Tabs, TabItem } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Disallow empty array literals. Use constructor form for empty arrays instead.
 
@@ -19,53 +21,71 @@ This rule reports `[]` when it has zero elements.
 - If no type is available, the rule reports and offers `new Array()` as a suggestion.
 - Non-empty literals like `[1, 2, 3]` are allowed.
 
+### Context Configuration
+
+You can disable individual allowed contexts by setting `allowedEmptyArrayContexts` values to `false`. This lets you tune
+which safe usages keep `[]` (for example call arguments for hook dependencies, `for..of` defaults, JSX props, and so
+on).
+
 <Aside type="tip" title="Works Well With array-type-generic">
 	Use this rule together with `array-type-generic` if you want consistent type/value array conventions.
 </Aside>
 
 ## Configuration
 
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/no-empty-array-literal": ["error", {',
-		'\t\t"inferTypeForEmptyArrayFix": false,',
-		'\t\t"requireExplicitGenericOnNewArray": true,',
-		'\t\t"ignoreInferredNonEmptyLiterals": true',
-		"\t}]",
-		"}",
-	].join("\n")}
-	lang="typescript"
-	title="eslint.config.ts"
-/>
+    <Code
+    	code={[
+    		"{",
+    		'\t"cease-nonsense/no-empty-array-literal": ["error", {',
+    		'\t\t"inferTypeForEmptyArrayFix": false,',
+    		'\t\t"requireExplicitGenericOnNewArray": true,',
+    		'\t\t"ignoreInferredNonEmptyLiterals": true,',
+    		'\t\t"allowedEmptyArrayContexts": {',
+    		"\t\t\t\"callArguments\": true,",
+    		"\t\t\t\"assignmentExpressions\": true,",
+    		"\t\t\t\"assignmentPatterns\": true,",
+    		"\t\t\t\"arrowFunctionBody\": true,",
+    		"\t\t\t\"forOfStatements\": true,",
+    		"\t\t\t\"logicalExpressions\": true,",
+    		"\t\t\t\"conditionalExpressions\": true,",
+    		"\t\t\t\"typeAssertions\": true,",
+    		"\t\t\t\"propertyValues\": true,",
+    		"\t\t\t\"returnStatements\": true,",
+    		"\t\t\t\"jsxAttributes\": true",
+    		"\t\t}",
+    		"\t}]",
+    		"}",
+    	].join("\n")}
+    	lang="typescript"
+    	title="eslint.config.ts"
+    />
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
-		<Code
-			code={[
-				"const values: Array<string> = [];",
-				"function readAll(input: Array<number> = []) {",
-				"\treturn input;",
-				"}",
-			].join("\n")}
-			lang="tsx"
-		/>
-	</TabItem>
-	<TabItem label="✅ Correct" icon="check">
-		<Code
-			code={[
-				"const values: Array<string> = new Array<string>();",
-				"function readAll(input: Array<number> = new Array<number>()) {",
-				"\treturn input;",
-				"}",
-				"const seeded = [1, 2, 3];",
-			].join("\n")}
-			lang="tsx"
-		/>
-	</TabItem>
-</Tabs>
+<RuleExample type="fail" title="Incorrect">
+	<Code
+		code={[
+			"const values: Array<string> = [];",
+			"function readAll(input: Array<number> = []) {",
+			"\treturn input;",
+			"}",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
+
+<RuleExample type="pass" title="Correct">
+	<Code
+		code={[
+			"const values: Array<string> = new Array<string>();",
+			"function readAll(input: Array<number> = new Array<number>()) {",
+			"\treturn input;",
+			"}",
+			"const seeded = [1, 2, 3];",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
 ## Related Rules
 

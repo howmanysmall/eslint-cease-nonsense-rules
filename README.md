@@ -2264,7 +2264,20 @@ Disallow empty array literals (`[]`). Use `new Array<T>()` (or `new Array()` whe
   "cease-nonsense/no-empty-array-literal": ["error", {
     "inferTypeForEmptyArrayFix": false,
     "requireExplicitGenericOnNewArray": true,
-    "ignoreInferredNonEmptyLiterals": true
+    "ignoreInferredNonEmptyLiterals": true,
+    "allowedEmptyArrayContexts": {
+      "assignmentExpressions": true,
+      "assignmentPatterns": true,
+      "arrowFunctionBody": true,
+      "callArguments": true,
+      "forOfStatements": true,
+      "logicalExpressions": true,
+      "conditionalExpressions": true,
+      "typeAssertions": true,
+      "propertyValues": true,
+      "returnStatements": true,
+      "jsxAttributes": true
+    }
   }]
 }
 ```

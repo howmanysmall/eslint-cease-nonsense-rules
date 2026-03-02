@@ -6,7 +6,9 @@ badge:
 description: Require displayName on exported memo/context values so DevTools stays readable.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Require `displayName` on exported `memo(...)` and `createContext(...)` values.
 
@@ -39,8 +41,7 @@ Components wrapped in `memo` and contexts from `createContext` can lose useful n
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Anonymous Exports
 		Bans direct exports that hide the component name from the debugger.
 
@@ -54,8 +55,9 @@ Components wrapped in `memo` and contexts from `createContext` can lose useful n
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Labeled Components
     	Name your exports so DevTools and stack traces stay readable.
 
@@ -71,9 +73,7 @@ Components wrapped in `memo` and contexts from `createContext` can lose useful n
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why is this important?
 

@@ -6,7 +6,9 @@ badge:
 description: Ensure opener/closer call pairs are balanced (LIFO) across all code paths.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Ensure opener/closer call pairs are balanced.
 
@@ -40,8 +42,7 @@ LIFO order.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Unbalanced Pairs
 		Bans patterns where an early return or error could skip the cleaning phase.
 
@@ -58,8 +59,9 @@ LIFO order.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Balanced Execution
     	Use LIFO order and ensure every path out of the function hits a closer.
 
@@ -77,9 +79,7 @@ LIFO order.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Common Used Pairs
 

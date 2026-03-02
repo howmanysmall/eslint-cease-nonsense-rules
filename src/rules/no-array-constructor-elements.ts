@@ -139,22 +139,6 @@ function isReadonlyArrayAnnotation(typeAnnotation: TSESTree.TSTypeAnnotation | u
 	return annotationType.typeName.name === "ReadonlyArray";
 }
 
-function isNumericLengthArgument(argument: TSESTree.Expression): boolean {
-	const unwrapped = unwrapExpression(argument);
-
-	if (unwrapped.type === AST_NODE_TYPES.Literal) return typeof unwrapped.value === "number";
-
-	if (
-		unwrapped.type === AST_NODE_TYPES.UnaryExpression &&
-		(unwrapped.operator === "+" || unwrapped.operator === "-") &&
-		unwrapped.argument.type === AST_NODE_TYPES.Literal
-	) {
-		return typeof unwrapped.argument.value === "number";
-	}
-
-	return false;
-}
-
 function isDefinitelyNonNumericExpression(expression: TSESTree.Expression): boolean {
 	const unwrapped = unwrapExpression(expression);
 
@@ -455,6 +439,18 @@ export default createRule<Options, MessageIds>({
 				}
 
 				if (node.arguments.length > 1) {
+					const [firstArgument] = node.arguments;
+					if (
+						firstArgument &&
+						firstArgument.type !== AST_NODE_TYPES.SpreadElement &&
+						options.environment === "roblox-ts" &&
+						!isDefinitelyNonNumericExpression(firstArgument)
+					) {
+						return;
+					}
+
+					if (firstArgument === undefined) return;
+
 					const literalText = buildArrayLiteralFromArguments(node.arguments, sourceCode);
 					const hasSpread = node.arguments.some((argument) => argument.type === AST_NODE_TYPES.SpreadElement);
 
@@ -498,7 +494,7 @@ export default createRule<Options, MessageIds>({
 					return;
 				}
 
-				if (isNumericLengthArgument(firstArgument)) {
+				if (!isDefinitelyNonNumericExpression(firstArgument)) {
 					if (options.environment === "roblox-ts") return;
 
 					const lengthExpressionText = sourceCode.getText(firstArgument);
@@ -517,24 +513,10 @@ export default createRule<Options, MessageIds>({
 				}
 
 				const singleElementLiteral = `[${sourceCode.getText(firstArgument)}]`;
-				if (isDefinitelyNonNumericExpression(firstArgument)) {
-					context.report({
-						fix: (fixer) => fixer.replaceText(node, singleElementLiteral),
-						messageId: "avoidSingleArgumentConstructor",
-						node,
-					});
-					return;
-				}
-
 				context.report({
+					fix: (fixer) => fixer.replaceText(node, singleElementLiteral),
 					messageId: "avoidSingleArgumentConstructor",
 					node,
-					suggest: [
-						{
-							fix: (fixer): TSESLint.RuleFix => fixer.replaceText(node, singleElementLiteral),
-							messageId: "suggestArrayLiteral",
-						},
-					],
 				});
 			},
 			Program(node): void {

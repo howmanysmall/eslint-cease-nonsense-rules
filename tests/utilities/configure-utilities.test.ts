@@ -510,6 +510,19 @@ describe("configure-utilities", () => {
 			expect.assertions(1);
 			const configuration = createNoEmptyArrayLiteralOptions();
 			expect(configuration).toEqual({
+				allowedEmptyArrayContexts: {
+					arrowFunctionBody: true,
+					assignmentExpressions: true,
+					assignmentPatterns: true,
+					callArguments: true,
+					conditionalExpressions: true,
+					forOfStatements: true,
+					jsxAttributes: true,
+					logicalExpressions: true,
+					propertyValues: true,
+					returnStatements: true,
+					typeAssertions: true,
+				},
 				ignoreInferredNonEmptyLiterals: true,
 				inferTypeForEmptyArrayFix: false,
 				requireExplicitGenericOnNewArray: true,
@@ -517,8 +530,11 @@ describe("configure-utilities", () => {
 		});
 
 		it("should override defaults", () => {
-			expect.assertions(3);
+			expect.assertions(4);
 			const configuration = createNoEmptyArrayLiteralOptions({
+				allowedEmptyArrayContexts: {
+					callArguments: false,
+				},
 				ignoreInferredNonEmptyLiterals: false,
 				inferTypeForEmptyArrayFix: true,
 				requireExplicitGenericOnNewArray: false,
@@ -526,6 +542,19 @@ describe("configure-utilities", () => {
 			expect(configuration.ignoreInferredNonEmptyLiterals).toBe(false);
 			expect(configuration.inferTypeForEmptyArrayFix).toBe(true);
 			expect(configuration.requireExplicitGenericOnNewArray).toBe(false);
+			expect(configuration.allowedEmptyArrayContexts).toEqual({
+				arrowFunctionBody: true,
+				assignmentExpressions: true,
+				assignmentPatterns: true,
+				callArguments: false,
+				conditionalExpressions: true,
+				forOfStatements: true,
+				jsxAttributes: true,
+				logicalExpressions: true,
+				propertyValues: true,
+				returnStatements: true,
+				typeAssertions: true,
+			});
 		});
 	});
 

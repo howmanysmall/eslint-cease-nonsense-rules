@@ -328,11 +328,30 @@ export function createNoConstantConditionWithBreakOptions(
 export function createNoEmptyArrayLiteralOptions(
 	options: Partial<NoEmptyArrayLiteralOptions> = {},
 ): NoEmptyArrayLiteralOptions {
+	const defaultAllowedEmptyArrayContexts = {
+		arrowFunctionBody: true,
+		assignmentExpressions: true,
+		assignmentPatterns: true,
+		callArguments: true,
+		conditionalExpressions: true,
+		forOfStatements: true,
+		jsxAttributes: true,
+		logicalExpressions: true,
+		propertyValues: true,
+		returnStatements: true,
+		typeAssertions: true,
+	};
+	const { allowedEmptyArrayContexts, ...baseOptions } = options;
+	const mergedAllowedContexts = allowedEmptyArrayContexts
+		? { ...defaultAllowedEmptyArrayContexts, ...allowedEmptyArrayContexts }
+		: defaultAllowedEmptyArrayContexts;
+
 	return {
+		allowedEmptyArrayContexts: { ...mergedAllowedContexts },
 		ignoreInferredNonEmptyLiterals: true,
 		inferTypeForEmptyArrayFix: false,
 		requireExplicitGenericOnNewArray: true,
-		...options,
+		...baseOptions,
 	};
 }
 

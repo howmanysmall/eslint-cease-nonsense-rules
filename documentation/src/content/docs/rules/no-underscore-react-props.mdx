@@ -6,7 +6,9 @@ badge:
 description: Ban React prop names that start with an underscore in JSX.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Tabs, TabItem } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Disallow JSX prop names that start with `_`.
 
@@ -21,8 +23,7 @@ This rule bans underscore-prefixed props like `_tooltipGradient` in JSX.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Underscore-Prefixed Props
 
     	<Code
@@ -34,8 +35,9 @@ This rule bans underscore-prefixed props like `_tooltipGradient` in JSX.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Standard Prop Names
 
     	<Code
@@ -47,9 +49,7 @@ This rule bans underscore-prefixed props like `_tooltipGradient` in JSX.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Related Rules
 

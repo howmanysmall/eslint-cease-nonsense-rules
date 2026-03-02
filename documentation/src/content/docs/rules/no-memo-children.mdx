@@ -6,7 +6,9 @@ badge:
 description: Disallow React.memo on components that accept children (usually useless).
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Don't `memo` components that accept `children`.
 
@@ -41,8 +43,7 @@ nothing else.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Memo with Children
 		Bans `memo` on components that inherit or define a `children` prop.
 
@@ -60,8 +61,9 @@ nothing else.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Better Optimization
     	Use `memo` only on "leaf" components or use stable render props.
 
@@ -79,9 +81,7 @@ nothing else.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why is this bad?
 

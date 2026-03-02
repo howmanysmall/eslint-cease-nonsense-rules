@@ -3,7 +3,9 @@ title: no-constant-condition-with-break
 description: Disallow constant conditions, but allow constant loops with break, return, or configured exit calls.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Disallow constant conditions, but allow constant loops that include exits like `break`, `return`, or configured calls.
 
@@ -35,8 +37,7 @@ call expressions (for example `coroutine.yield`) as loop exits via `loopExitCall
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Constant Conditions Without Loop Exit
 		These patterns are flagged because they are likely bugs or missing exit conditions.
 
@@ -56,8 +57,9 @@ call expressions (for example `coroutine.yield`) as loop exits via `loopExitCall
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Valid Patterns
     	These patterns are allowed because they either have proper exit conditions or intentional loop exits.
 
@@ -100,9 +102,7 @@ call expressions (for example `coroutine.yield`) as loop exits via `loopExitCall
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Detection Strategy
 

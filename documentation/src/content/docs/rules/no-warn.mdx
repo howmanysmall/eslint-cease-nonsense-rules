@@ -6,7 +6,9 @@ badge:
 description: Prefer structured logging over raw warn() calls.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Prefer structured logging over the global `warn()`.
 
@@ -37,8 +39,7 @@ The global `warn()` call is fine for quick local debugging, but it doesn't scale
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Raw Warning Calls
 		Avoid using the global `warn` for state alerts or deprecations.
 
@@ -50,8 +51,9 @@ The global `warn()` call is fine for quick local debugging, but it doesn't scale
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Structured Warnings
     	Use the warning level of your logging library for consistent telemetry.
 
@@ -63,9 +65,7 @@ The global `warn()` call is fine for quick local debugging, but it doesn't scale
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why use Log instead?
 

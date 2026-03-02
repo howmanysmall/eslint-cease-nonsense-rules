@@ -6,7 +6,9 @@ badge:
 description: Prefer push() over array[array.size()] = value.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Prefer `push` over append-by-size indexing.
 
@@ -47,8 +49,7 @@ for. This rule reports it and nudges you toward `array.push(value)`.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Size Index Append
 		Avoid append assignment via `.size()` index.
 
@@ -59,8 +60,9 @@ for. This rule reports it and nudges you toward `array.push(value)`.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Explicit Append
     	Use `push` for append operations.
 
@@ -71,9 +73,7 @@ for. This rule reports it and nudges you toward `array.push(value)`.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why enforce this?
 

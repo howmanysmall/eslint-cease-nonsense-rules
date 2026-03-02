@@ -6,7 +6,9 @@ badge:
 description: Custom hooks must return a pair or an object to avoid positional tuples.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Custom hooks should return a pair or an object.
 
@@ -40,8 +42,7 @@ large tuples makes destructuring awkward and error-prone because everything is p
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Unwieldy Tuples
 		Bans large arrays where the position of a value is its only identifier.
 
@@ -53,8 +54,9 @@ large tuples makes destructuring awkward and error-prone because everything is p
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Objects or Pairs
     	Use objects for complexity and tuples only for simple `[value, setter]` pairs.
 
@@ -72,9 +74,7 @@ large tuples makes destructuring awkward and error-prone because everything is p
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why avoid large tuples?
 

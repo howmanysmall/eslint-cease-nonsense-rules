@@ -6,7 +6,9 @@ badge:
 description: Reports commented-out code blocks. Delete them or move the intent to a ticket.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Reports commented-out code blocks.
 
@@ -34,8 +36,7 @@ trying to ignore real documentation and explanatory notes.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Commented Code
 		Bans blocks of code that have been neutralized with `//` or `/* */`.
 
@@ -50,8 +51,9 @@ trying to ignore real documentation and explanatory notes.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Explanatory Comments
     	Use comments to explain things that the code cannot say for itself.
 
@@ -65,9 +67,7 @@ trying to ignore real documentation and explanatory notes.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Detection Strategy
 

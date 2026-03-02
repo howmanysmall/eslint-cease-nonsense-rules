@@ -39,15 +39,16 @@ describe("no-array-constructor-elements", () => {
 				code: "const value = new Array(size);",
 				errors: [
 					{
-						messageId: "avoidSingleArgumentConstructor",
+						messageId: "avoidLengthConstructorInStandard",
 						suggestions: [
 							{
-								messageId: "suggestArrayLiteral",
-								output: "const value = [size];",
+								messageId: "suggestArrayFromLength",
+								output: "const value = Array.from({ length: size });",
 							},
 						],
 					},
 				],
+				options: [{ environment: "standard" }],
 				output: undefined,
 			},
 			{
@@ -65,6 +66,16 @@ describe("no-array-constructor-elements", () => {
 				],
 				options: [{ environment: "standard" }],
 				output: undefined,
+			},
+			{
+				code: "const value = new Array(256, -1);",
+				errors: [
+					{
+						messageId: "avoidConstructorEnumeration",
+					},
+				],
+				options: [{ environment: "standard" }],
+				output: "const value = [256, -1];",
 			},
 			{
 				code: "const value = new Array();",
@@ -113,6 +124,24 @@ const array = [getValue(), "b"];
 				code: "const sized = new Array(10);",
 				options: [{ environment: "roblox-ts" }],
 			},
+			`
+type ColorSequenceKeypoint = { time: number };
+declare const length: number;
+const keypoints = new Array<ColorSequenceKeypoint>(length);
+`,
+			`
+type ColorSequenceKeypoint = { time: number };
+const keypoints = new Array<ColorSequenceKeypoint>(256, -1);
+`,
+			`
+function multiplyByTwo(array: ReadonlyArray<number>): ReadonlyArray<number> {
+	const newArray = new Array<number>(array.size());
+	let size = 0;
+
+	for (const value of array) newArray[size++] = value * 2;
+	return newArray;
+}
+`,
 			{
 				code: "const value = new Array();",
 				options: [{ requireExplicitGenericOnNewArray: false }],

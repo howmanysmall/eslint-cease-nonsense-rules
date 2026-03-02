@@ -48,6 +48,7 @@ describe("array-type-generic", () => {
 		],
 		valid: [
 			"type Point = [x: number, y: number];",
+			"function parseValues(values: [unknown, string, ...unknown[]]): void {}",
 			"type Values = Array<string>;",
 			"type Values = ReadonlyArray<string>;",
 			"const pairs: Array<[number, string]> = [[1, 'one'], [2, 'two']];",

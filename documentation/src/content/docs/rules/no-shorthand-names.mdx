@@ -6,7 +6,9 @@ badge:
 description: Ban shorthand names like plr/dt/args and prefer full words.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Ban shorthand names like `plr`, `dt`, and `args`.
 
@@ -38,8 +40,7 @@ rule prefers full words and also catches shorthands inside compound identifiers 
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Cryptic Shorthands
 		Bans abbreviations that obscure meaning.
 
@@ -55,8 +56,9 @@ rule prefers full words and also catches shorthands inside compound identifiers 
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Explicit Names
     	Use full words to describe your variables and parameters.
 
@@ -72,9 +74,7 @@ rule prefers full words and also catches shorthands inside compound identifiers 
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Common Replacements
 

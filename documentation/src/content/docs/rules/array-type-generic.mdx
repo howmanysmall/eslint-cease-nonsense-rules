@@ -6,7 +6,9 @@ badge:
 description: Disallow T[] / readonly T[] type syntax and require Array<T> / ReadonlyArray<T>.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Use one array type style everywhere: `Array<T>` / `ReadonlyArray<T>`.
 
@@ -35,31 +37,30 @@ Standalone tuples remain valid.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
-		<Code
-			code={[
-				"type Names = string[];",
-				"type Values = readonly number[];",
-				"type Pairs = [number, string][];",
-				"type Grid = string[][];",
-			].join("\n")}
-			lang="tsx"
-		/>
-	</TabItem>
-	<TabItem label="✅ Correct" icon="check">
-		<Code
-			code={[
-				"type Names = Array<string>;",
-				"type Values = ReadonlyArray<number>;",
-				"type Pairs = Array<[number, string]>;",
-				"type Grid = Array<Array<string>>;",
-				"type Point = [x: number, y: number];",
-			].join("\n")}
-			lang="tsx"
-		/>
-	</TabItem>
-</Tabs>
+<RuleExample type="fail" title="Incorrect">
+	<Code
+		code={[
+			"type Names = string[];",
+			"type Values = readonly number[];",
+			"type Pairs = [number, string][];",
+			"type Grid = string[][];",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
+
+<RuleExample type="pass" title="Correct">
+	<Code
+		code={[
+			"type Names = Array<string>;",
+			"type Values = ReadonlyArray<number>;",
+			"type Pairs = Array<[number, string]>;",
+			"type Grid = Array<Array<string>>;",
+			"type Point = [x: number, y: number];",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
 ## Why use this?
 

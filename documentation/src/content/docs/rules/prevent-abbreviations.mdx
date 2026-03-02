@@ -6,7 +6,9 @@ badge:
 description: Ban cryptic abbreviations and suggest readable replacements.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Ban cryptic abbreviations in names.
 
@@ -39,8 +41,7 @@ can auto-fix it.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Cryptic Names
 		Bans short, ambiguous names that force the reader to guess the meaning.
 
@@ -53,8 +54,9 @@ can auto-fix it.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Descriptive Names
     	Use complete words to make the code readable and professional.
 
@@ -67,9 +69,7 @@ can auto-fix it.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Configuration Options
 

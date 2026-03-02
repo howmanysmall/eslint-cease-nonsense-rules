@@ -8,7 +8,9 @@ description:
     duplicates, and chains).
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
 
 Flags `useEffect` calls that only move data around inside React. If the logic can run during render or in an event
 handler, it usually shouldn't be an effect.
@@ -75,8 +77,7 @@ All `report*` options default to `true` unless you turn them off.
 
 ## Examples
 
-<Tabs>
-	<TabItem label="❌ Incorrect" icon="close">
+<RuleExample type="fail" title="Incorrect">
 		### Derived State and Notify Parent
 
     	<Code
@@ -107,8 +108,9 @@ All `report*` options default to `true` unless you turn them off.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-    <TabItem label="✅ Correct" icon="check">
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
     	### Compute During Render and Call in Events
 
     	<Code
@@ -134,9 +136,7 @@ All `report*` options default to `true` unless you turn them off.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </TabItem>
-
-</Tabs>
+    </RuleExample>
 
 ## Why is this bad?
 
