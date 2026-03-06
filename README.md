@@ -2358,6 +2358,20 @@ without requiring type checking.
 - No type checking required (fast AST-only analysis)
 - Pre-compiled regex patterns
 - Focused on common use cases
+- Destructured bindings are ignored by default, with an opt-out setting
+
+**Destructured Bindings**
+
+By default, destructured variables and parameters are ignored so cases like `const { LocalPlayer } = Players;`
+don't error. To enforce destructured bindings too, add a settings item with `ignoreDestructured: false`.
+
+```typescript
+{
+  "cease-nonsense/naming-convention": ["error",
+    { "ignoreDestructured": false }
+  ]
+}
+```
 
 **❌ Bad**
 

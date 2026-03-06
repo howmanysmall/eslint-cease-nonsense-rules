@@ -17,8 +17,13 @@ export type MessageIds =
 	| "satisfyCustom"
 	| "unexpectedUnderscore";
 
+export interface NamingConventionSettings {
+	ignoreDestructured?: boolean;
+}
+
 export type NamingConventionOptions = Selector;
-export type Options = Array<NamingConventionOptions>;
+type RuleOption = NamingConventionOptions | NamingConventionSettings;
+export type Options = Array<RuleOption>;
 
 const defaultCamelCaseAllTheThingsConfig: Options = [
 	{
@@ -42,6 +47,8 @@ const defaultCamelCaseAllTheThingsConfig: Options = [
 		selector: "typeLike",
 	},
 ];
+
+const DEFAULT_IGNORE_DESTRUCTURED = true;
 
 // Helper functions moved to module scope to avoid recreating them on every call
 function isUnused(name: string, initialScope?: TSESLint.Scope.Scope): boolean {
@@ -70,21 +77,50 @@ function isGlobal(scope?: TSESLint.Scope.Scope): boolean {
 	return scope.type === ScopeType.global || scope.type === ScopeType.module;
 }
 
+function isSelectorOption(option: RuleOption): option is NamingConventionOptions {
+	return "selector" in option;
+}
+
+function getRuleSettings(options: ReadonlyArray<RuleOption>): NamingConventionSettings {
+	let ignoreDestructured = DEFAULT_IGNORE_DESTRUCTURED;
+
+	for (const option of options) {
+		if (isSelectorOption(option)) continue;
+
+		const { ignoreDestructured: nextIgnoreDestructured } = option;
+		if (nextIgnoreDestructured === undefined) continue;
+		ignoreDestructured = nextIgnoreDestructured;
+	}
+
+	return { ignoreDestructured };
+}
+
 export default createRule<Options, MessageIds>({
 	create(contextWithoutDefaults) {
 		if (contextWithoutDefaults.filename.endsWith(".d.ts")) return {};
 
+		const settings = getRuleSettings(contextWithoutDefaults.options);
+		const selectorOptions = contextWithoutDefaults.options.filter(isSelectorOption);
+		const activeSelectorOptions =
+			selectorOptions.length > 0
+				? selectorOptions
+				: defaultCamelCaseAllTheThingsConfig.filter((option) => isSelectorOption(option));
 		const context =
-			contextWithoutDefaults.options.length > 0
-				? contextWithoutDefaults
+			selectorOptions.length > 0
+				? (Object.setPrototypeOf(
+						{
+							options: activeSelectorOptions,
+						},
+						contextWithoutDefaults,
+					) as Context)
 				: (Object.setPrototypeOf(
 						{
-							options: defaultCamelCaseAllTheThingsConfig,
+							options: activeSelectorOptions,
 						},
 						contextWithoutDefaults,
 					) as Context);
 
-		const validators = parseOptions(context);
+		const validators = parseOptions(context, activeSelectorOptions, settings);
 		const parserServices = ESLintUtils.getParserServices(context, true);
 		const compilerOptions = parserServices.program?.getCompilerOptions() ?? {};
 		const unusedCache = new WeakMap<TSESLint.Scope.Scope, Map<string, boolean>>();
@@ -132,6 +168,7 @@ export default createRule<Options, MessageIds>({
 			modifiers: Set<Modifiers>,
 		): void {
 			if (node.computed) return;
+			if (node.type === AST_NODE_TYPES.Property && node.parent.type === AST_NODE_TYPES.ObjectPattern) return;
 
 			const { key } = node;
 			if (

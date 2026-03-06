@@ -1,6 +1,6 @@
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
-import type { MessageIds, Options } from "../../rules/naming-convention";
+import type { MessageIds, NamingConventionSettings, Options } from "../../rules/naming-convention";
 import type {
 	IndividualAndMetaSelectorsString,
 	ModifiersString,
@@ -54,3 +54,4 @@ export type ValidatorFunction = (
 
 export type ParsedOptions = Record<string, ValidatorFunction>;
 export type Context = Readonly<TSESLint.RuleContext<MessageIds, Options>>;
+export type { NamingConventionSettings };

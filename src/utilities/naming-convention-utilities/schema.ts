@@ -177,11 +177,26 @@ function selectorsSchema(): JSONSchema.JSONSchema4 {
 	};
 }
 
+function settingsSchema(): JSONSchema.JSONSchema4 {
+	return {
+		additionalProperties: false,
+		description: "Global naming-convention settings",
+		properties: {
+			ignoreDestructured: {
+				type: "boolean",
+			},
+		},
+		required: ["ignoreDestructured"],
+		type: "object",
+	};
+}
+
 export const SCHEMA: JSONSchema.JSONSchema4 = {
 	$defs: $DEFS,
 	additionalItems: false,
 	items: {
 		oneOf: [
+			settingsSchema(),
 			selectorsSchema(),
 			...selectorSchema("default", false, getEnumNames(Modifiers)),
 			...selectorSchema("variableLike", false, ["unused", "async"]),

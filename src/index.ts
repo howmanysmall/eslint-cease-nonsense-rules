@@ -61,7 +61,7 @@ import type { ReadonlyRecord } from "./types/utility-types.d";
 export type { BanInstancesOptions } from "./rules/ban-instances";
 export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
 export type { MemoizedEffectDependenciesOptions } from "./rules/memoized-effect-dependencies";
-export type { NamingConventionOptions } from "./rules/naming-convention";
+export type { NamingConventionOptions, NamingConventionSettings } from "./rules/naming-convention";
 export type { NoArrayConstructorElementsOptions } from "./rules/no-array-constructor-elements";
 export type { NoArraySizeAssignmentOptions } from "./rules/no-array-size-assignment";
 export type { NoConstantConditionWithBreakOptions } from "./rules/no-constant-condition-with-break";
