@@ -4,7 +4,14 @@ import { isMetaSelector, isMethodOrPropertySelector } from "./shared";
 import { createValidator } from "./validator";
 
 import type { MetaSelectorsString } from "./enums";
-import type { Context, NormalizedMatchRegex, NormalizedSelector, ParsedOptions, Selector } from "./types";
+import type {
+	Context,
+	NamingConventionSettings,
+	NormalizedMatchRegex,
+	NormalizedSelector,
+	ParsedOptions,
+	Selector,
+} from "./types";
 
 const META_SELECTOR_MAP: Record<MetaSelectorsString, Array<keyof typeof Selectors>> = {
 	accessor: ["classicAccessor", "autoAccessor"],
@@ -89,8 +96,12 @@ function normalizeOption(option: Selector): Array<NormalizedSelector> {
 	return normalizedSelectors;
 }
 
-export function parseOptions(context: Context): ParsedOptions {
-	const normalizedOptions = context.options.flatMap(normalizeOption);
+export function parseOptions(
+	context: Context,
+	options: ReadonlyArray<Selector>,
+	settings: NamingConventionSettings,
+): ParsedOptions {
+	const normalizedOptions = options.flatMap((option) => normalizeOption(option));
 	const selectorNames = getEnumNames(Selectors);
 	const selectorMap = new Map<string, Array<NormalizedSelector>>();
 
@@ -102,7 +113,7 @@ export function parseOptions(context: Context): ParsedOptions {
 
 	const entries = selectorNames.map((selectorName) => [
 		selectorName,
-		createValidator(selectorName, context, selectorMap.get(selectorName) ?? []),
+		createValidator(selectorName, context, selectorMap.get(selectorName) ?? [], settings),
 	]);
 	return Object.fromEntries(entries) as ParsedOptions;
 }

@@ -284,6 +284,24 @@ describe("naming-convention", () => {
 				errors: [{ messageId: "doesNotMatchFormat" }],
 				options: [{ format: ["PascalCase"], selector: "typeAlias" }],
 			},
+			{
+				code: "const { foo_bar } = foo;",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [{ ignoreDestructured: false }],
+			},
+			{
+				code: "function fn({ foo_bar }) { return foo_bar; }",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [{ ignoreDestructured: false }],
+			},
+			{
+				code: "const { foo_bar } = foo;",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [
+					{ ignoreDestructured: true },
+					{ format: ["camelCase"], modifiers: ["destructured"], selector: "variable" },
+				],
+			},
 		],
 		valid: [
 			// Declaration files are ignored
@@ -297,6 +315,12 @@ describe("naming-convention", () => {
 			},
 			{
 				code: "const fooBar = 1;",
+			},
+			{
+				code: "const { foo_bar } = foo;",
+			},
+			{
+				code: "function fn({ foo_bar = 'x' }) { return foo_bar; }",
 			},
 			{
 				code: "function fooBar() {}",
