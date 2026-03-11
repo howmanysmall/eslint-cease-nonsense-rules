@@ -9,7 +9,7 @@ import type { TSESTree } from "@typescript-eslint/utils";
 import type { Type, TypeChecker } from "typescript";
 
 import type { ModifiersString, SelectorsString } from "./enums";
-import type { Context, NormalizedSelector, ValidatorFunction } from "./types";
+import type { Context, NamingConventionSettings, NormalizedSelector, ValidatorFunction } from "./types";
 
 interface ParserServicesWithTypeInformation {
 	getTypeAtLocation: (node: TSESTree.Node) => Type;
@@ -40,6 +40,7 @@ export function createValidator(
 	type: SelectorsString,
 	context: Context,
 	allConfigs: Array<NormalizedSelector>,
+	settings: NamingConventionSettings,
 ): ValidatorFunction {
 	const configs = allConfigs.toSorted((first, second) => {
 		if (first.selectorPriority !== second.selectorPriority) return second.selectorPriority - first.selectorPriority;
@@ -73,6 +74,12 @@ export function createValidator(
 			node.type === AST_NODE_TYPES.Identifier || node.type === AST_NODE_TYPES.PrivateIdentifier
 				? node.name
 				: `${node.value}`;
+		const shouldIgnoreDestructured =
+			(settings.ignoreDestructured ?? true) &&
+			modifiers.has("destructured") &&
+			!configs.some((config) => config.modifiers?.includes("destructured"));
+
+		if (shouldIgnoreDestructured) return;
 
 		for (const config of configs) {
 			if (config.filter && config.filter.regex.test(originalName) !== config.filter.match) continue;

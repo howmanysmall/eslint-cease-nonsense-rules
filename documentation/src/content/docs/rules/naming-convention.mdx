@@ -33,6 +33,19 @@ it runs quickly even on large projects. If you need type-aware behavior, use the
 
 </Steps>
 
+## Destructured Bindings
+
+Destructured variables and parameters are ignored by default, so names inherited from an external API don't trip the
+rule.
+
+If you want destructured bindings checked too, add a settings object with `ignoreDestructured: false`.
+
+```typescript
+{
+	"cease-nonsense/naming-convention": ["error", { ignoreDestructured: false }],
+}
+```
+
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
