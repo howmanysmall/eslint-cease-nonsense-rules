@@ -294,7 +294,7 @@ function getConstantValue(expression: TSESTree.Expression): ConstantValueResult 
 
 			if (unwrapped.operator === "!") return toConstantValue(!argument.value);
 			if (unwrapped.operator === "+" && typeof argument.value === "number") {
-				return toConstantValue(Number(argument.value));
+				return toConstantValue(argument.value);
 			}
 
 			if (unwrapped.operator === "-" && typeof argument.value === "number") {

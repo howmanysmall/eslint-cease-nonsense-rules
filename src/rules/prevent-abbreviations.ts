@@ -465,11 +465,11 @@ function resolveVariableName(
 function isUnresolvedName(name: string, scope: TSESLint.Scope.Scope): boolean {
 	return getReferences(scope).some((reference) => {
 		const { identifier } = reference;
-		return Boolean(
+		return (
 			identifier &&
 			identifier.type === AST_NODE_TYPES.Identifier &&
 			identifier.name === name &&
-			!reference.resolved,
+			!reference.resolved
 		);
 	});
 }
@@ -534,9 +534,7 @@ function isShorthandExportLocal(node: TSESTree.Identifier): boolean {
 
 function isShorthandPropertyValue(identifier: TSESTree.Identifier): boolean {
 	const { parent } = identifier;
-	return Boolean(
-		parent && parent.type === AST_NODE_TYPES.Property && parent.shorthand && parent.value === identifier,
-	);
+	return parent && parent.type === AST_NODE_TYPES.Property && parent.shorthand && parent.value === identifier;
 }
 
 function isShorthandPropertyAssignmentPatternLeft(identifier: TSESTree.Identifier): boolean {
@@ -544,9 +542,7 @@ function isShorthandPropertyAssignmentPatternLeft(identifier: TSESTree.Identifie
 	if (!parent || parent.type !== AST_NODE_TYPES.AssignmentPattern || parent.left !== identifier) return false;
 
 	const property = parent.parent;
-	return Boolean(
-		property && property.type === AST_NODE_TYPES.Property && property.shorthand && property.value === parent,
-	);
+	return property && property.type === AST_NODE_TYPES.Property && property.shorthand && property.value === parent;
 }
 
 function replaceReferenceIdentifier(
@@ -774,11 +770,11 @@ function isExportedIdentifier(identifier: IdentifierLike): boolean {
 	if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.id === identifier) {
 		const declaration = parent.parent;
 		const declarationParent = declaration?.parent;
-		return Boolean(
+		return (
 			declaration &&
 			declaration.type === AST_NODE_TYPES.VariableDeclaration &&
 			declarationParent &&
-			declarationParent.type === AST_NODE_TYPES.ExportNamedDeclaration,
+			declarationParent.type === AST_NODE_TYPES.ExportNamedDeclaration
 		);
 	}
 
@@ -895,13 +891,13 @@ function shouldReportIdentifierAsProperty(identifier: TSESTree.Identifier): bool
 
 function isObjectPropertyKey(identifier: TSESTree.Identifier): boolean {
 	const { parent } = identifier;
-	return Boolean(
+	return (
 		parent &&
 		parent.type === AST_NODE_TYPES.Property &&
 		parent.key === identifier &&
 		!parent.computed &&
 		!parent.shorthand &&
-		parent.parent?.type === AST_NODE_TYPES.ObjectExpression,
+		parent.parent?.type === AST_NODE_TYPES.ObjectExpression
 	);
 }
 

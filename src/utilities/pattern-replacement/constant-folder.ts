@@ -52,7 +52,7 @@ export function evaluateConstant(node: TSESTree.Expression): number | undefined 
 				return normalizeZero(-argument);
 
 			case "+":
-				return normalizeZero(Number(argument));
+				return normalizeZero(argument);
 
 			default:
 				return undefined;
