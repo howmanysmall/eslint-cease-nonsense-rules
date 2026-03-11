@@ -1,0 +1,101 @@
+---
+title: no-pascal-case-type-keys
+badge:
+    text: Naming
+    variant: caution
+description: Disallow PascalCase property keys in TypeScript interfaces and type literals.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
+
+Don't use PascalCase property keys in TypeScript interfaces or type literals. CamelCase only.
+
+## Rule Details :badge[Naming]{variant=caution}
+
+Property keys should match JS object literal style: camelCase. PascalCase is meant for types and classes. It just
+creates unnecessary confusion otherwise.
+
+<Aside type="tip" title="Convention">
+	Properties are data fields. Save PascalCase for types like `User`. Use `userName` for the property.
+</Aside>
+
+## Examples
+
+<RuleExample type="fail" title="Incorrect">
+		### PascalCase Keys
+
+    	<Code
+    		code={[
+    			"interface User {",
+    			"	UserName: string;",
+    			"	EmailAddress: string;",
+    			"}",
+    			"",
+
+    			"type Config = {",
+    			"	ApiKey: string;",
+    			"	ApiSecret: string;",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
+    	### camelCase Keys
+
+    	<Code
+    		code={[
+    			"interface User {",
+    			"	userName: string;",
+    			"	emailAddress: string;",
+    			"}",
+    			"",
+
+    			"type Config = {",
+    			"	apiKey: string;",
+    			"	apiSecret: string;",
+    			"}",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </RuleExample>
+
+## What's Allowed
+
+<CardGrid stagger>
+	<Card title="Single Letters" icon="text">
+		Single uppercase letters like `X`, `Y`, `Z` for coordinates.
+	</Card>
+	<Card title="UPPER_CASE" icon="text">
+		Constants like `MAX_VALUE`.
+	</Card>
+	<Card title="snake_case" icon="text">
+		Snake case (camelCase preferred).
+	</Card>
+	<Card title="Computed Keys" icon="code">
+		Computed keys `[expr]` are skipped.
+	</Card>
+</CardGrid>
+
+## Auto-Fix
+
+This rule suggests converting PascalCase keys to camelCase but won't auto-apply the change. Renaming properties breaks
+references, so review and accept the suggestion yourself.
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="naming-convention"
+		description="Enforce naming conventions across the codebase"
+		href="/eslint-cease-nonsense-rules/rules/naming-convention/"
+	/>
+	<LinkCard
+		title="prefer-pascal-case-enums"
+		description="Enforce PascalCase for enums"
+		href="/eslint-cease-nonsense-rules/rules/prefer-pascal-case-enums/"
+	/>
+</CardGrid>

@@ -247,6 +247,8 @@
 		"bash": {
 			"*": "ask",
 			"bat*": "allow",
+			"bun run test*": "allow",
+			"bun test*": "allow",
 			"cat*": "allow",
 			"cd*": "allow",
 			"delta*": "allow",

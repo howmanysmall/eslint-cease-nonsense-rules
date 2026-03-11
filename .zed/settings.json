@@ -1,70 +1,8 @@
 {
-	"agent": {
-		"always_allow_tool_actions": true,
-		"button": true,
-		"commit_message_model": {
-			"model": "gpt-5-mini",
-			"provider": "copilot_chat"
-		},
-		"default_model": {
-			"model": "gpt-5-mini",
-			"provider": "copilot_chat"
-		},
-		"default_profile": "ask",
-		"dock": "right",
-		"enable_feedback": true,
-		"inline_assistant_model": {
-			"model": "gpt-4.1",
-			"provider": "copilot_chat"
-		}
-	},
-	"audio": {
-		"experimental.rodio_audio": true
-	},
 	"auto_indent": true,
-	"autosave": {
-		"after_delay": {
-			"milliseconds": 1000
-		}
-	},
-	"base_keymap": "SublimeText",
-	"buffer_font_family": "Monaspace Neon Var",
-	"buffer_font_features": {
-		"calt": true,
-		"liga": true,
-		"ss01": true,
-		"ss02": true,
-		"ss03": true,
-		"ss04": true,
-		"ss05": true,
-		"ss06": true,
-		"ss07": true,
-		"ss08": true,
-		"ss09": true
-	},
-	"buffer_font_size": 16,
-	"centered_layout": {
-		"left_padding": 0.0,
-		"right_padding": 0.0
-	},
 	"code_actions_on_format": {
 		"source.fixAll": true,
 		"source.organizeImports": true
-	},
-	"diagnostics": {
-		"button": true,
-		"include_warnings": true,
-		"inline": {
-			"enabled": true,
-			"max_severity": null,
-			"min_column": 0,
-			"padding": 4,
-			"update_debounce_ms": 150
-		},
-		"lsp_pull_diagnostics": {
-			"debounce_ms": 50,
-			"enabled": true
-		}
 	},
 	"disable_ai": false,
 	"edit_predictions": {
@@ -90,17 +28,7 @@
 		"YAML": ["*.yml", "*.yaml", ".github/workflows/*.yml", ".github/workflows/*.yaml"]
 	},
 	"format_on_save": "on",
-	"git": {
-		"git_gutter": "tracked_files",
-		"hunk_style": null,
-		"inline_blame": {
-			"delay_ms": 600,
-			"enabled": true,
-			"show_commit_summary": true
-		}
-	},
 	"hard_tabs": true,
-	"icon_theme": "Material Icon Theme",
 	"indent_guides": {
 		"active_line_width": 1,
 		"background_coloring": "disabled",
@@ -186,6 +114,7 @@
 			],
 			"hard_tabs": true,
 			"language_servers": [
+				"!deno",
 				"!tailwindcss-language-server",
 				"oxfmt",
 				"!typescript-language-server",
@@ -214,6 +143,7 @@
 			],
 			"hard_tabs": true,
 			"language_servers": [
+				"!deno",
 				"!tailwindcss-language-server",
 				"!oxfmt",
 				"!typescript-language-server",
@@ -279,10 +209,6 @@
 				}
 			}
 		},
-
-		"marksman": {
-			"initialization_options": {}
-		},
 		"oxlint": {
 			"initialization_options": {
 				"settings": {
@@ -292,31 +218,6 @@
 					"run": "onType",
 					"typeAware": true,
 					"unusedDisableDirectives": "deny"
-				}
-			}
-		},
-		"snippet-completion-server": {
-			"settings": {
-				"feature_paths": true
-			}
-		},
-
-		"taplo": {
-			"initialization_options": {
-				"configuration": {
-					"formatting": {
-						"align_comments": true,
-						"align_entries": false,
-						"allowed_blank_lines": 1,
-						"array_auto_expand": true,
-						"array_trailing_comma": true,
-						"column_width": 120,
-						"compact_arrays": true,
-						"compact_inline_tables": false,
-						"indent_entries": false,
-						"indent_tables": false,
-						"trailing_newline": true
-					}
 				}
 			}
 		},
@@ -444,73 +345,12 @@
 			}
 		}
 	},
-	"project_panel": {
-		"button": true,
-		"default_width": 240,
-		"dock": "left",
-		"file_icons": true,
-		"folder_icons": true,
-		"git_status": true,
-		"indent_size": 20
-	},
-	"redact_private_values": false,
 	"remove_trailing_whitespace_on_save": true,
-	"scrollbar": {
-		"cursors": true,
-		"diagnostics": "all",
-		"git_diff": true,
-		"search_results": true,
-		"selected_symbol": true,
-		"show": "auto"
-	},
 	"show_completions_on_input": true,
 	"show_edit_predictions": true,
 	"tab_size": 4,
-	"tabs": {
-		"close_position": "right",
-		"file_icons": true,
-		"git_status": true
-	},
 	"terminal": {
-		"button": true,
-		"default_height": 320,
-		"default_width": 640,
-		"dock": "bottom",
-		"font_family": "Monaspace Neon",
-		"font_features": {
-			"calt": true,
-			"liga": true,
-			"ss01": true,
-			"ss02": true,
-			"ss03": true,
-			"ss04": true,
-			"ss05": true,
-			"ss06": true,
-			"ss07": true,
-			"ss08": true,
-			"ss09": true
-		},
-		"max_scroll_history_lines": 100000,
-		"toolbar": {
-			"breadcrumbs": true
-		},
 		"working_directory": "current_project_directory"
 	},
-	"theme": {
-		"dark": "Zedokai (Filter Spectrum)",
-		"light": "One Light",
-		"mode": "system"
-	},
-	"toolbar": {
-		"breadcrumbs": true,
-		"quick_actions": true
-	},
-	"ui_font_family": "SF Pro",
-
-	"ui_font_features": {
-		"calt": true
-	},
-	"ui_font_size": 16,
-	"use_on_type_format": true,
-	"vim_mode": false
+	"use_on_type_format": true
 }

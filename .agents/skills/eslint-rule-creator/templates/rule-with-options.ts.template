@@ -9,7 +9,7 @@ export interface RuleNameOptions {
 
 const DEFAULT_THRESHOLD = 10;
 
-export default createRule<[RuleNameOptions?], MessageIds>({
+const RULE_NAME = createRule<[RuleNameOptions?], MessageIds>({
 	create(context) {
 		const options = context.options[0] ?? {};
 		const threshold = options.threshold ?? DEFAULT_THRESHOLD;
@@ -47,3 +47,5 @@ export default createRule<[RuleNameOptions?], MessageIds>({
 	},
 	name: "RULE_NAME",
 });
+
+export default RULE_NAME;

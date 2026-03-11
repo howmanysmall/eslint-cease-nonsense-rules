@@ -2452,6 +2452,50 @@ if (getLuaTuple()[0]) {
 const [result] = getLuaTuple();
 ```
 
+#### `no-pascal-case-type-keys`
+
+Disallow PascalCase for property keys in TypeScript interfaces and type literals.
+
+**❌ Bad**
+
+```typescript
+interface User {
+	UserName: string;
+	EmailAddress: string;
+}
+
+type Config = {
+	ApiKey: string;
+	ApiSecret: string;
+};
+```
+
+**✅ Good**
+
+```typescript
+interface User {
+	userName: string;
+	emailAddress: string;
+}
+
+type Config = {
+	apiKey: string;
+	apiSecret: string;
+};
+
+// Single letters ok
+interface Point {
+	X: number;
+	Y: number;
+	Z: number;
+}
+
+// UPPER_CASE constants ok too
+interface Constants {
+	MAX_VALUE: number;
+}
+```
+
 #### `prefer-pascal-case-enums`
 
 Enum names and members must be PascalCase.

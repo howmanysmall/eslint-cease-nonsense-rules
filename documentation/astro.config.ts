@@ -96,6 +96,7 @@ export default defineConfig({
 						"rules/array-type-generic",
 						"rules/naming-convention",
 						"rules/no-empty-array-literal",
+						"rules/no-pascal-case-type-keys",
 						"rules/no-shorthand-names",
 						"rules/prefer-pascal-case-enums",
 						"rules/prefer-singular-enums",

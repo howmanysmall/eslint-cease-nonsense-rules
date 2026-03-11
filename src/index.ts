@@ -19,6 +19,7 @@ import noIdentityMap from "./rules/no-identity-map";
 import noInstanceMethodsWithoutThis from "./rules/no-instance-methods-without-this";
 import noMemoChildren from "./rules/no-memo-children";
 import noNewInstanceInUseMemo from "./rules/no-new-instance-in-use-memo";
+import noPascalCaseTypeKeys from "./rules/no-pascal-case-type-keys";
 import noPrint from "./rules/no-print";
 import noRenderHelperFunctions from "./rules/no-render-helper-functions";
 import noShorthandNames from "./rules/no-shorthand-names";
@@ -149,6 +150,7 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"no-instance-methods-without-this": noInstanceMethodsWithoutThis,
 	"no-memo-children": noMemoChildren,
 	"no-new-instance-in-use-memo": noNewInstanceInUseMemo,
+	"no-pascal-case-type-keys": noPascalCaseTypeKeys,
 	"no-print": noPrint,
 	"no-render-helper-functions": noRenderHelperFunctions,
 	"no-shorthand-names": noShorthandNames,
