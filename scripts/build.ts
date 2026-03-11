@@ -212,8 +212,6 @@ async function runBuildAsync(options: BuildOptions): Promise<BuildResult> {
 			"false",
 			"--declaration",
 			"--emitDeclarationOnly",
-			"--esModuleInterop",
-			"false",
 			"--exactOptionalPropertyTypes",
 			"--forceConsistentCasingInFileNames",
 			"--isolatedModules",
