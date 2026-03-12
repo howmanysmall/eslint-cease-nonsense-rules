@@ -110,7 +110,7 @@
 		"docs:dev": "bun --cwd documentation dev",
 		"format": "oxfmt",
 		"knip": "knip-bun",
-		"lint": "bun run oxc:complete . && bun run biome:check .",
+		"lint": "bash -c 'a=$(bash scripts/default-src.sh \"$@\"); bun run oxc:complete $a && bun run biome:check $a' _",
 		"lint:fix": "bun run oxc:complete . --fix && bun run biome:check . --fix",
 		"oxc": "oxlint --type-aware",
 		"oxc:complete": "oxlint --type-aware --type-check",

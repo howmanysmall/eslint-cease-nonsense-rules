@@ -219,7 +219,7 @@ function processHasCalls(calls: ReadonlyArray<WorldQueryCall>, context: TSESLint
 	});
 }
 
-export default createRule<[], MessageIds>({
+const preferSingleWorldQuery = createRule<[], MessageIds>({
 	create(context) {
 		// Buffers for consecutive calls
 		let currentGetBuffer = new Array<WorldQueryCall>();
@@ -290,3 +290,5 @@ export default createRule<[], MessageIds>({
 	},
 	name: "prefer-single-world-query",
 });
+
+export default preferSingleWorldQuery;

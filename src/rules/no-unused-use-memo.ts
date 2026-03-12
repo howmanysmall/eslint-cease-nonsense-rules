@@ -49,7 +49,7 @@ function isStandaloneUseMemo(node: TSESTree.CallExpression): boolean {
 	return false;
 }
 
-export default createRule<Options, MessageIds>({
+const noUnusedUseMemo = createRule<Options, MessageIds>({
 	create(context) {
 		const options: Required<NoUnusedUseMemoOptions> = {
 			...DEFAULT_OPTIONS,
@@ -129,3 +129,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "no-unused-use-memo",
 });
+
+export default noUnusedUseMemo;

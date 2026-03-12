@@ -476,7 +476,7 @@ function isLogicalJSXChild(node: TSESTree.JSXElement | TSESTree.JSXFragment): bo
 	);
 }
 
-export default createRule<Options, MessageIds>({
+const requireReactComponentKeys = createRule<Options, MessageIds>({
 	create(context) {
 		const options: Required<ReactKeysOptions> = {
 			...DEFAULT_OPTIONS,
@@ -604,3 +604,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "require-react-component-keys",
 });
+
+export default requireReactComponentKeys;

@@ -253,7 +253,7 @@ function seedPlayerValueFromParameter(parameter: TSESTree.Parameter, state: Call
 	markPatternValues(parameter, state);
 }
 
-export default createRule<Options, MessageIds>({
+const noEventsInEventsCallback = createRule<Options, MessageIds>({
 	create(context) {
 		const allowedImportPaths = normalizeImportPaths(context.options[0]);
 		const trackedEventsIdentifiers = new Set<string>();
@@ -407,3 +407,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "no-events-in-events-callback",
 });
+
+export default noEventsInEventsCallback;

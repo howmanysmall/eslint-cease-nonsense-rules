@@ -121,7 +121,7 @@ function createEnumMatch(enumPath: string): EnumMatch {
 	return { enumPath };
 }
 
-export default createRule<Options, MessageIds>({
+const preferEnumItem = createRule<Options, MessageIds>({
 	create(context) {
 		const [{ fixNumericToValue = false, performanceMode = true } = {}] = context.options;
 		const services = ESLintUtils.getParserServices(context);
@@ -374,3 +374,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "prefer-enum-item",
 });
+
+export default preferEnumItem;

@@ -158,7 +158,7 @@
 	"rules": {
 		"arrow-body-style": ["error", "as-needed"],
 		"complexity": "off",
-		"curly": "off",
+		"curly": ["error", "multi-line"],
 		"default-case": "off",
 		"eqeqeq": "error",
 		"eslint/max-lines-per-function": [

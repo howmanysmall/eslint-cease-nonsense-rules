@@ -208,7 +208,7 @@ function reportViolation(context: TSESLint.RuleContext<MessageIds, []>, violatio
 	});
 }
 
-export default createRule<[], MessageIds>({
+const noAsyncConstructor = createRule<[], MessageIds>({
 	create(context) {
 		return {
 			"MethodDefinition[kind='constructor']"(node: TSESTree.MethodDefinition): void {
@@ -257,3 +257,5 @@ export default createRule<[], MessageIds>({
 	},
 	name: "no-async-constructor",
 });
+
+export default noAsyncConstructor;

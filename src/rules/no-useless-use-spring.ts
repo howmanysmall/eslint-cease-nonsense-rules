@@ -269,8 +269,9 @@ function isStaticObjectLikeConfig(
 	options: NormalizedOptions,
 ): boolean {
 	const unwrapped = unwrapExpression(expression);
-	if (unwrapped.type === AST_NODE_TYPES.ObjectExpression)
+	if (unwrapped.type === AST_NODE_TYPES.ObjectExpression) {
 		return isStaticObjectExpression(context, unwrapped, seen, options);
+	}
 
 	if (unwrapped.type === AST_NODE_TYPES.Identifier) {
 		const variable = findVariable(context, unwrapped);
@@ -436,7 +437,7 @@ function isSpringHookCall(node: TSESTree.CallExpression, options: NormalizedOpti
 	return false;
 }
 
-export default createRule({
+const noUselessUseSpring = createRule({
 	create(context) {
 		const [rawOptions] = context.options;
 		const normalized: NormalizedOptions = {
@@ -510,3 +511,5 @@ export default createRule({
 	},
 	name: "no-useless-use-spring",
 });
+
+export default noUselessUseSpring;

@@ -36,7 +36,7 @@ function collectNumericComponents(parameters: ReadonlyArray<unknown>): NumericCo
 	return { allZero, components };
 }
 
-export default createRule<[], "useFromRGB" | "onlyZeroArgs">({
+const noColor3Constructor = createRule<[], "useFromRGB" | "onlyZeroArgs">({
 	create(context) {
 		return {
 			NewExpression(node): void {
@@ -92,3 +92,5 @@ export default createRule<[], "useFromRGB" | "onlyZeroArgs">({
 	},
 	name: "no-color3-constructor",
 });
+
+export default noColor3Constructor;

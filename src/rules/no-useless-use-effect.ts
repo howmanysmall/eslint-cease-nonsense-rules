@@ -775,12 +775,13 @@ function isPropertyCallbackCall(
 		!callee.computed &&
 		callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-	)
+	) {
 		return (
 			functionContext.propertyObjectName !== undefined &&
 			callee.object.name === functionContext.propertyObjectName &&
 			hasPrefix(callee.property.name, propertyCallbackPrefixes)
 		);
+	}
 
 	return false;
 }
@@ -1223,7 +1224,7 @@ function getFunctionBody(node: FunctionNode): TSESTree.BlockStatement | undefine
 	return undefined;
 }
 
-export default createRule<Options, MessageIds>({
+const noUselessUseEffect = createRule<Options, MessageIds>({
 	create(context) {
 		const options = normalizeOptions(context.options[0]);
 		const reactSources = getReactSources(options.environment);
@@ -1375,8 +1376,9 @@ export default createRule<Options, MessageIds>({
 
 				if (isStateSetterCall(call, setterIds)) continue;
 
-				if (call.callee.type === TSESTree.AST_NODE_TYPES.Identifier && callbackIds.has(call.callee.name))
+				if (call.callee.type === TSESTree.AST_NODE_TYPES.Identifier && callbackIds.has(call.callee.name)) {
 					continue;
+				}
 
 				if (call.callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
 					const { name } = call.callee;
@@ -1405,8 +1407,9 @@ export default createRule<Options, MessageIds>({
 					if (
 						call.callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
 						callbackIds.has(call.callee.object.name)
-					)
+					) {
 						continue;
+					}
 
 					const method = call.callee.property.name;
 					// Only consider console.log/warn/error as real side effects
@@ -1418,8 +1421,9 @@ export default createRule<Options, MessageIds>({
 							method === "debug") &&
 						call.callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
 						call.callee.object.name === "console"
-					)
+					) {
 						return true;
+					}
 					if (
 						method.startsWith("fetch") ||
 						method.startsWith("send") ||
@@ -1442,8 +1446,9 @@ export default createRule<Options, MessageIds>({
 						method === "then" ||
 						method === "catch" ||
 						method === "finally"
-					)
+					) {
 						return true;
+					}
 				}
 			}
 
@@ -1894,3 +1899,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "no-useless-use-effect",
 });
+
+export default noUselessUseEffect;

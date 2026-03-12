@@ -526,7 +526,7 @@ function createReplacementText(
 	return "new Array()";
 }
 
-export default createRule<Options, MessageIds>({
+const noEmptyArrayLiteral = createRule<Options, MessageIds>({
 	create(context) {
 		const userOptions = context.options[0] ?? {};
 		const allowedContexts = userOptions.allowedEmptyArrayContexts;
@@ -730,3 +730,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "no-empty-array-literal",
 });
+
+export default noEmptyArrayLiteral;

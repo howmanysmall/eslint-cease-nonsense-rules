@@ -136,7 +136,7 @@ function isLikelyBinding(
 	return object.type === AST_NODE_TYPES.CallExpression && isJoinBindingsCall(object);
 }
 
-export default createRule<Options, MessageIds>({
+const noIdentityMap = createRule<Options, MessageIds>({
 	create(context) {
 		const [{ bindingPatterns = DEFAULT_BINDING_PATTERNS } = {}] = context.options;
 
@@ -198,3 +198,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "no-identity-map",
 });
+
+export default noIdentityMap;

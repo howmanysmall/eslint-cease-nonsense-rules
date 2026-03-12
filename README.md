@@ -1029,6 +1029,92 @@ ErrorBoundaryContext.displayName = "ErrorBoundaryContext";
 export default ErrorBoundaryContext;
 ```
 
+#### `prefer-context-stack`
+
+Prefer a local `ContextStack` component over directly nesting multiple context providers.
+
+This rule only reports direct provider wrapper chains, and only when the project already defines a local
+`ContextStack` component.
+
+**❌ Bad**
+
+```tsx
+return (
+	<ThemeContext.Provider value={theme}>
+		<LocaleContext.Provider value={locale}>
+			<App />
+		</LocaleContext.Provider>
+	</ThemeContext.Provider>
+);
+```
+
+**✅ Good**
+
+```tsx
+return (
+	<ContextStack
+		providers={[
+			<ThemeContext.Provider value={theme} />,
+			<LocaleContext.Provider value={locale} />,
+		]}
+	>
+		<App />
+	</ContextStack>
+);
+```
+
+#### `prefer-local-portal-component`
+
+Prefer a local `Portal` wrapper component over direct `createPortal(...)` calls.
+
+This rule only reports when it can find a local `Portal` component in the project. Auto-fix only runs when that
+component is already imported in the current file.
+
+**❌ Bad**
+
+```tsx
+import { createPortal } from "@rbxts/react-roblox";
+
+return createPortal(<frame />, target);
+```
+
+**✅ Good**
+
+```tsx
+import Portal from "../components/portal";
+
+return <Portal target={target}><frame /></Portal>;
+```
+
+#### `prefer-padding-components`
+
+Prefer `EqualPadding` or `DirectionalPadding` over a raw `<uipadding />` when the padding values already match those
+abstractions.
+
+This rule only reports when it can find the matching local component in the project.
+
+For `DirectionalPadding`, this rule follows the local component contract you provide: `horizontal` maps to
+`PaddingTop`/`PaddingBottom`, and `vertical` maps to `PaddingLeft`/`PaddingRight`.
+
+**❌ Bad**
+
+```tsx
+<uipadding
+	PaddingBottom={padding}
+	PaddingLeft={padding}
+	PaddingRight={padding}
+	PaddingTop={padding}
+/>
+```
+
+**✅ Good**
+
+```tsx
+<EqualPadding padding={padding} />
+
+<DirectionalPadding horizontal={horizontal} vertical={vertical} />
+```
+
 #### `prefer-read-only-props`
 
 Enforce that React component props are typed as `readonly` in TypeScript, preventing accidental mutation of props.

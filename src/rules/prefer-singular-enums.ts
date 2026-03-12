@@ -136,7 +136,7 @@ function isPlural(name: string): boolean {
 	return last ? isPluralWord(last.lower, last.original) : false;
 }
 
-export default createRule({
+const preferSingularEnums = createRule({
 	create(context) {
 		return {
 			TSEnumDeclaration(node: TSESTree.TSEnumDeclaration): void {
@@ -164,3 +164,5 @@ export default createRule({
 	},
 	name: "prefer-singular-enums",
 });
+
+export default preferSingularEnums;

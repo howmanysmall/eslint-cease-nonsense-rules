@@ -141,7 +141,7 @@ function isSizeCall(node: TSESTree.Expression): node is SizeCallExpression {
 	return node.callee.property.name === "size";
 }
 
-export default createRule<Options, MessageIds>({
+const noArraySizeAssignment = createRule<Options, MessageIds>({
 	create(context) {
 		const [{ allowAutofix = false } = {}] = context.options;
 		const { sourceCode } = context;
@@ -205,3 +205,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "no-array-size-assignment",
 });
+
+export default noArraySizeAssignment;

@@ -31,7 +31,7 @@ function parsePatterns(patterns: ReadonlyArray<Pattern>): ReadonlyArray<ParsedPa
 	);
 }
 
-export default createRule({
+const preferPatternReplacements = createRule({
 	create(context) {
 		const validatedOptions = isRuleOptions.Check(context.options[0]) ? context.options[0] : undefined;
 		if (!validatedOptions || validatedOptions.patterns.length === 0) return {};
@@ -146,3 +146,5 @@ export default createRule({
 	},
 	name: "prefer-pattern-replacements",
 });
+
+export default preferPatternReplacements;

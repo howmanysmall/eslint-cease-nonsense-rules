@@ -70,7 +70,7 @@ function isGlobal(scope?: TSESLint.Scope.Scope): boolean {
 	return scope.type === ScopeType.global || scope.type === ScopeType.module;
 }
 
-export default createRule<Options, MessageIds>({
+const namingConventions = createRule<Options, MessageIds>({
 	create(contextWithoutDefaults) {
 		if (contextWithoutDefaults.filename.endsWith(".d.ts")) return {};
 
@@ -585,6 +585,8 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "naming-convention",
 });
+
+export default namingConventions;
 
 function getIdentifiersFromPattern(pattern: TSESTree.DestructuringPattern): Array<TSESTree.Identifier> {
 	const identifiers: Array<TSESTree.Identifier> = [];

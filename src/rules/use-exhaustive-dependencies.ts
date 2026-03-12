@@ -562,8 +562,9 @@ function collectCaptures(node: TSESTree.Node, sourceCode: TSESLint.SourceCode): 
 		for (const key of keys) {
 			const value = (current as unknown as Record<string, unknown>)[key];
 			if (Array.isArray(value)) {
-				for (const item of value)
+				for (const item of value) {
 					if (item && typeof item === "object" && "type" in item) visit(item as TSESTree.Node);
+				}
 			} else if (value && typeof value === "object" && "type" in value) visit(value as TSESTree.Node);
 		}
 	}

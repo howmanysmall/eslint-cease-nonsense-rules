@@ -35,7 +35,7 @@ function isTopLevelArrayType(node: TSESTree.TypeNode): boolean {
 	return true;
 }
 
-export default createRule<Options, MessageIds>({
+const arrayTypeGeneric = createRule<Options, MessageIds>({
 	create(context) {
 		const { sourceCode } = context;
 
@@ -76,3 +76,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "array-type-generic",
 });
+
+export default arrayTypeGeneric;

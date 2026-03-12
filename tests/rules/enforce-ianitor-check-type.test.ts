@@ -355,8 +355,9 @@ export type SpinOptions = Readonly<Ianitor.Static<typeof isSpinOptions>>;
 				options: [{ baseThreshold: 1, interfacePenalty: 1 }],
 				report(descriptor: Rule.ReportDescriptor): void {
 					if (typeof descriptor === "string") return;
-					if ("messageId" in descriptor && typeof descriptor.messageId === "string")
+					if ("messageId" in descriptor && typeof descriptor.messageId === "string") {
 						reports.push({ messageId: descriptor.messageId });
+					}
 				},
 			};
 
