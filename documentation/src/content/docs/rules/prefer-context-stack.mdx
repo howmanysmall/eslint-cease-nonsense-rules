@@ -1,0 +1,93 @@
+---
+title: prefer-context-stack
+badge:
+    text: Best Practice
+    variant: success
+description: Prefer a local ContextStack component over directly nesting multiple context providers.
+---
+
+import { Aside, CardGrid, Card, Code, LinkCard } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
+
+Prefer a local `ContextStack` component when a file directly nests multiple context providers as a wrapper chain.
+
+## Rule Details :badge[Best Practice]{variant=success}
+
+Long provider chains make component trees harder to scan and harder to refactor. If the project already exposes a local
+`ContextStack` component, this rule prefers that shared abstraction over repeating provider nesting by hand.
+
+<Aside type="tip" title="Conservative by design">
+	This rule only reports when it can find a local `ContextStack` component. Auto-fix only runs when that component is
+	already imported into the current file.
+</Aside>
+
+## Examples
+
+<RuleExample type="fail" title="Incorrect">
+		### Nested Provider Chain
+		Collapse direct wrapper chains into the shared context helper.
+
+    	<Code
+    		code={[
+    			"return (",
+    			"\t<ThemeContext.Provider value={theme}>",
+    			"\t\t<LocaleContext.Provider value={locale}>",
+    			"\t\t\t<App />",
+    			"\t\t</LocaleContext.Provider>",
+    			"\t</ThemeContext.Provider>",
+    			");",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
+		### Shared Context Wrapper
+		Move the provider list into `ContextStack` and keep the rendered children focused.
+
+    	<Code
+    		code={[
+    			"return (",
+    			"\t<ContextStack",
+    			"\t\tproviders={[",
+    			"\t\t\t<ThemeContext.Provider value={theme} />,",
+    			"\t\t\t<LocaleContext.Provider value={locale} />,",
+    			"\t\t]}",
+    			"\t>",
+    			"\t\t<App />",
+    			"\t</ContextStack>",
+    			");",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </RuleExample>
+
+## What gets reported?
+
+<CardGrid stagger>
+	<Card title="Direct Chains" icon="list-format">
+		Reports provider wrappers like `A.Provider -> B.Provider -> children` when they are stacked directly.
+	</Card>
+	<Card title="Single Providers Stay" icon="check">
+		Leaves a single provider alone because there is no stack to collapse.
+	</Card>
+	<Card title="Mixed Layouts Stay" icon="warning">
+		Skips cases where the outer provider also renders siblings or other non-provider children.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="prefer-local-portal-component"
+		description="Another React rule that replaces repeated low-level APIs with a shared local component"
+		href="/eslint-cease-nonsense-rules/rules/prefer-local-portal-component/"
+	/>
+	<LinkCard
+		title="require-react-display-names"
+		description="Keep your shared React abstractions identifiable in DevTools"
+		href="/eslint-cease-nonsense-rules/rules/require-react-display-names/"
+	/>
+</CardGrid>

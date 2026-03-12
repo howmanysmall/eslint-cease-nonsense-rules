@@ -30,10 +30,13 @@ import noUselessUseEffect from "./rules/no-useless-use-effect";
 import noUselessUseSpring from "./rules/no-useless-use-spring";
 import noWarn from "./rules/no-warn";
 import preferClassProperties from "./rules/prefer-class-properties";
+import preferContextStack from "./rules/prefer-context-stack";
 import preferEarlyReturn from "./rules/prefer-early-return";
 import preferEnumItem from "./rules/prefer-enum-item";
 import preferEnumMember from "./rules/prefer-enum-member";
+import preferLocalPortalComponent from "./rules/prefer-local-portal-component";
 import preferModuleScopeConstants from "./rules/prefer-module-scope-constants";
+import preferPaddingComponents from "./rules/prefer-padding-components";
 import preferPascalCaseEnums from "./rules/prefer-pascal-case-enums";
 import preferPatternReplacements from "./rules/prefer-pattern-replacements";
 import preferReadOnlyProps from "./rules/prefer-read-only-props";
@@ -160,10 +163,13 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"no-useless-use-spring": noUselessUseSpring,
 	"no-warn": noWarn,
 	"prefer-class-properties": preferClassProperties,
+	"prefer-context-stack": preferContextStack,
 	"prefer-early-return": preferEarlyReturn,
 	"prefer-enum-item": preferEnumItem,
 	"prefer-enum-member": preferEnumMember,
+	"prefer-local-portal-component": preferLocalPortalComponent,
 	"prefer-module-scope-constants": preferModuleScopeConstants,
+	"prefer-padding-components": preferPaddingComponents,
 	"prefer-pascal-case-enums": preferPascalCaseEnums,
 	"prefer-pattern-replacements": preferPatternReplacements,
 	"prefer-read-only-props": preferReadOnlyProps,

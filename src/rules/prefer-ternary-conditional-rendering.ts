@@ -146,8 +146,9 @@ function areEquivalentExpression(
 			) {
 				return false;
 			}
-			if (!areEquivalentExpressionOrSuper(normalizedLeft.object, normalizedRight.object, sourceCode))
+			if (!areEquivalentExpressionOrSuper(normalizedLeft.object, normalizedRight.object, sourceCode)) {
 				return false;
+			}
 
 			if (normalizedLeft.computed) {
 				return areEquivalentOperand(normalizedLeft.property, normalizedRight.property, sourceCode);
@@ -169,8 +170,9 @@ function areEquivalentExpression(
 		case AST_NODE_TYPES.CallExpression:
 			if (normalizedRight.type !== AST_NODE_TYPES.CallExpression) return false;
 			if (normalizedLeft.optional !== normalizedRight.optional) return false;
-			if (!areEquivalentExpressionOrSuper(normalizedLeft.callee, normalizedRight.callee, sourceCode))
+			if (!areEquivalentExpressionOrSuper(normalizedLeft.callee, normalizedRight.callee, sourceCode)) {
 				return false;
+			}
 			if (normalizedLeft.arguments.length !== normalizedRight.arguments.length) return false;
 
 			for (let index = 0; index < normalizedLeft.arguments.length; index += 1) {

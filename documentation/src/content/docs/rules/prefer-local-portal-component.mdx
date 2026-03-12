@@ -1,0 +1,90 @@
+---
+title: prefer-local-portal-component
+badge:
+    text: Best Practice
+    variant: success
+description: Prefer a local Portal wrapper component over direct createPortal calls.
+---
+
+import { Aside, CardGrid, Card, Code, LinkCard } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
+
+Prefer a local `Portal` component over direct `createPortal(...)` calls when the project already defines one.
+
+## Rule Details :badge[Best Practice]{variant=success}
+
+Direct portal calls work, but they scatter low-level mounting logic across the codebase. A shared `Portal` component
+keeps that logic in one place and gives you one consistent abstraction for Roblox and standard React projects.
+
+<Aside type="tip" title="Conservative by design">
+	This rule only reports when it can find a local `Portal` component in the project. Auto-fix only runs when that
+	component is already imported into the current file.
+</Aside>
+
+## Examples
+
+<RuleExample type="fail" title="Incorrect">
+		### Direct Portal Factory Calls
+		Prefer the project wrapper instead of calling the renderer API directly.
+
+    	<Code
+    		code={[
+    			'import { createPortal } from "@rbxts/react-roblox";',
+    			"",
+    			"return createPortal(<frame />, target);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
+		### Shared Portal Wrapper
+		Keep portal mounting behind the local component boundary.
+
+    	<Code
+    		code={[
+    			'import Portal from "../components/portal";',
+    			"",
+    			"return <Portal target={target}><frame /></Portal>;",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </RuleExample>
+
+## Environment Modes
+
+| Direct API Source      | Supported Call Shape                      |
+| :--------------------- | :---------------------------------------- |
+| `@rbxts/react-roblox`  | `createPortal(children, target)`          |
+| `react-dom`            | `createPortal(children, container)`       |
+| `import * as ReactDOM` | `ReactDOM.createPortal(children, target)` |
+
+## Why use a wrapper?
+
+<CardGrid stagger>
+	<Card title="One Abstraction" icon="list-format">
+		Keeps portal setup in one local component instead of repeating renderer calls throughout the app.
+	</Card>
+	<Card title="Safer Refactors" icon="bolt">
+		Makes it easier to change portal behavior later without touching every call site.
+	</Card>
+	<Card title="Consistent JSX" icon="setting">
+		Reads like the rest of the component tree instead of dropping into an imperative factory call.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="prefer-context-stack"
+		description="Another wrapper-oriented React rule for repeated provider trees"
+		href="/eslint-cease-nonsense-rules/rules/prefer-context-stack/"
+	/>
+	<LinkCard
+		title="require-react-display-names"
+		description="Keep component-oriented abstractions easy to debug"
+		href="/eslint-cease-nonsense-rules/rules/require-react-display-names/"
+	/>
+</CardGrid>

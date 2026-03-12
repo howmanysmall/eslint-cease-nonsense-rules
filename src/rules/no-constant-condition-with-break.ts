@@ -137,8 +137,9 @@ function expressionContainsConfiguredLoopExit(
 			if (
 				unwrapped.left.type !== AST_NODE_TYPES.PrivateIdentifier &&
 				expressionContainsConfiguredLoopExit(unwrapped.left, loopExitCalls)
-			)
+			) {
 				return true;
+			}
 			return expressionContainsConfiguredLoopExit(unwrapped.right, loopExitCalls);
 
 		case AST_NODE_TYPES.LogicalExpression:
@@ -153,8 +154,9 @@ function expressionContainsConfiguredLoopExit(
 			if (
 				unwrapped.callee.type !== AST_NODE_TYPES.Super &&
 				expressionContainsConfiguredLoopExit(unwrapped.callee, loopExitCalls)
-			)
+			) {
 				return true;
+			}
 
 			for (const argument of unwrapped.arguments) {
 				if (argument.type === AST_NODE_TYPES.SpreadElement) {
@@ -510,10 +512,12 @@ function statementContainsLoopExit(
 
 		case AST_NODE_TYPES.TryStatement:
 			if (statementContainsLoopExit(statement.block, loopNode, loopExitCalls)) return true;
-			if (statement.handler && statementContainsLoopExit(statement.handler.body, loopNode, loopExitCalls))
+			if (statement.handler && statementContainsLoopExit(statement.handler.body, loopNode, loopExitCalls)) {
 				return true;
-			if (statement.finalizer && statementContainsLoopExit(statement.finalizer, loopNode, loopExitCalls))
+			}
+			if (statement.finalizer && statementContainsLoopExit(statement.finalizer, loopNode, loopExitCalls)) {
 				return true;
+			}
 			return false;
 
 		case AST_NODE_TYPES.VariableDeclaration:

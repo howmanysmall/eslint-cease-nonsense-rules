@@ -1,0 +1,96 @@
+---
+title: prefer-padding-components
+badge:
+    text: Roblox
+    variant: note
+description: Prefer EqualPadding or DirectionalPadding over matching uipadding declarations.
+---
+
+import { Aside, CardGrid, Card, Code, LinkCard } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
+
+Prefer `EqualPadding` or `DirectionalPadding` when a raw `<uipadding />` already matches one of those abstractions.
+
+## Rule Details :badge[Roblox]{variant=note}
+
+When all four padding values match, or when the horizontal and vertical pairs already match, a wrapper component is
+clearer than repeating the same `uipadding` attributes over and over.
+
+<Aside type="tip" title="Conservative by design">
+	This rule only reports when it can find the matching local padding component. Auto-fix only runs when that component
+	is already imported into the current file.
+</Aside>
+
+## Examples
+
+<RuleExample type="fail" title="Incorrect">
+		### Repeated Padding Attributes
+		Use the component that already captures the same layout intent.
+
+    	<Code
+    		code={[
+    			"<uipadding",
+    			"\tPaddingBottom={padding}",
+    			"\tPaddingLeft={padding}",
+    			"\tPaddingRight={padding}",
+    			"\tPaddingTop={padding}",
+    			"/>;",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
+		### Intentional Layout Components
+		Keep equal and per-axis padding expressed as dedicated JSX components.
+
+    	<Code
+    		code={[
+    			"<EqualPadding padding={padding} />;",
+    			"",
+    			"<DirectionalPadding horizontal={horizontal} vertical={vertical} />;",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </RuleExample>
+
+## Mapping Rules
+
+| Pattern                                                                             | Preferred Component  |
+| :---------------------------------------------------------------------------------- | :------------------- |
+| `PaddingTop === PaddingBottom === PaddingLeft === PaddingRight`                     | `EqualPadding`       |
+| `PaddingTop === PaddingBottom` and `PaddingLeft === PaddingRight`                   | `DirectionalPadding` |
+| Any spread attributes, duplicate attributes, extra attributes, or mismatched values | No report            |
+
+For `DirectionalPadding`, this rule follows the local component contract shown in your project: `horizontal` maps to
+`PaddingTop`/`PaddingBottom`, and `vertical` maps to `PaddingLeft`/`PaddingRight`.
+
+## Why use wrapper components?
+
+<CardGrid stagger>
+	<Card title="Less Repetition" icon="rocket">
+		Avoids repeating the same padding value four times in every layout node.
+	</Card>
+	<Card title="Clearer Intent" icon="magnifier">
+		Shows whether the layout wants equal padding or per-axis padding immediately.
+	</Card>
+	<Card title="Reusable Defaults" icon="setting">
+		Makes it easier for shared layout components to evolve without touching every call site.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="prefer-udim2-shorthand"
+		description="Another Roblox readability rule that replaces repeated low-level constructor patterns"
+		href="/eslint-cease-nonsense-rules/rules/prefer-udim2-shorthand/"
+	/>
+	<LinkCard
+		title="prefer-context-stack"
+		description="Uses the same idea of replacing repeated JSX structure with a shared wrapper"
+		href="/eslint-cease-nonsense-rules/rules/prefer-context-stack/"
+	/>
+</CardGrid>
