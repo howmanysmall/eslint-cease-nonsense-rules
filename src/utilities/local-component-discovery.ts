@@ -1,18 +1,18 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, extname, join, relative } from "node:path";
 
-export interface LocalComponentDefinition {
+interface LocalComponentDefinition {
 	readonly componentName: string;
 	readonly fileNames: ReadonlyArray<string>;
 	readonly markers?: ReadonlyArray<string>;
 }
 
-export interface LocalComponentInspection {
+interface LocalComponentInspection {
 	readonly importStyle: "default" | "named" | undefined;
 	readonly matches: boolean;
 }
 
-export type LocalComponentDiscovery =
+type LocalComponentDiscovery =
 	| { readonly found: false }
 	| {
 			readonly found: true;
