@@ -2,7 +2,7 @@ import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "MESSAGE_ID_HERE";
 
-export default createRule<[], MessageIds>({
+const RULE_NAME = createRule<[], MessageIds>({
 	create(context) {
 		return {
 			// Use AST selector - see https://eslint.org/docs/latest/extend/selectors
@@ -27,3 +27,5 @@ export default createRule<[], MessageIds>({
 	},
 	name: "RULE_NAME",
 });
+
+export default RULE_NAME;
