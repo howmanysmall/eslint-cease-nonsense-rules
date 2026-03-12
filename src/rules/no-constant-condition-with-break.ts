@@ -558,7 +558,7 @@ function reportConstantCondition(
 	});
 }
 
-export default createRule<Options, MessageIds>({
+const noConstantConditionWithBreak = createRule<Options, MessageIds>({
 	create(context) {
 		const loopExitCalls = normalizeLoopExitCalls(context.options[0]);
 
@@ -627,3 +627,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "no-constant-condition-with-break",
 });
+
+export default noConstantConditionWithBreak;

@@ -1223,7 +1223,7 @@ function getFunctionBody(node: FunctionNode): TSESTree.BlockStatement | undefine
 	return undefined;
 }
 
-export default createRule<Options, MessageIds>({
+const noUselessUseEffect = createRule<Options, MessageIds>({
 	create(context) {
 		const options = normalizeOptions(context.options[0]);
 		const reactSources = getReactSources(options.environment);
@@ -1894,3 +1894,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "no-useless-use-effect",
 });
+
+export default noUselessUseEffect;

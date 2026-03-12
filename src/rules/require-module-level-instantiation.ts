@@ -60,7 +60,7 @@ function isTopScope({ type }: TSESLint.Scope.Scope): boolean {
 	return type === ScopeType.module || type === ScopeType.global;
 }
 
-export default createRule<Options, MessageIds>({
+const requireModuleLevelInstantiation = createRule<Options, MessageIds>({
 	create(context) {
 		const { trackedImports } = normalizeConfiguration(context.options[0]);
 		if (trackedImports.size === 0) return {};
@@ -156,3 +156,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "require-module-level-instantiation",
 });
+
+export default requireModuleLevelInstantiation;

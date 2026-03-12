@@ -82,7 +82,7 @@ function methodUsesThis(node: TSESTree.MethodDefinition): boolean {
 	return traverseForThis(value, new WeakSet());
 }
 
-export default createRule<[NoInstanceMethodsOptions | undefined], MessageIds>({
+const noInstanceMethodsWithoutThis = createRule<[NoInstanceMethodsOptions | undefined], MessageIds>({
 	create(context) {
 		const [rawOptions] = context.options;
 		const options = normalizeOptions(rawOptions);
@@ -139,3 +139,5 @@ export default createRule<[NoInstanceMethodsOptions | undefined], MessageIds>({
 	},
 	name: "no-instance-methods-without-this",
 });
+
+export default noInstanceMethodsWithoutThis;

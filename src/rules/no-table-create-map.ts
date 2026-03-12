@@ -94,7 +94,7 @@ function isArrayConstructorBase(
 	return !hasShadowedBinding(context, callee, "Array");
 }
 
-export default createRule<Options, MessageIds>({
+const noTableCreateMap = createRule<Options, MessageIds>({
 	create(context) {
 		return {
 			CallExpression(node): void {
@@ -131,3 +131,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "no-table-create-map",
 });
+
+export default noTableCreateMap;

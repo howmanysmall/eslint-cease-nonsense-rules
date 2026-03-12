@@ -436,7 +436,7 @@ function isSpringHookCall(node: TSESTree.CallExpression, options: NormalizedOpti
 	return false;
 }
 
-export default createRule({
+const noUselessUseSpring = createRule({
 	create(context) {
 		const [rawOptions] = context.options;
 		const normalized: NormalizedOptions = {
@@ -510,3 +510,5 @@ export default createRule({
 	},
 	name: "no-useless-use-spring",
 });
+
+export default noUselessUseSpring;

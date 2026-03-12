@@ -86,7 +86,7 @@ function isReferenceExported(reference: Scope.Reference): boolean {
 	return isNodeInExport(reference.identifier);
 }
 
-export default createRule<Options, MessageIds>({
+const requireReactDisplayNames = createRule<Options, MessageIds>({
 	create(context) {
 		const options: Required<RequireReactDisplayNamesOptions> = {
 			...DEFAULT_OPTIONS,
@@ -277,3 +277,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "require-react-display-names",
 });
+
+export default requireReactDisplayNames;

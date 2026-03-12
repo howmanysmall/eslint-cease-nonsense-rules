@@ -1,6 +1,6 @@
 import { createRule } from "../utilities/create-rule";
 
-export default createRule({
+const noPrint = createRule({
 	create(context) {
 		return {
 			'CallExpression[callee.type="Identifier"][callee.name="print"]'(node): void {
@@ -24,3 +24,5 @@ export default createRule({
 	},
 	name: "no-print",
 });
+
+export default noPrint;

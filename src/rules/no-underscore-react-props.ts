@@ -4,7 +4,7 @@ import { createRule } from "../utilities/create-rule";
 
 type MessageIds = "noUnderscoreReactProp";
 
-export default createRule<[], MessageIds>({
+const noUnderscoreReactProperties = createRule<[], MessageIds>({
 	create(context) {
 		return {
 			JSXAttribute(node: TSESTree.JSXAttribute): void {
@@ -33,3 +33,5 @@ export default createRule<[], MessageIds>({
 	},
 	name: "no-underscore-react-props",
 });
+
+export default noUnderscoreReactProperties;

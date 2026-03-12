@@ -325,7 +325,7 @@ function createCollapseFixes(
 	];
 }
 
-export default createRule<Options, MessageIds>({
+const noArrayConstructorElements = createRule<Options, MessageIds>({
 	create(context) {
 		const options: Required<NoArrayConstructorElementsOptions> = {
 			...DEFAULT_OPTIONS,
@@ -572,3 +572,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "no-array-constructor-elements",
 });
+
+export default noArrayConstructorElements;

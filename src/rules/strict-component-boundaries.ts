@@ -44,7 +44,7 @@ function isValidFixtureImport(pathParts: ReadonlyArray<string>): boolean {
 	return !hasAnotherComponentInPath(partsBeforeFixture);
 }
 
-export default createRule<[Options], "noReachingIntoComponent">({
+const strictComponentBoundaries = createRule<[Options], "noReachingIntoComponent">({
 	create(context) {
 		const [{ allow = [], maxDepth = 1 } = {}] = context.options;
 		// oxlint-disable-next-line no-array-callback-reference
@@ -124,3 +124,5 @@ export default createRule<[Options], "noReachingIntoComponent">({
 	},
 	name: "strict-component-boundaries",
 });
+
+export default strictComponentBoundaries;

@@ -276,7 +276,7 @@ function getBranchCandidate(child: TSESTree.JSXChild): BranchCandidate | undefin
 	};
 }
 
-export default createRule<Options, MessageIds>({
+const preferTernaryConditionalRendering = createRule<Options, MessageIds>({
 	create(context) {
 		const { sourceCode } = context;
 
@@ -357,3 +357,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "prefer-ternary-conditional-rendering",
 });
+
+export default preferTernaryConditionalRendering;

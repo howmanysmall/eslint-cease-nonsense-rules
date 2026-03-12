@@ -21,7 +21,7 @@ function isTopScope(scope: TSESLint.Scope.Scope): boolean {
 	return false;
 }
 
-export default createRule<[], MessageIds>({
+const preferModuleScopeConstants = createRule<[], MessageIds>({
 	create(context) {
 		let inConstDeclaration = false;
 
@@ -71,3 +71,5 @@ export default createRule<[], MessageIds>({
 	},
 	name: "prefer-module-scope-constants",
 });
+
+export default preferModuleScopeConstants;

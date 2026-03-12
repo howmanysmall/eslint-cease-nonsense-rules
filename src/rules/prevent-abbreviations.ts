@@ -943,7 +943,7 @@ function isVueTemplateReference(reference: TSESLint.Scope.Reference): boolean {
 	return Reflect.get(reference, "vueUsedInTemplate") === true;
 }
 
-export default createRule<Options, MessageIds>({
+const preventAbbreviations = createRule<Options, MessageIds>({
 	create(context) {
 		const options = prepareOptions(context.options[0]);
 		const filenameWithExtension = context.physicalFilename;
@@ -1225,3 +1225,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "prevent-abbreviations",
 });
+
+export default preventAbbreviations;

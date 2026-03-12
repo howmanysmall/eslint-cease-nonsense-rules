@@ -65,7 +65,7 @@ function collectJSDocIdentifiers(sourceCode: TSESLint.SourceCode): Set<string> {
 	return identifiers;
 }
 
-export default createRule<Options, MessageIds>({
+const noUnusedImports = createRule<Options, MessageIds>({
 	create(context) {
 		const [{ checkJSDoc = true } = {}] = context.options;
 		const { sourceCode } = context;
@@ -185,3 +185,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "no-unused-imports",
 });
+
+export default noUnusedImports;

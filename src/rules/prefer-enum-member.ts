@@ -144,7 +144,7 @@ function getPropertyKeyInfo(node: TSESTree.Property): PropertyKeyInfo | undefine
 	return undefined;
 }
 
-export default createRule<Options, MessageIds>({
+const preferEnumMember = createRule<Options, MessageIds>({
 	create(context) {
 		const services = ESLintUtils.getParserServices(context);
 		const checker = services.program.getTypeChecker();
@@ -833,3 +833,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "prefer-enum-member",
 });
+
+export default preferEnumMember;

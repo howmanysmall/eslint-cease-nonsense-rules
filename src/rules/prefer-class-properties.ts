@@ -67,7 +67,7 @@ function isConstructor(node: TSESTree.ClassElement): boolean {
 	);
 }
 
-export default createRule<Options, MessageIds>({
+const preferClassProperties = createRule<Options, MessageIds>({
 	create(context) {
 		const option = context.options[0] ?? "always";
 
@@ -137,3 +137,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "prefer-class-properties",
 });
+
+export default preferClassProperties;

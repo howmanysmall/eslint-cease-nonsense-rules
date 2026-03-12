@@ -67,7 +67,7 @@ function extractKeypoint(
 	};
 }
 
-export default createRule<[], "preferSingleOverload" | "preferTwoPointOverload">({
+const preferSequenceOverloads = createRule<[], "preferSingleOverload" | "preferTwoPointOverload">({
 	create(context) {
 		const { sourceCode } = context;
 
@@ -143,3 +143,5 @@ export default createRule<[], "preferSingleOverload" | "preferTwoPointOverload">
 	},
 	name: "prefer-sequence-overloads",
 });
+
+export default preferSequenceOverloads;

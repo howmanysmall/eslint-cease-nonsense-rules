@@ -97,7 +97,7 @@ function exceedsMaxReturnProperties(node: TSESTree.ReturnStatement, scope: TSESL
 	return countReturnElements(argument, scope) > MAX_RETURN_ELEMENTS;
 }
 
-export default createRule({
+const reactHooksStrictReturn = createRule({
 	create(context) {
 		let hookDepth = 0;
 
@@ -163,3 +163,5 @@ export default createRule({
 	},
 	name: "react-hooks-strict-return",
 });
+
+export default reactHooksStrictReturn;

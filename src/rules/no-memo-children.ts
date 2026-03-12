@@ -147,7 +147,7 @@ function getComponentName(node: TSESTree.CallExpression): string | undefined {
 	return undefined;
 }
 
-export default createRule<Options, MessageIds>({
+const noMemoChildren = createRule<Options, MessageIds>({
 	create(context) {
 		const options: Required<NoMemoChildrenOptions> = {
 			...DEFAULT_OPTIONS,
@@ -242,3 +242,5 @@ export default createRule<Options, MessageIds>({
 	},
 	name: "no-memo-children",
 });
+
+export default noMemoChildren;
