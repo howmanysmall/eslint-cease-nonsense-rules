@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { MessageChannel, receiveMessageOnPort, Worker } from "node:worker_threads";
 
-import type { FormatOptions, FormatRequest, FormatResponse } from "./oxfmt-worker";
+import type { FormatConfiguration, FormatRequest, FormatResponse } from "./oxfmt-worker";
 
 const FORMAT_TIMEOUT = 30_000;
 
@@ -52,7 +52,7 @@ function getWorker(): OxfmtWorkerState {
 	return workerState;
 }
 
-export function formatSync(fileName: string, sourceText: string, options: FormatOptions = {}): string {
+export function formatSync(fileName: string, sourceText: string, options: FormatConfiguration = {}): string {
 	const { controlBuffer, responsePort } = getWorker();
 	const control = new Int32Array(controlBuffer);
 

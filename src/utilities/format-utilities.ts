@@ -6,7 +6,7 @@ import fastDiff from "fast-diff";
 
 import { formatSync } from "../oxfmt-sync";
 
-import type { FormatOptions } from "../oxfmt-worker";
+import type { FormatConfiguration } from "../oxfmt-worker";
 
 export interface Difference {
 	readonly deleteText?: string;
@@ -15,9 +15,9 @@ export interface Difference {
 	readonly operation: "INSERT" | "DELETE" | "REPLACE";
 }
 
-let cachedConfig: FormatOptions | undefined;
+let cachedConfig: FormatConfiguration | undefined;
 
-function loadOxfmtConfig(): FormatOptions {
+function loadOxfmtConfig(): FormatConfiguration {
 	if (cachedConfig !== undefined) return cachedConfig;
 
 	try {
@@ -33,7 +33,7 @@ function loadOxfmtConfig(): FormatOptions {
 		const config = parsed as Record<string, unknown>;
 		const { $schema: _schema, ignorePatterns: _ignore, ...formatOptions } = config;
 
-		cachedConfig = formatOptions as FormatOptions;
+		cachedConfig = formatOptions as FormatConfiguration;
 		return cachedConfig;
 	} catch {
 		cachedConfig = {};
@@ -152,10 +152,10 @@ export function generateDifferences(original: string, formatted: string): Readon
 
 const MAX_LENGTH = 60;
 const SYMBOLS: Record<string, string> = {
-	" ": "\u{00B7}",
+	"\t": "\u{2192}",
 	"\n": "\u{240A}",
 	"\r": "\u{240D}",
-	"\t": "\u{2192}",
+	" ": "\u{00B7}",
 };
 
 const WHITESPACE_REGEXP = regex("[\r\n\t ]", "g");

@@ -1,5 +1,3 @@
-// oxlint-disable prefer-code-point
-// oxlint-disable prefer-string-raw
 import { regex } from "arktype";
 import { barplot, bench, do_not_optimize, run } from "mitata";
 import { toPascal } from "ts-case-convert";

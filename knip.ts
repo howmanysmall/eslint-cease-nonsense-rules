@@ -10,7 +10,6 @@ const config: KnipConfig = {
 	ignore: ["scripts/plugins/**/*.ts"],
 	ignoreBinaries: ["rumdl", "tombi"],
 	ignoreDependencies: ["source-map", "@mitata/counters", "oxfmt", "@rbxts/types", "better-result"],
-	"lint-staged": true,
 	oxlint: true,
 	project: ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts"],
 	rules: {

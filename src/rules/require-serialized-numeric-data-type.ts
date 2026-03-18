@@ -134,10 +134,7 @@ const requireSerializedNumericDataType = createRule<Options, MessageIds>({
 
 		const { parserServices } = context.sourceCode;
 
-		const typeChecker =
-			strictMode && parserServices !== undefined && parserServices.program
-				? parserServices.program.getTypeChecker()
-				: undefined;
+		const typeChecker = strictMode && parserServices?.program ? parserServices.program.getTypeChecker() : undefined;
 
 		function reportError(node: TSESTree.Node): void {
 			context.report({
