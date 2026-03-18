@@ -507,7 +507,7 @@ function getExternalOrLocalImportBinding(symbol: ts.Symbol): ExternalImportBindi
 function getFileStem(filePath: string): string {
 	const baseName = basename(filePath);
 	if (baseName.endsWith(".d.ts")) {
-		const fileStem = baseName.slice(0, Math.max(0, baseName.length - ".d.ts".length));
+		const fileStem = baseName.slice(0, Math.max(0, baseName.length - 5));
 		if (fileStem === "index") return basename(dirname(filePath));
 		return fileStem;
 	}
