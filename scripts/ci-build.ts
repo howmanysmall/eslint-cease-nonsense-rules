@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import buildMetadata from "./plugins/build-metadata";
+import buildMetadata from "./plugins/bun/build-metadata";
 
 await Bun.$`rm -rf ./dist`;
 

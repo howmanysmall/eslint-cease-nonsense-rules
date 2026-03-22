@@ -1,13 +1,13 @@
 import { basename, dirname, resolve, sep } from "node:path";
 import ts from "typescript";
 
-export interface DeclarationProgramOptions {
+interface DeclarationProgramOptions {
 	readonly compilerOptions?: ts.CompilerOptions;
 	readonly declarationDirectories?: ReadonlyArray<string>;
 	readonly entryFilePaths?: ReadonlyArray<string>;
 }
 
-export interface BundleDeclarationOptions {
+interface BundleDeclarationOptions {
 	readonly entryFilePath: string;
 	readonly program: ts.Program;
 }

@@ -8,8 +8,8 @@ const config: KnipConfig = {
 	entry: ["scripts/*.ts", "benchmarks/**/*.bench.ts", ".opencode/**/*.ts", "tests/**/*.ts"],
 	eslint: true,
 	ignore: ["scripts/plugins/**/*.ts"],
-	ignoreBinaries: ["rumdl", "tombi"],
-	ignoreDependencies: ["source-map", "@mitata/counters", "oxfmt", "@rbxts/types", "better-result"],
+	ignoreBinaries: ["lefthook"],
+	ignoreDependencies: ["source-map", "@mitata/counters", "@rbxts/types", "better-result"],
 	oxlint: true,
 	project: ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts"],
 	rules: {
