@@ -346,9 +346,7 @@ const preferEnumMember = createRule<Options, MessageIds>({
 				if (isIdentifier(typeName)) {
 					const parameterMap = getTypeParameterMap(aliasSymbol);
 					const index = parameterMap?.get(typeName.text);
-					if (index !== undefined && aliasTypeArguments && aliasTypeArguments[index]) {
-						return aliasTypeArguments[index];
-					}
+					if (index !== undefined && aliasTypeArguments?.[index]) return aliasTypeArguments[index];
 				}
 			}
 			return isTypeNode(constraint) ? checker.getTypeFromTypeNode(constraint) : undefined;

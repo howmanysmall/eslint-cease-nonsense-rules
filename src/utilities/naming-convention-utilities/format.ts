@@ -73,8 +73,8 @@ function validateUnderscores(name: string): boolean {
 export const PredefinedFormatToCheckFunction: Record<string, (name: string) => boolean> = {
 	camelCase: isCamelCase,
 	PascalCase: isPascalCase,
-	StrictPascalCase: isStrictPascalCase,
 	snake_case: isSnakeCase,
 	strictCamelCase: isStrictCamelCase,
+	StrictPascalCase: isStrictPascalCase,
 	UPPER_CASE: isUpperCase,
 };

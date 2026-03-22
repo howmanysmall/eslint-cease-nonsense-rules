@@ -1,6 +1,6 @@
 import { Temporal } from "temporal-polyfill";
 
-import { version } from "../../package.json";
+import { version } from "../../../package.json";
 
 function stringifyUnknownError(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);

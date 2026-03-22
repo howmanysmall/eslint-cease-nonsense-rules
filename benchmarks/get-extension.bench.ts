@@ -1,8 +1,5 @@
 #!/usr/bin/env bun
 
-// oxlint-disable prefer-code-point
-// oxlint-disable no-unsafe-enum-comparison
-
 import { readdir, stat } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 import { argv, exit } from "node:process";
@@ -117,48 +114,33 @@ function getExtensionMicro(filePath: string): string | undefined {
 	return undefined;
 }
 
-const enum Char {
-	Dot = 0x2e,
-	// oxlint-disable-next-line id-length
-	c = 0x63,
-	// oxlint-disable-next-line id-length
-	j = 0x6a,
-	// oxlint-disable-next-line id-length
-	m = 0x6d,
-	// oxlint-disable-next-line id-length
-	s = 0x73,
-	// oxlint-disable-next-line id-length
-	t = 0x74,
-	x = 0x78,
-}
-
 function getExtensionFunny(filePath: string): string | undefined {
 	const len = filePath.length;
 
 	// Check for .ts or .js (3-char extensions) — most common case
-	if (len >= 3 && filePath.charCodeAt(len - 3) === Char.Dot) {
+	if (len >= 3 && filePath.charCodeAt(len - 3) === 0x2e) {
 		const c1 = filePath.charCodeAt(len - 2);
 		const c2 = filePath.charCodeAt(len - 1);
-		if (c1 === Char.t && c2 === Char.s) return ".ts";
-		if (c1 === Char.j && c2 === Char.s) return ".js";
+		if (c1 === 0x74 && c2 === 0x73) return ".ts";
+		if (c1 === 0x6a && c2 === 0x73) return ".js";
 	}
 
 	// Check for 4-char extensions: .tsx, .jsx, .mts, .mjs, .cts, .cjs
-	if (len >= 4 && filePath.charCodeAt(len - 4) === Char.Dot) {
+	if (len >= 4 && filePath.charCodeAt(len - 4) === 0x2e) {
 		const c1 = filePath.charCodeAt(len - 3);
 		const c2 = filePath.charCodeAt(len - 2);
 		const c3 = filePath.charCodeAt(len - 1);
 
-		if (c3 === Char.x) {
-			if (c1 === Char.t && c2 === Char.s) return ".tsx";
-			if (c1 === Char.j && c2 === Char.s) return ".jsx";
-		} else if (c3 === Char.s) {
-			if (c2 === Char.t) {
-				if (c1 === Char.m) return ".mts";
-				if (c1 === Char.c) return ".cts";
-			} else if (c2 === Char.j) {
-				if (c1 === Char.m) return ".mjs";
-				if (c1 === Char.c) return ".cjs";
+		if (c3 === 0x78) {
+			if (c1 === 0x74 && c2 === 0x73) return ".tsx";
+			if (c1 === 0x6a && c2 === 0x73) return ".jsx";
+		} else if (c3 === 0x73) {
+			if (c2 === 0x74) {
+				if (c1 === 0x6d) return ".mts";
+				if (c1 === 0x63) return ".cts";
+			} else if (c2 === 0x6a) {
+				if (c1 === 0x6d) return ".mjs";
+				if (c1 === 0x63) return ".cjs";
 			}
 		}
 	}

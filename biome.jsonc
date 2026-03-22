@@ -9,8 +9,8 @@
 				"organizeImports": "off",
 				"recommended": true,
 				"useSortedAttributes": "on",
-				"useSortedInterfaceMembers": "on",
-				"useSortedKeys": "on",
+				"useSortedInterfaceMembers": "off",
+				"useSortedKeys": "off",
 				"useSortedProperties": "on"
 			}
 		}

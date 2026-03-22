@@ -34,5 +34,5 @@
 		"useUnknownInCatchVariables": true
 	},
 	"exclude": ["node_modules"],
-	"include": ["plugins/**/*.ts", "tools/**/*.ts", "skills/**/*.ts"]
+	"include": ["plugins/**/*.ts", "tool/**/*.ts", "tools/**/*.ts", "utilities/**/*.ts", "skills/**/*.ts"]
 }

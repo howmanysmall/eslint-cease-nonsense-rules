@@ -1,17 +1,21 @@
 #!/usr/bin/env bun
 
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { readdir, rm, stat } from "node:fs/promises";
-import { basename, extname, resolve } from "node:path";
-import { cwd, exit, platform } from "node:process";
+import { mkdir, readdir, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, dirname, extname, resolve } from "node:path";
+import { arch, cwd, exit, platform } from "node:process";
 import { Command } from "@jsr/cliffy__command";
-import { type } from "arktype";
 import console from "consola";
 import { bold, cyan, gray, green, magenta, red, yellow } from "picocolors";
 import prettyBytes from "pretty-bytes";
 import prettyMilliseconds from "pretty-ms";
 
-import buildMetadata from "./plugins/build-metadata";
+import {
+	getStaleDeclarationSupportPaths,
+	normalizeDeclarationSupportPaths,
+} from "./utilities/declaration-support-cache";
 
 if (typeof Bun === "undefined") {
 	const installScript =
@@ -25,63 +29,81 @@ if (typeof Bun === "undefined") {
 
 const scriptPath = import.meta.path;
 const SCRIPT_NAME = basename(scriptPath, extname(scriptPath));
-const CRITICAL_FILES = ["dist/index.js", "dist/oxfmt-worker.js"];
+const CRITICAL_FILES = ["dist/index.js", "dist/oxfmt-worker.js", "dist/index.d.ts", "dist/oxfmt-worker.d.ts"];
+const DECLARATION_CACHE_KEY = createHash("sha1").update(cwd()).digest("hex").slice(0, 12);
+const DECLARATION_CACHE_DIRECTORY = resolve(tmpdir(), `${SCRIPT_NAME}-${DECLARATION_CACHE_KEY}`);
+const DECLARATION_CACHE_MANIFEST_PATH = resolve(DECLARATION_CACHE_DIRECTORY, "support-manifest.json");
+const DECLARATION_CACHE_OUTPUT_DIRECTORY = resolve(DECLARATION_CACHE_DIRECTORY, "out");
+const DECLARATION_CACHE_BUILD_INFO_PATH = resolve(DECLARATION_CACHE_DIRECTORY, "tsgo.tsbuildinfo");
 type BuildRelatedMessage = BuildMessage | ResolveMessage;
 
-const isPosition = type({
-	column: "number",
-	file: "string",
-	length: "number",
-	line: "number",
-	lineText: "string",
-	namespace: "string",
-});
-
-const isMessageLevel = type('"error" | "warning" | "info" | "debug" | "verbose"');
-const isBuffer = type.unknown.narrow((data, context): data is Buffer => {
-	if (typeof Buffer !== "undefined" && Buffer.isBuffer(data)) return true;
-	return context.reject("Buffer");
-});
-const isBuildMessageType = type({
-	level: isMessageLevel,
-	message: "string",
-	name: "'BuildMessage'",
-	position: isPosition.or("null"),
-}).readonly();
-const isResolveMessageType = type({
-	code: "string",
-	importKind:
-		'"entry_point" | "stmt" | "require" | "import" | "dynamic" | "require_resolve" | "at" | "at_conditional" | "url" | "internal"',
-	level: isMessageLevel,
-	message: "string",
-	name: "'ResolveMessage'",
-	position: isPosition.or("null"),
-	referrer: "string",
-	specifier: "string",
-}).readonly();
-const isShellErrorType = type({
-	exitCode: "number % 1",
-	message: "string",
-	stderr: isBuffer,
-	stdout: isBuffer,
-}).readonly();
-type ShellError = typeof isShellErrorType.infer;
+interface ShellError {
+	readonly exitCode: number;
+	readonly message: string;
+	readonly stderr: Uint8Array;
+	readonly stdout: Uint8Array;
+}
 
 function isBuildMessage(object: unknown): object is BuildMessage {
-	return !(isBuildMessageType(object) instanceof type.errors);
+	return (
+		isRecord(object) &&
+		object.name === "BuildMessage" &&
+		typeof object.message === "string" &&
+		isValidMessageLevel(object.level) &&
+		isBuildPosition(object.position)
+	);
 }
 function isResolveMessage(object: unknown): object is ResolveMessage {
-	return !(isResolveMessageType(object) instanceof type.errors);
+	return (
+		isRecord(object) &&
+		object.name === "ResolveMessage" &&
+		typeof object.code === "string" &&
+		typeof object.importKind === "string" &&
+		typeof object.message === "string" &&
+		isValidMessageLevel(object.level) &&
+		isBuildPosition(object.position) &&
+		typeof object.referrer === "string" &&
+		typeof object.specifier === "string"
+	);
 }
 function isBuildRelatedMessage(object: unknown): object is BuildRelatedMessage {
 	return isBuildMessage(object) || isResolveMessage(object);
 }
 function isShellError(object: unknown): object is ShellError {
-	return !(isShellErrorType(object) instanceof type.errors);
+	return (
+		isRecord(object) &&
+		typeof object.exitCode === "number" &&
+		Number.isInteger(object.exitCode) &&
+		typeof object.message === "string" &&
+		object.stderr instanceof Uint8Array &&
+		object.stdout instanceof Uint8Array
+	);
+}
+
+function isBuildPosition(position: unknown): position is BuildMessage["position"] {
+	return (
+		position === null ||
+		(isRecord(position) &&
+			typeof position.column === "number" &&
+			typeof position.file === "string" &&
+			typeof position.length === "number" &&
+			typeof position.line === "number" &&
+			typeof position.lineText === "string" &&
+			typeof position.namespace === "string")
+	);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function isValidMessageLevel(level: unknown): level is BuildMessage["level"] {
+	return level === "error" || level === "warning" || level === "info" || level === "debug" || level === "verbose";
 }
 
 const DIST_DIRECTORY = resolve(".", "dist");
 const ENTRY_POINTS = ["./src/index.ts", "./src/oxfmt-worker.ts"];
+const SOURCE_DIRECTORY = resolve(".", "src");
 const EXTERNAL_PACKAGES = [
 	"@typescript-eslint/utils",
 	"@typescript-eslint/parser",
@@ -110,6 +132,26 @@ interface BuildResult {
 	readonly success: boolean;
 }
 
+function getJavaScriptMinifyConfiguration(minify: boolean):
+	| boolean
+	| {
+			readonly identifiers: boolean;
+			readonly syntax: boolean;
+			readonly whitespace: boolean;
+	  } {
+	if (minify) return true;
+
+	return {
+		identifiers: false,
+		syntax: true,
+		whitespace: true,
+	};
+}
+
+function getJavaScriptMinifyLabel(minify: boolean): string {
+	return minify ? green("full") : cyan("syntax+whitespace");
+}
+
 function formatBuildMessage(buildRelatedMessage: BuildRelatedMessage): string {
 	const parts = new Array<string>();
 	let size = 0;
@@ -130,11 +172,160 @@ function formatBuildMessage(buildRelatedMessage: BuildRelatedMessage): string {
 	return parts.join("\n");
 }
 
+function getTsgoExecutablePath(): string {
+	const platformPackageName = `@typescript/native-preview-${platform}-${arch}`;
+	const packageJsonUrl = import.meta.resolve(`${platformPackageName}/package.json`);
+	const packageJsonPath = Bun.fileURLToPath(packageJsonUrl);
+	const executablePath = resolve(dirname(packageJsonPath), "lib", platform === "win32" ? "tsgo.exe" : "tsgo");
+
+	if (!existsSync(executablePath)) {
+		throw new Error(`TypeScript Native executable not found: ${executablePath}`);
+	}
+
+	return executablePath;
+}
+
 async function cleanDistDirectoryAsync(verbose: boolean): Promise<void> {
 	if (existsSync(DIST_DIRECTORY)) {
 		if (verbose) console.info(`Removing ${cyan(DIST_DIRECTORY)}...`);
 		await rm(DIST_DIRECTORY, { recursive: true });
 	}
+}
+
+function createDeclarationEmitFlags(outputDirectory: string, buildInfoPath: string): Array<string> {
+	return [
+		"--allowJs",
+		"false",
+		"--declaration",
+		"--emitDeclarationOnly",
+		"--exactOptionalPropertyTypes",
+		"--forceConsistentCasingInFileNames",
+		"--isolatedModules",
+		"--lib",
+		"ES2023",
+		"--module",
+		"ES2022",
+		"--moduleDetection",
+		"force",
+		"--moduleResolution",
+		"Bundler",
+		"--incremental",
+		"--noFallthroughCasesInSwitch",
+		"--noImplicitAny",
+		"--noImplicitOverride",
+		"--noImplicitReturns",
+		"--noImplicitThis",
+		"--noUncheckedIndexedAccess",
+		"--noUncheckedSideEffectImports",
+		"--noUnusedLocals",
+		"--noUnusedParameters",
+		"--outDir",
+		outputDirectory,
+		"--resolveJsonModule",
+		"false",
+		"--rootDir",
+		"src",
+		"--skipLibCheck",
+		"--strict",
+		"--target",
+		"es2023",
+		"--tsBuildInfoFile",
+		buildInfoPath,
+		"--types",
+		"bun,node",
+		"--useUnknownInCatchVariables",
+		"--verbatimModuleSyntax",
+		"--declarationMap",
+		"false",
+		"--sourceMap",
+		"false",
+	];
+}
+
+function getSourceDeclarationRelativePaths(sourceDirectory: string): ReadonlyArray<string> {
+	const declarationGlob = new Bun.Glob("**/*.d.ts");
+	return normalizeDeclarationSupportPaths([...declarationGlob.scanSync({ cwd: sourceDirectory, onlyFiles: true })]);
+}
+
+async function readDeclarationSupportManifestAsync(manifestPath: string): Promise<ReadonlyArray<string>> {
+	const manifestFile = Bun.file(manifestPath);
+	if (!(await manifestFile.exists())) return [];
+
+	try {
+		const manifest: unknown = JSON.parse(await manifestFile.text());
+		if (!Array.isArray(manifest) || !manifest.every((entry) => typeof entry === "string")) return [];
+		return normalizeDeclarationSupportPaths(manifest);
+	} catch {
+		return [];
+	}
+}
+
+async function syncSourceDeclarationFilesAsync(
+	sourceDirectory: string,
+	targetDirectory: string,
+	manifestPath: string,
+): Promise<void> {
+	const relativePaths = getSourceDeclarationRelativePaths(sourceDirectory);
+	const previousPaths = await readDeclarationSupportManifestAsync(manifestPath);
+	const stalePaths = getStaleDeclarationSupportPaths(previousPaths, relativePaths);
+	const targetDirectories = new Set(
+		relativePaths.map((relativePath) => dirname(resolve(targetDirectory, relativePath))),
+	);
+
+	await Promise.all([
+		...stalePaths.map(async (relativePath): Promise<void> => {
+			await rm(resolve(targetDirectory, relativePath), { force: true });
+		}),
+		...[...targetDirectories].map(async (directoryPath): Promise<void> => {
+			await mkdir(directoryPath, { recursive: true });
+		}),
+	]);
+
+	await Promise.all(
+		relativePaths.map(async (relativePath): Promise<void> => {
+			await Bun.write(resolve(targetDirectory, relativePath), Bun.file(resolve(sourceDirectory, relativePath)));
+		}),
+	);
+
+	await Bun.write(manifestPath, JSON.stringify(relativePaths));
+}
+
+async function generateBundledDeclarationsAsync(verbose: boolean): Promise<void> {
+	const tsgoExecutablePath = getTsgoExecutablePath();
+	const declarationBundlerPromise = import("./utilities/declaration-bundler");
+
+	await mkdir(DECLARATION_CACHE_OUTPUT_DIRECTORY, { recursive: true });
+
+	const flags = createDeclarationEmitFlags(DECLARATION_CACHE_OUTPUT_DIRECTORY, DECLARATION_CACHE_BUILD_INFO_PATH);
+	if (verbose) console.log(`Calling ${cyan("tsgo")} ${flags.join(" ")}`);
+
+	await Bun.$`${tsgoExecutablePath} ${flags}`.quiet();
+	await syncSourceDeclarationFilesAsync(
+		SOURCE_DIRECTORY,
+		DECLARATION_CACHE_OUTPUT_DIRECTORY,
+		DECLARATION_CACHE_MANIFEST_PATH,
+	);
+
+	const { bundleDeclarationEntryPoint, createDeclarationBundlerProgram } = await declarationBundlerPromise;
+	const bundledEntrypoints = [
+		{ entryFileName: "index.d.ts", outputFileName: resolve(DIST_DIRECTORY, "index.d.ts") },
+		{ entryFileName: "oxfmt-worker.d.ts", outputFileName: resolve(DIST_DIRECTORY, "oxfmt-worker.d.ts") },
+	];
+	const program = createDeclarationBundlerProgram({
+		entryFilePaths: bundledEntrypoints.map(({ entryFileName }) =>
+			resolve(DECLARATION_CACHE_OUTPUT_DIRECTORY, entryFileName),
+		),
+	});
+
+	await Promise.all(
+		bundledEntrypoints.map(async ({ entryFileName, outputFileName }): Promise<void> => {
+			const bundledDeclaration = bundleDeclarationEntryPoint({
+				entryFilePath: resolve(DECLARATION_CACHE_OUTPUT_DIRECTORY, entryFileName),
+				program,
+			});
+			await Bun.write(outputFileName, bundledDeclaration);
+		}),
+	);
 }
 
 async function getOutputFilesAsync(directory: string): Promise<ReadonlyArray<OutputFile>> {
@@ -179,21 +370,30 @@ async function runBuildAsync(options: BuildOptions): Promise<BuildResult> {
 		if (options.verbose) {
 			console.start("Building with Bun...");
 			console.info(`  Entry points: ${cyan(ENTRY_POINTS.join(", "))}`);
-			console.info(`  Minify: ${options.minify ? green("yes") : gray("no")}`);
+			console.info(`  Minify: ${getJavaScriptMinifyLabel(options.minify)}`);
 			console.info(`  Sourcemap: ${options.sourcemap ? green("yes") : gray("no")}`);
+			console.info(`  Declarations: ${cyan("custom bundle")}`);
 		}
 
-		const buildResult = await Bun.build({
-			entrypoints: [...ENTRY_POINTS],
-			external: [...EXTERNAL_PACKAGES],
-			format: "esm",
-			minify: options.minify,
-			outdir: DIST_DIRECTORY,
-			plugins: [buildMetadata],
-			sourcemap: options.sourcemap ? "external" : "none",
-			target: "node",
-			tsconfig: "./tsconfig.json",
-		});
+		const declarationBuildPromise = generateBundledDeclarationsAsync(options.verbose);
+		const buildMetadataModulePromise = import("./plugins/bun/build-metadata");
+		const { default: buildMetadata } = await buildMetadataModulePromise;
+
+		const [buildResult] = await Promise.all([
+			Bun.build({
+				entrypoints: [...ENTRY_POINTS],
+				external: [...EXTERNAL_PACKAGES],
+				format: "esm",
+				minify: getJavaScriptMinifyConfiguration(options.minify),
+				outdir: DIST_DIRECTORY,
+				packages: "external",
+				plugins: [buildMetadata],
+				sourcemap: options.sourcemap ? "external" : "none",
+				target: "node",
+				tsconfig: "./tsconfig.json",
+			}),
+			declarationBuildPromise,
+		]);
 
 		if (!buildResult.success) {
 			for (const log of buildResult.logs) console.error(formatBuildMessage(log));
@@ -205,54 +405,6 @@ async function runBuildAsync(options: BuildOptions): Promise<BuildResult> {
 		}
 
 		if (options.verbose) console.success("Bun build completed");
-		if (options.verbose) console.start("Generating type declarations...");
-
-		const flags = [
-			"--allowJs",
-			"false",
-			"--declaration",
-			"--emitDeclarationOnly",
-			"--exactOptionalPropertyTypes",
-			"--forceConsistentCasingInFileNames",
-			"--isolatedModules",
-			"--lib",
-			"ES2023",
-			"--module",
-			"ES2022",
-			"--moduleDetection",
-			"force",
-			"--moduleResolution",
-			"Bundler",
-			"--noFallthroughCasesInSwitch",
-			"--noImplicitAny",
-			"--noImplicitOverride",
-			"--noImplicitReturns",
-			"--noImplicitThis",
-			"--noUncheckedIndexedAccess",
-			"--noUncheckedSideEffectImports",
-			"--noUnusedLocals",
-			"--noUnusedParameters",
-			"--outDir",
-			"dist",
-			"--resolveJsonModule",
-			"false",
-			"--rootDir",
-			"src",
-			"--skipLibCheck",
-			"--strict",
-			"--target",
-			"es2023",
-			"--types",
-			"bun,node",
-			"--useUnknownInCatchVariables",
-			"--verbatimModuleSyntax",
-		];
-
-		if (options.sourcemap) flags.push("--declarationMap", "--sourceMap");
-		else flags.push("--declarationMap", "false", "--sourceMap", "false");
-		if (options.verbose) console.log(`Calling bun x --bun tsc ${flags.join(" ")}`);
-
-		await Bun.$`bun x --bun tsgo ${flags}`.quiet();
 		if (options.verbose) console.success("Type declarations generated");
 
 		for (const file of CRITICAL_FILES) {
@@ -278,8 +430,8 @@ async function runBuildAsync(options: BuildOptions): Promise<BuildResult> {
 			}
 		} else if (isShellError(error)) {
 			console.error(`${red("error:")} Command failed with exit code ${error.exitCode}`);
-			const stderr = error.stderr.toString().trim();
-			const stdout = error.stdout.toString().trim();
+			const stderr = Buffer.from(error.stderr).toString().trim();
+			const stdout = Buffer.from(error.stdout).toString().trim();
 			if (stderr.length > 0) console.error(stderr);
 			if (stdout.length > 0) console.log(stdout);
 		} else {
@@ -339,7 +491,7 @@ const command = new Command()
 	.description("Build the ESLint plugin for distribution.")
 	.option("--no-clean", "Skip cleaning dist/ before build", { default: true })
 	.option("-v, --verbose", "Show detailed build output", { default: false })
-	.option("-m, --minify", "Minify the output bundle", { default: false })
+	.option("-m, --minify", "Aggressively minify identifiers and syntax", { default: false })
 	.option("--sourcemap", "Generate sourcemaps", { default: false })
 	.action(async ({ clean, minify, sourcemap, verbose }) => {
 		const options: BuildOptions = { clean, minify, sourcemap, verbose };
@@ -347,7 +499,7 @@ const command = new Command()
 		if (verbose) {
 			console.info(bold("Build configuration:"));
 			console.log(`  Clean: ${clean ? green("yes") : gray("no")}`);
-			console.log(`  Minify: ${minify ? green("yes") : gray("no")}`);
+			console.log(`  Minify: ${getJavaScriptMinifyLabel(minify)}`);
 			console.log(`  Sourcemap: ${sourcemap ? green("yes") : gray("no")}`);
 			console.log("");
 		}

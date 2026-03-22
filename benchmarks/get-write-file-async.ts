@@ -5,7 +5,6 @@ interface DenoLike {
 }
 
 export default async function getWriteFileAsync(): Promise<WriteFileAsync> {
-	// oxlint-disable-next-line typescript/no-unnecessary-condition
 	if (globalThis.Bun) {
 		return async function writeFileAsync(path: string, content: string | Uint8Array): Promise<void> {
 			await Bun.write(path, content);

@@ -1,9 +1,9 @@
 export const PredefinedFormats = {
 	camelCase: "camelCase",
 	PascalCase: "PascalCase",
-	StrictPascalCase: "StrictPascalCase",
 	snake_case: "snake_case",
 	strictCamelCase: "strictCamelCase",
+	StrictPascalCase: "StrictPascalCase",
 	UPPER_CASE: "UPPER_CASE",
 };
 export type PredefinedFormatsString = keyof typeof PredefinedFormats;

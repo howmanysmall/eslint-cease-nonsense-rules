@@ -1,0 +1,69 @@
+min_version: 2.1.4
+
+commit-msg:
+  jobs:
+    - name: commitlint
+      run: bun x --bun commitlint --edit {1}
+
+post-merge:
+  jobs:
+    - name: bun-install
+      run: bun install
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: biome-json
+      glob:
+        - "*.css"
+        - "*.html"
+        - "*.json"
+        - "*.jsonc"
+        - "*.grit"
+        - "*.code-workspace"
+      run: bun run biome:check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+
+    - name: js-ts-fix
+      glob:
+        - "*.js"
+        - "*.jsx"
+        - "*.ts"
+        - "*.tsx"
+      run: bun run oxc --fix {staged_files} && bun run biome:check --write --no-errors-on-unmatched {staged_files} && bun run format {staged_files}
+      stage_fixed: true
+
+    - name: format-json5-mdx
+      glob:
+        - "*.json5"
+        - "*.mdx"
+      run: bun run format {staged_files}
+      stage_fixed: true
+
+    - name: md-fix
+      glob: "*.md"
+      run: rumdl check --fix {staged_files} && rumdl fmt {staged_files}
+      stage_fixed: true
+
+    - name: toml-fix
+      glob: "*.toml"
+      run: tombi lint {staged_files} && tombi format {staged_files}
+      stage_fixed: true
+
+pre-push:
+  parallel: true
+  jobs:
+    - name: biome-ci
+      run: bun run biome:ci
+
+    - name: oxc
+      run: bun run oxc .
+
+    - name: type-check
+      run: bun run type-check
+
+    - name: knip
+      run: bun run knip
+
+    - name: build
+      run: bun run build

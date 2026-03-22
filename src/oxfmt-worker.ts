@@ -1,13 +1,13 @@
 import { workerData } from "node:worker_threads";
 
-import type { FormatOptions } from "oxfmt";
+import type { format } from "oxfmt";
 
-export type { FormatOptions } from "oxfmt";
+export type FormatConfiguration = NonNullable<Parameters<typeof format>[2]>;
 
 export interface FormatRequest {
 	readonly controlBuffer: SharedArrayBuffer;
 	readonly fileName: string;
-	readonly options: FormatOptions;
+	readonly options: FormatConfiguration;
 	readonly sourceText: string;
 }
 

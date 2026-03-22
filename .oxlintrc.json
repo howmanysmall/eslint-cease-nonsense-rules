@@ -16,7 +16,6 @@
 	},
 	"extends": [],
 	"globals": {
-		"Astro": "readonly",
 		"Bun": "readonly",
 	},
 	"ignorePatterns": [
@@ -28,7 +27,20 @@
 		".context/**",
 	],
 	"jsPlugins": [],
+	"options": {
+		"denyWarnings": true,
+		"maxWarnings": 0,
+		"reportUnusedDisableDirectives": "error",
+		"typeAware": true,
+		"typeCheck": true,
+	},
 	"overrides": [
+		{
+			"files": ["documentation/**/*.ts", "documentation/**/*.astro"],
+			"globals": {
+				"Astro": "readonly",
+			},
+		},
 		{
 			"files": [".opencode/**/*.{ts,tsx,js,jsx}"],
 			"rules": {
@@ -37,7 +49,7 @@
 		},
 		{
 			"env": {},
-			"files": ["tests/*.test.ts", "src/**/*.test.ts"],
+			"files": ["tests/**/*.test.ts", "src/**/*.test.ts"],
 			"globals": {},
 			"plugins": ["eslint", "import", "jest", "node", "oxc", "promise", "typescript", "unicorn"],
 			"rules": {
@@ -87,7 +99,7 @@
 				"jest/prefer-to-have-been-called-times": "error",
 				"jest/prefer-to-have-length": "error",
 				"jest/prefer-todo": "error",
-				"jest/require-hook": "error",
+				"jest/require-hook": "off",
 				"jest/require-to-throw-message": "error",
 				"jest/require-top-level-describe": "error",
 				"jest/valid-describe-callback": "error",
@@ -137,8 +149,12 @@
 			"files": ["benchmarks/**/*.bench.ts"],
 			"rules": {
 				"complexity": "off",
+				"id-length": "off",
 				"no-console": "off",
 				"no-namespace": "off",
+				"unicorn/prefer-code-point": "off",
+				"unicorn/prefer-string-raw": "off",
+				"typescript/no-unsafe-enum-comparison": "off",
 			},
 		},
 		{
@@ -331,13 +347,21 @@
 		"promise/avoid-new": "off",
 		"promise/prefer-await-to-callbacks": "off",
 		"require-yield": "error",
-		"sort-imports": "off",
+		"sort-imports": [
+			"error",
+			{
+				"allowSeparatedGroups": true,
+				"ignoreCase": true,
+				"ignoreDeclarationSort": true,
+				"ignoreMemberSort": false,
+			},
+		],
 		"sort-keys": [
-			"off",
+			"error",
 			"asc",
 			{
 				"allowLineSeparatedGroups": true,
-				"caseSensitive": true,
+				"caseSensitive": false,
 				"minKeys": 2,
 				"natural": true,
 			},

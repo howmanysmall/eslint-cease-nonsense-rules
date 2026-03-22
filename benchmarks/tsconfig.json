@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"lib": ["es2022"],
+		"lib": ["es2023"],
 		"module": "esnext",
 		"moduleResolution": "bundler",
 		"noEmit": true,
@@ -8,5 +8,5 @@
 		"target": "es2022",
 		"types": ["bun", "node"]
 	},
-	"include": ["**/*.ts"]
+	"include": ["./**/*.ts"]
 }
