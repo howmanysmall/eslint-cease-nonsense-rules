@@ -432,6 +432,7 @@ function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree
 
 			if (isParameter) return true;
 
+			// oxlint-disable-next-line array-callback-return -- extremely dumb false positive
 			return variable.defs.some((definition) => {
 				let node: TSESTree.Node | undefined = definition.node.parent;
 				while (node && node !== functionParent) node = node.parent;
