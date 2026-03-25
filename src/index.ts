@@ -34,6 +34,7 @@ import preferContextStack from "./rules/prefer-context-stack";
 import preferEarlyReturn from "./rules/prefer-early-return";
 import preferEnumItem from "./rules/prefer-enum-item";
 import preferEnumMember from "./rules/prefer-enum-member";
+import preferIdiv from "./rules/prefer-idiv";
 import preferLocalPortalComponent from "./rules/prefer-local-portal-component";
 import preferModuleScopeConstants from "./rules/prefer-module-scope-constants";
 import preferPaddingComponents from "./rules/prefer-padding-components";
@@ -167,6 +168,7 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"prefer-early-return": preferEarlyReturn,
 	"prefer-enum-item": preferEnumItem,
 	"prefer-enum-member": preferEnumMember,
+	"prefer-idiv": preferIdiv,
 	"prefer-local-portal-component": preferLocalPortalComponent,
 	"prefer-module-scope-constants": preferModuleScopeConstants,
 	"prefer-padding-components": preferPaddingComponents,
@@ -236,6 +238,7 @@ export const recommended = {
 		"cease-nonsense/no-unused-use-memo": "error",
 		"cease-nonsense/no-warn": "error",
 		"cease-nonsense/prefer-enum-member": "error",
+		"cease-nonsense/prefer-idiv": "error",
 		"cease-nonsense/prefer-read-only-props": "error",
 		"cease-nonsense/prefer-sequence-overloads": "error",
 		"cease-nonsense/prefer-ternary-conditional-rendering": "error",

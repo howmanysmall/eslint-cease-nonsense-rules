@@ -57,6 +57,7 @@ export default [
 				"cease-nonsense/no-print": "error",
 				"cease-nonsense/prefer-enum-item": "error",
 			"cease-nonsense/prefer-enum-member": "error",
+			"cease-nonsense/prefer-idiv": "error",
 			"cease-nonsense/no-shorthand-names": "error",
 			"cease-nonsense/no-unused-imports": "error",
 			"cease-nonsense/no-unused-use-memo": "error",
@@ -228,6 +229,36 @@ const meta: Record<Color, number> = {
 };
 
 const selected: Color = Color.Blue;
+```
+
+#### `prefer-idiv`
+
+Prefer using `.idiv()` for integer division instead of `math.floor(x / y)` in roblox-ts. The `.idiv()` method compiles to
+Luau's `//` (floor division) operator, which is more idiomatic and efficient.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/prefer-idiv": "error"
+}
+```
+
+**❌ Bad**
+
+```typescript
+const quotient = math.floor(x / y);
+const result = math.floor((a + b) / c);
+const value = math.floor(100 / 3);
+```
+
+**✅ Good**
+
+```typescript
+const quotient = x.idiv(y);
+const result = (a + b).idiv(c);
+const value = (100).idiv(3);
+const nested = (a / b).idiv(c);
 ```
 
 #### `require-serialized-numeric-data-type`

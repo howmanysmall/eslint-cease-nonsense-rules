@@ -86,6 +86,7 @@ export default defineConfig({
 						"rules/no-table-create-map",
 						"rules/no-warn",
 						"rules/prefer-enum-item",
+						"rules/prefer-idiv",
 						"rules/prefer-sequence-overloads",
 						"rules/prefer-single-world-query",
 						"rules/prefer-udim2-shorthand",

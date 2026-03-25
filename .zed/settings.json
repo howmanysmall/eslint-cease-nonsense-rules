@@ -1,15 +1,16 @@
 {
-	"allow_rewrap": "in_comments",
-	"auto_indent": true,
+	"always_treat_brackets_as_autoclosed": true,
+	"auto_indent": "syntax_aware",
 	"code_actions_on_format": {
 		"source.fixAll": true,
 		"source.organizeImports": true
 	},
+	"colorize_brackets": true,
 	"disable_ai": false,
 	"edit_predictions": {
 		"codestral": {},
-		"copilot": {},
-		"enabled_in_text_threads": false,
+		"copilot": { "enable_next_edit_suggestions": true },
+		"enabled_in_text_threads": true,
 		"mode": "eager"
 	},
 	"ensure_final_newline_on_save": true,
@@ -45,19 +46,36 @@
 		"show_parameter_hints": true,
 		"show_type_hints": true
 	},
-	"jsx_tag_auto_close": {
-		"enabled": true
-	},
+	"jsx_tag_auto_close": { "enabled": true },
 	"languages": {
+		"GraphQL": {
+			"format_on_save": "on",
+			"formatter": [{ "language_server": { "name": "oxfmt" } }],
+			"hard_tabs": true,
+			"language_servers": ["!biome", "oxfmt", "..."],
+			"prettier": { "allowed": false },
+			"tab_size": 4
+		},
 		"JSON": {
 			"code_actions_on_format": {
 				"source.fixAll.biome": true,
 				"source.organizeImports.biome": true
 			},
 			"format_on_save": "on",
-			"formatter": { "language_server": { "name": "biome" } },
+			"formatter": [{ "language_server": { "name": "biome" } }, { "language_server": { "name": "oxfmt" } }],
 			"hard_tabs": true,
-			"language_servers": ["biome", "..."],
+			"language_servers": ["!eslint", "package-version-server", "biome", "oxfmt", "..."],
+			"tab_size": 4
+		},
+		"JSON5": {
+			"code_actions_on_format": {
+				"source.fixAll.biome": true,
+				"source.organizeImports.biome": true
+			},
+			"format_on_save": "on",
+			"formatter": { "language_server": { "name": "oxfmt" } },
+			"hard_tabs": true,
+			"language_servers": ["!eslint", "oxfmt", "..."],
 			"tab_size": 4
 		},
 		"JSONC": {
@@ -66,20 +84,24 @@
 				"source.organizeImports.biome": true
 			},
 			"format_on_save": "on",
-			"formatter": { "language_server": { "name": "biome" } },
+			"formatter": [{ "language_server": { "name": "biome" } }, { "language_server": { "name": "oxfmt" } }],
 			"hard_tabs": true,
 			"language_servers": ["biome", "..."],
 			"tab_size": 4
 		},
-
 		"Markdown": {
 			"format_on_save": "on",
 			"formatter": [{ "language_server": { "name": "rumdl" } }],
 			"hard_tabs": true,
 			"language_servers": ["!marksman", "!markdownlint", "rumdl", "..."],
 			"show_whitespaces": "none",
-			"soft_wrap": "editor_width",
 			"tab_size": 4
+		},
+		"MDX": {
+			"format_on_save": "on",
+			"formatter": { "language_server": { "name": "oxfmt" } },
+			"language_servers": ["!eslint", "oxfmt", "..."],
+			"prettier": { "allowed": false }
 		},
 		"Shell Script": {
 			"format_on_save": "on",
@@ -93,7 +115,6 @@
 			"language_servers": ["bash-language-server", "..."],
 			"tab_size": 4
 		},
-
 		"TOML": {
 			"format_on_save": "on",
 			"formatter": "language_server",
@@ -107,26 +128,19 @@
 				"source.organizeImports.biome": true
 			},
 			"format_on_save": "on",
-			"formatter": [
-				{
-					"external": {
-						"arguments": ["x", "--bun", "oxfmt", "--stdin-filepath", "{buffer_path}"],
-						"command": "bun"
-					}
-				},
-				{ "language_server": { "name": "biome" } }
-			],
+			"formatter": [{ "language_server": { "name": "biome" } }, { "language_server": { "name": "oxfmt" } }],
 			"hard_tabs": true,
 			"language_servers": [
 				"!deno",
-				"!tailwindcss-language-server",
-				"oxfmt",
-				"!typescript-language-server",
 				"!eslint",
+				"!tailwindcss-language-server",
+				"!typescript-language-server",
+				"oxfmt",
 				"tsgo",
 				"vtsls",
 				"..."
 			],
+			"prettier": { "allowed": false },
 			"tab_size": 4
 		},
 		"TypeScript": {
@@ -136,40 +150,32 @@
 				"source.organizeImports.biome": true
 			},
 			"format_on_save": "on",
-			"formatter": [
-				{
-					"external": {
-						"arguments": ["x", "--bun", "oxfmt", "--stdin-filepath", "{buffer_path}"],
-						"command": "bun"
-					}
-				},
-				{ "language_server": { "name": "biome" } }
-			],
+			"formatter": [{ "language_server": { "name": "oxfmt" } }],
 			"hard_tabs": true,
 			"language_servers": [
 				"!deno",
-				"!tailwindcss-language-server",
-				"!oxfmt",
-				"!typescript-language-server",
 				"!eslint",
+				"!tailwindcss-language-server",
+				"!typescript-language-server",
+				"oxfmt",
 				"tsgo",
 				"vtsls",
 				"..."
 			],
+			"prettier": { "allowed": false },
 			"tab_size": 4
 		},
-
 		"YAML": {
 			"format_on_save": "on",
+			"formatter": [{ "language_server": { "name": "oxfmt" } }],
 			"hard_tabs": false,
+			"prettier": { "allowed": false },
 			"tab_size": 2
 		}
 	},
 	"lsp": {
 		"bash-language-server": {
-			"settings": {
-				"bashIde": { "globPattern": "**/*@(.sh|.inc|.bash|.command|.zsh)" }
-			}
+			"settings": { "bashIde": { "globPattern": "**/*@(.sh|.inc|.bash|.command|.zsh)" } }
 		},
 		"biome": {
 			"binary": {
@@ -184,10 +190,14 @@
 				}
 			}
 		},
+		"oxfmt": {
+			"initialization_options": {
+				"settings": { "configPath": "./.oxfmtrc.json" }
+			}
+		},
 		"oxlint": {
 			"initialization_options": {
 				"settings": {
-					"configPath": "./.oxlintrc.json",
 					"disableNestedConfig": false,
 					"fixKind": "safe_fix",
 					"run": "onType",
@@ -197,65 +207,6 @@
 			}
 		},
 		"vtsls": {
-			"enable_lsp_tasks": true,
-			"initialization_options": {
-				"javascript": {
-					"inlayHints": {
-						"enumMemberValues": {
-							"enabled": true
-						},
-						"functionLikeReturnTypes": {
-							"enabled": true
-						},
-						"parameterNames": {
-							"enabled": "all",
-							"suppressWhenArgumentMatchesName": false
-						},
-						"parameterTypes": {
-							"enabled": true
-						},
-						"propertyDeclarationTypes": {
-							"enabled": true
-						},
-						"variableTypes": {
-							"enabled": false
-						}
-					}
-				},
-				"tsserver": {
-					"maxTsServerMemory": 8192
-				},
-				"typescript": {
-					"inlayHints": {
-						"enumMemberValues": {
-							"enabled": true
-						},
-						"functionLikeReturnTypes": {
-							"enabled": true
-						},
-						"parameterNames": {
-							"enabled": "all",
-							"suppressWhenArgumentMatchesName": false
-						},
-						"parameterTypes": {
-							"enabled": true
-						},
-						"propertyDeclarationTypes": {
-							"enabled": true
-						},
-						"variableTypes": {
-							"enabled": false
-						}
-					},
-					"preferences": {
-						"includePackageJsonAutoImports": "on"
-					},
-					"suggest": {
-						"autoImports": true
-					},
-					"updateImportsOnFileMove": "always"
-				}
-			},
 			"settings": {
 				"javascript": {
 					"inlayHints": {
@@ -266,12 +217,9 @@
 							"suppressWhenArgumentMatchesName": false
 						},
 						"parameterTypes": { "enabled": true },
-						"propertyDeclarationTypes": { "enabled": true },
-						"variableTypes": { "enabled": false }
+						"propertyDeclarationTypes": { "enabled": true }
 					},
-					"suggest": { "autoImports": true },
-					"tsserver": { "maxTsServerMemory": 8192 },
-					"updateImportsOnFileMove": "always"
+					"updateImportsOnFileMove": { "enabled": "always" } // or is it "updateImportsOnFileMove": "always"?
 				},
 				"typescript": {
 					"inlayHints": {
@@ -282,21 +230,26 @@
 							"suppressWhenArgumentMatchesName": false
 						},
 						"parameterTypes": { "enabled": true },
-						"propertyDeclarationTypes": { "enabled": true },
-						"variableTypes": { "enabled": false }
+						"propertyDeclarationTypes": { "enabled": true }
 					},
-					"suggest": { "autoImports": true },
-					"tsserver": { "maxTsServerMemory": 8192 },
-					"updateImportsOnFileMove": "always"
+					"preferences": { "includePackageJsonAutoImports": "on" },
+					"updateImportsOnFileMove": { "enabled": "always" }
 				}
 			}
 		}
 	},
+	"project_name": "Cease Nonsense Rules",
 	"remove_trailing_whitespace_on_save": true,
+	"show_completion_documentation": true,
 	"show_completions_on_input": true,
 	"show_edit_predictions": true,
-	"soft_wrap": "none",
+	"soft_wrap": "prefer_line",
 	"tab_size": 4,
-	"terminal": { "working_directory": "current_project_directory" },
+	"terminal": {
+		"shell": "system",
+		"working_directory": "current_project_directory"
+	},
+	"use_auto_surround": true,
+	"use_autoclose": true,
 	"use_on_type_format": true
 }

@@ -5,11 +5,11 @@ import type { TSESTree } from "@typescript-eslint/types";
 /**
  * Normalize -0 to 0 for consistent comparisons
  *
- * @param num - The number to normalize
+ * @param number - The number to normalize
  * @returns The normalized number (converts -0 to 0)
  */
-export function normalizeZero(num: number): number {
-	return Object.is(num, -0) ? 0 : num;
+export function normalizeZero(number: number): number {
+	return Object.is(number, -0) ? 0 : number;
 }
 
 /**
