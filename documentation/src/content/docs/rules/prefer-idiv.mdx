@@ -1,0 +1,130 @@
+---
+title: prefer-idiv
+badge:
+    text: Roblox
+    variant: note
+description: Prefer .idiv() for integer division instead of math.floor(x / y) in roblox-ts.
+---
+
+import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
+
+Prefer `.idiv()` for integer division instead of `math.floor(x / y)`.
+
+## Rule Details :badge[Roblox]{variant=note}
+
+In `roblox-ts`, the `.idiv()` method compiles to Luau's `//` (floor division) operator. Using `math.floor(x / y)` is
+less idiomatic and slightly less efficient than using the dedicated integer division operator.
+
+<Aside type="caution" title="Nested Division Semantics">
+	`math.floor(a / b / c)` is **NOT equivalent** to `a.idiv(b).idiv(c)`!
+
+    - `math.floor(a / b / c)` performs floating-point division first, then floors the result.
+    - `a.idiv(b).idiv(c)` performs floor division at each step.
+
+    For example: `math.floor(-49164 / -61439 / -37118)` returns `-1`, but `(-49164).idiv(-61439).idiv(-37118)` returns `0`.
+
+</Aside>
+
+## Examples
+
+<RuleExample type="fail" title="Incorrect">
+		### Using math.floor for Division
+		Avoid wrapping division in `math.floor()` when you want integer division.
+
+    	<Code
+    		code={[
+    			"const quotient = math.floor(x / y);",
+    			"const result = math.floor((a + b) / c);",
+    			"const value = math.floor(100 / 3);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </RuleExample>
+
+<RuleExample type="pass" title="Correct">
+    	### Using .idiv() Method
+    	Use the `.idiv()` method for integer division.
+
+    	<Code
+    		code={[
+    			"const quotient = x.idiv(y);",
+    			"const result = (a + b).idiv(c);",
+    			"const value = (100).idiv(3);",
+    		].join("\n")}
+    		lang="tsx"
+    	/>
+    </RuleExample>
+
+## Configuration
+
+<Aside type="note" title="Default Behavior">
+	By default, nested divisions like `math.floor(a / b / c)` are **not reported** because they cannot be safely
+	auto-fixed.
+</Aside>
+
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/prefer-idiv": [',
+		'\t\t"error",',
+		"\t\t{",
+		'\t\t\t"reportNestedDivisions": true',
+		"\t\t}",
+		"\t]",
+		"}",
+	].join("\n")}
+	lang="json"
+	title="eslint.config.js"
+/>
+
+<Code
+	code={["// When reportNestedDivisions is true, this will be flagged (no auto-fix):", "math.floor(a / b / c);"].join(
+		"\n",
+	)}
+	lang="tsx"
+	title="Nested Division Example"
+/>
+
+## Why use .idiv()?
+
+<CardGrid stagger>
+	<Card title="Idiomatic" icon="code">
+		`.idiv()` is the roblox-ts convention for integer division, compiling directly to Luau's `//` operator.
+	</Card>
+	<Card title="Performance" icon="bolt">
+		Slightly more efficient than floating-point division followed by `math.floor()`.
+	</Card>
+	<Card title="Readability" icon="book">
+		Intent is clearer: you want integer division, not a floor operation on a float result.
+	</Card>
+	<Card title="Auto-fixable" icon="wrench">
+		Simple cases are automatically fixed by ESLint's `--fix` command.
+	</Card>
+</CardGrid>
+
+## Related Rules
+
+<CardGrid>
+	<LinkCard
+		title="no-print"
+		description="Prefer structured logging over print()"
+		href="/eslint-cease-nonsense-rules/rules/no-print/"
+	/>
+</CardGrid>
+
+## Further Reading
+
+<CardGrid>
+	<LinkCard
+		title="roblox-ts Operator Macros"
+		description="Documentation for operator method macros including idiv"
+		href="https://github.com/roblox-ts/roblox-ts/blob/master/docs/17-constructor-and-property-call-macros.md"
+	/>
+	<LinkCard
+		title="Luau Floor Division"
+		description="Luau documentation for the // operator"
+		href="https://luau-lang.org/"
+	/>
+</CardGrid>

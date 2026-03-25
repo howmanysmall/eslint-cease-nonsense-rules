@@ -17,6 +17,7 @@ import type { NoUnusedUseMemoOptions } from "../rules/no-unused-use-memo";
 import type { NoUselessUseEffectOptions } from "../rules/no-useless-use-effect";
 import type { NoUselessUseSpringOptions } from "../rules/no-useless-use-spring";
 import type { PreferEnumItemOptions } from "../rules/prefer-enum-item";
+import type { PreferIdivOptions } from "../rules/prefer-idiv";
 import type { PreventAbbreviationsOptions } from "../rules/prevent-abbreviations";
 import type { RequireModuleLevelInstantiationOptions } from "../rules/require-module-level-instantiation";
 import type { EffectFunctionOptions, HookConfiguration } from "../rules/require-named-effect-functions";
@@ -252,6 +253,15 @@ export function createPreferPatternReplacementsOptions(
  */
 export function createPreferEnumItemOptions(options: Partial<PreferEnumItemOptions> = {}): PreferEnumItemOptions {
 	return { fixNumericToValue: false, performanceMode: false, ...options };
+}
+
+/**
+ * Creates options for prefer-idiv rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createPreferIdivOptions(options: Partial<PreferIdivOptions> = {}): PreferIdivOptions {
+	return { reportNestedDivisions: false, ...options };
 }
 
 /**

@@ -57,6 +57,7 @@ export default [
 				"cease-nonsense/no-print": "error",
 				"cease-nonsense/prefer-enum-item": "error",
 			"cease-nonsense/prefer-enum-member": "error",
+			"cease-nonsense/prefer-idiv": "error",
 			"cease-nonsense/no-shorthand-names": "error",
 			"cease-nonsense/no-unused-imports": "error",
 			"cease-nonsense/no-unused-use-memo": "error",
@@ -229,6 +230,48 @@ const meta: Record<Color, number> = {
 
 const selected: Color = Color.Blue;
 ```
+
+#### `prefer-idiv`
+
+Prefer using `.idiv()` for integer division instead of `math.floor(x / y)` in roblox-ts. The `.idiv()` method compiles to
+Luau's `//` (floor division) operator, which is more idiomatic and efficient.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/prefer-idiv": ["error", {
+    "reportNestedDivisions": false  // When true, report nested divisions like math.floor(a / b / c)
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+const quotient = math.floor(x / y);
+const result = math.floor((a + b) / c);
+const value = math.floor(100 / 3);
+```
+
+**✅ Good**
+
+```typescript
+const quotient = x.idiv(y);
+const result = (a + b).idiv(c);
+const value = (100).idiv(3);
+```
+
+> **Note: Nested Division Semantics**
+>
+> `math.floor(a / b / c)` is **NOT equivalent** to `a.idiv(b).idiv(c)`!
+>
+> - `math.floor(a / b / c)` performs floating-point division first, then floors the result.
+> - `a.idiv(b).idiv(c)` performs floor division at each step.
+>
+> For example: `math.floor(-49164 / -61439 / -37118)` returns `-1`, but `(-49164).idiv(-61439).idiv(-37118)` returns `0`.
+>
+> By default, nested divisions are not reported because they cannot be safely auto-fixed.
 
 #### `require-serialized-numeric-data-type`
 
