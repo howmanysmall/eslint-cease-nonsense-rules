@@ -82,7 +82,6 @@ export type { NoUnusedUseMemoOptions } from "./rules/no-unused-use-memo";
 export type { NoUselessUseEffectOptions } from "./rules/no-useless-use-effect";
 export type { NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
 export type { PreferEnumItemOptions } from "./rules/prefer-enum-item";
-export type { PreferIdivOptions } from "./rules/prefer-idiv";
 export type { PreventAbbreviationsOptions } from "./rules/prevent-abbreviations";
 export type { RequireModuleLevelInstantiationOptions } from "./rules/require-module-level-instantiation";
 export type { EffectFunctionOptions, HookConfiguration } from "./rules/require-named-effect-functions";
@@ -113,7 +112,6 @@ export {
 	createNoUselessUseSpringOptions,
 	createPairConfiguration,
 	createPreferEnumItemOptions,
-	createPreferIdivOptions,
 	createPreferPatternReplacementsOptions,
 	createPreventAbbreviationsOptions,
 	createReactKeysOptions,

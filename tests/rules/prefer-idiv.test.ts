@@ -57,6 +57,21 @@ describe("prefer-idiv", () => {
 				errors: [{ messageId: "useIdiv" }],
 				output: "(x * y).idiv(z + w);",
 			},
+			{
+				code: "math.floor(-x / y);",
+				errors: [{ messageId: "useIdiv" }],
+				output: "(-x).idiv(y);",
+			},
+			{
+				code: "math.floor((a && b) / c);",
+				errors: [{ messageId: "useIdiv" }],
+				output: "(a && b).idiv(c);",
+			},
+			{
+				code: "math.floor((x = y) / z);",
+				errors: [{ messageId: "useIdiv" }],
+				output: "(x = y).idiv(z);",
+			},
 			// Computed property access
 			{
 				code: 'math["floor"](x / y);',
@@ -87,21 +102,25 @@ describe("prefer-idiv", () => {
 				errors: [{ messageId: "useIdiv" }, { messageId: "useIdiv" }],
 				output: "a.idiv(b) + c.idiv(d);",
 			},
-			// Nested divisions with reportNestedDivisions: true - NO auto-fix
 			{
 				code: "math.floor(a / b / c);",
-				errors: [{ messageId: "useIdivNested" }],
-				options: [{ reportNestedDivisions: true }],
+				errors: [{ messageId: "useIdiv" }],
+				output: "(a / b).idiv(c);",
 			},
 			{
 				code: "math.floor(x / y / z / w);",
-				errors: [{ messageId: "useIdivNested" }],
-				options: [{ reportNestedDivisions: true }],
+				errors: [{ messageId: "useIdiv" }],
+				output: "(x / y / z).idiv(w);",
 			},
 			{
 				code: "const result = math.floor(a / b / c);",
-				errors: [{ messageId: "useIdivNested" }],
-				options: [{ reportNestedDivisions: true }],
+				errors: [{ messageId: "useIdiv" }],
+				output: "const result = (a / b).idiv(c);",
+			},
+			{
+				code: "math.floor(a / (b / c));",
+				errors: [{ messageId: "useIdiv" }],
+				output: "a.idiv(b / c);",
 			},
 		],
 		valid: [
@@ -123,10 +142,6 @@ describe("prefer-idiv", () => {
 			{
 				code: "const math = { floor: () => 0 }; math.floor(x / y);",
 			},
-			// Nested division - valid by default (reportNestedDivisions: false)
-			"math.floor(a / b / c);",
-			"math.floor(x / y / z / w);",
-			"math.floor((a / b) / c);",
 			// Optional chaining on math - should not match
 			"math?.floor(x / y);",
 			// Optional chaining on floor - should not match

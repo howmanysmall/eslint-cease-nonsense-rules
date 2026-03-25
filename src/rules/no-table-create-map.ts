@@ -1,66 +1,13 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 
+import { getMemberPropertyName, hasShadowedBinding, unwrapExpression } from "../utilities/ast-utilities";
 import { createRule } from "../utilities/create-rule";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds = "avoidConstructThenMap";
 
-const WRAPPER_TYPES = new Set([
-	"TSAsExpression",
-	"TSSatisfiesExpression",
-	"TSTypeAssertion",
-	"TSNonNullExpression",
-	"TSInstantiationExpression",
-	"ChainExpression",
-]);
-
 type Options = [];
-
-function unwrapExpression(expression: TSESTree.Expression): TSESTree.Expression {
-	let current: TSESTree.Expression = expression;
-
-	while (WRAPPER_TYPES.has(current.type)) {
-		switch (current.type) {
-			case AST_NODE_TYPES.TSAsExpression:
-			case AST_NODE_TYPES.TSSatisfiesExpression:
-			case AST_NODE_TYPES.TSTypeAssertion:
-			case AST_NODE_TYPES.TSNonNullExpression:
-			case AST_NODE_TYPES.TSInstantiationExpression:
-			case AST_NODE_TYPES.ChainExpression:
-				current = current.expression;
-				break;
-		}
-	}
-
-	return current;
-}
-
-function getMemberPropertyName(memberExpression: TSESTree.MemberExpression): string | undefined {
-	if (!memberExpression.computed) {
-		if (memberExpression.property.type === AST_NODE_TYPES.Identifier) return memberExpression.property.name;
-		return undefined;
-	}
-
-	if (memberExpression.property.type !== AST_NODE_TYPES.Literal) return undefined;
-	return typeof memberExpression.property.value === "string" ? memberExpression.property.value : undefined;
-}
-
-function hasShadowedBinding(
-	context: TSESLint.RuleContext<MessageIds, Options>,
-	node: TSESTree.Node,
-	name: string,
-): boolean {
-	let scope: TSESLint.Scope.Scope | undefined = context.sourceCode.getScope(node);
-
-	while (scope !== undefined) {
-		const variable = scope.set.get(name);
-		if (variable !== undefined && variable.defs.length > 0) return true;
-		scope = scope.upper ?? undefined;
-	}
-
-	return false;
-}
 
 function isTableCreateBase(
 	context: TSESLint.RuleContext<MessageIds, Options>,
@@ -77,7 +24,7 @@ function isTableCreateBase(
 
 	const target = unwrapExpression(callee.object);
 	if (target.type !== AST_NODE_TYPES.Identifier || target.name !== "table") return false;
-	return !hasShadowedBinding(context, target, "table");
+	return !hasShadowedBinding(context.sourceCode, target, "table");
 }
 
 function isArrayConstructorBase(
@@ -91,7 +38,7 @@ function isArrayConstructorBase(
 
 	const callee = unwrapExpression(unwrapped.callee);
 	if (callee.type !== AST_NODE_TYPES.Identifier || callee.name !== "Array") return false;
-	return !hasShadowedBinding(context, callee, "Array");
+	return !hasShadowedBinding(context.sourceCode, callee, "Array");
 }
 
 const noTableCreateMap = createRule<Options, MessageIds>({

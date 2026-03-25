@@ -1,5 +1,6 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 
+import { getMemberPropertyName, hasShadowedBinding, unwrapExpression } from "../utilities/ast-utilities";
 import { createRule } from "../utilities/create-rule";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
@@ -28,48 +29,13 @@ const DEFAULT_OPTIONS: Required<NoArrayConstructorElementsOptions> = {
 	requireExplicitGenericOnNewArray: true,
 };
 
-function unwrapExpression(expression: TSESTree.Expression): TSESTree.Expression {
-	if (expression.type === AST_NODE_TYPES.ChainExpression) return unwrapExpression(expression.expression);
-	if (expression.type === AST_NODE_TYPES.TSAsExpression) return unwrapExpression(expression.expression);
-	if (expression.type === AST_NODE_TYPES.TSInstantiationExpression) return unwrapExpression(expression.expression);
-	if (expression.type === AST_NODE_TYPES.TSNonNullExpression) return unwrapExpression(expression.expression);
-	if (expression.type === AST_NODE_TYPES.TSTypeAssertion) return unwrapExpression(expression.expression);
-	return expression;
-}
-
-function getMemberPropertyName(memberExpression: TSESTree.MemberExpression): string | undefined {
-	if (!memberExpression.computed) {
-		if (memberExpression.property.type === AST_NODE_TYPES.Identifier) return memberExpression.property.name;
-		return undefined;
-	}
-
-	if (memberExpression.property.type !== AST_NODE_TYPES.Literal) return undefined;
-	return typeof memberExpression.property.value === "string" ? memberExpression.property.value : undefined;
-}
-
-function hasShadowedBinding(
-	context: Readonly<TSESLint.RuleContext<MessageIds, Options>>,
-	node: TSESTree.Node,
-	name: string,
-): boolean {
-	let scope: TSESLint.Scope.Scope | undefined = context.sourceCode.getScope(node);
-
-	while (scope !== undefined) {
-		const variable = scope.set.get(name);
-		if (variable !== undefined && variable.defs.length > 0) return true;
-		scope = scope.upper ?? undefined;
-	}
-
-	return false;
-}
-
 function isGlobalArrayConstructor(
 	context: Readonly<TSESLint.RuleContext<MessageIds, Options>>,
 	node: TSESTree.NewExpression,
 ): boolean {
 	const callee = unwrapExpression(node.callee);
 	if (callee.type !== AST_NODE_TYPES.Identifier || callee.name !== "Array") return false;
-	return !hasShadowedBinding(context, callee, "Array");
+	return !hasShadowedBinding(context.sourceCode, callee, "Array");
 }
 
 function extractElementTypeFromArrayAnnotation(

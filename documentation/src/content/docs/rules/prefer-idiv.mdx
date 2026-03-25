@@ -6,7 +6,7 @@ badge:
 description: Prefer .idiv() for integer division instead of math.floor(x / y) in roblox-ts.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Code, LinkCard, CardGrid, Card } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
@@ -16,16 +16,6 @@ Prefer `.idiv()` for integer division instead of `math.floor(x / y)`.
 
 In `roblox-ts`, the `.idiv()` method compiles to Luau's `//` (floor division) operator. Using `math.floor(x / y)` is
 less idiomatic and slightly less efficient than using the dedicated integer division operator.
-
-<Aside type="caution" title="Nested Division Semantics">
-	`math.floor(a / b / c)` is **NOT equivalent** to `a.idiv(b).idiv(c)`!
-
-    - `math.floor(a / b / c)` performs floating-point division first, then floors the result.
-    - `a.idiv(b).idiv(c)` performs floor division at each step.
-
-    For example: `math.floor(-49164 / -61439 / -37118)` returns `-1`, but `(-49164).idiv(-61439).idiv(-37118)` returns `0`.
-
-</Aside>
 
 ## Examples
 
@@ -48,44 +38,19 @@ less idiomatic and slightly less efficient than using the dedicated integer divi
     	Use the `.idiv()` method for integer division.
 
     	<Code
-    		code={[
-    			"const quotient = x.idiv(y);",
-    			"const result = (a + b).idiv(c);",
-    			"const value = (100).idiv(3);",
-    		].join("\n")}
+    			code={[
+    				"const quotient = x.idiv(y);",
+    				"const result = (a + b).idiv(c);",
+    				"const value = (100).idiv(3);",
+    				"const nested = (a / b).idiv(c);",
+    			].join("\n")}
     		lang="tsx"
     	/>
     </RuleExample>
 
 ## Configuration
 
-<Aside type="note" title="Default Behavior">
-	By default, nested divisions like `math.floor(a / b / c)` are **not reported** because they cannot be safely
-	auto-fixed.
-</Aside>
-
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/prefer-idiv": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"reportNestedDivisions": true',
-		"\t\t}",
-		"\t]",
-		"}",
-	].join("\n")}
-	lang="json"
-	title="eslint.config.js"
-/>
-
-<Code
-	code={["// When reportNestedDivisions is true, this will be flagged (no auto-fix):", "math.floor(a / b / c);"].join(
-		"\n",
-	)}
-	lang="tsx"
-	title="Nested Division Example"
-/>
+<Code code={["{", '\t"cease-nonsense/prefer-idiv": "error"', "}"].join("\n")} lang="json" title="eslint.config.js" />
 
 ## Why use .idiv()?
 
@@ -100,7 +65,7 @@ less idiomatic and slightly less efficient than using the dedicated integer divi
 		Intent is clearer: you want integer division, not a floor operation on a float result.
 	</Card>
 	<Card title="Auto-fixable" icon="wrench">
-		Simple cases are automatically fixed by ESLint's `--fix` command.
+		Matches are automatically fixed by ESLint's `--fix` command.
 	</Card>
 </CardGrid>
 

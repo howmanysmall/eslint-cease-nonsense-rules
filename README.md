@@ -240,9 +240,7 @@ Luau's `//` (floor division) operator, which is more idiomatic and efficient.
 
 ```typescript
 {
-  "cease-nonsense/prefer-idiv": ["error", {
-    "reportNestedDivisions": false  // When true, report nested divisions like math.floor(a / b / c)
-  }]
+  "cease-nonsense/prefer-idiv": "error"
 }
 ```
 
@@ -260,18 +258,8 @@ const value = math.floor(100 / 3);
 const quotient = x.idiv(y);
 const result = (a + b).idiv(c);
 const value = (100).idiv(3);
+const nested = (a / b).idiv(c);
 ```
-
-> **Note: Nested Division Semantics**
->
-> `math.floor(a / b / c)` is **NOT equivalent** to `a.idiv(b).idiv(c)`!
->
-> - `math.floor(a / b / c)` performs floating-point division first, then floors the result.
-> - `a.idiv(b).idiv(c)` performs floor division at each step.
->
-> For example: `math.floor(-49164 / -61439 / -37118)` returns `-1`, but `(-49164).idiv(-61439).idiv(-37118)` returns `0`.
->
-> By default, nested divisions are not reported because they cannot be safely auto-fixed.
 
 #### `require-serialized-numeric-data-type`
 
