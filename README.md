@@ -2373,56 +2373,32 @@ type Grid = Array<Array<string>>;
 
 #### `dot-notation`
 
-Enforce dot notation whenever possible, with an opt-in `roblox-ts` escape for bracket access that would become invalid
-after conversion because the target member is inaccessible at that site.
+Enforce dot notation whenever possible. In `roblox-ts`, it can also leave bracket notation alone when switching to dot
+notation would fail because the member is inaccessible at that access site.
 
-**Configuration**
-
-```typescript
-{
-  "cease-nonsense/dot-notation": ["error", {
-    "allowKeywords": true,
-    "allowPattern": "",
-    "allowPrivateClassPropertyAccess": false,
-    "allowProtectedClassPropertyAccess": false,
-    "allowIndexSignaturePropertyAccess": false,
-    "environment": "roblox-ts",
-    "allowInaccessibleClassPropertyAccess": true
-  }]
-}
-```
+**Options:** `{ allowKeywords?: boolean, allowPattern?: string, allowPrivateClassPropertyAccess?: boolean, allowProtectedClassPropertyAccess?: boolean, allowIndexSignaturePropertyAccess?: boolean, environment?: "standard" | "roblox-ts", allowInaccessibleClassPropertyAccess?: boolean }`
 
 **❌ Bad**
 
 ```typescript
-interface PublicBox {
-	name: number;
+class Counter {
+	public value = 0;
 }
-
-function incrementValue(object: PublicBox): void {
-	object["name"] += 1;
-}
+const counter = new Counter();
+counter["value"] += 1;
 ```
 
 **✅ Good**
 
 ```typescript
-interface PublicBox {
-	name: number;
-}
+const counter = new Counter();
+counter.value += 1;
 
-function incrementValue(object: PublicBox): void {
-	object.name += 1;
-}
-```
-
-```typescript
-function incrementValue(object: ExampleClass): void {
-	object["value"] += 1;
-}
-
-class ExampleClass {
+class SecretCounter {
 	private value = 0;
+}
+function incrementValue(object: SecretCounter): void {
+	object["value"] += 1;
 }
 ```
 
