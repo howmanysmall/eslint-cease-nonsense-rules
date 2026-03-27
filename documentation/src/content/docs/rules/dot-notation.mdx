@@ -1,0 +1,102 @@
+---
+title: dot-notation
+badge:
+    text: TypeScript
+    variant: note
+description: Enforce dot notation while preserving opt-in roblox-ts visibility-safe bracket access.
+---
+
+import { Aside, Code, Steps } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
+
+Prefer `object.property` over `object["property"]` whenever the dot form is actually legal at that access site.
+
+## Rule Details :badge[TypeScript]{variant=note}
+
+This rule mirrors ESLint core `dot-notation` for normal cases, then adds one opt-in `roblox-ts` escape:
+
+1. Public string-literal property access is rewritten to dot notation.
+2. Keyword and pattern handling stays aligned with core `dot-notation`.
+3. `allowPrivateClassPropertyAccess`, `allowProtectedClassPropertyAccess`, and `allowIndexSignaturePropertyAccess` keep
+   their upstream behavior.
+4. When `environment` is `"roblox-ts"` and `allowInaccessibleClassPropertyAccess` is `true`, bracket notation is allowed
+   only if converting to dot notation would fail at that exact access site because the member is inaccessible.
+
+<Aside type="tip" title="Why the Roblox Escape Exists">
+	In `roblox-ts`, bracket access to a `private` or `protected` member can compile cleanly in places where
+	`object.member` would be rejected by TypeScript. This rule keeps reporting normal cases while skipping only those
+	accesses that would become invalid after the autofix.
+</Aside>
+
+## Configuration
+
+<Code
+	code={[
+		"{",
+		'\t"cease-nonsense/dot-notation": ["error", {',
+		'\t\t"allowKeywords": true,',
+		'\t\t"allowPattern": "",',
+		'\t\t"allowPrivateClassPropertyAccess": false,',
+		'\t\t"allowProtectedClassPropertyAccess": false,',
+		'\t\t"allowIndexSignaturePropertyAccess": false,',
+		'\t\t"environment": "roblox-ts",',
+		'\t\t"allowInaccessibleClassPropertyAccess": true',
+		"\t}]",
+		"}",
+	].join("\n")}
+	lang="typescript"
+	title="eslint.config.ts"
+/>
+
+## Visibility Escape
+
+<Steps>
+1. Resolve the member symbol from parser services and the object type.
+2. Check upstream escape hatches first: private/protected/index-signature options.
+3. In opt-in `roblox-ts` mode, ask the TypeScript checker whether dot access is legal at the current site.
+4. Skip reporting only when dot access would be rejected there; otherwise report and autofix normally.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+## Examples
+
+<RuleExample type="fail" title="Incorrect">
+	<Code
+		code={[
+			"interface PublicBox {",
+			"\tname: number;",
+			"}",
+			"",
+			"function incrementValue(object: PublicBox): void {",
+			'\tobject["name"] += 1;',
+			"}",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
+
+<RuleExample type="pass" title="Correct">
+	<Code
+		code={[
+			"interface PublicBox {",
+			"\tname: number;",
+			"}",
+			"",
+			"function incrementValue(object: PublicBox): void {",
+			"\tobject.name += 1;",
+			"}",
+			"",
+			"function incrementHidden(object: ExampleClass): void {",
+			'\tobject["value"] += 1;',
+			"}",
+			"",
+			"class ExampleClass {",
+			"\tprivate value = 0;",
+			"}",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>

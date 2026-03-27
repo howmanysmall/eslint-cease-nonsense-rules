@@ -109,6 +109,7 @@ export default defineConfig({
 				},
 				{
 					items: [
+						"rules/dot-notation",
 						"rules/fast-format",
 						"rules/no-async-constructor",
 						"rules/no-commented-code",

@@ -42,6 +42,7 @@ export default [
 			// Enable all rules (recommended)
 			"cease-nonsense/ban-instances": "error",
 			"cease-nonsense/ban-react-fc": "error",
+			"cease-nonsense/dot-notation": "error",
 			"cease-nonsense/enforce-ianitor-check-type": "error",
 			"cease-nonsense/fast-format": "error",
 			"cease-nonsense/no-array-size-assignment": "error",
@@ -2369,6 +2370,64 @@ type Values = ReadonlyArray<number>;
 type Pairs = Array<[number, string]>;
 type Grid = Array<Array<string>>;
 ```
+
+#### `dot-notation`
+
+Enforce dot notation whenever possible, with an opt-in `roblox-ts` escape for bracket access that would become invalid
+after conversion because the target member is inaccessible at that site.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/dot-notation": ["error", {
+    "allowKeywords": true,
+    "allowPattern": "",
+    "allowPrivateClassPropertyAccess": false,
+    "allowProtectedClassPropertyAccess": false,
+    "allowIndexSignaturePropertyAccess": false,
+    "environment": "roblox-ts",
+    "allowInaccessibleClassPropertyAccess": true
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+interface PublicBox {
+	name: number;
+}
+
+function incrementValue(object: PublicBox): void {
+	object["name"] += 1;
+}
+```
+
+**✅ Good**
+
+```typescript
+interface PublicBox {
+	name: number;
+}
+
+function incrementValue(object: PublicBox): void {
+	object.name += 1;
+}
+```
+
+```typescript
+function incrementValue(object: ExampleClass): void {
+	object["value"] += 1;
+}
+
+class ExampleClass {
+	private value = 0;
+}
+```
+
+Use the second form only when you intentionally opt into `roblox-ts` mode with
+`allowInaccessibleClassPropertyAccess: true`.
 
 #### `no-empty-array-literal`
 
