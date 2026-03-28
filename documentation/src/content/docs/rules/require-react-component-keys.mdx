@@ -1,130 +1,70 @@
 ---
 title: require-react-component-keys
-badge:
-    text: Best Practice
-    variant: success
-description: Require stable keys for JSX elements that are part of a list.
+badges:
+    - text: "error"
+      variant: danger
+description:
+    Require keys for JSX returned from list-like callbacks, and flag unnecessary keys on root returns by default.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Require stable `key` props for list items.
+Requires keys for JSX used as list output.
 
-## Rule Details :badge[Best Practice]{variant=success}
+## Rule details :badge[Problem]{variant=danger}
 
-React uses `key` to track list items across renders. This rule requires keys on JSX elements that are used as list items
-(while ignoring the top-level return of a component).
+The rule looks for JSX returned from iteration callbacks such as `.map(...)` and from memoization callbacks such as
+`useMemo(...)`. In those contexts, JSX elements need a `key`, and JSX fragments need to be replaced with a keyed
+element.
 
-<Aside type="caution" title="State Preservation">
-	Without stable keys, React can attach the wrong state to the wrong item when a list is reordered.
+It skips ordinary top-level component returns, JSX passed through most props, ternary children, logical child fragments,
+and a small ignore list of call expressions. By default it also reports a `key` on a plain root component return,
+because that key is usually ignored by the parent.
+
+<Aside type="tip" title="Fragments are stricter here">
+	A bare fragment like `<>...</>` can never carry a key, so list items that use fragments need `<React.Fragment key=...>`
+	or another keyed wrapper element.
 </Aside>
-
-## Key Implementation Path
-
-<Steps>
-1. **Identify Lists**
-   Find `map()` calls or arrays that return JSX elements.
-
-2. **Select a Stable ID** Choose a property that is unique and persistent (like a database ID or UUID). Avoid using the
-   array index.
-
-3. **Apply the Key** Add the `key` prop to the outermost element returned for each item.
-
-4. **Handle Fragments** If returning multiple elements per item, use a keyed `<Fragment>` instead of the short `<>`
-   syntax.
-
-{/* oxfmt-ignore */}
-
-</Steps>
-
-Short fragments used as conditional JSX children (for example with `&&`, `||`, `??`, or ternaries) do not need keys
-unless they are list items in an array literal or iteration callback.
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Missing Keys
-		Bans elements inside maps that don't have a unique identifier.
-
-    	<Code
-    		code={[
-    			"function UserList({ users }) {",
-    			"\treturn (",
-    			"\t\t<div>",
-    			"\t\t\t{users.map((user) => (",
-    			"\t\t\t\t<UserCard user={user} /> // ❌ Missing key",
-    			"\t\t\t))}",
-    			"\t\t</div>",
-    			"\t);",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={["function UserList({ users }) {", "\treturn users.map((user) => <UserCard user={user} />);", "}"].join(
+			"\n",
+		)}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Keyed Elements
-    	Use stable identifiers for every list item.
+	<Code
+		code={[
+			"function UserList({ users }) {",
+			"\treturn users.map((user) => <UserCard key={user.id} user={user} />);",
+			"}",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			"function UserList({ users }) {",
-    			"\treturn (",
-    			"\t\t<div>",
-    			"\t\t\t{users.map((user) => (",
-    			"\t\t\t\t<UserCard key={user.id} user={user} />",
-    			"\t\t\t))}",
-    			"\t\t</div>",
-    			"\t);",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+## Options
 
-## Why Keys Matter
+| Option                  | Type       | Default                                                                                                  |
+| :---------------------- | :--------- | :------------------------------------------------------------------------------------------------------- |
+| `allowRootKeys`         | `boolean`  | `false`                                                                                                  |
+| `ignoreCallExpressions` | `string[]` | `["ReactTree.mount", "CreateReactStory"]`                                                                |
+| `iterationMethods`      | `string[]` | `["map", "filter", "forEach", "flatMap", "reduce", "reduceRight", "some", "every", "find", "findIndex"]` |
+| `memoizationHooks`      | `string[]` | `["useCallback", "useMemo"]`                                                                             |
 
-<CardGrid stagger>
-	<Card title="Reconciliation" icon="bolt">
-		Helps React identify which items changed, were added, or were removed.
-	</Card>
-	<Card title="State Stability" icon="setting">
-		Ensures local component state (like input values) stays attached to the correct item.
-	</Card>
-	<Card title="Performance" icon="rocket">
-		Avoids destroying and recreating the entire DOM list when only one item changes.
-	</Card>
-</CardGrid>
-
-## Good Key Practices
-
-- **Stable**: Should not change over time (avoid `Math.random()`).
-- **Unique**: No two elements in the same list should share a key.
-- **Predictable**: Avoid using array indices if the list can be reordered or filtered.
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
-		title="no-god-components"
-		description="Prevents overly complex components"
-		href="/eslint-cease-nonsense-rules/rules/no-god-components/"
-	/>
-	<LinkCard
-		title="ban-react-fc"
-		description="Enforces proper component patterns"
-		href="/eslint-cease-nonsense-rules/rules/ban-react-fc/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="React Docs: Lists & Keys"
-		description="Official guide on rendering lists"
-		href="https://react.dev/learn/rendering-lists"
+		title="require-react-display-names"
+		description="Keeps React DevTools output readable"
+		href="/eslint-cease-nonsense-rules/rules/require-react-display-names/"
 	/>
 </CardGrid>

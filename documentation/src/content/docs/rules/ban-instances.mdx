@@ -1,8 +1,8 @@
 ---
 title: ban-instances
-badge:
-    text: Roblox
-    variant: caution
+badges:
+    - text: "Roblox"
+      variant: caution
 description: Ban specific Roblox Instances in new Instance() and JSX (configurable).
 ---
 
@@ -111,7 +111,7 @@ The rule accepts an object with a `bannedInstances` property, which can be an ar
 
 ## Detection Strategy
 
-<CardGrid stagger>
+<CardGrid>
 	<Card title="JSX Detection" icon="bolt">
 		Flags lowercase elements like `<part />` which represent Roblox Instances.
 	</Card>

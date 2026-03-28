@@ -1,90 +1,82 @@
 ---
 title: prefer-local-portal-component
-badge:
-    text: Best Practice
-    variant: success
-description: Prefer a local Portal wrapper component over direct createPortal calls.
+badges:
+    - text: "Fixable"
+      variant: success
+description: Prefer a local Portal component over direct createPortal calls when one is already available.
 ---
 
-import { Aside, CardGrid, Card, Code, LinkCard } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Prefer a local `Portal` component over direct `createPortal(...)` calls when the project already defines one.
+Prefer a local `Portal` component over direct `createPortal(...)` calls.
 
-## Rule Details :badge[Best Practice]{variant=success}
+## Rule details :badge[Suggestion]{variant=note}
 
-Direct portal calls work, but they scatter low-level mounting logic across the codebase. A shared `Portal` component
-keeps that logic in one place and gives you one consistent abstraction for Roblox and standard React projects.
+This rule looks for `createPortal` calls from `@rbxts/react-roblox` or `react-dom` and reports them when the project
+already has a matching local `Portal` component.
 
-<Aside type="tip" title="Conservative by design">
-	This rule only reports when it can find a local `Portal` component in the project. Auto-fix only runs when that
-	component is already imported into the current file.
+If the current file already imports that local component, the rule can replace the call with JSX. If the project has no
+matching local component, or the rule cannot tell which one to use, it does nothing.
+
+<Aside type="tip" title="When auto-fix runs">
+	Auto-fix only runs in `.jsx` and `.tsx` files, and only when the current file already has exactly one matching local
+	`Portal` import.
 </Aside>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Direct Portal Factory Calls
-		Prefer the project wrapper instead of calling the renderer API directly.
+		### Direct portal call
 
-    	<Code
-    		code={[
-    			'import { createPortal } from "@rbxts/react-roblox";',
-    			"",
-    			"return createPortal(<frame />, target);",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
+        	<Code
+        		code={[
+        			'import Portal from "../components/portal";',
+        			'import { createPortal } from "@rbxts/react-roblox";',
+        			"",
+        			"export function Example(target: Instance) {",
+        			"\treturn createPortal(<frame />, target);",
+        			"}",
+        		].join("\n")}
+        		lang="tsx"
+        	/>
     </RuleExample>
 
 <RuleExample type="pass" title="Correct">
-		### Shared Portal Wrapper
-		Keep portal mounting behind the local component boundary.
+		### Local wrapper component
 
-    	<Code
-    		code={[
-    			'import Portal from "../components/portal";',
-    			"",
-    			"return <Portal target={target}><frame /></Portal>;",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
+        	<Code
+        		code={[
+        			'import Portal from "../components/portal";',
+        			"",
+        			"export function Example(target: Instance) {",
+        			"\treturn <Portal target={target}><frame /></Portal>;",
+        			"}",
+        		].join("\n")}
+        		lang="tsx"
+        	/>
     </RuleExample>
 
-## Environment Modes
+## What it checks
 
-| Direct API Source      | Supported Call Shape                      |
-| :--------------------- | :---------------------------------------- |
-| `@rbxts/react-roblox`  | `createPortal(children, target)`          |
-| `react-dom`            | `createPortal(children, container)`       |
-| `import * as ReactDOM` | `ReactDOM.createPortal(children, target)` |
+| Source                                                | Supported form                            |
+| :---------------------------------------------------- | :---------------------------------------- |
+| `@rbxts/react-roblox`                                 | `createPortal(children, target)`          |
+| `react-dom`                                           | `createPortal(children, container)`       |
+| `react-dom` or `@rbxts/react-roblox` namespace import | `ReactDOM.createPortal(children, target)` |
 
-## Why use a wrapper?
-
-<CardGrid stagger>
-	<Card title="One Abstraction" icon="list-format">
-		Keeps portal setup in one local component instead of repeating renderer calls throughout the app.
-	</Card>
-	<Card title="Safer Refactors" icon="bolt">
-		Makes it easier to change portal behavior later without touching every call site.
-	</Card>
-	<Card title="Consistent JSX" icon="setting">
-		Reads like the rest of the component tree instead of dropping into an imperative factory call.
-	</Card>
-</CardGrid>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="prefer-context-stack"
-		description="Another wrapper-oriented React rule for repeated provider trees"
+		description="Moves repeated provider trees behind a local component"
 		href="/eslint-cease-nonsense-rules/rules/prefer-context-stack/"
 	/>
 	<LinkCard
 		title="require-react-display-names"
-		description="Keep component-oriented abstractions easy to debug"
+		description="Keeps shared component wrappers easier to debug"
 		href="/eslint-cease-nonsense-rules/rules/require-react-display-names/"
 	/>
 </CardGrid>

@@ -1,0 +1,45 @@
+---
+title: Quick Start
+description: Install and configure Cease Nonsense in a couple of minutes.
+---
+
+import { Steps, Tabs, TabItem, Code } from "@astrojs/starlight/components";
+
+## Installation
+
+<Tabs>
+	<TabItem label="bun">```bash bun add -D eslint-plugin-cease-nonsense ```</TabItem>
+	<TabItem label="npm">```bash npm install -D eslint-plugin-cease-nonsense ```</TabItem>
+	<TabItem label="pnpm">```bash pnpm add -D eslint-plugin-cease-nonsense ```</TabItem>
+</Tabs>
+
+## Configuration
+
+<Steps>
+
+1. **Add to your ESLint config**
+
+    ```typescript
+    import ceaseNonsense from "eslint-plugin-cease-nonsense";
+
+    export default [
+    	ceaseNonsense.configs.recommended,
+    	// ... your other configs
+    ];
+    ```
+
+2. **Run ESLint**
+
+    ```bash
+    bun run eslint .
+    ```
+
+</Steps>
+
+## What You Get
+
+The `recommended` config turns on every rule with sensible defaults. Most are set to `warn`; a handful of critical rules
+default to `error`.
+
+If you want to cherry-pick categories, disable specific rules, or adjust severity levels, see the
+[Configuration Reference](/eslint-cease-nonsense-rules/configuration/).

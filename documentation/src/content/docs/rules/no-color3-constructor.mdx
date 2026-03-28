@@ -1,134 +1,90 @@
 ---
 title: no-color3-constructor
-badge:
-    text: Roblox
-    variant: note
-description: Prefer Color3.fromRGB() over new Color3(r, g, b) for non-zero values.
+badges:
+    - text: "error"
+      variant: danger
+    - text: "Fixable"
+      variant: success
+description: Bans `new Color3(...)` except zero-valued constructors and prefers `Color3.fromRGB(...)`.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Prefer `Color3.fromRGB()` over `new Color3(r, g, b)` for non-zero values.
+Bans most `new Color3(...)` calls and prefers `Color3.fromRGB(...)`.
 
-## Rule Details :badge[Roblox]{variant=note}
+## Rule details :badge[Problem]{variant=danger}
 
-`new Color3(r, g, b)` takes floats in the range 0-1. `Color3.fromRGB(r, g, b)` takes 0-255 integers and is a better fit
-for most UI work. This rule prefers `fromRGB` while still allowing `new Color3()` and explicit zero values.
+This rule allows only these constructor forms:
 
-<Aside type="tip" title="Why Color3.fromRGB?">
-	Most UI palettes are specified as 0-255. `fromRGB` matches that and avoids extra conversion work.
+- `new Color3()`
+- `new Color3(0, 0, 0)`
+
+Everything else is reported.
+
+When every argument is a numeric literal, the rule can fix the call by converting values to the RGB range. Numbers less
+than or equal to `1` are multiplied by `255` and rounded. Numbers greater than `1` are used as-is.
+
+That means these are all reported:
+
+- `new Color3(1, 0, 0)`
+- `new Color3(255, 0, 0)`
+- `new Color3(0.5)`
+- `new Color3(value)`
+
+Calls with one or two arguments use the `useFromRGB` message. Calls with three or more arguments use `onlyZeroArgs`.
+
+<Aside type="tip" title="What gets auto-fixed">
+	The fix only works when every argument is a numeric literal. If any argument is a variable or expression, the rule
+	still reports it but leaves the code alone.
 </Aside>
-
-## Refactoring Path
-
-<Steps>
-1. **Identify Violations**
-   Locate `new Color3(r, g, b)` calls where `r`, `g`, or `b` are literals between 0 and 1.
-
-2. **Convert to RGB** Multiply each component by 255 and round to the nearest integer.
-
-3. **Update Method** Replace the `new Color3` call with `Color3.fromRGB`.
-
-4. **Verify Zeros** If you meant to initialize a black color, `new Color3()` is still allowed and efficient.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Floating Point Constructors
-		Using `new Color3` with non-zero values triggers an error.
-
-    	<Code
-    		code={[
-    			"const red = new Color3(1, 0, 0);",
-    			"const blue = new Color3(0.5, 0.5, 1);",
-    			"const green = new Color3(0, 255, 0);",
-    			"",
-    			"// Partial arguments are also banned",
-    			"const white = new Color3(1, 1);",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			"const red = new Color3(1, 0, 0);",
+			"const accent = new Color3(255, 128, 64);",
+			"const dynamic = new Color3(value);",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Optimized Static Methods
-    	Use `fromRGB` for colors or keep `new Color3()` for zero-initialization.
+	<Code
+		code={[
+			"const red = Color3.fromRGB(255, 0, 0);",
+			"const accent = Color3.fromRGB(255, 128, 64);",
+			"const black = new Color3();",
+			"const explicitBlack = new Color3(0, 0, 0);",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			"const red = Color3.fromRGB(255, 0, 0);",
-    			"const blue = Color3.fromRGB(127, 127, 255);",
-    			"",
-    			"// Zero constructors are allowed (efficient in engine)",
-    			"const alsoBlack = new Color3();",
-    			"const explicitBlack = new Color3(0, 0, 0);",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+## Conversion examples
 
-## Performance Benefits
+| Input                      | Fixed output                    |
+| :------------------------- | :------------------------------ |
+| `new Color3(0.5)`          | `Color3.fromRGB(128, 0, 0)`     |
+| `new Color3(1, 0)`         | `Color3.fromRGB(255, 0, 0)`     |
+| `new Color3(1, 1, 1)`      | `Color3.fromRGB(255, 255, 255)` |
+| `new Color3(255, 128, 64)` | `Color3.fromRGB(255, 128, 64)`  |
 
-<CardGrid stagger>
-	<Card title="No Conversion" icon="bolt">
-		`fromRGB` avoids the float-to-int conversion work that comes with `new Color3(r, g, b)`.
-	</Card>
-	<Card title="Direct Storage" icon="setting">
-		Integers are stored directly, reducing the memory and CPU cycles spent on representation.
-	</Card>
-	<Card title="Optimized Path" icon="rocket">
-		The engine has a fast path for `fromRGB`.
-	</Card>
-</CardGrid>
-
-## Conversion Table
-
-| Float Input | RGB Output | Rule Behavior                |
-| :---------- | :--------- | :--------------------------- |
-| `0.0`       | `0`        | Allowed in constructor       |
-| `0.25`      | `64`       | Auto-fixes to `fromRGB(64)`  |
-| `0.5`       | `127`      | Auto-fixes to `fromRGB(127)` |
-| `0.75`      | `191`      | Auto-fixes to `fromRGB(191)` |
-| `1.0`       | `255`      | Auto-fixes to `fromRGB(255)` |
-
-## Edge Cases
-
-- **Variables**: The rule only flags literals. `new Color3(r, g, b)` is not flagged.
-- **Expressions**: `new Color3(Math.random(), 0, 0)` is not flagged.
-- **Mixed Ranges**: If you use `new Color3(1, 128, 0.5)`, it auto-fixes to `Color3.fromRGB(255, 128, 127)`.
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="prefer-udim2-shorthand"
-		description="Similar performance rule for UDim2"
+		description="Cleans up another Roblox constructor pattern"
 		href="/eslint-cease-nonsense-rules/rules/prefer-udim2-shorthand/"
 	/>
 	<LinkCard
 		title="prefer-sequence-overloads"
-		description="Optimized sequence constructors"
+		description="Checks other Roblox datatype construction patterns"
 		href="/eslint-cease-nonsense-rules/rules/prefer-sequence-overloads/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="Roblox Color3 API"
-		description="Official engine documentation"
-		href="https://create.roblox.com/docs/reference/engine/datatypes/Color3"
-	/>
-	<LinkCard
-		title="Performance Optimization"
-		description="Roblox scripting performance guide"
-		href="https://create.roblox.com/docs/scripting/performance-optimization"
 	/>
 </CardGrid>

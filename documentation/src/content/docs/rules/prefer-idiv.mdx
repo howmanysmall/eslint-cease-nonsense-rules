@@ -1,95 +1,59 @@
 ---
 title: prefer-idiv
-badge:
-    text: Roblox
-    variant: note
-description: Prefer .idiv() for integer division instead of math.floor(x / y) in roblox-ts.
+badges:
+    - text: "Fixable"
+      variant: success
+    - text: "Suggestion"
+      variant: note
+description: Prefer `.idiv()` over `math.floor(x / y)` for integer division in roblox-ts.
 ---
 
-import { Code, LinkCard, CardGrid, Card } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Prefer `.idiv()` for integer division instead of `math.floor(x / y)`.
+Replaces `math.floor(x / y)` with `.idiv()` in roblox-ts code.
 
-## Rule Details :badge[Roblox]{variant=note}
+## Rule details :badge[Suggestion]{variant=note}
 
-In `roblox-ts`, the `.idiv()` method compiles to Luau's `//` (floor division) operator. Using `math.floor(x / y)` is
-less idiomatic and slightly less efficient than using the dedicated integer division operator.
+This rule reports calls to the global `math.floor` when the call has exactly one argument and that argument is a `/`
+binary expression. The fix turns the left side into the receiver and keeps the right side as the argument.
+
+It does not report shadowed `math` bindings, optional calls, or other `math.floor(...)` cases that are not a direct
+division expression.
+
+<Aside type="tip" title="Parentheses are preserved when needed">
+	Expressions like `math.floor((a + b) / c)` fix to `(a + b).idiv(c)`.
+</Aside>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Using math.floor for Division
-		Avoid wrapping division in `math.floor()` when you want integer division.
-
-    	<Code
-    		code={[
-    			"const quotient = math.floor(x / y);",
-    			"const result = math.floor((a + b) / c);",
-    			"const value = math.floor(100 / 3);",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			"const quotient = math.floor(x / y);",
+			"const result = math.floor((a + b) / c);",
+			"const value = math.floor(100 / 3);",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Using .idiv() Method
-    	Use the `.idiv()` method for integer division.
+	<Code
+		code={["const quotient = x.idiv(y);", "const result = (a + b).idiv(c);", "const value = (100).idiv(3);"].join(
+			"\n",
+		)}
+		lang="ts"
+	/>
+</RuleExample>
 
-    	<Code
-    			code={[
-    				"const quotient = x.idiv(y);",
-    				"const result = (a + b).idiv(c);",
-    				"const value = (100).idiv(3);",
-    				"const nested = (a / b).idiv(c);",
-    			].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Configuration
-
-<Code code={["{", '\t"cease-nonsense/prefer-idiv": "error"', "}"].join("\n")} lang="json" title="eslint.config.js" />
-
-## Why use .idiv()?
-
-<CardGrid stagger>
-	<Card title="Idiomatic" icon="code">
-		`.idiv()` is the roblox-ts convention for integer division, compiling directly to Luau's `//` operator.
-	</Card>
-	<Card title="Performance" icon="bolt">
-		Slightly more efficient than floating-point division followed by `math.floor()`.
-	</Card>
-	<Card title="Readability" icon="book">
-		Intent is clearer: you want integer division, not a floor operation on a float result.
-	</Card>
-	<Card title="Auto-fixable" icon="wrench">
-		Matches are automatically fixed by ESLint's `--fix` command.
-	</Card>
-</CardGrid>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="no-print"
-		description="Prefer structured logging over print()"
+		description="Catches another common roblox-ts habit"
 		href="/eslint-cease-nonsense-rules/rules/no-print/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="roblox-ts Operator Macros"
-		description="Documentation for operator method macros including idiv"
-		href="https://github.com/roblox-ts/roblox-ts/blob/master/docs/17-constructor-and-property-call-macros.md"
-	/>
-	<LinkCard
-		title="Luau Floor Division"
-		description="Luau documentation for the // operator"
-		href="https://luau-lang.org/"
 	/>
 </CardGrid>

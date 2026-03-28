@@ -1,188 +1,175 @@
 ---
 title: no-useless-use-effect
-badge:
-    text: Experimental
-    variant: warning
-description:
-    Flags useEffect that only moves data around inside React (derived state, resets, parent notifications, event flags,
-    duplicates, and chains).
+badges:
+    - text: "error"
+      variant: danger
+    - text: "Suggestion"
+      variant: note
+description: Reports effect patterns that only move data around inside React instead of doing real side effects.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Flags `useEffect` calls that only move data around inside React. If the logic can run during render or in an event
-handler, it usually shouldn't be an effect.
+Reports effect patterns that only move data around inside React instead of doing real side effects.
 
-## Rule Details :badge[Best Practice]{variant=success}
+## Rule details :badge[Suggestion]{variant=note}
 
-Reports these patterns (each can be toggled):
+This rule looks for `useEffect`, `useLayoutEffect`, and `useInsertionEffect` by default. It reports effects that are
+better handled during render, in event handlers, or with a different hook.
 
-- `adjustState` (`reportAdjustState`): Conditionally sets state based on prop values.
-- `derivedState` (`reportDerivedState`): Only derives state from props/state.
-- `duplicateDeps` (`reportDuplicateDeps`): Multiple effects with identical deps.
-- `effectChain` (`reportEffectChain`): Chains where effects trigger other effects via state.
-- `emptyEffect` (`reportEmptyEffect`): Empty callback bodies.
-- `eventFlag` (`reportEventFlag`): Routes events through state flags.
-- `eventSpecificLogic` (`reportEventSpecificLogic`): Event logic based on state flags.
-- `externalStore` (`reportExternalStore`): Subscribes to external stores and syncs to state.
-- `initializeState` (`reportInitializeState`): Initializes state with constants on mount.
-- `logOnly` (`reportLogOnly`): Only console logging.
-- `mixedDerivedState` (`reportMixedDerivedState`): Derived state mixed with non-side-effect calls.
-- `notifyParent` (`reportNotifyParent`): Only notifies parent via callbacks.
-- `passRefToParent` (`reportPassRefToParent`): Passes refs to parent callbacks.
-- `resetState` (`reportResetState`): Resets state to constants on prop change.
+The built-in reports are:
 
-<Aside type="danger" title="Effects Are Not Computed State">
-	If the logic can run during rendering or directly inside an event handler, it should not be in an effect.
+- `adjustState`, state is adjusted from prop changes
+- `derivedState`, state is only derived from props or other state
+- `duplicateDeps`, multiple effects use the same dependency list
+- `effectChain`, one effect depends on state written by another effect chain
+- `emptyEffect`, the callback body is empty
+- `eventFlag`, an event is routed through a boolean flag in state
+- `eventSpecificLogic`, event logic runs later in an effect based on state
+- `externalStore`, an external subscription syncs into state, use `useSyncExternalStore` instead
+- `initializeState`, state is initialized in an effect with a constant value
+- `logOnly`, the effect only calls `console.log`
+- `mixedDerivedState`, derived setter calls are mixed with other non-side-effect work
+- `notifyParent`, the effect only calls a parent callback
+- `passRefToParent`, the effect passes a ref to a parent callback
+- `resetState`, state is reset from prop changes instead of using a `key`
+
+Async effect callbacks are ignored.
+
+<Aside type="danger" title="Effects should do effect work">
+	If the code can run during render or directly in the event that caused it, `useEffect` adds an extra step for no
+	real gain.
 </Aside>
 
-## Refactoring Workflow
+## Options
 
-<Steps>
-1. **Identify the effect body**
-   Check whether the effect only sets local state or only calls a property callback.
-2. **Move derived values into rendering**
-   Compute values directly from properties and state during render.
-3. **Move callbacks into event handlers**
-   Call property callbacks in the event handler that triggers the change.
-4. **Remove event flags**
-   Call the side effect directly instead of toggling state to trigger it.
-
-{/* oxfmt-ignore */}
-
-</Steps>
+| Option                     | Default                                                  |
+| -------------------------- | -------------------------------------------------------- |
+| `environment`              | `"roblox-ts"`                                            |
+| `hooks`                    | `["useEffect", "useLayoutEffect", "useInsertionEffect"]` |
+| `propertyCallbackPrefixes` | `["on"]`                                                 |
+| `refHooks`                 | `["useRef"]`                                             |
+| `stateHooks`               | `["useState", "useReducer"]`                             |
+| `reportAdjustState`        | `true`                                                   |
+| `reportDerivedState`       | `true`                                                   |
+| `reportDuplicateDeps`      | `true`                                                   |
+| `reportEffectChain`        | `true`                                                   |
+| `reportEmptyEffect`        | `true`                                                   |
+| `reportEventFlag`          | `true`                                                   |
+| `reportEventSpecificLogic` | `true`                                                   |
+| `reportExternalStore`      | `true`                                                   |
+| `reportInitializeState`    | `true`                                                   |
+| `reportLogOnly`            | `true`                                                   |
+| `reportMixedDerivedState`  | `true`                                                   |
+| `reportNotifyParent`       | `true`                                                   |
+| `reportPassRefToParent`    | `true`                                                   |
+| `reportResetState`         | `true`                                                   |
 
 ## Configuration
 
 <Code
 	code={[
-		"{",
-		'\t"cease-nonsense/no-useless-use-effect": ["error", {',
-		'\t\t"environment": "roblox-ts",',
-		'\t\t"hooks": ["useEffect", "useLayoutEffect", "useInsertionEffect"],',
-		'\t\t"propertyCallbackPrefixes": ["on"],',
-		'\t\t"reportDerivedState": true,',
-		'\t\t"reportNotifyParent": true,',
-		'\t\t"reportEventFlag": true',
-		"\t}]",
-		"}",
+		'import ceaseNonsense from "eslint-plugin-cease-nonsense";',
+		"",
+		"export default [",
+		"\t{",
+		"\t\tplugins: {",
+		'\t\t\t"cease-nonsense": ceaseNonsense,',
+		"\t\t},",
+		"\t\trules: {",
+		'\t\t\t"cease-nonsense/no-useless-use-effect": ["error", {',
+		'\t\t\t\tenvironment: "roblox-ts",',
+		'\t\t\t\thooks: ["useEffect", "useLayoutEffect", "useInsertionEffect"],',
+		'\t\t\t\tpropertyCallbackPrefixes: ["on"],',
+		"\t\t\t\treportDerivedState: true,",
+		"\t\t\t\treportNotifyParent: true,",
+		"\t\t\t\treportEventFlag: true,",
+		"\t\t\t}],",
+		"\t\t},",
+		"\t},",
+		"];",
 	].join("\n")}
-	lang="json"
+	lang="ts"
 	title="eslint.config.js"
 />
-
-All `report*` options default to `true` unless you turn them off.
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Derived State and Notify Parent
-
-    	<Code
-    		code={[
-    			"import { useEffect, useState } from \"@rbxts/react\";",
-    			"",
-    			"function Profile(properties) {",
-    			"\tconst [fullName, setFullName] = useState(\"\");",
-    			"\tuseEffect(() => {",
-    			"\t\tsetFullName(`${properties.first} ${properties.last}`);",
-    			"\t}, [properties.first, properties.last]);",
-    			"}",
-    			"",
-    			"function Form(properties) {",
-    			"\tuseEffect(() => {",
-    			"\t\tproperties.onChange(properties.value);",
-    			"\t}, [properties.value, properties.onChange]);",
-    			"}",
-    			"",
-    			"function SubmitButton() {",
-    			"\tconst [submitted, setSubmitted] = useState(false);",
-    			"\tuseEffect(() => {",
-    			"\t\tif (!submitted) return;",
-    			"\t\tsubmitForm();",
-    			"\t\tsetSubmitted(false);",
-    			"\t}, [submitted]);",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			'import { useEffect, useState } from "@rbxts/react";',
+			"",
+			"function Profile(properties) {",
+			'\tconst [fullName, setFullName] = useState("");',
+			"\tuseEffect(() => {",
+			"\t\tsetFullName(`${properties.first} ${properties.last}`);",
+			"\t}, [properties.first, properties.last]);",
+			"}",
+			"",
+			"function Form(properties) {",
+			"\tuseEffect(() => {",
+			"\t\tproperties.onChange(properties.value);",
+			"\t}, [properties.value, properties.onChange]);",
+			"}",
+			"",
+			"function SubmitButton() {",
+			"\tconst [submitted, setSubmitted] = useState(false);",
+			"\tuseEffect(() => {",
+			"\t\tif (!submitted) return;",
+			"\t\tsubmitForm();",
+			"\t\tsetSubmitted(false);",
+			"\t}, [submitted]);",
+			"}",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Compute During Render and Call in Events
+	<Code
+		code={[
+			"function Profile(properties) {",
+			"\tconst fullName = `${properties.first} ${properties.last}`;",
+			"\treturn <textlabel Text={fullName} />;",
+			"}",
+			"",
+			"function Form(properties) {",
+			"\tfunction handleSubmit() {",
+			"\t\tproperties.onChange(properties.value);",
+			"\t}",
+			"\treturn <textbutton Event={{ Activated: handleSubmit }} />;",
+			"}",
+			"",
+			"function SubmitButton() {",
+			"\tfunction handleSubmit() {",
+			"\t\tsubmitForm();",
+			"\t}",
+			"\treturn <textbutton Event={{ Activated: handleSubmit }} />;",
+			"}",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			"function Profile(properties) {",
-    			"\tconst fullName = `${properties.first} ${properties.last}`;",
-    			"\treturn <textlabel Text={fullName} />;",
-    			"}",
-    			"",
-    			"function Form(properties) {",
-    			"\tfunction handleSubmit() {",
-    			"\t\tproperties.onChange(properties.value);",
-    			"\t}",
-    			"\treturn <textbutton Event={{ Activated: handleSubmit }} />;",
-    			"}",
-    			"",
-    			"function SubmitButton() {",
-    			"\tfunction handleSubmit() {",
-    			"\t\tsubmitForm();",
-    			"\t}",
-    			"\treturn <textbutton Event={{ Activated: handleSubmit }} />;",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Why is this bad?
-
-<CardGrid stagger>
-	<Card title="Extra Renders" icon="bolt">
-		Deriving state in effects causes an extra render cycle for every update.
-	</Card>
-	<Card title="Hidden Side Effects" icon="list-format">
-		Using effects for property callbacks hides real data flow and complicates debugging.
-	</Card>
-	<Card title="Unnecessary Indirection" icon="rocket">
-		Event flags add state churn and delay actions that should happen immediately.
-	</Card>
-</CardGrid>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="require-named-effect-functions"
-		description="Enforces named effect callbacks"
+		description="Requires named effect callbacks"
 		href="/eslint-cease-nonsense-rules/rules/require-named-effect-functions/"
 	/>
 	<LinkCard
 		title="use-exhaustive-dependencies"
-		description="Ensures hook dependencies are correct"
+		description="Checks hook dependency lists"
 		href="/eslint-cease-nonsense-rules/rules/use-exhaustive-dependencies/"
 	/>
 	<LinkCard
-		title="use-hook-at-top-level"
-		description="Enforces hook placement rules"
-		href="/eslint-cease-nonsense-rules/rules/use-hook-at-top-level/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="React Docs: You Might Not Need An Effect"
-		description="Guidance on avoiding unnecessary effects"
+		title="React Docs: You Might Not Need an Effect"
+		description="React guidance for effect-free patterns"
 		href="https://react.dev/learn/you-might-not-need-an-effect"
-	/>
-	<LinkCard
-		title="React Docs: useEffect"
-		description="Official guide to effect usage"
-		href="https://react.dev/reference/react/useEffect"
 	/>
 </CardGrid>

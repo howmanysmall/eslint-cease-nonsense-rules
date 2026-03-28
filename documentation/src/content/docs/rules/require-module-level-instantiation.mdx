@@ -1,131 +1,99 @@
 ---
 title: require-module-level-instantiation
-badge:
-    text: Best Practice
-    variant: caution
-description: Ensure that singletons and utility classes are instantiated once at module scope.
+badges:
+    - text: "error"
+      variant: danger
+description: Require selected imported classes to be instantiated at module scope instead of inside functions.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Require certain classes to be instantiated at module scope rather than inside functions.
+Requires configured classes to be instantiated at module scope.
 
-## Rule Details :badge[Best Practice]{variant=caution}
+## Rule details :badge[Problem]{variant=danger}
 
-Some classes (logging utilities, networked servers, etc.) should be instantiated exactly once at the top level of a
-module. Recreating these objects inside functions or methods wastes resources, risks duplicate connections/listeners,
-and fragments state.
+This rule does nothing until you configure a `classes` map.
 
-<Aside type="tip" title="Singleton Pattern">
-	Many utility classes are designed as singletons. Recreating them inside frequently-called functions (like React
-	render cycles) defeats their design and can cause memory leaks.
+Once configured, it tracks imports that match the class name and source you listed, then reports `new ClassName()` when
+it happens inside a non-top-level scope. Top-level module and global scope instantiations are allowed.
+
+The rule handles both direct class imports and member access such as `new Library.Log()` when the configured class name
+matches the member name.
+
+<Aside type="tip" title="Good fit for shared services">
+	Use this for objects that should exist once per module, such as loggers, clients, or server wrappers.
 </Aside>
-
-## Refactoring Workflow
-
-    <Steps>
-    1. **Identify Target Classes**
-       Configure the linter with classes that must be shared globally (e.g., `Log`, `Server`).
-
-2. **Locate Local Instances** Find `new ClassName()` calls that are nested inside functions, loops, or class methods. 3.
-   **Lift to Module Scope** Move the instantiation to the top of the file, outside of all functions. 4. **Verify
-   References** Use the shared instance from your functions. Ensure it is initialized before first use.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Local Instantiation
-		Recreating heavier objects inside frequently executed code adds churn.
-
-    	<Code
-    		code={[
-    			'import Log from "@rbxts/rbxts-sleitnick-log";',
-    			"",
-    			"function useData() {",
-    			"\t// ❌ Created every time the function runs!",
-    			"\tconst log = new Log();",
-    			'\tlog.Info("Loading data...");',
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			'import Log from "@rbxts/rbxts-sleitnick-log";',
+			"",
+			"function runTask() {",
+			"\tconst log = new Log();",
+			'\tlog.Info("running");',
+			"}",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Static Global Instance
-    	Instantiate once at the top level and reuse the reference everywhere.
-
-    	<Code
-    		code={[
-    			'import Log from "@rbxts/rbxts-sleitnick-log";',
-    			"",
-    		"// ✅ Created once when the module loads",
-    		"const log = new Log();",
-    			"",
-    			"function useData() {",
-    			'\tlog.Info("Loading data...");',
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Why Avoid Local Instantiations?
-
-<CardGrid stagger>
-	<Card title="Performance" icon="bolt">
-		Avoids repeated object creation and garbage collection.
-	</Card>
-	<Card title="Connections" icon="rocket">
-		Prevents opening multiple sockets or listeners for the same service.
-	</Card>
-	<Card title="State Consistency" icon="setting">
-		Ensures the whole module shares one state (e.g., log history or server config).
-	</Card>
-</CardGrid>
-
-## Configuration Example
-
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/require-module-level-instantiation": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"classes": {',
-		'\t\t\t\t"Log": "@rbxts/rbxts-sleitnick-log",',
-		'\t\t\t\t"Server": "@rbxts/net"',
-		"\t\t\t}",
-		"\t\t}",
-		"\t]",
-		"}",
-	].join("\n")}
-	lang="json"
-	title="eslint.config.js"
-/>
-
-## Related Rules
-
-<CardGrid>
-	<LinkCard
-		title="prefer-module-scope-constants"
-		description="Similar rule for naming constants"
-		href="/eslint-cease-nonsense-rules/rules/prefer-module-scope-constants/"
+	<Code
+		code={[
+			'import Log from "@rbxts/rbxts-sleitnick-log";',
+			"",
+			"const log = new Log();",
+			"",
+			"function runTask() {",
+			'\tlog.Info("running");',
+			"}",
+		].join("\n")}
+		lang="ts"
 	/>
-</CardGrid>
+</RuleExample>
 
-## Further Reading
+## Options
+
+| Option    | Type                     | Default | Notes                               |
+| :-------- | :----------------------- | :------ | :---------------------------------- |
+| `classes` | `Record<string, string>` | `{}`    | Maps class names to import sources. |
+
+Example config:
+
+```js
+import ceaseNonsense from "eslint-plugin-cease-nonsense";
+
+export default [
+	{
+		plugins: {
+			"cease-nonsense": ceaseNonsense,
+		},
+		rules: {
+			"cease-nonsense/require-module-level-instantiation": [
+				"error",
+				{
+					classes: {
+						Log: "@rbxts/rbxts-sleitnick-log",
+						Server: "@rbxts/net",
+					},
+				},
+			],
+		},
+	},
+];
+```
+
+## Related rules
 
 <CardGrid>
 	<LinkCard
-		title="Singleton Design Pattern"
-		description="When and why to use shared instances"
-		href="https://refactoring.guru/design-patterns/singleton"
+		title="strict-component-boundaries"
+		description="Keeps module boundaries from leaking across folders"
+		href="/eslint-cease-nonsense-rules/rules/strict-component-boundaries/"
 	/>
 </CardGrid>

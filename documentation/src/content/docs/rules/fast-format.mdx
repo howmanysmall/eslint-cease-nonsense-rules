@@ -1,74 +1,68 @@
 ---
 title: fast-format
-badge:
-    text: Performance
-    variant: success
+badges:
+    - text: "error"
+      variant: danger
+    - text: "Fixable"
+      variant: success
 description: Runs oxfmt during linting and can apply fixes with --fix.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem } from "@astrojs/starlight/components";
 
-Formats code with `oxfmt` as part of linting.
+Formats code with `oxfmt` as part of your lint pass. No separate formatter step needed.
 
-## Rule Details :badge[Performance]{variant=success}
+## Rule details :badge[Layout]{variant=success}
 
-This rule runs `oxfmt` during linting. When your file doesn't match the formatter output, it reports a small set of
-edits (`INSERT`, `DELETE`, `REPLACE`) and can apply them with `--fix`.
+The rule runs `oxfmt` on each file during linting. When the file doesn't match the formatted output, it reports a
+minimal set of edits (insert, delete, replace) and can apply them with `--fix`.
 
 <Aside type="tip" title="Fast enough for every save">
-	`oxfmt` is usually much faster than Prettier. Wiring it into ESLint keeps formatting in the same pass as the rest of
-	your lint rules.
+	`oxfmt` is a Rust-based formatter, usually much faster than Prettier. Wiring it into ESLint keeps formatting in the
+	same pass as the rest of your lint rules.
 </Aside>
 
-## How it Works
+## How it works
 
-<Steps>
-1. **Source Analysis**
-   The rule reads your file and identifies its language (TS, JS, TSX, JSX).
+1. The rule reads your file and identifies its language (TS, JS, TSX, JSX).
+2. It runs `oxfmt` on the source.
+3. It computes a minimal diff between original and formatted output.
+4. ESLint applies those edits when you run with `--fix`.
 
-2. **Oxfmt Execution** It runs `oxfmt` on the file content.
-
-3. **Diff Generation** It computes a minimal diff (Insert/Delete/Replace) to match the formatted output.
-
-4. **Auto-Fix** ESLint applies these edits automatically when running with the `--fix` flag.
-
-{/* oxfmt-ignore */}
-
-</Steps>
+An LRU cache (default capacity: 32 files) skips unchanged files so repeated runs stay fast.
 
 ## Features
 
-<CardGrid stagger>
-	<Card title="Rust-Powered" icon="bolt">
-		`oxfmt` is written in Rust and runs fast.
+<CardGrid>
+	<Card title="Rust-powered" icon="bolt">
+		`oxfmt` runs in native code. Formatting is fast.
 	</Card>
-	<Card title="LRU Caching" icon="setting">
-		Skips unchanged files using a small LRU cache.
+	<Card title="LRU caching" icon="setting">
+		Unchanged files get skipped via an internal cache keyed on filename + content.
 	</Card>
-	<Card title="Auto-Fix" icon="approve-check">
-		Fully compatible with `eslint --fix` and `bun run lint:fix`.
+	<Card title="Auto-fix" icon="approve-check">
+		Works with `eslint --fix` and `bun run lint:fix`.
 	</Card>
-	<Card title="Unified Tooling" icon="rocket">
-		No separate formatter step; it runs with your normal lint command.
+	<Card title="Unified tooling" icon="rocket">
+		No separate formatter step. Formatting runs alongside your other lint rules.
 	</Card>
 </CardGrid>
 
 ## Usage
 
 <Tabs>
-	<TabItem label="Command Line" icon="terminal">
-		### Fixing Issues
-		Run the fix command to automatically format your entire project.
+	<TabItem label="Command line" icon="terminal">
+		### Fixing issues
+		Run the fix command to format your project:
 
     	<Code code={["bun run lint:fix", "eslint --fix src/"].join("\n")} lang="bash" />
     </TabItem>
     <TabItem label="Configuration" icon="seti:typescript">
-    	### ESLint Setup
-    	Include the plugin and enable the rule in your configuration.
+    	### ESLint setup
 
     	<Code
     		code={[
-    			'import ceaseNonsense from "@pobammer-ts/eslint-cease-nonsense-rules";',
+    			'import ceaseNonsense from "eslint-plugin-cease-nonsense";',
     			"",
     			"export default [",
     			"\t{",
@@ -87,50 +81,39 @@ edits (`INSERT`, `DELETE`, `REPLACE`) and can apply them with `--fix`.
 
 </Tabs>
 
-## Performance Internals
+## Message types
 
-### LRU Cache Strategy
-
-The rule keeps a Least Recently Used (LRU) cache (default capacity: 32 files) so it can skip unchanged files:
-
-- **Cache keys**: Filename + hashed source content.
-- **Eviction**: Drops older entries to keep memory down.
-- **Support**: Works on `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs`, `.cjs`.
-
-## Message Types
-
-| Type      | Description                       | Example                        |
+| Type      | Meaning                           | Example                        |
 | :-------- | :-------------------------------- | :----------------------------- |
 | `INSERT`  | Missing whitespace or punctuation | `Insert " " at position 42`    |
 | `DELETE`  | Extra or incorrect characters     | `Delete ";" at position 10`    |
 | `REPLACE` | Swapping styles (e.g., quotes)    | `Replace 'hello' with "hello"` |
 
-## Related Rules
+## Supported extensions
+
+The rule processes `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs`, and `.cjs` files. Everything else gets skipped.
+
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="no-commented-code"
-		description="Clean up old code blocks"
+		description="Clean up dead comment blocks"
 		href="/eslint-cease-nonsense-rules/rules/no-commented-code/"
 	/>
 	<LinkCard
 		title="naming-convention"
-		description="Enforce fast naming standards"
+		description="Enforce naming standards"
 		href="/eslint-cease-nonsense-rules/rules/naming-convention/"
 	/>
 </CardGrid>
 
-## Further Reading
+## Further reading
 
 <CardGrid>
 	<LinkCard
-		title="oxfmt Documentation"
+		title="oxfmt documentation"
 		description="Official guide to the oxc formatter"
 		href="https://oxc-project.github.io/docs/guide/usage/linter/oxfmt.html"
-	/>
-	<LinkCard
-		title="ESLint Formatters"
-		description="Understanding how ESLint handles formatting"
-		href="https://eslint.org/docs/latest/use/formatters/"
 	/>
 </CardGrid>

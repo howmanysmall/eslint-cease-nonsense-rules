@@ -20,8 +20,8 @@ describe("memoized-effect-dependencies", () => {
 import { useEffect } from "@rbxts/react";
 
 function Component() {
-	const dep = {};
-	useEffect(() => {}, [dep]);
+    const dep = {};
+    useEffect(() => {}, [dep]);
 }
 `,
 				errors: [{ messageId: "unmemoizedDependency" }],
@@ -31,8 +31,8 @@ function Component() {
 import React from "@rbxts/react";
 
 function Component() {
-	const dep = () => {};
-	React.useEffect(() => {}, [dep]);
+    const dep = () => {};
+    React.useEffect(() => {}, [dep]);
 }
 `,
 				errors: [{ messageId: "unmemoizedDependency" }],
@@ -44,7 +44,7 @@ import { useEffect } from "@rbxts/react";
 class Foo {}
 
 function Component() {
-	useEffect(() => {}, [() => {}, {}, [], new Foo()]);
+    useEffect(() => {}, [() => {}, {}, [], new Foo()]);
 }
 `,
 				errors: [
@@ -59,12 +59,12 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function compute() {
-	return {};
+    return {};
 }
 
 function Component() {
-	const dep = compute();
-	useEffect(() => {}, [dep]);
+    const dep = compute();
+    useEffect(() => {}, [dep]);
 }
 `,
 				errors: [{ messageId: "unmemoizedDependency" }],
@@ -75,9 +75,9 @@ function Component() {
 import { useEffect, useRef } from "@rbxts/react";
 
 function Component() {
-	const stableRef = useRef({});
-	let dep = stableRef;
-	useEffect(() => {}, [dep]);
+    const stableRef = useRef({});
+    let dep = stableRef;
+    useEffect(() => {}, [dep]);
 }
 `,
 				errors: [{ messageId: "unmemoizedDependency" }],
@@ -90,9 +90,9 @@ function Component() {
 import { useEffect, useMemo, useCallback } from "@rbxts/react";
 
 function Component() {
-	const memo = useMemo(() => ({}), []);
-	const callback = useCallback(() => {}, []);
-	useEffect(() => {}, [memo, callback]);
+    const memo = useMemo(() => ({}), []);
+    const callback = useCallback(() => {}, []);
+    useEffect(() => {}, [memo, callback]);
 }
 `,
 			},
@@ -101,8 +101,8 @@ function Component() {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component() {
-	const [count, setCount] = useState(0);
-	useEffect(() => {}, [setCount]);
+    const [count, setCount] = useState(0);
+    useEffect(() => {}, [setCount]);
 }
 `,
 			},
@@ -113,7 +113,7 @@ import { useEffect } from "@rbxts/react";
 const stable = {};
 
 function Component() {
-	useEffect(() => {}, [stable]);
+    useEffect(() => {}, [stable]);
 }
 `,
 			},
@@ -122,7 +122,7 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component(props: { value: number }) {
-	useEffect(() => {}, [props.value]);
+    useEffect(() => {}, [props.value]);
 }
 `,
 			},

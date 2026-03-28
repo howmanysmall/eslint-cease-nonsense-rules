@@ -1,116 +1,142 @@
 ---
 title: naming-convention
-badge:
-    text: Performance
-    variant: success
-description: Fast naming convention checks for TypeScript (AST-only, no type checker).
+badges:
+    - text: "Suggestion"
+      variant: note
+description: Enforces naming rules for identifiers with AST-based checks and configurable selectors.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Fast naming convention checks for TypeScript code.
+Checks identifier names against the selectors and formats you configure.
 
-## Rule Details :badge[Performance]{variant=success}
+## Rule details :badge[Suggestion]{variant=note}
 
-Checks casing and naming for interfaces, type aliases, enums, variables, and more. It stays AST-only (no type graph), so
-it runs quickly even on large projects. If you need type-aware behavior, use the `@typescript-eslint` naming rule.
+This rule covers classes, interfaces, types, enums, variables, imports, parameters, members, and more. It works from the
+AST, so it stays fast and does not need full type-aware linting.
 
-<Aside type="note" title="Design Philosophy">
-	Naming rules shouldn't make your editor crawl. This one avoids type-checking, so it can run on every save.
+If you do not pass options, the default setup is:
+
+- `default`: `camelCase`, leading and trailing underscores allowed
+- `import`: `camelCase` or `PascalCase`
+- `variable`: `camelCase` or `UPPER_CASE`, leading and trailing underscores allowed
+- `typeLike`: `PascalCase`
+
+The rule skips `.d.ts` files.
+
+<Aside type="note" title="Message IDs you may see">
+	The rule can report format mismatches, missing prefixes or suffixes, missing or forbidden underscores, and custom
+	regex failures.
 </Aside>
 
-## Configuration Workflow
+## Configuration
 
-<Steps>
-1. **Identify Selectors**
-   Choose which constructs to check (e.g., `interface`, `typeAlias`, `enum`).
-2. **Select Formats** Define allowed casing formats (e.g., `PascalCase`, `camelCase`, `UPPER_CASE`).
-3. **Define Custom Rules** Use regex to add specific constraints, like banning the `I` prefix on interfaces.
-4. **Keep it cheap** This rule is meant to stay fast; save heavy checks for CI.
-{/* oxfmt-ignore */}
+<Code
+	code={[
+		'import ceaseNonsense from "eslint-plugin-cease-nonsense";',
+		"",
+		"export default [",
+		"\t{",
+		"\t\tplugins: {",
+		'\t\t\t"cease-nonsense": ceaseNonsense,',
+		"\t\t},",
+		"\t\trules: {",
+		'\t\t\t"cease-nonsense/naming-convention": ["error",',
+		"\t\t\t\t{",
+		'\t\t\t\t\tselector: "interface",',
+		'\t\t\t\t\tformat: ["PascalCase"],',
+		"\t\t\t\t},",
+		"\t\t\t\t{",
+		'\t\t\t\t\tselector: "variable",',
+		'\t\t\t\t\tformat: ["camelCase", "UPPER_CASE"],',
+		'\t\t\t\t\tleadingUnderscore: "allow",',
+		'\t\t\t\t\ttrailingUnderscore: "allow",',
+		"\t\t\t\t},",
+		"\t\t\t],",
+		"\t\t},",
+		"\t},",
+		"];",
+	].join("\n")}
+	lang="ts"
+	title="eslint.config.ts"
+/>
 
-</Steps>
+## Options
+
+| Option                                     | Type                         | What it does                                                                                                             |
+| :----------------------------------------- | :--------------------------- | :----------------------------------------------------------------------------------------------------------------------- |
+| `selector`                                 | string or string[]           | Picks which identifiers this config entry applies to                                                                     |
+| `format`                                   | string[] or `null`           | Allowed formats, such as `camelCase`, `PascalCase`, `strictCamelCase`, `StrictPascalCase`, `snake_case`, or `UPPER_CASE` |
+| `filter`                                   | string or `{ regex, match }` | Limits which names the entry applies to                                                                                  |
+| `custom`                                   | `{ regex, match }`           | Adds an extra regex rule after format checks                                                                             |
+| `prefix` / `suffix`                        | string[]                     | Requires one of the listed prefixes or suffixes                                                                          |
+| `leadingUnderscore` / `trailingUnderscore` | string                       | Controls underscore usage with `allow`, `allowDouble`, `allowSingleOrDouble`, `forbid`, `require`, or `requireDouble`    |
+| `modifiers`                                | string[]                     | Narrows by modifiers such as `const`, `async`, `readonly`, `exported`, `unused`, `namespace`, or `requiresQuotes`        |
+| `types`                                    | string[]                     | Narrows supported selectors by simple type groups such as `array`, `boolean`, `function`, `number`, or `string`          |
+
+`selector` supports both individual selectors like `interface`, `typeAlias`, `enum`, `classMethod`, `typeProperty`, and
+`import`, and meta selectors like `default`, `typeLike`, `variableLike`, `property`, `method`, `memberLike`, and
+`accessor`.
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Invalid Casing
-		Bans names that don't match your project's architectural standards.
-
-    	<Code
-    		code={[
-    			"// If interface must be PascalCase",
-    			"interface iUser { name: string; }",
-    			"",
-    			"// If I-prefix is banned",
-    			"interface IUser { name: string; }",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code code={["interface IFoo {}", "", "const foo_bar = 1;", "", "class widgetFactory {}"].join("\n")} lang="ts" />
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Standardized Names
-    	Consistent naming makes search and refactors easier.
+	<Code
+		code={[
+			"interface User {}",
+			"",
+			"const userName = getUserName();",
+			"const MAX_RETRIES = 3;",
+			"",
+			"class WidgetFactory {}",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			"interface User { name: string; }",
-    			"",
-    			"type UserData = { id: string; };",
-    			"",
-    			"enum LogLevel { Info, Warn, Error };",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+## Common patterns
 
-## Selectors & Formats
+<Code
+	code={[
+		"[",
+		"\t{",
+		'\t\tselector: "typeLike",',
+		'\t\tformat: ["PascalCase"],',
+		"\t},",
+		"\t{",
+		'\t\tselector: "variable",',
+		'\t\tformat: ["camelCase", "UPPER_CASE"],',
+		'\t\tleadingUnderscore: "allow",',
+		'\t\ttrailingUnderscore: "allow",',
+		"\t},",
+		"\t{",
+		'\t\tselector: "interface",',
+		'\t\tformat: ["PascalCase"],',
+		'\t\tcustom: { match: false, regex: "^I[A-Z]" },',
+		"\t},",
+		"]",
+	].join("\n")}
+	lang="ts"
+	title="rule options"
+/>
 
-| Selector    | Common Format | Description            |
-| :---------- | :------------ | :--------------------- |
-| `interface` | `PascalCase`  | Standard TS interfaces |
-| `typeAlias` | `PascalCase`  | Type definitions       |
-| `variable`  | `camelCase`   | Standard variables     |
-| `constant`  | `UPPER_CASE`  | Global constants       |
-
-## Why use this over TS-ESLint?
-
-<CardGrid stagger>
-	<Card title="No Type Graph" icon="bolt">
-		Reads the AST only; it doesn't build the TypeScript program.
-	</Card>
-	<Card title="Regex Engine" icon="setting">
-		Compiles regex up front and reuses it.
-	</Card>
-	<Card title="Memory Light" icon="rocket">
-		Uses less memory than type-aware linting rules.
-	</Card>
-</CardGrid>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="prefer-pascal-case-enums"
-		description="Enforce PascalCase for enums"
+		description="Keeps enum names in PascalCase"
 		href="/eslint-cease-nonsense-rules/rules/prefer-pascal-case-enums/"
 	/>
 	<LinkCard
 		title="no-shorthand-names"
-		description="Ban problematic shorthand names"
+		description="Bans shorthand names that are hard to read"
 		href="/eslint-cease-nonsense-rules/rules/no-shorthand-names/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="Google TS Style Guide"
-		description="Official naming recommendations"
-		href="https://google.github.io/styleguide/tsguide.html#naming"
 	/>
 </CardGrid>

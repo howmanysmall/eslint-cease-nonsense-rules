@@ -1,131 +1,132 @@
 ---
 title: no-god-components
-badge:
-    text: Complex
-    variant: danger
-description: Reports React components that have grown too large or too tangled.
+badges:
+    - text: "error"
+      variant: danger
+description: Report React components that cross size and complexity limits.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Reports React components that are doing too much in one place.
+Report React components that have grown past the limits this rule sets.
 
-## Rule Details :badge[Complex]{variant=danger}
+## Rule details :badge[Problem]{variant=danger}
 
-A "god component" tries to own an entire screen: state, data, rendering, and every edge case. This rule puts hard limits
-on a few signals (line count, TSX nesting, and stateful hooks). If you trip them, split the component into smaller
-pieces with clearer responsibilities.
+This rule checks function components whose names start with an uppercase letter. It also checks components wrapped in
+`memo` or `forwardRef`.
 
-<Aside type="caution" title="Complexity Signals">
-	Deeply nested TSX, lots of local state, and components that run for hundreds of lines are usually telling you the
-	same thing: split it.
+By default it reports these cases:
+
+- more than `200` lines in a component
+- more than `120` lines when `enforceTargetLines` is `true`
+- more than `5` destructured props in the first parameter
+- more than `3` levels of JSX or TSX nesting
+- more than `5` state hook calls, counting `useState`, `useReducer`, and `useBinding`
+- any runtime `null` literal inside the component body
+
+Nested functions do not count toward JSX depth or hook usage. `null` literal type annotations are ignored.
+
+<Aside type="caution" title="This rule reports several separate signals">
+	A single component can produce more than one report. For example, one component may be too long, too deeply nested,
+	and also contain `null` literals.
 </Aside>
 
-## Refactoring Workflow
+## Options
 
-<Steps>
-1. **Pick the main job**
-   Decide what the component is responsible for. Everything else moves out.
-2. **Extract logic** Move state management, data fetching, and event handlers into `use*` hooks.
-3. **Split the UI** Pull independent sections (header, list, sidebar) into sub-components.
-4. **Flatten TSX** If you have more than 3 levels of nesting, extract the inner block into its own component.
-{/* oxfmt-ignore */}
+<Code
+	code={[
+		'import plugin from "eslint-plugin-cease-nonsense";',
+		"",
+		"export default [",
+		"\t{",
+		'\t\tplugins: { "cease-nonsense": plugin },',
+		"\t\trules: {",
+		'\t\t\t"cease-nonsense/no-god-components": [',
+		'\t\t\t\t"error",',
+		"\t\t\t\t{",
+		"\t\t\t\t\tmaxLines: 180,",
+		"\t\t\t\t\ttargetLines: 100,",
+		"\t\t\t\t\tmaxDestructuredProps: 4,",
+		"\t\t\t\t\tmaxTsxNesting: 2,",
+		"\t\t\t\t\tmaxStateHooks: 4,",
+		'\t\t\t\t\tstateHooks: ["useState", "useReducer", "useBinding"],',
+		'\t\t\t\t\tignoreComponents: ["App"],',
+		"\t\t\t\t},",
+		"\t\t\t],",
+		"\t\t},",
+		"\t},",
+		"];",
+	].join("\n")}
+	lang="typescript"
+	title="eslint.config.ts"
+/>
 
-</Steps>
+Options and defaults:
+
+- `enforceTargetLines`, default `true`
+- `targetLines`, default `120`
+- `maxLines`, default `200`
+- `maxDestructuredProps`, default `5`
+- `maxTsxNesting`, default `3`
+- `maxStateHooks`, default `5`
+- `stateHooks`, default `['useState', 'useReducer', 'useBinding']`
+- `ignoreComponents`, default `[]`
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Bloated Components
-		Bans components that try to own an entire screen's worth of logic and UI.
-
-    	<Code
-    		code={[
-    			"function MassiveDashboard() {",
-    			"  const [user, setUser] = useState();",
-    			"  const [theme, setTheme] = useState();",
-    			"  const [notifications, setNotifications] = useState([]);",
-    			"  const [data, setData] = useState();",
-    			"  const [filter, setFilter] = useState('');",
-    			"  const [sort, setSort] = useState('asc'); // 7th state hook!",
-    			"",
-    			"  return (",
-    			"    <div>",
-    			"      <header>...</header>",
-    			"      <aside>...</aside>",
-    			"      <main>...",
-    			"        <section>...",
-    			"          <div>{/* This is too deep! */}</div>",
-    			"        </section>",
-    			"      </main>",
-    			"    </div>",
-    			"  );",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			"function Dashboard({ a, b, c, d, e, f }) {",
+			"\tconst [user, setUser] = useState();",
+			"\tconst [theme, setTheme] = useState();",
+			"\tconst [notifications, setNotifications] = useState([]);",
+			"\tconst [data, setData] = useState();",
+			"\tconst [filter, setFilter] = useState('');",
+			"\tconst [sort, setSort] = useReducer(reducer, initialState);",
+			"",
+			"\treturn (",
+			"\t\t<div>",
+			"\t\t\t<section>",
+			"\t\t\t\t<div>",
+			"\t\t\t\t\t<span>{null}</span>",
+			"\t\t\t\t</div>",
+			"\t\t\t</section>",
+			"\t\t</div>",
+			"\t);",
+			"}",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Composed Dashboard
-    	Split the screen into small, focused pieces you can test.
-
-    	<Code
-    		code={[
-    			"function Dashboard() {",
-    			"  const { user, notifications } = useDashboardData();",
-    			"  const { filter, sort, setFilter, setSort } = useDashboardFilters();",
-    			"",
-    			"  return (",
-    			"    <Layout>",
-    			"      <Header user={user} />",
-    			"      <MainContent ",
-    			"        data={notifications} ",
-    			"        filters={{ filter, sort }} ",
-    			"      />",
-    			"    </Layout>",
-    			"  );",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Complexity Metrics
-
-<CardGrid stagger>
-	<Card title="Line Count" icon="list-format">
-		Hard limit: 200 lines. Aim for under 120.
-	</Card>
-	<Card title="TSX Nesting" icon="magnifier">
-		Max depth: 3. If it goes deeper, extract a component.
-	</Card>
-	<Card title="State Hooks" icon="bolt">
-		Max 5 stateful hooks. More usually wants a reducer or custom hook.
-	</Card>
-	<Card title="Explicit Undefined" icon="warning">
-		Prefer `undefined` over `null` to keep types simple.
-	</Card>
-</CardGrid>
-
-## Related Rules
-
-<CardGrid>
-	<LinkCard
-		title="ban-react-fc"
-		description="Bans React.FC for better clarity"
-		href="/eslint-cease-nonsense-rules/rules/ban-react-fc/"
+	<Code
+		code={[
+			"function Dashboard() {",
+			"\tconst { user, notifications } = useDashboardData();",
+			"\tconst filters = useDashboardFilters();",
+			"",
+			"\treturn (",
+			"\t\t<Layout>",
+			"\t\t\t<Header user={user} />",
+			"\t\t\t<MainContent data={notifications} filters={filters} />",
+			"\t\t</Layout>",
+			"\t);",
+			"}",
+		].join("\n")}
+		lang="tsx"
 	/>
-</CardGrid>
+</RuleExample>
 
-## Further Reading
+## Related rules
 
 <CardGrid>
 	<LinkCard
-		title="React: Thinking in React"
-		description="Official guide to component decomposition"
+		title="React: thinking in React"
+		description="React's guide for breaking a large UI into smaller pieces."
 		href="https://react.dev/learn/thinking-in-react"
 	/>
 </CardGrid>

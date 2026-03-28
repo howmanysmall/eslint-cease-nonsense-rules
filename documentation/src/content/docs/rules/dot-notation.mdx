@@ -1,8 +1,10 @@
 ---
 title: dot-notation
-badge:
-    text: TypeScript
-    variant: note
+badges:
+    - text: "error"
+      variant: danger
+    - text: "Fixable"
+      variant: success
 description: Enforce dot notation while preserving opt-in roblox-ts visibility-safe bracket access.
 ---
 
@@ -10,57 +12,41 @@ import { Aside, Card, CardGrid, Code, LinkCard, Steps } from "@astrojs/starlight
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Prefer `object.property` over `object["property"]` when dot notation is legal.
+Write `object.property` instead of `object["property"]` when dot notation works.
 
-## Rule Details :badge[TypeScript]{variant=note}
+## Rule details :badge[TypeScript]{variant=note}
 
-Most bracket access with a fixed string is harder to scan and easier to ignore in review. This rule pushes those cases
-to dot notation, keeps the usual escape hatches from ESLint and TypeScript ESLint, and adds one `roblox-ts` option for
-the cases where `obj["value"]` compiles but `obj.value` does not.
+Bracket access with a string literal is noisier than dot notation and easy to miss in review. This rule converts those
+cases to dot notation, keeps the standard escape hatches from ESLint and TypeScript ESLint, and adds an opt-in
+`roblox-ts` mode for situations where `obj["value"]` compiles but `obj.value` would fail.
 
-<Aside type="tip" title="Why the Roblox Escape Exists">
-	In `roblox-ts`, bracket access to a `private` or `protected` member can compile cleanly in places where
-	`object.member` would be rejected by TypeScript. This rule keeps reporting normal cases while skipping only those
-	accesses that would become invalid after the autofix.
+<Aside type="tip" title="Why the roblox-ts escape exists">
+	In roblox-ts, bracket access to a `private` or `protected` member can compile in places where `object.member` would
+	be rejected by TypeScript. The rule skips only those accesses that would break after autofix.
 </Aside>
 
 ## Configuration
 
-Use the default configuration if you just want standard dot notation checks. Add the `roblox-ts` options only if your
-project relies on bracket access for members that TypeScript would reject with dot syntax.
+The default options cover standard TypeScript. Add the roblox-ts options only if your project uses bracket access for
+members that dot syntax can't reach.
 
-| Option                                 | Type                        | Default      | Description                                                                                                 |
-| -------------------------------------- | --------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------- |
-| `allowKeywords`                        | `boolean`                   | `true`       | Allow bracket notation for reserved keywords such as `obj["class"]`.                                        |
-| `allowPattern`                         | `string`                    | `""`         | Allow bracket notation for property names that match a regular expression.                                  |
-| `allowPrivateClassPropertyAccess`      | `boolean`                   | `false`      | Allow bracket notation for `private` class members.                                                         |
-| `allowProtectedClassPropertyAccess`    | `boolean`                   | `false`      | Allow bracket notation for `protected` class members.                                                       |
-| `allowIndexSignaturePropertyAccess`    | `boolean`                   | `false`      | Allow bracket notation for properties that are accessed through a string index signature.                   |
-| `environment`                          | `"standard" \| "roblox-ts"` | `"standard"` | Switch the rule into `roblox-ts` mode so the compiler-aware escape can be enabled.                          |
-| `allowInaccessibleClassPropertyAccess` | `boolean`                   | `false`      | Allow bracket notation when converting to dot notation would be rejected by TypeScript at that access site. |
+| Option                                 | Type                        | Default      | What it does                                                            |
+| -------------------------------------- | --------------------------- | ------------ | ----------------------------------------------------------------------- |
+| `allowKeywords`                        | `boolean`                   | `true`       | Allow bracket notation for reserved keywords like `obj["class"]`.       |
+| `allowPattern`                         | `string`                    | `""`         | Regex pattern for property names that can stay in bracket notation.     |
+| `allowPrivateClassPropertyAccess`      | `boolean`                   | `false`      | Allow bracket notation for `private` class members.                     |
+| `allowProtectedClassPropertyAccess`    | `boolean`                   | `false`      | Allow bracket notation for `protected` class members.                   |
+| `allowIndexSignaturePropertyAccess`    | `boolean`                   | `false`      | Allow bracket notation for properties accessed through a string index.  |
+| `environment`                          | `"standard" \| "roblox-ts"` | `"standard"` | Set to `"roblox-ts"` to enable the compiler-aware escape.               |
+| `allowInaccessibleClassPropertyAccess` | `boolean`                   | `false`      | Allow brackets when dot notation would fail type checking at that site. |
 
-## Why This Rule?
-
-<CardGrid stagger>
-	<Card title="Readability" icon="book">
-		`obj.property` is shorter, more familiar, and easier to scan than `obj["property"]` when both forms mean the
-		same thing.
-	</Card>
-	<Card title="Compiler-Aware" icon="shield-check">
-		In `roblox-ts`, the rule can leave bracket access alone when changing it would make the code fail type checking.
-	</Card>
-	<Card title="Auto-fixable" icon="wrench">
-		Most violations can be cleaned up automatically with ESLint's `--fix` command.
-	</Card>
-</CardGrid>
-
-## Visibility Escape
+## How the visibility escape works
 
 <Steps>
 1. Resolve the member symbol from parser services and the object type.
-2. Check upstream escape hatches first: private/protected/index-signature options.
-3. In opt-in `roblox-ts` mode, ask the TypeScript checker whether dot access is legal at the current site.
-4. Skip reporting only when dot access would be rejected there; otherwise report and autofix normally.
+2. Check upstream escape hatches first (private/protected/index-signature options).
+3. In opt-in roblox-ts mode, ask the TypeScript checker whether dot access is legal at the current site.
+4. Skip reporting only when dot access would be rejected. Otherwise report and autofix normally.
 
 {/* oxfmt-ignore */}
 
@@ -94,6 +80,7 @@ project relies on bracket access for members that TypeScript would reject with d
 			"\tobject.name += 1;",
 			"}",
 			"",
+			"// Bracket access is fine when the member is private",
 			"function incrementHidden(object: ExampleClass): void {",
 			'\tobject["value"] += 1;',
 			"}",
@@ -106,7 +93,21 @@ project relies on bracket access for members that TypeScript would reject with d
 	/>
 </RuleExample>
 
-## Related Rules
+## Why this rule?
+
+<CardGrid>
+	<Card title="Less noise" icon="book">
+		`obj.property` is shorter and easier to scan than `obj["property"]` when both mean the same thing.
+	</Card>
+	<Card title="Compiler-aware" icon="shield-check">
+		In roblox-ts, the rule leaves bracket access alone when converting it would break type checking.
+	</Card>
+	<Card title="Auto-fixable" icon="wrench">
+		Most violations get cleaned up automatically with `eslint --fix`.
+	</Card>
+</CardGrid>
+
+## Related rules
 
 <CardGrid>
 	<LinkCard
@@ -116,7 +117,7 @@ project relies on bracket access for members that TypeScript would reject with d
 	/>
 	<LinkCard
 		title="@typescript-eslint/dot-notation"
-		description="The TypeScript-aware version of dot-notation from TypeScript ESLint."
+		description="The TypeScript-aware version from TypeScript ESLint."
 		href="https://typescript-eslint.io/rules/dot-notation/"
 	/>
 </CardGrid>

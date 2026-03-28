@@ -23,9 +23,9 @@ describe("no-events-in-events-callback", () => {
 import { Events } from "server/networking";
 
 Events.units.unequipUnit.connect((player: Player, unitKey: string): void => {
-	if (unitKey.size() > 0) {
-		Events.promptNotification.fire(player, "error");
-	}
+    if (unitKey.size() > 0) {
+        Events.promptNotification.fire(player, "error");
+    }
 });
 `,
 				errors: [{ messageId: "preferFunctions" }],
@@ -36,8 +36,8 @@ Events.units.unequipUnit.connect((player: Player, unitKey: string): void => {
 import { Events } from "server/networking";
 
 Events.units.unequipUnit.connect((player: Player): void => {
-	const samePlayer = player;
-	Events.promptNotification.fire(samePlayer, "error");
+    const samePlayer = player;
+    Events.promptNotification.fire(samePlayer, "error");
 });
 `,
 				errors: [{ messageId: "preferFunctions" }],
@@ -48,9 +48,9 @@ Events.units.unequipUnit.connect((player: Player): void => {
 import { Events } from "server/networking";
 
 Events.units.unequipUnit.connect((player: Player): void => {
-	const payload = { player };
-	const { player: targetPlayer } = payload;
-	Events.promptNotification.fire(targetPlayer, "error");
+    const payload = { player };
+    const { player: targetPlayer } = payload;
+    Events.promptNotification.fire(targetPlayer, "error");
 });
 `,
 				errors: [{ messageId: "preferFunctions" }],
@@ -61,9 +61,9 @@ Events.units.unequipUnit.connect((player: Player): void => {
 import { Events } from "server/networking";
 
 Events.units.unequipUnit.connect((player: Player): void => {
-	let target: Player | undefined;
-	target = player;
-	Events.promptNotification.fire(target, "error");
+    let target: Player | undefined;
+    target = player;
+    Events.promptNotification.fire(target, "error");
 });
 `,
 				errors: [{ messageId: "preferFunctions" }],
@@ -74,7 +74,7 @@ Events.units.unequipUnit.connect((player: Player): void => {
 import { Events as ServerEvents } from "server/networking";
 
 ServerEvents.units.unequipUnit.connect((player: Player): void => {
-	ServerEvents.promptNotification(player, "error");
+    ServerEvents.promptNotification(player, "error");
 });
 `,
 				errors: [{ messageId: "preferFunctions" }],
@@ -87,7 +87,7 @@ ServerEvents.units.unequipUnit.connect((player: Player): void => {
 import { Events } from "server/networking";
 
 Events.units.unequipUnit.connect((player: Player, otherPlayer: Player): void => {
-	Events.promptNotification.fire(otherPlayer, "error");
+    Events.promptNotification.fire(otherPlayer, "error");
 });
 `,
 				options,
@@ -97,7 +97,7 @@ Events.units.unequipUnit.connect((player: Player, otherPlayer: Player): void => 
 import { Events } from "shared/networking";
 
 Events.units.unequipUnit.connect((player: Player): void => {
-	Events.promptNotification.fire(player, "error");
+    Events.promptNotification.fire(player, "error");
 });
 `,
 				options,
@@ -107,7 +107,7 @@ Events.units.unequipUnit.connect((player: Player): void => {
 import { Events, Functions } from "server/networking";
 
 Events.units.unequipUnit.connect((player: Player): void => {
-	Functions.units.unequipUnit(player);
+    Functions.units.unequipUnit(player);
 });
 `,
 				options,
@@ -117,8 +117,8 @@ Events.units.unequipUnit.connect((player: Player): void => {
 import { Events } from "server/networking";
 
 Events.units.unequipUnit.connect((player: Player): void => {
-	const targetPlayer = getTargetPlayer(player);
-	Events.promptNotification.fire(targetPlayer, "error");
+    const targetPlayer = getTargetPlayer(player);
+    Events.promptNotification.fire(targetPlayer, "error");
 });
 `,
 				options,

@@ -49,7 +49,7 @@ describe("no-table-create-map", () => {
 			`
 const rewards = new Array<RewardData<RewardType.Item>>(entries);
 for (const index of $range(1, entries)) {
-	rewards[index - 1] = makeReward(index);
+    rewards[index - 1] = makeReward(index);
 }
 `,
 			`
@@ -59,18 +59,18 @@ const rewards = baseRewards.map((value) => value);
 			"const rewards = table.create(entries, 0).filter((value) => value > 0).map((value) => value);",
 			`
 const table = {
-	create(size: number, fill?: number) {
-		return fill === undefined ? [] : [fill];
-	},
+    create(size: number, fill?: number) {
+        return fill === undefined ? [] : [fill];
+    },
 };
 const mapped = table.create(5, 0).map((value) => value);
 `,
 			`
 class Array<TValue> {
-	constructor(_size: number, _fill?: TValue) {}
-	map(_callback: (value: TValue) => TValue) {
-		return [];
-	}
+    constructor(_size: number, _fill?: TValue) {}
+    map(_callback: (value: TValue) => TValue) {
+        return [];
+    }
 }
 const mapped = new Array<number>(5, 0).map((value) => value);
 `,

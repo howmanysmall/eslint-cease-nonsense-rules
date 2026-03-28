@@ -1,104 +1,74 @@
 ---
 title: no-commented-code
-badge:
-    text: Maintenance
-    variant: note
-description: Reports commented-out code blocks. Delete them or move the intent to a ticket.
+badges:
+    - text: "Suggestion"
+      variant: note
+description: Reports comments that parse like commented-out code and suggests removing them.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Reports commented-out code blocks.
+Reports comments that look like real code.
 
-## Rule Details :badge[Maintenance]{variant=note}
+## Rule details :badge[Suggestion]{variant=note}
 
-Commented-out code clutters the codebase and gets stale fast. This rule looks for comments that are really code, while
-trying to ignore real documentation and explanatory notes.
+The rule groups adjacent line comments, checks block comments on their own, and tries to parse the comment text as
+JavaScript or TypeScript. If the result looks like real code, it reports the whole comment range and offers a removal
+suggestion.
 
-<Aside type="tip" title="Trust Version Control">
-	Delete it. Git has it. If the old behavior matters, write down why in a ticket or a short comment.
+It intentionally skips a lot of comments that would be noisy to flag, including empty comments, JSDoc, linter
+directives, many plain-English notes, URLs, and a few short parseable forms that are common in prose.
+
+<Aside type="tip" title="What to do instead">
+	Delete dead code. If the comment was carrying context, keep that context as a short explanation or move it to an
+	issue.
 </Aside>
-
-## Cleanup Path
-
-<Steps>
-1. **Identify violations**
-   The linter flags comment blocks that look like valid JavaScript/TypeScript.
-2. **Decide what you actually want** If the behavior matters later, move it to a task description.
-3. **Delete the block** Remove the commented lines.
-4. **Keep the reasoning** If the comment was trying to explain a decision, rewrite it as a short "why" comment.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Commented Code
-		Bans blocks of code that have been neutralized with `//` or `/* */`.
-
-    	<Code
-    		code={[
-    			"function calculate(x: number) {",
-    			"\t// const result = x * 2;",
-    			"\t// return result;",
-    			"",
-    			"\treturn x + 1;",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			"function calculate(x: number) {",
+			"\t// const result = x * 2;",
+			"\t// return result;",
+			"\treturn x + 1;",
+			"}",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Explanatory Comments
-    	Use comments to explain things that the code cannot say for itself.
+	<Code
+		code={[
+			"function calculate(x: number) {",
+			"\t// TODO: switch back to multiplication after the API lands",
+			"\t// The offset is temporary because the upstream value can overflow.",
+			"\treturn x + 1;",
+			"}",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			"function calculate(x: number) {",
-    			"\t// TODO: Consider multiplying by 2 once API is ready",
-    			"\t// Use a simple offset for now to avoid overflow",
-    			"\treturn x + 1;",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+## What it catches
 
-## Detection Strategy
+- adjacent `//` lines that form a code block
+- `/* ... */` comments that parse as statements or expressions
+- incomplete commented code where the rule can infer missing braces and still parse it
+- JSX-like commented code when the parser can recover with TSX parsing
 
-<CardGrid stagger>
-	<Card title="Keyword Matching" icon="list-format">
-		Looks for common syntax tokens like `function`, `class`, `import`, and `const` inside comments.
-	</Card>
-	<Card title="Parse Pass" icon="bolt">
-		Briefly attempts to parse the comment content; if it's valid syntax, it's flagged as code.
-	</Card>
-	<Card title="Exclusion Logic" icon="setting">
-		Automatically ignores URLs, JSDoc tags, and common English phrases to reduce false positives.
-	</Card>
-</CardGrid>
+The rule does not auto-fix by default. It adds a suggestion to remove the commented block.
 
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="no-unused-imports"
-		description="Clean up unused package references"
+		description="Removes another common form of dead code"
 		href="/eslint-cease-nonsense-rules/rules/no-unused-imports/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="Clean Code: Comments"
-		description="Robert C. Martin's principles on good vs bad comments"
-		href="https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882"
 	/>
 </CardGrid>

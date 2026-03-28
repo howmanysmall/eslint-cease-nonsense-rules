@@ -31,7 +31,7 @@ describe("prefer-local-portal-component", () => {
 import { createPortal } from "@rbxts/react-roblox";
 
 export function Example(target: Instance) {
-	return createPortal(<frame />, target);
+    return createPortal(<frame />, target);
 }`,
 				errors: [{ messageId: "preferPortalComponent" }],
 				filename: join(WITH_PORTAL, "src", "screens", "example.tsx"),
@@ -39,7 +39,7 @@ export function Example(target: Instance) {
 import { createPortal } from "@rbxts/react-roblox";
 
 export function Example(target: Instance) {
-	return <Portal target={target}><frame /></Portal>;
+    return <Portal target={target}><frame /></Portal>;
 }`,
 			},
 			{
@@ -47,7 +47,7 @@ export function Example(target: Instance) {
 import { createPortal as mountPortal } from "@rbxts/react-roblox";
 
 export function Example(content: React.ReactNode, target: Instance) {
-	return mountPortal(content, target);
+    return mountPortal(content, target);
 }`,
 				errors: [{ messageId: "preferPortalComponent" }],
 				filename: join(WITH_PORTAL, "src", "screens", "aliased.tsx"),
@@ -55,7 +55,7 @@ export function Example(content: React.ReactNode, target: Instance) {
 import { createPortal as mountPortal } from "@rbxts/react-roblox";
 
 export function Example(content: React.ReactNode, target: Instance) {
-	return <PortalComponent target={target}>{content}</PortalComponent>;
+    return <PortalComponent target={target}>{content}</PortalComponent>;
 }`,
 			},
 			{
@@ -63,7 +63,7 @@ export function Example(content: React.ReactNode, target: Instance) {
 import * as ReactDOM from "react-dom";
 
 export function Example(container: HTMLElement) {
-	return ReactDOM.createPortal(<div />, container);
+    return ReactDOM.createPortal(<div />, container);
 }`,
 				errors: [{ messageId: "preferPortalComponent" }],
 				filename: join(WITH_PORTAL, "src", "screens", "standard.tsx"),
@@ -71,14 +71,14 @@ export function Example(container: HTMLElement) {
 import * as ReactDOM from "react-dom";
 
 export function Example(container: HTMLElement) {
-	return <Portal target={container}><div /></Portal>;
+    return <Portal target={container}><div /></Portal>;
 }`,
 			},
 			{
 				code: `import { createPortal } from "@rbxts/react-roblox";
 
 export function Example(target: Instance) {
-	return createPortal(<frame />, target);
+    return createPortal(<frame />, target);
 }`,
 				errors: [{ messageId: "preferPortalComponent" }],
 				filename: join(WITH_PORTAL, "src", "screens", "report-only.tsx"),
@@ -89,7 +89,7 @@ export function Example(target: Instance) {
 				code: `import { createPortal } from "@rbxts/react-roblox";
 
 export function Example(target: Instance) {
-	return createPortal(<frame />, target);
+    return createPortal(<frame />, target);
 }`,
 				filename: join(WITHOUT_PORTAL, "src", "screens", "example.tsx"),
 			},
@@ -97,7 +97,7 @@ export function Example(target: Instance) {
 				code: `import { createPortal } from "@rbxts/react-roblox";
 
 export function Example(target: Instance) {
-	return createPortal(<frame />, target);
+    return createPortal(<frame />, target);
 }`,
 				filename: join(AMBIGUOUS_PORTAL, "src", "screens", "example.tsx"),
 			},
@@ -105,19 +105,19 @@ export function Example(target: Instance) {
 				code: `import { createPortal } from "@rbxts/react-roblox";
 
 export function Example(target: Instance) {
-		function createPortal() {
-			return target;
-		}
+        function createPortal() {
+            return target;
+        }
 
-					return createPortal();
-	}`,
+                    return createPortal();
+    }`,
 				filename: join(WITH_PORTAL, "src", "screens", "shadowed.tsx"),
 			},
 			{
 				code: `import { createPortal } from "@rbxts/react-roblox";
 
 export function Example(target: Instance) {
-	return createPortal(<frame />, target);
+    return createPortal(<frame />, target);
 }`,
 				filename: join(FIXTURE_ONLY_PORTAL, "src", "screens", "example.tsx"),
 			},

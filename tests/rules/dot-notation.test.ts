@@ -55,236 +55,236 @@ describe("dot-notation", () => {
 				{
 					code: `
 interface PublicBox {
-	name: number;
+    name: number;
 }
 
 function incrementValue(object: PublicBox): void {
-	object["name"] += 1;
+    object["name"] += 1;
 }
-				`,
+                `,
 					errors: [{ messageId: "useDot" }],
 					output: `
 interface PublicBox {
-	name: number;
+    name: number;
 }
 
 function incrementValue(object: PublicBox): void {
-	object.name += 1;
+    object.name += 1;
 }
-				`,
+                `,
 				},
 				{
 					code: `
 interface PublicBox {
-	name: number;
+    name: number;
 }
 
 function incrementValue(object: PublicBox): void {
-	object[\`name\`] += 1;
+    object[\`name\`] += 1;
 }
-				`,
+                `,
 					errors: [{ messageId: "useDot" }],
 					output: `
 interface PublicBox {
-	name: number;
+    name: number;
 }
 
 function incrementValue(object: PublicBox): void {
-	object.name += 1;
+    object.name += 1;
 }
-				`,
+                `,
 				},
 				{
 					code: `
 declare const keywords: Record<string, number>;
 
 keywords.default += 1;
-				`,
+                `,
 					errors: [{ messageId: "useBrackets" }],
 					options: [{ allowKeywords: false }],
 					output: `
 declare const keywords: Record<string, number>;
 
 keywords["default"] += 1;
-				`,
+                `,
 				},
 				{
 					code: `
 function incrementValue(object: ExampleClass): void {
-	object["value"] += 1;
+    object["value"] += 1;
 }
 
 class ExampleClass {
-	private value = 0;
+    private value = 0;
 }
-				`,
+                `,
 					errors: [{ messageId: "useDot" }],
 					output: `
 function incrementValue(object: ExampleClass): void {
-	object.value += 1;
+    object.value += 1;
 }
 
 class ExampleClass {
-	private value = 0;
+    private value = 0;
 }
-				`,
+                `,
 				},
 				{
 					code: `
 class ExampleClass {
-	private value = 0;
+    private value = 0;
 
-	public incrementBy(): void {
-		this["value"] += 1;
-	}
+    public incrementBy(): void {
+        this["value"] += 1;
+    }
 }
-				`,
+                `,
 					errors: [{ messageId: "useDot" }],
 					options: [{ allowInaccessibleClassPropertyAccess: true, environment: "roblox-ts" }],
 					output: `
 class ExampleClass {
-	private value = 0;
+    private value = 0;
 
-	public incrementBy(): void {
-		this.value += 1;
-	}
+    public incrementBy(): void {
+        this.value += 1;
+    }
 }
-				`,
+                `,
 				},
 				{
 					code: `
 type Entry<TValue> = {
-	value: TValue;
+    value: TValue;
 };
 
 export default class SomeClass<TKey, TValue extends NonNullable<unknown>> {
-	private readonly entries = new Map<TKey, Entry<TValue>>();
+    private readonly entries = new Map<TKey, Entry<TValue>>();
 
-	public clear(): void {
-		this["entries"].clear();
-	}
+    public clear(): void {
+        this["entries"].clear();
+    }
 }
-				`,
+                `,
 					errors: [{ messageId: "useDot" }],
 					options: [{ allowInaccessibleClassPropertyAccess: true, environment: "roblox-ts" }],
 					output: `
 type Entry<TValue> = {
-	value: TValue;
+    value: TValue;
 };
 
 export default class SomeClass<TKey, TValue extends NonNullable<unknown>> {
-	private readonly entries = new Map<TKey, Entry<TValue>>();
+    private readonly entries = new Map<TKey, Entry<TValue>>();
 
-	public clear(): void {
-		this.entries.clear();
-	}
+    public clear(): void {
+        this.entries.clear();
+    }
 }
-				`,
+                `,
 				},
 				{
 					code: `
 class ExampleClass {
-	protected value = 0;
+    protected value = 0;
 }
 
 class Derived extends ExampleClass {
-	public incrementBy(): void {
-		this["value"] += 1;
-	}
+    public incrementBy(): void {
+        this["value"] += 1;
+    }
 }
-				`,
+                `,
 					errors: [{ messageId: "useDot" }],
 					options: [{ allowInaccessibleClassPropertyAccess: true, environment: "roblox-ts" }],
 					output: `
 class ExampleClass {
-	protected value = 0;
+    protected value = 0;
 }
 
 class Derived extends ExampleClass {
-	public incrementBy(): void {
-		this.value += 1;
-	}
+    public incrementBy(): void {
+        this.value += 1;
+    }
 }
-				`,
+                `,
 				},
 				{
 					code: `
 interface PublicBox {
-	name: number;
+    name: number;
 }
 
 declare const object: PublicBox;
 declare const other: object;
 
 const result = object["name"]in other;
-					`,
+                    `,
 					errors: [{ messageId: "useDot" }],
 					output: `
 interface PublicBox {
-	name: number;
+    name: number;
 }
 
 declare const object: PublicBox;
 declare const other: object;
 
 const result = object.name in other;
-					`,
+                    `,
 				},
 				{
 					code: `
 0["toFixed"]();
-					`,
+                    `,
 					errors: [{ messageId: "useDot" }],
 					output: `
 0 .toFixed();
-					`,
+                    `,
 				},
 				{
 					code: `
 declare const values: Record<string, number>;
 
 values[true] += 1;
-					`,
+                    `,
 					errors: [{ messageId: "useDot" }],
 					output: `
 declare const values: Record<string, number>;
 
 values.true += 1;
-					`,
+                    `,
 				},
 				{
 					code: `
 declare const values: Record<string, number>;
 
 values[null] += 1;
-					`,
+                    `,
 					errors: [{ messageId: "useDot" }],
 					output: `
 declare const values: Record<string, number>;
 
 values.null += 1;
-					`,
+                    `,
 				},
 				{
 					code: `
 interface PublicBox {
-	name: number;
+    name: number;
 }
 
 declare const object: PublicBox | undefined;
 
 object?.["name"];
-					`,
+                    `,
 					errors: [{ messageId: "useDot" }],
 					output: `
 interface PublicBox {
-	name: number;
+    name: number;
 }
 
 declare const object: PublicBox | undefined;
 
 object?.name;
-					`,
+                    `,
 				},
 			],
 			"invalid",
@@ -294,61 +294,61 @@ object?.name;
 				{
 					code: `
 function incrementValue(object: ExampleClass): void {
-	object["value"] += 1;
+    object["value"] += 1;
 }
 
 class ExampleClass {
-	private value = 0;
+    private value = 0;
 }
-				`,
+                `,
 					options: [{ allowInaccessibleClassPropertyAccess: true, environment: "roblox-ts" }],
 				},
 				{
 					code: `
 function incrementValue(object: ExampleClass): void {
-	object["value"] += 1;
+    object["value"] += 1;
 }
 
 class ExampleClass {
-	protected value = 0;
+    protected value = 0;
 }
-				`,
+                `,
 					options: [{ allowInaccessibleClassPropertyAccess: true, environment: "roblox-ts" }],
 				},
 				{
 					code: `
 function incrementValue(object: ExampleClass): void {
-	object["value"] += 1;
+    object["value"] += 1;
 }
 
 class ExampleClass {
-	private value = 0;
+    private value = 0;
 }
-				`,
+                `,
 					options: [{ allowPrivateClassPropertyAccess: true }],
 				},
 				{
 					code: `
 function incrementValue(object: ExampleClass): void {
-	object["value"] += 1;
+    object["value"] += 1;
 }
 
 class ExampleClass {
-	protected value = 0;
+    protected value = 0;
 }
-				`,
+                `,
 					options: [{ allowProtectedClassPropertyAccess: true }],
 				},
 				{
 					code: `
 type ValueMap = {
-	[key: string]: number;
+    [key: string]: number;
 };
 
 declare const values: ValueMap;
 
 values["score"] += 1;
-				`,
+                `,
 					options: [{ allowIndexSignaturePropertyAccess: true }],
 				},
 				{
@@ -356,14 +356,14 @@ values["score"] += 1;
 declare const values: Record<number, number>;
 
 values[1] += 1;
-				`,
+                `,
 				},
 				{
 					code: `
 declare const keywords: Record<string, number>;
 
 keywords["default"] += 1;
-				`,
+                `,
 					options: [{ allowKeywords: false }],
 				},
 				{
@@ -371,7 +371,7 @@ keywords["default"] += 1;
 declare const ignored: Record<string, number>;
 
 ignored["__value"] += 1;
-				`,
+                `,
 					options: [{ allowPattern: "^__" }],
 				},
 			],

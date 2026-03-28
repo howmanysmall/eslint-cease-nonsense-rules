@@ -1,114 +1,106 @@
 ---
 title: use-exhaustive-dependencies
-badge:
-    text: Best Practice
-    variant: success
-description: Make hook dependency arrays match what the callback actually uses.
+badges:
+    - text: "error"
+      variant: danger
+    - text: "Fixable"
+      variant: success
+description: Keep hook dependency arrays aligned with the values the closure actually captures.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Make dependency arrays match what the callback uses.
+Checks hook dependency arrays against the values captured by the callback.
 
-## Rule Details :badge[Best Practice]{variant=success}
+## Rule details :badge[Problem]{variant=danger}
 
-If you use a value from component scope inside a hook callback, it belongs in the dependency array. Missing deps lead to
-stale closures. Extra deps lead to unnecessary reruns.
+By default, the rule checks these hooks:
 
-<Aside type="tip" title="Why it matters">
-	Stale closures are an easy way to ship a bug in React. Let the linter do the bookkeeping.
+- `useEffect`
+- `useLayoutEffect`
+- `useInsertionEffect`
+- `useCallback`
+- `useMemo`
+- `useImperativeHandle`
+- `useSpring`
+- `useSprings`
+- `useTrail`
+
+It reports three broad problems:
+
+- a dependency array is missing when the closure captures reactive values
+- one or more dependencies are missing from the array
+- a dependency is unnecessary or unstable
+
+The rule skips values it treats as stable, including imports, function declarations, class declarations, literal `const`
+values, module-level `const` values, stable hook results like setters from `useState` and `useReducer`, and values from
+hooks configured with `stableResult`.
+
+It can also suggest edits for adding or removing dependencies.
+
+<Aside type="tip" title="Path-based dependencies">
+	When the closure reads `user.profile.name`, the rule can suggest the property path instead of only the root
+	variable.
 </Aside>
-
-## Dependency Management Workflow
-
-<Steps>
-1. **Analyze Hook Body**
-   The linter identifies all variables from the component scope used inside your hook.
-2. **Categorize Inputs** Determine which values are "reactive" (props, state, or other hooks) and which are "stable"
-   (dispatchers, refs).
-3. **Update Array** Add all reactive values to the dependency array. Remove any values that are no longer used.
-4. **Stabilize if Needed** If a dependency changes too often (like an inline object), wrap its definition in `useMemo`
-   or `useCallback`.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Stale Closures
-		Bans missing or incorrect dependencies that lead to out-of-sync state.
-
-    	<Code
-    		code={[
-    			"function UserProfile({ userId }) {",
-    			"\tuseEffect(() => {",
-    			"\t\t// ❌ userId is used but not in deps",
-    			"\t\tfetchUser(userId);",
-    			"\t}, []);",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			"function UserProfile({ userId }) {",
+			"\tuseEffect(() => {",
+			"\t\tfetchUser(userId);",
+			"\t}, []);",
+			"}",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Exhaustive Dependencies
-    	Ensure every external value used is present in the array.
+	<Code
+		code={[
+			"function UserProfile({ userId }) {",
+			"\tuseEffect(() => {",
+			"\t\tfetchUser(userId);",
+			"\t}, [userId]);",
+			"}",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			"function UserProfile({ userId }) {",
-    			"\tuseEffect(() => {",
-    			"\t\tfetchUser(userId);",
-    			"\t}, [userId]); // ✅ Included",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+## Options
 
-## Common Solutions
+| Option                           | Type          | Default |
+| :------------------------------- | :------------ | :------ |
+| `hooks`                          | `HookEntry[]` | `[]`    |
+| `reportMissingDependenciesArray` | `boolean`     | `true`  |
+| `reportUnnecessaryDependencies`  | `boolean`     | `true`  |
 
-<CardGrid stagger>
-	<Card title="Functional Updates" icon="list-format">
-		Use `setCount(c => c + 1)` to avoid needing `count` as a dependency.
-	</Card>
-	<Card title="useMemo / useCallback" icon="bolt">
-		Stabilize object or function references so they don't trigger the hook every render.
-	</Card>
-	<Card title="useRef" icon="rocket">
-		Store non-reactive data in refs, which are stable and don't require tracking.
-	</Card>
-	<Card title="Effect Extraction" icon="setting">
-		Move functions outside the component if they don't depend on any reactive values.
-	</Card>
-</CardGrid>
+Each custom hook entry can define:
 
-## Related Rules
+| Field               | Type                                        | Notes                                                            |
+| :------------------ | :------------------------------------------ | :--------------------------------------------------------------- |
+| `name`              | `string`                                    | Hook name to track.                                              |
+| `closureIndex`      | `number`                                    | Which argument contains the callback.                            |
+| `dependenciesIndex` | `number`                                    | Which argument contains the dependency array.                    |
+| `stableResult`      | `boolean \| number \| number[] \| string[]` | Marks the whole result, tuple indices, or object keys as stable. |
+
+## Related rules
 
 <CardGrid>
-	<LinkCard
-		title="use-hook-at-top-level"
-		description="Enforces hook placement rules"
-		href="/eslint-cease-nonsense-rules/rules/use-hook-at-top-level/"
-	/>
 	<LinkCard
 		title="require-named-effect-functions"
-		description="Enforces named effect callbacks"
+		description="Pairs well with effect callback style checks"
 		href="/eslint-cease-nonsense-rules/rules/require-named-effect-functions/"
 	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
 	<LinkCard
-		title="React Docs: Dependencies"
-		description="Official guide on reactive dependencies"
-		href="https://react.dev/reference/react/useEffect#specifying-reactive-dependencies"
+		title="use-hook-at-top-level"
+		description="Checks where hooks are called"
+		href="/eslint-cease-nonsense-rules/rules/use-hook-at-top-level/"
 	/>
 </CardGrid>

@@ -267,6 +267,15 @@
 	"layout": "stretch",
 	"lsp": {},
 	"mcp": {
+		"astro-docs": {
+			"type": "remote",
+			"url": "https://mcp.docs.astro.build/mcp",
+		},
+		"chrome-dev-tools": {
+			"command": ["bash", "./scripts/get-chrome-path.sh", "--serve"],
+			"enabled": true,
+			"type": "local",
+		},
 		"context7": {
 			"enabled": true,
 			"headers": { "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}" },
@@ -277,6 +286,15 @@
 			"enabled": true,
 			"type": "remote",
 			"url": "https://mcp.grep.app",
+		},
+		"minimax": {
+			"command": ["uvx", "minimax-coding-plan-mcp", "-y"],
+			"enabled": true,
+			"environment": {
+				"MINIMAX_API_HOST": "https://api.minimax.io",
+				"MINIMAX_API_KEY": "{env:MINIMAX_API_KEY}",
+			},
+			"type": "local",
 		},
 		"npm-registry": {
 			"command": ["npm-registry-mcp"],

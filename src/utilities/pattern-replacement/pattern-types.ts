@@ -52,9 +52,9 @@ export interface Pattern<Match extends string = string> {
 
 // // Input type for pattern() helper (without brand)
 // Export interface PatternInput<Match extends string> {
-// 	Readonly match: Match;
-// 	Readonly replacement: string;
-// 	Readonly when?: { readonly [Key in ExtractCaptures<Match>]?: WhenCondition };
+//     Readonly match: Match;
+//     Readonly replacement: string;
+//     Readonly when?: { readonly [Key in ExtractCaptures<Match>]?: WhenCondition };
 // }
 
 // The ONLY way to create a valid Pattern

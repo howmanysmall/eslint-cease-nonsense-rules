@@ -1,113 +1,83 @@
 ---
 title: prefer-sequence-overloads
-badge:
-    text: Roblox
-    variant: success
-description: Prefer ColorSequence/NumberSequence overloads over manual keypoint arrays.
+badges:
+    - text: "error"
+      variant: danger
+    - text: "Fixable"
+      variant: success
+description: Prefer `ColorSequence` and `NumberSequence` constructor overloads over two-keypoint arrays.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Prefer optimized `ColorSequence` and `NumberSequence` constructors.
+Replaces simple two-keypoint `ColorSequence` and `NumberSequence` arrays with the shorter constructor overloads.
 
-## Rule Details :badge[Roblox]{variant=success}
+## Rule details :badge[Problem]{variant=danger}
 
-Roblox has constructor overloads for `ColorSequence` and `NumberSequence` that cover the common two-keypoint case. This
-rule prefers those overloads over manually building arrays of keypoints.
+This rule only reports `new ColorSequence([...])` and `new NumberSequence([...])` when all of these are true:
 
-<Aside type="tip" title="Performance">
-	The overloads avoid allocating a temporary array and keypoint objects.
+- the constructor gets exactly one argument, and that argument is an array
+- the array has exactly two elements
+- both elements are `new ColorSequenceKeypoint(...)` or `new NumberSequenceKeypoint(...)`
+- the keypoint times are exactly `0` and `1`
+- each keypoint has exactly two arguments, so envelope keypoints are skipped
+
+If both endpoint values are the same, the fixer uses the single-argument overload. Otherwise it uses the two-argument
+overload.
+
+<Aside type="tip" title="What it skips">
+	Sequences with middle keypoints, reversed endpoints, or envelope values are left alone.
 </Aside>
-
-## Optimization Steps
-
-<Steps>
-1. **Analyze Sequence**
-   Check if your sequence has exactly two keypoints at positions `0` and `1`.
-2. **Check Equality** If the start and end values are identical, you can collapse the entire sequence into a
-   single-value constructor.
-3. **Strip Arrays** Remove the `[` and `]` brackets and the `new *Keypoint(...)` calls.
-4. **Update Constructor** Pass the raw values directly to the sequence constructor: `new NumberSequence(0, 1)`.
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Verbose Keypoints
-		Avoid creating arrays for simple 0→1 linear sequences.
-
-    	<Code
-    		code={[
-    			"// Manual array and keypoints",
-    			"new ColorSequence([",
-    			"\tnew ColorSequenceKeypoint(0, Color3.fromRGB(255, 0, 0)),",
-    			"\tnew ColorSequenceKeypoint(1, Color3.fromRGB(0, 0, 255)),",
-    			"]);",
-    			"",
-    			"new NumberSequence([new NumberSequenceKeypoint(0, 0), new NumberSequenceKeypoint(1, 1)]);",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			"new ColorSequence([",
+			"\tnew ColorSequenceKeypoint(0, Color3.fromRGB(255, 0, 0)),",
+			"\tnew ColorSequenceKeypoint(1, Color3.fromRGB(0, 0, 255)),",
+			"]);",
+			"",
+			"new NumberSequence([",
+			"\tnew NumberSequenceKeypoint(0, 0),",
+			"\tnew NumberSequenceKeypoint(1, 1),",
+			"]);",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Linear Overloads
-    	Use the simplified constructors for linear or uniform sequences.
+	<Code
+		code={[
+			"new ColorSequence(Color3.fromRGB(255, 0, 0), Color3.fromRGB(0, 0, 255));",
+			"",
+			"new NumberSequence(0, 1);",
+			"new NumberSequence(42);",
+			"",
+			"new NumberSequence([",
+			"\tnew NumberSequenceKeypoint(0, 10, 0.2),",
+			"\tnew NumberSequenceKeypoint(1, 90, 0.8),",
+			"]);",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			"// Clean linear gradient",
-    			"new ColorSequence(Color3.fromRGB(255, 0, 0), Color3.fromRGB(0, 0, 255));",
-    			"",
-    			"// Uniform sequence (collapses identical values)",
-    			"new ColorSequence(Color3.fromRGB(127, 127, 127));",
-    			"",
-    			"// Simple number range",
-    			"new NumberSequence(0, 1);",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Why optimize sequences?
-
-<CardGrid stagger>
-	<Card title="GC Pressure" icon="bolt">
-		Reduces the number of short-lived objects that the Luau garbage collector must track.
-	</Card>
-	<Card title="Readability" icon="list-format">
-		Removes the boilerplate of repeating `new ColorSequenceKeypoint` multiple times.
-	</Card>
-	<Card title="Engine Speed" icon="rocket">
-		The engine can initialize these overloads directly without parsing a Lua table/array.
-	</Card>
-</CardGrid>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
-		title="no-color3-constructor"
-		description="Optimizes Color3 creation"
-		href="/eslint-cease-nonsense-rules/rules/no-color3-constructor/"
+		title="prefer-udim2-shorthand"
+		description="Uses the shorter Roblox constructor form when the full constructor is redundant"
+		href="/eslint-cease-nonsense-rules/rules/prefer-udim2-shorthand/"
 	/>
 	<LinkCard
 		title="prefer-pattern-replacements"
-		description="General pattern replacement framework"
+		description="Applies configurable constructor and method rewrites"
 		href="/eslint-cease-nonsense-rules/rules/prefer-pattern-replacements/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="Roblox ColorSequence"
-		description="Official engine reference for color gradients"
-		href="https://create.roblox.com/docs/reference/engine/datatypes/ColorSequence"
 	/>
 </CardGrid>

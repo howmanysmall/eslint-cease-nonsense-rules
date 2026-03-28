@@ -195,61 +195,61 @@ const values: ColorMap<Color> = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]
 				},
 				{
 					code: `${declarations}
-	type Mixed = Record<Color, string> | Record<Color, number>;
-	const values: Mixed = { Blue: 1, Green: 2, Red: 3 };`,
+    type Mixed = Record<Color, string> | Record<Color, number>;
+    const values: Mixed = { Blue: 1, Green: 2, Red: 3 };`,
 					errors: [
 						{ messageId: "preferEnumMember" },
 						{ messageId: "preferEnumMember" },
 						{ messageId: "preferEnumMember" },
 					],
 					output: `${declarations}
-	type Mixed = Record<Color, string> | Record<Color, number>;
-	const values: Mixed = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]: 3 };`,
+    type Mixed = Record<Color, string> | Record<Color, number>;
+    const values: Mixed = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]: 3 };`,
 				},
 				{
 					code: `${declarations}
-	type Mixed = Record<Color, string> | Record<Color, number>;
-	type MixedAlias = Mixed;
-	const values: MixedAlias = { Blue: 1, Green: 2, Red: 3 };`,
+    type Mixed = Record<Color, string> | Record<Color, number>;
+    type MixedAlias = Mixed;
+    const values: MixedAlias = { Blue: 1, Green: 2, Red: 3 };`,
 					errors: [
 						{ messageId: "preferEnumMember" },
 						{ messageId: "preferEnumMember" },
 						{ messageId: "preferEnumMember" },
 					],
 					output: `${declarations}
-	type Mixed = Record<Color, string> | Record<Color, number>;
-	type MixedAlias = Mixed;
-	const values: MixedAlias = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]: 3 };`,
+    type Mixed = Record<Color, string> | Record<Color, number>;
+    type MixedAlias = Mixed;
+    const values: MixedAlias = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]: 3 };`,
 				},
 				{
 					code: `${declarations}
-	type Wrapped = Readonly<Record<Color, string> | Record<Color, number>>;
-	const values: Wrapped = { Blue: 1, Green: 2, Red: 3 };`,
+    type Wrapped = Readonly<Record<Color, string> | Record<Color, number>>;
+    const values: Wrapped = { Blue: 1, Green: 2, Red: 3 };`,
 					errors: [
 						{ messageId: "preferEnumMember" },
 						{ messageId: "preferEnumMember" },
 						{ messageId: "preferEnumMember" },
 					],
 					output: `${declarations}
-	type Wrapped = Readonly<Record<Color, string> | Record<Color, number>>;
-	const values: Wrapped = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]: 3 };`,
+    type Wrapped = Readonly<Record<Color, string> | Record<Color, number>>;
+    const values: Wrapped = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]: 3 };`,
 				},
 				{
 					code: `${declarations}
-	type Narrow = Record<Color.Blue, number>;
-	type Wide = Record<Color, number>;
-	type MixedNarrow = Narrow | Wide;
-	const mixed: MixedNarrow = { Blue: 1, Green: 2, Red: 3 };`,
+    type Narrow = Record<Color.Blue, number>;
+    type Wide = Record<Color, number>;
+    type MixedNarrow = Narrow | Wide;
+    const mixed: MixedNarrow = { Blue: 1, Green: 2, Red: 3 };`,
 					errors: [
 						{ messageId: "preferEnumMember" },
 						{ messageId: "preferEnumMember" },
 						{ messageId: "preferEnumMember" },
 					],
 					output: `${declarations}
-	type Narrow = Record<Color.Blue, number>;
-	type Wide = Record<Color, number>;
-	type MixedNarrow = Narrow | Wide;
-	const mixed: MixedNarrow = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]: 3 };`,
+    type Narrow = Record<Color.Blue, number>;
+    type Wide = Record<Color, number>;
+    type MixedNarrow = Narrow | Wide;
+    const mixed: MixedNarrow = { [Color.Blue]: 1, [Color.Green]: 2, [Color.Red]: 3 };`,
 				},
 				{
 					code: `${declarations}\ndeclare const Swatch: (props: { color: Color }) => unknown;\n<Swatch color="Blue" />;`,

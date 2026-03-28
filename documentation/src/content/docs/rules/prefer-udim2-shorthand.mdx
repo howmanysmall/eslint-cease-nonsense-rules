@@ -1,118 +1,74 @@
 ---
 title: prefer-udim2-shorthand
-badge:
-    text: Roblox
-    variant: note
-description: Prefer UDim2.fromScale()/fromOffset() when half the constructor is zeros.
+badges:
+    - text: "Fixable"
+      variant: success
+    - text: "Suggestion"
+      variant: note
+description: Prefer `UDim2.fromScale()` or `UDim2.fromOffset()` when the full constructor only uses one side.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Prefer `UDim2.fromScale()` or `UDim2.fromOffset()` over the 4-argument constructor.
+Replaces `new UDim2(...)` with `UDim2.fromScale(...)` or `UDim2.fromOffset(...)` when the other half is zero.
 
-## Rule Details :badge[Roblox]{variant=note}
+## Rule details :badge[Suggestion]{variant=note}
 
-When creating a `UDim2` with all scales or all offsets set to zero, the shorthand constructors are clearer. This rule
-avoids redundant zeros and makes it obvious whether you're working in scale or offset space.
+The rule checks `new UDim2(scaleX, offsetX, scaleY, offsetY)` calls with exactly four arguments.
 
-<Aside type="tip" title="Readability">
-	`UDim2.fromScale(1, 0.5)` reads like "scale". `new UDim2(1, 0, 0.5, 0)` makes you double-check the zeros.
+- If `offsetX` and `offsetY` both evaluate to `0`, it reports `UDim2.fromScale(scaleX, scaleY)`.
+- If `scaleX` and `scaleY` both evaluate to `0`, it reports `UDim2.fromOffset(offsetX, offsetY)`.
+
+It can evaluate numeric literals, identifiers, unary `+` and `-`, and simple arithmetic with `+`, `-`, `*`, `/`, and
+`%`. Mixed scale and offset constructors are left alone.
+
+<Aside type="tip" title="Special case">
+	`new UDim2(0, 0, 0, 0)` is allowed and is not rewritten.
 </Aside>
-
-## Refactoring Steps
-
-<Steps>
-1. **Analyze Constructor**
-   Look at your `new UDim2(Sx, Ox, Sy, Oy)` calls. Check if `Ox` and `Oy` are both zero, or if `Sx` and `Sy` are both zero.
-
-2. **Select Shorthand**
-    - If offsets are zero: use `UDim2.fromScale(Sx, Sy)`.
-    - If scales are zero: use `UDim2.fromOffset(Ox, Oy)`.
-
-3. **Replace Call** Update the code to use the static method. Note that the shorthand methods only take 2 arguments
-   instead of 4.
-
-4. **Preserve Mixed** If you have a mix (e.g., `new UDim2(1, 5, 0, 0)`), keep the full constructor as shorthands don't
-   support mixed modes easily.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Verbose Constructors
-		Bans the 4-argument version when 2 arguments are just zeros.
-
-    	<Code
-    		code={[
-    			"// Pure scale",
-    			"new UDim2(1, 0, 1, 0);",
-    			"",
-    			"// Pure offset",
-    			"new UDim2(0, 100, 0, 50);",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={["new UDim2(1, 0, 1, 0);", "new UDim2(0, 100, 0, 50);", "new UDim2(x + 1, 0, 1 - y, 0);"].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Descriptive Shorthands
-    	Use the specific static methods for scale or offset operations.
+	<Code
+		code={[
+			"UDim2.fromScale(1, 1);",
+			"UDim2.fromOffset(100, 50);",
+			"UDim2.fromScale(x + 1, 1 - y);",
+			"",
+			"new UDim2(0.5, 10, 0.5, 10);",
+			"new UDim2(0, 0, 0, 0);",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			"UDim2.fromScale(1, 1);",
-    			"UDim2.fromOffset(100, 50);",
-    			"",
-    			"// Mixed values are still allowed",
-    			"new UDim2(0.5, 10, 0.5, 10);",
-    			"",
-    			"// Explicit zero-initialization is allowed",
-    			"new UDim2(0, 0, 0, 0);",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+## What gets skipped
 
-## Why use shorthands?
+- constructors with fewer or more than four arguments
+- constructors where the zero side cannot be evaluated
+- unsupported expressions such as bitwise operators or string literals
+- mixed scale and offset values
 
-<CardGrid stagger>
-	<Card title="Intent" icon="magnifier">
-		Makes it obvious whether you're doing relative scaling or pixel offsets.
-	</Card>
-	<Card title="Error Prevention" icon="bolt">
-		Reduces the chance of accidentally putting a scale value into an offset parameter.
-	</Card>
-	<Card title="Conciseness" icon="rocket">
-		Reduces horizontal noise in your JSX properties or layout scripts.
-	</Card>
-</CardGrid>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
-		title="no-color3-constructor"
-		description="Similar performance rule for Color3"
-		href="/eslint-cease-nonsense-rules/rules/no-color3-constructor/"
+		title="prefer-sequence-overloads"
+		description="Uses shorter Roblox constructor overloads for simple sequence values"
+		href="/eslint-cease-nonsense-rules/rules/prefer-sequence-overloads/"
 	/>
 	<LinkCard
 		title="prefer-pattern-replacements"
-		description="General pattern replacement framework"
+		description="Handles configurable constructor and method rewrites"
 		href="/eslint-cease-nonsense-rules/rules/prefer-pattern-replacements/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="Roblox UDim2 Documentation"
-		description="Official engine reference for UDim2"
-		href="https://create.roblox.com/docs/reference/engine/datatypes/UDim2"
 	/>
 </CardGrid>

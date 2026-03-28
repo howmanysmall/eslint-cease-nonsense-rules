@@ -1,0 +1,109 @@
+---
+title: Configuration
+description: Configure Cease Nonsense with recommended presets, per-rule settings, and category rulesets.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+import { ruleCategories, totalRules } from "../../data/rule-stats";
+
+## Recommended Config
+
+The quickest setup — one line, all {totalRules} rules enabled:
+
+```typescript
+import ceaseNonsense from "eslint-plugin-cease-nonsense";
+
+export default [ceaseNonsense.configs.recommended];
+```
+
+Rules are grouped into four categories with these default severities:
+
+| Category                       | Rules                                | Default Severity |
+| ------------------------------ | ------------------------------------ | ---------------- |
+| {ruleCategories.react.label}   | {ruleCategories.react.count} rules   | `warn` / `error` |
+| {ruleCategories.roblox.label}  | {ruleCategories.roblox.count} rules  | `warn` / `error` |
+| {ruleCategories.naming.label}  | {ruleCategories.naming.count} rules  | `warn`           |
+| {ruleCategories.general.label} | {ruleCategories.general.count} rules | `warn` / `error` |
+
+<Aside type="tip">
+	Not using Roblox? You can pull in only the categories you need — see [Category Presets](#category-presets) below.
+</Aside>
+
+## Severity Levels
+
+Most rules support both `warn` and `error`. The recommended config uses `warn` for most rules and reserves `error` for
+things that are almost certainly bugs.
+
+### Per-Rule Severity Example
+
+```typescript
+export default [
+	{
+		rules: {
+			"cease-nonsense/ban-react-fc": "error", // Already error in recommended
+			"cease-nonsense/no-god-components": "warn",
+		},
+	},
+];
+```
+
+## Category Presets
+
+Pull in rules for a single category instead of everything:
+
+```typescript
+import ceaseNonsense from "eslint-plugin-cease-nonsense";
+
+export default [
+	// React only
+	...ceaseNonsense.rulesets.react,
+
+	// Roblox only
+	...ceaseNonsense.rulesets.roblox,
+
+	// Naming only
+	...ceaseNonsense.rulesets.naming,
+];
+```
+
+## Disabling Rules
+
+### Per-File
+
+```typescript
+// eslint-disable-next-line cease-nonsense/ban-react-fc
+const MyComponent = React.forwardRef<Props, Ref>((props, ref) => {
+	// ...
+});
+```
+
+### Per-Project
+
+```typescript
+export default [
+	ceaseNonsense.configs.recommended,
+	{
+		rules: {
+			"cease-nonsense/ban-react-fc": "off",
+			"cease-nonsense/no-god-components": "off",
+		},
+	},
+];
+```
+
+## Fixable Rules
+
+These rules support auto-fix via `eslint --fix`:
+
+| Rule                                   | Fix Type                  |
+| -------------------------------------- | ------------------------- |
+| `no-commented-code`                    | Removes dead comments     |
+| `prefer-early-return`                  | Restructures control flow |
+| `prefer-pattern-replacements`          | Applies pattern swaps     |
+| `no-unused-imports`                    | Removes dead imports      |
+| `prefer-ternary-conditional-rendering` | Suggestion fix            |
+| `no-shorthand-names`                   | Suggestion fix            |
+
+```bash
+bun run eslint . --fix
+```

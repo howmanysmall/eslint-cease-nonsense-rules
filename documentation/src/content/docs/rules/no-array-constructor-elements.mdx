@@ -1,57 +1,70 @@
 ---
 title: no-array-constructor-elements
-badge:
-    text: Roblox
-    variant: note
-description: Enforce safe, explicit new Array(...) constructor patterns.
+badges:
+    - text: "error"
+      variant: danger
+    - text: "Fixable"
+      variant: success
+description: Disallows most `new Array(...)` element forms and prefers literals or typed empty arrays.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Disallow element-style `new Array(...)` construction and enforce environment-aware constructor behavior.
+Disallows `new Array(...)` forms that read like element lists and catches a few array initialization patterns that are
+easy to rewrite.
 
-## Rule Details :badge[Roblox]{variant=note}
+## Rule details :badge[Problem]{variant=danger}
 
-This rule enforces four behaviors:
+By default, this rule runs in `roblox-ts` mode and requires a type for `new Array()` with no arguments.
 
-1. `new Array("a", "b")` is reported and rewritten to `["a", "b"]`.
-2. `new Array("a")` is reported and rewritten/suggested as `["a"]`.
-3. `new Array(3)` is allowed in `roblox-ts` mode and reported in `standard` mode.
-4. `new Array<T>()` + consecutive `.push(...)` calls can collapse into one literal initializer.
+It reports these cases:
 
-<Aside type="tip" title="Length Constructor Safety">
-	In `standard` mode, length constructor reports include an `Array.from({ length: n })` suggestion.
-	The rule never rewrites length form to `[n]`.
+- `new Array("a", "b")` and similar enumeration forms, usually fixed to `[...]`
+- `new Array("a")`, fixed to `["a"]`
+- `new Array()` without type arguments or contextual `Array<T>` / `ReadonlyArray<T>` typing
+- `const items = new Array<T>(); items.push(...)` when the pushes are immediate and consecutive
+
+In `standard` mode, `new Array(length)` is also reported and gets an `Array.from({ length })` suggestion.
+
+In `roblox-ts` mode, length-style constructors stay allowed. The rule also leaves alone roblox-ts overloads such as
+`new Array(length, fill)` when the first argument could be numeric.
+
+<Aside type="tip" title="What counts as contextual typing">
+	`const items: Array<string> = new Array();` is valid. So is a matching `ReadonlyArray<T>` annotation or assertion.
 </Aside>
 
 ## Configuration
 
 <Code
 	code={[
-		"{",
-		'\t"cease-nonsense/no-array-constructor-elements": ["error", {',
-		'\t\t"environment": "roblox-ts",',
-		'\t\t"requireExplicitGenericOnNewArray": true',
-		"\t}]",
-		"}",
+		'import ceaseNonsense from "eslint-plugin-cease-nonsense";',
+		"",
+		"export default [",
+		"\t{",
+		"\t\tplugins: {",
+		'\t\t\t"cease-nonsense": ceaseNonsense,',
+		"\t\t},",
+		"\t\trules: {",
+		'\t\t\t"cease-nonsense/no-array-constructor-elements": ["error", {',
+		'\t\t\t\t"environment": "standard",',
+		'\t\t\t\t"requireExplicitGenericOnNewArray": true',
+		"\t\t\t}],",
+		"\t\t},",
+		"\t},",
+		"];",
 	].join("\n")}
-	lang="typescript"
+	lang="ts"
 	title="eslint.config.ts"
 />
 
-## Push-Collapse Behavior
+## Options
 
-<Steps>
-1. Detect `const/let arr = new Array<T>()`.
-2. Collect immediate consecutive `arr.push(...)` statements in the same block.
-3. If arguments are side-effect-safe, auto-fix to one literal initializer.
-4. If not side-effect-safe, report and offer a suggestion instead.
-
-{/* oxfmt-ignore */}
-
-</Steps>
+| Option                             | Default       | What it does                                                                                           |
+| :--------------------------------- | :------------ | :----------------------------------------------------------------------------------------------------- |
+| `environment`                      | `"roblox-ts"` | `"roblox-ts"` allows length-style `new Array(...)` overloads, `"standard"` reports `new Array(length)` |
+| `requireExplicitGenericOnNewArray` | `true`        | Requires `new Array<T>()` or matching contextual array typing for zero-argument calls                  |
 
 ## Examples
 
@@ -59,13 +72,14 @@ This rule enforces four behaviors:
 	<Code
 		code={[
 			'const letters = new Array("a", "b");',
-			'const one = new Array("a");',
+			'const single = new Array("a");',
+			"const missingType = new Array();",
 			"",
-			"const array = new Array<string>();",
-			'array.push("a");',
-			'array.push("b");',
+			"const items = new Array<string>();",
+			'items.push("a");',
+			'items.push("b");',
 		].join("\n")}
-		lang="tsx"
+		lang="ts"
 	/>
 </RuleExample>
 
@@ -73,27 +87,35 @@ This rule enforces four behaviors:
 	<Code
 		code={[
 			'const letters = ["a", "b"];',
-			'const one = ["a"];',
-			"",
-			'const array = ["a", "b"];',
-			"const empty = new Array<string>();",
-			"const sized = new Array(10); // allowed in roblox-ts mode",
+			'const single = ["a"];',
+			"const typed = new Array<string>();",
+			"const contextual: Array<string> = new Array();",
+			"const sized = new Array(10); // valid in roblox-ts mode",
 		].join("\n")}
-		lang="tsx"
+		lang="ts"
 	/>
 </RuleExample>
 
-## Related Rules
+## Push collapse behavior
+
+The `new Array<T>()` plus `.push(...)` rewrite only happens when all of these are true:
+
+- the declaration is a single `const` or `let`
+- the `push` calls are immediate and consecutive in the same block
+- there is no later `push` call on the same variable in that block or program section
+- every pushed value is safe to inline, otherwise the rule gives a suggestion instead of an automatic fix
+
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="no-empty-array-literal"
-		description="Disallow [] for empty arrays"
+		description="Checks empty array literal usage"
 		href="/eslint-cease-nonsense-rules/rules/no-empty-array-literal/"
 	/>
 	<LinkCard
 		title="no-array-size-assignment"
-		description="Prefer push over append-by-size indexing"
+		description="Replaces append-by-size indexing with `push`"
 		href="/eslint-cease-nonsense-rules/rules/no-array-size-assignment/"
 	/>
 </CardGrid>

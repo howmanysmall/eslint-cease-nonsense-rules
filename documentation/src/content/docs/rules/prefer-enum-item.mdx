@@ -1,131 +1,102 @@
 ---
 title: prefer-enum-item
-badge:
-    text: Roblox
-    variant: note
-description: Prefer EnumItem values over magic strings/numbers in roblox-ts.
+badges:
+    - text: "Fixable"
+      variant: success
+    - text: "Suggestion"
+      variant: note
+description: Prefer Roblox `Enum` items over string and number literals when the expected type is an `EnumItem`.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Prefer EnumItem values over magic strings/numbers.
+Replaces string and number literals with Roblox `Enum` items when the expected type already points to one.
 
-## Rule Details :badge[Roblox]{variant=note}
+## Rule details :badge[Suggestion]{variant=note}
 
-In `roblox-ts`, you can often pass an enum value as its string name or numeric value. It works at runtime, but you lose
-type safety and IDE features like "Go to Definition" and "Find References". This rule prefers the explicit form
-(`Enum.ScaleType.Slice`) over magic strings (`"Slice"`) or numbers (`1`).
+This rule uses type information. It reports a literal only when TypeScript can tell that the surrounding position
+expects one or more Roblox `Enum` items and the literal matches one of them.
 
-<Aside type="tip" title="Self-Documenting Code">
-	`Enum.UIFlexMode.Fill` is clearer than `"Fill"`.
+That means the rule can catch cases like:
+
+- function and constructor arguments
+- object property values
+- JSX attribute values
+- variable initializers with an explicit type annotation
+
+<Aside type="tip" title="Numeric fixes can be configured">
+	By default, a numeric literal fixes to `Enum.Type.Member`. Turn on `fixNumericToValue` if you want numeric matches
+	to fix to `Enum.Type.Member.Value` instead.
 </Aside>
-
-## Refactoring Steps
-
-<Steps>
-1. **Identify Magic Literals**
-   Locate strings or numbers being used in places where a Roblox Enum is expected (e.g., JSX properties like `ScaleType`).
-
-2. **Search Enum Global** Look up the corresponding Enum name in the
-   [Roblox Enum Browser](https://create.roblox.com/docs/reference/engine/enums).
-
-3. **Update Reference** Replace the literal with the full `Enum.Category.Member` path.
-
-4. **Auto-Fix** Most violations can be fixed automatically by running `eslint --fix`.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Magic Values
-		Bans patterns that use strings or numbers where enums are expected.
-
-    	<Code
-    		code={[
-    			"// String literal",
-    			'<uiflexitem FlexMode="Fill" />',
-    			"",
-    			"// Number literal",
-    			"<Halftones nativeProperties={{ ScaleType: 1 }} />",
-    			"",
-    			"// In function arguments",
-    			'setFlexMode("Fill");',
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			'<uiflexitem FlexMode="Fill" />',
+			"",
+			"const props: { ScaleType: Enum.ScaleType } = {",
+			"\tScaleType: 1,",
+			"};",
+			"",
+			'setFlexMode("Fill");',
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Explicit Enums
-    	Use the built-in `Enum` global for all property assignments and arguments.
+	<Code
+		code={[
+			"<uiflexitem FlexMode={Enum.UIFlexMode.Fill} />",
+			"",
+			"const props: { ScaleType: Enum.ScaleType } = {",
+			"\tScaleType: Enum.ScaleType.Slice,",
+			"};",
+			"",
+			"setFlexMode(Enum.UIFlexMode.Fill);",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			"// Explicit enum usage",
-    			"<uiflexitem FlexMode={Enum.UIFlexMode.Fill} />",
-    			"",
-    			"// Explicit enum in objects",
-    			"<Halftones nativeProperties={{ ScaleType: Enum.ScaleType.Slice }} />",
-    			"",
-    			"// In function arguments",
-    			"setFlexMode(Enum.UIFlexMode.Fill);",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+## Options
 
-## Configuration
+| Option              | Default | What it does                                                                      |
+| ------------------- | ------- | --------------------------------------------------------------------------------- |
+| `fixNumericToValue` | `false` | Fixes numeric literals to `Enum.Type.Member.Value` instead of `Enum.Type.Member`. |
+| `performanceMode`   | `true`  | Uses cached enum lookups to skip work. It does not change what gets reported.     |
 
-<CardGrid stagger>
-	<Card title="fixNumericToValue" icon="setting">
-		When `true`, numeric literals fix to `Enum.X.Y.Value` instead of `Enum.X.Y`.
-	</Card>
-	<Card title="performanceMode" icon="bolt">
-		Caches enum lookups to speed up linting on large projects.
-	</Card>
-</CardGrid>
+```js
+// eslint.config.js
+import ceaseNonsense from "eslint-plugin-cease-nonsense";
 
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/prefer-enum-item": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"fixNumericToValue": true',
-		"\t\t}",
-		"\t]",
-		"}",
-	].join("\n")}
-	lang="json"
-	title="eslint.config.js"
-/>
+export default [
+	{
+		plugins: {
+			"cease-nonsense": ceaseNonsense,
+		},
+		rules: {
+			"cease-nonsense/prefer-enum-item": ["error", { fixNumericToValue: true }],
+		},
+	},
+];
+```
 
-## Related Rules
+## Related rules
 
 <CardGrid>
+	<LinkCard
+		title="prefer-enum-member"
+		description="Does the same kind of check for TypeScript enums"
+		href="/eslint-cease-nonsense-rules/rules/prefer-enum-member/"
+	/>
 	<LinkCard
 		title="prefer-pascal-case-enums"
-		description="Ensure your enums follow casing rules"
+		description="Keeps enum names in a consistent style"
 		href="/eslint-cease-nonsense-rules/rules/prefer-pascal-case-enums/"
-	/>
-	<LinkCard
-		title="prefer-singular-enums"
-		description="Avoid plural enum names"
-		href="/eslint-cease-nonsense-rules/rules/prefer-singular-enums/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="Roblox Enums"
-		description="Official engine documentation for enums"
-		href="https://create.roblox.com/docs/reference/engine/enums"
 	/>
 </CardGrid>

@@ -1,8 +1,10 @@
 ---
 title: ban-react-fc
-badge:
-    text: Best Practice
-    variant: success
+badges:
+    - text: "error"
+      variant: danger
+    - text: "Best Practice"
+      variant: success
 description: Prefer function components with typed props over React.FC.
 ---
 
@@ -38,46 +40,44 @@ to end up anonymous in stack traces and DevTools. Prefer plain function declarat
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Type Annotations
-		Bans the use of generic wrapper types for component variables.
+	### Type Annotations
+	Bans the use of generic wrapper types for component variables.
 
-    	<RuleExample type="fail" title="Incorrect">
-    		<Code
-    			code={[
-    				"export const MyComponent: React.FC<Props> = ({ children }) => {",
-    				"\treturn <div>{children}</div>;",
-    				"};",
-    				"",
-    				"const Button: FC<ButtonProps> = ({ label }) => <button>{label}</button>;",
-    				].join("\n")}
-    			lang="tsx"
-    		/>
-    	</RuleExample>
-    </RuleExample>
+    <Code
+    	code={[
+    		"export const MyComponent: React.FC<Props> = ({ children }) => {",
+    		"\treturn <div>{children}</div>;",
+    		"};",
+    		"",
+    		"const Button: FC<ButtonProps> = ({ label }) => <button>{label}</button>;",
+    	].join("\n")}
+    	lang="tsx"
+    />
+
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Function Declarations
-    	Use standard TypeScript function signatures for your components.
+	### Function Declarations
+	Use standard TypeScript function signatures for your components.
 
-    	<RuleExample type="pass" title="Correct">
-    		<Code
-    			code={[
-    				"export function MyComponent({ children }: Props) {",
-    				"\treturn <div>{children}</div>;",
-    				"}",
-    				"",
-    				"function Button({ label }: ButtonProps) {",
-    				"\treturn <button>{label}</button>;",
-    				"}",
-    			].join("\n")}
-    			lang="tsx"
-    		/>
-    	</RuleExample>
-    </RuleExample>
+    <Code
+    	code={[
+    		"export function MyComponent({ children }: Props) {",
+    		"\treturn <div>{children}</div>;",
+    		"}",
+    		"",
+    		"function Button({ label }: ButtonProps) {",
+    		"\treturn <button>{label}</button>;",
+    		"}",
+    	].join("\n")}
+    	lang="tsx"
+    />
+
+</RuleExample>
 
 ## Problems with React.FC
 
-<CardGrid stagger>
+<CardGrid>
 	<Card title="DevTools Issues" icon="setting">
 		Obscures names in React DevTools, making it difficult to navigate your component tree.
 	</Card>

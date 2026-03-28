@@ -1,110 +1,97 @@
 ---
 title: no-unused-imports
-badge:
-    text: Maintenance
-    variant: note
-description: Reports unused imports (including references that only appear in JSDoc).
+badges:
+    - text: "error"
+      variant: danger
+    - text: "Fixable"
+      variant: success
+description: Reports import specifiers that are never used, with optional JSDoc support.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Reports imports you don't actually use.
+Reports import specifiers that are never used.
 
-## Rule Details :badge[Maintenance]{variant=note}
+## Rule details :badge[Problem]{variant=danger}
 
-Reports when an import is defined but never referenced. Unused imports add noise at the top of the file and make it
-harder to see what a module depends on. The rule also counts references inside JSDoc tags.
+This rule checks default imports, namespace imports, and named imports. When a binding is never referenced, it reports
+it and can remove the unused specifier with `--fix`.
 
-<Aside type="note" title="JSDoc Support">
-	Some imports only exist for JSDoc tags like `@see` or `@link`. This rule counts those so you don't delete them by
-	accident.
+By default, references inside JSDoc also count as usage. Bare side-effect imports like `import "./init";` are ignored.
+
+<Aside type="note" title="JSDoc references count by default">
+	Tags like `@see`, `@link`, `@type`, `@param`, and `@returns` can keep an import alive when `checkJSDoc` is `true`.
 </Aside>
 
-## Cleanup Workflow
+## Options
 
-<Steps>
-1. **Find unused imports**
-   The linter flags import statements with no references in code or JSDoc.
+| Option       | Type      | Default | What it does                               |
+| ------------ | --------- | ------- | ------------------------------------------ |
+| `checkJSDoc` | `boolean` | `true`  | Counts supported JSDoc references as usage |
 
-2. **Check for Intentional Side-Effects** Rarely, an import is needed only for its side-effects (e.g.,
-   `import "./init"`). If so, use the bare import syntax without binding variables.
+## Configuration
 
-3. **Delete the Reference** Remove the specific named import or the entire import line.
-
-4. **Check dependencies** Sometimes this reveals a package you can remove.
-
-{/* oxfmt-ignore */}
-
-</Steps>
+<Code
+	code={[
+		'import ceaseNonsense from "eslint-plugin-cease-nonsense";',
+		"",
+		"export default [",
+		"\t{",
+		"\t\tplugins: {",
+		'\t\t\t"cease-nonsense": ceaseNonsense,',
+		"\t\t},",
+		"\t\trules: {",
+		'\t\t\t"cease-nonsense/no-unused-imports": ["error", { checkJSDoc: true }],',
+		"\t\t},",
+		"\t},",
+		"];",
+	].join("\n")}
+	lang="ts"
+	title="eslint.config.js"
+/>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Ghost Imports
-		Bans imports that don't contribute to the logic or documentation of the file.
-
-    	<Code
-    		code={[
-    			'import { unusedFunction, UsedFunction } from "./utils";',
-    			'import { AnotherUnused } from "./types";',
-    			"",
-    			"UsedFunction();",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			'import { unusedFunction, usedFunction } from "./utils";',
+			'import { AnotherUnused } from "./types";',
+			"",
+			"usedFunction();",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Lean Imports
-    	Every import line corresponds to an active symbol in the file.
+	<Code
+		code={[
+			'import { usedFunction } from "./utils";',
+			'import { anotherUsedFunction } from "./more-utils";',
+			"",
+			"/**",
+			" * @see {anotherUsedFunction}",
+			" */",
+			"usedFunction();",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			'import { usedFunction } from "./utils";',
-    			"",
-    			"/**",
-    			" * @see {anotherUsedFunction} ✅ Counted as used",
-    			" */",
-    			'import { anotherUsedFunction } from "./more-utils";',
-    			"",
-    			"usedFunction();",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Why remove unused imports?
-
-<CardGrid stagger>
-	<Card title="Code Clarity" icon="list-format">
-		Reduces mental noise when opening a file; you only see what the module actually needs.
-	</Card>
-	<Card title="Build Speed" icon="bolt">
-		Minimizes the number of files a bundler or compiler has to parse and analyze during a build.
-	</Card>
-	<Card title="Dependency Health" icon="rocket">
-		Helps you identify when a feature is truly removed and its library can be uninstalled.
-	</Card>
-</CardGrid>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="no-commented-code"
-		description="Clean up dead code blocks"
+		description="Removes dead code left in comments"
 		href="/eslint-cease-nonsense-rules/rules/no-commented-code/"
 	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
 	<LinkCard
 		title="ESLint: no-unused-vars"
-		description="The standard for unused variable detection"
+		description="Base rule for unused variables"
 		href="https://eslint.org/docs/latest/rules/no-unused-vars"
 	/>
 </CardGrid>

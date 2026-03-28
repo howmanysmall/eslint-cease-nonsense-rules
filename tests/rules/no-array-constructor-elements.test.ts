@@ -135,11 +135,11 @@ const keypoints = new Array<ColorSequenceKeypoint>(256, -1);
 `,
 			`
 function multiplyByTwo(array: ReadonlyArray<number>): ReadonlyArray<number> {
-	const newArray = new Array<number>(array.size());
-	let size = 0;
+    const newArray = new Array<number>(array.size());
+    let size = 0;
 
-	for (const value of array) newArray[size++] = value * 2;
-	return newArray;
+    for (const value of array) newArray[size++] = value * 2;
+    return newArray;
 }
 `,
 			{
@@ -148,7 +148,7 @@ function multiplyByTwo(array: ReadonlyArray<number>): ReadonlyArray<number> {
 			},
 			`
 class Array<TValue> {
-	constructor(..._arguments: Array<TValue>) {}
+    constructor(..._arguments: Array<TValue>) {}
 }
 const value = new Array("a");
 `,

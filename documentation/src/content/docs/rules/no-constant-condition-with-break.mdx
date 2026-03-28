@@ -1,143 +1,112 @@
 ---
 title: no-constant-condition-with-break
-description: Disallow constant conditions, but allow constant loops with break, return, or configured exit calls.
+badges:
+    - text: "error"
+      variant: danger
+description:
+    Disallow constant conditions, but allow constant true loops that can exit with break, return, or configured calls.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Disallow constant conditions, but allow constant loops that include exits like `break`, `return`, or configured calls.
+Disallow constant conditions, but allow constant true loops that have a real exit path.
 
-## Rule Details
+## Rule details :badge[Problem]{variant=danger}
 
-This rule is similar to ESLint's built-in `no-constant-condition` rule, but it makes an exception for constant loops
-(like `while (true)`) that contain an exit path (for example `break` or `return`). You can also configure additional
-call expressions (for example `coroutine.yield`) as loop exits via `loopExitCalls`.
+This rule reports constant conditions in `if` statements, ternaries, and loop tests.
 
-<Aside type="tip" title="When to use this rule">
-	Use this rule when you want to catch accidental constant conditions in `if` statements and loops without a loop
-	exit, while allowing intentional infinite loops with proper exit mechanisms.
+It makes one exception for loops such as `while (true)`. Those are allowed when the loop can exit with `break`,
+`return`, or a call you list in `loopExitCalls`.
+
+Constant false loops are still reported. The loop never runs, so the exit analysis does not matter there.
+
+<Aside type="tip" title="What counts as an exit">
+	A `break` has to target the current loop. A `break` or `return` inside a nested function does not count.
 </Aside>
 
 ## Options
 
-```typescript
-{
-	"cease-nonsense/no-constant-condition-with-break": [
-		"error",
-		{
-			loopExitCalls: ["coroutine.yield", "task.wait"]
-		}
-	]
-}
-```
+`loopExitCalls` is an array of fully qualified call paths that should count as loop exits.
 
-- `loopExitCalls` (`string[]`) - Fully-qualified call paths treated as loop exits inside constant loops.
+<Code
+	code={[
+		'import plugin from "eslint-plugin-cease-nonsense";',
+		"",
+		"export default [",
+		"\t{",
+		'\t\tplugins: { "cease-nonsense": plugin },',
+		"\t\trules: {",
+		'\t\t\t"cease-nonsense/no-constant-condition-with-break": [',
+		'\t\t\t\t"error",',
+		'\t\t\t\t{ loopExitCalls: ["coroutine.yield", "task.wait"] },',
+		"\t\t\t],",
+		"\t\t},",
+		"\t},",
+		"];",
+	].join("\n")}
+	lang="typescript"
+	title="eslint.config.ts"
+/>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Constant Conditions Without Loop Exit
-		These patterns are flagged because they are likely bugs or missing exit conditions.
-
-    	<Code
-    		code={[
-    			"// if statement with constant condition",
-    			'if (true) { doSomething(); }',
-    			'',
-    		"// while loop without a loop exit",
-    		'while (true) { doSomething(); }',
-    			'',
-    		"// for loop with constant condition and no loop exit",
-    		'for (;; true) { doSomething(); }',
-    			'',
-    		"// do-while loop without a loop exit",
-    		'do { doSomething(); } while (true);',
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			"if (true) {",
+			"\tdoSomething();",
+			"}",
+			"",
+			"const value = true ? a : b;",
+			"",
+			"while (true) {",
+			"\tdoSomething();",
+			"}",
+			"",
+			"do {",
+			"\tdoSomething();",
+			"} while (false);",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Valid Patterns
-    	These patterns are allowed because they either have proper exit conditions or intentional loop exits.
-
-    	<Code
-    		code={[
-    			"// Variable condition is fine",
-    			'while (condition) { doSomething(); }',
-    			'',
-    		"// Loop with break is allowed",
-    		'while (true) {',
-    		'\tif (shouldStop) break;',
-    		'\tdoSomething();',
-    		'}',
-    		'',
-    		"// Loop with return is allowed",
-    		'function run() {',
-    		'\twhile (true) {',
-    		'\t\tif (shouldStop) return;',
-    		'\t\tdoSomething();',
-    		'\t}',
-    		'}',
-    		'',
-    		"// Configured exit call (with loopExitCalls)",
-    		'while (true) {',
-    		'\tcoroutine.yield();',
-    		'\tdoSomething();',
-    		'}',
-    		'',
-    		"// Labeled break targeting this loop",
-    		'outer: while (true) {',
-    		'\tif (done) break outer;',
-    		'\tdoSomething();',
-    		'}',
-    		'',
-    		"// For loop with break",
-    		'for (;; true) {',
-    		'\tif (condition) break;',
-    		'\tdoSomething();',
-    		'}',
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Detection Strategy
-
-<CardGrid stagger>
-	<Card title="Constant Evaluation" icon="magnifier">
-		Evaluates expressions to determine if they always result in the same value.
-	</Card>
-	<Card title="Exit Path Analysis" icon="target">
-		Traces loop exits (`break`, `return`) and configurable exit calls, and verifies labeled breaks target the same
-		loop.
-	</Card>
-	<Card title="Nested Loop Aware" icon="seti:folder">
-		Correctly handles nested loops and labeled breaks.
-	</Card>
-	<Card title="Function Boundary" icon="seti:lock">
-		Respects function boundaries—breaks inside callbacks don't count as exiting the outer loop.
-	</Card>
-</CardGrid>
-
-## Related Rules
-
-<CardGrid>
-	<LinkCard
-		title="no-useless-use-effect"
-		description="Prevents unnecessary useEffect patterns"
-		href="/eslint-cease-nonsense-rules/rules/no-useless-use-effect/"
+	<Code
+		code={[
+			"while (running) {",
+			"\tdoSomething();",
+			"}",
+			"",
+			"while (true) {",
+			"\tif (shouldStop) break;",
+			"\tdoSomething();",
+			"}",
+			"",
+			"function run() {",
+			"\tfor (; true; ) {",
+			"\t\tif (done) return;",
+			"\t\twork();",
+			"\t}",
+			"}",
+			"",
+			"while (true) {",
+			"\tcoroutine.yield();",
+			"\twork();",
+			"}",
+		].join("\n")}
+		lang="tsx"
 	/>
-</CardGrid>
+</RuleExample>
 
-## Further Reading
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="ESLint no-constant-condition"
-		description="Original ESLint rule documentation"
+		description="The built-in rule. This rule is stricter about constant conditions, but looser for intentional infinite loops with exits."
 		href="https://eslint.org/docs/latest/rules/no-constant-condition"
 	/>
 </CardGrid>

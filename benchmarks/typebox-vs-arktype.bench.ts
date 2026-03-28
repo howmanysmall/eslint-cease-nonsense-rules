@@ -54,13 +54,13 @@ barplot(() => {
 		do_not_optimize(validValues);
 	});
 	// Bench("ArkType (standard)", () => {
-	// 	Const validValues = new Array<unknown>();
-	// 	For (const value of values) {
-	// 		Const result = isOptionsObjectArkType(value);
-	// 		If (result instanceof type.errors) continue;
-	// 		ValidValues.push(result);
-	// 	}
-	// 	Do_not_optimize(validValues);
+	//     Const validValues = new Array<unknown>();
+	//     For (const value of values) {
+	//         Const result = isOptionsObjectArkType(value);
+	//         If (result instanceof type.errors) continue;
+	//         ValidValues.push(result);
+	//     }
+	//     Do_not_optimize(validValues);
 	// })
 });
 

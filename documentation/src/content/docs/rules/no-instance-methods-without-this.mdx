@@ -1,117 +1,99 @@
 ---
 title: no-instance-methods-without-this
-badge:
-    text: Performance
-    variant: success
-description: Move instance methods that don't use this into module-level functions.
+badges:
+    - text: "error"
+      variant: danger
+description: Report non-static class methods that never use this or super.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Detect instance methods that don't use `this`.
+Report instance methods that never use `this` or `super`.
 
-## Rule Details :badge[Performance]{variant=success}
+## Rule details :badge[Problem]{variant=danger}
 
-In `roblox-ts`, instance methods add metatable overhead. If a method doesn't touch instance state (via `this`), it can
-usually live as a module-level function instead.
+This rule checks non-static class methods with `kind: "method"`. Getters, setters, constructors, and static methods are
+ignored.
 
-<Aside type="danger" title="Metatable Overhead">
-	Each instance method increases the metatable. In games with lots of instances, that overhead adds up.
+By default it checks public, protected, and private methods. If a method body never touches `this` or `super`, the rule
+reports it.
+
+The scan walks the whole method body, including nested functions. If a nested callback uses `this`, the method is
+treated as using `this` too.
+
+<Aside type="tip" title="Why this exists">
+	The rule is aimed at `roblox-ts`, where extra instance methods add metatable overhead. If a method is really a
+	helper, keeping it at module scope is often a better fit.
 </Aside>
 
-## Refactoring Workflow
+## Options
 
-<Steps>
-1. **Identify Stateless Methods**
-   The linter identifies methods with no `this` references in their bodies.
+All three options default to `true`.
 
-2. **Extract to Module Scope** Move the method body outside the class definition to the top-level or a utility file.
+- `checkPublic`
+- `checkProtected`
+- `checkPrivate`
 
-3. **Convert to Pure Function** Ensure all dependencies are passed as explicit parameters rather than being implied by
-   object membership.
-
-4. **Update Call Sites** Replace `this.myMethod()` calls with a direct module-level call: `myMethod()`.
-
-{/* oxfmt-ignore */}
-
-</Steps>
+<Code
+	code={[
+		'import plugin from "eslint-plugin-cease-nonsense";',
+		"",
+		"export default [",
+		"\t{",
+		'\t\tplugins: { "cease-nonsense": plugin },',
+		"\t\trules: {",
+		'\t\t\t"cease-nonsense/no-instance-methods-without-this": [',
+		'\t\t\t\t"error",',
+		"\t\t\t\t{ checkPrivate: false, checkProtected: true, checkPublic: true },",
+		"\t\t\t],",
+		"\t\t},",
+		"\t},",
+		"];",
+	].join("\n")}
+	lang="typescript"
+	title="eslint.config.ts"
+/>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Bound Pure Functions
-		Bans instance methods that act as pure functions but are tied to class instances.
-
-    	<Code
-    		code={[
-    			"class MathSystem {",
-    			"\t// ❌ Doesn't use 'this', but costs metatable space",
-    			"\tprivate calculate(x: number): number {",
-    			"\t\treturn x * x;",
-    			"\t}",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={["class MathSystem {", "\tprivate calculate(x: number): number {", "\t\treturn x * x;", "\t}", "}"].join(
+			"\n",
+		)}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Standalone Utils
-    	Extract stateless logic to module scope for maximum performance.
+	<Code
+		code={[
+			"function calculate(x: number): number {",
+			"\treturn x * x;",
+			"}",
+			"",
+			"class MathSystem {",
+			"\tpublic run(value: number): number {",
+			"\t\treturn calculate(value);",
+			"\t}",
+			"",
+			"\tprotected log(): void {",
+			"\t\tprint(this);",
+			"\t}",
+			"}",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			"function calculate(x: number) {",
-    			"\treturn x * x;",
-    			"}",
-    			"",
-    			"class MathSystem {",
-    			"\tpublic run(val: number) {",
-    			"\t\treturn calculate(val);",
-    			"\t}",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Why is this important?
-
-<CardGrid stagger>
-	<Card title="Lookup Speed" icon="bolt">
-		Module-level functions are resolved faster than methods that require Lua index traversal.
-	</Card>
-	<Card title="Memory Scale" icon="list-format">
-		Removing unused instance methods reduces per-class overhead.
-	</Card>
-	<Card title="Testability" icon="rocket">
-		Pure standalone functions can be tested without the overhead of instantiating whole classes.
-	</Card>
-</CardGrid>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
-	<LinkCard
-		title="prefer-class-properties"
-		description="Optimizes property setup"
-		href="/eslint-cease-nonsense-rules/rules/prefer-class-properties/"
-	/>
 	<LinkCard
 		title="require-module-level-instantiation"
-		description="Correct placement for singletons"
+		description="Another rule that pushes reusable logic toward module scope."
 		href="/eslint-cease-nonsense-rules/rules/require-module-level-instantiation/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="roblox-ts Performance Guide"
-		description="Optimization tips for Roblox engine"
-		href="https://roblox-ts.com/docs/guides/performance"
 	/>
 </CardGrid>

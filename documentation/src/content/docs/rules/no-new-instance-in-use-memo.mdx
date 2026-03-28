@@ -1,150 +1,122 @@
 ---
 title: no-new-instance-in-use-memo
-badge:
-    text: React
-    variant: note
-description: "Disallow configured constructor calls (default: new Instance) inside useMemo callbacks."
+badges:
+    - text: "error"
+      variant: danger
+    - text: "React"
+      variant: note
+description: Disallow configured constructor calls inside React useMemo callbacks.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Disallow configured constructor calls inside `useMemo` callbacks.
+Reports configured `new` expressions inside `useMemo` callbacks, including traced local helper calls.
 
-## Rule Details :badge[React]{variant=note}
+## Rule details :badge[Problem]{variant=danger}
 
-`useMemo` should stay pure. Constructing runtime objects in the callback (especially Roblox Instances) mixes allocation
-and lifecycle work into memoization.
+By default, the rule reports `new Instance(...)` inside `useMemo`. It also follows local helper functions called from
+the memo callback, up to `maxHelperTraceDepth`, so a helper that creates an instance is still reported.
 
-<Aside type="caution" title="Render-Phase Allocation">
-	If you need to create and clean up runtime objects, manage the lifecycle explicitly (`useEffect`, refs, or module
-	scope factories) instead of constructing inside `useMemo`.
+The rule only checks `useMemo` imported from the configured React environment. `environment: "roblox-ts"` watches
+`@rbxts/react`, and `environment: "standard"` watches `react`.
+
+<Aside type="tip" title="What maxHelperTraceDepth does">
+	`0` only checks code written directly inside the `useMemo` callback. The default is `4`, which also traces a few
+	helper calls.
 </Aside>
-
-## Refactoring Workflow
-
-<Steps>
-1. **Find `new` Inside `useMemo`**
-   Look for `new Instance(...)` (or other configured constructors) inside memo callbacks.
-2. **Move Creation**
-   Move constructor logic to `useEffect`, a ref-backed initializer, or module-level code depending on lifecycle needs.
-3. **Keep `useMemo` Pure**
-   Use `useMemo` for deterministic value derivation only.
-4. **Clean Up Resources**
-   Ensure objects created in effects are cleaned up in the effect return function.
-
-{/* oxfmt-ignore */}
-
-</Steps>
-
-## Configuration
-
-The rule accepts these options:
-
-- `constructors` (default: `["Instance"]`): Constructor identifiers to disallow inside `useMemo`.
-- `environment` (default: `"roblox-ts"`): React import source mode (`"roblox-ts"` or `"standard"`).
-- `maxHelperTraceDepth` (default: `4`): Maximum local helper-call depth traced from `useMemo` callbacks.
-
-```typescript
-{
-  "cease-nonsense/no-new-instance-in-use-memo": ["error", {
-    constructors: ["Instance", "Vector3"],
-    environment: "roblox-ts",
-    maxHelperTraceDepth: 4,
-  }]
-}
-```
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Constructor Call in `useMemo`
-		Allocating runtime objects inside memo callbacks is disallowed.
+		### Constructor inside useMemo
 
-    	<Code
-    		code={[
-    			"import { useMemo } from \"@rbxts/react\";",
-    			"",
-    			"const model = useMemo(() => {",
-    			"\tconst value = new Instance(\"Model\");",
-    			"\tvalue.Name = \"Preview\";",
-    			"\treturn value;",
-    			"}, [itemId]);",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
+        	<Code
+        		code={[
+        			'import { useMemo } from "@rbxts/react";',
+        			"",
+        			"const model = useMemo(() => {",
+        			'\treturn new Instance("Model");',
+        			"}, []);",
+        		].join("\n")}
+        		lang="tsx"
+        	/>
+    </RuleExample>
+
+<RuleExample type="fail" title="Also incorrect">
+	    	### Helper traced from useMemo
+
+        	<Code
+        		code={[
+        			'import { useMemo } from "@rbxts/react";',
+        			"",
+        			"function createModel() {",
+        			'\treturn new Instance("Model");',
+        			"}",
+        			"",
+        			"const model = useMemo(() => createModel(), []);",
+        		].join("\n")}
+        		lang="tsx"
+        	/>
     </RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Explicit Lifecycle + Pure Memo
-    	Create resources in effects and keep memo for pure computation.
+	    	### Reuse or create outside the memo callback
 
-    	<Code
-    		code={[
-    			"import { useEffect, useMemo, useState } from \"@rbxts/react\";",
-    			"",
-    			"const [model, setModel] = useState<Model | undefined>(undefined);",
-    			"",
-    			"useEffect(() => {",
-    			"\tconst next = new Instance(\"Model\");",
-    			"\tnext.Name = \"Preview\";",
-    			"\tsetModel(next);",
-    			"",
-    			"\treturn () => next.Destroy();",
-    			"}, [itemId]);",
-    			"",
-    			"const texture = useMemo(() => resolveTexture(itemId), [itemId]);",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
+        	<Code
+        		code={[
+        			'import { useMemo } from "@rbxts/react";',
+        			"",
+        			'const model = new Instance("Model");',
+        			"",
+        			"const memoizedModel = useMemo(() => model, []);",
+        		].join("\n")}
+        		lang="tsx"
+        	/>
     </RuleExample>
 
-## Detection Strategy
+## Options
 
-<CardGrid stagger>
-	<Card title="Import Aware" icon="magnifier">
-		Only checks real React `useMemo` calls resolved from configured React import sources.
-	</Card>
-	<Card title="Constructor Matching" icon="setting">
-		Flags configured constructor identifiers (`new Foo()`), defaulting to `Instance`.
-	</Card>
-	<Card title="Deep Traversal" icon="list-format">
-		Reports constructor calls in memo callbacks and traced local helper chains up to `maxHelperTraceDepth`.
-	</Card>
-</CardGrid>
+| Option                | Type                        | Default        | Notes                                                                           |
+| :-------------------- | :-------------------------- | :------------- | :------------------------------------------------------------------------------ |
+| `constructors`        | `string[]`                  | `["Instance"]` | Constructor names to report.                                                    |
+| `environment`         | `"roblox-ts" \| "standard"` | `"roblox-ts"`  | Picks `@rbxts/react` or `react` imports.                                        |
+| `maxHelperTraceDepth` | `integer`                   | `4`            | Helper-call depth to trace from the memo callback. `0` disables helper tracing. |
 
-## Related Rules
+```js
+import ceaseNonsense from "eslint-plugin-cease-nonsense";
+
+export default [
+	{
+		plugins: {
+			"cease-nonsense": ceaseNonsense,
+		},
+		rules: {
+			"cease-nonsense/no-new-instance-in-use-memo": [
+				"error",
+				{
+					constructors: ["Instance", "Vector3"],
+					environment: "roblox-ts",
+					maxHelperTraceDepth: 2,
+				},
+			],
+		},
+	},
+];
+```
+
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="no-unused-use-memo"
-		description="Disallows standalone useMemo side-effect patterns"
+		description="Disallows useMemo calls that are only used for side effects"
 		href="/eslint-cease-nonsense-rules/rules/no-unused-use-memo/"
 	/>
 	<LinkCard
 		title="no-useless-use-effect"
-		description="Detects effects that are not synchronizing external systems"
+		description="Reports effects that are not syncing with anything external"
 		href="/eslint-cease-nonsense-rules/rules/no-useless-use-effect/"
-	/>
-	<LinkCard
-		title="require-named-effect-functions"
-		description="Enforces named effect callbacks"
-		href="/eslint-cease-nonsense-rules/rules/require-named-effect-functions/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="React Docs: useMemo"
-		description="Memoization guidance and caveats"
-		href="https://react.dev/reference/react/useMemo"
-	/>
-	<LinkCard
-		title="React Docs: useEffect"
-		description="Managing effects and cleanup"
-		href="https://react.dev/reference/react/useEffect"
 	/>
 </CardGrid>

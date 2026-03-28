@@ -1,105 +1,87 @@
 ---
 title: no-array-size-assignment
-badge:
-    text: Roblox
-    variant: note
-description: Prefer push() over array[array.size()] = value.
+badges:
+    - text: "error"
+      variant: danger
+    - text: "Fixable"
+      variant: success
+description: Reports `array[array.size()] = value` and can rewrite it to `array.push(value)`.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Prefer `push` over append-by-size indexing.
+Reports append-by-size assignments and points you to `push`.
 
-## Rule Details :badge[Roblox]{variant=note}
+## Rule details :badge[Problem]{variant=danger}
 
-In roblox-ts, `array[array.size()] = value` is an append pattern that's easy to miss in review and awkward to search
-for. This rule reports it and nudges you toward `array.push(value)`.
+The rule matches this exact append pattern:
 
-<Aside type="tip" title="Clear Append Intent">
-	`array.push(value)` makes append intent obvious.
+```ts
+array[array.size()] = value;
+```
+
+It also works with member chains such as `state.items[state.items.size()] = item;`.
+
+It does not match lookalikes like `array[array.size() - 1] = value`, `array[other.size()] = value`, or
+`array[array.size()] += value`.
+
+<Aside type="tip" title="Default behavior">
+	Autofix is off by default. With the default config, the rule reports the pattern but does not rewrite it.
 </Aside>
 
 ## Configuration
 
 <Code
 	code={[
-		"{",
-		'\t"cease-nonsense/no-array-size-assignment": ["error", {',
-		'\t\t"allowAutofix": false',
-		"\t}]",
-		"}",
+		'import ceaseNonsense from "eslint-plugin-cease-nonsense";',
+		"",
+		"export default [",
+		"\t{",
+		"\t\tplugins: {",
+		'\t\t\t"cease-nonsense": ceaseNonsense,',
+		"\t\t},",
+		"\t\trules: {",
+		'\t\t\t"cease-nonsense/no-array-size-assignment": ["error", {',
+		'\t\t\t\t"allowAutofix": true',
+		"\t\t\t}],",
+		"\t\t},",
+		"\t},",
+		"];",
 	].join("\n")}
-	lang="typescript"
+	lang="ts"
 	title="eslint.config.ts"
 />
 
-## Autofix Behavior
+## Option
 
-<Steps>
-1. **Enable autofix** Set `allowAutofix: true`.
-2. **Expression statement only** Autofix runs only when the append assignment is a direct statement.
-3. **Safe target only** The array target must be a side-effect-free reference chain (no calls or optional chaining).
-4. **Rewrite** The rule rewrites to `array.push(value)`.
+| Option         | Default | What it does                                                                     |
+| :------------- | :------ | :------------------------------------------------------------------------------- |
+| `allowAutofix` | `false` | Rewrites the assignment to `.push(...)` when the target is safe to evaluate once |
 
-{/* oxfmt-ignore */}
-
-</Steps>
+The automatic fix only runs when the assignment is a standalone expression statement and the array target is a simple,
+non-optional reference chain such as `array`, `this.items`, `store["items"]`, or `registry[keyRef.value]`.
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Size Index Append
-		Avoid append assignment via `.size()` index.
-
-    	<Code
-    		code={[
-    			"inventory[inventory.size()] = item;",
-    			"state.items[state.items.size()] = nextItem;",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={["inventory[inventory.size()] = item;", "state.items[state.items.size()] = nextItem;"].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Explicit Append
-    	Use `push` for append operations.
+	<Code code={["inventory.push(item);", "state.items.push(nextItem);"].join("\n")} lang="ts" />
+</RuleExample>
 
-    	<Code
-    		code={[
-    			"inventory.push(item);",
-    			"state.items.push(nextItem);",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Why enforce this?
-
-<CardGrid stagger>
-	<Card title="Intent" icon="magnifier">
-		`push` communicates append semantics directly without hidden index math.
-	</Card>
-	<Card title="Consistency" icon="list-format">
-		Enforces one append style across the codebase for easier searching and review.
-	</Card>
-	<Card title="Safer Fixes" icon="bolt">
-		Autofix runs only when the target can be safely evaluated once.
-	</Card>
-</CardGrid>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
-		title="prefer-sequence-overloads"
-		description="Performance-focused Roblox constructor rule"
-		href="/eslint-cease-nonsense-rules/rules/prefer-sequence-overloads/"
-	/>
-	<LinkCard
-		title="prefer-udim2-shorthand"
-		description="Another Roblox shorthand performance rule"
-		href="/eslint-cease-nonsense-rules/rules/prefer-udim2-shorthand/"
+		title="no-array-constructor-elements"
+		description="Cleans up other array initialization patterns"
+		href="/eslint-cease-nonsense-rules/rules/no-array-constructor-elements/"
 	/>
 </CardGrid>

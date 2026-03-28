@@ -1,119 +1,98 @@
 ---
 title: require-paired-calls
-badge:
-    text: Safety
-    variant: danger
-description: Ensure opener/closer call pairs are balanced (LIFO) across all code paths.
+badges:
+    - text: "error"
+      variant: danger
+    - text: "Fixable"
+      variant: success
+description: Track opener and closer calls across control flow, and report mismatches, wrong order, and unsafe yielding.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Ensure opener/closer call pairs are balanced.
+Checks opener and closer call pairs across control flow.
 
-## Rule Details :badge[Safety]{variant=danger}
+## Rule details :badge[Problem]{variant=danger}
 
-This rule checks resource-style call pairs (profiling markers, transactions, mutex locks, etc.). Every opener (for
-example `debug.profilebegin`) must have a matching closer (for example `debug.profileend`), and they must be closed in
-LIFO order.
+The rule keeps a stack of configured opener calls and matches later closers against that stack.
 
-<Aside type="danger" title="Resource Leaks">
-	Unpaired calls leak resources and cause hard-to-reproduce bugs. Use a `try...finally` so cleanup always runs.
+It reports missing closers, extra closers, closers called out of order, early exits that skip cleanup, and branch paths
+where an opener is not closed everywhere. When `requireSync` is on, it also reports `await` and `yield` between the
+opener and closer.
+
+With no options, it defaults to Roblox profiling rules:
+
+- opener: `debug.profilebegin`
+- closer: `debug.profileend`
+- `requireSync: true`
+- `platform: "roblox"`
+- yielding functions: `task.wait`, `wait`, `*.WaitForChild`, `*.*Async`
+
+<Aside type="danger" title="About the Fixable badge">
+	The rule is marked fixable in metadata, but most reports still need a manual fix because the right cleanup code
+	depends on your control flow.
 </Aside>
-
-## Resource Management Workflow
-
-<Steps>
-1. **Initialize Opening**
-   Call your opener function (e.g., `db.begin()`).
-
-2. **Wrap in Try-Finally** Use a `try...finally` block. This is the only way to guarantee the closer runs even if an
-   error occurs.
-
-3. **Perform Action** Execute your business logic inside the `try` block.
-
-4. **Guaranteed Cleanup** Place your closer function (e.g., `db.end()`) inside the `finally` block to ensure it always
-   executes.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Unbalanced Pairs
-		Bans patterns where an early return or error could skip the cleaning phase.
-
-    	<Code
-    		code={[
-    			"function test() {",
-    			'\tdebug.profilebegin("calculation");',
-    			"\tif (isInputInvalid()) {",
-    			"\t\t// ❌ ERROR: Function ends without profileend()!",
-    			"\t\treturn;",
-    			"\t}",
-    			"\tdebug.profileend();",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			"function runTask() {",
+			'\tdebug.profilebegin("runTask");',
+			"\tif (!ready) return;",
+			"\tdebug.profileend();",
+			"}",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Balanced Execution
-    	Use LIFO order and ensure every path out of the function hits a closer.
-
-    	<Code
-    		code={[
-    			"function test() {",
-    			'\tdebug.profilebegin("calculation");',
-    			"\ttry {",
-    			"\t\trunComplexCalculation();",
-    			"\t} finally {",
-    			"\t\t// ✅ Guaranteed to run",
-    			"\t\tdebug.profileend();",
-    			"\t}",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Common Used Pairs
-
-<CardGrid stagger>
-	<Card title="Profiling" icon="bolt">
-		`debug.profilebegin` and `debug.profileend` for Roblox MicroProfiler.
-	</Card>
-	<Card title="Transactions" icon="list-format">
-		`db.transaction` and `db.commit` for database integrity.
-	</Card>
-	<Card title="Locking" icon="rocket">
-		`mutex.lock` and `mutex.unlock` to prevent race conditions.
-	</Card>
-	<Card title="UI Layout" icon="setting">
-		`Iris.Window` and `Iris.End` for immediate mode GUI libraries.
-	</Card>
-</CardGrid>
-
-## Related Rules
-
-<CardGrid>
-	<LinkCard
-		title="no-async-constructor"
-		description="Prevents race conditions in setup"
-		href="/eslint-cease-nonsense-rules/rules/no-async-constructor/"
+	<Code
+		code={[
+			"function runTask() {",
+			'\tdebug.profilebegin("runTask");',
+			"\ttry {",
+			"\t\tdoWork();",
+			"\t} finally {",
+			"\t\tdebug.profileend();",
+			"\t}",
+			"}",
+		].join("\n")}
+		lang="ts"
 	/>
-</CardGrid>
+</RuleExample>
 
-## Further Reading
+## Options
+
+| Option                    | Type                  | Default                                    |
+| :------------------------ | :-------------------- | :----------------------------------------- |
+| `allowConditionalClosers` | `boolean`             | `false`                                    |
+| `allowMultipleOpeners`    | `boolean`             | `true`                                     |
+| `maxNestingDepth`         | `number`              | `0`                                        |
+| `pairs`                   | `PairConfiguration[]` | default Roblox profiling pair when omitted |
+
+Each pair supports these fields:
+
+| Field                | Type                 |
+| :------------------- | :------------------- |
+| `opener`             | `string`             |
+| `closer`             | `string \| string[]` |
+| `alternatives`       | `string[]`           |
+| `openerAlternatives` | `string[]`           |
+| `platform`           | `"roblox"`           |
+| `requireSync`        | `boolean`            |
+| `yieldingFunctions`  | `string[]`           |
+
+## Related rules
 
 <CardGrid>
 	<LinkCard
-		title="Resource Management (RAII)"
-		description="General software patterns for resource safety"
-		href="https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization"
+		title="require-module-level-instantiation"
+		description="Keeps long-lived objects out of hot paths"
+		href="/eslint-cease-nonsense-rules/rules/require-module-level-instantiation/"
 	/>
 </CardGrid>

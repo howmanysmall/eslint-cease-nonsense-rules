@@ -1,117 +1,71 @@
 ---
 title: require-react-display-names
-badge:
-    text: Best Practice
-    variant: success
-description: Require displayName on exported memo/context values so DevTools stays readable.
+badges:
+    - text: "error"
+      variant: danger
+description: Require `displayName` on exported `memo(...)` components and exported `createContext(...)` values.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Require `displayName` on exported `memo(...)` and `createContext(...)` values.
+Requires `displayName` on exported memoized components and exported contexts.
 
-## Rule Details :badge[Best Practice]{variant=success}
+## Rule details :badge[Problem]{variant=danger}
 
-Components wrapped in `memo` and contexts from `createContext` can lose useful names in React DevTools unless you set
-`displayName`. This rule makes you keep that name.
+The rule tracks calls to `memo(...)` and `createContext(...)` from the configured React environment.
 
-<Aside type="tip" title="Production Debugging">
-	Minification often strips function names. `displayName` is a string literal that survives, so you can still read
-	DevTools and stack traces.
+It reports two cases:
+
+- direct default exports such as `export default memo(Component)` or `export default createContext(...)`
+- exported variables created from `memo(...)` or `createContext(...)` that never get a `.displayName` assignment
+
+By default, `environment` is `"roblox-ts"`. Switch to `"standard"` to use regular React package sources.
+
+<Aside type="tip" title="What counts as a display name assignment">
+	The rule looks for `SomeValue.displayName = ...`. It does not require the string to match the variable name, but
+	that is the intended pattern.
 </Aside>
-
-## Refactoring Path
-
-<Steps>
-1. **Locate Exports**
-   Find `export default memo(...)` or `export const MyContext = createContext(...)` calls.
-
-2. **Assign to Constant** Instead of exporting the result directly, assign it to a named variable (e.g.,
-   `const MyComponent = memo(...)`).
-
-3. **Set Display Name** Append a `.displayName` assignment: `MyComponent.displayName = "MyComponent"`.
-
-4. **Export Named** Export the named variable. You can still use `export default` for the named variable afterwards.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Anonymous Exports
-		Bans direct exports that hide the component name from the debugger.
-
-    	<Code
-    		code={[
-    			"// Direct memo export",
-    			"export default memo(MyComponent);",
-    			"",
-    			"// Missing displayName",
-    			"export const MyContext = React.createContext(undefined);",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={["export default memo(ButtonImpl);", "", "export const UserContext = createContext(undefined);"].join(
+			"\n",
+		)}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Labeled Components
-    	Name your exports so DevTools and stack traces stay readable.
-
-    	<Code
-    		code={[
-    			'const MyComponent = memo(MyComponentNoMemo);',
-    			'MyComponent.displayName = "MyComponent";',
-    			"export default MyComponent;",
-    			"",
-    			"const MyContext = React.createContext(undefined);",
-    			'MyContext.displayName = "MyContext";',
-    			"export default MyContext;",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Why is this important?
-
-<CardGrid stagger>
-	<Card title="DevTools Mapping" icon="list-format">
-		Ensures your component tree doesn't just show `<Memo(Anonymous)>` everywhere.
-	</Card>
-	<Card title="Profiling" icon="bolt">
-		Helps the React Profiler attribute performance bottlenecks to specific named components.
-	</Card>
-	<Card title="Refactoring Safety" icon="setting">
-		Assigning to a local constant before exporting makes the code easier to grep and refactor.
-	</Card>
-</CardGrid>
-
-## Environment Modes
-
-| Mode        | Target Packages                |
-| :---------- | :----------------------------- |
-| `roblox-ts` | `@rbxts/react`, `@rbxts/roact` |
-| `standard`  | `react`, `react-dom`           |
-
-## Related Rules
-
-<CardGrid>
-	<LinkCard
-		title="ban-react-fc"
-		description="Bans React.FC for better type clarity"
-		href="/eslint-cease-nonsense-rules/rules/ban-react-fc/"
+	<Code
+		code={[
+			"const Button = memo(ButtonImpl);",
+			'Button.displayName = "Button";',
+			"export default Button;",
+			"",
+			"const UserContext = createContext(undefined);",
+			'UserContext.displayName = "UserContext";',
+			"export { UserContext };",
+		].join("\n")}
+		lang="tsx"
 	/>
-</CardGrid>
+</RuleExample>
 
-## Further Reading
+## Options
+
+| Option        | Type                        | Default       |
+| :------------ | :-------------------------- | :------------ |
+| `environment` | `"roblox-ts" \| "standard"` | `"roblox-ts"` |
+
+## Related rules
 
 <CardGrid>
 	<LinkCard
-		title="React Docs: DisplayName"
-		description="How React uses display names for debugging"
-		href="https://legacy.reactjs.org/docs/react-component.html#displayname"
+		title="require-react-component-keys"
+		description="Checks list rendering details in JSX"
+		href="/eslint-cease-nonsense-rules/rules/require-react-component-keys/"
 	/>
 </CardGrid>
