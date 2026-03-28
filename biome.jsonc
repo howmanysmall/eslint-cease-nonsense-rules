@@ -251,6 +251,14 @@
 				}
 			}
 		},
+		{
+			"assist": {
+				"actions": {
+					"source": { "useSortedKeys": "on" }
+				}
+			},
+			"includes": [".zed/settings.json"]
+		},
 
 		{
 			"includes": [".claude/**/*.json"],

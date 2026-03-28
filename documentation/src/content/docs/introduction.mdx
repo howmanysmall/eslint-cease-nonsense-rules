@@ -4,14 +4,15 @@ description: Learn about Cease Nonsense, a comprehensive ESLint plugin for TypeS
 ---
 
 import { Aside, LinkCard, CardGrid, Card } from "@astrojs/starlight/components";
+import { totalRules, ruleCategories } from "../../data/rule-stats";
 
 Welcome to **Cease Nonsense**, a comprehensive ESLint plugin designed to catch common mistakes, enforce best practices,
 and improve code quality in TypeScript, React, and roblox-ts projects.
 
 ## What is Cease Nonsense?
 
-Cease Nonsense provides **55 carefully crafted ESLint rules** that go beyond standard linting. These rules are designed
-to catch subtle bugs, enforce architectural patterns, and improve developer experience.
+Cease Nonsense provides **{totalRules} carefully crafted ESLint rules** that go beyond standard linting. These rules are
+designed to catch subtle bugs, enforce architectural patterns, and improve developer experience.
 
 <CardGrid>
 	<Card title="Type-Aware" icon="seti:typescript">
@@ -44,35 +45,49 @@ See the [Quick Start guide](/eslint-cease-nonsense-rules/quick-start/) for insta
 
 ## Rule Categories
 
-The 55 rules are organized into five categories:
-
-| Category              | Count    |
-| --------------------- | -------- |
-| React Rules           | 20 rules |
-| Roblox & Luau Rules   | 16 rules |
-| Naming & Conventions  | 7 rules  |
-| General Logic & Style | 12 rules |
+<div class="category-grid">
+	<div class="category-card">
+		<div class="category-count">{ruleCategories.react.count}</div>
+		<div class="category-label">{ruleCategories.react.label}</div>
+		<div class="category-description">Hooks, components, and React-specific patterns</div>
+	</div>
+	<div class="category-card">
+		<div class="category-count">{ruleCategories.roblox.count}</div>
+		<div class="category-label">{ruleCategories.roblox.label}</div>
+		<div class="category-description">roblox-ts and Luau development essentials</div>
+	</div>
+	<div class="category-card">
+		<div class="category-count">{ruleCategories.naming.count}</div>
+		<div class="category-label">{ruleCategories.naming.label}</div>
+		<div class="category-description">Consistent naming across your codebase</div>
+	</div>
+	<div class="category-card">
+		<div class="category-count">{ruleCategories.general.count}</div>
+		<div class="category-label">{ruleCategories.general.label}</div>
+		<div class="category-description">Clean code and maintainable patterns</div>
+	</div>
+</div>
 
 <CardGrid>
 	<LinkCard
-		title="React Rules"
-		description="20 rules for hooks, components, and patterns"
-		href="/eslint-cease-nonsense-rules/rules/ban-react-fc/"
+		title={ruleCategories.react.label}
+		description={`${ruleCategories.react.count} rules for hooks, components, and patterns`}
+		href={ruleCategories.react.slug}
 	/>
 	<LinkCard
-		title="Roblox & Luau Rules"
-		description="16 rules specific to roblox-ts development"
-		href="/eslint-cease-nonsense-rules/rules/ban-instances/"
+		title={ruleCategories.roblox.label}
+		description={`${ruleCategories.roblox.count} rules specific to roblox-ts development`}
+		href={ruleCategories.roblox.slug}
 	/>
 	<LinkCard
-		title="Naming Conventions"
-		description="7 rules for consistent naming across your codebase"
-		href="/eslint-cease-nonsense-rules/rules/naming-convention/"
+		title={ruleCategories.naming.label}
+		description={`${ruleCategories.naming.count} rules for consistent naming across your codebase`}
+		href={ruleCategories.naming.slug}
 	/>
 	<LinkCard
-		title="General Logic & Style"
-		description="12 rules for clean, maintainable code"
-		href="/eslint-cease-nonsense-rules/rules/prefer-early-return/"
+		title={ruleCategories.general.label}
+		description={`${ruleCategories.general.count} rules for clean, maintainable code`}
+		href={ruleCategories.general.slug}
 	/>
 </CardGrid>
 
