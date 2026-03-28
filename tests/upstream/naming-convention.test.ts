@@ -8,6 +8,17 @@ import { invalid, valid } from "./naming-convention/cases";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+// Add ignoreDestructured: false to every test case so upstream ESLint tests
+// run against the rule's original behavior. The rule defaults to
+// ignoreDestructured: true, but the upstream tests were written for the
+// original (non-ignoring) behavior.
+function withDestructuredSetting<T extends { options: unknown[] }>(cases: readonly T[]): T[] {
+	return cases.map((c) => ({
+		...c,
+		options: [...c.options, { ignoreDestructured: false }],
+	})) as T[];
+}
+
 const ruleTester = new RuleTester({
 	languageOptions: {
 		ecmaVersion: 2022,
@@ -24,4 +35,7 @@ const ruleTester = new RuleTester({
 });
 
 // @ts-expect-error -- Stupid.
-ruleTester.run("naming-convention", rule, { invalid, valid });
+ruleTester.run("naming-convention", rule, {
+	invalid: withDestructuredSetting(invalid),
+	valid: withDestructuredSetting(valid),
+});
