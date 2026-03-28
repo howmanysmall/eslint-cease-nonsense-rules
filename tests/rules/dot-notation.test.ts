@@ -153,6 +153,36 @@ class ExampleClass {
 				},
 				{
 					code: `
+type Entry<TValue> = {
+	value: TValue;
+};
+
+export default class SomeClass<TKey, TValue extends NonNullable<unknown>> {
+	private readonly entries = new Map<TKey, Entry<TValue>>();
+
+	public clear(): void {
+		this["entries"].clear();
+	}
+}
+				`,
+					errors: [{ messageId: "useDot" }],
+					options: [{ allowInaccessibleClassPropertyAccess: true, environment: "roblox-ts" }],
+					output: `
+type Entry<TValue> = {
+	value: TValue;
+};
+
+export default class SomeClass<TKey, TValue extends NonNullable<unknown>> {
+	private readonly entries = new Map<TKey, Entry<TValue>>();
+
+	public clear(): void {
+		this.entries.clear();
+	}
+}
+				`,
+				},
+				{
+					code: `
 class ExampleClass {
 	protected value = 0;
 }
