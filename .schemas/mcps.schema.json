@@ -1,0 +1,364 @@
+{
+	"properties": {
+		"$schema": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			]
+		},
+		"mcpServers": {
+			"additionalProperties": {
+				"anyOf": [
+					{
+						"description": "A single MCP server configuration.",
+						"properties": {
+							"args": {
+								"anyOf": [
+									{
+										"description": "Arguments passed to the command. Each argument may use env expansion.",
+										"items": {
+											"type": "string"
+										},
+										"type": "array"
+									},
+									{
+										"description": "Arguments passed to the command. Each argument may use env expansion.",
+										"type": "null"
+									}
+								],
+								"description": "Arguments passed to the command. Each argument may use env expansion."
+							},
+							"command": {
+								"description": "Executable used to start the MCP server. Supports env expansion, e.g. \"${HOME}/bin/server\".",
+								"type": "string"
+							},
+							"description": {
+								"anyOf": [
+									{
+										"description": "Optional human-readable description of this server. Not currently documented, but useful for tooling/UX.",
+										"type": "string"
+									},
+									{
+										"description": "Optional human-readable description of this server. Not currently documented, but useful for tooling/UX.",
+										"type": "null"
+									}
+								],
+								"description": "Optional human-readable description of this server. Not currently documented, but useful for tooling/UX."
+							},
+							"env": {
+								"anyOf": [
+									{
+										"additionalProperties": {
+											"type": "string"
+										},
+										"description": "Environment variables to set *for the server process / HTTP client*.\n\nValues support environment expansion:\n  - \"${VAR}\" - required env var VAR\n - \"${VAR:-default}\" → VAR if set, otherwise literal \"default\"\n\nFor HTTP servers, these are process-level env vars (not HTTP headers).\nFor stdio servers, they become process env vars.",
+										"type": "object"
+									},
+									{
+										"description": "Environment variables to set *for the server process / HTTP client*.\n\nValues support environment expansion:\n  - \"${VAR}\" - required env var VAR\n - \"${VAR:-default}\" → VAR if set, otherwise literal \"default\"\n\nFor HTTP servers, these are process-level env vars (not HTTP headers).\nFor stdio servers, they become process env vars.",
+										"type": "null"
+									}
+								],
+								"description": "Environment variables to set *for the server process / HTTP client*.\n\nValues support environment expansion:\n  - \"${VAR}\" - required env var VAR\n - \"${VAR:-default}\" → VAR if set, otherwise literal \"default\"\n\nFor HTTP servers, these are process-level env vars (not HTTP headers).\nFor stdio servers, they become process env vars."
+							},
+							"oauth": {
+								"anyOf": [
+									{
+										"description": "Optional OAuth configuration for this server. Only meaningful for HTTP/SSE transports.",
+										"properties": {
+											"authServerMetadataUrl": {
+												"anyOf": [
+													{
+														"description": "Override for the OAuth metadata discovery URL.\n\nWhen the server’s standard\n  /.well-known/oauth-authorization-server\nendpoint is broken, Claude can be configured to fetch metadata\nfrom a specific OIDC configuration URL instead.\n\nMust be an https:// URL according to docs.\n\nExample:\n\n \"authServerMetadataUrl\":\n   \"https://auth.example.com/.well-known/openid-configuration\"",
+														"type": "string"
+													},
+													{
+														"description": "Override for the OAuth metadata discovery URL.\n\nWhen the server’s standard\n  /.well-known/oauth-authorization-server\nendpoint is broken, Claude can be configured to fetch metadata\nfrom a specific OIDC configuration URL instead.\n\nMust be an https:// URL according to docs.\n\nExample:\n\n \"authServerMetadataUrl\":\n   \"https://auth.example.com/.well-known/openid-configuration\"",
+														"type": "null"
+													}
+												],
+												"description": "Override for the OAuth metadata discovery URL.\n\nWhen the server’s standard\n  /.well-known/oauth-authorization-server\nendpoint is broken, Claude can be configured to fetch metadata\nfrom a specific OIDC configuration URL instead.\n\nMust be an https:// URL according to docs.\n\nExample:\n\n \"authServerMetadataUrl\":\n   \"https://auth.example.com/.well-known/openid-configuration\""
+											},
+											"callbackPort": {
+												"anyOf": [
+													{
+														"description": "Fixed callback port used for the redirect URI:\n  http://localhost:<callbackPort>/callback\n\nUsed when the OAuth app has a pre-registered redirect URI\nwith a fixed port.",
+														"type": "integer"
+													},
+													{
+														"description": "Fixed callback port used for the redirect URI:\n  http://localhost:<callbackPort>/callback\n\nUsed when the OAuth app has a pre-registered redirect URI\nwith a fixed port.",
+														"type": "null"
+													}
+												],
+												"description": "Fixed callback port used for the redirect URI:\n  http://localhost:<callbackPort>/callback\n\nUsed when the OAuth app has a pre-registered redirect URI\nwith a fixed port."
+											},
+											"clientId": {
+												"anyOf": [
+													{
+														"description": "OAuth client ID.\n\nTypically configured either:\n - via CLI flags (`--client-id`), or\n - directly in `.mcp.json`.\n\nMay be required depending on the server.",
+														"type": "string"
+													},
+													{
+														"description": "OAuth client ID.\n\nTypically configured either:\n - via CLI flags (`--client-id`), or\n - directly in `.mcp.json`.\n\nMay be required depending on the server.",
+														"type": "null"
+													}
+												],
+												"description": "OAuth client ID.\n\nTypically configured either:\n - via CLI flags (`--client-id`), or\n - directly in `.mcp.json`.\n\nMay be required depending on the server."
+											}
+										},
+										"type": "object"
+									},
+									{
+										"description": "Optional OAuth configuration for this server. Only meaningful for HTTP/SSE transports.",
+										"type": "null"
+									}
+								],
+								"description": "Optional OAuth configuration for this server. Only meaningful for HTTP/SSE transports."
+							},
+							"type": {
+								"const": "stdio"
+							}
+						},
+						"required": ["command", "type"],
+						"type": "object"
+					},
+					{
+						"description": "A single MCP server configuration.",
+						"properties": {
+							"description": {
+								"anyOf": [
+									{
+										"description": "Optional human-readable description of this server. Not currently documented, but useful for tooling/UX.",
+										"type": "string"
+									},
+									{
+										"description": "Optional human-readable description of this server. Not currently documented, but useful for tooling/UX.",
+										"type": "null"
+									}
+								],
+								"description": "Optional human-readable description of this server. Not currently documented, but useful for tooling/UX."
+							},
+							"env": {
+								"anyOf": [
+									{
+										"additionalProperties": {
+											"type": "string"
+										},
+										"description": "Environment variables to set *for the server process / HTTP client*.\n\nValues support environment expansion:\n  - \"${VAR}\" - required env var VAR\n - \"${VAR:-default}\" → VAR if set, otherwise literal \"default\"\n\nFor HTTP servers, these are process-level env vars (not HTTP headers).\nFor stdio servers, they become process env vars.",
+										"type": "object"
+									},
+									{
+										"description": "Environment variables to set *for the server process / HTTP client*.\n\nValues support environment expansion:\n  - \"${VAR}\" - required env var VAR\n - \"${VAR:-default}\" → VAR if set, otherwise literal \"default\"\n\nFor HTTP servers, these are process-level env vars (not HTTP headers).\nFor stdio servers, they become process env vars.",
+										"type": "null"
+									}
+								],
+								"description": "Environment variables to set *for the server process / HTTP client*.\n\nValues support environment expansion:\n  - \"${VAR}\" - required env var VAR\n - \"${VAR:-default}\" → VAR if set, otherwise literal \"default\"\n\nFor HTTP servers, these are process-level env vars (not HTTP headers).\nFor stdio servers, they become process env vars."
+							},
+							"headers": {
+								"anyOf": [
+									{
+										"additionalProperties": {
+											"type": "string"
+										},
+										"description": "Optional HTTP headers added to every request. Values support env expansion.",
+										"type": "object"
+									},
+									{
+										"description": "Optional HTTP headers added to every request. Values support env expansion.",
+										"type": "null"
+									}
+								],
+								"description": "Optional HTTP headers added to every request. Values support env expansion."
+							},
+							"oauth": {
+								"anyOf": [
+									{
+										"description": "Optional OAuth configuration for this server. Only meaningful for HTTP/SSE transports.",
+										"properties": {
+											"authServerMetadataUrl": {
+												"anyOf": [
+													{
+														"description": "Override for the OAuth metadata discovery URL.\n\nWhen the server’s standard\n  /.well-known/oauth-authorization-server\nendpoint is broken, Claude can be configured to fetch metadata\nfrom a specific OIDC configuration URL instead.\n\nMust be an https:// URL according to docs.\n\nExample:\n\n \"authServerMetadataUrl\":\n   \"https://auth.example.com/.well-known/openid-configuration\"",
+														"type": "string"
+													},
+													{
+														"description": "Override for the OAuth metadata discovery URL.\n\nWhen the server’s standard\n  /.well-known/oauth-authorization-server\nendpoint is broken, Claude can be configured to fetch metadata\nfrom a specific OIDC configuration URL instead.\n\nMust be an https:// URL according to docs.\n\nExample:\n\n \"authServerMetadataUrl\":\n   \"https://auth.example.com/.well-known/openid-configuration\"",
+														"type": "null"
+													}
+												],
+												"description": "Override for the OAuth metadata discovery URL.\n\nWhen the server’s standard\n  /.well-known/oauth-authorization-server\nendpoint is broken, Claude can be configured to fetch metadata\nfrom a specific OIDC configuration URL instead.\n\nMust be an https:// URL according to docs.\n\nExample:\n\n \"authServerMetadataUrl\":\n   \"https://auth.example.com/.well-known/openid-configuration\""
+											},
+											"callbackPort": {
+												"anyOf": [
+													{
+														"description": "Fixed callback port used for the redirect URI:\n  http://localhost:<callbackPort>/callback\n\nUsed when the OAuth app has a pre-registered redirect URI\nwith a fixed port.",
+														"type": "integer"
+													},
+													{
+														"description": "Fixed callback port used for the redirect URI:\n  http://localhost:<callbackPort>/callback\n\nUsed when the OAuth app has a pre-registered redirect URI\nwith a fixed port.",
+														"type": "null"
+													}
+												],
+												"description": "Fixed callback port used for the redirect URI:\n  http://localhost:<callbackPort>/callback\n\nUsed when the OAuth app has a pre-registered redirect URI\nwith a fixed port."
+											},
+											"clientId": {
+												"anyOf": [
+													{
+														"description": "OAuth client ID.\n\nTypically configured either:\n - via CLI flags (`--client-id`), or\n - directly in `.mcp.json`.\n\nMay be required depending on the server.",
+														"type": "string"
+													},
+													{
+														"description": "OAuth client ID.\n\nTypically configured either:\n - via CLI flags (`--client-id`), or\n - directly in `.mcp.json`.\n\nMay be required depending on the server.",
+														"type": "null"
+													}
+												],
+												"description": "OAuth client ID.\n\nTypically configured either:\n - via CLI flags (`--client-id`), or\n - directly in `.mcp.json`.\n\nMay be required depending on the server."
+											}
+										},
+										"type": "object"
+									},
+									{
+										"description": "Optional OAuth configuration for this server. Only meaningful for HTTP/SSE transports.",
+										"type": "null"
+									}
+								],
+								"description": "Optional OAuth configuration for this server. Only meaningful for HTTP/SSE transports."
+							},
+							"type": {
+								"const": "http"
+							},
+							"url": {
+								"description": "Base MCP endpoint, usually ending with \"/mcp\". Supports env expansion like  \"${API_BASE_URL:-https://api.example.com}/mcp\"",
+								"type": "string"
+							}
+						},
+						"required": ["type", "url"],
+						"type": "object"
+					},
+					{
+						"description": "A single MCP server configuration.",
+						"properties": {
+							"description": {
+								"anyOf": [
+									{
+										"description": "Optional human-readable description of this server. Not currently documented, but useful for tooling/UX.",
+										"type": "string"
+									},
+									{
+										"description": "Optional human-readable description of this server. Not currently documented, but useful for tooling/UX.",
+										"type": "null"
+									}
+								],
+								"description": "Optional human-readable description of this server. Not currently documented, but useful for tooling/UX."
+							},
+							"env": {
+								"anyOf": [
+									{
+										"additionalProperties": {
+											"type": "string"
+										},
+										"description": "Environment variables to set *for the server process / HTTP client*.\n\nValues support environment expansion:\n  - \"${VAR}\" - required env var VAR\n - \"${VAR:-default}\" → VAR if set, otherwise literal \"default\"\n\nFor HTTP servers, these are process-level env vars (not HTTP headers).\nFor stdio servers, they become process env vars.",
+										"type": "object"
+									},
+									{
+										"description": "Environment variables to set *for the server process / HTTP client*.\n\nValues support environment expansion:\n  - \"${VAR}\" - required env var VAR\n - \"${VAR:-default}\" → VAR if set, otherwise literal \"default\"\n\nFor HTTP servers, these are process-level env vars (not HTTP headers).\nFor stdio servers, they become process env vars.",
+										"type": "null"
+									}
+								],
+								"description": "Environment variables to set *for the server process / HTTP client*.\n\nValues support environment expansion:\n  - \"${VAR}\" - required env var VAR\n - \"${VAR:-default}\" → VAR if set, otherwise literal \"default\"\n\nFor HTTP servers, these are process-level env vars (not HTTP headers).\nFor stdio servers, they become process env vars."
+							},
+							"headers": {
+								"anyOf": [
+									{
+										"additionalProperties": {
+											"type": "string"
+										},
+										"description": "Optional HTTP headers for the SSE connection.",
+										"type": "object"
+									},
+									{
+										"description": "Optional HTTP headers for the SSE connection.",
+										"type": "null"
+									}
+								],
+								"description": "Optional HTTP headers for the SSE connection."
+							},
+							"oauth": {
+								"anyOf": [
+									{
+										"description": "Optional OAuth configuration for this server. Only meaningful for HTTP/SSE transports.",
+										"properties": {
+											"authServerMetadataUrl": {
+												"anyOf": [
+													{
+														"description": "Override for the OAuth metadata discovery URL.\n\nWhen the server’s standard\n  /.well-known/oauth-authorization-server\nendpoint is broken, Claude can be configured to fetch metadata\nfrom a specific OIDC configuration URL instead.\n\nMust be an https:// URL according to docs.\n\nExample:\n\n \"authServerMetadataUrl\":\n   \"https://auth.example.com/.well-known/openid-configuration\"",
+														"type": "string"
+													},
+													{
+														"description": "Override for the OAuth metadata discovery URL.\n\nWhen the server’s standard\n  /.well-known/oauth-authorization-server\nendpoint is broken, Claude can be configured to fetch metadata\nfrom a specific OIDC configuration URL instead.\n\nMust be an https:// URL according to docs.\n\nExample:\n\n \"authServerMetadataUrl\":\n   \"https://auth.example.com/.well-known/openid-configuration\"",
+														"type": "null"
+													}
+												],
+												"description": "Override for the OAuth metadata discovery URL.\n\nWhen the server’s standard\n  /.well-known/oauth-authorization-server\nendpoint is broken, Claude can be configured to fetch metadata\nfrom a specific OIDC configuration URL instead.\n\nMust be an https:// URL according to docs.\n\nExample:\n\n \"authServerMetadataUrl\":\n   \"https://auth.example.com/.well-known/openid-configuration\""
+											},
+											"callbackPort": {
+												"anyOf": [
+													{
+														"description": "Fixed callback port used for the redirect URI:\n  http://localhost:<callbackPort>/callback\n\nUsed when the OAuth app has a pre-registered redirect URI\nwith a fixed port.",
+														"type": "integer"
+													},
+													{
+														"description": "Fixed callback port used for the redirect URI:\n  http://localhost:<callbackPort>/callback\n\nUsed when the OAuth app has a pre-registered redirect URI\nwith a fixed port.",
+														"type": "null"
+													}
+												],
+												"description": "Fixed callback port used for the redirect URI:\n  http://localhost:<callbackPort>/callback\n\nUsed when the OAuth app has a pre-registered redirect URI\nwith a fixed port."
+											},
+											"clientId": {
+												"anyOf": [
+													{
+														"description": "OAuth client ID.\n\nTypically configured either:\n - via CLI flags (`--client-id`), or\n - directly in `.mcp.json`.\n\nMay be required depending on the server.",
+														"type": "string"
+													},
+													{
+														"description": "OAuth client ID.\n\nTypically configured either:\n - via CLI flags (`--client-id`), or\n - directly in `.mcp.json`.\n\nMay be required depending on the server.",
+														"type": "null"
+													}
+												],
+												"description": "OAuth client ID.\n\nTypically configured either:\n - via CLI flags (`--client-id`), or\n - directly in `.mcp.json`.\n\nMay be required depending on the server."
+											}
+										},
+										"type": "object"
+									},
+									{
+										"description": "Optional OAuth configuration for this server. Only meaningful for HTTP/SSE transports.",
+										"type": "null"
+									}
+								],
+								"description": "Optional OAuth configuration for this server. Only meaningful for HTTP/SSE transports."
+							},
+							"type": {
+								"const": "sse"
+							},
+							"url": {
+								"description": "SSE endpoint URL. Supports env expansion.",
+								"type": "string"
+							}
+						},
+						"required": ["type", "url"],
+						"type": "object"
+					}
+				],
+				"description": "A single MCP server configuration."
+			},
+			"description": "The top-level MCP server configurations keyed by server name. The key is the logical server name (e.g. \"github\", \"sentry\", \"internal-db\").",
+			"type": "object"
+		}
+	},
+	"required": ["mcpServers"],
+	"type": "object"
+}

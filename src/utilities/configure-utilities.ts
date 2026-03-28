@@ -1,6 +1,7 @@
 import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../rules/no-useless-use-spring";
 
 import type { BanInstancesOptions } from "../rules/ban-instances";
+import type { DotNotationOptions } from "../rules/dot-notation";
 import type { ComplexityConfiguration } from "../rules/enforce-ianitor-check-type";
 import type { NamingConventionOptions } from "../rules/naming-convention";
 import type { NoArrayConstructorElementsOptions } from "../rules/no-array-constructor-elements";
@@ -75,6 +76,24 @@ export function createComplexityConfiguration(options: Partial<ComplexityConfigu
 		interfacePenalty: 20,
 		performanceMode: true,
 		warnThreshold: 15,
+		...options,
+	};
+}
+
+/**
+ * Creates options for dot-notation rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createDotNotationOptions(options: Partial<DotNotationOptions> = {}): DotNotationOptions {
+	return {
+		allowInaccessibleClassPropertyAccess: false,
+		allowIndexSignaturePropertyAccess: false,
+		allowKeywords: true,
+		allowPattern: "",
+		allowPrivateClassPropertyAccess: false,
+		allowProtectedClassPropertyAccess: false,
+		environment: "standard",
 		...options,
 	};
 }

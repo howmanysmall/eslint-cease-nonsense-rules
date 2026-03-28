@@ -1,9 +1,14 @@
 {
+	"$schema": ".schemas/mcps.schema.json",
 	"mcpServers": {
 		"context7": {
-			"args": ["x", "--bun", "@upstash/context7-mcp"],
-			"command": "bun",
-			"type": "stdio"
+			"headers": { "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}" },
+			"type": "http",
+			"url": "https://mcp.context7.com/mcp"
+		},
+		"gh-grep": {
+			"type": "http",
+			"url": "https://mcp.grep.app"
 		},
 		"npm-registry": {
 			"command": "npm-registry-mcp",

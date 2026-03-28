@@ -59,9 +59,6 @@ jobs:
       - name: Biome CI
         run: bun run biome:ci
 
-      - name: Setup oxlint-tsgolint
-        run: bun add -D oxlint-tsgolint@latest
-
       - name: Lint
         run: bun run oxc .
 

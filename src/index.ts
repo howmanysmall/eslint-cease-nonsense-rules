@@ -1,6 +1,7 @@
 import arrayTypeGeneric from "./rules/array-type-generic";
 import banInstances from "./rules/ban-instances";
 import banReactFC from "./rules/ban-react-fc";
+import dotNotation from "./rules/dot-notation";
 import enforceIanitorCheckType from "./rules/enforce-ianitor-check-type";
 import fastFormat from "./rules/fast-format";
 import memoizedEffectDependencies from "./rules/memoized-effect-dependencies";
@@ -64,6 +65,7 @@ import type { ReadonlyRecord } from "./types/utility-types.d";
 
 export type { BanInstancesOptions } from "./rules/ban-instances";
 export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
+export type { DotNotationOptions } from "./rules/dot-notation";
 export type { MemoizedEffectDependenciesOptions } from "./rules/memoized-effect-dependencies";
 export type { NamingConventionOptions } from "./rules/naming-convention";
 export type { NoArrayConstructorElementsOptions } from "./rules/no-array-constructor-elements";
@@ -94,6 +96,7 @@ export type { EnvironmentMode } from "./types/environment-mode";
 export {
 	createBanInstancesOptions,
 	createComplexityConfiguration,
+	createDotNotationOptions,
 	createEffectFunctionOptions,
 	createHookConfiguration,
 	createNamingConventionOptions,
@@ -135,6 +138,7 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"array-type-generic": arrayTypeGeneric,
 	"ban-instances": banInstances,
 	"ban-react-fc": banReactFC,
+	"dot-notation": dotNotation,
 	"enforce-ianitor-check-type": enforceIanitorCheckType,
 	"fast-format": fastFormat,
 	"memoized-effect-dependencies": memoizedEffectDependencies,
@@ -216,6 +220,7 @@ export const recommended = {
 	rules: {
 		"cease-nonsense/array-type-generic": "error",
 		"cease-nonsense/ban-react-fc": "error",
+		"cease-nonsense/dot-notation": "error",
 		"cease-nonsense/enforce-ianitor-check-type": "error",
 		"cease-nonsense/fast-format": "error",
 		"cease-nonsense/misleading-lua-tuple-checks": "error",

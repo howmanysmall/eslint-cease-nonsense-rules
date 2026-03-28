@@ -42,6 +42,7 @@ export default [
 			// Enable all rules (recommended)
 			"cease-nonsense/ban-instances": "error",
 			"cease-nonsense/ban-react-fc": "error",
+			"cease-nonsense/dot-notation": "error",
 			"cease-nonsense/enforce-ianitor-check-type": "error",
 			"cease-nonsense/fast-format": "error",
 			"cease-nonsense/no-array-size-assignment": "error",
@@ -2369,6 +2370,40 @@ type Values = ReadonlyArray<number>;
 type Pairs = Array<[number, string]>;
 type Grid = Array<Array<string>>;
 ```
+
+#### `dot-notation`
+
+Enforce dot notation whenever possible. In `roblox-ts`, it can also leave bracket notation alone when switching to dot
+notation would fail because the member is inaccessible at that access site.
+
+**Options:** `{ allowKeywords?: boolean, allowPattern?: string, allowPrivateClassPropertyAccess?: boolean, allowProtectedClassPropertyAccess?: boolean, allowIndexSignaturePropertyAccess?: boolean, environment?: "standard" | "roblox-ts", allowInaccessibleClassPropertyAccess?: boolean }`
+
+**❌ Bad**
+
+```typescript
+class Counter {
+	public value = 0;
+}
+const counter = new Counter();
+counter["value"] += 1;
+```
+
+**✅ Good**
+
+```typescript
+const counter = new Counter();
+counter.value += 1;
+
+class SecretCounter {
+	private value = 0;
+}
+function incrementValue(object: SecretCounter): void {
+	object["value"] += 1;
+}
+```
+
+Use the second form only when you intentionally opt into `roblox-ts` mode with
+`allowInaccessibleClassPropertyAccess: true`.
 
 #### `no-empty-array-literal`
 
