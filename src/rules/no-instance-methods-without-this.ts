@@ -62,10 +62,6 @@ function traverseForThis(currentNode: TSESTree.Node, visited: WeakSet<TSESTree.N
 	for (const key in currentNode) {
 		if (!Object.hasOwn(currentNode, key)) continue;
 
-		// Skip the parent property to avoid traversing back up the AST tree
-		// Which could lead to revisiting nodes and cycles
-		if (key === "parent") continue;
-
 		const childValue = currentNode[key];
 		if (childValue === null || childValue === undefined) continue;
 
