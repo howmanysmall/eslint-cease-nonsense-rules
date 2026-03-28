@@ -23,8 +23,8 @@ describe("no-underscore-react-props", () => {
 			{
 				code: `
 <InventoryItemTooltip
-	key="inventory-tooltip"
-	_tooltipGradient={tooltipGradient}
+    key="inventory-tooltip"
+    _tooltipGradient={tooltipGradient}
 />;
 `,
 				errors: [{ data: { propName: "_tooltipGradient" }, messageId: "noUnderscoreReactProp" }],
@@ -32,7 +32,7 @@ describe("no-underscore-react-props", () => {
 			{
 				code: `
 function Component() {
-	return <Widget _private mode="enabled" _version={1} />;
+    return <Widget _private mode="enabled" _version={1} />;
 }
 `,
 				errors: [
@@ -51,15 +51,15 @@ const view = <panel _ />;
 			{
 				code: `
 <InventoryItemTooltip
-	key="inventory-tooltip"
-	tooltipGradient={tooltipGradient}
+    key="inventory-tooltip"
+    tooltipGradient={tooltipGradient}
 />;
 `,
 			},
 			{
 				code: `
 function Component() {
-	return <Widget tooltipGradient={tooltipGradient} />;
+    return <Widget tooltipGradient={tooltipGradient} />;
 }
 `,
 			},

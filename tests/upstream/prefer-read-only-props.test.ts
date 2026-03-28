@@ -31,58 +31,58 @@ const allComponents = [
 	"const CreateElementComponent = () => React.createElement('div', null, null)",
 	"const FunctionComponent = () => <div></div>",
 	tsx`
-	  /// <reference types="react" />
-	  /// <reference types="react-dom" />
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
 
-	  function FunctionComponent() {
-	      return <div></div>
-	  }
-	`,
+      function FunctionComponent() {
+          return <div></div>
+      }
+    `,
 	tsx`
-	  /// <reference types="react" />
-	  /// <reference types="react-dom" />
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
 
-	  import { memo } from 'react'
+      import { memo } from 'react'
 
-	  const MemoComponent = memo(() => <div></div>)
-	`,
+      const MemoComponent = memo(() => <div></div>)
+    `,
 	tsx`
-	  /// <reference types="react" />
-	  /// <reference types="react-dom" />
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
 
-	  import { forwardRef } from 'react'
+      import { forwardRef } from 'react'
 
-	  const ForwardRefComponent = forwardRef((props, ref) => <div></div>)
-	`,
+      const ForwardRefComponent = forwardRef((props, ref) => <div></div>)
+    `,
 	tsx`
-	  /// <reference types="react" />
-	  /// <reference types="react-dom" />
+      /// <reference types="react" />
+      /// <reference types="react-dom" />
 
-	  import { memo, forwardRef } from 'react'
+      import { memo, forwardRef } from 'react'
 
-	  const MemoForwardRefComponent = memo(forwardRef((props, ref) => <div></div>))
-	`,
+      const MemoForwardRefComponent = memo(forwardRef((props, ref) => <div></div>))
+    `,
 ];
 
 const allFunctions = [
 	"const fn = () => null",
 	tsx`
-	  function fnWithReturn() {
-	      return null
-	  }
-	`,
+      function fnWithReturn() {
+          return null
+      }
+    `,
 	"const footer = () => <div />",
 	"const renderFunction = (id: string, name: string) => <div key={id} id={id}>{name}</div>",
 	tsx`
-	  function renderFunctionWithReturn(id: string, name: string) {
-	      return <div key={id} id={id}>{name}</div>
-	  }
-	`,
+      function renderFunctionWithReturn(id: string, name: string) {
+          return <div key={id} id={id}>{name}</div>
+      }
+    `,
 	tsx`
-	  function renderFunctionWithNestedRenderFunction(id: string, name: string) {
-	      return <Component footer={() => <div />} />
-	  }
-	`,
+      function renderFunctionWithNestedRenderFunction(id: string, name: string) {
+          return <Component footer={() => <div />} />
+      }
+    `,
 ];
 
 const allValid = [...allComponents, ...allFunctions];

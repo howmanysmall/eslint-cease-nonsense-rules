@@ -20,10 +20,10 @@ describe("no-useless-use-effect", () => {
 import { "useEffect" as useEffectAlias, useState } from "@rbxts/react";
 
 function Component(properties) {
-	const [count, setCount] = useState(0);
-	useEffectAlias(() => {
-		setCount(properties.initialCount);
-	}, [properties.initialCount]);
+    const [count, setCount] = useState(0);
+    useEffectAlias(() => {
+        setCount(properties.initialCount);
+    }, [properties.initialCount]);
 }
 `,
 				errors: [{ messageId: "derivedState" }],
@@ -33,10 +33,10 @@ function Component(properties) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component(properties) {
-	const [fullName, setFullName] = useState("");
-	useEffect(() => {
-		setFullName(properties.firstName + properties.lastName);
-	}, [properties.firstName, properties.lastName]);
+    const [fullName, setFullName] = useState("");
+    useEffect(() => {
+        setFullName(properties.firstName + properties.lastName);
+    }, [properties.firstName, properties.lastName]);
 }
 `,
 				errors: [{ messageId: "derivedState" }],
@@ -46,11 +46,11 @@ function Component(properties) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component(properties) {
-	const [selection, setSelection] = useState("");
-	useEffect(() => {
-		if (!properties.initialSelection) return;
-		setSelection(properties.initialSelection);
-	}, [properties.initialSelection]);
+    const [selection, setSelection] = useState("");
+    useEffect(() => {
+        if (!properties.initialSelection) return;
+        setSelection(properties.initialSelection);
+    }, [properties.initialSelection]);
 }
 `,
 				errors: [{ messageId: "derivedState" }],
@@ -60,10 +60,10 @@ function Component(properties) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component(properties) {
-	const [count, setCount] = useState(0);
-	useEffect(() => {
-		if (properties.ready) setCount(properties.value);
-	}, [properties.ready, properties.value]);
+    const [count, setCount] = useState(0);
+    useEffect(() => {
+        if (properties.ready) setCount(properties.value);
+    }, [properties.ready, properties.value]);
 }
 `,
 				errors: [{ messageId: "derivedState" }],
@@ -73,16 +73,16 @@ function Component(properties) {
 import { useEffect, useReducer } from "@rbxts/react";
 
 function reducer(state, action) {
-	return action.type === "set" ? action.value : state;
+    return action.type === "set" ? action.value : state;
 }
 
 function Component(properties) {
-	const [value, dispatch] = useReducer(reducer, 0);
-	useEffect(() => {
-		if (properties.ready) {
-			dispatch({ type: "set", value: properties.value });
-		}
-	}, [properties.ready, properties.value]);
+    const [value, dispatch] = useReducer(reducer, 0);
+    useEffect(() => {
+        if (properties.ready) {
+            dispatch({ type: "set", value: properties.value });
+        }
+    }, [properties.ready, properties.value]);
 }
 `,
 				errors: [{ messageId: "derivedState" }],
@@ -92,10 +92,10 @@ function Component(properties) {
 import { useLayoutEffect, useState } from "react";
 
 function Component(properties) {
-	const [count, setCount] = useState(0);
-	useLayoutEffect(() => {
-		setCount(properties.initialCount);
-	}, [properties.initialCount]);
+    const [count, setCount] = useState(0);
+    useLayoutEffect(() => {
+        setCount(properties.initialCount);
+    }, [properties.initialCount]);
 }
 `,
 				errors: [{ messageId: "derivedState" }],
@@ -108,9 +108,9 @@ function Component(properties) {
 import { useEffect } from "@rbxts/react";
 
 function Component({ onChange, value }) {
-	useEffect(() => {
-		onChange(value);
-	}, [onChange, value]);
+    useEffect(() => {
+        onChange(value);
+    }, [onChange, value]);
 }
 `,
 				errors: [{ messageId: "notifyParent" }],
@@ -120,9 +120,9 @@ function Component({ onChange, value }) {
 import { useEffect } from "@rbxts/react";
 
 function Component(properties) {
-	useEffect(() => {
-		properties.onChange?.(properties.value);
-	}, [properties.value, properties.onChange]);
+    useEffect(() => {
+        properties.onChange?.(properties.value);
+    }, [properties.value, properties.onChange]);
 }
 `,
 				errors: [{ messageId: "notifyParent" }],
@@ -132,9 +132,9 @@ function Component(properties) {
 import { useEffect } from "@rbxts/react";
 
 function Component({ "onChange": handleChange = fallbackChange, value }) {
-	useEffect(() => {
-		handleChange(value);
-	}, [handleChange, value]);
+    useEffect(() => {
+        handleChange(value);
+    }, [handleChange, value]);
 }
 `,
 				errors: [{ messageId: "notifyParent" }],
@@ -144,9 +144,9 @@ function Component({ "onChange": handleChange = fallbackChange, value }) {
 import { useEffect } from "@rbxts/react";
 
 function Component({ onChange, value }) {
-	useEffect(() => {
-		if (value) onChange(value);
-	}, [onChange, value]);
+    useEffect(() => {
+        if (value) onChange(value);
+    }, [onChange, value]);
 }
 `,
 				errors: [{ messageId: "notifyParent" }],
@@ -156,9 +156,9 @@ function Component({ onChange, value }) {
 import React from "@rbxts/react";
 
 function Component(properties) {
-	React.useEffect(() => {
-		properties.onChange(properties.value);
-	}, [properties.value, properties.onChange]);
+    React.useEffect(() => {
+        properties.onChange(properties.value);
+    }, [properties.value, properties.onChange]);
 }
 `,
 				errors: [{ messageId: "notifyParent" }],
@@ -168,9 +168,9 @@ function Component(properties) {
 import { useEffect } from "@rbxts/react";
 
 function Component(properties = {}) {
-	useEffect(() => {
-		properties.onChange(properties.value);
-	}, [properties.value, properties.onChange]);
+    useEffect(() => {
+        properties.onChange(properties.value);
+    }, [properties.value, properties.onChange]);
 }
 `,
 				errors: [{ messageId: "notifyParent" }],
@@ -180,9 +180,9 @@ function Component(properties = {}) {
 import { useInsertionEffect } from "@rbxts/react";
 
 function Component({ onMount }) {
-	useInsertionEffect(() => {
-		onMount();
-	}, [onMount]);
+    useInsertionEffect(() => {
+        onMount();
+    }, [onMount]);
 }
 `,
 				errors: [{ messageId: "notifyParent" }],
@@ -194,12 +194,12 @@ function Component({ onMount }) {
 import * as React from "@rbxts/react";
 
 function Component() {
-	const [submitted, setSubmitted] = React.useState(false);
-	React.useEffect(() => {
-		if (!submitted) return;
-		sendForm();
-		setSubmitted(false);
-	}, [submitted]);
+    const [submitted, setSubmitted] = React.useState(false);
+    React.useEffect(() => {
+        if (!submitted) return;
+        sendForm();
+        setSubmitted(false);
+    }, [submitted]);
 }
 `,
 				errors: [{ messageId: "eventFlag" }],
@@ -209,13 +209,13 @@ function Component() {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component() {
-	const [submitted, setSubmitted] = useState(false);
-	useEffect(() => {
-		if (submitted) {
-			setSubmitted(false);
-			sendForm();
-		}
-	}, [submitted]);
+    const [submitted, setSubmitted] = useState(false);
+    useEffect(() => {
+        if (submitted) {
+            setSubmitted(false);
+            sendForm();
+        }
+    }, [submitted]);
 }
 `,
 				errors: [{ messageId: "eventFlag" }],
@@ -225,13 +225,13 @@ function Component() {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component() {
-	const [submitted, setSubmitted] = useState(false);
-	useEffect(() => {
-		if (submitted) {
-			sendForm();
-			setSubmitted(false);
-		}
-	}, [submitted]);
+    const [submitted, setSubmitted] = useState(false);
+    useEffect(() => {
+        if (submitted) {
+            sendForm();
+            setSubmitted(false);
+        }
+    }, [submitted]);
 }
 `,
 				errors: [{ messageId: "eventFlag" }],
@@ -241,12 +241,12 @@ function Component() {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component() {
-	const [submitted, setSubmitted] = useState(false);
-	useEffect(() => {
-		if (!submitted) return;
-		setSubmitted(false);
-		sendForm();
-	}, [submitted]);
+    const [submitted, setSubmitted] = useState(false);
+    useEffect(() => {
+        if (!submitted) return;
+        setSubmitted(false);
+        sendForm();
+    }, [submitted]);
 }
 `,
 				errors: [{ messageId: "eventFlag" }],
@@ -259,12 +259,12 @@ function Component() {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component(properties) {
-	const [count, setCount] = useState(0);
+    const [count, setCount] = useState(0);
 
-	function initEffect(): void {
-		setCount(properties.initialValue);
-	}
-	useEffect(initEffect, [properties.initialValue]);
+    function initEffect(): void {
+        setCount(properties.initialValue);
+    }
+    useEffect(initEffect, [properties.initialValue]);
 }
 `,
 				errors: [{ messageId: "derivedState" }],
@@ -274,12 +274,12 @@ function Component(properties) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component(properties) {
-	const [count, setCount] = useState(0);
+    const [count, setCount] = useState(0);
 
-	const initEffect = () => {
-		setCount(properties.initialValue);
-	};
-	useEffect(initEffect, [properties.initialValue]);
+    const initEffect = () => {
+        setCount(properties.initialValue);
+    };
+    useEffect(initEffect, [properties.initialValue]);
 }
 `,
 				errors: [{ messageId: "derivedState" }],
@@ -289,10 +289,10 @@ function Component(properties) {
 import { useEffect } from "@rbxts/react";
 
 function Component({ onChange, value }) {
-	function notify() {
-		onChange(value);
-	}
-	useEffect(notify, [onChange, value]);
+    function notify() {
+        onChange(value);
+    }
+    useEffect(notify, [onChange, value]);
 }
 `,
 				errors: [{ messageId: "notifyParent" }],
@@ -302,14 +302,14 @@ function Component({ onChange, value }) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component() {
-	const [submitted, setSubmitted] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
 
-	function handleSubmit() {
-		if (!submitted) return;
-		sendForm();
-		setSubmitted(false);
-	}
-	useEffect(handleSubmit, [submitted]);
+    function handleSubmit() {
+        if (!submitted) return;
+        sendForm();
+        setSubmitted(false);
+    }
+    useEffect(handleSubmit, [submitted]);
 }
 `,
 				errors: [{ messageId: "eventFlag" }],
@@ -324,9 +324,9 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component() {
-	useEffect(() => {
-		return;
-	}, []);
+    useEffect(() => {
+        return;
+    }, []);
 }
 `,
 				errors: [{ messageId: "emptyEffect" }],
@@ -339,10 +339,10 @@ function Component() {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component() {
-	const [name, setName] = useState<string | undefined>();
-	useEffect(() => {
-		setName("Hello World");
-	}, []);
+    const [name, setName] = useState<string | undefined>();
+    useEffect(() => {
+        setName("Hello World");
+    }, []);
 }
 `,
 				errors: [{ messageId: "initializeState" }],
@@ -352,10 +352,10 @@ function Component() {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component() {
-	const [count, setCount] = useState(0);
-	useEffect(() => {
-		setCount(42);
-	}, []);
+    const [count, setCount] = useState(0);
+    useEffect(() => {
+        setCount(42);
+    }, []);
 }
 `,
 				errors: [{ messageId: "initializeState" }],
@@ -365,10 +365,10 @@ function Component() {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component() {
-	const [items, setItems] = useState<string[]>([]);
-	useEffect(() => {
-		setItems([]);
-	}, []);
+    const [items, setItems] = useState<string[]>([]);
+    useEffect(() => {
+        setItems([]);
+    }, []);
 }
 `,
 				errors: [{ messageId: "initializeState" }],
@@ -381,10 +381,10 @@ function Component() {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component({ userId }) {
-	const [comment, setComment] = useState("");
-	useEffect(() => {
-		setComment("");
-	}, [userId]);
+    const [comment, setComment] = useState("");
+    useEffect(() => {
+        setComment("");
+    }, [userId]);
 }
 `,
 				errors: [{ messageId: "resetState" }],
@@ -394,10 +394,10 @@ function Component({ userId }) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component({ items }) {
-	const [selection, setSelection] = useState<string | null>(null);
-	useEffect(() => {
-		setSelection(null);
-	}, [items]);
+    const [selection, setSelection] = useState<string | null>(null);
+    useEffect(() => {
+        setSelection(null);
+    }, [items]);
 }
 `,
 				errors: [{ messageId: "resetState" }],
@@ -407,10 +407,10 @@ function Component({ items }) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component({ userId }) {
-	const [isLoading, setIsLoading] = useState(false);
-	useEffect(() => {
-		setIsLoading(false);
-	}, [userId]);
+    const [isLoading, setIsLoading] = useState(false);
+    useEffect(() => {
+        setIsLoading(false);
+    }, [userId]);
 }
 `,
 				errors: [{ messageId: "resetState" }],
@@ -420,10 +420,10 @@ function Component({ userId }) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component({ userId }) {
-	const [items, setItems] = useState<string[]>([]);
-	useEffect(() => {
-		setItems([]);
-	}, [userId]);
+    const [items, setItems] = useState<string[]>([]);
+    useEffect(() => {
+        setItems([]);
+    }, [userId]);
 }
 `,
 				errors: [{ messageId: "resetState" }],
@@ -436,12 +436,12 @@ function Component({ userId }) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component({ items }) {
-	const [selection, setSelection] = useState<string | null>(null);
-	useEffect(() => {
-		if (items.length > 0) {
-			setSelection(items[0]);
-		}
-	}, [items]);
+    const [selection, setSelection] = useState<string | null>(null);
+    useEffect(() => {
+        if (items.length > 0) {
+            setSelection(items[0]);
+        }
+    }, [items]);
 }
 `,
 				errors: [{ messageId: "adjustState" }],
@@ -451,14 +451,14 @@ function Component({ items }) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component({ user }) {
-	const [profile, setProfile] = useState<string | null>(null);
-	useEffect(() => {
-		if (user) {
-			setProfile(user.name);
-		} else {
-			setProfile(null);
-		}
-	}, [user]);
+    const [profile, setProfile] = useState<string | null>(null);
+    useEffect(() => {
+        if (user) {
+            setProfile(user.name);
+        } else {
+            setProfile(null);
+        }
+    }, [user]);
 }
 `,
 				errors: [{ messageId: "adjustState" }],
@@ -476,11 +476,11 @@ function Component({ user }) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component({ count, logger }) {
-	const [localCount, setLocalCount] = useState(0);
-	useEffect(() => {
-		setLocalCount(count);
-		logger.log(count);
-	}, [count, logger]);
+    const [localCount, setLocalCount] = useState(0);
+    useEffect(() => {
+        setLocalCount(count);
+        logger.log(count);
+    }, [count, logger]);
 }
 `,
 				errors: [{ messageId: "mixedDerivedState" }],
@@ -493,10 +493,10 @@ function Component({ count, logger }) {
 import { useEffect, useRef } from "@rbxts/react";
 
 function Component({ onRef }) {
-	const myRef = useRef();
-	useEffect(() => {
-		onRef(myRef.current);
-	}, [onRef, myRef]);
+    const myRef = useRef();
+    useEffect(() => {
+        onRef(myRef.current);
+    }, [onRef, myRef]);
 }
 `,
 				errors: [{ messageId: "passRefToParent" }],
@@ -506,12 +506,12 @@ function Component({ onRef }) {
 import { useEffect, useRef } from "@rbxts/react";
 
 function Component({ onReady }) {
-	const containerRef = useRef();
-	useEffect(() => {
-		if (containerRef.current) {
-			onReady(containerRef.current);
-		}
-	}, [onReady, containerRef]);
+    const containerRef = useRef();
+    useEffect(() => {
+        if (containerRef.current) {
+            onReady(containerRef.current);
+        }
+    }, [onReady, containerRef]);
 }
 `,
 				errors: [{ messageId: "passRefToParent" }],
@@ -524,17 +524,17 @@ function Component({ onReady }) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component() {
-	const [isOnline, setIsOnline] = useState(navigator.onLine);
-	useEffect(() => {
-		const handleOnline = () => setIsOnline(true);
-		const handleOffline = () => setIsOnline(false);
-		window.addEventListener("online", handleOnline);
-		window.addEventListener("offline", handleOffline);
-		return () => {
-			window.removeEventListener("online", handleOnline);
-			window.removeEventListener("offline", handleOffline);
-		};
-	}, []);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        window.addEventListener("online", handleOnline);
+        window.addEventListener("offline", handleOffline);
+        return () => {
+            window.removeEventListener("online", handleOnline);
+            window.removeEventListener("offline", handleOffline);
+        };
+    }, []);
 }
 `,
 				errors: [{ messageId: "externalStore" }],
@@ -544,12 +544,12 @@ function Component() {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component() {
-	const [width, setWidth] = useState(window.innerWidth);
-	useEffect(() => {
-		const handleResize = () => setWidth(window.innerWidth);
-		window.addEventListener("resize", handleResize);
-		return () => window.removeEventListener("resize", handleResize);
-	}, []);
+    const [width, setWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const handleResize = () => setWidth(window.innerWidth);
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 }
 `,
 				errors: [{ messageId: "externalStore" }],
@@ -562,9 +562,9 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component({ value }) {
-	useEffect(() => {
-		console.log("Value changed:", value);
-	}, [value]);
+    useEffect(() => {
+        console.log("Value changed:", value);
+    }, [value]);
 }
 `,
 				errors: [{ messageId: "logOnly" }],
@@ -574,9 +574,9 @@ function Component({ value }) {
 import { useEffect } from "@rbxts/react";
 
 function Component() {
-	useEffect(() => {
-		console.log("Component mounted");
-	}, []);
+    useEffect(() => {
+        console.log("Component mounted");
+    }, []);
 }
 `,
 				errors: [{ messageId: "logOnly" }],
@@ -586,10 +586,10 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component({ count }) {
-	useEffect(() => {
-		console.log("Count:", count);
-		console.warn("Warning message");
-	}, [count]);
+    useEffect(() => {
+        console.log("Count:", count);
+        console.warn("Warning message");
+    }, [count]);
 }
 `,
 				errors: [{ messageId: "logOnly" }],
@@ -602,13 +602,13 @@ function Component({ count }) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component({ userId }) {
-	useEffect(() => {
-		fetchUser(userId);
-	}, [userId]);
+    useEffect(() => {
+        fetchUser(userId);
+    }, [userId]);
 
-	useEffect(() => {
-		getProfilePicture(userId);
-	}, [userId]);
+    useEffect(() => {
+        getProfilePicture(userId);
+    }, [userId]);
 }
 `,
 				errors: [{ messageId: "duplicateDeps" }, { messageId: "duplicateDeps" }],
@@ -618,17 +618,17 @@ function Component({ userId }) {
 import { useEffect } from "@rbxts/react";
 
 function Component({ count }) {
-	useEffect(() => {
-		logCount(count);
-	}, [count]);
+    useEffect(() => {
+        logCount(count);
+    }, [count]);
 
-	useEffect(() => {
-		sendAnalytics(count);
-	}, [count]);
+    useEffect(() => {
+        sendAnalytics(count);
+    }, [count]);
 
-	useEffect(() => {
-		updateTitle(count);
-	}, [count]);
+    useEffect(() => {
+        updateTitle(count);
+    }, [count]);
 }
 `,
 				errors: [
@@ -648,20 +648,20 @@ function Component({ count }) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component() {
-	const [card, setCard] = useState(null);
-	const [goldCardCount, setGoldCardCount] = useState(0);
+    const [card, setCard] = useState(null);
+    const [goldCardCount, setGoldCardCount] = useState(0);
 
-	useEffect(() => {
-		if (card !== null && card.gold) {
-			setGoldCardCount(c => c + 1);
-		}
-	}, [card]);
+    useEffect(() => {
+        if (card !== null && card.gold) {
+            setGoldCardCount(c => c + 1);
+        }
+    }, [card]);
 
-	useEffect(() => {
-		if (goldCardCount > 3) {
-			setCard(null);
-		}
-	}, [goldCardCount]);
+    useEffect(() => {
+        if (goldCardCount > 3) {
+            setCard(null);
+        }
+    }, [goldCardCount]);
 }
 `,
 				// Only effectChain, not derivedState for individual effects
@@ -672,16 +672,16 @@ function Component() {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component() {
-	const [value, setValue] = useState(0);
-	const [doubled, setDoubled] = useState(0);
+    const [value, setValue] = useState(0);
+    const [doubled, setDoubled] = useState(0);
 
-	useEffect(() => {
-		setDoubled(value * 2);
-	}, [value]);
+    useEffect(() => {
+        setDoubled(value * 2);
+    }, [value]);
 
-	useEffect(() => {
-		setValue(doubled + 1);
-	}, [doubled]);
+    useEffect(() => {
+        setValue(doubled + 1);
+    }, [doubled]);
 }
 `,
 				errors: [{ messageId: "derivedState" }, { messageId: "effectChain" }, { messageId: "derivedState" }],
@@ -695,7 +695,7 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component({ onChange, value }) {
-	useEffect(() => onChange(value), [onChange, value]);
+    useEffect(() => onChange(value), [onChange, value]);
 }
 `,
 			},
@@ -704,9 +704,9 @@ function Component({ onChange, value }) {
 import { useEffect } from "@rbxts/react";
 
 function Component({ [getKey()]: handleChange, value }) {
-	useEffect(() => {
-		handleChange(value);
-	}, [handleChange, value]);
+    useEffect(() => {
+        handleChange(value);
+    }, [handleChange, value]);
 }
 `,
 			},
@@ -715,9 +715,9 @@ function Component({ [getKey()]: handleChange, value }) {
 import { useEffect } from "@rbxts/react";
 
 function Component({ onChange: { nested }, value }) {
-	useEffect(() => {
-		nested(value);
-	}, [nested, value]);
+    useEffect(() => {
+        nested(value);
+    }, [nested, value]);
 }
 `,
 			},
@@ -726,10 +726,10 @@ function Component({ onChange: { nested }, value }) {
 import { useEffect } from "@rbxts/react";
 
 function Component() {
-	useEffect(() => {
-		const connection = connect();
-		return () => disconnect(connection);
-	}, []);
+    useEffect(() => {
+        const connection = connect();
+        return () => disconnect(connection);
+    }, []);
 }
 `,
 			},
@@ -738,9 +738,9 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component() {
-	useEffect(async () => {
-		await fetchData();
-	}, []);
+    useEffect(async () => {
+        await fetchData();
+    }, []);
 }
 `,
 			},
@@ -749,11 +749,11 @@ function Component() {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component(properties) {
-	const [value, setValue] = useState(0);
-	useEffect(() => {
-		setValue(properties.count);
-		logChange(properties.count);
-	}, [properties.count]);
+    const [value, setValue] = useState(0);
+    useEffect(() => {
+        setValue(properties.count);
+        logChange(properties.count);
+    }, [properties.count]);
 }
 `,
 			},
@@ -762,11 +762,11 @@ function Component(properties) {
 import { useEffect } from "@rbxts/react";
 
 function Component({ onChange, value }) {
-	useEffect(() => {
-		if (!value) return;
-		logChange(value);
-		onChange(value);
-	}, [onChange, value]);
+    useEffect(() => {
+        if (!value) return;
+        logChange(value);
+        onChange(value);
+    }, [onChange, value]);
 }
 `,
 			},
@@ -775,9 +775,9 @@ function Component({ onChange, value }) {
 import React from "@rbxts/react";
 
 function Component(properties) {
-	React["useEffect"](() => {
-		properties.onChange?.(properties.value);
-	}, [properties.value, properties.onChange]);
+    React["useEffect"](() => {
+        properties.onChange?.(properties.value);
+    }, [properties.value, properties.onChange]);
 }
 `,
 			},
@@ -786,12 +786,12 @@ function Component(properties) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component() {
-	const [submitted, setSubmitted] = useState(false);
-	useEffect(() => {
-		if (!submitted) return;
-		sendForm();
-		setSubmitted(false);
-	}, []);
+    const [submitted, setSubmitted] = useState(false);
+    useEffect(() => {
+        if (!submitted) return;
+        sendForm();
+        setSubmitted(false);
+    }, []);
 }
 `,
 			},
@@ -800,12 +800,12 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component() {
-	useEffect(() => {
-		return () => cleanup();
-		function helper() {
-			return () => ignored();
-		}
-	}, []);
+    useEffect(() => {
+        return () => cleanup();
+        function helper() {
+            return () => ignored();
+        }
+    }, []);
 }
 `,
 			},
@@ -814,11 +814,11 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component() {
-	useEffect(() => {
-		for (const item of items) {
-			return () => cleanup(item);
-		}
-	}, [items]);
+    useEffect(() => {
+        for (const item of items) {
+            return () => cleanup(item);
+        }
+    }, [items]);
 }
 `,
 			},
@@ -827,11 +827,11 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component() {
-	useEffect(() => {
-		for (let index = 0; index < 1; index += 1) {
-			return () => cleanup(index);
-		}
-	}, []);
+    useEffect(() => {
+        for (let index = 0; index < 1; index += 1) {
+            return () => cleanup(index);
+        }
+    }, []);
 }
 `,
 			},
@@ -840,11 +840,11 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component() {
-	useEffect(() => {
-		label: {
-			return () => cleanup();
-		}
-	}, []);
+    useEffect(() => {
+        label: {
+            return () => cleanup();
+        }
+    }, []);
 }
 `,
 			},
@@ -853,14 +853,14 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component() {
-	useEffect(() => {
-		switch (getMode()) {
-			case "open":
-				return () => cleanup();
-			default:
-				return;
-		}
-	}, []);
+    useEffect(() => {
+        switch (getMode()) {
+            case "open":
+                return () => cleanup();
+            default:
+                return;
+        }
+    }, []);
 }
 `,
 			},
@@ -869,13 +869,13 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component() {
-	useEffect(() => {
-		try {
-			start();
-		} finally {
-			return () => stop();
-		}
-	}, []);
+    useEffect(() => {
+        try {
+            start();
+        } finally {
+            return () => stop();
+        }
+    }, []);
 }
 `,
 			},
@@ -884,11 +884,11 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component() {
-	useEffect(() => {
-		while (shouldContinue()) {
-			return () => stop();
-		}
-	}, []);
+    useEffect(() => {
+        while (shouldContinue()) {
+            return () => stop();
+        }
+    }, []);
 }
 `,
 			},
@@ -901,13 +901,13 @@ function Component() {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component({ userId }) {
-	const [data, setData] = useState(null);
-	useEffect(() => {
-		const controller = new AbortController();
-		fetchUser(userId, { signal: controller.signal })
-			.then(setData);
-		return () => controller.abort();
-	}, [userId]);
+    const [data, setData] = useState(null);
+    useEffect(() => {
+        const controller = new AbortController();
+        fetchUser(userId, { signal: controller.signal })
+            .then(setData);
+        return () => controller.abort();
+    }, [userId]);
 }
 `,
 			},
@@ -918,9 +918,9 @@ function Component({ userId }) {
 import { useEffect } from "@rbxts/react";
 
 function Component({ title }) {
-	useEffect(() => {
-		document.title = title;
-	}, [title]);
+    useEffect(() => {
+        document.title = title;
+    }, [title]);
 }
 `,
 			},
@@ -931,9 +931,9 @@ function Component({ title }) {
 import { useEffect } from "@rbxts/react";
 
 function Component() {
-	useEffect(() => {
-		trackPageView("/home");
-	}, []);
+    useEffect(() => {
+        trackPageView("/home");
+    }, []);
 }
 `,
 			},
@@ -944,10 +944,10 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component({ isOpen }) {
-	function handleToggle(): void {
-		document.body.style.overflow = isOpen ? "hidden" : "";
-	}
-	useEffect(handleToggle, [isOpen]);
+    function handleToggle(): void {
+        document.body.style.overflow = isOpen ? "hidden" : "";
+    }
+    useEffect(handleToggle, [isOpen]);
 }
 `,
 			},
@@ -958,13 +958,13 @@ function Component({ isOpen }) {
 import { useEffect } from "@rbxts/react";
 
 function Component({ channelId }) {
-	useEffect(() => {
-		const ws = new WebSocket(\`wss://example.com/\${channelId}\`);
-		ws.onmessage = (event) => {
-			handleMessage(event.data);
-		};
-		return () => ws.close();
-	}, [channelId]);
+    useEffect(() => {
+        const ws = new WebSocket(\`wss://example.com/\${channelId}\`);
+        ws.onmessage = (event) => {
+            handleMessage(event.data);
+        };
+        return () => ws.close();
+    }, [channelId]);
 }
 `,
 			},
@@ -975,11 +975,11 @@ function Component({ channelId }) {
 import { useEffect, useRef } from "@rbxts/react";
 
 function Component() {
-	const canvasRef = useRef();
-	useEffect(() => {
-		const chart = new Chart(canvasRef.current, { type: "line" });
-		return () => chart.destroy();
-	}, []);
+    const canvasRef = useRef();
+    useEffect(() => {
+        const chart = new Chart(canvasRef.current, { type: "line" });
+        return () => chart.destroy();
+    }, []);
 }
 `,
 			},
@@ -990,12 +990,12 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component() {
-	useEffect(() => {
-		const interval = setInterval(() => {
-			pollServer();
-		}, 5000);
-		return () => clearInterval(interval);
-	}, []);
+    useEffect(() => {
+        const interval = setInterval(() => {
+            pollServer();
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
 }
 `,
 			},
@@ -1006,9 +1006,9 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component({ key, value }) {
-	useEffect(() => {
-		localStorage.setItem(key, JSON.stringify(value));
-	}, [key, value]);
+    useEffect(() => {
+        localStorage.setItem(key, JSON.stringify(value));
+    }, [key, value]);
 }
 `,
 			},
@@ -1019,11 +1019,11 @@ function Component({ key, value }) {
 import { useEffect, useRef } from "@rbxts/react";
 
 function Component({ isOpen }) {
-	const ref = useRef();
-	useEffect(() => {
-		const animation = animate(ref.current, { opacity: isOpen ? 1 : 0 });
-		return () => animation.cancel();
-	}, [isOpen]);
+    const ref = useRef();
+    useEffect(() => {
+        const animation = animate(ref.current, { opacity: isOpen ? 1 : 0 });
+        return () => animation.cancel();
+    }, [isOpen]);
 }
 `,
 			},
@@ -1034,9 +1034,9 @@ function Component({ isOpen }) {
 import { useEffect } from "@rbxts/react";
 
 function Component({ query }) {
-	useEffect(() => {
-		sendSearchAnalytics(query);
-	}, [query]);
+    useEffect(() => {
+        sendSearchAnalytics(query);
+    }, [query]);
 }
 `,
 			},
@@ -1047,10 +1047,10 @@ function Component({ query }) {
 import { useEffect } from "@rbxts/react";
 
 function Component({ userId }) {
-	function syncUser(): void {
-		api.syncUser(userId);
-	}
-	useEffect(syncUser, [userId]);
+    function syncUser(): void {
+        api.syncUser(userId);
+    }
+    useEffect(syncUser, [userId]);
 }
 `,
 			},
@@ -1061,13 +1061,13 @@ function Component({ userId }) {
 import { useEffect } from "@rbxts/react";
 
 function Component({ userId, projectId }) {
-	useEffect(() => {
-		fetchUser(userId);
-	}, [userId]);
+    useEffect(() => {
+        fetchUser(userId);
+    }, [userId]);
 
-	useEffect(() => {
-		fetchProject(projectId);
-	}, [projectId]);
+    useEffect(() => {
+        fetchProject(projectId);
+    }, [projectId]);
 }
 `,
 			},
@@ -1079,21 +1079,21 @@ function Component({ userId, projectId }) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component({ userId }) {
-	const [data, setData] = useState(null);
+    const [data, setData] = useState(null);
 
-	useEffect(() => {
-		// Async data fetching - legitimate synchronization
-		void (async () => {
-			const result = await fetchData(userId);
-			setData(result);
-		})();
-	}, [userId]);
+    useEffect(() => {
+        // Async data fetching - legitimate synchronization
+        void (async () => {
+            const result = await fetchData(userId);
+            setData(result);
+        })();
+    }, [userId]);
 
-	useEffect(() => {
-		if (data) {
-			processData(data);
-		}
-	}, [data]);
+    useEffect(() => {
+        if (data) {
+            processData(data);
+        }
+    }, [data]);
 }
 `,
 			},
@@ -1106,17 +1106,17 @@ function Component({ userId }) {
 import { useEffect } from "react";
 
 export function usePrimary(total: number, sync?: (value: number) => void): void {
-	function runPrimarySync(): void {
-		sync?.(total + 1);
-	}
-	useEffect(runPrimarySync, [total, sync]);
+    function runPrimarySync(): void {
+        sync?.(total + 1);
+    }
+    useEffect(runPrimarySync, [total, sync]);
 }
 
 export function useSecondary(total: number, sync?: (value: number) => void): void {
-	function runSecondarySync(): void {
-		sync?.(total + 2);
-	}
-	useEffect(runSecondarySync, [total, sync]);
+    function runSecondarySync(): void {
+        sync?.(total + 2);
+    }
+    useEffect(runSecondarySync, [total, sync]);
 }
 `,
 				options: [{ environment: "standard" }],
@@ -1128,19 +1128,19 @@ export function useSecondary(total: number, sync?: (value: number) => void): voi
 import { useEffect, useState } from "react";
 
 type Channel = {
-	listen: (listener: (next: string) => void) => () => void;
+    listen: (listener: (next: string) => void) => () => void;
 };
 
 export function useChannelValue(channel: Channel): string {
-	const [value, setValue] = useState("");
+    const [value, setValue] = useState("");
 
-	useEffect(() => {
-		return channel.listen((next) => {
-			setValue(next);
-		});
-	}, [channel]);
+    useEffect(() => {
+        return channel.listen((next) => {
+            setValue(next);
+        });
+    }, [channel]);
 
-	return value;
+    return value;
 }
 `,
 				options: [{ environment: "standard" }],
@@ -1152,23 +1152,23 @@ export function useChannelValue(channel: Channel): string {
 import { useEffect, useState } from "react";
 
 export function useAsyncTitle(task: Promise<string>): string | undefined {
-	const [title, setTitle] = useState<string | undefined>(undefined);
+    const [title, setTitle] = useState<string | undefined>(undefined);
 
-	function syncAsyncTitle(): () => void {
-		let cancelled = false;
+    function syncAsyncTitle(): () => void {
+        let cancelled = false;
 
-		task.then((nextTitle) => {
-			if (cancelled) return;
-			setTitle(nextTitle);
-		});
+        task.then((nextTitle) => {
+            if (cancelled) return;
+            setTitle(nextTitle);
+        });
 
-		return () => {
-			cancelled = true;
-		};
-	}
+        return () => {
+            cancelled = true;
+        };
+    }
 
-	useEffect(syncAsyncTitle, [task]);
-	return title;
+    useEffect(syncAsyncTitle, [task]);
+    return title;
 }
 `,
 				options: [{ environment: "standard" }],
@@ -1180,34 +1180,34 @@ export function useAsyncTitle(task: Promise<string>): string | undefined {
 import { useEffect, useRef, useState } from "react";
 
 export function useStaggeredVisibility(isVisible: boolean, waitMs: number): boolean {
-	const [shown, setShown] = useState(isVisible);
-	const pendingTimer = useRef<number | undefined>(undefined);
+    const [shown, setShown] = useState(isVisible);
+    const pendingTimer = useRef<number | undefined>(undefined);
 
-	function applyVisibility(): () => void {
-		if (isVisible) {
-			if (pendingTimer.current !== undefined) {
-				clearTimeout(pendingTimer.current);
-				pendingTimer.current = undefined;
-			}
-			setShown(true);
-			return () => {};
-		}
+    function applyVisibility(): () => void {
+        if (isVisible) {
+            if (pendingTimer.current !== undefined) {
+                clearTimeout(pendingTimer.current);
+                pendingTimer.current = undefined;
+            }
+            setShown(true);
+            return () => {};
+        }
 
-		pendingTimer.current = window.setTimeout(() => {
-			setShown(false);
-			pendingTimer.current = undefined;
-		}, waitMs);
+        pendingTimer.current = window.setTimeout(() => {
+            setShown(false);
+            pendingTimer.current = undefined;
+        }, waitMs);
 
-		return () => {
-			if (pendingTimer.current !== undefined) {
-				clearTimeout(pendingTimer.current);
-				pendingTimer.current = undefined;
-			}
-		};
-	}
+        return () => {
+            if (pendingTimer.current !== undefined) {
+                clearTimeout(pendingTimer.current);
+                pendingTimer.current = undefined;
+            }
+        };
+    }
 
-	useEffect(applyVisibility, [isVisible, waitMs]);
-	return shown;
+    useEffect(applyVisibility, [isVisible, waitMs]);
+    return shown;
 }
 `,
 				options: [{ environment: "standard" }],
@@ -1219,13 +1219,13 @@ export function useStaggeredVisibility(isVisible: boolean, waitMs: number): bool
 import { useEffect } from "react";
 
 type MotionController = {
-	pushTarget: (next: number) => void;
+    pushTarget: (next: number) => void;
 };
 
 export function useMotionBridge(goal: number, controller: MotionController): void {
-	useEffect(() => {
-		controller.pushTarget(goal);
-	}, [goal, controller]);
+    useEffect(() => {
+        controller.pushTarget(goal);
+    }, [goal, controller]);
 }
 `,
 				options: [{ environment: "standard" }],
@@ -1239,24 +1239,24 @@ import { useEffect, useState } from "react";
 type Watch = (key: "focus" | "hover", listener: (value: boolean) => void) => () => void;
 
 export function useFocusHoverState(watch: Watch): boolean {
-	const [active, setActive] = useState(false);
+    const [active, setActive] = useState(false);
 
-	function bindObservers(): () => void {
-		const stopFocus = watch("focus", (value) => {
-			setActive(value);
-		});
-		const stopHover = watch("hover", (value) => {
-			setActive(value);
-		});
+    function bindObservers(): () => void {
+        const stopFocus = watch("focus", (value) => {
+            setActive(value);
+        });
+        const stopHover = watch("hover", (value) => {
+            setActive(value);
+        });
 
-		return () => {
-			stopFocus();
-			stopHover();
-		};
-	}
+        return () => {
+            stopFocus();
+            stopHover();
+        };
+    }
 
-	useEffect(bindObservers, [watch]);
-	return active;
+    useEffect(bindObservers, [watch]);
+    return active;
 }
 `,
 				options: [{ environment: "standard" }],
@@ -1268,17 +1268,17 @@ export function useFocusHoverState(watch: Watch): boolean {
 import { useEffect } from "react";
 
 interface ReadySignalInput {
-	readonly ready: boolean;
-	readonly onReady?: () => void;
+    readonly ready: boolean;
+    readonly onReady?: () => void;
 }
 
 export function useReadySignal({ ready, onReady }: ReadySignalInput): void {
-	function notifyReady(): void {
-		if (!ready) return;
-		onReady?.();
-	}
+    function notifyReady(): void {
+        if (!ready) return;
+        onReady?.();
+    }
 
-	useEffect(notifyReady, [ready, onReady]);
+    useEffect(notifyReady, [ready, onReady]);
 }
 `,
 				options: [{ environment: "standard" }],
@@ -1290,10 +1290,10 @@ export function useReadySignal({ ready, onReady }: ReadySignalInput): void {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component() {
-	const [name, setName] = useState<string | undefined>();
-	useEffect(() => {
-		setName("Hello World");
-	}, []);
+    const [name, setName] = useState<string | undefined>();
+    useEffect(() => {
+        setName("Hello World");
+    }, []);
 }
 `,
 				options: [{ reportInitializeState: false }],
@@ -1305,9 +1305,9 @@ function Component() {
 import { useEffect } from "@rbxts/react";
 
 function Component({ value }) {
-	useEffect(() => {
-		console.log("Value changed:", value);
-	}, [value]);
+    useEffect(() => {
+        console.log("Value changed:", value);
+    }, [value]);
 }
 `,
 				options: [{ reportLogOnly: false }],
@@ -1319,12 +1319,12 @@ function Component({ value }) {
 import { useEffect, useState } from "@rbxts/react";
 
 function Component() {
-	const [isOnline, setIsOnline] = useState(navigator.onLine);
-	useEffect(() => {
-		const handleOnline = () => setIsOnline(true);
-		window.addEventListener("online", handleOnline);
-		return () => window.removeEventListener("online", handleOnline);
-	}, []);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        window.addEventListener("online", handleOnline);
+        return () => window.removeEventListener("online", handleOnline);
+    }, []);
 }
 `,
 				options: [{ reportExternalStore: false }],

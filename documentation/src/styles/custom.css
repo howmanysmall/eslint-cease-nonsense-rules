@@ -491,7 +491,12 @@ starlight-aside .title {
 	line-height: 1;
 	-webkit-text-fill-color: transparent;
 	letter-spacing: -0.04em;
-	background: linear-gradient(135deg, var(--sl-color-accent-high) 0%, var(--sl-color-accent) 50%, var(--sl-color-accent-low) 100%);
+	background: linear-gradient(
+		135deg,
+		var(--sl-color-accent-high) 0%,
+		var(--sl-color-accent) 50%,
+		var(--sl-color-accent-low) 100%
+	);
 	-webkit-background-clip: text;
 	background-clip: text;
 	filter: drop-shadow(0 2px 8px rgba(245, 158, 11, 0.2));

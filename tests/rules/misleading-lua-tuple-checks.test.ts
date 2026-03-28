@@ -36,15 +36,15 @@ const iterableDeclarations =
 const tupleDeclarations = `
 type LuaTuple<T extends unknown[]> = T & { readonly LUA_TUPLE: never };
 interface LuaSignal<T extends unknown[]> {
-	Wait(): LuaTuple<T>;
+    Wait(): LuaTuple<T>;
 }
 interface Player {}
 interface PlayersService {
-	PlayerAdded: LuaSignal<[Player]>;
+    PlayerAdded: LuaSignal<[Player]>;
 }
 interface Game {
-	Loaded: LuaSignal<[boolean]>;
-	GetService(name: "Players"): PlayersService;
+    Loaded: LuaSignal<[boolean]>;
+    GetService(name: "Players"): PlayersService;
 }
 declare const game: Game;
 `;

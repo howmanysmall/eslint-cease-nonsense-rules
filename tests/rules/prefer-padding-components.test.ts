@@ -29,47 +29,47 @@ describe("prefer-padding-components", () => {
 				code: `import { EqualPadding } from "../ui/equal-padding";
 
 export function Example(padding: UDim) {
-	return <uipadding PaddingBottom={padding} PaddingLeft={padding} PaddingRight={padding} PaddingTop={padding} />;
+    return <uipadding PaddingBottom={padding} PaddingLeft={padding} PaddingRight={padding} PaddingTop={padding} />;
 }`,
 				errors: [{ messageId: "preferEqualPadding" }],
 				filename: join(WITH_COMPONENTS, "src", "screens", "equal.tsx"),
 				output: `import { EqualPadding } from "../ui/equal-padding";
 
 export function Example(padding: UDim) {
-	return <EqualPadding padding={padding} />;
+    return <EqualPadding padding={padding} />;
 }`,
 			},
 			{
 				code: `import { DirectionalPadding as AxisPadding } from "../ui/directional-padding";
 
 export function Example(horizontal: UDim, vertical: UDim) {
-	return <uipadding PaddingBottom={horizontal} PaddingLeft={vertical} PaddingRight={vertical} PaddingTop={horizontal} />;
+    return <uipadding PaddingBottom={horizontal} PaddingLeft={vertical} PaddingRight={vertical} PaddingTop={horizontal} />;
 }`,
 				errors: [{ messageId: "preferDirectionalPadding" }],
 				filename: join(WITH_COMPONENTS, "src", "screens", "directional.tsx"),
 				output: `import { DirectionalPadding as AxisPadding } from "../ui/directional-padding";
 
 export function Example(horizontal: UDim, vertical: UDim) {
-	return <AxisPadding horizontal={horizontal} vertical={vertical} />;
+    return <AxisPadding horizontal={horizontal} vertical={vertical} />;
 }`,
 			},
 			{
 				code: `import { EqualPadding } from "../ui/equal-padding";
 
 export function Example(padding: UDim) {
-	return <uipadding PaddingBottom={padding as UDim} PaddingLeft={padding} PaddingRight={padding} PaddingTop={padding} />;
+    return <uipadding PaddingBottom={padding as UDim} PaddingLeft={padding} PaddingRight={padding} PaddingTop={padding} />;
 }`,
 				errors: [{ messageId: "preferEqualPadding" }],
 				filename: join(WITH_COMPONENTS, "src", "screens", "normalized.tsx"),
 				output: `import { EqualPadding } from "../ui/equal-padding";
 
 export function Example(padding: UDim) {
-	return <EqualPadding padding={padding} />;
+    return <EqualPadding padding={padding} />;
 }`,
 			},
 			{
 				code: `export function Example(padding: UDim) {
-	return <uipadding PaddingBottom={padding} PaddingLeft={padding} PaddingRight={padding} PaddingTop={padding} />;
+    return <uipadding PaddingBottom={padding} PaddingLeft={padding} PaddingRight={padding} PaddingTop={padding} />;
 }`,
 				errors: [{ messageId: "preferEqualPadding" }],
 				filename: join(WITH_COMPONENTS, "src", "screens", "report-only.tsx"),
@@ -78,7 +78,7 @@ export function Example(padding: UDim) {
 		valid: [
 			{
 				code: `export function Example(padding: UDim) {
-	return <uipadding PaddingBottom={padding} PaddingLeft={padding} PaddingRight={padding} PaddingTop={padding} />;
+    return <uipadding PaddingBottom={padding} PaddingLeft={padding} PaddingRight={padding} PaddingTop={padding} />;
 }`,
 				filename: join(WITHOUT_COMPONENTS, "src", "screens", "missing.tsx"),
 			},
@@ -86,7 +86,7 @@ export function Example(padding: UDim) {
 				code: `import { EqualPadding } from "../ui/equal-padding";
 
 export function Example(padding: UDim) {
-	return <uipadding Name="Padding" PaddingBottom={padding} PaddingLeft={padding} PaddingRight={padding} PaddingTop={padding} />;
+    return <uipadding Name="Padding" PaddingBottom={padding} PaddingLeft={padding} PaddingRight={padding} PaddingTop={padding} />;
 }`,
 				filename: join(WITH_COMPONENTS, "src", "screens", "extra-props.tsx"),
 			},
@@ -94,7 +94,7 @@ export function Example(padding: UDim) {
 				code: `import { DirectionalPadding } from "../ui/directional-padding";
 
 export function Example(horizontal: UDim, vertical: UDim, other: UDim) {
-	return <uipadding PaddingBottom={horizontal} PaddingLeft={vertical} PaddingRight={vertical} PaddingTop={other} />;
+    return <uipadding PaddingBottom={horizontal} PaddingLeft={vertical} PaddingRight={vertical} PaddingTop={other} />;
 }`,
 				filename: join(WITH_COMPONENTS, "src", "screens", "mismatch.tsx"),
 			},
@@ -104,13 +104,13 @@ export function Example(horizontal: UDim, vertical: UDim, other: UDim) {
 const attributes = { PaddingBottom: padding };
 
 export function Example(padding: UDim) {
-	return <uipadding {...attributes} PaddingLeft={padding} PaddingRight={padding} PaddingTop={padding} />;
+    return <uipadding {...attributes} PaddingLeft={padding} PaddingRight={padding} PaddingTop={padding} />;
 }`,
 				filename: join(WITH_COMPONENTS, "src", "screens", "spread.tsx"),
 			},
 			{
 				code: `export function Example(padding: UDim) {
-	return <uipadding PaddingBottom={padding} PaddingLeft={padding} PaddingRight={padding} PaddingTop={padding} />;
+    return <uipadding PaddingBottom={padding} PaddingLeft={padding} PaddingRight={padding} PaddingTop={padding} />;
 }`,
 				filename: join(FIXTURE_ONLY_COMPONENTS, "src", "screens", "fixture.tsx"),
 			},

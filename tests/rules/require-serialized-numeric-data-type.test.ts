@@ -174,12 +174,12 @@ describe("require-serialized-numeric-data-type", () => {
 			// All DataType variants
 			{
 				code: `
-					registerComponent<DataType.i8>({});
-					registerComponent<DataType.i16>({});
-					registerComponent<DataType.i32>({});
-					registerComponent<DataType.u16>({});
-					registerComponent<DataType.f64>({});
-				`,
+                    registerComponent<DataType.i8>({});
+                    registerComponent<DataType.i16>({});
+                    registerComponent<DataType.i32>({});
+                    registerComponent<DataType.u16>({});
+                    registerComponent<DataType.f64>({});
+                `,
 			},
 			// Object type with DataType properties - allowed
 			{
@@ -258,16 +258,16 @@ describe("require-serialized-numeric-data-type", () => {
 			// Type reference to non-number type - allowed (in non-strict mode)
 			{
 				code: `
-					type MyType = string;
-					registerComponent<MyType>({ replicated: true });
-				`,
+                    type MyType = string;
+                    registerComponent<MyType>({ replicated: true });
+                `,
 			},
 			// Type reference with DataType alias - allowed (in non-strict mode)
 			{
 				code: `
-					type MyNumber = DataType.u8;
-					registerComponent<MyNumber>({ replicated: true });
-				`,
+                    type MyNumber = DataType.u8;
+                    registerComponent<MyNumber>({ replicated: true });
+                `,
 			},
 			// Generic type with DataType argument - Array<DataType.f32>
 			{

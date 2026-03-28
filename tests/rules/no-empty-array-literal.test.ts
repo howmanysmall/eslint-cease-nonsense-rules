@@ -180,7 +180,7 @@ describe("no-empty-array-literal", () => {
 declare const gameMode: "story" | "default";
 declare const cache: { rewards?: readonly string[] };
 const rewards = gameMode === "story" ? cache.rewards ?? [] : [];
-			`,
+            `,
 			"const defaultValues: ReadonlyArray<number> = [];",
 			"type UnitCostRefundArray = Array<number>;\nconst unitsOfCostId: UnitCostRefundArray = [];",
 			"type ComponentList = ReadonlyArray<string>; const values = [] as ComponentList;",
@@ -189,152 +189,152 @@ type BreakpointValue = number;
 type BreakpointList<T> = ReadonlyArray<T>;
 
 class BreakpointTemplate<T extends Record<string, number>> {
-	public map<K extends { [P in keyof T]: BreakpointValue }>(
-		values: K,
-		deviations: BreakpointList<K[keyof K]> = [],
-	): BreakpointList<K[keyof K]> {
-		void values;
-		void deviations;
-		return [] as BreakpointList<K[keyof K]>;
-	}
+    public map<K extends { [P in keyof T]: BreakpointValue }>(
+        values: K,
+        deviations: BreakpointList<K[keyof K]> = [],
+    ): BreakpointList<K[keyof K]> {
+        void values;
+        void deviations;
+        return [] as BreakpointList<K[keyof K]>;
+    }
 }
-			`,
+            `,
 			`
 declare function useMemo<TValue>(factory: () => TValue, dependencies: ReadonlyArray<unknown>): TValue;
 const value = useMemo(() => true, []);
-			`,
+            `,
 			`
 declare function useEventConnection(
-	event: unknown,
-	handler: (deltaTime: number) => void,
-	dependencies: ReadonlyArray<unknown>,
+    event: unknown,
+    handler: (deltaTime: number) => void,
+    dependencies: ReadonlyArray<unknown>,
 ): void;
 useEventConnection({}, (_deltaTime: number) => {}, []);
-			`,
+            `,
 			`
 type QuestId = string;
 declare function useState<TState>(initialState: TState): [TState, (next: TState) => void];
 const [categoryIds, setCategoryIds] = useState<ReadonlyArray<QuestId>>([]);
-			`,
+            `,
 			`
 declare function useRef<TValue>(initialValue: TValue): { current: TValue };
 const damageHistoryReference = useRef<Array<{ readonly damage: number; readonly time: number }>>([]);
-			`,
+            `,
 			`
 type EffectLike = () => void;
 
 export default function useThreadEffect(callback: EffectLike, dependencies: ReadonlyArray<unknown> = []): void {
-	void callback;
-	void dependencies;
-	return;
+    void callback;
+    void dependencies;
+    return;
 }
-			`,
+            `,
 			`
 type MouseTipEntry = { readonly id: string };
 type MouseTipList = ReadonlyArray<MouseTipEntry>;
 const defaultMouseTips: MouseTipList = [];
-			`,
+            `,
 			`
 const craftingCostItem: { usages: { craftsInto?: Array<string> } } = { usages: {} };
 craftingCostItem.usages.craftsInto ??= [];
-			`,
+            `,
 			`
 const groups = new Map<string, Array<number>>();
 let values = groups.get("key");
 if (!values) {
-	values = [];
-	groups.set("key", values);
+    values = [];
+    groups.set("key", values);
 }
-			`,
+            `,
 			`
 const values: { items?: Array<number> } = {};
 for (const item of values.items ?? []) {
-	void item;
+    void item;
 }
-			`,
+            `,
 			`
 const base: { synergies?: Array<string> } = {};
 for (const synergyId of base.synergies ?? []) {
-	void synergyId;
+    void synergyId;
 }
-			`,
+            `,
 			`
 const key = "crates";
 const obtainment: Partial<Record<string, Array<string>>> = {};
 obtainment[key] ??= [];
-			`,
+            `,
 			`
 enum Category {
-	StoryMode = "StoryMode",
+    StoryMode = "StoryMode",
 }
 const cache: { groups?: Partial<Record<Category, Array<string>>> } = {};
 cache.groups ??= {};
 cache.groups[Category.StoryMode] ??= [];
-			`,
+            `,
 			`
 const spatial: { rebuild(values: Array<number>): void } = {
-	rebuild(_values: Array<number>): void {},
+    rebuild(_values: Array<number>): void {},
 };
 spatial.rebuild([]);
-			`,
+            `,
 			`
 enum MapId {
-	PlanetNamak = "PlanetNamak",
+    PlanetNamak = "PlanetNamak",
 }
 declare const center: { [key: string]: unknown };
 declare const MAP_STYLE_META: Record<MapId, unknown>;
 
 declare function MatchInfoPlate(props: {
-	playerIds: unknown;
-	mapStyle: unknown;
-	shadowTransparency: number;
-	nativeProperties: unknown;
+    playerIds: unknown;
+    mapStyle: unknown;
+    shadowTransparency: number;
+    nativeProperties: unknown;
 }): JSX.Element;
 
 const result = (
-	<MatchInfoPlate
-		key="match-info-plate"
-		mapStyle={MAP_STYLE_META[MapId.PlanetNamak]}
-		nativeProperties={{
-			AnchorPoint: center,
-			Position: { foo: 1 },
-			Size: { bar: 2 },
-		}}
-		playerIds={[]}
-		shadowTransparency={0.5}
-	/>
+    <MatchInfoPlate
+        key="match-info-plate"
+        mapStyle={MAP_STYLE_META[MapId.PlanetNamak]}
+        nativeProperties={{
+            AnchorPoint: center,
+            Position: { foo: 1 },
+            Size: { bar: 2 },
+        }}
+        playerIds={[]}
+        shadowTransparency={0.5}
+    />
 );
 void result;
 `,
 			`
 declare function useEventListener(
-	event: unknown,
-	handler: () => void,
+    event: unknown,
+    handler: () => void,
 ): void;
 declare const UserInputService: { InputEnded: unknown };
 declare function setIsDragging(value: boolean): void;
 declare function setPattern(value: Array<number>): void;
 useEventListener(UserInputService.InputEnded, () => {
-	setIsDragging(false);
-	setPattern([]);
+    setIsDragging(false);
+    setPattern([]);
 });
-			`,
+            `,
 			`
 declare function consume(values: Array<number>): void;
 consume([]);
-			`,
+            `,
 			`
 class Container {
-	constructor(_values: Array<number>) {}
+    constructor(_values: Array<number>) {}
 }
 const container = new Container([]);
-			`,
+            `,
 			`
 function buildResult(shouldBeEmpty: boolean): Array<number> {
-	if (shouldBeEmpty) return [];
-	return [1];
+    if (shouldBeEmpty) return [];
+    return [1];
 }
-			`,
+            `,
 		],
 	});
 });
@@ -358,11 +358,11 @@ describe("no-empty-array-literal (type-aware inference)", () => {
 			{
 				code: `
 function useValues<T>(): void {
-	type ComponentList<U> = ReadonlyArray<U>;
-	const values = [] as ComponentList<T>;
-	void values;
+    type ComponentList<U> = ReadonlyArray<U>;
+    const values = [] as ComponentList<T>;
+    void values;
 }
-					`,
+                    `,
 				options: [{ inferTypeForEmptyArrayFix: true }],
 			},
 		],

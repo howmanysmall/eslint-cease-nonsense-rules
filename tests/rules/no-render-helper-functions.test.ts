@@ -79,12 +79,12 @@ describe("no-render-helper-functions", () => {
 			},
 			{
 				code: `function createLabel(text: string): React.ReactNode {
-	return (
-		<TextLabel
-			nativeProperties={{ Text: text }}
-			strokeEnabled={true}
-		/>
-	);
+    return (
+        <TextLabel
+            nativeProperties={{ Text: text }}
+            strokeEnabled={true}
+        />
+    );
 }`,
 				errors: [{ messageId: "noRenderHelper" }],
 			},

@@ -29,19 +29,19 @@ describe("prefer-context-stack", () => {
 				code: `import ContextStack from "../providers/context-stack";
 
 export function Example(locale: string, theme: string) {
-	return <ThemeContext.Provider value={theme}><LocaleContext.Provider value={locale}><App /></LocaleContext.Provider></ThemeContext.Provider>;
+    return <ThemeContext.Provider value={theme}><LocaleContext.Provider value={locale}><App /></LocaleContext.Provider></ThemeContext.Provider>;
 }`,
 				errors: [{ messageId: "preferContextStack" }],
 				filename: join(WITH_CONTEXT_STACK, "src", "screens", "basic.tsx"),
 				output: `import ContextStack from "../providers/context-stack";
 
 export function Example(locale: string, theme: string) {
-	return <ContextStack providers={[<ThemeContext.Provider value={theme} />, <LocaleContext.Provider value={locale} />]}><App /></ContextStack>;
+    return <ContextStack providers={[<ThemeContext.Provider value={theme} />, <LocaleContext.Provider value={locale} />]}><App /></ContextStack>;
 }`,
 			},
 			{
 				code: `export function Example(locale: string, theme: string) {
-	return <ThemeContext.Provider value={theme}><LocaleContext.Provider value={locale}><App /></LocaleContext.Provider></ThemeContext.Provider>;
+    return <ThemeContext.Provider value={theme}><LocaleContext.Provider value={locale}><App /></LocaleContext.Provider></ThemeContext.Provider>;
 }`,
 				errors: [{ messageId: "preferContextStack" }],
 				filename: join(WITH_CONTEXT_STACK, "src", "screens", "report-only.tsx"),
@@ -50,7 +50,7 @@ export function Example(locale: string, theme: string) {
 				code: `import ContextStack from "../providers/context-stack";
 
 export function Example(locale: string, theme: string) {
-	return <ThemeContext.Provider value={theme}>{/* keep */}<LocaleContext.Provider value={locale}><App /></LocaleContext.Provider></ThemeContext.Provider>;
+    return <ThemeContext.Provider value={theme}>{/* keep */}<LocaleContext.Provider value={locale}><App /></LocaleContext.Provider></ThemeContext.Provider>;
 }`,
 				errors: [{ messageId: "preferContextStack" }],
 				filename: join(WITH_CONTEXT_STACK, "src", "screens", "comment.tsx"),
@@ -61,7 +61,7 @@ export function Example(locale: string, theme: string) {
 				code: `import ContextStack from "../providers/context-stack";
 
 export function Example(theme: string) {
-	return <ThemeContext.Provider value={theme}><App /></ThemeContext.Provider>;
+    return <ThemeContext.Provider value={theme}><App /></ThemeContext.Provider>;
 }`,
 				filename: join(WITH_CONTEXT_STACK, "src", "screens", "single.tsx"),
 			},
@@ -69,19 +69,19 @@ export function Example(theme: string) {
 				code: `import ContextStack from "../providers/context-stack";
 
 export function Example(locale: string, theme: string) {
-	return <ThemeContext.Provider value={theme}><Toolbar /><LocaleContext.Provider value={locale}><App /></LocaleContext.Provider></ThemeContext.Provider>;
+    return <ThemeContext.Provider value={theme}><Toolbar /><LocaleContext.Provider value={locale}><App /></LocaleContext.Provider></ThemeContext.Provider>;
 }`,
 				filename: join(WITH_CONTEXT_STACK, "src", "screens", "not-direct.tsx"),
 			},
 			{
 				code: `export function Example(locale: string, theme: string) {
-	return <ThemeContext.Provider value={theme}><LocaleContext.Provider value={locale}><App /></LocaleContext.Provider></ThemeContext.Provider>;
+    return <ThemeContext.Provider value={theme}><LocaleContext.Provider value={locale}><App /></LocaleContext.Provider></ThemeContext.Provider>;
 }`,
 				filename: join(WITHOUT_CONTEXT_STACK, "src", "screens", "missing.tsx"),
 			},
 			{
 				code: `export function Example(locale: string, theme: string) {
-	return <ThemeContext.Provider value={theme}><LocaleContext.Provider value={locale}><App /></LocaleContext.Provider></ThemeContext.Provider>;
+    return <ThemeContext.Provider value={theme}><LocaleContext.Provider value={locale}><App /></LocaleContext.Provider></ThemeContext.Provider>;
 }`,
 				filename: join(FIXTURE_ONLY_CONTEXT_STACK, "src", "screens", "fixture.tsx"),
 			},
