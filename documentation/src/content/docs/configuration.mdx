@@ -3,7 +3,8 @@ title: Configuration
 description: Configure Cease Nonsense for your project with recommended presets and per-rule settings.
 ---
 
-import { Aside, Code } from "@astrojs/starlight/components";
+import { Aside } from "@astrojs/starlight/components";
+import { ruleCategories, totalRules } from "../../data/rule-stats";
 
 ## Recommended Config
 
@@ -15,14 +16,14 @@ import ceaseNonsense from "eslint-plugin-cease-nonsense";
 export default [ceaseNonsense.configs.recommended];
 ```
 
-This enables all 55 rules with sensible defaults. Rules are categorized into five groups:
+This enables all {totalRules} rules with sensible defaults. Rules are categorized into four groups:
 
-| Category              | Rules    | Default Severity |
-| --------------------- | -------- | ---------------- |
-| React                 | 20 rules | `warn` / `error` |
-| Roblox & Luau         | 16 rules | `warn` / `error` |
-| Naming & Conventions  | 7 rules  | `warn`           |
-| General Logic & Style | 12 rules | `warn` / `error` |
+| Category                       | Rules                                | Default Severity |
+| ------------------------------ | ------------------------------------ | ---------------- |
+| {ruleCategories.react.label}   | {ruleCategories.react.count} rules   | `warn` / `error` |
+| {ruleCategories.roblox.label}  | {ruleCategories.roblox.count} rules  | `warn` / `error` |
+| {ruleCategories.naming.label}  | {ruleCategories.naming.count} rules  | `warn`           |
+| {ruleCategories.general.label} | {ruleCategories.general.count} rules | `warn` / `error` |
 
 <Aside type="tip">
 	Not using Roblox? You can selectively enable only the rules you need. See [Disabling Rules](#disabling-rules) below.

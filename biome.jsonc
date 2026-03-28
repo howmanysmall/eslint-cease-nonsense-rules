@@ -8,10 +8,12 @@
 				"recommended": true,
 				"useSortedAttributes": "on",
 				"useSortedInterfaceMembers": "off",
-				"useSortedKeys": "off",
+				"useSortedKeys": "on",
 				"useSortedProperties": "on"
 			}
-		}
+		},
+		"enabled": true,
+		"includes": ["!package.json"]
 	},
 
 	"css": {
@@ -65,6 +67,7 @@
 		},
 		"linter": { "enabled": true }
 	},
+
 	"grit": {
 		"assist": { "enabled": true },
 		"formatter": {
@@ -225,6 +228,7 @@
 				}
 			}
 		},
+
 		{
 			"includes": [
 				".vscode/**",
@@ -251,14 +255,6 @@
 				}
 			}
 		},
-		{
-			"assist": {
-				"actions": {
-					"source": { "useSortedKeys": "on" }
-				}
-			},
-			"includes": [".zed/settings.json"]
-		},
 
 		{
 			"includes": [".claude/**/*.json"],
@@ -282,12 +278,8 @@
 			"includes": ["bun/**"],
 			"linter": {
 				"rules": {
-					"style": {
-						"noEnum": "off"
-					},
-					"suspicious": {
-						"noConstEnum": "off"
-					}
+					"style": { "noEnum": "off" },
+					"suspicious": { "noConstEnum": "off" }
 				}
 			}
 		}

@@ -20,7 +20,8 @@ hero:
           variant: minimal
 ---
 
-import { Card, CardGrid, LinkCard, Steps, Code, Aside } from "@astrojs/starlight/components";
+import { Card, CardGrid, LinkCard, Aside } from "@astrojs/starlight/components";
+import { ruleCategories, totalCategories, totalRules } from "../../data/rule-stats";
 
 ## Why Cease Nonsense?
 
@@ -36,32 +37,32 @@ import { Card, CardGrid, LinkCard, Steps, Code, Aside } from "@astrojs/starlight
 		Catch performance regressions and anti-patterns early before they ship to production.
 	</Card>
 	<Card title="Batteries Included" icon="puzzle">
-		55 rules covering everything from naming conventions to architectural patterns.
+		{totalRules} rules covering everything from naming conventions to architectural patterns.
 	</Card>
 </CardGrid>
 
-## 55 Rules Across Five Categories
+## {totalRules} Rules Across {totalCategories} Categories
 
 <CardGrid>
 	<LinkCard
-		title="React Rules"
-		description="20 rules for hooks, components, and patterns"
-		href="/eslint-cease-nonsense-rules/rules/ban-react-fc/"
+		title={ruleCategories.react.label}
+		description={`${ruleCategories.react.count} rules for hooks, components, and patterns`}
+		href={ruleCategories.react.slug}
 	/>
 	<LinkCard
-		title="Roblox & Luau Rules"
-		description="16 rules for roblox-ts game development"
-		href="/eslint-cease-nonsense-rules/rules/ban-instances/"
+		title={ruleCategories.roblox.label}
+		description={`${ruleCategories.roblox.count} rules for roblox-ts game development`}
+		href={ruleCategories.roblox.slug}
 	/>
 	<LinkCard
-		title="Naming & Conventions"
-		description="7 rules for consistent naming"
-		href="/eslint-cease-nonsense-rules/rules/naming-convention/"
+		title={ruleCategories.naming.label}
+		description={`${ruleCategories.naming.count} rules for consistent naming`}
+		href={ruleCategories.naming.slug}
 	/>
 	<LinkCard
-		title="General Logic & Style"
-		description="12 rules for clean, maintainable code"
-		href="/eslint-cease-nonsense-rules/rules/prefer-early-return/"
+		title={ruleCategories.general.label}
+		description={`${ruleCategories.general.count} rules for clean, maintainable code`}
+		href={ruleCategories.general.slug}
 	/>
 </CardGrid>
 
