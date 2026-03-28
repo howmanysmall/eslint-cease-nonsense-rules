@@ -27,6 +27,7 @@
     },
   },
   "patchedDependencies": {
+    "astro@6.1.1": "patches/astro@6.1.1.patch",
     "starlight-scroll-to-top@0.4.0": "patches/starlight-scroll-to-top@0.4.0.patch",
   },
   "overrides": {

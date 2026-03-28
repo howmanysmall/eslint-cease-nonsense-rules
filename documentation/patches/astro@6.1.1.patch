@@ -1,0 +1,89 @@
+diff --git a/types/content.d.ts b/types/content.d.ts
+index 25d3e2b07f330b3dedf83f32fcd332de7710e89d..b4b634dd2f95284bd6a5ba731ce05082dbb1cc67 100644
+--- a/types/content.d.ts
++++ b/types/content.d.ts
+@@ -19,31 +19,70 @@ declare module 'astro:content' {
+ 	export const z = zod.z;
+ 
+ 	/** Run `astro dev` or `astro sync` to generate high fidelity types */
+-	export const getEntryBySlug: (...args: any[]) => any;
++	export type CollectionKey = string;
+ 	/** Run `astro dev` or `astro sync` to generate high fidelity types */
+-	export const getDataEntryById: (...args: any[]) => any;
++	export interface CollectionEntry<C extends CollectionKey = CollectionKey> {
++		id: string;
++		collection: C;
++		data: Record<string, unknown>;
++		body?: string;
++		rendered?: unknown;
++		filePath?: string;
++	}
+ 	/** Run `astro dev` or `astro sync` to generate high fidelity types */
+-	export const getCollection: (...args: any[]) => any;
++	export interface CollectionReference<C extends CollectionKey = CollectionKey> {
++		collection: C;
++		id: string;
++	}
+ 	/** Run `astro dev` or `astro sync` to generate high fidelity types */
+-	export const getEntry: (...args: any[]) => any;
++	export interface RenderResult {
++		Content: unknown;
++		headings: Array<import('astro').MarkdownHeading>;
++		remarkPluginFrontmatter: Record<string, unknown>;
++	}
+ 	/** Run `astro dev` or `astro sync` to generate high fidelity types */
+-	export const getEntries: (...args: any[]) => any;
++	export type ContentCollectionKey = CollectionKey;
+ 	/** Run `astro dev` or `astro sync` to generate high fidelity types */
+-	export const reference: (...args: any[]) => any;
++	export type DataCollectionKey = CollectionKey;
+ 	/** Run `astro dev` or `astro sync` to generate high fidelity types */
+-	export type CollectionKey = any;
++	export interface ContentConfig {
++		collections: Record<string, unknown>;
++	}
+ 	/** Run `astro dev` or `astro sync` to generate high fidelity types */
+-	export type CollectionEntry<C> = any;
++	export const getEntryBySlug: <C extends CollectionKey>(
++		collection: C,
++		slug: string,
++	) => Promise<CollectionEntry<C> | undefined>;
+ 	/** Run `astro dev` or `astro sync` to generate high fidelity types */
+-	export type ContentCollectionKey = any;
++	export const getDataEntryById: <C extends CollectionKey>(
++		collection: C,
++		id: string,
++	) => Promise<CollectionEntry<C> | undefined>;
+ 	/** Run `astro dev` or `astro sync` to generate high fidelity types */
+-	export type DataCollectionKey = any;
++	export const getCollection: <C extends CollectionKey>(
++		collection: C,
++		filter?: (entry: CollectionEntry<C>) => unknown,
++	) => Promise<Array<CollectionEntry<C>>>;
+ 	/** Run `astro dev` or `astro sync` to generate high fidelity types */
+-	export type ContentConfig = any;
++	export const getEntry: {
++		<C extends CollectionKey>(entry: CollectionReference<C>): Promise<CollectionEntry<C> | undefined>;
++		<C extends CollectionKey>(collection: C, id: string): Promise<CollectionEntry<C> | undefined>;
++	};
+ 	/** Run `astro dev` or `astro sync` to generate high fidelity types */
+-	export const render: (entry: any) => any;
++	export const getEntries: <C extends CollectionKey>(
++		entries: Array<CollectionReference<C>>,
++	) => Promise<Array<CollectionEntry<C>>>;
+ 	/** Run `astro dev` or `astro sync` to generate high fidelity types */
+-	export const getLiveCollection: (...args: any[]) => any;
++	export const reference: <C extends CollectionKey>(
++		collection: C,
++	) => import('astro/zod').ZodPipe<
++		import('astro/zod').ZodString,
++		import('astro/zod').ZodTransform<CollectionReference<C>, string>
++	>;
+ 	/** Run `astro dev` or `astro sync` to generate high fidelity types */
+-	export const getLiveEntry: (...args: any[]) => any;
++	export const render: (entry: CollectionEntry) => Promise<RenderResult>;
++	/** Run `astro dev` or `astro sync` to generate high fidelity types */
++	export const getLiveCollection: (...args: Array<unknown>) => Promise<Record<string, unknown>>;
++	/** Run `astro dev` or `astro sync` to generate high fidelity types */
++	export const getLiveEntry: (...args: Array<unknown>) => Promise<Record<string, unknown>>;
+ }

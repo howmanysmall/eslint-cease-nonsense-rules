@@ -24,7 +24,8 @@
 		"picomatch": "^4.0.3"
 	},
 	"patchedDependencies": {
-		"starlight-scroll-to-top@0.4.0": "patches/starlight-scroll-to-top@0.4.0.patch"
+		"starlight-scroll-to-top@0.4.0": "patches/starlight-scroll-to-top@0.4.0.patch",
+		"astro@6.1.1": "patches/astro@6.1.1.patch"
 	},
 	"scripts": {
 		"astro": "astro",
