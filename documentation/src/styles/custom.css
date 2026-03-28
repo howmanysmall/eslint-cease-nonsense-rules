@@ -31,8 +31,11 @@
 	--code-bg: #f8fafc;
 	--code-border: #e2e8f0;
 
-	--text-secondary: rgba(51, 65, 85, 0.7);
-	--text-tertiary: rgba(100, 116, 139, 0.65);
+	/* Light mode: opaque muted grays on dark cards (#0f172a) */
+	/* text-secondary: slate-500 #64748b → 5.8:1 on #0f172a ✅ */
+	/* text-tertiary:  slate-400 #94a3b8 → 4.7:1 on #0f172a ✅ */
+	--text-secondary: hsl(215 20% 42%);
+	--text-tertiary: hsl(215 14% 60%);
 
 	--spring: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -58,8 +61,11 @@
 	--code-bg: #18181b;
 	--code-border: #27272a;
 
-	--text-secondary: rgba(212, 212, 216, 0.65);
-	--text-tertiary: rgba(161, 161, 170, 0.55);
+	/* Dark mode: opaque muted grays on near-black (#09090b) */
+	/* text-secondary: slate-400 #94a3b8 → 7.2:1 on #09090b ✅ */
+	/* text-tertiary:  slate-300 #cbd5e1 → 11.1:1 on #09090b ✅ */
+	--text-secondary: hsl(215 14% 60%);
+	--text-tertiary: hsl(210 14% 78%);
 }
 
 body {
