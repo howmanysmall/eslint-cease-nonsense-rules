@@ -1,124 +1,83 @@
 ---
 title: prefer-enum-member
 badges:
-    - text: "error"
-      variant: danger
     - text: "Fixable"
       variant: success
     - text: "Suggestion"
       variant: note
-description: Prefer enum members over raw strings/numbers.
+description: Prefer enum member references over raw string and number values when a TypeScript enum is expected.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Prefer enum members over raw strings/numbers.
+Replaces raw enum values with `EnumName.Member` references when the expected type points to a TypeScript enum.
 
-## Rule Details :badge[Clean Code]{variant=success}
+## Rule details :badge[Suggestion]{variant=note}
 
-Enums are the source of truth for their values. Raw literals hide intent and tend to drift when enum definitions change.
-This rule requires member references for both `enum` and `const enum`, including object keys when the expected type is a
-mapped enum type.
+This rule uses type information to find string and number literals that match a regular `enum` or `const enum` member.
+When it can resolve a single enum match, it reports the literal and fixes it to the member reference.
 
-<Aside type="caution" title="Avoid Drift">
-	If you change an enum definition, raw strings don't update. Member references do.
+It also checks object keys when the key type comes from an enum, including shapes built with `Record`, mapped types,
+type aliases, and `Readonly` wrappers.
+
+<Aside type="tip" title="Object keys are handled too">
+	If an object is typed as `Record<Color, string>`, the rule can turn `Red: "#f00"` into `[Color.Red]: "#f00"`.
 </Aside>
-
-## Refactoring Steps
-
-<Steps>
-1. **Locate Literals**
-   Find raw strings or numbers being used in places where an Enum type is expected.
-
-2. **Check Member Existence** Ensure the value you are using is actually defined in the Enum.
-
-3. **Convert Call** Replace the literal with the member access (e.g., `Color.Red`).
-
-4. **Object Keys** For object keys derived from enums, use computed properties: `[Color.Red]: value`.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Raw Values
-		Bans passing raw literals where an enum is expected.
-
-    	<Code
-    		code={[
-    			'enum Color { Red = "Red", Blue = "Blue" }',
-    			"",
-    			"// Using raw string",
-    			'setColor("Red");',
-    			"",
-    			"// Using raw key in object",
-    			"const palette = {",
-    			'\tRed: "#F00"',
-    			"};",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			'enum Color { Red = "Red", Blue = "Blue" }',
+			"",
+			"function setColor(color: Color) {}",
+			'setColor("Red");',
+			"",
+			"const palette: Record<Color, string> = {",
+			'\tRed: "#f00",',
+			"};",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Member References
-    	Use the enum name followed by the member for all usages.
+	<Code
+		code={[
+			'enum Color { Red = "Red", Blue = "Blue" }',
+			"",
+			"function setColor(color: Color) {}",
+			"setColor(Color.Red);",
+			"",
+			"const palette: Record<Color, string> = {",
+			'\t[Color.Red]: "#f00",',
+			"};",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			'enum Color { Red = "Red", Blue = "Blue" }',
-    			"",
-    			"// Using enum member",
-    			"setColor(Color.Red);",
-    			"",
-    			"// Using computed key in object",
-    			"const palette = {",
-    			'\t[Color.Red]: "#F00"',
-    			"};",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+## What gets skipped
 
-## Why Use Members?
+- module specifiers like `import \"./file\"`
+- directive strings like `"use strict"`
+- literal types such as `type T = "Red"`
+- property keys handled in places where there is no enum-typed object shape to check against
 
-<CardGrid>
-	<Card title="Global Renaming" icon="rocket">
-		IDE tools can rename an enum member across your entire project safely.
-	</Card>
-	<Card title="Type Safety" icon="approve-check">
-		Ensures you only pass values that actually exist in the enum definition.
-	</Card>
-	<Card title="Single Source of Truth" icon="setting">
-		Change a value in one place (the enum) and it updates everywhere.
-	</Card>
-</CardGrid>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="prefer-enum-item"
-		description="Enforce EnumItem usage in roblox-ts"
+		description="Uses Roblox `Enum` items instead of raw values"
 		href="/eslint-cease-nonsense-rules/rules/prefer-enum-item/"
 	/>
 	<LinkCard
 		title="prefer-pascal-case-enums"
-		description="Standardize enum naming"
+		description="Keeps enum names consistent"
 		href="/eslint-cease-nonsense-rules/rules/prefer-pascal-case-enums/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="TypeScript Enums"
-		description="Official guide to enums and const enums"
-		href="https://www.typescriptlang.org/docs/handbook/enums.html"
 	/>
 </CardGrid>

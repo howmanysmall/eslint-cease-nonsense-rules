@@ -6,31 +6,32 @@ badges:
 description: Require Ianitor validators for complex types (runtime validation).
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid, Card, Steps } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Require `Ianitor.Check<T>` validators for complex types.
+Require `Ianitor.Check<T>` validators when a TypeScript type gets too complex to trust at runtime.
 
-## Rule Details :badge[Roblox]{variant=note}
+## Rule details :badge[Roblox]{variant=note}
 
-This rule calculates the structural complexity of your TypeScript types and requires `Ianitor` validators once they
-cross a configured threshold. Runtime validation matters most at boundaries like DataStores and RemoteEvents, where
-TypeScript can't prove the data is shaped correctly.
+TypeScript types evaporate at runtime. If your code reads data from a DataStore, RemoteEvent, or any other IO boundary,
+TypeScript has no way to prove the data matches your type. This rule scores the structural complexity of your types and
+reports an error when the score crosses a threshold, nudging you to add an Ianitor runtime validator.
 
-<Aside type="caution" title="Runtime Safety">
-	TypeScript can't validate runtime data. `Ianitor` can.
+<Aside type="caution" title="Runtime safety">
+	TypeScript types don't exist at runtime. Ianitor fills the gap by validating data shape before your code touches it.
 </Aside>
 
-## Validation Workflow
+## How it works
 
 <Steps>
-1. **Analyze Type Shape**
-   The linter recursively calculates a complexity score based on nesting, property counts, and structural weight.
-2. **Trigger Threshold** If the score exceeds the configured limit, a linter error will prompt you for a runtime check.
-3. **Define Ianitor Schema** Create an `Ianitor` validator that matches your TypeScript interface.
-4. **Derive Type** Use `type MyType = Ianitor.Static<typeof myValidator>` to ensure your runtime check and type are
-   perfectly synced.
+1. **Score the type** -- The rule recursively walks the type, adding weight for nesting depth, property count, unions,
+   intersections, and structural complexity.
+2. **Check the threshold** -- If the score exceeds `baseThreshold` (default 10), the rule reports an error.
+3. **Define an Ianitor schema** -- Create an Ianitor validator that matches your TypeScript interface.
+4. **Derive the type** -- Use `type MyType = Ianitor.Static<typeof myValidator>` so the runtime check and the
+   TypeScript type stay in sync.
+
 {/* oxfmt-ignore */}
 
 </Steps>
@@ -38,64 +39,76 @@ TypeScript can't prove the data is shaped correctly.
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Dangerous Types
-		Bans complex, deeply nested types that lack a runtime validation schema.
+	### Complex type without validation
+	This type is too deeply nested to trust without a runtime check.
 
-    	<Code
-    		code={[
-    			"// Too complex to be trusted without a check!",
-    			"type UserPayload = {",
-    			"\tdata: {",
-    			"\t\tpreferences: {",
-    			"\t\t\ttheme: string;",
-    			"\t\t\tblurEnabled: boolean;",
-    			"\t\t};",
-    			"\t\tlastLogin: number;",
-    			"\t};",
-    			"};",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+    <Code
+    	code={[
+    		"type UserPayload = {",
+    		"\tdata: {",
+    		"\t\tpreferences: {",
+    		"\t\t\ttheme: string;",
+    		"\t\t\tblurEnabled: boolean;",
+    		"\t\t};",
+    		"\t\tlastLogin: number;",
+    		"\t};",
+    		"};",
+    	].join("\n")}
+    	lang="tsx"
+    />
+
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Schema-Derived Types
-    	Define the schema once and use `Ianitor.Static` to get the TypeScript type.
+	### Schema-derived type
+	Define the validator once and extract the TypeScript type from it.
 
-    	<Code
-    		code={[
-    			"const userValidator = Ianitor.interface({",
-    			"\tdata: Ianitor.interface({",
-    			"\t\tpreferences: Ianitor.interface({ ... }),",
-    			"\t\tlastLogin: Ianitor.number(),",
-    			"\t}),",
-    			"});",
-    			"",
-    			"// Safely derived and validated",
-    			"type UserPayload = Ianitor.Static<typeof userValidator>;",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+    <Code
+    	code={[
+    		"const userValidator = Ianitor.interface({",
+    		"\tdata: Ianitor.interface({",
+    		"\t\tpreferences: Ianitor.interface({ ... }),",
+    		"\t\tlastLogin: Ianitor.number(),",
+    		"\t}),",
+    		"});",
+    		"",
+    		"type UserPayload = Ianitor.Static<typeof userValidator>;",
+    	].join("\n")}
+    	lang="tsx"
+    />
 
-## Complexity Factors
+</RuleExample>
+
+## Configuration options
+
+The rule accepts a single options object with these fields:
+
+| Option             | Type      | Default | What it controls                                            |
+| ------------------ | --------- | ------- | ----------------------------------------------------------- |
+| `baseThreshold`    | `number`  | `10`    | Minimum complexity score before the rule reports.           |
+| `warnThreshold`    | `number`  | `15`    | Score at which the rule starts warning.                     |
+| `errorThreshold`   | `number`  | `25`    | Score at which the violation becomes an error.              |
+| `interfacePenalty` | `number`  | `20`    | Base score added to all `interface` declarations.           |
+| `performanceMode`  | `boolean` | `true`  | Cap scores at `2x errorThreshold` to avoid expensive walks. |
+
+## What drives the score up
 
 <CardGrid>
-	<Card title="Structural Weight" icon="list-format">
-		Unions, intersections, and optional properties add more complexity than simple primitives.
+	<Card title="Structural weight" icon="list-format">
+		Unions, intersections, and optional properties add more weight than simple primitives.
 	</Card>
-	<Card title="Nesting Depth" icon="magnifier">
-		Deep nesting drives complexity up quickly.
+	<Card title="Nesting depth" icon="magnifier">
+		Each level of nesting multiplies the score via `log2(depth + 1)`.
 	</Card>
-	<Card title="Property Density" icon="bolt">
-		Large objects with dozens of fields are penalized to encourage modular sub-interfaces.
+	<Card title="Property count" icon="bolt">
+		Large objects with many fields are penalized to encourage smaller sub-interfaces.
 	</Card>
-	<Card title="Performance" icon="setting">
-		Uses caching so the complexity check stays cheap.
+	<Card title="Caching" icon="setting">
+		The rule caches complexity scores per node so re-checking stays cheap.
 	</Card>
 </CardGrid>
 
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
@@ -105,12 +118,12 @@ TypeScript can't prove the data is shaped correctly.
 	/>
 </CardGrid>
 
-## Further Reading
+## Further reading
 
 <CardGrid>
 	<LinkCard
-		title="Ianitor GitHub"
-		description="Official source for the Ianitor library"
+		title="Ianitor on GitHub"
+		description="Source code for the Ianitor runtime validation library"
 		href="https://github.com/howmanysmall/ianitor"
 	/>
 </CardGrid>

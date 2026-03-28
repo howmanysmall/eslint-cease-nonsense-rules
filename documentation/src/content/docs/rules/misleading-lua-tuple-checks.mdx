@@ -14,26 +14,33 @@ import RuleExample from "../../../components/rule-example.astro";
 
 Disallow using `LuaTuple` in conditional expressions.
 
-## Rule Details :badge[Roblox]{variant=note}
+## Rule details :badge[Roblox]{variant=note}
 
 In `roblox-ts`, a `LuaTuple` represents multiple return values from Luau. Using a `LuaTuple` directly in a conditional
 is almost always a bug. At runtime it's an array, so the value is always truthy in JavaScript/TypeScript, even if the
 first Luau return value is `false` or `nil`.
+
+This rule reports `LuaTuple` values in `if`, `while`, `do...while`, and `for` conditions, conditional expressions,
+logical expressions, and `!tuple` checks. It also reports declarations, assignments, and `for...of` bindings that keep
+the tuple as a single value instead of destructuring it.
+
+The rule is fixable. For condition-style checks it adds `[0]`. For declarations, assignments, and `for...of`, it wraps
+the binding in array destructuring, for example `const result = getTuple()` becomes `const [result] = getTuple()`.
+
+It also handles `IterableFunction` types that yield `LuaTuple` values in `for...of` loops.
 
 <Aside type="danger" title="Confusing Behavior">
 	In Lua, `if getTuple() then` checks the first return value. In TypeScript, `if (getTuple())` checks if the *array*
 	exists. Since the array always exists, the check will always pass.
 </Aside>
 
-## Refactoring Steps
+## Refactoring steps
 
-    <Steps>
-    1. **Identify Tuple Checks**
-       Locate `if`, `while`, or ternary expressions that use a variable of type `LuaTuple`.
-    2. **Destructure Results** Assign the tuple to a local destructuring:
-       `const [success, result] = getTuple()`.
-    3. **Check the Variable** Perform your truthiness check on the specific destructured variable: `if (success) { ... }`.
-    4. **Explicit Indexing** Alternatively, if you only need the first value, use explicit indexing: `if (getTuple()[0])`.
+<Steps>
+1. **Pick the value you want to test**. If you only care about the first return value, use `[0]`.
+2. **Destructure when you keep the result**. Write `const [success, data] = getTuple()` instead of storing the whole tuple.
+3. **Check the destructured value**. Use `if (success) { ... }` or another explicit check.
+4. **Do the same in `for...of`**. If the iterable yields tuples, destructure each item as it comes out.
 
 {/* oxfmt-ignore */}
 
@@ -77,23 +84,24 @@ first Luau return value is `false` or `nil`.
     		].join("\n")}
     		lang="tsx"
     	/>
-    </RuleExample>
+
+</RuleExample>
 
 ## Why is this bad?
 
 <CardGrid>
 	<Card title="Runtime Mismatch" icon="bolt">
-		Lua mental models don't translate; `LuaTuple` is a JS object (array), not a raw return value.
+		`LuaTuple` is a JavaScript array at runtime, so a truthiness check does not match Luau's first-value behavior.
 	</Card>
 	<Card title="Silent Failures" icon="warning">
-		Logic blocks can run when they shouldn't, leading to hard-to-track state bugs.
+		Code can take the wrong branch and keep running without an obvious error.
 	</Card>
 	<Card title="Type Clarity" icon="magnifier">
-		Destructuring makes it obvious what each returned value represents.
+		Destructuring makes it clear which tuple value you are actually using.
 	</Card>
 </CardGrid>
 
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
@@ -103,7 +111,7 @@ first Luau return value is `false` or `nil`.
 	/>
 </CardGrid>
 
-## Further Reading
+## Further reading
 
 <CardGrid>
 	<LinkCard

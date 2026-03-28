@@ -3,111 +3,69 @@ title: prefer-module-scope-constants
 badges:
     - text: "Suggestion"
       variant: note
-description: SCREAMING_SNAKE_CASE should be module-level const (not local or mutable).
+description: Require SCREAMING_SNAKE_CASE variables to be const declarations at module scope.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-SCREAMING_SNAKE_CASE variables must be `const` at module scope.
+Require `SCREAMING_SNAKE_CASE` variables to be `const` declarations at module scope.
 
-## Rule Details :badge[Clean Code]{variant=success}
+## Rule details :badge[Suggestion]{variant=note}
 
-`SCREAMING_SNAKE_CASE` is usually a promise: "this is a constant". This rule enforces that the binding is a module-level
-`const`, not a local variable or a `let`.
+This rule checks simple identifier names that match `SCREAMING_SNAKE_CASE`. Those bindings must use `const`, and they
+must live at the top level of the module.
 
-<Aside type="tip" title="Naming as a Signal">
-	`SCREAMING_SNAKE_CASE` is a visual signal that the value shouldn't be reassigned. Defining it locally or with `let`
-	breaks that signal.
+If a value needs to change, or it only makes sense inside a function or block, use a different name.
+
+<Aside type="tip" title="What it ignores">
+	Destructuring is not checked by this rule. `const {FOO} = config` and `const [FOO] = values` are both allowed.
 </Aside>
-
-## Refactoring Path
-
-<Steps>
-1. **Identify Local Constants**
-   Locate `SCREAMING_SNAKE_CASE` variables defined inside functions, methods, or blocks.
-
-2. **Move to Top Level** Relocate the variable definition to the module scope (outside of any function or class).
-
-3. **Ensure Const Usage** Ensure the variable is defined using `const`. If the value needs to change, it should use
-   `camelCase` instead.
-
-4. **Export if Needed** If the constant is used in multiple files, add the `export` keyword.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Local or Mutable Constants
-		Bans uppercase naming for variables that are local or can be reassigned.
+		### Local or mutable uppercase names
 
-    	<Code
-    		code={[
-    			"function calculate() {",
-    			"\t// ❌ Local scope constant",
-    			"\tconst PI = 3.14;",
-    			"}",
-    			"",
-    			"// ❌ Mutable screaming snake case",
-    			"let MAX_RETRIES = 3;",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
+        	<Code
+        		code={[
+        			"function calculate() {",
+        			"\tconst PI = 3.14;",
+        			"}",
+        			"",
+        			"let MAX_RETRIES = 3;",
+        		].join("\n")}
+        		lang="ts"
+        	/>
     </RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Module-Level Constants
-    	Define once at the file's root so it's obvious and reusable.
+		### Module-scope constants
 
-    	<Code
-    		code={[
-    			"const PI = 3.14;",
-    			"",
-    			"function calculate(radius: number) {",
-    			"\treturn radius * radius * PI;",
-    			"}",
-    			"",
-    			"// Destructuring is allowed anywhere",
-    			"const { MAX_SIZE } = getConfig();",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
+        	<Code
+        		code={[
+        			"const PI = 3.14;",
+        			"const MAX_RETRIES = 3;",
+        			"",
+        			"function calculate(radius: number) {",
+        			"\treturn radius * radius * PI;",
+        			"}",
+        		].join("\n")}
+        		lang="ts"
+        	/>
     </RuleExample>
 
-## Why use module scope?
+## Notes
 
-<CardGrid>
-	<Card title="Immutability" icon="lock">
-		A module-level `const` binding can't be reassigned.
-	</Card>
-	<Card title="Reusability" icon="rocket">
-		Top-level constants can be easily exported and shared across your entire project.
-	</Card>
-	<Card title="Readability" icon="list-format">
-		Keeping constants at the top makes it easy for developers to see all configuration values in one place.
-	</Card>
-</CardGrid>
+In `script` files, the rule also allows a first-level function scope. That matches common CommonJS wrapper patterns.
 
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="prefer-pascal-case-enums"
-		description="Standardizes enum naming"
+		description="Keeps enum names and members in PascalCase"
 		href="/eslint-cease-nonsense-rules/rules/prefer-pascal-case-enums/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="Clean Code: Meaningful Names"
-		description="Principles for constant and variable naming"
-		href="https://google.github.io/styleguide/jsguide.html#naming"
 	/>
 </CardGrid>

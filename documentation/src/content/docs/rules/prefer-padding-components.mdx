@@ -3,94 +3,86 @@ title: prefer-padding-components
 badges:
     - text: "Fixable"
       variant: success
-description: Prefer EqualPadding or DirectionalPadding over matching uipadding declarations.
+description: Prefer local EqualPadding or DirectionalPadding components over matching uipadding elements.
 ---
 
-import { Aside, CardGrid, Card, Code, LinkCard } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Prefer `EqualPadding` or `DirectionalPadding` when a raw `<uipadding />` already matches one of those abstractions.
+Prefer local padding components when a `<uipadding />` element already matches them.
 
-## Rule Details :badge[Roblox]{variant=note}
+## Rule details :badge[Suggestion]{variant=note}
 
-When all four padding values match, or when the horizontal and vertical pairs already match, a wrapper component is
-clearer than repeating the same `uipadding` attributes over and over.
+This rule checks empty `<uipadding />` elements with exactly these four attributes: `PaddingTop`, `PaddingBottom`,
+`PaddingLeft`, and `PaddingRight`.
 
-<Aside type="tip" title="Conservative by design">
-	This rule only reports when it can find the matching local padding component. Auto-fix only runs when that component
-	is already imported into the current file.
+It reports two cases:
+
+| Shape                                                                          | Report               |
+| :----------------------------------------------------------------------------- | :------------------- |
+| All four values are the same                                                   | `EqualPadding`       |
+| `PaddingTop` matches `PaddingBottom`, and `PaddingLeft` matches `PaddingRight` | `DirectionalPadding` |
+
+The rule only reports when the project already has a matching local component.
+
+<Aside type="tip" title="When it skips">
+	The rule does nothing when the element has spread attributes, duplicate padding attributes, extra attributes, or
+	real children.
 </Aside>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Repeated Padding Attributes
-		Use the component that already captures the same layout intent.
+		### Repeated padding attributes
 
-    	<Code
-    		code={[
-    			"<uipadding",
-    			"\tPaddingBottom={padding}",
-    			"\tPaddingLeft={padding}",
-    			"\tPaddingRight={padding}",
-    			"\tPaddingTop={padding}",
-    			"/>;",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
+        	<Code
+        		code={[
+        			"<uipadding",
+        			"\tPaddingBottom={padding}",
+        			"\tPaddingLeft={padding}",
+        			"\tPaddingRight={padding}",
+        			"\tPaddingTop={padding}",
+        			"/>;",
+        		].join("\n")}
+        		lang="tsx"
+        	/>
     </RuleExample>
 
 <RuleExample type="pass" title="Correct">
-		### Intentional Layout Components
-		Keep equal and per-axis padding expressed as dedicated JSX components.
+		### Matching local components
 
-    	<Code
-    		code={[
-    			"<EqualPadding padding={padding} />;",
-    			"",
-    			"<DirectionalPadding horizontal={horizontal} vertical={vertical} />;",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
+        	<Code
+        		code={[
+        			"<EqualPadding padding={padding} />;",
+        			"",
+        			"<DirectionalPadding horizontal={horizontal} vertical={vertical} />;",
+        		].join("\n")}
+        		lang="tsx"
+        	/>
     </RuleExample>
 
-## Mapping Rules
+## Auto-fix behavior
 
-| Pattern                                                                             | Preferred Component  |
-| :---------------------------------------------------------------------------------- | :------------------- |
-| `PaddingTop === PaddingBottom === PaddingLeft === PaddingRight`                     | `EqualPadding`       |
-| `PaddingTop === PaddingBottom` and `PaddingLeft === PaddingRight`                   | `DirectionalPadding` |
-| Any spread attributes, duplicate attributes, extra attributes, or mismatched values | No report            |
+Auto-fix only runs in `.jsx` and `.tsx` files, and only when the current file already imports exactly one matching local
+component.
 
-For `DirectionalPadding`, this rule follows the local component contract shown in your project: `horizontal` maps to
-`PaddingTop`/`PaddingBottom`, and `vertical` maps to `PaddingLeft`/`PaddingRight`.
+For `DirectionalPadding`, the generated props follow the local component contract used by the rule:
 
-## Why use wrapper components?
+- `horizontal` comes from `PaddingTop` and `PaddingBottom`
+- `vertical` comes from `PaddingLeft` and `PaddingRight`
 
-<CardGrid>
-	<Card title="Less Repetition" icon="rocket">
-		Avoids repeating the same padding value four times in every layout node.
-	</Card>
-	<Card title="Clearer Intent" icon="magnifier">
-		Shows whether the layout wants equal padding or per-axis padding immediately.
-	</Card>
-	<Card title="Reusable Defaults" icon="setting">
-		Makes it easier for shared layout components to evolve without touching every call site.
-	</Card>
-</CardGrid>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="prefer-udim2-shorthand"
-		description="Another Roblox readability rule that replaces repeated low-level constructor patterns"
+		description="Replaces repeated Roblox constructor patterns with shorter forms"
 		href="/eslint-cease-nonsense-rules/rules/prefer-udim2-shorthand/"
 	/>
 	<LinkCard
 		title="prefer-context-stack"
-		description="Uses the same idea of replacing repeated JSX structure with a shared wrapper"
+		description="Pushes repeated JSX structure into a shared component"
 		href="/eslint-cease-nonsense-rules/rules/prefer-context-stack/"
 	/>
 </CardGrid>

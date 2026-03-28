@@ -3,117 +3,78 @@ title: use-hook-at-top-level
 badges:
     - text: "error"
       variant: danger
-    - text: "Best Practice"
-      variant: success
-description: "Enforce the Rules of Hooks: call hooks unconditionally at the top level."
+description: Require hooks to run at the top level of components and custom hooks.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Call hooks at the top level. No conditions, no loops, no nested functions.
+Requires hooks to run at the top level of components and custom hooks.
 
-## Rule Details :badge[Best Practice]{variant=success}
+## Rule details :badge[Problem]{variant=danger}
 
-React matches hook calls to state by call order. If you call hooks conditionally or inside loops, that order changes and
-you get weird bugs. This rule enforces the basic constraint: call hooks unconditionally at the top level.
+The rule looks for hook-like calls, names that start with `use` followed by a capital letter, inside component or custom
+hook bodies.
 
-<Aside type="tip" title="State Corruption">
-	Once hook order shifts, React starts pairing state with the wrong call site. The failure mode is usually confusing.
+It reports hooks called inside conditionals, loops, nested functions, try blocks, after an early return, and recursive
+hook calls. Hooks inside `finally` blocks are allowed because that block always runs.
+
+You can narrow or widen what gets checked with `onlyHooks`, `ignoreHooks`, and `importSources`. If `onlyHooks` is
+present, it takes priority over the other two options.
+
+<Aside type="tip" title="Import source filtering">
+	`importSources` maps import sources or member namespaces to booleans. That lets you ignore one hook library without
+	skipping every `use*` call in the file.
 </Aside>
-
-## Refactoring Workflow
-
-<Steps>
-1. **Identify Nested Call** Locate hooks (functions starting with `use`) called inside `if`, `for`, `while`, or nested `function`/`arrow` definitions.
-2. **Lift to Top Level** Move the hook call to the very top of your component body, before any early returns or logic.
-3. **Convert to Internal Logic** If the hook shouldn't perform work unless a condition is met, move that condition _inside_ the hook's implementation (e.g., inside the `useEffect` callback).
-4. **Component Extraction** If you need to call a hook for every item in an array, extract the item's JSX into a sub-component where the hook is called at its top level.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Conditional & Nested Hooks
-		Bans patterns that break the predictable order of execution.
-
-    	<Code
-    		code={[
-    			"function UserProfile({ userId }) {",
-    			"\t// ❌ Conditional hook",
-    			"\tif (userId) {",
-    			"\t\tuseEffect(() => { ... }, [userId]);",
-    			"\t}",
-    			"",
-    			"\t// ❌ Hook in loop",
-    			"\tuserIds.map(id => {",
-    			"\t\tconst data = useData(id);",
-    			"\t});",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			"function UserProfile({ userId }) {",
+			"\tif (userId) {",
+			"\t\tuseEffect(() => {}, [userId]);",
+			"\t}",
+			"}",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Top-Level Hooks
-    	All hooks are called unconditionally at the start of the function.
+	<Code
+		code={[
+			"function UserProfile({ userId }) {",
+			"\tuseEffect(() => {",
+			"\t\tif (userId) loadUser(userId);",
+			"\t}, [userId]);",
+			"}",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			"function UserProfile({ userId }) {",
-    			"\t// ✅ Always called",
-    			"\tconst data = useData(userId);",
-    			"",
-    			"\tuseEffect(() => {",
-    			"\t\t// Put logic inside, not around the hook",
-    			"\t\tif (userId) { ... }",
-    			"\t}, [userId]);",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+## Options
 
-## Why is order important?
+| Option          | Type                      | Default | Notes                                                        |
+| :-------------- | :------------------------ | :------ | :----------------------------------------------------------- |
+| `ignoreHooks`   | `string[]`                | `[]`    | Exact hook names to skip.                                    |
+| `importSources` | `Record<string, boolean>` | `{}`    | `true` checks a source, `false` skips it.                    |
+| `onlyHooks`     | `string[]`                | `[]`    | Whitelist mode. When present, the other filters are ignored. |
 
-<CardGrid>
-	<Card title="Mapping" icon="list-format">
-		React doesn't know which state relates to which `useState` call except by their call order.
-	</Card>
-	<Card title="Concurrency" icon="bolt">
-		Predictable hook order is essential for React's Concurrent rendering features to function.
-	</Card>
-	<Card title="Custom Hooks" icon="rocket">
-		The rules apply recursively; if your custom hook calls a hook, it must also be called at the top level.
-	</Card>
-</CardGrid>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="use-exhaustive-dependencies"
-		description="Ensures correct dependency arrays"
+		description="Checks the dependency array once the hook is in the right place"
 		href="/eslint-cease-nonsense-rules/rules/use-exhaustive-dependencies/"
 	/>
 	<LinkCard
 		title="require-named-effect-functions"
-		description="Enforces named effect callbacks"
+		description="Checks the callback shape passed to effect hooks"
 		href="/eslint-cease-nonsense-rules/rules/require-named-effect-functions/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="React Docs: Rules of Hooks"
-		description="Official documentation on hook constraints"
-		href="https://react.dev/reference/rules/rules-of-hooks"
 	/>
 </CardGrid>

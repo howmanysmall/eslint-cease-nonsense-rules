@@ -1,122 +1,95 @@
 ---
 title: no-identity-map
 badges:
-    - text: "error"
-      variant: danger
+    - text: "suggestion"
+      variant: note
     - text: "Fixable"
       variant: success
-    - text: "Suggestion"
-      variant: note
-description: Ban identity map calls like items.map(x => x).
+description: Disallow identity .map() calls that return the callback parameter unchanged.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Ban identity `.map()` calls.
+Disallow `.map()` calls where the callback returns its input unchanged.
 
-## Rule Details :badge[Maintenance]{variant=note}
+## Rule details :badge[Suggestion]{variant=note}
 
-Reports `.map()` calls where the callback just returns its input. These calls are redundant and create unnecessary array
-copies and callbacks.
+This rule reports calls such as `items.map((item) => item)` and fixes them by replacing the full call with the original
+object expression.
 
-<Aside type="caution" title="Performance Impact">
-	Every `.map()` call allocates a new array and iterates the whole collection. `items.map((x) => x)` is just a shallow
-	copy with extra work.
+It covers arrow functions and function expressions with exactly one parameter. The callback can return the parameter
+directly or from a single `return` statement in a block.
+
+The rule also tries to tell the difference between normal arrays and Roblox bindings. By default it treats names that
+contain `binding` as bindings, and it also detects values created with `useBinding`, `joinBindings`, or another binding
+`.map()` call.
+
+<Aside type="tip" title="The auto-fix removes the map call">
+	If you wanted a shallow copy, keep that intent explicit with `[...items]` or `table.clone(items)`.
 </Aside>
 
-## Refactoring Steps
+## Options
 
-<Steps>
-1. **Analyze Purpose**
-   Determine if the `.map(x => x)` was intended to create a shallow copy or if it's completely redundant.
+`bindingPatterns` is a list of case-insensitive name fragments used to guess whether `.map()` is operating on a binding.
+The default is `['binding']`.
 
-2. **Remove Redundancy** If the copy isn't needed, simply remove the `.map()` call and use the original variable.
-
-3. **Use spread for copies** If you need a shallow copy, use `[...original]`.
-
-4. **Fix the type at the source** If mapping was only used to coerce types, fix the typing where the array is created
-   (or use a proper type guard).
-
-{/* oxfmt-ignore */}
-
-</Steps>
+<Code
+	code={[
+		'import plugin from "eslint-plugin-cease-nonsense";',
+		"",
+		"export default [",
+		"\t{",
+		'\t\tplugins: { "cease-nonsense": plugin },',
+		"\t\trules: {",
+		'\t\t\t"cease-nonsense/no-identity-map": [',
+		'\t\t\t\t"warn",',
+		'\t\t\t\t{ bindingPatterns: ["binding", "spring"] },',
+		"\t\t\t],",
+		"\t\t},",
+		"\t},",
+		"];",
+	].join("\n")}
+	lang="typescript"
+	title="eslint.config.ts"
+/>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Identity Maps
-		Bans patterns that return the item unchanged.
-
-    	<Code
-    		code={[
-    			"// Array identity map",
-    			"const copied = items.map((item) => item);",
-    			"",
-    			"// Binding identity map (roblox-ts)",
-    			"const level = healthBinding.map((h) => h);",
-    			"",
-    			"// Block syntax identity",
-    			"const list = data.map((x) => {",
-    			"\treturn x;",
-    			"});",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			"const copied = items.map((item) => item);",
+			"",
+			"const list = data.map(function (x) {",
+			"\treturn x;",
+			"});",
+			"",
+			"const next = healthBinding.map((value) => value);",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Efficient Alternatives
-    	Use the original reference if no change is needed, or use proper cloning methods.
-
-    	<Code
-    		code={[
-    			"// Just use the original",
-    			"const result = items;",
-    			"",
-    			"// Use spread for shallow copy",
-    			"const copied = [...items];",
-    			"",
-    			"// Proper transformation",
-    			"const doubled = numbers.map((n) => n * 2);",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Why is this wasteful?
-
-<CardGrid>
-	<Card title="Arrow Overhead" icon="bolt">
-		`x => x` still involves a function call jump for every single element in your array.
-	</Card>
-	<Card title="Allocation" icon="list-format">
-		Creates a whole new array in memory that is identical to the first, doubling heap usage
-		temporarily.
-	</Card>
-	<Card title="Readability" icon="rocket">
-		Code that "does nothing" is confusing to other developers; they'll look for hidden logic
-		where none exists.
-	</Card>
-</CardGrid>
-
-## Related Rules
-
-<CardGrid>
-	<LinkCard
-		title="prefer-single-world-query"
-		description="Optimizes ECS lookups"
-		href="/eslint-cease-nonsense-rules/rules/prefer-single-world-query/"
+	<Code
+		code={[
+			"const result = items;",
+			"const copied = [...items];",
+			"const doubled = numbers.map((n) => n * 2);",
+			"const values = items.map(identity);",
+		].join("\n")}
+		lang="tsx"
 	/>
-</CardGrid>
+</RuleExample>
 
-## Further Reading
+## Related rules
 
 <CardGrid>
 	<LinkCard
-		title="MDN: Array.map()"
-		description="Documentation for the array map method"
+		title="MDN: Array.prototype.map"
+		description="Reference for normal `.map()` behavior and when a real transformation makes sense."
 		href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map"
 	/>
 </CardGrid>

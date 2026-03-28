@@ -1,134 +1,67 @@
 ---
 title: strict-component-boundaries
-badges: []
-description: Don't import from a sibling component's internals. Use its public API.
+badges:
+    - text: "error"
+      variant: danger
+description: Block relative imports that reach too far into another component folder.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Don't import from a sibling component's internals.
+Blocks relative imports that reach into another component folder.
 
-## Rule Details :badge[Maintenance]{variant=caution}
+## Rule details :badge[Problem]{variant=danger}
 
-Components should be isolated units. Importing from a sibling component's `utils/` or `hooks/` folder couples you to its
-folder layout. This rule pushes you toward a public API (usually `index.ts`) instead.
+This rule only checks relative imports.
 
-<Aside type="caution" title="Tight Coupling">
-	If you change `ComponentA`'s internal layout, you shouldn't have to touch imports in `ComponentB`.
+It resolves the import path, looks for PascalCase component directories in the target path, and reports deep imports
+that reach into another component's internals instead of importing from that component's boundary.
+
+By default, `maxDepth` is `1`, which means imports can reach the component root but not deeper nested files. Imports to
+an `index` file are allowed, fixture paths under `fixtures` are allowed in the expected cases, and you can add regex
+patterns to `allow` for local exceptions.
+
+<Aside type="tip" title="What the message wants">
+	The rule message points you back to the closest shared component boundary, usually the sibling component root or its
+	`index` file.
 </Aside>
-
-## Refactoring Path
-
-<Steps>
-1. **Define Public API**
-   Ensure every component folder has an `index.ts` that exports only the public-facing elements.
-
-2. **Audit Cross-Imports** Locate imports that look like `../OtherComponent/internal/helper`.
-
-3. **Expose or Move**
-    - If the helper is truly specific to `OtherComponent`, expose it in its `index.ts`.
-    - If the helper is generally useful, move it to a shared `src/utils` folder.
-
-4. **Update Imports** Replace deep imports with clean, top-level imports: `import { helper } from "../OtherComponent"`.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Deep Sibling Imports
-		Bans reaching past the component's root into its subfolders.
-
-    	<Code
-    		code={[
-    			"// Reaching into another component's internals",
-    			'import { helper } from "../OtherComponent/utils/helper";',
-    			"",
-    			"// Importing from sibling's nested hooks",
-    			'import { hook } from "../UserProfile/hooks/useProfile";',
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			'import { helper } from "../UserCard/utils/helper";',
+			'import { useProfile } from "../UserProfile/hooks/useProfile";',
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Public API & Shared Utils
-    	Import from a public API or move shared logic to a shared folder.
-
-    	<Code
-    		code={[
-    			"// Import from shared location",
-    			'import { helper } from "../../shared/utils/helper";',
-    			"",
-    			"// Index import from sibling component (Public API)",
-    			'import { OtherComponent } from "../OtherComponent";',
-    			"",
-    			"// Internal imports are allowed within the same component",
-    			'import { myLocalHelper } from "./utils/myLocalHelper";',
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Why Enforce Boundaries?
-
-<CardGrid>
-	<Card title="Encapsulation" icon="list-format">
-		Hides internal implementation details, allowing you to refactor components safely.
-	</Card>
-	<Card title="No Cycles" icon="bolt">
-		Reduces the risk of circular dependencies by encouraging a tree-like import structure.
-	</Card>
-	<Card title="Reusability" icon="rocket">
-		Makes components easier to extract or move because they have zero hidden dependencies.
-	</Card>
-	<Card title="Refactoring Safety" icon="setting">
-		Internal renames or folder moves won't break unrelated parts of your codebase.
-	</Card>
-</CardGrid>
-
-## Recommended Structure
-
-<Code
-	code={[
-		"components/",
-		"  UserProfile/",
-		"    index.ts                 # Public API (exports only what is needed)",
-		"    UserProfile.tsx          # Main component",
-		"    hooks/                   # Internal hooks (NOT for sibling use)",
-		"      useUserData.ts",
-		"    utils/                   # Internal utilities",
-		"      formatters.ts",
-	].join("\n")}
-	lang="text"
-	title="Project Hierarchy"
-/>
-
-## Related Rules
-
-<CardGrid>
-	<LinkCard
-		title="no-god-components"
-		description="Prevents components from growing too large"
-		href="/eslint-cease-nonsense-rules/rules/no-god-components/"
+	<Code
+		code={['import { UserCard } from "../UserCard";', 'import { localHelper } from "./utils/localHelper";'].join(
+			"\n",
+		)}
+		lang="ts"
 	/>
-	<LinkCard
-		title="prefer-module-scope-constants"
-		description="Proper constant scoping"
-		href="/eslint-cease-nonsense-rules/rules/prefer-module-scope-constants/"
-	/>
-</CardGrid>
+</RuleExample>
 
-## Further Reading
+## Options
+
+| Option     | Type       | Default | Notes                                                                |
+| :--------- | :--------- | :------ | :------------------------------------------------------------------- |
+| `allow`    | `string[]` | `[]`    | Regex patterns matched case-insensitively against the import source. |
+| `maxDepth` | `number`   | `1`     | Maximum allowed depth into another component path.                   |
+
+## Related rules
 
 <CardGrid>
 	<LinkCard
-		title="Component-Driven Development"
-		description="Official guide to building modular UIs"
-		href="https://www.componentdriven.org/"
+		title="require-module-level-instantiation"
+		description="Keeps shared runtime objects in one place"
+		href="/eslint-cease-nonsense-rules/rules/require-module-level-instantiation/"
 	/>
 </CardGrid>

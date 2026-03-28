@@ -191,17 +191,15 @@ header.header {
 }
 
 .sl-markdown-content > * + * {
-	margin-top: 1.75em !important;
+	margin-top: 1.25em !important;
 }
 
 .sl-markdown-content h2 {
-	padding-bottom: 0.5em;
-	margin-top: 2.5em !important;
-	border-bottom: 1px solid var(--glass-border);
+	margin-top: 2em !important;
 }
 
 .sl-markdown-content h3 {
-	margin-top: 2em !important;
+	margin-top: 1.5em !important;
 }
 
 h1,
@@ -384,94 +382,31 @@ starlight-toc a {
 }
 
 .expressive-code {
-	margin-top: 1.5rem !important;
-	border-radius: 12px;
-	box-shadow:
-		0 4px 6px -1px rgba(0, 0, 0, 0.05),
-		0 2px 4px -2px rgba(0, 0, 0, 0.05);
+	margin-top: 1rem !important;
+	border-radius: 8px;
+	box-shadow: none;
 }
 
 .RuleExample {
-	margin: 2rem 0;
-	overflow: hidden;
-	background: var(--sl-color-black);
-	border: 1px solid var(--glass-border);
-	border-radius: 12px;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+	margin: 1rem 0;
 }
 
-:root[data-theme="dark"] .RuleExample {
-	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-}
-
-.RuleExample-tabs {
+.RuleExample-header {
 	display: flex;
-	gap: 0;
-	padding: 0 1.25rem;
-	border-bottom: 1px solid var(--glass-border);
-}
-
-.RuleExample-tab {
-	display: flex;
-	gap: 0.5rem;
+	gap: 0.35rem;
 	align-items: center;
-	padding: 0.75rem 1rem;
-	margin-bottom: -1px;
-	font-size: 0.875rem;
-	font-weight: 500;
-	color: var(--text-tertiary);
-	cursor: pointer;
-	background: transparent;
-	border: none;
-	border-bottom: 2px solid transparent;
-	transition:
-		color 150ms ease,
-		border-color 150ms ease;
+	padding: 0 0 0.3rem;
 }
 
-@media (hover: hover) {
-	.RuleExample-tab:hover {
-		color: var(--text-secondary);
-	}
-}
 
-.RuleExample-tab--active {
-	color: var(--sl-color-white);
-}
-
-.RuleExample-tab--pass.RuleExample-tab--active {
-	border-bottom-color: #10b981;
-}
-
-.RuleExample-tab--fail.RuleExample-tab--active {
-	border-bottom-color: #f43f5e;
-}
-
-.RuleExample--pass {
-	background: linear-gradient(to bottom, rgba(16, 185, 129, 0.04) 0%, var(--sl-color-black) 100%);
-	border-top: 2px solid #10b981;
-}
-
-.RuleExample--pass .RuleExample-tab--active {
-	color: #34d399;
-}
-
-.RuleExample--fail {
-	background: linear-gradient(to bottom, rgba(244, 63, 94, 0.04) 0%, var(--sl-color-black) 100%);
-	border-top: 2px solid #f43f5e;
-}
-
-.RuleExample--fail .RuleExample-tab--active {
-	color: #fb7185;
-}
 
 .RuleExample-status {
 	display: inline-flex;
 }
 
 .RuleExample-icon {
-	width: 1rem;
-	height: 1rem;
+	width: 0.875rem;
+	height: 0.875rem;
 }
 
 .RuleExample--pass .RuleExample-icon {
@@ -491,28 +426,39 @@ starlight-toc a {
 }
 
 .RuleExample-content {
-	padding: 1.25rem 1.5rem;
+	padding: 0;
 }
 
 .RuleExample-title {
-	font-size: 0.8rem;
-	font-weight: 500;
-	color: var(--text-tertiary);
+	font-size: 0.7rem;
+	font-weight: 600;
 	text-transform: uppercase;
-	letter-spacing: 0.05em;
+	letter-spacing: 0.06em;
 }
 
-/* RuleExample-header is unused — the header slot is hidden and tabs handle the UI */
+.RuleExample--pass .RuleExample-title {
+	color: #10b981;
+}
+
+.RuleExample--fail .RuleExample-title {
+	color: #f43f5e;
+}
+
+:root[data-theme="dark"] .RuleExample--pass .RuleExample-title {
+	color: #34d399;
+}
+
+:root[data-theme="dark"] .RuleExample--fail .RuleExample-title {
+	color: #fb7185;
+}
 
 .RuleExample-content .expressive-code {
 	margin: 0 !important;
-	border-radius: 0 !important;
-	box-shadow: none !important;
 }
 
-.RuleExample-content .expressive-code .frame {
-	border: none !important;
-	border-radius: 0 !important;
+.RuleExample-content .expressive-code .copy {
+	top: 0.25rem !important;
+	right: 0.25rem !important;
 }
 
 starlight-link-card {
@@ -539,6 +485,11 @@ starlight-card-grid {
 starlight-aside {
 	border: 1px solid var(--glass-border);
 	border-radius: 10px;
+}
+
+:root[data-theme="dark"] starlight-aside {
+	--sl-color-asides-text-accent: var(--sl-color-gray-2);
+	border-color: var(--glass-border);
 }
 
 starlight-aside .title {
@@ -731,7 +682,6 @@ starlight-aside .title {
 }
 
 .content-panel {
-	min-height: 50vh;
 	contain: layout style;
 }
 
@@ -758,7 +708,7 @@ starlight-link-card:focus-visible,
 	}
 
 	.RuleExample-content {
-		padding: 1rem;
+		padding: 0;
 	}
 
 	h1 {

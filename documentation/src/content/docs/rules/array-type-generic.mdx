@@ -12,21 +12,22 @@ import { Aside, Code, LinkCard, CardGrid, Card } from "@astrojs/starlight/compon
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Use one array type style everywhere: `Array<T>` / `ReadonlyArray<T>`.
+Pick one array type style and stick with it. This rule bans the bracket syntax (`T[]`, `readonly T[]`) and rewrites it
+to the generic form (`Array<T>`, `ReadonlyArray<T>`).
 
-## Rule Details :badge[TypeScript]{variant=note}
+## Rule details :badge[TypeScript]{variant=note}
 
-This rule reports bracket array syntax and fixes it to generic syntax.
+The fixer handles four cases:
 
-1. `T[]` -> `Array<T>`
-2. `readonly T[]` -> `ReadonlyArray<T>`
-3. Nested arrays (`string[][]`) -> nested generic forms (`Array<Array<string>>`)
-4. Tuple arrays (`[A, B][]`) -> `Array<[A, B]>`
+1. `T[]` becomes `Array<T>`
+2. `readonly T[]` becomes `ReadonlyArray<T>`
+3. Nested brackets like `string[][]` become `Array<Array<string>>`
+4. Tuple arrays like `[A, B][]` become `Array<[A, B]>`
 
-Standalone tuples remain valid.
+Standalone tuples are left alone.
 
-<Aside type="tip" title="Tuple Types Stay Intact">
-	`[x: number, y: number]` is valid and stays unchanged. Only array wrappers are rewritten.
+<Aside type="tip" title="Tuple types stay intact">
+	`[x: number, y: number]` is valid and won't be touched. Only the array wrapper syntax gets rewritten.
 </Aside>
 
 ## Configuration
@@ -64,21 +65,22 @@ Standalone tuples remain valid.
 	/>
 </RuleExample>
 
-## Why use this?
+## Why bother?
 
 <CardGrid>
-	<Card title="Single Style" icon="list-format">
-		Review is faster when the codebase only has one array type format.
+	<Card title="Consistency" icon="list-format">
+		One array format across the codebase means less noise in code review.
 	</Card>
-	<Card title="Clear Nesting" icon="magnifier">
-		Nested arrays and readonly arrays are easier to read in generic form.
+	<Card title="Readability at depth" icon="magnifier">
+		`Array<Array<string>>` is easier to parse than `string[][]`, and `ReadonlyArray<T>` is clearer than `readonly
+		T[]`.
 	</Card>
-	<Card title="Safe Autofix" icon="bolt">
-		The fixer rewrites the full type chain and keeps tuple semantics intact.
+	<Card title="Safe autofix" icon="bolt">
+		The fixer walks the full type chain and preserves tuple semantics.
 	</Card>
 </CardGrid>
 
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard

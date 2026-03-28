@@ -5,121 +5,108 @@ badges:
       variant: danger
     - text: "Suggestion"
       variant: note
-description: Disallow React.memo on components that accept children (usually useless).
+description: Disallow React.memo on components whose props include children.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Don't `memo` components that accept `children`.
+Reports `memo(...)` calls when the component props type includes a `children` property.
 
-## Rule Details :badge[Best Practice]{variant=success}
+## Rule details :badge[Suggestion]{variant=note}
 
-`React.memo` does a shallow prop comparison to decide whether to rerender. If a component accepts `children`, that prop
-is usually a new JSX element created on every parent render. The comparison fails, so `memo` buys you overhead and
-nothing else.
+The rule checks imported `memo` calls from `react` or `@rbxts/react`, based on the configured `environment`. If the
+memoized component's props type has a `children` property, it reports the call.
 
-<Aside type="danger" title="The Memo Trap">
-	Wrapping a component with `children` in `memo` adds overhead for almost no benefit, because the `children` reference
-	changes every time the parent rerenders.
+It resolves `children` through direct props, inherited interfaces, intersections, and unions. You can also allow
+specific component names with `allowedComponents`.
+
+<Aside type="tip" title="Known limitation">
+	`PropsWithChildren<T>` imported from React is not always resolved by the current type lookup. An explicit props type or
+	intersection is more reliable.
 </Aside>
-
-## Refactoring Workflow
-
-<Steps>
-1. **Identify Useless Memo**
-   Locate components wrapped in `memo` that also destructure `children` from their props.
-
-2. **Remove the Wrapper** Delete the `memo(...)` call. In most cases, performance is identical or slightly better.
-
-3. **Switch to Render Props** If you truly need to skip re-renders, pass a stable function via a `renderContent` prop
-   instead of using `children`.
-
-4. **Name Stability** Ensure any components you extract are named correctly so they continue to look good in DevTools
-   without the `Memo()` wrapper.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Memo with Children
-		Bans `memo` on components that inherit or define a `children` prop.
+		### Memoized component with children
 
-    	<Code
-    		code={[
-    			"// ❌ Card accepts children, so memo will always fail",
-    			"const Card = memo<CardProps>(({ title, children }) => {",
-    			"\treturn <frame>{children}</frame>;",
-    			"});",
-    			"",
-    			"// ❌ PropsWithChildren also triggers this rule",
-    			"const Panel = memo<PropsWithChildren<Props>>(({ children }) => {",
-    			"\treturn <frame>{children}</frame>;",
-    			"});",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
+        	<Code
+        		code={[
+        			'import { memo, ReactNode } from "@rbxts/react";',
+        			"",
+        			"interface CardProps {",
+        			"\treadonly title: string;",
+        			"\treadonly children?: ReactNode;",
+        			"}",
+        			"",
+        			"const Card = memo<CardProps>((props) => {",
+        			"\treturn <frame>{props.children}</frame>;",
+        			"});",
+        		].join("\n")}
+        		lang="tsx"
+        	/>
     </RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Better Optimization
-    	Use `memo` only on "leaf" components or use stable render props.
+	    	### Component without children
 
-    	<Code
-    		code={[
-    			"// ✅ OK: Props without children",
-    			"const Button = memo(({ label }) => {",
-    			"\treturn <textbutton Text={label} />;",
-    			"});",
-    			"",
-    			"// ✅ OK: Render prop pattern",
-    			"const List = memo(({ renderItem }) => {",
-    			"\treturn <frame>{items.map(renderItem)}</frame>;",
-    			"});",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
+        	<Code
+        		code={[
+        			'import { memo } from "@rbxts/react";',
+        			"",
+        			"interface ButtonProps {",
+        			"\treadonly label: string;",
+        			"}",
+        			"",
+        			"const Button = memo<ButtonProps>((props) => {",
+        			"\treturn <textbutton Text={props.label} />;",
+        			"});",
+        		].join("\n")}
+        		lang="tsx"
+        	/>
     </RuleExample>
 
-## Why is this bad?
+## Options
+
+| Option              | Type                        | Default       | Notes                                    |
+| :------------------ | :-------------------------- | :------------ | :--------------------------------------- |
+| `allowedComponents` | `string[]`                  | `[]`          | Component names the rule should skip.    |
+| `environment`       | `"roblox-ts" \| "standard"` | `"roblox-ts"` | Picks `@rbxts/react` or `react` imports. |
+
+```js
+import ceaseNonsense from "eslint-plugin-cease-nonsense";
+
+export default [
+	{
+		plugins: {
+			"cease-nonsense": ceaseNonsense,
+		},
+		rules: {
+			"cease-nonsense/no-memo-children": [
+				"error",
+				{
+					allowedComponents: ["PortalHost"],
+					environment: "standard",
+				},
+			],
+		},
+	},
+];
+```
+
+## Related rules
 
 <CardGrid>
-	<Card title="Always Unequal" icon="bolt">
-		`<span>Text</span>` in JSX is a new object every render. `prev.children !== next.children` is always true.
-	</Card>
-	<Card title="CPU Waste" icon="list-format">
-		The engine compares every primitive prop only to fail at the very end when it checks `children`.
-	</Card>
-	<Card title="False Security" icon="rocket">
-		Developers see `memo` and assume the component is optimized, hiding the real source of lag.
-	</Card>
-</CardGrid>
-
-## Related Rules
-
-<CardGrid>
+	<LinkCard
+		title="no-new-instance-in-use-memo"
+		description="Keeps useMemo callbacks free of object construction"
+		href="/eslint-cease-nonsense-rules/rules/no-new-instance-in-use-memo/"
+	/>
 	<LinkCard
 		title="require-react-display-names"
-		description="Ensures components have names in DevTools"
+		description="Requires display names for React components"
 		href="/eslint-cease-nonsense-rules/rules/require-react-display-names/"
-	/>
-	<LinkCard
-		title="ban-react-fc"
-		description="Bans problematic React.FC pattern"
-		href="/eslint-cease-nonsense-rules/rules/ban-react-fc/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="React Docs: memo"
-		description="Official guide on component memoization"
-		href="https://react.dev/reference/react/memo"
 	/>
 </CardGrid>

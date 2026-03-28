@@ -3,129 +3,102 @@ title: require-named-effect-functions
 badges:
     - text: "error"
       variant: danger
-description: Require named effect callbacks so stack traces and DevTools stay readable.
+description: Require named functions for effect-like hooks, and block async callbacks unless the hook allows them.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Require named effect callbacks for `useEffect` and friends.
+Requires named functions for effect-like hooks.
 
-## Rule Details :badge[Best Practice]{variant=caution}
+## Rule details :badge[Problem]{variant=danger}
 
-Inline callbacks are convenient, but they show up as `(anonymous)` in stack traces and make effects harder to scan. This
-rule requires a named callback (and in `standard` mode, allows named function expressions).
+By default, the rule checks `useEffect`, `useLayoutEffect`, and `useInsertionEffect`.
 
-<Aside type="tip" title="Self-Documenting Effects">
-	A name carries intent. `useEffect(onUserIdChange, [userId])` tells you what's happening without opening the
-	implementation.
+It reports inline arrow functions, anonymous function expressions, identifiers that point to arrow functions, and
+identifiers that come from `useCallback` or `useMemo`. It also reports async effect callbacks unless the matched hook is
+configured with `allowAsync: true`.
+
+In `roblox-ts` mode, named function expressions are also rejected. In `standard` mode, named function expressions are
+allowed.
+
+<Aside type="tip" title="What passes cleanly">
+	A named function declaration passed by identifier is the safest shape here, for example `useEffect(syncUser,
+	[userId])`.
 </Aside>
-
-## Refactoring Workflow
-
-<Steps>
-1. **Identify Anonymous Hooks**
-   Locate `useEffect`, `useLayoutEffect`, or `useInsertionEffect` calls that use inline arrow functions.
-
-2. **Extract Logic** Move the function body into a named function defined above the hook call.
-
-3. **Name the Action** Choose a name that describes _why_ the effect is running (e.g., `onMount`, `onDataUpdate`,
-   `clearTimers`).
-
-4. **Replace with Identifier** Pass the function by name to the hook: `useEffect(onMount, [])`.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Anonymous Callbacks
-		Bans inline arrow functions that hide intent and clutter stack traces.
-
-    	<Code
-    		code={[
-    			"// Arrow function",
-    			"useEffect(() => {",
-    			"\tfetchData();",
-    			"}, [id]);",
-    			"",
-    			"// Anonymous expression",
-    			"useLayoutEffect(function() {",
-    			"\tcalculateLayout();",
-    			"}, []);",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			"useEffect(() => {",
+			"\tfetchData();",
+			"}, [id]);",
+			"",
+			"const runEffect = () => {",
+			"\tfetchData();",
+			"};",
+			"useLayoutEffect(runEffect, [id]);",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Named Effect Functions
-    	Use descriptive names to label your side effects.
+	<Code
+		code={["function syncUser() {", "\tfetchData();", "}", "", "useEffect(syncUser, [id]);"].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			"function onDataUpdate() {",
-    			"\tfetchData();",
-    			"}",
-    			"useEffect(onDataUpdate, [id]);",
-    			"",
-    			"// Named function expression (allowed in 'standard' mode)",
-    			"useLayoutEffect(function initializeUI() {",
-    			"\tcalculateLayout();",
-    			"}, []);",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+## Options
 
-## Why named functions?
+| Option        | Type                                           | Default                                                                                                                                         |
+| :------------ | :--------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `environment` | `"roblox-ts" \| "standard"`                    | `"roblox-ts"`                                                                                                                                   |
+| `hooks`       | `Array<{ name: string; allowAsync: boolean }>` | `[{ name: "useEffect", allowAsync: false }, { name: "useLayoutEffect", allowAsync: false }, { name: "useInsertionEffect", allowAsync: false }]` |
 
-<CardGrid>
-	<Card title="Stack Traces" icon="list-format">
-		Errors will explicitly mention your function name instead of the generic `(anonymous)`.
-	</Card>
-	<Card title="DevTools" icon="bolt">
-		The React Developer Tools can correctly label hooks in the component tree.
-	</Card>
-	<Card title="Testability" icon="rocket">
-		Extracted functions can be exported and unit tested in isolation from the component.
-	</Card>
-	<Card title="Readability" icon="magnifier">
-		The component's top-level structure becomes a list of clearly-named side effects.
-	</Card>
-</CardGrid>
+Example config:
 
-## Environment Modes
+```js
+import ceaseNonsense from "eslint-plugin-cease-nonsense";
 
-| Mode        | Description                                                                     |
-| :---------- | :------------------------------------------------------------------------------ |
-| `roblox-ts` | Only identifiers allowed. Very strict and clean.                                |
-| `standard`  | Both identifiers and named function expressions (`function name() {}`) allowed. |
+export default [
+	{
+		plugins: {
+			"cease-nonsense": ceaseNonsense,
+		},
+		rules: {
+			"cease-nonsense/require-named-effect-functions": [
+				"error",
+				{
+					environment: "standard",
+					hooks: [
+						{ name: "useEffect", allowAsync: false },
+						{ name: "useLayoutEffect", allowAsync: false },
+						{ name: "useInsertionEffect", allowAsync: false },
+						{ name: "useMyEffect", allowAsync: true },
+					],
+				},
+			],
+		},
+	},
+];
+```
 
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="use-exhaustive-dependencies"
-		description="Ensures correct dependency arrays"
+		description="Checks dependency arrays against the closure body"
 		href="/eslint-cease-nonsense-rules/rules/use-exhaustive-dependencies/"
 	/>
 	<LinkCard
 		title="use-hook-at-top-level"
-		description="Enforces hook placement rules"
+		description="Keeps hook calls out of nested control flow"
 		href="/eslint-cease-nonsense-rules/rules/use-hook-at-top-level/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="useEffect Reference"
-		description="Official React documentation for side effects"
-		href="https://react.dev/reference/react/useEffect"
 	/>
 </CardGrid>

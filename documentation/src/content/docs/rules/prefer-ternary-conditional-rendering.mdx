@@ -1,54 +1,50 @@
 ---
 title: prefer-ternary-conditional-rendering
 badges:
-    - text: "error"
-      variant: danger
     - text: "Fixable"
       variant: success
-description: Prefer a single ternary expression when JSX conditional rendering uses complementary && branches.
+    - text: "Suggestion"
+      variant: note
+description: Prefer one ternary when two sibling JSX `&&` branches are logical opposites.
 ---
 
-import { Aside, Code, CardGrid, Card, LinkCard } from "@astrojs/starlight/components";
+import { Aside, Code, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Prefer a single ternary expression when two sibling JSX `&&` branches are complements.
+Reports sibling JSX `&&` branches when the conditions are logical opposites and can be written as one ternary.
 
-## Rule Details :badge[React]{variant=success}
+## Rule details :badge[Suggestion]{variant=note}
 
-This rule finds sibling JSX branches like `condition && <A />` and `!condition && <B />` (or strict `===`/`!==`
-complements) and recommends replacing them with a single ternary.
+The rule looks at adjacent JSX expression containers, ignoring whitespace-only JSX text between them.
 
-    <Aside type="note" title="Why this helps">
-    	A single ternary keeps mutually exclusive rendering in one place and avoids repeating the condition across two
-    	sibling nodes.
-    </Aside>
+It reports pairs like these:
 
-The rule reports whenever it can prove the two conditions are complementary.
+- `flag && <A />` and `!flag && <B />`
+- `mode === "x" && <A />` and `mode !== "x" && <B />`
+- the same strict comparison with the operands swapped
 
-Auto-fix is conservative and only applies when the condition shape is provably safe:
+The fixer is narrower than the report. It only rewrites pairs when the condition is safe to reuse directly in a ternary:
 
-- Negation complements: `!x` vs `x`, where `x` is an identifier, `this`, or literal.
-- Strict comparison complements: `x === y` vs `x !== y` (including swapped operands), where both operands are safe
-  atoms.
+- negation pairs built from an identifier, `this`, or a literal
+- strict comparison pairs where both sides are identifiers, `this`, or literals
+
+<Aside type="note" title="Reported without a fix">
+	Pairs like `isReady() && <A />` and `!isReady() && <B />` are still reported, but there is no auto-fix.
+</Aside>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
 	<Code
 		code={[
-			"function Component({ gradient, gradientToUse, rarityStyle }) {",
+			"function Component({ flag, mode }) {",
 			"\treturn (",
 			"\t\t<>",
-			'\t\t\t{gradient !== undefined && <uigradient key="ui-gradient" Color={gradient} />}',
-			"\t\t\t{gradient === undefined && (",
-			"\t\t\t\t<AnimatedGradient",
-			'\t\t\t\t\tkey="animated-gradient"',
-			"\t\t\t\t\tcolorValue={gradientToUse}",
-			"\t\t\t\t\trotation={45}",
-			"\t\t\t\t\tsweepingSpeed={rarityStyle?.sweepingSpeed ?? 0}",
-			"\t\t\t\t/>",
-			"\t\t\t)}",
+			"\t\t\t{flag && <A />}",
+			"\t\t\t{!flag && <B />}",
+			'\t\t\t{mode === "x" && <Primary />}',
+			'\t\t\t{mode !== "x" && <Fallback />}',
 			"\t\t</>",
 			"\t);",
 			"}",
@@ -60,19 +56,11 @@ Auto-fix is conservative and only applies when the condition shape is provably s
 <RuleExample type="pass" title="Correct">
 	<Code
 		code={[
-			"function Component({ gradient, gradientToUse, rarityStyle }) {",
+			"function Component({ flag, mode }) {",
 			"\treturn (",
 			"\t\t<>",
-			"\t\t\t{gradient !== undefined ? (",
-			'\t\t\t\t<uigradient key="ui-gradient" Color={gradient} />',
-			"\t\t\t) : (",
-			"\t\t\t\t<AnimatedGradient",
-			'\t\t\t\t\tkey="animated-gradient"',
-			"\t\t\t\t\tcolorValue={gradientToUse}",
-			"\t\t\t\t\trotation={45}",
-			"\t\t\t\t\tsweepingSpeed={rarityStyle?.sweepingSpeed ?? 0}",
-			"\t\t\t\t/>",
-			"\t\t\t)}",
+			"\t\t\t{flag ? <A /> : <B />}",
+			'\t\t\t{mode === "x" ? <Primary /> : <Fallback />}',
 			"\t\t</>",
 			"\t);",
 			"}",
@@ -81,31 +69,24 @@ Auto-fix is conservative and only applies when the condition shape is provably s
 	/>
 </RuleExample>
 
-## Notes
+## What gets skipped
 
-<CardGrid>
-	<Card title="Reported Without Fix" icon="warning">
-		Unsafe complements like `isReady() && <A />` and `!isReady() && <B />` are reported but not auto-fixed.
-	</Card>
-	<Card title="Whitespace Only Pairing" icon="list-format">
-		Only sibling JSX expression containers separated by whitespace JSX text are paired.
-	</Card>
-	<Card title="First Condition Preserved" icon="seti:typescript">
-		When fixed, the ternary test uses the first branch condition to keep diffs stable.
-	</Card>
-</CardGrid>
+- non-adjacent branches
+- pairs separated by real JSX content, not just whitespace
+- `&&` expressions whose right side is not a JSX element or fragment
+- unrelated conditions like `first && <A />` and `second && <B />`
 
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="use-hook-at-top-level"
-		description="Keep hook calls in predictable top-level positions"
+		description="Keeps hook calls in predictable places"
 		href="/eslint-cease-nonsense-rules/rules/use-hook-at-top-level/"
 	/>
 	<LinkCard
 		title="prefer-read-only-props"
-		description="Prevent accidental prop mutation in React components"
+		description="Prevents prop mutation in React components"
 		href="/eslint-cease-nonsense-rules/rules/prefer-read-only-props/"
 	/>
 </CardGrid>

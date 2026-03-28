@@ -10,15 +10,30 @@ import { Aside, Code, LinkCard, CardGrid, Steps } from "@astrojs/starlight/compo
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Experimental rule that flags obviously unstable effect dependencies.
+Experimental rule that flags effect dependencies the rule can tell are not memoized.
 
-## Rule Details :badge[Experimental]{variant=caution}
+## Rule details :badge[Experimental]{variant=caution}
 
-This rule detects clearly un-memoized values inside effect dependency arrays. Unstable deps can cause unnecessary
-rerenders or even loops when an effect updates something that gets recreated every render.
+This rule checks dependency arrays passed to `useEffect`, `useLayoutEffect`, and `useInsertionEffect`. By default it
+uses the `roblox-ts` React environment and the `definite` mode.
+
+In `definite` mode, it reports dependencies that are plainly unstable, such as inline objects, arrays, functions,
+classes, and `new` expressions. The stricter modes widen the net:
+
+<Steps>
+1. **definite** Only report obviously unstable dependencies.
+2. **moderate** Also report unknown call results and values declared with non-`const` bindings.
+3. **aggressive** Report anything outside module scope unless the rule can tell it is stable.
+
+{/* oxfmt-ignore */}
+
+</Steps>
+
+The rule treats values from `useMemo` and `useCallback` as memoized. It also knows that `useRef` and `useBinding` return
+stable values, and that the second item from `useState`, `useReducer`, and `useTransition` is stable.
 
 <Aside type="caution" title="Experimental">
-	This rule is AST-only heuristics, not the React Compiler. Treat it as a hint and expect missed edge cases.
+	This is an AST-based heuristic, not the React Compiler. It can miss cases, and it can report code you want to keep.
 </Aside>
 
 ## Examples
@@ -64,7 +79,9 @@ rerenders or even loops when an effect updates something that gets recreated eve
 		'\t\t\t"environment": "roblox-ts",',
 		'\t\t\t"mode": "definite",',
 		'\t\t\t"hooks": [',
-		'\t\t\t\t{ "name": "useEffect", "dependenciesIndex": 1 }',
+		'\t\t\t\t{ "name": "useEffect", "dependenciesIndex": 1 },',
+		'\t\t\t\t{ "name": "useLayoutEffect", "dependenciesIndex": 1 },',
+		'\t\t\t\t{ "name": "useInsertionEffect", "dependenciesIndex": 1 }',
 		"\t\t\t]",
 		"\t\t}",
 		"\t]",
@@ -74,18 +91,9 @@ rerenders or even loops when an effect updates something that gets recreated eve
 	title="eslint.config.js"
 />
 
-### Modes
+Add entries to `hooks` if you use custom effect-style hooks with a dependency array in a different argument position.
 
-<Steps>
-1. **definite** Only report obviously unstable dependencies (objects, arrays, functions, classes, `new`).
-2. **moderate** Also report dependencies from unknown call expressions or non-`const` bindings.
-3. **aggressive** Report any non-module, non-memoized binding.
-
-{/* oxfmt-ignore */}
-
-</Steps>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard

@@ -3,67 +3,56 @@ title: no-underscore-react-props
 badges:
     - text: "error"
       variant: danger
-    - text: "Best Practice"
-      variant: success
-description: Ban React prop names that start with an underscore in JSX.
+    - text: "Problem"
+      variant: danger
+description: Reports JSX props whose names start with `_`.
 ---
 
 import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Disallow JSX prop names that start with `_`.
+Reports JSX props whose names start with `_`.
 
-## Rule Details :badge[Best Practice]{variant=success}
+## Rule details :badge[Problem]{variant=danger}
 
-This rule bans underscore-prefixed props like `_tooltipGradient` in JSX.
+This rule reports any JSX attribute whose name begins with `_`.
 
-<Aside type="danger" title="Props Are Public API">
-	Component props are part of the component API. A leading underscore reads as "internal/private" and makes call sites
-	harder to scan.
+<Aside type="danger" title="Props are part of the public API">
+	A leading `_` reads like an internal field name. In JSX, that usually makes the call site harder to read.
 </Aside>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Underscore-Prefixed Props
-
-    	<Code
-    		code={[
-    			"<InventoryItemTooltip",
-    			'\tkey="inventory-tooltip"',
-    			"\t_tooltipGradient={tooltipGradient}",
-    			"/>",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={["<InventoryItemTooltip", '\tkey="inventory-tooltip"', "\t_tooltipGradient={tooltipGradient}", "/>"].join(
+			"\n",
+		)}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Standard Prop Names
+	<Code
+		code={["<InventoryItemTooltip", '\tkey="inventory-tooltip"', "\ttooltipGradient={tooltipGradient}", "/>"].join(
+			"\n",
+		)}
+		lang="tsx"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			"<InventoryItemTooltip",
-    			'\tkey="inventory-tooltip"',
-    			"\ttooltipGradient={tooltipGradient}",
-    			"/>",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="require-react-component-keys"
-		description="Enforces key props in JSX iteration contexts"
+		description="Requires key props in JSX iteration contexts"
 		href="/eslint-cease-nonsense-rules/rules/require-react-component-keys/"
 	/>
 	<LinkCard
 		title="prefer-read-only-props"
-		description="Keeps React prop contracts immutable and explicit"
+		description="Keeps React prop types read-only"
 		href="/eslint-cease-nonsense-rules/rules/prefer-read-only-props/"
 	/>
 </CardGrid>

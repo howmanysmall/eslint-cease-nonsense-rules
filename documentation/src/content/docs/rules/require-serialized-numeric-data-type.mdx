@@ -1,127 +1,95 @@
 ---
 title: require-serialized-numeric-data-type
-badges: []
-description: Require DataType.* instead of number in serialization contexts.
+badges:
+    - text: "error"
+      variant: danger
+description: Require `DataType.*` instead of raw `number` in configured serialization type positions.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Require `DataType.*` instead of `number` in serialization contexts.
+Requires `DataType.*` instead of raw `number` in serialization type positions.
 
-## Rule Details :badge[Roblox]{variant=caution}
+## Rule details :badge[Problem]{variant=danger}
 
-When working with serialization systems like `@rbxts/flamework-binary-serializer`, the generic `number` type is
-ambiguous. The serializer doesn't know whether to use a small integer, a large signed value, or a high-precision double.
-This rule enforces explicit `DataType` variants so the serializer knows how to pack the value.
+In the default `type-arguments` mode, the rule only checks type arguments passed to selected functions. By default, that
+means `registerComponent<...>()`.
 
-<Aside type="tip" title="Network Optimization">
-	If you're packing a lot of numbers, picking the right `DataType` adds up.
+It reports raw `number` and nested uses of `number`, including unions, intersections, arrays, tuples, type literals,
+indexed access types, and generic type arguments. `DataType.u8`, `DataType.i16`, `DataType.f32`, and the other supported
+`DataType.*` variants are allowed.
+
+In `all` mode, the rule also checks function parameters, return types, properties, type aliases, and variable type
+annotations across the file. When `strict: true`, it uses the TypeScript type checker so aliased `number` types can be
+reported too.
+
+<Aside type="tip" title="Supported DataType members">
+	The rule recognizes `u8`, `u16`, `u32`, `i8`, `i16`, `i32`, `f32`, and `f64`.
 </Aside>
-
-## Choosing a Data Type
-
-<Steps>
-1. **Determine Range**
-   Check if your value is always positive (`u`) or can be negative (`i`).
-2. **Check Magnitude**
-   Select the smallest bit-size that fits your maximum value (e.g., `u8` for 0-255, `u16` for up to 65k).
-3. **Float vs Integer**
-   Use `f32` or `f64` only if you need decimal precision.
-4. **Apply to Type**
-   Replace `number` in your component interface or function arguments with the specific `DataType`.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Ambiguous Numbers
-		Bans generic `number` in serialization contexts.
-
-    	<Code
-    		code={[
-    			"// Serializer doesn't know how to pack this",
-    			"export const WaveNumber = registerComponent<number>({ replicated: true });",
-    			"",
-    			"interface Stats {",
-    			"\thealth: number;",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			"const Health = registerComponent<number>({ replicated: true });",
+			"",
+			"type Payload = { value: number };",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Explicit Variants
-    	Use the `DataType` enum to specify the exact binary format.
-
-    	<Code
-    		code={[
-    			'import type { DataType } from "@rbxts/flamework-binary-serializer";',
-    			"",
-    			"// Explicit 8-bit unsigned integer",
-    			"export const WaveNumber = registerComponent<DataType.u8>({ replicated: true });",
-    			"",
-    			"interface Stats {",
-    			"\thealth: DataType.u16;",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Supported Types
-
-<CardGrid>
-	<Card title="Unsigned Ints" icon="approve-check">
-		`u8` (0-255), `u16` (0-65k), `u32` (0-4b).
-	</Card>
-	<Card title="Signed Ints" icon="warning">
-		`i8` (-128 to 127), `i16` (-32k to 32k), `i32` (-2b to 2b).
-	</Card>
-	<Card title="Floats" icon="bolt">
-		`f32` (Standard precision), `f64` (Double precision).
-	</Card>
-</CardGrid>
-
-## Configuration Example
-
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/require-serialized-numeric-data-type": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"mode": "type-arguments",',
-		'\t\t\t"functionNames": ["registerComponent", "createEvent"]',
-		"\t\t}",
-		"\t]",
-		"}",
-	].join("\n")}
-	lang="json"
-	title="eslint.config.js"
-/>
-
-## Related Rules
-
-<CardGrid>
-	<LinkCard
-		title="enforce-ianitor-check-type"
-		description="Runtime type validation"
-		href="/eslint-cease-nonsense-rules/rules/enforce-ianitor-check-type/"
+	<Code
+		code={[
+			"const Health = registerComponent<DataType.u16>({ replicated: true });",
+			"",
+			"type Payload = { value: DataType.u16 };",
+		].join("\n")}
+		lang="ts"
 	/>
-</CardGrid>
+</RuleExample>
 
-## Further Reading
+## Options
+
+| Option          | Type                        | Default                 |
+| :-------------- | :-------------------------- | :---------------------- |
+| `functionNames` | `string[]`                  | `["registerComponent"]` |
+| `mode`          | `"type-arguments" \| "all"` | `"type-arguments"`      |
+| `strict`        | `boolean`                   | `false`                 |
+
+Example config:
+
+```js
+import ceaseNonsense from "eslint-plugin-cease-nonsense";
+
+export default [
+	{
+		plugins: {
+			"cease-nonsense": ceaseNonsense,
+		},
+		rules: {
+			"cease-nonsense/require-serialized-numeric-data-type": [
+				"error",
+				{
+					mode: "type-arguments",
+					functionNames: ["registerComponent", "createEvent"],
+				},
+			],
+		},
+	},
+];
+```
+
+## Related rules
 
 <CardGrid>
 	<LinkCard
-		title="Flamework Binary Serializer"
-		description="Official documentation for binary replication"
-		href="https://flamework.cloud/docs/binary-serializer"
+		title="require-module-level-instantiation"
+		description="Another rule aimed at long-lived runtime behavior"
+		href="/eslint-cease-nonsense-rules/rules/require-module-level-instantiation/"
 	/>
 </CardGrid>

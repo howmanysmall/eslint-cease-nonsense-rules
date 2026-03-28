@@ -3,104 +3,86 @@ title: prefer-early-return
 badges:
     - text: "Suggestion"
       variant: note
-description: Prefer early returns over wrapping the whole function body in an if.
+description: Prefer an early return when a function body is just a single if statement with no else branch.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Prefer early returns over full-body conditional wrapping.
+Flags functions whose whole body is a single `if` statement with no `else`.
 
-## Rule Details :badge[Clean Code]{variant=success}
+## Rule details :badge[Suggestion]{variant=note}
 
-If a function is wrapped almost entirely in a single `if`, flip the condition and return early instead. It keeps the
-main path at the top level and avoids pointless indentation.
+This rule reports a function when its block body has exactly one statement, that statement is an `if`, and the `if` does
+not have an `else` branch.
 
-<Aside type="note" title="Cognitive Load">
-	Deep nesting makes code harder to scan. Guard clauses keep functions flat.
+With the default options, the `if` block must contain more than one statement before the rule reports it. That keeps
+small guard-style wrappers out of the way.
+
+<Aside type="note" title="What it does not touch">
+	The rule does not report `if` statements with an `else`, and it does not report functions that have other top-level
+	statements next to the `if`.
 </Aside>
-
-## Refactoring Workflow
-
-<Steps>
-1. **Identify the Wrapper**
-   Look for an `if` statement that encapsulates almost the entire body of a function.
-2. **Negate the Condition** Invert the logic of the `if`. For example, `if (isValid)` becomes `if (!isValid)`.
-3. **Insert Early Return** Add a `return` or `return undefined` immediately inside the new negated block.
-4. **Flatten the Rest** Move the original logic out of the `if` block and place it directly below the new guard clause.
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Deep Nesting
-		Bans wrapping the primary function logic in a single large conditional block.
-
-    	<Code
-    		code={[
-    			"function process(data: Data) {",
-    			"\tif (data.isValid) {",
-    			"\t\ttransform(data);",
-    			"\t\tsave(data);",
-    			"\t\tnotify();",
-    			"\t}",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			"function process(data: Data) {",
+			"\tif (data.isValid) {",
+			"\t\ttransform(data);",
+			"\t\tsave(data);",
+			"\t}",
+			"}",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Flat Logic
-    	Use guard clauses at the top to filter out invalid states early.
+	<Code
+		code={[
+			"function process(data: Data) {",
+			"\tif (!data.isValid) return;",
+			"",
+			"\ttransform(data);",
+			"\tsave(data);",
+			"}",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			"function process(data: Data) {",
-    			"\tif (!data.isValid) return;",
-    			"",
-    			"\ttransform(data);",
-    			"\tsave(data);",
-    			"\tnotify();",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+## Options
 
-## Why use early returns?
+| Option              | Default | What it does                                                                                                                           |
+| ------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `maximumStatements` | `1`     | Reports when the wrapped `if` block contains more than this many statements. Set it to `0` to also report `if (condition) doThing();`. |
 
-<CardGrid>
-	<Card title="No Arrow Code" icon="list-format">
-		Eliminates the "arrow" shape formed by deeply nested blocks, keeping code near the left margin.
-	</Card>
-	<Card title="Happy Path" icon="rocket">
-		The main purpose of the function stays at the top level of indentation, making it easier to scan.
-	</Card>
-	<Card title="Simplified Exit" icon="bolt">
-		You don't need to scroll to the bottom of a large function to see what happens when a condition fails.
-	</Card>
-</CardGrid>
+```js
+// eslint.config.js
+import ceaseNonsense from "eslint-plugin-cease-nonsense";
 
-## Related Rules
+export default [
+	{
+		plugins: {
+			"cease-nonsense": ceaseNonsense,
+		},
+		rules: {
+			"cease-nonsense/prefer-early-return": ["error", { maximumStatements: 0 }],
+		},
+	},
+];
+```
+
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="no-god-components"
-		description="Reduces component complexity"
+		description="Keeps large React components from growing unchecked"
 		href="/eslint-cease-nonsense-rules/rules/no-god-components/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="Flattening Arrow Code"
-		description="Classic essay on reducing code nesting"
-		href="https://blog.codinghorror.com/flattening-arrow-code/"
 	/>
 </CardGrid>

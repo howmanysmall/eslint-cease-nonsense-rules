@@ -3,109 +3,60 @@ title: react-hooks-strict-return
 badges:
     - text: "Suggestion"
       variant: note
-description: Custom hooks must return a pair or an object to avoid positional tuples.
+description: Keep custom hook returns to an object or a tuple with at most two items.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Custom hooks should return a pair or an object.
+Limits custom hooks to returning an object or a tuple with at most two items.
 
-## Rule Details :badge[Best Practice]{variant=success}
+## Rule details :badge[Suggestion]{variant=note}
 
-Custom hooks should return either a tuple with at most 2 elements (mirroring `useState`) or a single object. Returning
-large tuples makes destructuring awkward and error-prone because everything is positional.
+The rule checks functions whose names look like hooks, such as `useThing`, and reports returns that resolve to more than
+two tuple items.
 
-<Aside type="tip" title="Positional Clarity">
-	If a hook returns more than 2 values, callers end up guessing what `[a, b, c, d]` means. Objects make the meaning
-	explicit and let the IDE autocomplete names.
+Returning an object is always allowed. Returning one or two array items is also allowed. Once a hook returns three or
+more positional values, the rule reports it and asks you to switch to named properties instead.
+
+<Aside type="tip" title="What the rule counts">
+	The rule follows direct array returns, returned array variables, and simple spread cases, so `return values` and
+	`return [a, ...rest]` are checked too.
 </Aside>
-
-## Refactoring Workflow
-
-<Steps>
-1. **Identify Large Tuples**
-   Locate hooks that return an array containing more than two variables.
-
-2. **Convert to Object** Change the `return [v1, v2, v3]` line to `return { v1, v2, v3 }`.
-
-3. **Update Call Sites** Replace array destructuring `const [v1, v2, v3] = useHook()` with object destructuring
-   `const { v1, v2, v3 } = useHook()`.
-
-4. **Review Naming** Ensure the object keys are descriptive, as they will now be the primary way users interact with the
-   hook's output.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Unwieldy Tuples
-		Bans large arrays where the position of a value is its only identifier.
-
-    	<Code
-    		code={[
-    			"function useData() {",
-    			"\treturn [state, setState, loading, error]; // ❌ 4 elements is too many",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code code={["function useData() {", "\treturn [state, setState, loading, error];", "}"].join("\n")} lang="tsx" />
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Objects or Pairs
-    	Use objects for complexity and tuples only for simple `[value, setter]` pairs.
-
-    	<Code
-    		code={[
-    			"// ✅ Objects are clear and named",
-    			"function useData() {",
-    			"\treturn { state, setState, loading, error };",
-    			"}",
-    			"",
-    			"// ✅ Pairs are fine (standard React pattern)",
-    			"function useToggle() {",
-    			"\treturn [isOpen, toggle];",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Why avoid large tuples?
-
-<CardGrid>
-	<Card title="Order Sensitivity" icon="warning">
-		It's very easy to accidentally swap `[loading, error]` for `[error, loading]`.
-	</Card>
-	<Card title="Grep-ability" icon="magnifier">
-		Named object properties like `isLoaded` are much easier to search for than positional array elements.
-	</Card>
-	<Card title="Flexibility" icon="rocket">
-		Objects allow you to add new return values in the future without breaking existing destructuring order.
-	</Card>
-</CardGrid>
-
-## Related Rules
-
-<CardGrid>
-	<LinkCard
-		title="no-god-components"
-		description="Reduces component complexity"
-		href="/eslint-cease-nonsense-rules/rules/no-god-components/"
+	<Code
+		code={[
+			"function useToggle() {",
+			"\treturn [isOpen, setIsOpen];",
+			"}",
+			"",
+			"function useData() {",
+			"\treturn { state, setState, loading, error };",
+			"}",
+		].join("\n")}
+		lang="tsx"
 	/>
-</CardGrid>
+</RuleExample>
 
-## Further Reading
+## Related rules
 
 <CardGrid>
 	<LinkCard
-		title="React Docs: Custom Hooks"
-		description="Official guide on reusing logic"
-		href="https://react.dev/learn/reusing-logic-with-custom-hooks"
+		title="require-named-effect-functions"
+		description="Keeps effect callbacks readable in stack traces"
+		href="/eslint-cease-nonsense-rules/rules/require-named-effect-functions/"
+	/>
+	<LinkCard
+		title="use-hook-at-top-level"
+		description="Keeps hook calls in a predictable place"
+		href="/eslint-cease-nonsense-rules/rules/use-hook-at-top-level/"
 	/>
 </CardGrid>

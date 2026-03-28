@@ -5,149 +5,111 @@ badges:
       variant: danger
     - text: "Suggestion"
       variant: note
-description: Ban shorthand names like plr/dt/args and prefer full words.
+description: Ban shorthand identifiers like plr, char, args, and dt.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Ban shorthand names like `plr`, `dt`, and `args`.
+Reports identifiers that use configured shorthand words instead of fuller names.
 
-## Rule Details :badge[Clean Code]{variant=success}
+## Rule details :badge[Suggestion]{variant=note}
 
-Shorthand names like `plr`, `dt`, and `args` make code harder to scan, especially for people who didn't write it. The
-rule prefers full words and also catches shorthands inside compound identifiers (for example `plrData` → `playerData`).
+By default, the rule replaces these shorthands:
 
-<Aside type="tip" title="Self-Documenting Code">
-	Descriptive names reduce the need for comments. `playerScore` is clearer than `plrScr`.
+| Shorthand | Replacement  |
+| :-------- | :----------- |
+| `args`    | `parameters` |
+| `char`    | `character`  |
+| `dt`      | `deltaTime`  |
+| `plr`     | `player`     |
+
+The rule also checks shorthand words inside larger identifiers, so `playerData` is fine but `plrData` is reported.
+Identifiers are split at camelCase and number boundaries.
+
+There is one special case: `const plr = Players.LocalPlayer` reports `localPlayer` instead of `player`.
+
+<Aside type="tip" title="What gets ignored">
+	Import specifiers are skipped, and property access for `char` is allowed by default, so `model.char` is fine unless
+	you change `allowPropertyAccess`.
 </Aside>
-
-## Migration Workflow
-
-<Steps>
-1. **Identify Violations**
-   Run `bun run lint` to find all usages of cryptic shorthands in your project.
-
-2. **Determine Replacements** Check the [Common Replacements](#common-replacements) table below for the recommended full
-   names.
-
-3. **Rename Identifiers** Use your IDE's refactoring tools (F2 / Rename) to update all references safely.
-
-4. **Update Compound Names** Don't forget to update camelCase names like `plrId` to `playerId` to maintain consistency.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Cryptic Shorthands
-		Bans abbreviations that obscure meaning.
+		### Shorthand names
 
-    	<Code
-    		code={[
-    			"const plr = getPlayer();",
-    			"const dt = 0.016;",
-    			"const args = [1, 2, 3];",
-    			"",
-    			"// Compound shorthands are also caught",
-    			"const plrData = getUserData();",
-    			"const btnClick = handleClick;",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
+        	<Code
+        		code={[
+        			"const plr = getPlayer();",
+        			"const dt = 0.016;",
+        			"const plrData = loadProfile();",
+        			"const { args } = options;",
+        		].join("\n")}
+        		lang="ts"
+        	/>
     </RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Explicit Names
-    	Use full words to describe your variables and parameters.
+	    	### Full names
 
-    	<Code
-    		code={[
-    			"const player = getPlayer();",
-    			"const deltaTime = 0.016;",
-    			"const parameters = [1, 2, 3];",
-    			"",
-    			"// Descriptive compound names",
-    			"const playerData = getUserData();",
-    			"const buttonClick = handleClick;",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
+        	<Code
+        		code={[
+        			"const player = getPlayer();",
+        			"const deltaTime = 0.016;",
+        			"const playerData = loadProfile();",
+        			"const model = entity.char;",
+        		].join("\n")}
+        		lang="ts"
+        	/>
     </RuleExample>
 
-## Common Replacements
+## Options
 
-| Shorthand | Replacement  | Context                 |
-| :-------- | :----------- | :---------------------- |
-| `plr`     | `player`     | Roblox player reference |
-| `char`    | `character`  | Roblox character model  |
-| `args`    | `parameters` | Function parameters     |
-| `dt`      | `deltaTime`  | Frame time delta        |
-| `btn`     | `button`     | UI components           |
-| `cfg`     | `config`     | Configuration           |
+| Option                | Type                     | Default                                                                     | Notes                                                                                                     |
+| :-------------------- | :----------------------- | :-------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------- |
+| `allowPropertyAccess` | `string[]`               | `["char"]`                                                                  | Allowed on member access like `obj.char` and type qualified names like `React.PropsWithoutRef`.           |
+| `ignoreShorthands`    | `string[]`               | `[]`                                                                        | Shorthands or identifier patterns to skip completely. Supports exact values, globs, and `/regex/flags`.   |
+| `shorthands`          | `Record<string, string>` | `{ args: "parameters", char: "character", dt: "deltaTime", plr: "player" }` | Adds to, and can override, the default replacement map. Supports exact values, globs, and `/regex/flags`. |
 
-## Advanced Features
+```js
+import ceaseNonsense from "eslint-plugin-cease-nonsense";
 
-<CardGrid>
-	<Card title="Compound Detection" icon="magnifier">
-		Splits identifiers at camelCase boundaries to catch `myPlrName` or `UserCfg`.
-	</Card>
-	<Card title="Regex Support" icon="setting">
-		Define custom shorthands using regex for complex naming patterns.
-	</Card>
-	<Card title="Property Access" icon="approve-check">
-		Optionally allow shorthands when accessing external properties (e.g., `character.char`).
-	</Card>
-	<Card title="Import Safety" icon="warning">
-		Automatically ignores names from external packages to prevent breaking 3rd party code.
-	</Card>
-</CardGrid>
+export default [
+	{
+		plugins: {
+			"cease-nonsense": ceaseNonsense,
+		},
+		rules: {
+			"cease-nonsense/no-shorthand-names": [
+				"error",
+				{
+					allowPropertyAccess: ["char", "PropsWithoutRef"],
+					ignoreShorthands: ["ComponentProps", "*Props"],
+					shorthands: {
+						ctx: "context",
+						"*Btn*": "*Button*",
+						"/^str(.*)$/": "string$1",
+					},
+				},
+			],
+		},
+	},
+];
+```
 
-## Configuration Example
-
-<Code
-	code={[
-		"{",
-		'\t"cease-nonsense/no-shorthand-names": [',
-		'\t\t"error",',
-		"\t\t{",
-		'\t\t\t"shorthands": {',
-		'\t\t\t\t"cfg": "config",',
-		'\t\t\t\t"ctx": "context"',
-		"\t\t\t},",
-		'\t\t\t"allowPropertyAccess": ["char"]',
-		"\t\t}",
-		"\t]",
-		"}",
-	].join("\n")}
-	lang="json"
-	title="eslint.config.js"
-/>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="prevent-abbreviations"
-		description="General abbreviation preventative"
+		description="Catches a broader set of abbreviations"
 		href="/eslint-cease-nonsense-rules/rules/prevent-abbreviations/"
 	/>
 	<LinkCard
 		title="naming-convention"
-		description="Enforce casing and naming standards"
+		description="Applies naming style rules on top of word choice"
 		href="/eslint-cease-nonsense-rules/rules/naming-convention/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="Clean Code: Naming"
-		description="Principles for choosing meaningful names"
-		href="https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882"
 	/>
 </CardGrid>

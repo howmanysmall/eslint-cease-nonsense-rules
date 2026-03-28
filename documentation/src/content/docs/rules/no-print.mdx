@@ -3,99 +3,57 @@ title: no-print
 badges:
     - text: "error"
       variant: danger
-description: Prefer structured logging over raw print() calls.
+description: Ban calls written as print(...).
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Prefer structured logging over the global `print()`.
+Reports calls written as `print(...)`.
 
-## Rule Details :badge[Best Practice]{variant=caution}
+## Rule details :badge[Problem]{variant=danger}
 
-The global `print()` call is fine for quick local debugging, but it doesn't scale. A logging wrapper (like `Log` from
-`RbxUtil`) gives you levels, consistent output, and a way to filter in production.
+This rule is simple on purpose. If the callee is an identifier named `print`, it reports the call. It does not report
+`obj.print()` or `console.log(...)`, and it has no options.
 
-<Aside type="tip" title="Why Structured Logging?">
-	If you care about logs later (filtering, searching, routing), use your logger instead of raw `print()`.
+<Aside type="tip" title="What to use instead">
+	The rule message points you toward a logging package. Pick whatever logger your project already uses.
 </Aside>
-
-## Migration Path
-
-<Steps>
-1. **Choose a Logger**
-   Select a logging library like `Log` from `RbxUtil` or create your own structured wrapper.
-
-2. **Categorize Logs** Identify which prints are for `Info`, which are for `Debug`, and which should be `Errors`.
-
-3. **Global Replace** Search for `print(` across your project and replace them with the corresponding logger method.
-
-4. **Add Context** Take advantage of structured logging by passing objects or metadata as secondary arguments.
-
-{/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Raw Print Calls
-		Avoid using the global `print` for debugging or telemetry.
+		### Direct print call
 
-    	<Code
-    		code={[
-    			'print("Request failed");',
-    			'print("User logged in:", userId);',
-    			'print("DEBUG:", data);',
-    		].join("\n")}
-    		lang="tsx"
-    	/>
+        	<Code
+        		code={[
+        			'print("Request failed");',
+        			'print("User logged in", userId);',
+        		].join("\n")}
+        		lang="ts"
+        	/>
     </RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Structured Logging
-    	Use a logging library with appropriate severity levels.
+	    	### Other logging calls are not checked
 
-    	<Code
-    		code={[
-    			'log.Error("Request failed");',
-    			'log.Info("User logged in:", userId);',
-    			'log.Debug("Data state:", data);',
-    		].join("\n")}
-    		lang="tsx"
-    	/>
+        	<Code
+        		code={[
+        			'logger.error("Request failed");',
+        			'obj.print();',
+        			'console.log("debug");',
+        		].join("\n")}
+        		lang="ts"
+        	/>
     </RuleExample>
 
-## Why use Log instead?
-
-<CardGrid>
-	<Card title="Log Levels" icon="list-format">
-		Filter by `Debug`, `Info`, `Warning`, or `Error` to reduce noise in production.
-	</Card>
-	<Card title="Timestamps" icon="bolt">
-		Many logging systems attach timestamps automatically.
-	</Card>
-	<Card title="Remote Telemetry" icon="rocket">
-		Logging libraries often support sending critical errors to external services like Sentry.
-	</Card>
-	<Card title="Formatting" icon="setting">
-		Consistent formatting makes the developer console easier to scan.
-	</Card>
-</CardGrid>
-
-## Related Rules
-
-<CardGrid>
-	<LinkCard title="no-warn" description="Bans raw warn() calls" href="/eslint-cease-nonsense-rules/rules/no-warn/" />
-</CardGrid>
-
-## Further Reading
+## Related rules
 
 <CardGrid>
 	<LinkCard
-		title="RbxUtil Log API"
-		description="Official documentation for Sleitnick's Log utility"
-		href="https://sleitnick.github.io/RbxUtil/api/Log"
+		title="no-warn"
+		description="Bans calls written as warn(...)"
+		href="/eslint-cease-nonsense-rules/rules/no-warn/"
 	/>
 </CardGrid>

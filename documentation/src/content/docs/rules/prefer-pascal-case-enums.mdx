@@ -3,115 +3,81 @@ title: prefer-pascal-case-enums
 badges:
     - text: "Suggestion"
       variant: note
-description: Enforce PascalCase for enum names and members.
+description: Require PascalCase for enum names and enum members.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Enum names and members must be PascalCase.
+Require PascalCase for enum names and enum members.
 
-## Rule Details :badge[Clean Code]{variant=success}
+## Rule details :badge[Suggestion]{variant=note}
 
-TypeScript enums should use PascalCase for both the enum name and all members. It keeps usages like `Color.Red` distinct
-from constants like `MAX_SIZE` and variables like `activePlayer`.
+This rule reports any enum name or enum member whose text does not already match the plugin's PascalCase conversion.
 
-<Aside type="tip" title="Type Convention">
-	Enums define new types in TypeScript, so they should follow the same PascalCase convention as interfaces and
-	classes.
+It checks regular identifier members like `Red` and string-literal members like `'foo'`. String-literal members that
+start with a digit are ignored.
+
+<Aside type="tip" title="No auto-fix">
+	The rule reports casing problems, but it does not rename your enums for you.
 </Aside>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Mixed Casing
-		Bans non-PascalCase casing for enums and their members.
+		### Mixed casing
 
-    	<Code
-    		code={[
-    			"enum colors {",
-    			"\tRED, // SCREAMING_SNAKE_CASE",
-    			"\tblue, // camelCase",
-    			"}",
-    			"",
-    			"enum user_role {",
-    			"\tadmin_user",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
+        	<Code
+        		code={[
+        			"enum colors {",
+        			"\tRED,",
+        			"\tblue,",
+        			"}",
+        			"",
+        			"enum user_role {",
+        			"\tadmin_user,",
+        			"}",
+        		].join("\n")}
+        		lang="ts"
+        	/>
     </RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Strict PascalCase
-    	Use capitalized words without underscores for both names and members.
+		### PascalCase enums
 
-    	<Code
-    		code={[
-    			"enum Color {",
-    			"\tRed,",
-    			"\tBlue,",
-    			"\tDarkBlue,",
-    			"}",
-    			"",
-    			"enum UserRole {",
-    			"\tAdminUser",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
+        	<Code
+        		code={[
+        			"enum Color {",
+        			"\tRed,",
+        			"\tBlue,",
+        			"\tDarkBlue,",
+        			"}",
+        			"",
+        			"enum UserRole {",
+        			"\tAdminUser,",
+        			"}",
+        		].join("\n")}
+        		lang="ts"
+        	/>
     </RuleExample>
 
-## Why PascalCase?
+## Notes
 
-<CardGrid>
-	<Card title="TS Conventions" icon="list-format">
-		Aligns with the official TypeScript style guide and community standards.
-	</Card>
-	<Card title="IDE Clarity" icon="bolt">
-		Makes it easier to distinguish types and enums from regular variables in autocomplete.
-	</Card>
-	<Card title="Readability" icon="magnifier">
-		`HttpStatus.NotFound` is easier to read than `HTTP_STATUS.NOT_FOUND` or `status_codes.not_found`.
-	</Card>
-</CardGrid>
+Single-letter names like `X` or `A` are allowed. Acronym-style names such as `UDim2` and `CFrame` are also allowed when
+they already match PascalCase.
 
-## Conversion Guide
-
-<Steps>
-1. **Acronyms**
-   Treat acronyms as single words (e.g., `HttpStatus`, not `HTTPStatus`).
-
-2. **Snake Case** Remove underscores and capitalize the letter following them (e.g., `user_role` → `UserRole`).
-
-3. **Screaming Snake Case** Convert to lower case and then to PascalCase (e.g., `MAX_RETRIES` → `MaxRetries`).
-
-{/* oxfmt-ignore */}
-
-</Steps>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="prefer-singular-enums"
-		description="Ensure enum names are singular"
+		description="Keeps enum type names singular"
 		href="/eslint-cease-nonsense-rules/rules/prefer-singular-enums/"
 	/>
 	<LinkCard
 		title="prefer-module-scope-constants"
-		description="SCREAMING_SNAKE_CASE rules"
+		description="Reserves SCREAMING_SNAKE_CASE for top-level const bindings"
 		href="/eslint-cease-nonsense-rules/rules/prefer-module-scope-constants/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="TS Style Guide: Enums"
-		description="Google's TypeScript style guide for enums"
-		href="https://google.github.io/styleguide/tsguide.html#enums"
 	/>
 </CardGrid>

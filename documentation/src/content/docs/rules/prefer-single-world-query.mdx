@@ -5,112 +5,86 @@ badges:
       variant: success
     - text: "Suggestion"
       variant: note
-description:
-    Enforces combining multiple world.get() or world.has() calls on the same entity into a single call for better Jecs
-    performance.
+description: Combine consecutive `world.get()` calls, and some `world.has()` calls, on the same entity.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Prefer combining multiple `world.get()` or `world.has()` calls on the same entity.
+Combines consecutive `world.get()` calls, and some `world.has()` calls, that query the same entity from the same world.
 
-## Rule Details :badge[Performance]{variant=success}
+## Rule details :badge[Suggestion]{variant=note}
 
-In Jecs (a Roblox ECS library), calling `world.get()` or `world.has()` multiple times on the same entity triggers
-multiple archetype lookups. Combining these calls reduces lookups and cache misses. This rule detects consecutive
-lookups on the same entity and merges them.
+This rule looks for consecutive `const` declarations that call `world.get(entity, Component)` or
+`world.has(entity, Component)`. It only groups calls when the world expression text matches, the entity expression text
+matches, and there is nothing between the declarations except whitespace or semicolons.
 
-<Aside type="tip" title="Archetype Lookups">
-	Each lookup requires the engine to find the entity's storage location. By grouping queries, Jecs can find the
-	storage location once and retrieve all requested components in a single pass.
+For `world.get()`, any matching run of two or more declarations is reported.
+
+For `world.has()`, the rule is narrower. It only reports when every declared boolean is later used directly inside an
+`&&` expression, such as an `if`, `while`, or ternary condition.
+
+<Aside type="note" title="About the fixer for world.has()">
+	The fixer currently combines the declarations into `const hasAll = world.has(...)`, but it does not rename the later
+	`hasA`, `hasB`, and similar references. You still need to update those uses yourself.
 </Aside>
-
-## Optimization Path
-
-    <Steps>
-    1. **Identify Consecutive Calls**
-       Locate multiple `world.get(entity, Component)` or `world.has(entity, Component)` calls in the same block.
-    2. **Verify Entity & World** Ensure all calls are targeting the exact same `world` and `entity` expressions.
-    3. **Check Usage (for .has)** For `has()` calls, verify they are used together (e.g., `hasA && hasB`).
-    4. **Merge Calls** Replace the multiple lines with a single destructuring call:
-       `const [a, b] = world.get(entity, CompA, CompB)`. {/* oxfmt-ignore */}
-
-</Steps>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Redundant Lookups
-		Separate calls on the same entity force extra lookups.
-
-    	<Code
-    		code={[
-    		"// Multiple lookups",
-    		"const position = world.get(entity, Position);",
-    		"const velocity = world.get(entity, Velocity);",
-    			"",
-    			"const hasHealth = world.has(entity, Health);",
-    			"const hasMana = world.has(entity, Mana);",
-    			"if (hasHealth && hasMana) { ... }",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			"const position = world.get(entity, Position);",
+			"const velocity = world.get(entity, Velocity);",
+			"",
+			"const hasHealth = world.has(entity, Health);",
+			"const hasMana = world.has(entity, Mana);",
+			"if (hasHealth && hasMana) {",
+			"\tdoSomething();",
+			"}",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Grouped Queries
-    	Use the multi-argument overloads to keep it to one lookup.
+	<Code
+		code={[
+			"const [position, velocity] = world.get(entity, Position, Velocity);",
+			"",
+			"const hasAll = world.has(entity, Health, Mana);",
+			"if (hasAll) {",
+			"\tdoSomething();",
+			"}",
+			"",
+			"const health = world.get(player, Health);",
+			"logHealth(health);",
+			"const mana = world.get(player, Mana);",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    		"// Single lookup",
-    		"const [position, velocity] = world.get(entity, Position, Velocity);",
-    			"",
-    			"// Combined existence check",
-    			"const hasBoth = world.has(entity, Health, Mana);",
-    			"if (hasBoth) { ... }",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+## What gets skipped
 
-## Performance Benefits
+- `let` and `var` declarations
+- destructuring declarations like `const [value] = world.get(...)`
+- computed access like `world["get"](...)`
+- calls with extra arguments
+- `world.has()` values that are used separately or with `||`
 
-<CardGrid>
-	<Card title="Fewer Lookups" icon="bolt">
-		Reduces CPU cycles spent traversing the archetype table to locate component data.
-	</Card>
-	<Card title="Cache Locality" icon="rocket">
-		Accessing multiple components at once improves CPU cache usage as they are often stored together.
-	</Card>
-	<Card title="Jecs Limits" icon="setting">
-		Respects Jecs limits (up to 4 components) by only merging valid counts.
-	</Card>
-</CardGrid>
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="prefer-pattern-replacements"
-		description="General pattern replacement framework"
+		description="Handles configurable constructor and method rewrites"
 		href="/eslint-cease-nonsense-rules/rules/prefer-pattern-replacements/"
 	/>
 	<LinkCard
 		title="no-identity-map"
-		description="Detects pointless identity operations"
+		description="Removes work that does not change the result"
 		href="/eslint-cease-nonsense-rules/rules/no-identity-map/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="Jecs Documentation"
-		description="Official source for the Jecs ECS library"
-		href="https://github.com/ukendio/jecs"
 	/>
 </CardGrid>

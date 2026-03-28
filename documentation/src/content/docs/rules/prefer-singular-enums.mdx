@@ -3,128 +3,81 @@ title: prefer-singular-enums
 badges:
     - text: "Suggestion"
       variant: note
-description: Prefer singular enum names (Color, not Colors).
+description: Prefer singular enum names such as `Color` instead of `Colors`.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Badge, Steps } from "@astrojs/starlight/components";
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
 
 import RuleExample from "../../../components/rule-example.astro";
 
-Enum names should be singular, not plural.
+Reports TypeScript enum names that look plural.
 
-## Rule Details :badge[Clean Code]{variant=success}
+## Rule details :badge[Suggestion]{variant=note}
 
-Enum types represent a single choice from a set, not the whole collection. Plural names like `Colors` make code read as
-if the variable holds multiple values. This rule prefers singular names like `Color`.
+Enums describe one selected member at a time, so this rule expects singular names.
 
-<Aside type="tip" title="Natural Language">
-	`const theme: Color = Color.DeepSea` reads much more naturally than `const theme: Colors = Colors.DeepSea`.
+It catches regular plurals like `Colors`, acronym plurals like `IDs`, and several irregular plurals like `People` and
+`Children`. It also checks the last word in names such as `UserStatuses` and `USER_STATUSES`.
+
+Some words that end in `s` are treated as singular and are allowed, including `Status`, `Alias`, `Analysis`, `Series`,
+and `Species`.
+
+<Aside type="tip" title="No fixer">
+	The rule reports the enum declaration only. Rename the enum and its references with your editor or refactor tool.
 </Aside>
 
 ## Examples
 
 <RuleExample type="fail" title="Incorrect">
-		### Plural Names
-		Bans enums named with plural suffixes or irregular plural forms.
-
-    	<Code
-    		code={[
-    			"enum Colors {",
-    			"\tRed,",
-    			"\tBlue,",
-    			"}",
-    			"",
-    			"// Irregular plurals",
-    			"enum People {",
-    			"\tAdmin,",
-    			"\tUser,",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
+	<Code
+		code={[
+			"enum Colors {",
+			"\tRed,",
+			"\tBlue,",
+			"}",
+			"",
+			"enum People {",
+			"\tAdmin,",
+			"\tUser,",
+			"}",
+			"",
+			"enum USER_STATUSES {}",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
 <RuleExample type="pass" title="Correct">
-    	### Singular Names
-    	Use singular forms for all enum declarations.
+	<Code
+		code={[
+			"enum Color {",
+			"\tRed,",
+			"\tBlue,",
+			"}",
+			"",
+			"enum Person {",
+			"\tAdmin,",
+			"\tUser,",
+			"}",
+			"",
+			"enum Status {}",
+			"enum ID {}",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
 
-    	<Code
-    		code={[
-    			"enum Color {",
-    			"\tRed,",
-    			"\tBlue,",
-    			"}",
-    			"",
-    			"enum Person {",
-    			"\tAdmin,",
-    			"\tUser,",
-    			"}",
-    		].join("\n")}
-    		lang="tsx"
-    	/>
-    </RuleExample>
-
-## Refactoring Path
-
-<Steps>
-1. **Identify Plurals**
-   The linter will flag any enum that appears to be plural (including irregulars like `Feet` or `Children`).
-
-2. **Simplify Name** Determine the singular form of the identifier.
-
-3. **Rename & Update** Rename the enum and all references. Note that this often clarifies function arguments as well:
-   `function set(color: Color)`.
-
-4. **Exception Handling** If you have a bitmask enum where multiple flags are stored in one variable, consider adding a
-   `// eslint-disable-line` with a comment explaining why plural is intended.
-
-{/* oxfmt-ignore */}
-
-</Steps>
-
-## Why Singular?
-
-<CardGrid>
-	<Card title="Type Clarity" icon="list-format">
-		A variable of type `Color` clearly contains exactly one color.
-	</Card>
-	<Card title="TS Consistency" icon="bolt">
-		Matches how interfaces (e.g., `User`, not `Users`) and classes are named in the ecosystem.
-	</Card>
-	<Card title="Better API Design" icon="rocket">
-		Prevents confusing signatures like `function apply(types: Type)` which are grammatically incorrect.
-	</Card>
-</CardGrid>
-
-## Detectable Plurals
-
-The rule can spot a few common plural patterns:
-
-- **Regular**: `Commands`, `Statuses`, `Types`.
-- **Irregular**: `Children`, `People`, `Feet`, `Teeth`, `Mice`.
-- **Common Suffixes**: Handles `-es`, `-ies`, and `-s` logic.
-
-## Related Rules
+## Related rules
 
 <CardGrid>
 	<LinkCard
 		title="prefer-pascal-case-enums"
-		description="Standardize enum naming"
+		description="Keeps enum names in a consistent casing style"
 		href="/eslint-cease-nonsense-rules/rules/prefer-pascal-case-enums/"
 	/>
 	<LinkCard
 		title="prefer-enum-member"
-		description="Enforce member usage over raw values"
+		description="Checks enum member usage instead of naming"
 		href="/eslint-cease-nonsense-rules/rules/prefer-enum-member/"
-	/>
-</CardGrid>
-
-## Further Reading
-
-<CardGrid>
-	<LinkCard
-		title="Naming Conventions"
-		description="Google's TypeScript style guide for naming"
-		href="https://google.github.io/styleguide/tsguide.html#naming-style"
 	/>
 </CardGrid>
