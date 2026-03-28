@@ -12,7 +12,7 @@ import { ruleSidebarGroups } from "./src/data/rule-stats";
 import contextualMenuIntegration from "./src/integrations/contextual-menu";
 
 // https://astro.build/config
-export default defineConfig({
+const configuration = defineConfig({
 	base: "/eslint-cease-nonsense-rules",
 	integrations: [
 		starlight({
@@ -75,3 +75,5 @@ export default defineConfig({
 	],
 	site: "https://howmanysmall.github.io",
 });
+
+export default configuration;
