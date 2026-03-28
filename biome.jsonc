@@ -1,5 +1,3 @@
-// this shit is the lebron of never working correctly
-// truly a masterpiece
 {
 	"$schema": "https://biomejs.dev/schemas/latest/schema.json",
 	"assist": {
@@ -45,7 +43,8 @@
 			"!**/include/**",
 			"!**/node_modules/**",
 			"!**/*.ts",
-			"!.context/**"
+			"!.context/**",
+			"!*-lock.json"
 		],
 		"indentStyle": "tab",
 		"indentWidth": 4,
