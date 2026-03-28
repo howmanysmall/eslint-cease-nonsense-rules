@@ -3,15 +3,18 @@ import { getCollection } from "astro:content";
 import { createMarkdownResponse } from "../../utilities/create-markdown-response";
 
 import type { APIRoute, GetStaticPaths } from "astro";
-import type { CollectionEntry } from "astro:content";
 
 export const GET: APIRoute = async ({ params }) => createMarkdownResponse(params.path);
 
 export const getStaticPaths: GetStaticPaths = async () => {
-	const docs: Array<CollectionEntry<"docs">> = await getCollection("docs");
-	return docs
-		.filter((doc) => doc.id !== "index")
-		.map((doc) => ({
-			params: { path: doc.id },
-		}));
+	const docs = await getCollection("docs");
+	const staticPaths = new Array<{ readonly params: { readonly path: string } }>();
+	let size = 0;
+
+	for (const docsEntry of docs) {
+		if (docsEntry.id === "index") continue;
+		staticPaths[size++] = { params: { path: docsEntry.id } };
+	}
+
+	return staticPaths;
 };
