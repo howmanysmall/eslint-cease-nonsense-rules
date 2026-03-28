@@ -1,20 +1,24 @@
 /* src/styles/custom.css */
 
-/* Google Fonts */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+/* ---------------------------------------------------------
+   Fonts — Self-hosted via @fontsource
+--------------------------------------------------------- */
+@import "@fontsource/bricolage-grotesque/400.css";
+@import "@fontsource/bricolage-grotesque/700.css";
+@import "@fontsource/karla/400.css";
+@import "@fontsource/karla/600.css";
+@import "@fontsource/jetbrains-mono/400.css";
 
 :root {
-	/* Typography Scale */
-	--sl-font-system:
-		"Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+	--sl-font-system: "Karla", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	--sl-font: var(--sl-font-system);
-	--sl-text-body: 1.05rem;
-	--sl-line-height: 1.7;
+	--sl-text-body: 1.1rem;
+	--sl-line-height: 1.75;
+	--sl-font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-	/* Color Palette: Light Mode (Tailwind Slate/Zinc tones) */
-	--sl-color-accent-low: #f8fafc;
-	--sl-color-accent: #0284c7;
-	--sl-color-accent-high: #0c4a6e;
+	--sl-color-accent-low: #fffbeb;
+	--sl-color-accent: #b45309;
+	--sl-color-accent-high: #92400e;
 
 	--sl-color-white: #0f172a;
 	--sl-color-gray-1: #1e293b;
@@ -33,14 +37,20 @@
 	/* Code Blocks Light */
 	--code-bg: #f8fafc;
 	--code-border: #e2e8f0;
+
+	--spring: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* ---------------------------------------------------------
+   Design Tokens — Dark Mode
+--------------------------------------------------------- */
 :root[data-theme="dark"] {
-	/* Color Palette: Dark Mode (Tailwind Zinc tones) */
-	--sl-color-accent-low: #082f49;
-	--sl-color-accent: #38bdf8;
-	--sl-color-accent-high: #bae6fd;
+	/* Amber Accent — Dark */
+	--sl-color-accent-low: #451a03;
+	--sl-color-accent: #f59e0b;
+	--sl-color-accent-high: #fcd34d;
 
+	/* Neutral Palette — Dark */
 	--sl-color-white: #ffffff;
 	--sl-color-gray-1: #f4f4f5;
 	--sl-color-gray-2: #d4d4d8;
@@ -56,11 +66,13 @@
 	--glass-border: rgba(255, 255, 255, 0.08);
 
 	/* Code Blocks Dark */
-	--code-bg: #18181b; /* Zinc 900 */
-	--code-border: #27272a; /* Zinc 800 */
+	--code-bg: #18181b;
+	--code-border: #27272a;
 }
 
-/* Base styles / Typography */
+/* ---------------------------------------------------------
+   Base Styles
+--------------------------------------------------------- */
 body {
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
@@ -68,7 +80,7 @@ body {
 	background-color: var(--sl-color-black);
 }
 
-/* Add a subtle elegant background gradient to the main viewport */
+/* Warm spotlight from above — replaces competing radial blobs */
 body::before {
 	position: fixed;
 	top: 0;
@@ -79,15 +91,13 @@ body::before {
 	pointer-events: none;
 	content: "";
 	background-image:
-		radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.04) 0%, transparent 40%),
-		radial-gradient(circle at 85% 30%, rgba(2, 132, 199, 0.04) 0%, transparent 40%);
+		radial-gradient(ellipse 80% 50% at 50% -10%, rgba(245, 158, 11, 0.06) 0%, transparent 60%),
+		linear-gradient(to bottom, var(--sl-color-black) 0%, transparent 100%);
 }
 
 /* ---------------------------------------------------------
-   Layout Component Overrides (Header, Sidebar, Main)
+   Header
 --------------------------------------------------------- */
-
-/* Header */
 header.header {
 	padding-block: 0.5rem;
 	background-color: var(--glass-bg) !important;
@@ -96,7 +106,9 @@ header.header {
 	backdrop-filter: blur(12px) saturate(180%) !important;
 }
 
-/* Main Content Area: Increase Whitespace for Scannability */
+/* ---------------------------------------------------------
+   Content Area
+--------------------------------------------------------- */
 .sl-markdown-content {
 	font-size: var(--sl-text-body);
 	line-height: var(--sl-line-height);
@@ -116,7 +128,9 @@ header.header {
 	margin-top: 2em !important;
 }
 
-/* Headings */
+/* ---------------------------------------------------------
+   Headings — Bricolage Grotesque
+--------------------------------------------------------- */
 h1,
 h2,
 h3,
@@ -125,10 +139,11 @@ h5,
 h6 {
 	font-weight: 700;
 	color: var(--sl-color-white) !important;
-	letter-spacing: -0.025em;
+	letter-spacing: -0.03em;
 }
 
 h1 {
+	font-family: "Bricolage Grotesque", var(--sl-font-system);
 	font-size: 2.5rem !important;
 	font-weight: 800;
 	-webkit-text-fill-color: transparent;
@@ -138,7 +153,9 @@ h1 {
 	background-clip: text;
 }
 
-/* Sidebar UX */
+/* ---------------------------------------------------------
+   Sidebar
+--------------------------------------------------------- */
 .sidebar-pane {
 	background-color: transparent !important;
 	border-inline-end: 1px solid var(--glass-border) !important;
@@ -153,23 +170,29 @@ nav.sidebar a {
 	margin-block: 0.15rem;
 	border-left: 2px solid transparent;
 	border-radius: 6px;
-	transition: all 0.2s ease;
+	transition:
+		transform 150ms var(--spring),
+		background-color 150ms ease,
+		border-color 150ms ease;
 }
 
 nav.sidebar a:hover {
 	color: var(--sl-color-white);
 	background-color: var(--sl-color-gray-6);
 	border-left-color: var(--sl-color-gray-4);
+	transform: translateX(4px);
 }
 
 nav.sidebar a[aria-current="page"] {
 	font-weight: 600;
 	color: var(--sl-color-accent) !important;
-	background-color: rgba(56, 189, 248, 0.08) !important;
+	background-color: rgba(245, 158, 11, 0.08) !important;
 	border-left-color: var(--sl-color-accent) !important;
 }
 
-/* Table of Contents (Right Sidebar) */
+/* ---------------------------------------------------------
+   Table of Contents
+--------------------------------------------------------- */
 starlight-toc {
 	font-size: 0.85rem;
 }
@@ -177,20 +200,37 @@ starlight-toc {
 starlight-toc a {
 	padding-block: 0.25rem !important;
 	line-height: 1.6;
-	transition: all 0.2s ease;
+	transition:
+		transform 150ms var(--spring),
+		color 150ms ease;
 }
 
 starlight-toc a:hover {
 	color: var(--sl-color-accent) !important;
-	transform: translateX(2px);
+	transform: translateX(4px);
+}
+
+/* ---------------------------------------------------------
+   Cards — Hover lift with amber glow
+--------------------------------------------------------- */
+.card {
+	border-radius: 16px;
+	transition:
+		transform 150ms var(--spring),
+		box-shadow 150ms ease;
+}
+
+.card:hover {
+	box-shadow: 0 8px 24px rgba(245, 158, 11, 0.12);
+	transform: translateY(-2px);
 }
 
 /* ---------------------------------------------------------
    Code Blocks & Inline Code
 --------------------------------------------------------- */
-/* Inline code */
 :not(pre) > code {
 	padding: 0.2em 0.4em;
+	font-family: var(--sl-font-mono);
 	font-size: 0.85em;
 	font-weight: 500;
 	color: var(--sl-color-white) !important;
@@ -199,10 +239,9 @@ starlight-toc a:hover {
 	border-radius: 6px;
 }
 
-/* Expressive code overrides */
 .expressive-code {
 	margin-top: 1.5rem !important;
-	border-radius: 8px;
+	border-radius: 12px;
 	box-shadow:
 		0 4px 6px -1px rgba(0, 0, 0, 0.05),
 		0 2px 4px -2px rgba(0, 0, 0, 0.05);
@@ -216,7 +255,7 @@ starlight-toc a:hover {
 	overflow: hidden;
 	background: var(--sl-color-black);
 	border: 1px solid var(--glass-border);
-	border-radius: 12px;
+	border-radius: 16px;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
@@ -239,39 +278,55 @@ starlight-toc a:hover {
 	margin-right: 0.6rem;
 }
 
-/* Element: Pass */
+/* Pass — Emerald */
 .RuleExample--pass {
-	border-left: 4px solid #10b981; /* Emerald 500 */
+	border-left: 4px solid #10b981;
 }
 .RuleExample--pass .RuleExample-header {
-	color: #059669; /* Emerald 600 */
-	background-color: rgba(16, 185, 129, 0.06); /* Emerald 600 */
+	color: #059669;
+	background-color: rgba(16, 185, 129, 0.06);
 }
 :root[data-theme="dark"] .RuleExample--pass .RuleExample-header {
-	color: #34d399; /* Emerald 400 */
-	background-color: rgba(16, 185, 129, 0.08); /* Emerald 400 */
+	color: #34d399;
+	background-color: rgba(16, 185, 129, 0.08);
 }
 .RuleExample--pass .RuleExample-status {
 	color: #10b981;
 }
 
-/* Element: Fail */
+/* Fail — Rose */
 .RuleExample--fail {
-	border-left: 4px solid #f43f5e; /* Rose 500 */
+	border-left: 4px solid #f43f5e;
 }
 .RuleExample--fail .RuleExample-header {
-	color: #e11d48; /* Rose 600 */
-	background-color: rgba(244, 63, 94, 0.06); /* Rose 600 */
+	color: #e11d48;
+	background-color: rgba(244, 63, 94, 0.06);
 }
 :root[data-theme="dark"] .RuleExample--fail .RuleExample-header {
-	color: #fb7185; /* Rose 400 */
-	background-color: rgba(244, 63, 94, 0.08); /* Rose 400 */
+	color: #fb7185;
+	background-color: rgba(244, 63, 94, 0.08);
 }
 .RuleExample--fail .RuleExample-status {
 	color: #f43f5e;
 }
 
-/* Reset inner expressive-code margins and borders to nest it cleanly */
+/* Icon mount animation */
+.RuleExample-icon {
+	animation: ruleIconIn 250ms var(--spring) forwards;
+}
+
+@keyframes ruleIconIn {
+	from {
+		opacity: 0;
+		transform: scale(0.7);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+/* Nesting cleanup */
 .RuleExample-content .expressive-code {
 	margin: 0 !important;
 	border-radius: 0 !important;

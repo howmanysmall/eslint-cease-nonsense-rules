@@ -1,8 +1,10 @@
 ---
 title: no-useless-use-effect
-badge:
-    text: Experimental
-    variant: warning
+badges:
+    - text: "error"
+      variant: danger
+    - text: "Suggestion"
+      variant: note
 description:
     Flags useEffect that only moves data around inside React (derived state, resets, parent notifications, event flags,
     duplicates, and chains).

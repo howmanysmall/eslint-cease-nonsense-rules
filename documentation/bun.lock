@@ -22,6 +22,9 @@
         "starlight-scroll-to-top": "^0.4.0",
       },
       "devDependencies": {
+        "@fontsource/bricolage-grotesque": "^5.2.10",
+        "@fontsource/jetbrains-mono": "^5.2.8",
+        "@fontsource/karla": "^5.2.8",
         "typescript": "^5.7.3",
       },
     },
@@ -161,6 +164,12 @@
     "@expressive-code/plugin-shiki": ["@expressive-code/plugin-shiki@0.41.7", "", { "dependencies": { "@expressive-code/core": "^0.41.7", "shiki": "^3.2.2" } }, "sha512-DL605bLrUOgqTdZ0Ot5MlTaWzppRkzzqzeGEu7ODnHF39IkEBbFdsC7pbl3LbUQ1DFtnfx6rD54k/cdofbW6KQ=="],
 
     "@expressive-code/plugin-text-markers": ["@expressive-code/plugin-text-markers@0.41.7", "", { "dependencies": { "@expressive-code/core": "^0.41.7" } }, "sha512-Ewpwuc5t6eFdZmWlFyeuy3e1PTQC0jFvw2Q+2bpcWXbOZhPLsT7+h8lsSIJxb5mS7wZko7cKyQ2RLYDyK6Fpmw=="],
+
+    "@fontsource/bricolage-grotesque": ["@fontsource/bricolage-grotesque@5.2.10", "", {}, "sha512-V2xS+1P7C8IrSypXLUx/bLtX/LsTlYtV2k2CsU+S/0t8qepZ2hvKSlyJIx7Ub/iY8Bbnj+IjAuUF9nvFz+BbIg=="],
+
+    "@fontsource/jetbrains-mono": ["@fontsource/jetbrains-mono@5.2.8", "", {}, "sha512-6w8/SG4kqvIMu7xd7wt6x3idn1Qux3p9N62s6G3rfldOUYHpWcc2FKrqf+Vo44jRvqWj2oAtTHrZXEP23oSKwQ=="],
+
+    "@fontsource/karla": ["@fontsource/karla@5.2.8", "", {}, "sha512-uZMA4ugNcHFYMpjr/9FIHQC3ldtILlqPdK3f4P9XInDgRL0NxdIyRwH9MuGZUT7sdup0kshk9zsGXitq1xpFAw=="],
 
     "@img/colour": ["@img/colour@1.1.0", "", {}, "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ=="],
 

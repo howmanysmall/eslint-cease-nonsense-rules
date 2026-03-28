@@ -3,14 +3,14 @@ title: Introduction
 description: Learn about Cease Nonsense, a comprehensive ESLint plugin for TypeScript, React, and roblox-ts development.
 ---
 
-import { Aside, Code, LinkCard, CardGrid, Card, Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+import { Aside, LinkCard, CardGrid, Card } from "@astrojs/starlight/components";
 
 Welcome to **Cease Nonsense**, a comprehensive ESLint plugin designed to catch common mistakes, enforce best practices,
 and improve code quality in TypeScript, React, and roblox-ts projects.
 
 ## What is Cease Nonsense?
 
-Cease Nonsense provides over 40 carefully crafted ESLint rules that go beyond standard linting. These rules are designed
+Cease Nonsense provides **55 carefully crafted ESLint rules** that go beyond standard linting. These rules are designed
 to catch subtle bugs, enforce architectural patterns, and improve developer experience.
 
 <CardGrid stagger>
@@ -34,61 +34,44 @@ Cease Nonsense is ideal for:
 
 - **TypeScript developers** who want stricter linting than stock ESLint provides
 - **React developers** working with hooks and functional components
-- **roblox-ts developers** building games and experiences on Roblox
+- **roblox-ts developers** building games and experiences on Roblox — especially those working on Anime Rush or similar
+  large-scale projects where component complexity and performance matter
 - **Teams** who want to enforce consistent coding standards across projects
 
 ## Quick Start
 
-<Steps>
-
-1. **Install the package**
-
-    <Code code="bun add -D eslint-plugin-cease-nonsense" lang="bash" title="Terminal" />
-
-2. **Add to your ESLint config**
-
-    <Code
-    	code={[
-    		"import ceaseNonsense from 'eslint-plugin-cease-nonsense';",
-    		"",
-    		"export default [",
-    		"\tceaseNonsense.configs.recommended,",
-    		"\t// ... your other configs",
-    		"];",
-    	].join("\n")}
-    	lang="typescript"
-    	title="eslint.config.ts"
-    />
-
-3. **Run ESLint**
-
-    <Code code="bun run eslint ." lang="bash" title="Terminal" />
-
-</Steps>
+See the [Quick Start guide](/eslint-cease-nonsense-rules/quick-start/) for installation and configuration.
 
 ## Rule Categories
 
-The rules are organized into logical categories:
+The 55 rules are organized into five categories:
+
+| Category              | Count    |
+| --------------------- | -------- |
+| React Rules           | 20 rules |
+| Roblox & Luau Rules   | 16 rules |
+| Naming & Conventions  | 7 rules  |
+| General Logic & Style | 12 rules |
 
 <CardGrid>
 	<LinkCard
 		title="React Rules"
-		description="Rules for React hooks, components, and patterns"
+		description="20 rules for hooks, components, and patterns"
 		href="/eslint-cease-nonsense-rules/rules/ban-react-fc/"
 	/>
 	<LinkCard
 		title="Roblox & Luau Rules"
-		description="Rules specific to roblox-ts development"
+		description="16 rules specific to roblox-ts development"
 		href="/eslint-cease-nonsense-rules/rules/ban-instances/"
 	/>
 	<LinkCard
 		title="Naming Conventions"
-		description="Enforce consistent naming across your codebase"
+		description="7 rules for consistent naming across your codebase"
 		href="/eslint-cease-nonsense-rules/rules/naming-convention/"
 	/>
 	<LinkCard
 		title="General Logic & Style"
-		description="Best practices for clean, maintainable code"
+		description="12 rules for clean, maintainable code"
 		href="/eslint-cease-nonsense-rules/rules/prefer-early-return/"
 	/>
 </CardGrid>

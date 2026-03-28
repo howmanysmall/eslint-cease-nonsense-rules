@@ -45,6 +45,9 @@ export default defineConfig({
 					items: [
 						{ label: "Home", slug: "" },
 						{ label: "Introduction", slug: "introduction" },
+						{ label: "Quick Start", slug: "quick-start" },
+						{ label: "Configuration", slug: "configuration" },
+						{ label: "Changelog", slug: "changelog" },
 					],
 					label: "Getting Started",
 				},
