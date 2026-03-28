@@ -2,7 +2,7 @@ diff --git a/types/content.d.ts b/types/content.d.ts
 index 25d3e2b07f330b3dedf83f32fcd332de7710e89d..b4b634dd2f95284bd6a5ba731ce05082dbb1cc67 100644
 --- a/types/content.d.ts
 +++ b/types/content.d.ts
-@@ -19,31 +19,70 @@ declare module 'astro:content' {
+@@ -19,31 +19,74 @@ declare module 'astro:content' {
  	export const z = zod.z;
  
  	/** Run `astro dev` or `astro sync` to generate high fidelity types */
@@ -10,10 +10,14 @@ index 25d3e2b07f330b3dedf83f32fcd332de7710e89d..b4b634dd2f95284bd6a5ba731ce05082
 +	export type CollectionKey = string;
  	/** Run `astro dev` or `astro sync` to generate high fidelity types */
 -	export const getDataEntryById: (...args: any[]) => any;
++	export interface CollectionData extends Record<string, unknown> {
++		title?: string;
++	}
++	/** Run `astro dev` or `astro sync` to generate high fidelity types */
 +	export interface CollectionEntry<C extends CollectionKey = CollectionKey> {
 +		id: string;
 +		collection: C;
-+		data: Record<string, unknown>;
++		data: CollectionData;
 +		body?: string;
 +		rendered?: unknown;
 +		filePath?: string;

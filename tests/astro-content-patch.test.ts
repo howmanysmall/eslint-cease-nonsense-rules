@@ -21,6 +21,7 @@ describe("astro content patch", () => {
 		const patchText = readPatchFile();
 
 		expect(patchText).toContain("diff --git a/types/content.d.ts b/types/content.d.ts");
+		expect(patchText).toContain("title?: string;");
 
 		const addedLines = getAddedPatchLines(patchText);
 		const typedAnyLines = addedLines.filter((line) => TYPED_ANY_PATTERN.test(line));
