@@ -4,10 +4,11 @@ import starlight from "@astrojs/starlight";
 import viewTransitions from "astro-vtbot";
 import { defineConfig } from "astro/config";
 import starlightCodeblockFullscreen from "starlight-codeblock-fullscreen";
-import starlightContextualMenu from "starlight-contextual-menu";
 import starlightHeadingBadges from "starlight-heading-badges";
 import starlightLinksValidator from "starlight-links-validator";
 import starlightScrollToTop from "starlight-scroll-to-top";
+
+import contextualMenuIntegration from "./src/integrations/contextual-menu";
 
 // https://astro.build/config
 export default defineConfig({
@@ -33,7 +34,6 @@ export default defineConfig({
 					exitOnBrowserBack: true,
 					fullscreenButtonTooltip: "View in fullscreen",
 				}),
-				starlightContextualMenu(),
 				starlightLinksValidator(),
 				starlightScrollToTop({
 					smoothScroll: true,
@@ -142,6 +142,7 @@ export default defineConfig({
 		mdx(),
 		react(),
 		viewTransitions(),
+		contextualMenuIntegration(),
 	],
 	site: "https://howmanysmall.github.io",
 });
