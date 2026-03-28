@@ -74,6 +74,18 @@ const configuration = defineConfig({
 		contextualMenuIntegration(),
 	],
 	site: "https://howmanysmall.github.io",
+	vite: {
+		build: {
+			rollupOptions: {
+				output: {
+					// Consistent hashing for long-term caching
+					assetFileNames: "_astro/[name].[hash][extname]",
+					chunkFileNames: "_astro/[name].[hash].js",
+					entryFileNames: "_astro/[name].[hash].js",
+				},
+			},
+		},
+	},
 });
 
 export default configuration;

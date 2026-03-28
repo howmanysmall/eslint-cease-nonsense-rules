@@ -1,11 +1,11 @@
 ---
 title: Cease Nonsense
-description: A powerful ESLint plugin that catches common mistakes before they reach production.
+description: An ESLint plugin that catches common mistakes before they reach production.
 template: splash
 hero:
     tagline:
-        A premium ESLint plugin for TypeScript, React, and roblox-ts designed to catch bugs, enforce best practices, and
-        optimize performance before you ship.
+        An ESLint plugin for TypeScript, React, and roblox-ts that catches bugs, enforces patterns, and flags
+        performance issues before you ship.
     image:
         file: ../../assets/new-logo.svg
         alt: Cease Nonsense Logo
@@ -27,21 +27,20 @@ import { ruleCategories, totalCategories, totalRules } from "../../data/rule-sta
 
 <CardGrid>
 	<Card title="Type Safe" icon="seti:typescript">
-		Deep integration with TypeScript for precise type-aware linting with zero false positives.
+		Leverages TypeScript's type system for precise, context-aware linting without false positives.
 	</Card>
 	<Card title="React Optimized" icon="seti:react">
-		Rules specifically designed for React and roblox-ts environments to catch hook violations and component
-		anti-patterns.
+		Catches hook violations, component anti-patterns, and memoization mistakes in React and roblox-ts.
 	</Card>
 	<Card title="Performance First" icon="rocket">
-		Catch performance regressions and anti-patterns early before they ship to production.
+		Flags performance regressions and costly patterns early, not after they hit production.
 	</Card>
 	<Card title="Batteries Included" icon="puzzle">
-		{totalRules} rules covering everything from naming conventions to architectural patterns.
+		Ships {totalRules} rules covering naming conventions, architectural patterns, and more.
 	</Card>
 </CardGrid>
 
-## {totalRules} Rules Across {totalCategories} Categories
+## {totalRules} Rules, {totalCategories} Categories
 
 <CardGrid>
 	<LinkCard
@@ -67,6 +66,6 @@ import { ruleCategories, totalCategories, totalRules } from "../../data/rule-sta
 </CardGrid>
 
 <Aside type="tip" title="Ready to install?">
-	Follow the [Quick Start guide](/eslint-cease-nonsense-rules/quick-start/) to get up and running in under five
+	Follow the [Quick Start guide](/eslint-cease-nonsense-rules/quick-start/) to get up and running in a couple of
 	minutes.
 </Aside>

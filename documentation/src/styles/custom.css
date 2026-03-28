@@ -4,6 +4,67 @@
 @import "@fontsource/karla/600.css";
 @import "@fontsource/jetbrains-mono/400.css";
 
+/*
+ * Font metric overrides — these reduce layout shift when web fonts load
+ * by making fallback fonts dimensionally similar to the web fonts.
+ * Note: src is intentionally omitted — these merge with the @fontsource @font-face rules.
+ * Values are calibrated for Bricolage Grotesque (headings), Karla (body), JetBrains Mono (code).
+ */
+@font-face {
+	font-family: "Bricolage Grotesque";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	size-adjust: 98%;
+	ascent-override: 95%;
+	descent-override: 22%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Bricolage Grotesque";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	size-adjust: 98%;
+	ascent-override: 95%;
+	descent-override: 22%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Karla";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	size-adjust: 100%;
+	ascent-override: 97%;
+	descent-override: 24%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Karla";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	size-adjust: 100%;
+	ascent-override: 97%;
+	descent-override: 24%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "JetBrains Mono";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	size-adjust: 103%;
+	ascent-override: 90%;
+	descent-override: 24%;
+	line-gap-override: 0%;
+}
+
 :root {
 	--sl-font-system: "Karla", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	--sl-font: var(--sl-font-system);
@@ -25,17 +86,20 @@
 	--sl-color-black: #ffffff;
 	--sl-color-bg-nav: #ffffff;
 
-	--glass-bg: rgba(255, 255, 255, 0.85);
-	--glass-border: rgba(15, 23, 42, 0.08);
+	--glass-bg: rgba(255, 255, 255, 0.92);
+	--glass-border: rgba(15, 23, 42, 0.1);
 
 	--code-bg: #f8fafc;
 	--code-border: #e2e8f0;
 
-	/* Light mode: opaque muted grays on dark cards (#0f172a) */
-	/* text-secondary: slate-500 #64748b → 5.8:1 on #0f172a ✅ */
-	/* text-tertiary:  slate-400 #94a3b8 → 4.7:1 on #0f172a ✅ */
+	/* Light mode: muted grays for body text */
 	--text-secondary: hsl(215 20% 42%);
 	--text-tertiary: hsl(215 14% 60%);
+
+	/* Light mode amber values for cards/hovers */
+	--amber-glow-bg: rgba(245, 158, 11, 0.1);
+	--amber-glow-border: rgba(180, 83, 9, 0.18);
+	--amber-glow-shadow: rgba(180, 83, 9, 0.12);
 
 	--spring: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -61,11 +125,35 @@
 	--code-bg: #18181b;
 	--code-border: #27272a;
 
-	/* Dark mode: opaque muted grays on near-black (#09090b) */
-	/* text-secondary: slate-400 #94a3b8 → 7.2:1 on #09090b ✅ */
-	/* text-tertiary:  slate-300 #cbd5e1 → 11.1:1 on #09090b ✅ */
 	--text-secondary: hsl(215 14% 60%);
 	--text-tertiary: hsl(210 14% 78%);
+
+	--amber-glow-bg: rgba(245, 158, 11, 0.08);
+	--amber-glow-border: rgba(245, 158, 11, 0.15);
+	--amber-glow-shadow: rgba(245, 158, 11, 0.15);
+}
+
+/* Selection styling */
+::selection {
+	color: #ffffff;
+	background: rgba(180, 83, 9, 0.5);
+}
+
+:root[data-theme="dark"] ::selection {
+	color: #ffffff;
+	background: rgba(245, 158, 11, 0.4);
+}
+
+/* Gradient text must unset the clip on selection */
+h1::selection {
+	-webkit-text-fill-color: #ffffff;
+	-webkit-background-clip: initial;
+	background-clip: initial;
+	background: rgba(180, 83, 9, 0.5);
+}
+
+:root[data-theme="dark"] h1::selection {
+	background: rgba(245, 158, 11, 0.4);
 }
 
 body {
@@ -133,7 +221,13 @@ h1 {
 	font-weight: 500;
 	-webkit-text-fill-color: transparent;
 	letter-spacing: -0.02em;
-	background: linear-gradient(135deg, var(--sl-color-white) 30%, var(--sl-color-gray-3) 100%);
+	background: linear-gradient(135deg, #0f172a 20%, #92400e 80%, #b45309 100%);
+	-webkit-background-clip: text;
+	background-clip: text;
+}
+
+:root[data-theme="dark"] h1 {
+	background: linear-gradient(135deg, #ffffff 30%, #a1a1aa 100%);
 	-webkit-background-clip: text;
 	background-clip: text;
 }
@@ -169,11 +263,13 @@ nav.sidebar a {
 		border-color 150ms ease;
 }
 
-nav.sidebar a:hover {
-	color: var(--sl-color-white);
-	background-color: var(--sl-color-gray-6);
-	border-left-color: var(--sl-color-gray-4);
-	transform: translateX(4px);
+@media (hover: hover) {
+	nav.sidebar a:hover {
+		color: var(--sl-color-white);
+		background-color: var(--sl-color-gray-6);
+		border-left-color: var(--sl-color-gray-4);
+		transform: translateX(4px);
+	}
 }
 
 nav.sidebar a[aria-current="page"] {
@@ -195,9 +291,11 @@ starlight-toc a {
 		color 150ms ease;
 }
 
-starlight-toc a:hover {
-	color: var(--sl-color-accent) !important;
-	transform: translateX(4px);
+@media (hover: hover) {
+	starlight-toc a:hover {
+		color: var(--sl-color-accent) !important;
+		transform: translateX(4px);
+	}
 }
 
 .card {
@@ -212,15 +310,6 @@ starlight-toc a:hover {
 		border-color 200ms ease;
 }
 
-.card:hover {
-	background: rgba(245, 158, 11, 0.03);
-	border-color: rgba(245, 158, 11, 0.12);
-	box-shadow:
-		0 12px 32px rgba(245, 158, 11, 0.15),
-		0 4px 12px rgba(0, 0, 0, 0.08);
-	transform: translateY(-4px);
-}
-
 .card .icon {
 	width: 1.25rem;
 	height: 1.25rem;
@@ -228,8 +317,19 @@ starlight-toc a:hover {
 	transition: transform 200ms var(--spring);
 }
 
-.card:hover .icon {
-	transform: scale(1.1);
+@media (hover: hover) {
+	.card:hover {
+		background: var(--amber-glow-bg);
+		border-color: var(--amber-glow-border);
+		box-shadow:
+			0 12px 32px var(--amber-glow-shadow),
+			0 4px 12px rgba(0, 0, 0, 0.08);
+		transform: translateY(-4px);
+	}
+
+	.card:hover .icon {
+		transform: scale(1.1);
+	}
 }
 
 .card h2,
@@ -329,8 +429,10 @@ starlight-toc a:hover {
 		border-color 150ms ease;
 }
 
-.RuleExample-tab:hover {
-	color: var(--text-secondary);
+@media (hover: hover) {
+	.RuleExample-tab:hover {
+		color: var(--text-secondary);
+	}
 }
 
 .RuleExample-tab--active {
@@ -400,24 +502,7 @@ starlight-toc a:hover {
 	letter-spacing: 0.05em;
 }
 
-.RuleExample-icon {
-	animation: ruleIconIn 250ms var(--spring) forwards;
-}
-
-@keyframes ruleIconIn {
-	from {
-		opacity: 0;
-		transform: scale(0.7);
-	}
-	to {
-		opacity: 1;
-		transform: scale(1);
-	}
-}
-
-.RuleExample-header {
-	display: none;
-}
+/* RuleExample-header is unused — the header slot is hidden and tabs handle the UI */
 
 .RuleExample-content .expressive-code {
 	margin: 0 !important;
@@ -439,10 +524,12 @@ starlight-link-card {
 		border-color 200ms ease;
 }
 
-starlight-link-card:hover {
-	border-color: rgba(245, 158, 11, 0.15);
-	box-shadow: 0 8px 24px rgba(245, 158, 11, 0.1);
-	transform: translateY(-2px);
+@media (hover: hover) {
+	starlight-link-card:hover {
+		border-color: var(--amber-glow-border);
+		box-shadow: 0 8px 24px var(--amber-glow-shadow);
+		transform: translateY(-2px);
+	}
 }
 
 starlight-card-grid {
@@ -470,24 +557,26 @@ starlight-aside .title {
 	gap: 0.5rem;
 	align-items: center;
 	padding: 2rem 3rem;
-	background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.02) 100%);
-	border: 1px solid rgba(245, 158, 11, 0.15);
+	background: linear-gradient(135deg, rgba(180, 83, 9, 0.08) 0%, rgba(245, 158, 11, 0.04) 100%);
+	border: 1px solid rgba(180, 83, 9, 0.15);
 	border-radius: 16px;
 	box-shadow:
-		0 4px 24px rgba(245, 158, 11, 0.1),
-		inset 0 1px 0 rgba(255, 255, 255, 0.05);
+		0 4px 24px rgba(180, 83, 9, 0.08),
+		inset 0 1px 0 rgba(255, 255, 255, 0.6);
 	transition:
 		transform 300ms var(--spring),
 		box-shadow 300ms ease,
 		border-color 300ms ease;
 }
 
-.stat-badge:hover {
-	border-color: rgba(245, 158, 11, 0.25);
-	box-shadow:
-		0 12px 40px rgba(245, 158, 11, 0.15),
-		inset 0 1px 0 rgba(255, 255, 255, 0.08);
-	transform: translateY(-4px) scale(1.02);
+@media (hover: hover) {
+	.stat-badge:hover {
+		border-color: var(--amber-glow-border);
+		box-shadow:
+			0 12px 40px var(--amber-glow-shadow),
+			inset 0 1px 0 rgba(255, 255, 255, 0.08);
+		transform: translateY(-4px) scale(1.02);
+	}
 }
 
 .stat-number {
@@ -553,16 +642,23 @@ starlight-aside .title {
 	transition: opacity 250ms ease;
 }
 
-.category-card:hover {
-	border-color: rgba(245, 158, 11, 0.2);
-	box-shadow:
-		0 16px 40px rgba(245, 158, 11, 0.12),
-		0 4px 16px rgba(0, 0, 0, 0.06);
-	transform: translateY(-6px);
-}
+@media (hover: hover) {
+	.category-card:hover {
+		border-color: var(--amber-glow-border);
+		box-shadow:
+			0 16px 40px var(--amber-glow-shadow),
+			0 4px 16px rgba(0, 0, 0, 0.06);
+		transform: translateY(-6px);
+	}
 
-.category-card:hover::before {
-	opacity: 1;
+	.category-card:hover::before {
+		opacity: 1;
+	}
+
+	.category-card:hover .category-count {
+		background: var(--amber-glow-bg);
+		transform: scale(1.05);
+	}
 }
 
 .category-count {
@@ -583,11 +679,6 @@ starlight-aside .title {
 		background-color 250ms ease;
 }
 
-.category-card:hover .category-count {
-	background: rgba(245, 158, 11, 0.1);
-	transform: scale(1.05);
-}
-
 .category-label {
 	margin-top: 0.75rem;
 	font-size: 0.95rem;
@@ -606,10 +697,6 @@ starlight-aside .title {
 :root[data-theme="dark"] .category-count {
 	color: #fcd34d;
 	background: rgba(245, 158, 11, 0.08);
-}
-
-:root[data-theme="dark"] .category-card:hover .category-count {
-	background: rgba(245, 158, 11, 0.12);
 }
 
 .category-grid {
@@ -641,4 +728,40 @@ starlight-aside .title {
 
 :root[data-theme="dark"] .sl-markdown-content th {
 	color: #fcd34d;
+}
+
+.content-panel {
+	min-height: 50vh;
+	contain: layout style;
+}
+
+/* Focus ring — box-shadow instead of outline for cleaner look */
+:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px var(--sl-color-accent);
+}
+
+/* Ensure links/buttons in Starlight components get proper focus */
+nav.sidebar a:focus-visible,
+starlight-toc a:focus-visible,
+starlight-link-card:focus-visible,
+.card:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px var(--sl-color-accent);
+	border-radius: 6px;
+}
+
+/* Mobile: more breathing room for category grid and rule examples */
+@media (max-width: 50rem) {
+	.category-grid {
+		gap: 1.25rem;
+	}
+
+	.RuleExample-content {
+		padding: 1rem;
+	}
+
+	h1 {
+		font-size: 2rem !important;
+	}
 }
