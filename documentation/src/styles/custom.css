@@ -1,10 +1,6 @@
-/* src/styles/custom.css */
 
-/* ---------------------------------------------------------
-   Fonts — Self-hosted via @fontsource
---------------------------------------------------------- */
 @import "@fontsource/bricolage-grotesque/400.css";
-@import "@fontsource/bricolage-grotesque/700.css";
+@import "@fontsource/bricolage-grotesque/500.css";
 @import "@fontsource/karla/400.css";
 @import "@fontsource/karla/600.css";
 @import "@fontsource/jetbrains-mono/400.css";
@@ -30,27 +26,23 @@
 	--sl-color-black: #ffffff;
 	--sl-color-bg-nav: #ffffff;
 
-	/* Glassmorphism Light */
 	--glass-bg: rgba(255, 255, 255, 0.85);
 	--glass-border: rgba(15, 23, 42, 0.08);
 
-	/* Code Blocks Light */
 	--code-bg: #f8fafc;
 	--code-border: #e2e8f0;
+
+	--text-secondary: rgba(51, 65, 85, 0.7);
+	--text-tertiary: rgba(100, 116, 139, 0.65);
 
 	--spring: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ---------------------------------------------------------
-   Design Tokens — Dark Mode
---------------------------------------------------------- */
 :root[data-theme="dark"] {
-	/* Amber Accent — Dark */
 	--sl-color-accent-low: #451a03;
 	--sl-color-accent: #f59e0b;
 	--sl-color-accent-high: #fcd34d;
 
-	/* Neutral Palette — Dark */
 	--sl-color-white: #ffffff;
 	--sl-color-gray-1: #f4f4f5;
 	--sl-color-gray-2: #d4d4d8;
@@ -61,26 +53,23 @@
 	--sl-color-black: #09090b;
 	--sl-color-bg-nav: #09090b;
 
-	/* Glassmorphism Dark */
 	--glass-bg: rgba(9, 9, 11, 0.75);
 	--glass-border: rgba(255, 255, 255, 0.08);
 
-	/* Code Blocks Dark */
 	--code-bg: #18181b;
 	--code-border: #27272a;
+
+	--text-secondary: rgba(212, 212, 216, 0.65);
+	--text-tertiary: rgba(161, 161, 170, 0.55);
 }
 
-/* ---------------------------------------------------------
-   Base Styles
---------------------------------------------------------- */
 body {
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-	color: var(--sl-color-gray-2);
+	color: var(--text-secondary);
 	background-color: var(--sl-color-black);
 }
 
-/* Warm spotlight from above — replaces competing radial blobs */
 body::before {
 	position: fixed;
 	top: 0;
@@ -95,9 +84,6 @@ body::before {
 		linear-gradient(to bottom, var(--sl-color-black) 0%, transparent 100%);
 }
 
-/* ---------------------------------------------------------
-   Header
---------------------------------------------------------- */
 header.header {
 	padding-block: 0.5rem;
 	background-color: var(--glass-bg) !important;
@@ -106,9 +92,6 @@ header.header {
 	backdrop-filter: blur(12px) saturate(180%) !important;
 }
 
-/* ---------------------------------------------------------
-   Content Area
---------------------------------------------------------- */
 .sl-markdown-content {
 	font-size: var(--sl-text-body);
 	line-height: var(--sl-line-height);
@@ -128,34 +111,39 @@ header.header {
 	margin-top: 2em !important;
 }
 
-/* ---------------------------------------------------------
-   Headings — Bricolage Grotesque
---------------------------------------------------------- */
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-	font-weight: 700;
+	font-weight: 500;
 	color: var(--sl-color-white) !important;
-	letter-spacing: -0.03em;
+	letter-spacing: -0.01em;
 }
 
 h1 {
 	font-family: "Bricolage Grotesque", var(--sl-font-system);
 	font-size: 2.5rem !important;
-	font-weight: 800;
+	font-weight: 500;
 	-webkit-text-fill-color: transparent;
-	letter-spacing: -0.04em;
+	letter-spacing: -0.02em;
 	background: linear-gradient(135deg, var(--sl-color-white) 30%, var(--sl-color-gray-3) 100%);
 	-webkit-background-clip: text;
 	background-clip: text;
 }
 
-/* ---------------------------------------------------------
-   Sidebar
---------------------------------------------------------- */
+h2 {
+	font-family: "Bricolage Grotesque", var(--sl-font-system);
+	font-size: 1.75rem !important;
+	letter-spacing: -0.015em;
+}
+
+h3 {
+	font-family: "Bricolage Grotesque", var(--sl-font-system);
+	font-size: 1.25rem !important;
+}
+
 .sidebar-pane {
 	background-color: transparent !important;
 	border-inline-end: 1px solid var(--glass-border) !important;
@@ -190,9 +178,6 @@ nav.sidebar a[aria-current="page"] {
 	border-left-color: var(--sl-color-accent) !important;
 }
 
-/* ---------------------------------------------------------
-   Table of Contents
---------------------------------------------------------- */
 starlight-toc {
 	font-size: 0.85rem;
 }
@@ -210,24 +195,78 @@ starlight-toc a:hover {
 	transform: translateX(4px);
 }
 
-/* ---------------------------------------------------------
-   Cards — Hover lift with amber glow
---------------------------------------------------------- */
 .card {
-	border-radius: 16px;
+	padding: 1.25rem 1.5rem;
+	background: var(--sl-color-black);
+	border: 1px solid var(--glass-border);
+	border-radius: 12px;
 	transition:
-		transform 150ms var(--spring),
-		box-shadow 150ms ease;
+		transform 200ms var(--spring),
+		box-shadow 200ms ease,
+		background-color 200ms ease,
+		border-color 200ms ease;
 }
 
 .card:hover {
-	box-shadow: 0 8px 24px rgba(245, 158, 11, 0.12);
-	transform: translateY(-2px);
+	background: rgba(245, 158, 11, 0.03);
+	border-color: rgba(245, 158, 11, 0.12);
+	box-shadow:
+		0 12px 32px rgba(245, 158, 11, 0.15),
+		0 4px 12px rgba(0, 0, 0, 0.08);
+	transform: translateY(-4px);
 }
 
-/* ---------------------------------------------------------
-   Code Blocks & Inline Code
---------------------------------------------------------- */
+.card .icon {
+	width: 1.25rem;
+	height: 1.25rem;
+	color: var(--sl-color-accent);
+	transition: transform 200ms var(--spring);
+}
+
+.card:hover .icon {
+	transform: scale(1.1);
+}
+
+.card h2,
+.card h3 {
+	margin-top: 0.875rem;
+	font-size: 1rem !important;
+	font-weight: 600;
+	letter-spacing: -0.01em;
+}
+
+.card p {
+	margin-top: 0.5rem;
+	font-size: 0.95rem;
+	line-height: 1.6;
+	color: var(--text-tertiary);
+}
+
+.badge {
+	padding: 0.2em 0.5em !important;
+	font-size: 0.75rem !important;
+	font-weight: 500 !important;
+	letter-spacing: 0.01em !important;
+	border-radius: 6px !important;
+}
+
+.badge[variant="caution"],
+.badge[variant="danger"],
+.badge[variant="tip"],
+.badge[variant="note"] {
+	color: var(--sl-color-accent) !important;
+	background: rgba(245, 158, 11, 0.08) !important;
+	border: 1px solid rgba(245, 158, 11, 0.15) !important;
+}
+
+:root[data-theme="dark"] .badge[variant="caution"],
+:root[data-theme="dark"] .badge[variant="danger"],
+:root[data-theme="dark"] .badge[variant="tip"],
+:root[data-theme="dark"] .badge[variant="note"] {
+	background: rgba(245, 158, 11, 0.1) !important;
+	border-color: rgba(245, 158, 11, 0.2) !important;
+}
+
 :not(pre) > code {
 	padding: 0.2em 0.4em;
 	font-family: var(--sl-font-mono);
@@ -247,15 +286,12 @@ starlight-toc a:hover {
 		0 2px 4px -2px rgba(0, 0, 0, 0.05);
 }
 
-/* ---------------------------------------------------------
-   RuleExample Component
---------------------------------------------------------- */
 .RuleExample {
-	margin: 2.5rem 0;
+	margin: 2rem 0;
 	overflow: hidden;
 	background: var(--sl-color-black);
 	border: 1px solid var(--glass-border);
-	border-radius: 16px;
+	border-radius: 12px;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
@@ -263,54 +299,102 @@ starlight-toc a:hover {
 	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
-.RuleExample-header {
+.RuleExample-tabs {
 	display: flex;
-	align-items: center;
-	padding: 0.875rem 1.25rem;
-	font-size: 0.95rem;
-	font-weight: 600;
+	gap: 0;
+	padding: 0 1.25rem;
 	border-bottom: 1px solid var(--glass-border);
-	backdrop-filter: blur(8px);
+}
+
+.RuleExample-tab {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	padding: 0.75rem 1rem;
+	margin-bottom: -1px;
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: var(--text-tertiary);
+	cursor: pointer;
+	background: transparent;
+	border: none;
+	border-bottom: 2px solid transparent;
+	transition:
+		color 150ms ease,
+		border-color 150ms ease;
+}
+
+.RuleExample-tab:hover {
+	color: var(--text-secondary);
+}
+
+.RuleExample-tab--active {
+	color: var(--sl-color-white);
+}
+
+.RuleExample-tab--pass.RuleExample-tab--active {
+	border-bottom-color: #10b981;
+}
+
+.RuleExample-tab--fail.RuleExample-tab--active {
+	border-bottom-color: #f43f5e;
+}
+
+.RuleExample--pass {
+	background: linear-gradient(to bottom, rgba(16, 185, 129, 0.04) 0%, var(--sl-color-black) 100%);
+	border-top: 2px solid #10b981;
+}
+
+.RuleExample--pass .RuleExample-tab--active {
+	color: #34d399;
+}
+
+.RuleExample--fail {
+	background: linear-gradient(to bottom, rgba(244, 63, 94, 0.04) 0%, var(--sl-color-black) 100%);
+	border-top: 2px solid #f43f5e;
+}
+
+.RuleExample--fail .RuleExample-tab--active {
+	color: #fb7185;
 }
 
 .RuleExample-status {
 	display: inline-flex;
-	margin-right: 0.6rem;
 }
 
-/* Pass — Emerald */
-.RuleExample--pass {
-	border-left: 4px solid #10b981;
+.RuleExample-icon {
+	width: 1rem;
+	height: 1rem;
 }
-.RuleExample--pass .RuleExample-header {
-	color: #059669;
-	background-color: rgba(16, 185, 129, 0.06);
-}
-:root[data-theme="dark"] .RuleExample--pass .RuleExample-header {
-	color: #34d399;
-	background-color: rgba(16, 185, 129, 0.08);
-}
-.RuleExample--pass .RuleExample-status {
+
+.RuleExample--pass .RuleExample-icon {
 	color: #10b981;
 }
 
-/* Fail — Rose */
-.RuleExample--fail {
-	border-left: 4px solid #f43f5e;
+:root[data-theme="dark"] .RuleExample--pass .RuleExample-icon {
+	color: #34d399;
 }
-.RuleExample--fail .RuleExample-header {
-	color: #e11d48;
-	background-color: rgba(244, 63, 94, 0.06);
-}
-:root[data-theme="dark"] .RuleExample--fail .RuleExample-header {
-	color: #fb7185;
-	background-color: rgba(244, 63, 94, 0.08);
-}
-.RuleExample--fail .RuleExample-status {
+
+.RuleExample--fail .RuleExample-icon {
 	color: #f43f5e;
 }
 
-/* Icon mount animation */
+:root[data-theme="dark"] .RuleExample--fail .RuleExample-icon {
+	color: #fb7185;
+}
+
+.RuleExample-content {
+	padding: 1.25rem 1.5rem;
+}
+
+.RuleExample-title {
+	font-size: 0.8rem;
+	font-weight: 500;
+	color: var(--text-tertiary);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
 .RuleExample-icon {
 	animation: ruleIconIn 250ms var(--spring) forwards;
 }
@@ -326,7 +410,10 @@ starlight-toc a:hover {
 	}
 }
 
-/* Nesting cleanup */
+.RuleExample-header {
+	display: none;
+}
+
 .RuleExample-content .expressive-code {
 	margin: 0 !important;
 	border-radius: 0 !important;
@@ -336,4 +423,32 @@ starlight-toc a:hover {
 .RuleExample-content .expressive-code .frame {
 	border: none !important;
 	border-radius: 0 !important;
+}
+
+starlight-link-card {
+	border: 1px solid var(--glass-border);
+	border-radius: 12px;
+	transition:
+		transform 200ms var(--spring),
+		box-shadow 200ms ease,
+		border-color 200ms ease;
+}
+
+starlight-link-card:hover {
+	border-color: rgba(245, 158, 11, 0.15);
+	box-shadow: 0 8px 24px rgba(245, 158, 11, 0.1);
+	transform: translateY(-2px);
+}
+
+starlight-card-grid {
+	gap: 1rem;
+}
+
+starlight-aside {
+	border: 1px solid var(--glass-border);
+	border-radius: 10px;
+}
+
+starlight-aside .title {
+	font-weight: 600;
 }

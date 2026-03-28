@@ -82,7 +82,7 @@ callers can use the instance before it's initialized. That's a race condition wa
 
 ## Why avoid async constructors?
 
-<CardGrid stagger>
+<CardGrid>
 	<Card title="Race Conditions" icon="bolt">
 		Methods may be called on the instance before the `then()` callback has finished setup.
 	</Card>
