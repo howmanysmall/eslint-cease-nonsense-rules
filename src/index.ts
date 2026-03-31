@@ -28,6 +28,7 @@ import noUnderscoreReactProps from "./rules/no-underscore-react-props";
 import noUnusedImports from "./rules/no-unused-imports";
 import noUnusedUseMemo from "./rules/no-unused-use-memo";
 import noUselessUseEffect from "./rules/no-useless-use-effect";
+import noUselessUseMemo from "./rules/no-useless-use-memo";
 import noUselessUseSpring from "./rules/no-useless-use-spring";
 import noWarn from "./rules/no-warn";
 import preferClassProperties from "./rules/prefer-class-properties";
@@ -82,6 +83,7 @@ export type { NoShorthandOptions } from "./rules/no-shorthand-names";
 export type { NoUnusedImportsOptions } from "./rules/no-unused-imports";
 export type { NoUnusedUseMemoOptions } from "./rules/no-unused-use-memo";
 export type { NoUselessUseEffectOptions } from "./rules/no-useless-use-effect";
+export type { NoUselessUseMemoOptions } from "./rules/no-useless-use-memo";
 export type { NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
 export type { PreferEnumItemOptions } from "./rules/prefer-enum-item";
 export type { PreventAbbreviationsOptions } from "./rules/prevent-abbreviations";
@@ -112,6 +114,7 @@ export {
 	createNoUnusedImportsOptions,
 	createNoUnusedUseMemoOptions,
 	createNoUselessUseEffectOptions,
+	createNoUselessUseMemoOptions,
 	createNoUselessUseSpringOptions,
 	createPairConfiguration,
 	createPreferEnumItemOptions,
@@ -165,6 +168,7 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"no-unused-imports": noUnusedImports,
 	"no-unused-use-memo": noUnusedUseMemo,
 	"no-useless-use-effect": noUselessUseEffect,
+	"no-useless-use-memo": noUselessUseMemo,
 	"no-useless-use-spring": noUselessUseSpring,
 	"no-warn": noWarn,
 	"prefer-class-properties": preferClassProperties,
@@ -241,6 +245,9 @@ export const recommended = {
 		"cease-nonsense/no-underscore-react-props": "error",
 		"cease-nonsense/no-unused-imports": "error",
 		"cease-nonsense/no-unused-use-memo": "error",
+		"cease-nonsense/no-useless-use-effect": "error",
+		"cease-nonsense/no-useless-use-memo": "error",
+		"cease-nonsense/no-useless-use-spring": "error",
 		"cease-nonsense/no-warn": "error",
 		"cease-nonsense/prefer-enum-member": "error",
 		"cease-nonsense/prefer-idiv": "error",
