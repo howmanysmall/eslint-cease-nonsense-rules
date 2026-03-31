@@ -256,9 +256,9 @@ nav.sidebar a {
 	border-left: 2px solid transparent;
 	border-radius: 6px;
 	transition:
-		transform 150ms var(--spring),
-		background-color 150ms ease,
-		border-color 150ms ease;
+		background-color 120ms ease,
+		border-color 120ms ease,
+		color 120ms ease;
 }
 
 @media (hover: hover) {
@@ -266,7 +266,6 @@ nav.sidebar a {
 		color: var(--sl-color-white);
 		background-color: var(--sl-color-gray-6);
 		border-left-color: var(--sl-color-gray-4);
-		transform: translateX(4px);
 	}
 }
 
@@ -284,15 +283,12 @@ starlight-toc {
 starlight-toc a {
 	padding-block: 0.25rem !important;
 	line-height: 1.6;
-	transition:
-		transform 150ms var(--spring),
-		color 150ms ease;
+	transition: color 120ms ease;
 }
 
 @media (hover: hover) {
 	starlight-toc a:hover {
 		color: var(--sl-color-accent) !important;
-		transform: translateX(4px);
 	}
 }
 
@@ -389,6 +385,27 @@ starlight-toc a {
 
 .RuleExample {
 	margin: 1rem 0;
+	border-radius: 10px;
+}
+
+.RuleExample--pass {
+	padding: 0.5rem;
+	margin: 1rem -0.5rem;
+	background: rgba(16, 185, 129, 0.03);
+}
+
+.RuleExample--fail {
+	padding: 0.5rem;
+	margin: 1rem -0.5rem;
+	background: rgba(244, 63, 94, 0.03);
+}
+
+:root[data-theme="dark"] .RuleExample--pass {
+	background: rgba(52, 211, 153, 0.04);
+}
+
+:root[data-theme="dark"] .RuleExample--fail {
+	background: rgba(251, 113, 133, 0.04);
 }
 
 .RuleExample-header {
@@ -457,6 +474,36 @@ starlight-toc a {
 .RuleExample-content .expressive-code .copy {
 	top: 0.25rem !important;
 	right: 0.25rem !important;
+}
+
+/* ── RuleExample: pass/fail code accents ─────────────── */
+
+.RuleExample--pass .expressive-code .frame {
+	border-left: 3px solid rgba(16, 185, 129, 0.5);
+	box-shadow:
+		0 1px 3px rgba(16, 185, 129, 0.08),
+		0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.RuleExample--fail .expressive-code .frame {
+	border-left: 3px solid rgba(244, 63, 94, 0.5);
+	box-shadow:
+		0 1px 3px rgba(244, 63, 94, 0.08),
+		0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="dark"] .RuleExample--pass .expressive-code .frame {
+	border-left-color: rgba(52, 211, 153, 0.6);
+	box-shadow:
+		0 2px 6px rgba(52, 211, 153, 0.1),
+		0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+:root[data-theme="dark"] .RuleExample--fail .expressive-code .frame {
+	border-left-color: rgba(251, 113, 133, 0.6);
+	box-shadow:
+		0 2px 6px rgba(251, 113, 133, 0.1),
+		0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 starlight-link-card {
@@ -655,7 +702,10 @@ starlight-aside .title {
 	margin: 2rem 0;
 }
 
+/* ── Tables ──────────────────────────────────────────── */
+
 .sl-markdown-content table {
+	display: block;
 	overflow: hidden;
 	border: 1px solid var(--glass-border);
 	border-radius: 10px;
@@ -666,9 +716,34 @@ starlight-aside .title {
 }
 
 .sl-markdown-content th {
+	padding: 0.75rem 1rem;
 	font-weight: 600;
+	font-size: 0.85rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
 	color: var(--sl-color-accent-high);
 	border-bottom: 1px solid var(--glass-border);
+}
+
+.sl-markdown-content td {
+	padding: 0.75rem 1rem;
+	border-bottom: 1px solid var(--glass-border);
+	vertical-align: top;
+	line-height: 1.6;
+}
+
+.sl-markdown-content tr:last-child td {
+	border-bottom: none;
+}
+
+.sl-markdown-content tbody tr:nth-child(even) {
+	background: rgba(245, 158, 11, 0.02);
+}
+
+@media (hover: hover) {
+	.sl-markdown-content tbody tr:hover {
+		background: rgba(245, 158, 11, 0.06);
+	}
 }
 
 :root[data-theme="dark"] .sl-markdown-content thead {
@@ -677,6 +752,16 @@ starlight-aside .title {
 
 :root[data-theme="dark"] .sl-markdown-content th {
 	color: #fcd34d;
+}
+
+:root[data-theme="dark"] .sl-markdown-content tbody tr:nth-child(even) {
+	background: rgba(245, 158, 11, 0.03);
+}
+
+@media (hover: hover) {
+	:root[data-theme="dark"] .sl-markdown-content tbody tr:hover {
+		background: rgba(245, 158, 11, 0.07);
+	}
 }
 
 .content-panel {

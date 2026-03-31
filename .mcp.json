@@ -1,6 +1,25 @@
 {
 	"$schema": ".schemas/mcps.schema.json",
 	"mcpServers": {
+		"astro-docs": {
+			"type": "http",
+			"url": "https://mcp.docs.astro.build/mcp"
+		},
+		"chrome-dev-tools": {
+			"command": "bash",
+			"args": ["./scripts/get-chrome-path.sh", "--serve"],
+			"enabled": true,
+			"type": "stdio"
+		},
+		"minimax": {
+			"args": ["minimax-coding-plan-mcp", "-y"],
+			"command": "uvx",
+			"environment": {
+				"MINIMAX_API_HOST": "https://api.minimax.io",
+				"MINIMAX_API_KEY": "${MINIMAX_API_KEY}"
+			},
+			"type": "stdio"
+		},
 		"context7": {
 			"headers": { "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}" },
 			"type": "http",

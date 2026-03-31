@@ -16,6 +16,5 @@ export interface Detector {
  */
 export function recognize(detector: Detector, line: string): number {
 	const matches = detector.scan(line);
-	if (matches === 0) return 0;
-	return 1 - (1 - detector.probability) ** matches;
+	return matches === 0 ? 0 : 1 - (1 - detector.probability) ** matches;
 }
