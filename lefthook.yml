@@ -67,3 +67,6 @@ pre-push:
 
     - name: build
       run: bun run build
+
+    - name: test-documentation
+      run: bun run test tests/documentation/rule-stats.test.ts
