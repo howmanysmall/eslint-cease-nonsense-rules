@@ -253,27 +253,35 @@ h3 {
 nav.sidebar a {
 	padding: 0.4rem 0.75rem !important;
 	margin-block: 0.15rem;
-	border-left: 2px solid transparent;
-	border-radius: 6px;
+	border-radius: 4px;
 	transition:
-		background-color 120ms ease,
-		border-color 120ms ease,
-		color 120ms ease;
+		background-color 100ms ease,
+		color 100ms ease;
 }
 
 @media (hover: hover) {
 	nav.sidebar a:hover {
 		color: var(--sl-color-white);
-		background-color: var(--sl-color-gray-6);
-		border-left-color: var(--sl-color-gray-4);
+		background-color: rgba(15, 23, 42, 0.05);
 	}
 }
 
 nav.sidebar a[aria-current="page"] {
 	font-weight: 600;
 	color: var(--sl-color-accent) !important;
-	background-color: rgba(245, 158, 11, 0.08) !important;
-	border-left-color: var(--sl-color-accent) !important;
+	background-color: rgba(180, 83, 9, 0.1) !important;
+}
+
+:root[data-theme="dark"] nav.sidebar a[aria-current="page"] {
+	color: #ffffff !important;
+	background-color: rgba(245, 158, 11, 0.15) !important;
+}
+
+@media (hover: hover) {
+	:root[data-theme="dark"] nav.sidebar a:hover {
+		color: var(--sl-color-white);
+		background-color: rgba(255, 255, 255, 0.06);
+	}
 }
 
 starlight-toc {
@@ -385,34 +393,29 @@ starlight-toc a {
 
 .RuleExample {
 	margin: 1rem 0;
-	border-radius: 10px;
-}
-
-.RuleExample--pass {
-	padding: 0.5rem;
-	margin: 1rem -0.5rem;
-	background: rgba(16, 185, 129, 0.03);
-}
-
-.RuleExample--fail {
-	padding: 0.5rem;
-	margin: 1rem -0.5rem;
-	background: rgba(244, 63, 94, 0.03);
-}
-
-:root[data-theme="dark"] .RuleExample--pass {
-	background: rgba(52, 211, 153, 0.04);
-}
-
-:root[data-theme="dark"] .RuleExample--fail {
-	background: rgba(251, 113, 133, 0.04);
 }
 
 .RuleExample-header {
 	display: flex;
-	gap: 0.35rem;
+	gap: 0.4rem;
 	align-items: center;
-	padding: 0 0 0.3rem;
+	padding: 0 0 0.4rem;
+}
+
+.RuleExample--fail .RuleExample-header {
+	border-bottom: 1px solid rgba(244, 63, 94, 0.2);
+}
+
+.RuleExample--pass .RuleExample-header {
+	border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+:root[data-theme="dark"] .RuleExample--fail .RuleExample-header {
+	border-bottom-color: rgba(251, 113, 133, 0.25);
+}
+
+:root[data-theme="dark"] .RuleExample--pass .RuleExample-header {
+	border-bottom-color: rgba(52, 211, 153, 0.25);
 }
 
 .RuleExample-status {
@@ -445,8 +448,8 @@ starlight-toc a {
 }
 
 .RuleExample-title {
-	font-size: 0.7rem;
-	font-weight: 600;
+	font-size: 0.75rem;
+	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 0.06em;
 }
@@ -474,36 +477,6 @@ starlight-toc a {
 .RuleExample-content .expressive-code .copy {
 	top: 0.25rem !important;
 	right: 0.25rem !important;
-}
-
-/* ── RuleExample: pass/fail code accents ─────────────── */
-
-.RuleExample--pass .expressive-code .frame {
-	border-left: 3px solid rgba(16, 185, 129, 0.5);
-	box-shadow:
-		0 1px 3px rgba(16, 185, 129, 0.08),
-		0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.RuleExample--fail .expressive-code .frame {
-	border-left: 3px solid rgba(244, 63, 94, 0.5);
-	box-shadow:
-		0 1px 3px rgba(244, 63, 94, 0.08),
-		0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-:root[data-theme="dark"] .RuleExample--pass .expressive-code .frame {
-	border-left-color: rgba(52, 211, 153, 0.6);
-	box-shadow:
-		0 2px 6px rgba(52, 211, 153, 0.1),
-		0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-:root[data-theme="dark"] .RuleExample--fail .expressive-code .frame {
-	border-left-color: rgba(251, 113, 133, 0.6);
-	box-shadow:
-		0 2px 6px rgba(251, 113, 133, 0.1),
-		0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 starlight-link-card {
