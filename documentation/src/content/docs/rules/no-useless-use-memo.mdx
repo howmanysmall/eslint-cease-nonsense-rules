@@ -1,0 +1,89 @@
+---
+title: no-useless-use-memo
+badges:
+    - text: "error"
+      variant: danger
+    - text: "Suggestion"
+      variant: note
+description: Reports useMemo calls that only wrap values static enough to live at module scope.
+---
+
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
+
+Reports `useMemo` calls whose result is already static enough to move outside the component.
+
+## Rule details :badge[Suggestion]{variant=note}
+
+This rule looks for `useMemo` calls whose callback returns a value that does not depend on component state, props, or
+other local render-time values. When that happens, the memo adds overhead without changing the result.
+
+By default, the rule reports empty or omitted dependency arrays only when the returned value is static. Set
+`dependencyMode` to `"aggressive"` if you also want to report static callbacks even when the dependency list is not
+empty.
+
+<Aside type="danger" title="Static memos do not need a hook">
+	If the value can live at module scope, the hook is just extra work on every render.
+</Aside>
+
+## Options
+
+| Option                  | Type       | Default                         | What it does                                                                  |
+| ----------------------- | ---------- | ------------------------------- | ----------------------------------------------------------------------------- |
+| `dependencyMode`        | `string`   | `"non-updating"`                | Chooses whether empty deps only, non-updating deps, or any static memo counts |
+| `environment`           | `string`   | `"roblox-ts"`                   | Chooses which React package imports to track                                  |
+| `staticGlobalFactories` | `string[]` | Same as `no-useless-use-spring` | Names treated as static factories when they are otherwise free                |
+
+## Examples
+
+<RuleExample type="fail" title="Incorrect">
+	<Code
+		code={[
+			'import { useMemo } from "react";',
+			"",
+			"const rotationConfiguration = useMemo(",
+			"\t() => getAnimationConfiguration(SpringConfiguration.Sharp, AnimationLibrary.ReactSpring),",
+			"\t[],",
+			");",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
+
+<RuleExample type="pass" title="Correct">
+	<Code
+		code={[
+			"const rotationConfiguration = getAnimationConfiguration(",
+			"\tSpringConfiguration.Sharp,",
+			"\tAnimationLibrary.ReactSpring,",
+			");",
+			"",
+			"function Component({ theme }) {",
+			"\tconst config = useMemo(() => buildConfig(theme), [theme]);",
+			"\treturn config;",
+			"}",
+		].join("\n")}
+		lang="tsx"
+	/>
+</RuleExample>
+
+## Related rules
+
+<CardGrid>
+	<LinkCard
+		title="no-unused-use-memo"
+		description="Reports discarded useMemo results"
+		href="/eslint-cease-nonsense-rules/rules/no-unused-use-memo/"
+	/>
+	<LinkCard
+		title="no-useless-use-spring"
+		description="Reports spring hooks with static inputs"
+		href="/eslint-cease-nonsense-rules/rules/no-useless-use-spring/"
+	/>
+	<LinkCard
+		title="React Docs: useMemo"
+		description="Official reference for useMemo"
+		href="https://react.dev/reference/react/useMemo"
+	/>
+</CardGrid>

@@ -62,6 +62,7 @@ export default [
 			"cease-nonsense/no-shorthand-names": "error",
 			"cease-nonsense/no-unused-imports": "error",
 			"cease-nonsense/no-unused-use-memo": "error",
+			"cease-nonsense/no-useless-use-memo": "error",
 			"cease-nonsense/no-useless-use-spring": "error",
 			"cease-nonsense/no-warn": "error",
 			"cease-nonsense/prefer-class-properties": "error",
@@ -506,6 +507,52 @@ useEffect(() => {
 }, [eventName]);
 
 const config = useMemo(() => buildConfig(eventName), [eventName]);
+```
+
+#### `no-useless-use-memo`
+
+Disallow `useMemo` around values that are already static enough to live at module scope.
+
+**Why**
+
+`useMemo` only helps when a value is expensive and depends on changing inputs. If the callback always returns the same
+value, the hook adds overhead without changing the result. Move that value outside the component instead.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-useless-use-memo": ["error", {
+    "dependencyMode": "non-updating", // "empty-or-omitted" | "non-updating" | "aggressive"
+    "environment": "roblox-ts",       // or "standard"
+    "staticGlobalFactories": ["Color3", "Vector3"]
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+import { useMemo } from "react";
+
+const rotationConfiguration = useMemo(
+	() => getAnimationConfiguration(SpringConfiguration.Sharp, AnimationLibrary.ReactSpring),
+	[],
+);
+```
+
+**✅ Good**
+
+```typescript
+const rotationConfiguration = getAnimationConfiguration(
+	SpringConfiguration.Sharp,
+	AnimationLibrary.ReactSpring,
+);
+
+function Component({ theme }) {
+	const config = useMemo(() => buildConfig(theme), [theme]);
+	return config;
+}
 ```
 
 #### `no-new-instance-in-use-memo`

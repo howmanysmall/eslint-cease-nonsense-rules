@@ -10,7 +10,7 @@ import {
 describe("rule stats", () => {
 	it("derives totals from the shared rule catalog", () => {
 		expect(totalCategories).toBe(4);
-		expect(totalRules).toBe(56);
+		expect(totalRules).toBe(57);
 	});
 
 	it("keeps category stats aligned with the sidebar groups", () => {
@@ -27,7 +27,7 @@ describe("rule stats", () => {
 				slug: "/eslint-cease-nonsense-rules/rules/naming-convention/",
 			},
 			react: {
-				count: 20,
+				count: 21,
 				label: "React Rules",
 				slug: "/eslint-cease-nonsense-rules/rules/ban-react-fc/",
 			},
@@ -45,7 +45,7 @@ describe("rule stats", () => {
 				label,
 			})),
 		).toEqual([
-			{ count: 20, first: "rules/ban-react-fc", label: "React Rules" },
+			{ count: 21, first: "rules/ban-react-fc", label: "React Rules" },
 			{ count: 17, first: "rules/ban-instances", label: "Roblox & Luau Rules" },
 			{ count: 7, first: "rules/array-type-generic", label: "Naming & Conventions" },
 			{ count: 12, first: "rules/dot-notation", label: "General Logic & Style" },

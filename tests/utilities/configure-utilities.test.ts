@@ -18,6 +18,7 @@ import {
 	createNoShorthandOptions,
 	createNoUnusedImportsOptions,
 	createNoUselessUseEffectOptions,
+	createNoUselessUseMemoOptions,
 	createNoUselessUseSpringOptions,
 	createPairConfiguration,
 	createPreferEnumItemOptions,
@@ -635,6 +636,30 @@ describe("configure-utilities", () => {
 			expect(configuration.hooks).toEqual(["useEffect"]);
 			expect(configuration.propertyCallbackPrefixes).toEqual(["handle"]);
 			expect(configuration.reportNotifyParent).toBe(false);
+		});
+	});
+
+	describe("createNoUselessUseMemoOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createNoUselessUseMemoOptions();
+			expect(configuration).toEqual({
+				dependencyMode: "non-updating",
+				environment: "roblox-ts",
+				staticGlobalFactories: DEFAULT_STATIC_GLOBAL_FACTORIES,
+			});
+		});
+
+		it("should override defaults", () => {
+			expect.assertions(3);
+			const configuration = createNoUselessUseMemoOptions({
+				dependencyMode: "aggressive",
+				environment: "standard",
+				staticGlobalFactories: ["Foo"],
+			});
+			expect(configuration.dependencyMode).toBe("aggressive");
+			expect(configuration.environment).toBe("standard");
+			expect(configuration.staticGlobalFactories).toEqual(["Foo"]);
 		});
 	});
 

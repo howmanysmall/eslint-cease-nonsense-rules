@@ -16,6 +16,7 @@ import type { NoShorthandOptions } from "../rules/no-shorthand-names";
 import type { NoUnusedImportsOptions } from "../rules/no-unused-imports";
 import type { NoUnusedUseMemoOptions } from "../rules/no-unused-use-memo";
 import type { NoUselessUseEffectOptions } from "../rules/no-useless-use-effect";
+import type { NoUselessUseMemoOptions } from "../rules/no-useless-use-memo";
 import type { NoUselessUseSpringOptions } from "../rules/no-useless-use-spring";
 import type { PreferEnumItemOptions } from "../rules/prefer-enum-item";
 import type { PreventAbbreviationsOptions } from "../rules/prevent-abbreviations";
@@ -424,6 +425,20 @@ export function createNoUselessUseEffectOptions(
 		reportDerivedState: true,
 		reportEventFlag: true,
 		reportNotifyParent: true,
+		...options,
+	};
+}
+
+/**
+ * Creates options for no-useless-use-memo rule
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNoUselessUseMemoOptions(options: Partial<NoUselessUseMemoOptions> = {}): NoUselessUseMemoOptions {
+	return {
+		dependencyMode: "non-updating",
+		environment: "roblox-ts",
+		staticGlobalFactories: DEFAULT_STATIC_GLOBAL_FACTORIES,
 		...options,
 	};
 }
