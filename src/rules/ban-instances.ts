@@ -9,18 +9,17 @@ import type { ReadonlyRecord } from "../types/utility-types";
 /**
  * Configuration for banned Roblox Instance classes.
  *
- * Supports two formats:
- * - Array: `["Part", "Frame"]` - uses default message
- * - Object: `{ Part: "Use MeshPart instead" }` - uses custom message
+ * Supports two formats: - Array: `["Part", "Frame"]` - uses default message - Object: `{ Part: "Use MeshPart instead"
+ * }` - uses custom message
  *
  * @example
- * ```typescript
- * // Array format
- * { bannedInstances: ["Part", "Frame", "Script"] }
+ * 	```typescript
+ * 	// Array format
+ * 	{ bannedInstances: ["Part", "Frame", "Script"] }
  *
- * // Object format with custom messages
- * { bannedInstances: { Part: "Use MeshPart instead", Script: "Scripts should not be created at runtime" } }
- * ```
+ * 	// Object format with custom messages
+ * 	{ bannedInstances: { Part: "Use MeshPart instead", Script: "Scripts should not be created at runtime" } }
+ * 	```;
  */
 export interface BanInstancesOptions {
 	readonly bannedInstances: ReadonlyArray<string> | ReadonlyRecord<string, string>;

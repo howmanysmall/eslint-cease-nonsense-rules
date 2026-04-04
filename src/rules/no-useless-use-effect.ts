@@ -24,114 +24,133 @@ type MessageIds =
 export interface NoUselessUseEffectOptions {
 	/**
 	 * The React environment: "roblox-ts" uses the rbxts/react package, "standard" uses react.
+	 *
 	 * @default "roblox-ts"
 	 */
 	readonly environment?: EnvironmentMode;
 
 	/**
 	 * Effect hook names to check.
+	 *
 	 * @default ["useEffect", "useLayoutEffect", "useInsertionEffect"]
 	 */
 	readonly hooks?: ReadonlyArray<string>;
 
 	/**
 	 * Prefixes for property callback names.
+	 *
 	 * @default ["on"]
 	 */
 	readonly propertyCallbackPrefixes?: ReadonlyArray<string>;
 
 	/**
 	 * Ref hook names that return mutable ref objects.
+	 *
 	 * @default ["useRef"]
 	 */
 	readonly refHooks?: ReadonlyArray<string>;
 
 	/**
 	 * Report effects that conditionally set state based on prop values.
+	 *
 	 * @default true
 	 */
 	readonly reportAdjustState?: boolean;
 
 	/**
 	 * Report effects that only derive state from properties or state.
+	 *
 	 * @default true
 	 */
 	readonly reportDerivedState?: boolean;
 
 	/**
 	 * Report multiple effects with identical dependency arrays.
+	 *
 	 * @default true
 	 */
 	readonly reportDuplicateDeps?: boolean;
 
 	/**
 	 * Report chains of effects that set state triggering other effects.
+	 *
 	 * @default true
 	 */
 	readonly reportEffectChain?: boolean;
 
 	/**
 	 * Report effects with empty callback bodies.
+	 *
 	 * @default true
 	 */
 	readonly reportEmptyEffect?: boolean;
 
 	/**
 	 * Report effects that route event side effects through a state flag.
+	 *
 	 * @default true
 	 */
 	readonly reportEventFlag?: boolean;
 
 	/**
 	 * Report effects that run event-specific logic based on state.
+	 *
 	 * @default true
 	 */
 	readonly reportEventSpecificLogic?: boolean;
 
 	/**
 	 * Report effects that subscribe to external stores and sync to state.
+	 *
 	 * @default true
 	 */
 	readonly reportExternalStore?: boolean;
 
 	/**
 	 * Report effects that initialize state with constant values.
+	 *
 	 * @default true
 	 */
 	readonly reportInitializeState?: boolean;
 
 	/**
 	 * Report effects that only contain console.log calls.
+	 *
 	 * @default true
 	 */
 	readonly reportLogOnly?: boolean;
 
 	/**
 	 * Report effects that contain state setters mixed with non-setter calls.
+	 *
 	 * @default true
 	 */
 	readonly reportMixedDerivedState?: boolean;
 
 	/**
 	 * Report effects that only notify a parent via a property callback.
+	 *
 	 * @default true
 	 */
 	readonly reportNotifyParent?: boolean;
 
 	/**
 	 * Report effects that pass refs to parent callbacks.
+	 *
 	 * @default true
 	 */
 	readonly reportPassRefToParent?: boolean;
 
 	/**
 	 * Report effects that reset state to constant values when props change.
+	 *
 	 * @default true
 	 */
 	readonly reportResetState?: boolean;
 
 	/**
 	 * State hook names that return [value, setter] pairs.
+	 *
 	 * @default ["useState", "useReducer"]
 	 */
 	readonly stateHooks?: ReadonlyArray<string>;

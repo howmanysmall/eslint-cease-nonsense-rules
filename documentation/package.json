@@ -1,4 +1,14 @@
 {
+	"name": "docs",
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"astro": "astro",
+		"build": "astro build",
+		"dev": "astro dev",
+		"preview": "astro preview",
+		"start": "astro dev"
+	},
 	"dependencies": {
 		"@astrojs/mdx": "5.0.3",
 		"@astrojs/react": "5.0.2",
@@ -22,21 +32,11 @@
 		"@fontsource/karla": "^5.2.8",
 		"typescript": "^5.7.3"
 	},
-	"name": "docs",
 	"overrides": {
 		"picomatch": "^4.0.3"
 	},
 	"patchedDependencies": {
 		"starlight-scroll-to-top@0.4.0": "patches/starlight-scroll-to-top@0.4.0.patch",
 		"astro@6.1.1": "patches/astro@6.1.1.patch"
-	},
-	"scripts": {
-		"astro": "astro",
-		"build": "astro build",
-		"dev": "astro dev",
-		"preview": "astro preview",
-		"start": "astro dev"
-	},
-	"type": "module",
-	"version": "0.0.1"
+	}
 }

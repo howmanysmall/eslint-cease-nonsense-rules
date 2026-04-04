@@ -30,8 +30,7 @@ export function unwrap(node: TSESTree.Expression): TSESTree.Expression {
 }
 
 /**
- * Evaluate a constant expression at lint time.
- * Returns undefined if the expression cannot be evaluated to a constant.
+ * Evaluate a constant expression at lint time. Returns undefined if the expression cannot be evaluated to a constant.
  *
  * @param node - The expression node to evaluate
  * @returns The evaluated constant number, or undefined if not a constant

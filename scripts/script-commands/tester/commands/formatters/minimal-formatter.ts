@@ -63,6 +63,7 @@ function formatRule(entry: RuleEntry, isLast: boolean): string {
 
 /**
  * Formats rules in pnpm/bun-style minimal tree output.
+ *
  * @param entries - The rule entries to format.
  * @returns The formatted string.
  */

@@ -1,8 +1,9 @@
 import type { CapturedValue, ParsedReplacement } from "./pattern-types";
 
 /**
- * Get the identifier name from a replacement (for scope conflict checking)
- * Returns undefined for static access (no local conflict possible)
+ * Get the identifier name from a replacement (for scope conflict checking) Returns undefined for static access (no
+ * local conflict possible)
+ *
  * @param replacement - The parsed replacement to extract identifier from
  * @returns The identifier name or undefined for static access
  */
@@ -21,6 +22,7 @@ export function getReplacementIdentifier(replacement: ParsedReplacement): string
 
 /**
  * Generate replacement text from a parsed replacement and captured values
+ *
  * @param replacement - The parsed replacement pattern
  * @param captures - Map of captured values from pattern matching
  * @returns The generated replacement text

@@ -1,7 +1,4 @@
-/**
- * A detector scans lines and returns match counts.
- * Recognition probability: 1 - (1 - p)^matches
- */
+/** A detector scans lines and returns match counts. Recognition probability: 1 - (1 - p)^matches */
 export interface Detector {
 	readonly probability: number;
 	readonly scan: (line: string) => number;

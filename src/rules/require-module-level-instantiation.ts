@@ -15,14 +15,14 @@ import type { ReadonlyRecord } from "../types/utility-types";
  * Maps class names to their expected import sources.
  *
  * @example
- * ```typescript
- * {
- *   classes: {
- *     "Log": "@rbxts/rbxts-sleitnick-log",
- *     "Server": "@rbxts/net"
- *   }
- * }
- * ```
+ * 	```typescript
+ * 	{
+ * 	classes: {
+ * 	"Log": "@rbxts/rbxts-sleitnick-log",
+ * 	"Server": "@rbxts/net"
+ * 	}
+ * 	}
+ * 	```;
  */
 export interface RequireModuleLevelInstantiationOptions {
 	readonly classes: ReadonlyRecord<string, string>;

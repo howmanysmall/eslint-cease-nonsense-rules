@@ -204,18 +204,18 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 /**
  * Recommended configuration for ESLint flat config.
  *
- * Enables all rules with recommended settings. Users should import this
- * configuration and add it to their flat config array.
+ * Enables all rules with recommended settings. Users should import this configuration and add it to their flat config
+ * array.
  *
  * @example
- * ```typescript
- * import ceaseNonsense from '@pobammer-ts/eslint-cease-nonsense-rules';
+ * 	```typescript
+ * 	import ceaseNonsense from "@pobammer-ts/eslint-cease-nonsense-rules";
  *
- * export default [
- *   ceaseNonsense.configs.recommended,
- *   // ... other configs
- * ];
- * ```
+ * 	export default [
+ * 		ceaseNonsense.configs.recommended,
+ * 		// ... other configs
+ * 	];
+ * 	```;
  */
 export const recommended = {
 	plugins: {

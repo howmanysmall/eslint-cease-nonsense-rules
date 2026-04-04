@@ -57,6 +57,7 @@ function formatRule(entry: RuleEntry): string {
 
 /**
  * Formats rules in jq-style colored JSON output.
+ *
  * @param entries - The rule entries to format.
  * @returns The formatted string.
  */

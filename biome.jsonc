@@ -30,6 +30,10 @@
 		"parser": {}
 	},
 
+	"files": {
+		"includes": ["**", "!package.json"]
+	},
+
 	"formatter": {
 		"attributePosition": "auto",
 		"bracketSameLine": false,

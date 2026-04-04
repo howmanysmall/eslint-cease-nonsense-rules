@@ -6,8 +6,37 @@
 	"embeddedLanguageFormatting": "auto",
 	"endOfLine": "lf",
 	"htmlWhitespaceSensitivity": "css",
-	"ignorePatterns": ["**/dist/**", "**/node_modules/**", "**/*.{jsonc,json,yaml,yml,md,toml}", ".context/**"],
+	"ignorePatterns": [
+		"**/dist/**",
+		"**/node_modules/**",
+		"**/*.{md,toml}",
+		"**/*.json",
+		".context/**",
+		"!package.json",
+	],
+	"overrides": [
+		{
+			"files": ["**/*.{yaml,yml}"],
+			"options": {
+				"tabWidth": 2,
+				"useTabs": false,
+			},
+		},
+		{
+			"files": ["**/*.jsonc"],
+			"options": {
+				"trailingComma": "none",
+			},
+		},
+		{
+			"files": ["opencode.jsonc"],
+			"options": {
+				"trailingComma": "all",
+			},
+		},
+	],
 	"insertFinalNewline": true,
+	"jsdoc": true,
 	"jsxSingleQuote": false,
 	"objectWrap": "preserve",
 	"printWidth": 120,
@@ -97,9 +126,8 @@
 		"partitionByNewline": false,
 		"sortSideEffects": false,
 	},
-	"sortPackageJson": false,
+	"sortPackageJson": true,
 	"tabWidth": 4,
 	"trailingComma": "all",
 	"useTabs": true,
-	"vueIndentScriptAndStyle": null,
 }

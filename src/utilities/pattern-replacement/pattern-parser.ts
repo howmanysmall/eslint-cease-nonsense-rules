@@ -11,6 +11,7 @@ const CALL_PATTERN = regex("^(?<name>\\w+)\\((?<argumentsString>.*)\\)$");
 
 /**
  * Parse argument string into ParsedArg array
+ *
  * @param parametersString - Comma-separated argument string
  * @returns Array of parsed arguments
  */
@@ -39,6 +40,7 @@ export function parseParameters(parametersString: string): ReadonlyArray<ParsedP
 
 /**
  * Parse replacement string into ParsedReplacement
+ *
  * @param replacement - Replacement expression string
  * @returns Parsed replacement structure
  */
@@ -58,6 +60,7 @@ export function parseReplacement(replacement: string): ParsedReplacement {
 
 /**
  * Parse a pattern string into ParsedPattern
+ *
  * @param match - Pattern match expression
  * @param replacement - Replacement expression
  * @param when - Optional conditions for captures

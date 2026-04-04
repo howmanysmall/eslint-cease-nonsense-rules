@@ -30,7 +30,10 @@ pre-commit:
         - "*.jsx"
         - "*.ts"
         - "*.tsx"
-      run: bun run oxc --fix {staged_files} && bun run biome:check --write --no-errors-on-unmatched {staged_files} && bun run format {staged_files}
+      run: |
+        bun run oxc --fix {staged_files}
+        bun run biome:check --write --no-errors-on-unmatched {staged_files}
+        bun run format {staged_files}
       stage_fixed: true
 
     - name: format-json5-mdx
@@ -42,12 +45,16 @@ pre-commit:
 
     - name: md-fix
       glob: "*.md"
-      run: rumdl check --fix {staged_files} && rumdl fmt {staged_files}
+      run: |
+        rumdl check --fix {staged_files}
+        rumdl fmt {staged_files}
       stage_fixed: true
 
     - name: toml-fix
       glob: "*.toml"
-      run: tombi lint {staged_files} && tombi format {staged_files}
+      run: |
+        tombi lint {staged_files}
+        tombi format {staged_files}
       stage_fixed: true
 
 pre-push:
