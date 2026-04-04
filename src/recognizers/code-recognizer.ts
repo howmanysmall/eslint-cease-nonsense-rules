@@ -5,8 +5,7 @@ import type { Detector } from "./detector";
 const PROBABILITY_THRESHOLD = 0.9;
 
 /**
- * Calculate combined probability that a line contains code.
- * Uses: p = 1 - (1-p1)(1-p2)...(1-pn)
+ * Calculate combined probability that a line contains code. Uses: p = 1 - (1-p1)(1-p2)...(1-pn)
  *
  * @param detectors - Array of detectors to use
  * @param line - The line to analyze

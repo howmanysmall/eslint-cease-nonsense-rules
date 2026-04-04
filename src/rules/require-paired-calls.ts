@@ -8,9 +8,7 @@ import type { Writable } from "type-fest";
 
 const isStringArray = Compile(Typebox.Readonly(Typebox.Array(Typebox.String())));
 
-/**
- * Configuration for a single opener/closer pair
- */
+/** Configuration for a single opener/closer pair */
 export interface PairConfiguration {
 	/** Alternative closers (any one satisfies) */
 	readonly alternatives?: ReadonlyArray<string>;
@@ -41,9 +39,7 @@ const isPairConfiguration = Compile(
 	),
 );
 
-/**
- * Rule options schema
- */
+/** Rule options schema */
 export interface RequirePairedCallsOptions {
 	/** Allow conditional closers */
 	readonly allowConditionalClosers?: boolean;
@@ -68,9 +64,7 @@ const isRuleOptions = Compile(
 	),
 );
 
-/**
- * Entry in the opener stack
- */
+/** Entry in the opener stack */
 interface OpenerStackEntry {
 	/** Configuration for this pair */
 	readonly config: PairConfiguration;
@@ -101,9 +95,7 @@ const LOOP_NODE_TYPES = new Set([
 	AST_NODE_TYPES.WhileStatement,
 ]);
 
-/**
- * Control flow context tracking
- */
+/** Control flow context tracking */
 interface ControlFlowContext {
 	/** Inside async context */
 	readonly asyncContext: boolean;

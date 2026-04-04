@@ -1,8 +1,7 @@
 import type { Detector } from "./detector";
 
 /**
- * Creates a detector for camelCase patterns.
- * Returns 1 if lowercase char followed by uppercase char is found.
+ * Creates a detector for camelCase patterns. Returns 1 if lowercase char followed by uppercase char is found.
  *
  * @param probability - Base probability (0-1)
  * @returns Detector instance

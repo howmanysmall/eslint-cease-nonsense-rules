@@ -13,12 +13,14 @@ type MessageIds = "memoWithChildren";
 export interface NoMemoChildrenOptions {
 	/**
 	 * Component names to allow with children despite memo wrapper.
-	 * @default []
+	 *
+	 * @default [ ]
 	 */
 	readonly allowedComponents?: ReadonlyArray<string>;
 
 	/**
 	 * The React environment: 'roblox-ts' uses `@rbxts/react`, 'standard' uses react.
+	 *
 	 * @default "roblox-ts"
 	 */
 	readonly environment?: EnvironmentMode;

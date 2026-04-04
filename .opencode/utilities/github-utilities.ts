@@ -47,113 +47,91 @@ type GetGitHubData<TFn extends (...args: Array<never>) => Promise<{ data: unknow
 /**
  * Enumeration of supported serialization/file formats used by the GitHub utilities.
  *
- * Each member corresponds to a canonical format identifier used when reading,
- * writing, or normalizing content in the repository or interacting with APIs.
+ * Each member corresponds to a canonical format identifier used when reading, writing, or normalizing content in the
+ * repository or interacting with APIs.
  *
  * Members:
- * - Ini ("ini") -- INI files: simple key/value configuration files with optional
- *   sections. Best for lightweight configuration where minimal syntax is desired.
  *
- * - Json ("json") -- Standard JSON (RFC 8259): strict, widely-supported structured
- *   data interchange format. Use when interoperability and strict parsing are required.
- *
- * - Json5 ("json5") -- JSON5: a relaxed superset of JSON that permits comments,
- *   trailing commas, unquoted object keys, and other developer-friendly syntax.
- *   Useful for configuration files that should be human-editable.
- *
- * - JsonCompact ("json-compact") -- Compact JSON: a minified JSON representation
- *   that removes insignificant whitespace to reduce size. Ideal for storage or
- *   transmission where human readability is not needed.
- *
- * - Raw ("raw") -- Raw text/blob: no parsing or serialization is applied; the
- *   content is treated as an uninterpreted string or byte sequence. Use when
- *   exact preservation of bytes is required.
- *
- * - Toml ("toml") -- TOML (Tom's Obvious, Minimal Language): a configuration
- *   format with clear typing and table semantics. Good for declarative config
- *   files that require explicit datatypes and nesting.
- *
- * - Toon ("toon") -- Token-Oriented Object Notation: a compact, human-readable
- *   encoding of the JSON data model that minimizes tokens and makes structure
- *   easy for models to follow. It's intended for LLM input as a drop-in,
- *   lossless representation of your existing JSON.
- *
- * - Xml ("xml") -- XML: a verbose, tag-based markup format supporting attributes,
- *   namespaces, and mixed content. Use when interacting with systems or APIs
- *   that require XML payloads.
- *
- * - Yaml ("yaml") -- YAML: a human-friendly superset of JSON that supports
- *   anchors, aliases, and multiple documents per stream. Preferred for complex
- *   configuration documents that benefit from readability and expressive syntax.
+ * - Ini ("ini") -- INI files: simple key/value configuration files with optional sections. Best for lightweight
+ *   configuration where minimal syntax is desired.
+ * - Json ("json") -- Standard JSON (RFC 8259): strict, widely-supported structured data interchange format. Use when
+ *   interoperability and strict parsing are required.
+ * - Json5 ("json5") -- JSON5: a relaxed superset of JSON that permits comments, trailing commas, unquoted object keys,
+ *   and other developer-friendly syntax. Useful for configuration files that should be human-editable.
+ * - JsonCompact ("json-compact") -- Compact JSON: a minified JSON representation that removes insignificant whitespace to
+ *   reduce size. Ideal for storage or transmission where human readability is not needed.
+ * - Raw ("raw") -- Raw text/blob: no parsing or serialization is applied; the content is treated as an uninterpreted
+ *   string or byte sequence. Use when exact preservation of bytes is required.
+ * - Toml ("toml") -- TOML (Tom's Obvious, Minimal Language): a configuration format with clear typing and table
+ *   semantics. Good for declarative config files that require explicit datatypes and nesting.
+ * - Toon ("toon") -- Token-Oriented Object Notation: a compact, human-readable encoding of the JSON data model that
+ *   minimizes tokens and makes structure easy for models to follow. It's intended for LLM input as a drop-in, lossless
+ *   representation of your existing JSON.
+ * - Xml ("xml") -- XML: a verbose, tag-based markup format supporting attributes, namespaces, and mixed content. Use when
+ *   interacting with systems or APIs that require XML payloads.
+ * - Yaml ("yaml") -- YAML: a human-friendly superset of JSON that supports anchors, aliases, and multiple documents per
+ *   stream. Preferred for complex configuration documents that benefit from readability and expressive syntax.
  *
  * Remarks:
- * - Choose the format that best matches the consumer's expectations (strict parsers
- *   vs. human-editable configs vs. binary/raw data).
- * - These identifiers are used as the canonical keys when selecting parser/serializer
- *   behavior in the utilities that consume this enum.
+ *
+ * - Choose the format that best matches the consumer's expectations (strict parsers vs. human-editable configs vs.
+ *   binary/raw data).
+ * - These identifiers are used as the canonical keys when selecting parser/serializer behavior in the utilities that
+ *   consume this enum.
  */
 export enum FormatType {
 	/**
-	 * INI is a simple, line-oriented configuration format consisting of
-	 * key-value pairs grouped into named sections. Useful for lightweight,
-	 * human-editable configs.
+	 * INI is a simple, line-oriented configuration format consisting of key-value pairs grouped into named sections.
+	 * Useful for lightweight, human-editable configs.
 	 */
 	Ini = "Ini",
 
 	/**
-	 * JSON (JavaScript Object Notation) is a widely-used, structured
-	 * data format designed for interoperability and simplicity in both
-	 * human and machine contexts.
+	 * JSON (JavaScript Object Notation) is a widely-used, structured data format designed for interoperability and
+	 * simplicity in both human and machine contexts.
 	 */
 	Json = "Json",
 
 	/**
-	 * JSON5 extends standard JSON with more human-friendly syntax --
-	 * including comments, trailing commas, and unquoted keys -- while
-	 * remaining fully compatible with the JSON data model.
+	 * JSON5 extends standard JSON with more human-friendly syntax -- including comments, trailing commas, and unquoted
+	 * keys -- while remaining fully compatible with the JSON data model.
 	 */
 	Json5 = "Json5",
 
 	/**
-	 * A space-efficient variant of JSON that removes unnecessary whitespace
-	 * and formatting while keeping the structure and values identical.
-	 * Ideal for compact storage or transmission.
+	 * A space-efficient variant of JSON that removes unnecessary whitespace and formatting while keeping the structure
+	 * and values identical. Ideal for compact storage or transmission.
 	 */
 	JsonCompact = "JsonCompact",
 
 	/**
-	 * Raw mode passes the underlying string directly with no parsing,
-	 * transformation, or validation. Useful when you need full control
-	 * over input/output data.
+	 * Raw mode passes the underlying string directly with no parsing, transformation, or validation. Useful when you
+	 * need full control over input/output data.
 	 */
 	Raw = "Raw",
 
 	/**
-	 * TOML (Tom's Obvious, Minimal Language) is a configuration format
-	 * designed to be easy to read, with strong typing and a minimal,
-	 * predictable syntax.
+	 * TOML (Tom's Obvious, Minimal Language) is a configuration format designed to be easy to read, with strong typing
+	 * and a minimal, predictable syntax.
 	 */
 	Toml = "Toml",
 
 	/**
-	 * Token-Oriented Object Notation is a compact, human-readable encoding of
-	 * the JSON data model that minimizes tokens and makes structure easy for
-	 * models to follow. It's intended for LLM input as a drop-in, lossless
-	 * representation of your existing JSON.
+	 * Token-Oriented Object Notation is a compact, human-readable encoding of the JSON data model that minimizes tokens
+	 * and makes structure easy for models to follow. It's intended for LLM input as a drop-in, lossless representation
+	 * of your existing JSON.
 	 */
 	Toon = "Toon",
 
 	/**
-	 * XML (eXtensible Markup Language) is a hierarchical, tag-based data
-	 * format commonly used for document interchange, configuration, and
-	 * systems requiring extensive metadata.
+	 * XML (eXtensible Markup Language) is a hierarchical, tag-based data format commonly used for document interchange,
+	 * configuration, and systems requiring extensive metadata.
 	 */
 	Xml = "Xml",
 
 	/**
-	 * YAML (YAML Ain't Markup Language) is a flexible, indentation-based
-	 * serialization format that emphasizes human readability, supporting
-	 * complex data types with minimal syntax.
+	 * YAML (YAML Ain't Markup Language) is a flexible, indentation-based serialization format that emphasizes human
+	 * readability, supporting complex data types with minimal syntax.
 	 */
 	Yaml = "Yaml",
 }

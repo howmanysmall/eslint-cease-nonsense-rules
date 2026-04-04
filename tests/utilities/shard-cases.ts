@@ -1,25 +1,25 @@
 /**
  * Utility for sharding test cases across multiple CI jobs.
  *
- * When TEST_CASE_SHARD environment variable is set (format: "index/total"),
- * returns a filtered subset of cases. Otherwise returns all cases unchanged.
+ * When TEST_CASE_SHARD environment variable is set (format: "index/total"), returns a filtered subset of cases.
+ * Otherwise returns all cases unchanged.
  *
  * This enables parallel execution of heavy test files without affecting local development.
  *
+ * @example
+ * 	// Local development - no filtering
+ * 	const cases = shardCases([1, 2, 3, 4]); // Returns [1, 2, 3, 4]
+ *
+ * @example
+ * 	// CI with TEST_CASE_SHARD=1/4
+ * 	const cases = shardCases([1, 2, 3, 4, 5, 6, 7, 8]); // Returns [1, 5] (indices 0, 4)
+ *
+ * @example
+ * 	// CI with TEST_CASE_SHARD=2/4
+ * 	const cases = shardCases([1, 2, 3, 4, 5, 6, 7, 8]); // Returns [2, 6] (indices 1, 5)
+ *
  * @param cases - Array of test cases to potentially shard
  * @returns The full array if TEST_CASE_SHARD is not set, otherwise a filtered subset
- *
- * @example
- * // Local development - no filtering
- * const cases = shardCases([1, 2, 3, 4]); // Returns [1, 2, 3, 4]
- *
- * @example
- * // CI with TEST_CASE_SHARD=1/4
- * const cases = shardCases([1, 2, 3, 4, 5, 6, 7, 8]); // Returns [1, 5] (indices 0, 4)
- *
- * @example
- * // CI with TEST_CASE_SHARD=2/4
- * const cases = shardCases([1, 2, 3, 4, 5, 6, 7, 8]); // Returns [2, 6] (indices 1, 5)
  */
 export function shardCases<TestCase>(cases: ReadonlyArray<TestCase>): ReadonlyArray<TestCase> {
 	const shardEnv = Bun.env.TEST_CASE_SHARD;

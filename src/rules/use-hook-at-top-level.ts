@@ -22,23 +22,18 @@ interface ControlFlowContext {
 }
 
 export interface UseHookAtTopLevelOptions {
-	/**
-	 * Strategy 1: Simple name-based filtering
-	 * Hooks to completely ignore (both React and ECS hooks with these names)
-	 */
+	/** Strategy 1: Simple name-based filtering Hooks to completely ignore (both React and ECS hooks with these names) */
 	readonly ignoreHooks?: ReadonlyArray<string>;
 
 	/**
-	 * Strategy 2: Smart import source control
-	 * Control which import sources should be checked
-	 * true = check hooks from this source, false = ignore hooks from this source
+	 * Strategy 2: Smart import source control Control which import sources should be checked true = check hooks from
+	 * this source, false = ignore hooks from this source
 	 */
 	readonly importSources?: Record<string, boolean>;
 
 	/**
-	 * Strategy 3: Whitelist mode
-	 * Only check hooks that match these exact names
-	 * If provided, ignoreHooks and importSources are ignored
+	 * Strategy 3: Whitelist mode Only check hooks that match these exact names If provided, ignoreHooks and
+	 * importSources are ignored
 	 */
 	readonly onlyHooks?: ReadonlyArray<string>;
 }

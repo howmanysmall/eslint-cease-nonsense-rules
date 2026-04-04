@@ -44,6 +44,7 @@ function formatRecordConfiguration(
 
 /**
  * Formats rules in gh CLI-style aligned table output with wrapped configs.
+ *
  * @param entries - The rule entries to format.
  * @returns The formatted string.
  */

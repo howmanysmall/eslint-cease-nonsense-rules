@@ -32,6 +32,7 @@ import type { Pattern, PreferPatternReplacementsOptions } from "./pattern-replac
 
 /**
  * Creates a pair configuration for require-paired-calls rule
+ *
  * @param opener - The opener function name
  * @param closer - The closer function name(s)
  * @param options - Additional options
@@ -45,9 +46,7 @@ export function createPairConfiguration(
 	return { closer, opener, ...options };
 }
 
-/**
- * Default Roblox profiling pair configuration
- */
+/** Default Roblox profiling pair configuration */
 export const defaultRobloxProfilePair: PairConfiguration = {
 	closer: "debug.profileend",
 	opener: "debug.profilebegin",
@@ -58,6 +57,7 @@ export const defaultRobloxProfilePair: PairConfiguration = {
 
 /**
  * Creates options for ban-instances rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -67,6 +67,7 @@ export function createBanInstancesOptions(options: Partial<BanInstancesOptions> 
 
 /**
  * Creates a complexity configuration for enforce-ianitor-check-type rule
+ *
  * @param options - Partial configuration options
  * @returns The full complexity configuration
  */
@@ -83,6 +84,7 @@ export function createComplexityConfiguration(options: Partial<ComplexityConfigu
 
 /**
  * Creates options for dot-notation rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -101,6 +103,7 @@ export function createDotNotationOptions(options: Partial<DotNotationOptions> = 
 
 /**
  * Creates a no-instance-methods options for no-instance-methods-without-this rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -117,6 +120,7 @@ export function createNoInstanceMethodsOptions(
 
 /**
  * Creates options for no-memo-children rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -126,6 +130,7 @@ export function createNoMemoChildrenOptions(options: Partial<NoMemoChildrenOptio
 
 /**
  * Creates a no-shorthand options for no-shorthand-names rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -135,6 +140,7 @@ export function createNoShorthandOptions(options: Partial<NoShorthandOptions> = 
 
 /**
  * Creates an effect function options for require-named-effect-functions rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -144,6 +150,7 @@ export function createEffectFunctionOptions(options: Partial<EffectFunctionOptio
 
 /**
  * Creates a hook configuration for require-named-effect-functions rule
+ *
  * @param name - The hook name
  * @param options - Partial configuration options
  * @returns The full hook configuration
@@ -157,6 +164,7 @@ export function createHookConfiguration(
 
 /**
  * Creates a require-paired-calls options for require-paired-calls rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -174,6 +182,7 @@ export function createRequirePairedCallsOptions(
 
 /**
  * Creates a react keys options for require-react-component-keys rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -189,6 +198,7 @@ export function createReactKeysOptions(options: Partial<ReactKeysOptions> = {}):
 
 /**
  * Creates options for no-god-components rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -208,6 +218,7 @@ export function createNoGodComponentsOptions(options: Partial<NoGodComponentsOpt
 
 /**
  * Creates a use-exhaustive-dependencies options for use-exhaustive-dependencies rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -224,6 +235,7 @@ export function createUseExhaustiveDependenciesOptions(
 
 /**
  * Creates options for use-hook-at-top-level rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -240,6 +252,7 @@ export function createUseHookAtTopLevelOptions(
 
 /**
  * Creates options for no-useless-use-spring rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -256,6 +269,7 @@ export function createNoUselessUseSpringOptions(
 
 /**
  * Creates options for prefer-pattern-replacements rule
+ *
  * @param patterns - Array of pattern configurations
  * @returns The full options
  */
@@ -267,6 +281,7 @@ export function createPreferPatternReplacementsOptions(
 
 /**
  * Creates options for prefer-enum-item rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -276,6 +291,7 @@ export function createPreferEnumItemOptions(options: Partial<PreferEnumItemOptio
 
 /**
  * Creates options for require-react-display-names rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -287,6 +303,7 @@ export function createRequireReactDisplayNamesOptions(
 
 /**
  * Creates options for require-module-level-instantiation rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -298,6 +315,7 @@ export function createRequireModuleLevelInstantiationOptions(
 
 /**
  * Creates options for naming-convention rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -311,6 +329,7 @@ export function createNamingConventionOptions(options: Partial<NamingConventionO
 
 /**
  * Creates options for no-unused-imports rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -320,6 +339,7 @@ export function createNoUnusedImportsOptions(options: Partial<NoUnusedImportsOpt
 
 /**
  * Creates options for no-events-in-events-callback rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -331,6 +351,7 @@ export function createNoEventsInEventsCallbackOptions(
 
 /**
  * Creates options for no-constant-condition-with-break rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -342,6 +363,7 @@ export function createNoConstantConditionWithBreakOptions(
 
 /**
  * Creates options for no-empty-array-literal rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -377,6 +399,7 @@ export function createNoEmptyArrayLiteralOptions(
 
 /**
  * Creates options for no-array-constructor-elements rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -392,6 +415,7 @@ export function createNoArrayConstructorElementsOptions(
 
 /**
  * Creates options for no-new-instance-in-use-memo rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -403,6 +427,7 @@ export function createNoNewInstanceInUseMemoOptions(
 
 /**
  * Creates options for no-unused-use-memo rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -412,6 +437,7 @@ export function createNoUnusedUseMemoOptions(options: Partial<NoUnusedUseMemoOpt
 
 /**
  * Creates options for no-useless-use-effect rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -431,6 +457,7 @@ export function createNoUselessUseEffectOptions(
 
 /**
  * Creates options for no-useless-use-memo rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -445,6 +472,7 @@ export function createNoUselessUseMemoOptions(options: Partial<NoUselessUseMemoO
 
 /**
  * Creates options for prevent-abbreviations rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */
@@ -464,6 +492,7 @@ export function createPreventAbbreviationsOptions(
 
 /**
  * Creates options for require-serialized-numeric-data-type rule
+ *
  * @param options - Partial configuration options
  * @returns The full options
  */

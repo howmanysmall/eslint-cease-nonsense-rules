@@ -1,16 +1,12 @@
 import { type } from "arktype";
 
-/**
- * An entry for a rule lookup result.
- */
+/** An entry for a rule lookup result. */
 export interface RuleEntry {
 	readonly name: string;
 	readonly rule: Rule | undefined;
 }
 
-/**
- * Formatter function signature.
- */
+/** Formatter function signature. */
 export type RuleFormatter = (entries: ReadonlyArray<RuleEntry>) => string;
 
 const isRule = type(["0 | 1 | 2", "...", "unknown[]"]).readonly();
