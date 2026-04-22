@@ -21,7 +21,7 @@ hero:
 ---
 
 import { Card, CardGrid, LinkCard, Aside } from "@astrojs/starlight/components";
-import { ruleCategories, totalCategories, totalRules } from "../../data/rule-stats";
+import { ruleAwareness, ruleCategories, totalCategories, totalRules } from "../../data/rule-stats";
 
 ## Why Cease Nonsense?
 
@@ -64,6 +64,35 @@ import { ruleCategories, totalCategories, totalRules } from "../../data/rule-sta
 		href={ruleCategories.general.slug}
 	/>
 </CardGrid>
+
+## Rule Type Awareness
+
+<CardGrid>
+	<Card title={ruleAwareness.typeAware.label} icon="seti:typescript">
+		{ruleAwareness.typeAware.count} rules use parser services or the TypeScript checker.
+		<br />
+		React: {ruleCategories.react.typeAwareCount}, Roblox: {ruleCategories.roblox.typeAwareCount}, Naming:
+		{ruleCategories.naming.typeAwareCount}, General: {ruleCategories.general.typeAwareCount}
+	</Card>
+	<Card title={ruleAwareness.astOnly.label} icon="list-format">
+		{ruleAwareness.astOnly.count} rules stay AST-only.
+		<br />
+		React: {ruleCategories.react.astOnlyCount}, Roblox: {ruleCategories.roblox.astOnlyCount}, Naming:
+		{ruleCategories.naming.astOnlyCount}, General: {ruleCategories.general.astOnlyCount}
+	</Card>
+</CardGrid>
+
+| Category                       | Type-aware                              | AST-only                              |
+| ------------------------------ | --------------------------------------- | ------------------------------------- |
+| {ruleCategories.react.label}   | {ruleCategories.react.typeAwareCount}   | {ruleCategories.react.astOnlyCount}   |
+| {ruleCategories.roblox.label}  | {ruleCategories.roblox.typeAwareCount}  | {ruleCategories.roblox.astOnlyCount}  |
+| {ruleCategories.naming.label}  | {ruleCategories.naming.typeAwareCount}  | {ruleCategories.naming.astOnlyCount}  |
+| {ruleCategories.general.label} | {ruleCategories.general.typeAwareCount} | {ruleCategories.general.astOnlyCount} |
+
+<Aside type="note" title="What counts as type-aware?">
+	These rules use parser services or the TypeScript checker in at least one code path. `naming-convention` stays
+	AST-only; the rest of the rules without this badge do not need project type information.
+</Aside>
 
 <Aside type="tip" title="Ready to install?">
 	Follow the [Quick Start guide](/eslint-cease-nonsense-rules/quick-start/) to get up and running in a couple of

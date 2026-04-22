@@ -32,6 +32,7 @@
   "patchedDependencies": {
     "astro@6.1.1": "patches/astro@6.1.1.patch",
     "starlight-scroll-to-top@0.4.0": "patches/starlight-scroll-to-top@0.4.0.patch",
+    "astro-vtbot@2.1.12": "patches/astro-vtbot@2.1.12.patch",
   },
   "overrides": {
     "picomatch": "^4.0.3",

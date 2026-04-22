@@ -4,7 +4,7 @@ description: What Cease Nonsense does, who it's for, and how it works.
 ---
 
 import { Aside, LinkCard, CardGrid, Card } from "@astrojs/starlight/components";
-import { totalRules, ruleCategories } from "../../data/rule-stats";
+import { ruleAwareness, ruleCategories, totalRules } from "../../data/rule-stats";
 
 Cease Nonsense is an ESLint plugin for TypeScript, React, and roblox-ts projects. It ships {totalRules} rules that go
 after the kinds of bugs and anti-patterns that slip past standard linting — things like implicit `children` on
@@ -22,6 +22,36 @@ The plugin splits its rules into two tiers depending on what they need to analyz
 
 All {totalRules} rules ship in a single `recommended` config. You can also pull in category-specific rulesets if you
 only need a subset.
+
+## Rule Type Awareness
+
+<CardGrid>
+	<Card title={ruleAwareness.typeAware.label} icon="seti:typescript">
+		{ruleAwareness.typeAware.count} rules use parser services or the TypeScript checker.
+		<br />
+		React: {ruleCategories.react.typeAwareCount}, Roblox: {ruleCategories.roblox.typeAwareCount}, Naming:
+		{ruleCategories.naming.typeAwareCount}, General: {ruleCategories.general.typeAwareCount}
+	</Card>
+	<Card title={ruleAwareness.astOnly.label} icon="list-format">
+		{ruleAwareness.astOnly.count} rules stay AST-only.
+		<br />
+		React: {ruleCategories.react.astOnlyCount}, Roblox: {ruleCategories.roblox.astOnlyCount}, Naming:
+		{ruleCategories.naming.astOnlyCount}, General: {ruleCategories.general.astOnlyCount}
+	</Card>
+</CardGrid>
+
+| Category                       | Type-aware                              | AST-only                              |
+| ------------------------------ | --------------------------------------- | ------------------------------------- |
+| {ruleCategories.react.label}   | {ruleCategories.react.typeAwareCount}   | {ruleCategories.react.astOnlyCount}   |
+| {ruleCategories.roblox.label}  | {ruleCategories.roblox.typeAwareCount}  | {ruleCategories.roblox.astOnlyCount}  |
+| {ruleCategories.naming.label}  | {ruleCategories.naming.typeAwareCount}  | {ruleCategories.naming.astOnlyCount}  |
+| {ruleCategories.general.label} | {ruleCategories.general.typeAwareCount} | {ruleCategories.general.astOnlyCount} |
+
+<Aside type="note" title="At a glance">
+	`naming-convention` is AST-only. The eight type-aware rules are `dot-notation`, `misleading-lua-tuple-checks`,
+	`no-empty-array-literal`, `no-memo-children`, `prefer-enum-item`, `prefer-enum-member`, `prefer-read-only-props`,
+	and `require-serialized-numeric-data-type`.
+</Aside>
 
 ## Who Is This For?
 

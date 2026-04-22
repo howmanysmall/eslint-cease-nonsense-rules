@@ -16,14 +16,15 @@ import ceaseNonsense from "eslint-plugin-cease-nonsense";
 export default [ceaseNonsense.configs.recommended];
 ```
 
-Rules are grouped into four categories with these default severities:
+Rules are grouped into four categories with these default severities. The table also shows which categories lean on
+type-aware analysis versus AST-only checks:
 
-| Category                       | Rules                                | Default Severity |
-| ------------------------------ | ------------------------------------ | ---------------- |
-| {ruleCategories.react.label}   | {ruleCategories.react.count} rules   | `warn` / `error` |
-| {ruleCategories.roblox.label}  | {ruleCategories.roblox.count} rules  | `warn` / `error` |
-| {ruleCategories.naming.label}  | {ruleCategories.naming.count} rules  | `warn`           |
-| {ruleCategories.general.label} | {ruleCategories.general.count} rules | `warn` / `error` |
+| Category                       | Type-aware                              | AST-only                              | Default Severity |
+| ------------------------------ | --------------------------------------- | ------------------------------------- | ---------------- |
+| {ruleCategories.react.label}   | {ruleCategories.react.typeAwareCount}   | {ruleCategories.react.astOnlyCount}   | `warn` / `error` |
+| {ruleCategories.roblox.label}  | {ruleCategories.roblox.typeAwareCount}  | {ruleCategories.roblox.astOnlyCount}  | `warn` / `error` |
+| {ruleCategories.naming.label}  | {ruleCategories.naming.typeAwareCount}  | {ruleCategories.naming.astOnlyCount}  | `warn`           |
+| {ruleCategories.general.label} | {ruleCategories.general.typeAwareCount} | {ruleCategories.general.astOnlyCount} | `warn` / `error` |
 
 <Aside type="tip">
 	Not using Roblox? You can pull in only the categories you need — see [Category Presets](#category-presets) below.
