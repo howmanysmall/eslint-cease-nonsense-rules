@@ -8,12 +8,12 @@ import rule from "../../src/rules/prefer-enum-member";
 
 import type { InvalidTestCase, ValidTestCase } from "@typescript-eslint/rule-tester";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const currentDirectory = dirname(fileURLToPath(import.meta.url));
 
 // Type-aware tests have cold-start overhead from TypeScript project service initialization
 setDefaultTimeout(30_000);
 
-const testsDir = resolve(__dirname, "..");
+const testsDir = resolve(currentDirectory, "..");
 const eslintProjectPath = join(testsDir, "tsconfig.eslint.json");
 const fixturesRelativeDir = "fixtures/prefer-enum-member";
 
@@ -335,6 +335,25 @@ enum AltColor {
 }
 type Ambiguous = Record<Color, number> | Record<AltColor, number>;
 const values: Ambiguous = { Blue: 1, Green: 2, Red: 3 };`,
+				},
+				{
+					code: `${declarations}
+type Tweenable = CFrame | number;
+type ExtractMembers<TInstance, TValue> = {
+    [K in keyof TInstance as TInstance[K] extends TValue ? K : never]: TInstance[K];
+};
+
+interface BasePart {
+    CFrame: CFrame;
+    Name: string;
+}
+
+declare class CFrame {}
+declare function tween<TInstance>(instance: TInstance, properties: Partial<ExtractMembers<TInstance, Tweenable>>): void;
+declare const basePart: BasePart;
+declare const targetCFrame: CFrame;
+
+tween(basePart, { CFrame: targetCFrame });`,
 				},
 			],
 			"prefer-enum-member-valid",

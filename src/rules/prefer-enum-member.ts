@@ -166,7 +166,8 @@ const preferEnumMember = createRule<Options, MessageIds>({
 		function getUnionTypesCached(type: Type): ReadonlyArray<Type> {
 			const cached = unionTypesCache.get(type);
 			if (cached !== undefined) return cached;
-			const resolved = isUnionType(type) ? unionConstituents(type) : [type];
+			const constituents = isUnionType(type) ? unionConstituents(type) : undefined;
+			const resolved = constituents && constituents.length > 0 ? constituents : [type];
 			unionTypesCache.set(type, resolved);
 			return resolved;
 		}
