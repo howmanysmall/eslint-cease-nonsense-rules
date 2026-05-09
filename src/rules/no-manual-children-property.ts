@@ -94,9 +94,9 @@ function mergeInspectionResults(results: ReadonlyArray<InspectionResult>): Inspe
 	let hasManualChildren = false;
 	let usesApprovedWrapper = false;
 	for (const result of results) {
-		hasChildren = hasChildren || result.hasChildren;
-		hasManualChildren = hasManualChildren || result.hasManualChildren;
-		usesApprovedWrapper = usesApprovedWrapper || result.usesApprovedWrapper;
+		hasChildren ||= result.hasChildren;
+		hasManualChildren ||= result.hasManualChildren;
+		usesApprovedWrapper ||= result.usesApprovedWrapper;
 	}
 
 	return {

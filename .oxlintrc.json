@@ -334,7 +334,14 @@
 		"no-underscore-dangle": [
 			"error",
 			{
-				"allow": ["______IGNORE_ME______", "_options", "_tag", "_url"],
+				"allow": [
+					"__testing",
+					"__testingResolveWorkerPath",
+					"______IGNORE_ME______",
+					"_options",
+					"_tag",
+					"_url",
+				],
 			},
 		],
 		"no-unexpected-multiline": "error",

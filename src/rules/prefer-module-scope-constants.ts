@@ -7,7 +7,7 @@ import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds = "mustUseConst" | "mustBeModuleScope";
 
-const SCREAMING_SNAKE_CASE = /^[A-Z][A-Z0-9_]*$/;
+const SCREAMING_SNAKE_CASE = /^[A-Z][A-Z0-9_]*$/u;
 
 function isTopScope(scope: TSESLint.Scope.Scope): boolean {
 	const { type } = scope;

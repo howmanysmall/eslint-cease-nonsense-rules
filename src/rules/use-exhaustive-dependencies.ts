@@ -399,16 +399,16 @@ function isComputedPropertyIdentifier(identifier: TSESTree.Identifier): boolean 
 }
 
 function isInTypePosition(identifier: TSESTree.Identifier): boolean {
-	let { parent } = identifier;
+	let parent: TSESTree.Node | undefined = identifier.parent ?? undefined;
 
 	while (parent) {
 		if (TS_RUNTIME_EXPRESSIONS.has(parent.type)) {
-			({ parent } = parent);
+			parent = parent.parent ?? undefined;
 			continue;
 		}
 		if (parent.type.startsWith("TS")) return true;
 		if (IS_CEASE_BOUNDARY.has(parent.type)) return false;
-		({ parent } = parent);
+		parent = parent.parent ?? undefined;
 	}
 
 	return false;

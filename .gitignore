@@ -145,3 +145,8 @@ opensrc/
 documentation/.astro
 *.afdesign~lock~
 screenshots/
+
+.agents/skills/mise-configuration/
+.agents/skills/mise-expert/
+.agents/skills/mise-tasks/
+.agents/skills/vitest/

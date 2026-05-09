@@ -23,17 +23,16 @@ function loadOxfmtConfig(): FormatConfiguration {
 	try {
 		const configPath = resolve(process.cwd(), ".oxfmtrc.json");
 		const configText = readFileSync(configPath, "utf8");
-		const parsed: unknown = parseJSONC(configText);
+		const parsed = parseJSONC<Record<string, unknown>>(configText);
 
 		if (typeof parsed !== "object" || parsed === null) {
 			cachedConfig = {};
 			return cachedConfig;
 		}
 
-		const config = parsed as Record<string, unknown>;
-		const { $schema: _schema, ignorePatterns: _ignore, ...formatOptions } = config;
+		const { $schema: _schema, ignorePatterns: _ignore, ...formatOptions } = parsed;
 
-		cachedConfig = formatOptions as FormatConfiguration;
+		cachedConfig = formatOptions;
 		return cachedConfig;
 	} catch {
 		cachedConfig = {};

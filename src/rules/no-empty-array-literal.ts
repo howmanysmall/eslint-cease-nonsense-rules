@@ -1,11 +1,11 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { IndexKind } from "typescript";
+import { IndexKind, isExpression, isTypeNode } from "typescript";
 
 import { createRule } from "../utilities/create-rule";
 
 import type { TSESTree } from "@typescript-eslint/types";
 import type { TSESLint } from "@typescript-eslint/utils";
-import type { Expression, Type } from "typescript";
+import type { Type } from "typescript";
 
 type MessageIds = "noEmptyArrayLiteral" | "suggestUseNewArray";
 
@@ -347,11 +347,12 @@ function isArrayTypeFromTypeNode(
 
 	const { esTreeNodeToTSNodeMap } = parserServices;
 	const tsNode = esTreeNodeToTSNodeMap.get(typeNode);
+	if (!isTypeNode(tsNode)) return false;
 	const checker = parserServices.program.getTypeChecker();
 
 	let resolvedType: Type;
 	try {
-		resolvedType = checker.getTypeFromTypeNode(tsNode as never);
+		resolvedType = checker.getTypeFromTypeNode(tsNode);
 	} catch {
 		return false;
 	}
@@ -384,9 +385,10 @@ function isReadonlyArrayTypeFromChecker(
 	if (!("esTreeNodeToTSNodeMap" in parserServices)) return false;
 
 	const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
+	if (!isExpression(tsNode)) return false;
 	const checker = parserServices.program.getTypeChecker();
 	const resolvedType = checker.getTypeAtLocation(tsNode);
-	const contextualType = checker.getContextualType(tsNode as Expression);
+	const contextualType = checker.getContextualType(tsNode);
 
 	function isReadonlyArrayLike(type: Type): boolean {
 		const indexType = checker.getIndexTypeOfType(type, IndexKind.Number);

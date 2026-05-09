@@ -7,7 +7,7 @@ import { Modifiers, parseOptions, SCHEMA } from "../utilities/naming-convention-
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
-import type { Context, Selector, ValidatorFunction } from "../utilities/naming-convention-utilities";
+import type { Selector, ValidatorFunction } from "../utilities/naming-convention-utilities";
 
 export type MessageIds =
 	| "doesNotMatchFormat"
@@ -74,18 +74,14 @@ const namingConventions = createRule<Options, MessageIds>({
 	create(contextWithoutDefaults) {
 		if (contextWithoutDefaults.filename.endsWith(".d.ts")) return {};
 
-		const context =
+		const options =
 			contextWithoutDefaults.options.length > 0
-				? contextWithoutDefaults
-				: (Object.setPrototypeOf(
-						{
-							options: defaultCamelCaseAllTheThingsConfig,
-						},
-						contextWithoutDefaults,
-					) as Context);
+				? contextWithoutDefaults.options
+				: defaultCamelCaseAllTheThingsConfig;
+		const context = contextWithoutDefaults;
 
-		const validators = parseOptions(context);
-		const parserServices = ESLintUtils.getParserServices(context, true);
+		const validators = parseOptions(contextWithoutDefaults, options);
+		const parserServices = ESLintUtils.getParserServices(contextWithoutDefaults, true);
 		const compilerOptions = parserServices.program?.getCompilerOptions() ?? {};
 		const unusedCache = new WeakMap<TSESLint.Scope.Scope, Map<string, boolean>>();
 		const exportedCache = new WeakMap<TSESTree.Node, Map<string, boolean>>();

@@ -7,6 +7,8 @@ import { resolveRelativeImport } from "../utilities/resolve-import";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
+import type { ReadonlyRecord } from "../types/utility-types";
+
 type MessageIds = "preferDirectionalPadding" | "preferEqualPadding";
 type Options = [];
 
@@ -29,6 +31,10 @@ interface PaddingAttributes {
 	readonly paddingLeft: TSESTree.JSXAttribute;
 	readonly paddingRight: TSESTree.JSXAttribute;
 	readonly paddingTop: TSESTree.JSXAttribute;
+}
+
+function isRecord(value: unknown): value is ReadonlyRecord<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function unwrapComparableNode(node: TSESTree.Expression | TSESTree.Literal): TSESTree.Expression | TSESTree.Literal {
@@ -72,18 +78,15 @@ function areStructurallyEqual(left: unknown, right: unknown): boolean {
 		return true;
 	}
 
-	if (Array.isArray(right)) return false;
-
-	if (typeof left !== "object" || typeof right !== "object") return false;
+	if (Array.isArray(right) || !isRecord(left) || !isRecord(right)) return false;
 
 	const leftEntries = Object.entries(left).filter(([key]) => !IGNORED_COMPARISON_KEYS.has(key));
 	const rightEntries = Object.entries(right).filter(([key]) => !IGNORED_COMPARISON_KEYS.has(key));
 	if (leftEntries.length !== rightEntries.length) return false;
 
-	const rightRecord = right as Record<string, unknown>;
 	for (const [key, value] of leftEntries) {
-		if (!(key in rightRecord)) return false;
-		if (!areStructurallyEqual(value, rightRecord[key])) return false;
+		if (!(key in right)) return false;
+		if (!areStructurallyEqual(value, right[key])) return false;
 	}
 
 	return true;

@@ -69,10 +69,14 @@ export function parseReplacement(replacement: string): ParsedReplacement {
 export function parsePattern(
 	match: string,
 	replacement: string,
-	when: Record<string, WhenCondition> | undefined,
+	when: Readonly<Partial<Record<string, WhenCondition>>> | undefined,
 ): ParsedPattern {
 	const conditions = new Map<string, WhenCondition>();
-	if (when) for (const [key, value] of Object.entries(when)) conditions.set(key, value);
+	if (when) {
+		for (const [key, value] of Object.entries(when)) {
+			if (value !== undefined) conditions.set(key, value);
+		}
+	}
 
 	const constructorMatch = CONSTRUCTOR_PATTERN.exec(match);
 	if (constructorMatch) {

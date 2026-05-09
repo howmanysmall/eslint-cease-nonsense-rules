@@ -14,6 +14,15 @@ interface OxfmtWorkerState {
 
 let workerState: OxfmtWorkerState | undefined;
 
+function isFormatResponse(value: unknown): value is FormatResponse {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		(!("code" in value) || typeof value.code === "string") &&
+		(!("error" in value) || typeof value.error === "string")
+	);
+}
+
 export function __testingResolveWorkerPath(baseUrl: string | URL, exists: (path: string) => boolean): URL {
 	// Try .js first (production/dist), then .ts (development/source)
 	const jsPath = new URL("oxfmt-worker.js", baseUrl);
@@ -73,7 +82,8 @@ export function formatSync(fileName: string, sourceText: string, options: Format
 	const received = receiveMessageOnPort(responsePort);
 	if (received === undefined) throw new Error("No response received from oxfmt worker");
 
-	const response = received.message as FormatResponse;
+	const response: unknown = received.message;
+	if (!isFormatResponse(response)) throw new Error("Invalid response received from oxfmt worker");
 	if (response.error !== undefined) throw new Error(response.error);
 	if (response.code === undefined) throw new Error("Oxfmt returned undefined code");
 

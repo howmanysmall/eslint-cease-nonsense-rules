@@ -6,6 +6,8 @@ import { createRule } from "../utilities/create-rule";
 
 import type { TSESTree } from "@typescript-eslint/types";
 
+import type { ReadonlyRecord } from "../types/utility-types";
+
 type MessageIds = "noRenderHelper";
 
 const REACT_NODE_TYPE_NAMES = new Set(["ReactNode", "ReactElement", "JSXElement"]);
@@ -14,6 +16,14 @@ const HOOK_PATTERN = regex("^use[A-Z]");
 
 function isHookName(name: string): boolean {
 	return HOOK_PATTERN.test(name);
+}
+
+function isNode(value: unknown): value is TSESTree.Node {
+	return typeof value === "object" && value !== null && "type" in value;
+}
+
+function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & ReadonlyRecord<string, unknown> {
+	return true;
 }
 
 function isReactNodeTypeAnnotation(node: TSESTree.TypeNode | undefined): boolean {
@@ -64,16 +74,17 @@ function hasJSXReturn(
 
 		for (const key of validKeys) {
 			if (!(key in current)) continue;
+			if (!hasDynamicProperties(current)) continue;
 
-			const child = current[key as keyof typeof current];
+			const child = current[key];
 			if (!child) continue;
 
 			if (Array.isArray(child)) {
 				for (const item of child) {
-					if (item && typeof item === "object" && "type" in item) checkNode(item as TSESTree.Node);
+					if (isNode(item)) checkNode(item);
 					if (foundJSX) return;
 				}
-			} else if (typeof child === "object" && "type" in child) checkNode(child as TSESTree.Node);
+			} else if (isNode(child)) checkNode(child);
 		}
 	}
 

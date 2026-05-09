@@ -9,9 +9,6 @@ import type { Rule, SourceCode } from "eslint";
 
 import type { Difference } from "../utilities/format-utilities";
 
-const INSERT = "INSERT";
-const DELETE = "DELETE";
-const REPLACE = "REPLACE";
 const DEFAULT_CACHE_CAPACITY = 32;
 
 interface LocatableSourceCode {
@@ -190,9 +187,9 @@ export function createFastFormatRule(options: FastFormatOptions = {}): Rule.Rule
 			},
 			fixable: "code",
 			messages: {
-				[INSERT]: "Insert `{{ insertText }}`",
-				[DELETE]: "Delete `{{ deleteText }}`",
-				[REPLACE]: "Replace `{{ deleteText }}` with `{{ insertText }}`",
+				DELETE: "Delete `{{ deleteText }}`",
+				INSERT: "Insert `{{ insertText }}`",
+				REPLACE: "Replace `{{ deleteText }}` with `{{ insertText }}`",
 			},
 			schema: [],
 			type: "layout",

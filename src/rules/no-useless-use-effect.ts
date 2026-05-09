@@ -575,7 +575,7 @@ function matchEventFlagPattern(
 }
 
 function expressionContainsIdentifier(node: TSESTree.Expression): boolean {
-	const stack: Array<TSESTree.Expression | TSESTree.PrivateIdentifier> = [node];
+	const stack: Array<TSESTree.Node> = [node];
 	const visited = new Set<TSESTree.Node>();
 
 	while (stack.length > 0) {
@@ -637,7 +637,7 @@ function expressionContainsIdentifier(node: TSESTree.Expression): boolean {
 		if (current.type === TSESTree.AST_NODE_TYPES.ObjectExpression) {
 			for (const property of current.properties) {
 				if (property.type === TSESTree.AST_NODE_TYPES.Property) {
-					stack.push(property.value as TSESTree.Expression);
+					stack.push(property.value);
 				}
 			}
 			continue;
@@ -645,7 +645,6 @@ function expressionContainsIdentifier(node: TSESTree.Expression): boolean {
 
 		if (current.type === TSESTree.AST_NODE_TYPES.ChainExpression) {
 			stack.push(current.expression);
-			continue;
 		}
 	}
 
@@ -1149,7 +1148,6 @@ function collectIdentifiers(node: TSESTree.Node): Set<string> {
 
 		if (current.type === TSESTree.AST_NODE_TYPES.ChainExpression) {
 			stack.push(current.expression);
-			continue;
 		}
 	}
 

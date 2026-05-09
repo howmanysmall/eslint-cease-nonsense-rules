@@ -109,7 +109,7 @@ export function captureParameter(node: TSESTree.Expression, sourceCode: SourceCo
  */
 export function matchParameters(
 	patterns: ReadonlyArray<ParsedParameter>,
-	parameters: ReadonlyArray<TSESTree.Expression>,
+	parameters: ReadonlyArray<TSESTree.CallExpressionArgument>,
 	sourceCode: SourceCode,
 ): Map<string, CapturedValue> | undefined {
 	const captures = new Map<string, CapturedValue>();
@@ -123,6 +123,7 @@ export function matchParameters(
 		const pattern = patterns[index];
 		if (pattern === undefined) continue;
 		const parameter = parameters[index];
+		if (parameter?.type === AST_NODE_TYPES.SpreadElement) return undefined;
 
 		const unwrappedParameter = parameter === undefined ? undefined : unwrap(parameter);
 		const isMissing =

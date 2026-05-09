@@ -26,9 +26,7 @@ const isRuleOptions = Compile(
 );
 
 function parsePatterns(patterns: ReadonlyArray<Pattern>): ReadonlyArray<ParsedPattern> {
-	return patterns.map((pattern) =>
-		parsePattern(pattern.match, pattern.replacement, pattern.when as Record<string, never> | undefined),
-	);
+	return patterns.map((pattern) => parsePattern(pattern.match, pattern.replacement, pattern.when));
 }
 
 const preferPatternReplacements = createRule({

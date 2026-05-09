@@ -184,7 +184,7 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 		function addScore(current: number, addition: number): number {
 			const nextScore = current + addition;
 			if (!config.performanceMode) return nextScore;
-			return nextScore > complexityCeiling ? complexityCeiling : nextScore;
+			return Math.min(nextScore, complexityCeiling);
 		}
 
 		function calculateStructuralComplexity(node: TSESTree.Node, depth = 0): number {

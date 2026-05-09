@@ -47,14 +47,6 @@ const UNMEMOIZED_INLINE_TYPES = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.NewExpression,
 ]);
 
-const TS_RUNTIME_EXPRESSIONS = new Set<TSESTree.AST_NODE_TYPES>([
-	TSESTree.AST_NODE_TYPES.TSNonNullExpression,
-	TSESTree.AST_NODE_TYPES.TSAsExpression,
-	TSESTree.AST_NODE_TYPES.TSSatisfiesExpression,
-	TSESTree.AST_NODE_TYPES.TSTypeAssertion,
-	TSESTree.AST_NODE_TYPES.TSInstantiationExpression,
-]);
-
 const DEFAULT_OPTIONS: Required<MemoizedEffectDependenciesOptions> = {
 	environment: "roblox-ts",
 	hooks: [],
@@ -65,25 +57,19 @@ function unwrapExpression(node: TSESTree.Node): TSESTree.Node {
 	let current: TSESTree.Node = node;
 
 	while (true) {
-		if (current.type === TSESTree.AST_NODE_TYPES.ChainExpression) {
-			current = current.expression;
-			continue;
+		switch (current.type) {
+			case TSESTree.AST_NODE_TYPES.ChainExpression:
+			case TSESTree.AST_NODE_TYPES.TSAsExpression:
+			case TSESTree.AST_NODE_TYPES.TSInstantiationExpression:
+			case TSESTree.AST_NODE_TYPES.TSNonNullExpression:
+			case TSESTree.AST_NODE_TYPES.TSSatisfiesExpression:
+			case TSESTree.AST_NODE_TYPES.TSTypeAssertion:
+				current = current.expression;
+				continue;
+			default:
+				return current;
 		}
-		if (TS_RUNTIME_EXPRESSIONS.has(current.type)) {
-			current = (
-				current as
-					| TSESTree.TSAsExpression
-					| TSESTree.TSNonNullExpression
-					| TSESTree.TSSatisfiesExpression
-					| TSESTree.TSTypeAssertion
-					| TSESTree.TSInstantiationExpression
-			).expression;
-			continue;
-		}
-		break;
 	}
-
-	return current;
 }
 
 function getMemberHookName(callee: TSESTree.MemberExpression, reactNamespaces: Set<string>): string | undefined {

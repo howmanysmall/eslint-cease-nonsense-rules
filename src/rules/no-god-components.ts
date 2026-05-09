@@ -1,6 +1,8 @@
-import { TSESTree } from "@typescript-eslint/types";
+import { TSESTree } from "@typescript-eslint/utils";
 
 import type { Rule } from "eslint";
+
+import type { ReadonlyRecord } from "../types/utility-types";
 
 export interface NoGodComponentsOptions {
 	readonly enforceTargetLines?: boolean;
@@ -13,7 +15,7 @@ export interface NoGodComponentsOptions {
 	readonly targetLines?: number;
 }
 
-const COMPONENT_NAME_PATTERN = /^[A-Z]/;
+const COMPONENT_NAME_PATTERN = /^[A-Z]/u;
 
 const FUNCTION_BOUNDARIES = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.FunctionDeclaration,
@@ -167,6 +169,29 @@ function isTypeOnlyNullLiteral(node: TSESTree.Literal): boolean {
 	return parent.type === TSESTree.AST_NODE_TYPES.TSLiteralType;
 }
 
+function isNode(value: unknown): value is TSESTree.Node {
+	return typeof value === "object" && value !== null && "type" in value;
+}
+
+function isFunctionNode(
+	value: unknown,
+): value is TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression {
+	if (!isNode(value)) return false;
+	return (
+		value.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration ||
+		value.type === TSESTree.AST_NODE_TYPES.FunctionExpression ||
+		value.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression
+	);
+}
+
+function isCallExpression(value: unknown): value is TSESTree.CallExpression {
+	return isNode(value) && value.type === TSESTree.AST_NODE_TYPES.CallExpression;
+}
+
+function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & ReadonlyRecord<string, unknown> {
+	return true;
+}
+
 interface BodyAnalysis {
 	readonly maxJsxDepth: number;
 	readonly nullLiterals: ReadonlyArray<TSESTree.Literal>;
@@ -199,9 +224,12 @@ function analyzeComponentBody(
 			if (typeof hookName === "string" && hookName.length > 0 && stateHooks.has(hookName)) stateHookCount += 1;
 		}
 
-		if (current.type === TSESTree.AST_NODE_TYPES.Literal && current.value === null) {
-			const literalNode = current as TSESTree.Literal;
-			if (!isTypeOnlyNullLiteral(literalNode)) nullLiterals.push(literalNode);
+		if (
+			current.type === TSESTree.AST_NODE_TYPES.Literal &&
+			current.value === null &&
+			!isTypeOnlyNullLiteral(current)
+		) {
+			nullLiterals.push(current);
 		}
 
 		function getVisitorKeysForNodeType(nodeType: string): ReadonlyArray<string> {
@@ -213,21 +241,18 @@ function analyzeComponentBody(
 		}
 
 		const keys = getVisitorKeysForNodeType(current.type);
-		const currentRecord = current as unknown as Record<string, unknown>;
+		if (!hasDynamicProperties(current)) return;
 
 		for (const key of keys) {
-			const value = currentRecord[key];
+			const value = current[key];
 			if (Array.isArray(value)) {
 				for (const item of value) {
-					if (typeof item !== "object" || item === null) continue;
-					if ("type" in item) visit(item as TSESTree.Node, nextDepth);
+					if (isNode(item)) visit(item, nextDepth);
 				}
 				continue;
 			}
 
-			if (typeof value === "object" && value !== null && "type" in value) {
-				visit(value as TSESTree.Node, nextDepth);
-			}
+			if (isNode(value)) visit(value, nextDepth);
 		}
 	}
 
@@ -339,41 +364,43 @@ const noGodComponents: Rule.RuleModule = {
 			}
 		}
 
-		function maybeCheckFunction(
-			node: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
-		): void {
+		function maybeCheckFunction(node: unknown): void {
+			if (!isFunctionNode(node)) return;
 			const name = getComponentNameFromFunction(node);
 			if (typeof name !== "string" || name.length === 0) return;
 			checkComponent(node, name);
 		}
 
+		function checkHigherOrderComponentCall(node: unknown): void {
+			if (!isCallExpression(node) || !isReactComponentHOC(node)) return;
+			const [firstArg] = node.arguments;
+			if (
+				!firstArg ||
+				(firstArg.type !== TSESTree.AST_NODE_TYPES.FunctionExpression &&
+					firstArg.type !== TSESTree.AST_NODE_TYPES.ArrowFunctionExpression)
+			) {
+				return;
+			}
+
+			const nameFromParent = getComponentNameFromCallParent(node);
+			const nameFromArg = getComponentNameFromFunction(firstArg);
+			const name = nameFromParent ?? nameFromArg;
+			if (typeof name !== "string" || name.length === 0) return;
+			checkComponent(firstArg, name);
+		}
+
 		return {
 			ArrowFunctionExpression(node) {
-				maybeCheckFunction(node as unknown as TSESTree.ArrowFunctionExpression);
+				maybeCheckFunction(node);
 			},
 			CallExpression(node) {
-				const callExpr = node as unknown as TSESTree.CallExpression;
-				if (!isReactComponentHOC(callExpr)) return;
-				const [firstArg] = callExpr.arguments;
-				if (
-					!firstArg ||
-					(firstArg.type !== TSESTree.AST_NODE_TYPES.FunctionExpression &&
-						firstArg.type !== TSESTree.AST_NODE_TYPES.ArrowFunctionExpression)
-				) {
-					return;
-				}
-
-				const nameFromParent = getComponentNameFromCallParent(callExpr);
-				const nameFromArg = getComponentNameFromFunction(firstArg);
-				const name = nameFromParent ?? nameFromArg;
-				if (typeof name !== "string" || name.length === 0) return;
-				checkComponent(firstArg, name);
+				checkHigherOrderComponentCall(node);
 			},
 			FunctionDeclaration(node) {
-				maybeCheckFunction(node as unknown as TSESTree.FunctionDeclaration);
+				maybeCheckFunction(node);
 			},
 			FunctionExpression(node) {
-				maybeCheckFunction(node as unknown as TSESTree.FunctionExpression);
+				maybeCheckFunction(node);
 			},
 		};
 	},

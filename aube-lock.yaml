@@ -122,15 +122,10 @@ time:
   '@oxfmt/binding-linux-x64-musl@0.48.0': 2026-05-05T13:15:12.464Z
   '@oxfmt/binding-win32-arm64-msvc@0.48.0': 2026-05-05T13:14:00.796Z
   '@oxfmt/binding-win32-x64-msvc@0.48.0': 2026-05-05T13:14:58.675Z
-  '@oxlint-tsgolint/darwin-arm64@0.21.1': 2026-04-16T12:36:48.159Z
   '@oxlint-tsgolint/darwin-arm64@0.22.1': 2026-04-27T15:00:01.179Z
-  '@oxlint-tsgolint/linux-arm64@0.21.1': 2026-04-16T12:37:00.879Z
   '@oxlint-tsgolint/linux-arm64@0.22.1': 2026-04-27T15:00:14.795Z
-  '@oxlint-tsgolint/linux-x64@0.21.1': 2026-04-16T12:37:08.067Z
   '@oxlint-tsgolint/linux-x64@0.22.1': 2026-04-27T15:00:21.209Z
-  '@oxlint-tsgolint/win32-arm64@0.21.1': 2026-04-16T12:37:15.078Z
   '@oxlint-tsgolint/win32-arm64@0.22.1': 2026-04-27T15:00:26.824Z
-  '@oxlint-tsgolint/win32-x64@0.21.1': 2026-04-16T12:37:21.312Z
   '@oxlint-tsgolint/win32-x64@0.22.1': 2026-04-27T15:00:33.215Z
   '@oxlint/binding-darwin-arm64@1.63.0': 2026-05-05T13:13:47.243Z
   '@oxlint/binding-linux-arm64-gnu@1.63.0': 2026-05-05T13:14:00.894Z
@@ -299,7 +294,6 @@ time:
   oxc-parser@0.129.0: 2026-05-05T09:15:18.872Z
   oxc-resolver@11.19.1: 2026-02-28T03:45:02.737Z
   oxfmt@0.48.0: 2026-05-05T13:15:17.501Z
-  oxlint-tsgolint@0.21.1: 2026-04-16T12:36:41.733Z
   oxlint-tsgolint@0.22.1: 2026-04-27T14:59:54.947Z
   oxlint@1.63.0: 2026-05-05T13:15:22.344Z
   p-limit@3.1.0: 2020-11-25T07:42:37.364Z
@@ -328,6 +322,7 @@ time:
   semver@7.7.4: 2026-02-05T17:23:11.131Z
   shebang-command@2.0.0: 2019-09-06T14:53:25.901Z
   shebang-regex@3.0.0: 2019-04-27T10:46:19.256Z
+  skills@1.5.6: 2026-05-08T21:32:17.503Z
   smol-toml@1.6.1: 2026-03-23T15:48:57.449Z
   source-map@0.7.6: 2025-07-24T05:12:51.288Z
   string-width@7.2.0: 2024-06-30T14:48:16.656Z
@@ -515,6 +510,9 @@ importers:
       rotating-file-stream:
         specifier: ^3.2.9
         version: 3.2.9
+      skills:
+        specifier: ^1.5.6
+        version: 1.5.6
       source-map:
         specifier: ^0.7.6
         version: 0.7.6
@@ -2063,6 +2061,11 @@ packages:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
 
+  skills@1.5.6:
+    resolution: {integrity: sha512-CFXuNtPkVQl+Nub72C5apjQwpL195CcVre3H6jSzPLKKR+xsNMdEFmaHcc28M79cZdVmQll1xq5Rxb5PA/tBCQ==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   smol-toml@1.6.1:
     resolution: {integrity: sha512-dWUG8F5sIIARXih1DTaQAX4SsiTXhInKf1buxdY9DIg4ZYPZK5nGM1VRIYmEbDbsHt7USo99xSLFu5Q1IqTmsg==}
     engines: {node: '>= 18'}
@@ -3469,6 +3472,10 @@ snapshots:
       shebang-regex: 3.0.0
 
   shebang-regex@3.0.0: {}
+
+  skills@1.5.6:
+    dependencies:
+      yaml: 2.8.4
 
   smol-toml@1.6.1: {}
 

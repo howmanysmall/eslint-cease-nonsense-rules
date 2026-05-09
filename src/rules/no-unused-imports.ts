@@ -13,19 +13,11 @@ export interface NoUnusedImportsOptions {
 
 type Options = [NoUnusedImportsOptions?];
 
-const JSDOC_PATTERN = new RegExp(
-	`(?:@(?:link|linkcode|linkplain|see)\\s+\\{?\\w+\\b\\}?)|` +
-		`(?:\\{@(?:link|linkcode|linkplain|see)\\s+\\w+\\b\\})|` +
-		`(?:[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\\s+[^}]*\\b\\w+\\b)`,
-	"u",
-);
+const JSDOC_PATTERN =
+	/(?:@(?:link|linkcode|linkplain|see)\s+\{?\w+\b\}?)|(?:\{@(?:link|linkcode|linkplain|see)\s+\w+\b\})|(?:[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\s+[^}]*\b\w+\b)/u;
 
-const JSDOC_IDENTIFIER_PATTERN = new RegExp(
-	`(?:@(?:link|linkcode|linkplain|see)\\s+\\{?(\\w+)\\b\\}?)|` +
-		`(?:\\{@(?:link|linkcode|linkplain|see)\\s+(\\w+)\\b\\})|` +
-		`(?:[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\\s+[^}]*\\b(\\w+)\\b)`,
-	"gu",
-);
+const JSDOC_IDENTIFIER_PATTERN =
+	/(?:@(?:link|linkcode|linkplain|see)\s+\{?(\w+)\b\}?)|(?:\{@(?:link|linkcode|linkplain|see)\s+(\w+)\b\})|(?:[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\s+[^}]*\b(\w+)\b)/gu;
 
 type AnyImportSpecifier =
 	| TSESTree.ImportDefaultSpecifier

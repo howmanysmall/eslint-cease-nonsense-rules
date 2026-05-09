@@ -164,7 +164,7 @@ const noIdentityMap = createRule<Options, MessageIds>({
 						return fixer.replaceText(node, objectText);
 					},
 					messageId: isBinding ? "identityBindingMap" : "identityArrayMap",
-					node: node,
+					node,
 				});
 			},
 		};

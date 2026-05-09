@@ -104,8 +104,8 @@ function groupComments(
 }
 
 function injectMissingBraces(value: string): string {
-	const openCount = (value.match(/{/g) ?? []).length;
-	const closeCount = (value.match(/}/g) ?? []).length;
+	const openCount = (value.match(/\{/gu) ?? []).length;
+	const closeCount = (value.match(/\}/gu) ?? []).length;
 	const diff = openCount - closeCount;
 
 	if (diff > 0) return value + "}".repeat(diff);
@@ -191,7 +191,7 @@ function isExclusion(statements: ReadonlyArray<ParsedStatement>, codeText: strin
 	return false;
 }
 
-const ALLOWED_PARSE_ERROR_PATTERNS = [/A 'return' statement can only be used within a function body/] as const;
+const ALLOWED_PARSE_ERROR_PATTERNS = [/A 'return' statement can only be used within a function body/u] as const;
 type Errors = ReadonlyArray<{ readonly message: string }>;
 function hasOnlyAllowedErrors(errors: Errors): boolean {
 	return errors.every((error) => ALLOWED_PARSE_ERROR_PATTERNS.some((pattern) => pattern.test(error.message)));

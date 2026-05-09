@@ -38,8 +38,8 @@ export interface UseHookAtTopLevelOptions {
 	readonly onlyHooks?: ReadonlyArray<string>;
 }
 
-const HOOK_NAME_PATTERN = /^use[A-Z]/;
-const COMPONENT_NAME_PATTERN = /^[A-Z]/;
+const HOOK_NAME_PATTERN = /^use[A-Z]/u;
+const COMPONENT_NAME_PATTERN = /^[A-Z]/u;
 function isReactHook(name: string): boolean {
 	return HOOK_NAME_PATTERN.test(name);
 }

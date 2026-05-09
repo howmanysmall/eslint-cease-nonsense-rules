@@ -21,7 +21,7 @@ function escapeForRegex(value: string): string {
  */
 export function createContainsDetector(probability: number, patterns: ReadonlyArray<string | RegExp>): Detector {
 	const compiledPatterns = patterns.map((pattern) =>
-		typeof pattern === "string" ? new RegExp(escapeForRegex(pattern), "g") : new RegExp(pattern.source, "g"),
+		typeof pattern === "string" ? new RegExp(escapeForRegex(pattern), "gu") : new RegExp(pattern.source, "gu"),
 	);
 
 	return {

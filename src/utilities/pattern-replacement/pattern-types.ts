@@ -1,8 +1,5 @@
 import type { TSESTree } from "@typescript-eslint/types";
 
-// Brand symbol - internal, cannot be faked
-declare const PatternBrand: unique symbol;
-
 // Extract variable name from capture, stopping at delimiters
 type ExtractVariableName<VariableString extends string> = VariableString extends `${infer Name},${infer Rest}`
 	? [Name, `,${Rest}`]
@@ -42,12 +39,10 @@ type ValidateWhenClause<Match extends string, When> = {
 		: TypeError<`'${Key & string}' is not a capture variable. Valid captures: ${ExtractCaptures<Match> extends never ? "(none)" : ExtractCaptures<Match>}`>;
 };
 
-// Branded pattern type - requires going through pattern()
 export interface Pattern<Match extends string = string> {
 	readonly match: Match;
 	readonly replacement: string;
-	readonly when?: Readonly<Partial<Record<ExtractCaptures<Match>, WhenCondition>>>;
-	readonly [PatternBrand]: Match;
+	readonly when?: Readonly<Partial<Record<string, WhenCondition>>>;
 }
 
 // // Input type for pattern() helper (without brand)
@@ -58,12 +53,28 @@ export interface Pattern<Match extends string = string> {
 // }
 
 // The ONLY way to create a valid Pattern
-export function pattern<const Match extends string, const WhenClause extends object = object>(configuration: {
+export function pattern<
+	const Match extends string,
+	const WhenClause extends Readonly<Partial<Record<string, WhenCondition>>> = Readonly<
+		Partial<Record<string, WhenCondition>>
+	>,
+>(configuration: {
 	readonly match: Match;
 	readonly replacement: string;
 	readonly when?: WhenClause & ValidateWhenClause<Match, WhenClause>;
 }): Pattern<Match> {
-	return configuration as unknown as Pattern<Match>;
+	if (configuration.when === undefined) {
+		return {
+			match: configuration.match,
+			replacement: configuration.replacement,
+		};
+	}
+
+	return {
+		match: configuration.match,
+		replacement: configuration.replacement,
+		when: configuration.when,
+	};
 }
 
 // Rule options

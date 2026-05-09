@@ -1,11 +1,11 @@
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { isUnionType, unionConstituents } from "ts-api-utils";
-import { SymbolFlags } from "typescript";
+import { isExpression, SymbolFlags } from "typescript";
 
 import { createRule } from "../utilities/create-rule";
 
 import type { TSESTree } from "@typescript-eslint/utils";
-import type { Expression, Type, TypeChecker, Node as TypeScriptNode, Symbol as TypeScriptSymbol } from "typescript";
+import type { Type, TypeChecker, Node as TypeScriptNode, Symbol as TypeScriptSymbol } from "typescript";
 
 type MessageIds = "preferEnumItem";
 
@@ -260,7 +260,12 @@ const preferEnumItem = createRule<Options, MessageIds>({
 				return undefined;
 			}
 
-			const type = checker.getContextualType(tsNode as Expression);
+			if (!isExpression(tsNode)) {
+				contextualTypeCache.set(node, false);
+				return undefined;
+			}
+
+			const type = checker.getContextualType(tsNode);
 			contextualTypeCache.set(node, type ?? false);
 			return type;
 		}

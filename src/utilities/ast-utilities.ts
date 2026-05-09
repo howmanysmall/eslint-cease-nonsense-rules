@@ -2,32 +2,23 @@ import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
-const WRAPPER_TYPES = new Set([
-	"TSAsExpression",
-	"TSSatisfiesExpression",
-	"TSTypeAssertion",
-	"TSNonNullExpression",
-	"TSInstantiationExpression",
-	"ChainExpression",
-]);
-
 export function unwrapExpression(expression: TSESTree.Expression): TSESTree.Expression {
 	let current: TSESTree.Expression = expression;
 
-	while (WRAPPER_TYPES.has(current.type)) {
+	while (true) {
 		switch (current.type) {
 			case AST_NODE_TYPES.TSAsExpression:
+			case AST_NODE_TYPES.TSInstantiationExpression:
+			case AST_NODE_TYPES.TSNonNullExpression:
 			case AST_NODE_TYPES.TSSatisfiesExpression:
 			case AST_NODE_TYPES.TSTypeAssertion:
-			case AST_NODE_TYPES.TSNonNullExpression:
-			case AST_NODE_TYPES.TSInstantiationExpression:
 			case AST_NODE_TYPES.ChainExpression:
 				current = current.expression;
-				break;
+				continue;
+			default:
+				return current;
 		}
 	}
-
-	return current;
 }
 
 export function getMemberPropertyName(memberExpression: TSESTree.MemberExpression): string | undefined {

@@ -52,7 +52,7 @@ const fileTextCache = new Map<string, string>();
 const projectRootCache = new Map<string, string | undefined>();
 
 function escapeRegExp(value: string): string {
-	return value.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+	return value.replaceAll(/[.*+?^${}()|[\]\\]/gu, String.raw`\$&`);
 }
 
 function getFileText(filePath: string): string {
