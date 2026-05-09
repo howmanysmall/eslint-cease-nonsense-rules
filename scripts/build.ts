@@ -5,8 +5,8 @@ import { existsSync } from "node:fs";
 import { mkdir, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, resolve } from "node:path";
-import { arch, cwd, exit, platform } from "node:process";
-import { Command } from "@jsr/cliffy__command";
+import { cwd, exit, platform } from "node:process";
+import { Command } from "@cliffy/command";
 import console from "consola";
 import { bold, cyan, gray, green, magenta, red, yellow } from "picocolors";
 import prettyBytes from "pretty-bytes";
@@ -16,16 +16,6 @@ import {
 	getStaleDeclarationSupportPaths,
 	normalizeDeclarationSupportPaths,
 } from "./utilities/declaration-support-cache";
-
-if (typeof Bun === "undefined") {
-	const installScript =
-		platform === "win32"
-			? `${gray("`")}${green("powershell")} ${yellow("-c")} ${cyan('"irm bun.sh/install.ps1 | iex"')}${gray("`")}`
-			: `${gray("`")}${green("curl")} ${yellow("-fsSL")} ${cyan("https://bun.sh/install")} ${magenta("|")} ${green("bash")}${gray("`")}`;
-	console.fail(red("This script must be run with Bun."));
-	console.fail(`Please install Bun using ${installScript}`);
-	exit(1);
-}
 
 const scriptPath = import.meta.path;
 const SCRIPT_NAME = basename(scriptPath, extname(scriptPath));
@@ -173,13 +163,16 @@ function formatBuildMessage(buildRelatedMessage: BuildRelatedMessage): string {
 }
 
 function getTsgoExecutablePath(): string {
-	const platformPackageName = `@typescript/native-preview-${platform}-${arch}`;
-	const packageJsonUrl = import.meta.resolve(`${platformPackageName}/package.json`);
-	const packageJsonPath = Bun.fileURLToPath(packageJsonUrl);
-	const executablePath = resolve(dirname(packageJsonPath), "lib", platform === "win32" ? "tsgo.exe" : "tsgo");
+	const executableName = platform === "win32" ? "tsgo.cmd" : "tsgo";
+	const executablePath = resolve("node_modules", ".bin", executableName);
 
 	if (!existsSync(executablePath)) {
-		throw new Error(`TypeScript Native executable not found: ${executablePath}`);
+		const pathExecutablePath = Bun.which("tsgo");
+		if (pathExecutablePath && existsSync(pathExecutablePath)) return pathExecutablePath;
+
+		throw new Error(
+			`TypeScript Native executable not found. Expected ${executablePath} or a tsgo executable on PATH.`,
+		);
 	}
 
 	return executablePath;
