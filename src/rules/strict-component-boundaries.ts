@@ -12,7 +12,7 @@ interface Options {
 }
 
 function toRegExp(pattern: string): RegExp {
-	return new RegExp(pattern, "i");
+	return new RegExp(pattern, "iu");
 }
 
 function pathSegmentsFromSource(source: string): ReadonlyArray<string> {
@@ -46,6 +46,7 @@ function isValidFixtureImport(pathParts: ReadonlyArray<string>): boolean {
 
 const strictComponentBoundaries = createRule<[Options], "noReachingIntoComponent">({
 	create(context) {
+		// oxlint-disable-next-line typescript/no-useless-default-assignment
 		const [{ allow = [], maxDepth = 1 } = {}] = context.options;
 		// oxlint-disable-next-line no-array-callback-reference
 		const allowPatterns = allow.map(toRegExp);

@@ -347,7 +347,7 @@ function isIgnoredCallExpression(
 	node: TSESTree.JSXElement | TSESTree.JSXFragment,
 	ignoreList: ReadonlyArray<string>,
 ): boolean {
-	// oxlint-disable-next-line prefer-destructuring - not possible
+	// oxlint-disable-next-line prefer-destructuring
 	let parent: TSESTree.Node | undefined = node.parent;
 	if (!parent) return false;
 

@@ -104,7 +104,9 @@ const requireReactDisplayNames = createRule<Options, MessageIds>({
 			"AssignmentExpression[left.type='MemberExpression'][left.property.name='displayName']"(
 				node: TSESTree.AssignmentExpression,
 			): void {
-				const left = node.left as TSESTree.MemberExpression;
+				const { left } = node;
+				if (left.type !== TSESTree.AST_NODE_TYPES.MemberExpression) return;
+
 				if (left.object.type === TSESTree.AST_NODE_TYPES.Identifier) {
 					displayNameAssignments.add(left.object.name);
 				}

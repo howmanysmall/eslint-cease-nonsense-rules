@@ -490,6 +490,18 @@
 		"websearch": "allow",
 	},
 	"plugin": ["opencode-wakatime"],
+	"provider": {
+		"openai": {
+			"models": {
+				"gpt-5.4": {
+					"limit": { "context": 200000, "output": 128000 },
+				},
+				"gpt-5.5": {
+					"limit": { "context": 400000, "output": 128000 },
+				},
+			},
+		},
+	},
 	"share": "manual",
 	"tools": {},
 	"username": "small-eslint",

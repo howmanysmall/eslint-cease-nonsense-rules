@@ -94,9 +94,9 @@ export function captureParameter(node: TSESTree.Expression, sourceCode: SourceCo
 		isComplex = true;
 	} else expressionKey = `const:${constValue}`;
 
-	if (constValue === undefined) return { expressionKey: expressionKey, isComplex, node: expression, sourceText };
+	if (constValue === undefined) return { expressionKey, isComplex, node: expression, sourceText };
 
-	return { constValue, expressionKey: expressionKey, isComplex, node: expression, sourceText };
+	return { constValue, expressionKey, isComplex, node: expression, sourceText };
 }
 
 /**

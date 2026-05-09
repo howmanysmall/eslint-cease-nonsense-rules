@@ -369,12 +369,9 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			});
 		}
 
-		function onFunctionEnter(node: unknown): void {
-			const functionNode = node as
-				| TSESTree.FunctionDeclaration
-				| TSESTree.FunctionExpression
-				| TSESTree.ArrowFunctionExpression;
-
+		function onFunctionEnter(
+			node: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
+		): void {
 			functionStacks.push([...openerStack]);
 			openerStack.length = 0;
 
@@ -382,8 +379,8 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			yieldingReportedFirst = false;
 
 			pushContext({
-				asyncContext: functionNode.async ?? false,
-				currentFunction: functionNode,
+				asyncContext: node.async ?? false,
+				currentFunction: node,
 				hasEarlyExit: false,
 				inCatch: false,
 				inConditional: false,
@@ -496,10 +493,7 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			branchStacks.delete(ifNode);
 		}
 
-		function onIfConsequentExit(node: unknown): void {
-			const consequentNode = node as TSESTree.Statement;
-			const { parent } = consequentNode;
-
+		function onIfConsequentExit({ parent }: TSESTree.Statement): void {
 			if (parent?.type === AST_NODE_TYPES.IfStatement) {
 				const branches = branchStacks.get(parent) ?? [];
 				branches.push(cloneStack());
@@ -513,10 +507,7 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			}
 		}
 
-		function onIfAlternateExit(node: unknown): void {
-			const alternateNode = node as TSESTree.Statement;
-			const { parent } = alternateNode;
-
+		function onIfAlternateExit({ parent }: TSESTree.Statement): void {
 			if (parent?.type === AST_NODE_TYPES.IfStatement) {
 				const branches = branchStacks.get(parent) ?? [];
 				branches.push(cloneStack());
@@ -524,19 +515,13 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			}
 		}
 
-		function onTryStatementEnter(node: unknown): void {
-			const tryNode = node as TSESTree.TryStatement;
-			saveSnapshot(tryNode);
-		}
+		function onTryStatementExit(node: TSESTree.TryStatement): void {
+			const originalStack = stackSnapshots.get(node);
+			const branches = branchStacks.get(node);
 
-		function onTryStatementExit(node: unknown): void {
-			const tryNode = node as TSESTree.TryStatement;
-			const originalStack = stackSnapshots.get(tryNode);
-			const branches = branchStacks.get(tryNode);
-
-			if (tryNode.finalizer) {
-				stackSnapshots.delete(tryNode);
-				branchStacks.delete(tryNode);
+			if (node.finalizer) {
+				stackSnapshots.delete(node);
+				branchStacks.delete(node);
 				return;
 			}
 
@@ -575,18 +560,15 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 				openerStack.push(...commonOpeners);
 			}
 
-			stackSnapshots.delete(tryNode);
-			branchStacks.delete(tryNode);
+			stackSnapshots.delete(node);
+			branchStacks.delete(node);
 		}
 
 		function onTryBlockEnter(): void {
 			pushContext({ inTry: true });
 		}
 
-		function onTryBlockExit(node: unknown): void {
-			const blockNode = node as TSESTree.BlockStatement;
-			const { parent } = blockNode;
-
+		function onTryBlockExit({ parent }: TSESTree.BlockStatement): void {
 			if (parent?.type === AST_NODE_TYPES.TryStatement) {
 				const branches = branchStacks.get(parent) ?? [];
 				branches.push(cloneStack());
@@ -606,10 +588,7 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			pushContext({ inCatch: true });
 		}
 
-		function onCatchClauseExit(node: unknown): void {
-			const catchNode = node as TSESTree.CatchClause;
-			const { parent } = catchNode;
-
+		function onCatchClauseExit({ parent }: TSESTree.CatchClause): void {
 			if (parent?.type === AST_NODE_TYPES.TryStatement) {
 				const branches = branchStacks.get(parent) ?? [];
 				branches.push(cloneStack());
@@ -633,23 +612,21 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			popContext();
 		}
 
-		function onSwitchStatementEnter(node: unknown): void {
-			const switchNode = node as TSESTree.SwitchStatement;
+		function onSwitchStatementEnter(node: TSESTree.SwitchStatement): void {
 			pushContext({ inConditional: true });
-			saveSnapshot(switchNode);
+			saveSnapshot(node);
 		}
 
-		function onSwitchStatementExit(node: unknown): void {
-			const switchNode = node as TSESTree.SwitchStatement;
+		function onSwitchStatementExit(node: TSESTree.SwitchStatement): void {
 			popContext();
 
-			const originalStack = stackSnapshots.get(switchNode);
-			const branches = branchStacks.get(switchNode);
+			const originalStack = stackSnapshots.get(node);
+			const branches = branchStacks.get(node);
 
 			if (originalStack && branches && branches.length > 0) {
-				const hasDefault = switchNode.cases.some((caseNode) => caseNode.test === null);
+				const hasDefault = node.cases.some((caseNode) => caseNode.test === null);
 
-				if (hasDefault && branches.length === switchNode.cases.length) {
+				if (hasDefault && branches.length === node.cases.length) {
 					for (const opener of originalStack) {
 						const branchesWithOpener = branches.filter((branchStack) =>
 							branchStack.some((entry) => entry.index === opener.index),
@@ -688,14 +665,11 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 				}
 			}
 
-			stackSnapshots.delete(switchNode);
-			branchStacks.delete(switchNode);
+			stackSnapshots.delete(node);
+			branchStacks.delete(node);
 		}
 
-		function onSwitchCaseExit(node: unknown): void {
-			const caseNode = node as TSESTree.SwitchCase;
-			const { parent } = caseNode;
-
+		function onSwitchCaseExit({ parent }: TSESTree.SwitchCase): void {
 			if (parent?.type === AST_NODE_TYPES.SwitchStatement) {
 				const branches = branchStacks.get(parent) ?? [];
 				branches.push(cloneStack());
@@ -709,9 +683,8 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			}
 		}
 
-		function onLoopEnter(node: unknown): void {
-			const loopNode = node as LoopLikeStatement;
-			loopStack.push(loopNode);
+		function onLoopEnter(node: LoopLikeStatement): void {
+			loopStack.push(node);
 			pushContext({ inLoop: true });
 		}
 
@@ -740,19 +713,18 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 						paths: `${statementType} at line ${lineNumber}`,
 					},
 					messageId: "unpairedOpener",
-					node: node,
+					node,
 				});
 			}
 		}
 
-		function onBreakContinue(node: unknown): void {
-			const statementNode = node as TSESTree.BreakStatement | TSESTree.ContinueStatement;
+		function onBreakContinue(node: TSESTree.BreakStatement | TSESTree.ContinueStatement): void {
 			if (openerStack.length === 0) return;
 
 			const targetLoop =
-				statementNode.type === AST_NODE_TYPES.ContinueStatement
-					? resolveContinueTargetLoop(statementNode)
-					: resolveBreakTargetLoop(statementNode);
+				node.type === AST_NODE_TYPES.ContinueStatement
+					? resolveContinueTargetLoop(node)
+					: resolveBreakTargetLoop(node);
 
 			if (!targetLoop) return;
 
@@ -762,8 +734,8 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 				const validClosers = getValidClosers(config);
 				const closer = validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
 
-				const statementType = statementNode.type === AST_NODE_TYPES.BreakStatement ? "break" : "continue";
-				const lineNumber = statementNode.loc.start.line;
+				const statementType = node.type === AST_NODE_TYPES.BreakStatement ? "break" : "continue";
+				const lineNumber = node.loc.start.line;
 
 				context.report({
 					data: {
@@ -777,26 +749,25 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			}
 		}
 
-		function onCallExpression(node: unknown): void {
-			const callNode = node as TSESTree.CallExpression;
-			const callName = getCallName(callNode);
+		function onCallExpression(node: TSESTree.CallExpression): void {
+			const callName = getCallName(node);
 			if (callName === undefined || callName === "") return;
 
 			const openerConfig = findPairConfiguration(callName, true);
 			if (openerConfig) {
-				handleOpener(callNode, callName, openerConfig);
+				handleOpener(node, callName, openerConfig);
 				return;
 			}
 
 			if (findPairConfiguration(callName, false)) {
-				handleCloser(callNode, callName);
+				handleCloser(node, callName);
 				return;
 			}
 
 			for (const entry of openerStack) {
 				if (!isRobloxYieldingFunction(callName, entry.config)) continue;
 
-				handleRobloxYield(callNode, callName, entry);
+				handleRobloxYield(node, callName, entry);
 				openerStack.length = 0;
 				yieldingAutoClosed = true;
 				return;
@@ -921,8 +892,9 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			});
 		}
 
-		function onAsyncYield(node: unknown): void {
-			const asyncNode = node as TSESTree.AwaitExpression | TSESTree.YieldExpression;
+		function onAsyncYield(
+			asyncNode: TSESTree.AwaitExpression | TSESTree.ForOfStatement | TSESTree.YieldExpression,
+		): void {
 			for (const { opener, config } of openerStack) {
 				if (config.requireSync !== true) continue;
 
@@ -979,7 +951,7 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			"SwitchStatement:exit": onSwitchStatementExit,
 			ThrowStatement: onEarlyExit,
 
-			TryStatement: onTryStatementEnter,
+			TryStatement: saveSnapshot,
 			"TryStatement > .block": onTryBlockEnter,
 			"TryStatement > .block:exit": onTryBlockExit,
 			"TryStatement > .finalizer": onFinallyBlockEnter,

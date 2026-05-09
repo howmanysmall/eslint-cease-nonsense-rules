@@ -67,11 +67,7 @@ const preferPatternReplacements = createRule({
 			const skippedConflicts: Array<{ replacement: string; conflict: string }> = [];
 
 			for (const pattern of candidates) {
-				const captures = matchParameters(
-					pattern.parameters,
-					node.arguments as ReadonlyArray<TSESTree.Expression>,
-					sourceCode,
-				);
+				const captures = matchParameters(pattern.parameters, node.arguments, sourceCode);
 				if (!(captures && evaluateConditions(pattern.conditions, captures) && canSafelySubstitute(captures))) {
 					continue;
 				}

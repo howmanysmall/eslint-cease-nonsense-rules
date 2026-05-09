@@ -18,6 +18,7 @@ interface InGlobalThis {
 }
 
 export async function getInspectAsync(): Promise<InspectFunction> {
+	// oxlint-disable-next-line typescript/no-unsafe-type-assertion
 	const { Bun, Deno } = globalThis as typeof globalThis & InGlobalThis;
 	if (Bun) return Bun.inspect;
 	if (Deno !== undefined) {

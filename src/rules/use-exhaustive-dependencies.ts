@@ -399,8 +399,7 @@ function isComputedPropertyIdentifier(identifier: TSESTree.Identifier): boolean 
 }
 
 function isInTypePosition(identifier: TSESTree.Identifier): boolean {
-	// oxlint-disable-next-line prefer-destructuring - you cannot
-	let parent: TSESTree.Node | undefined = identifier.parent;
+	let { parent } = identifier;
 
 	while (parent) {
 		if (TS_RUNTIME_EXPRESSIONS.has(parent.type)) {
@@ -416,8 +415,7 @@ function isInTypePosition(identifier: TSESTree.Identifier): boolean {
 }
 
 function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree.Node): boolean {
-	// oxlint-disable-next-line prefer-destructuring - you cannot
-	let parent: TSESTree.Node | undefined = closureNode.parent;
+	let { parent } = closureNode;
 
 	while (parent) {
 		const isFunction = FUNCTION_DECLARATIONS.has(parent.type);
@@ -432,7 +430,6 @@ function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree
 
 			if (isParameter) return true;
 
-			// oxlint-disable-next-line array-callback-return -- extremely dumb false positive
 			return variable.defs.some((definition) => {
 				let node: TSESTree.Node | undefined = definition.node.parent;
 				while (node && node !== functionParent) node = node.parent;

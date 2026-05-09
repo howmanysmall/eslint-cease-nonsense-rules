@@ -170,9 +170,11 @@ function getTsgoExecutablePath(): string {
 		const pathExecutablePath = Bun.which("tsgo");
 		if (pathExecutablePath && existsSync(pathExecutablePath)) return pathExecutablePath;
 
-		throw new Error(
+		const error = new Error(
 			`TypeScript Native executable not found. Expected ${executablePath} or a tsgo executable on PATH.`,
 		);
+		Error.captureStackTrace(error, getTsgoExecutablePath);
+		throw error;
 	}
 
 	return executablePath;

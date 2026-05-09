@@ -152,9 +152,9 @@
 				"id-length": "off",
 				"no-console": "off",
 				"no-namespace": "off",
+				"typescript/no-unsafe-enum-comparison": "off",
 				"unicorn/prefer-code-point": "off",
 				"unicorn/prefer-string-raw": "off",
-				"typescript/no-unsafe-enum-comparison": "off",
 			},
 		},
 		{
@@ -173,6 +173,14 @@
 	"plugins": ["eslint", "import", "jsdoc", "node", "oxc", "promise", "typescript", "unicorn"],
 	"rules": {
 		"arrow-body-style": ["error", "as-needed"],
+		"capitalized-comments": [
+			"off",
+			{
+				"ignoreConsecutiveComments": true,
+				"ignorePattern": "^biome",
+				"line": { "ignorePattern": "^biome" },
+			},
+		],
 		"complexity": "off",
 		"curly": ["error", "multi-line"],
 		"default-case": "off",
@@ -189,7 +197,7 @@
 		"eslint/no-use-before-define": "off",
 		"eslint/require-await": "off",
 		"for-direction": "error",
-		"func-names": ["off", "never", { "generators": "never" }],
+		"func-names": ["error", "as-needed", { "generators": "as-needed" }],
 		"func-style": [
 			"error",
 			"declaration",
@@ -238,6 +246,20 @@
 		"import/no-named-export": "off",
 		"import/no-nodejs-modules": "off",
 		"import/no-relative-parent-imports": "off",
+		"import/no-unassigned-import": [
+			"error",
+			{
+				"allow": [
+					"**/*.css",
+					"**/*.scss",
+					"**/*.less",
+					"**/*.sass",
+					"@total-typescript/ts-reset",
+					"@polyfills/bun/bun-nanoseconds",
+					"dotenv/config",
+				],
+			},
+		],
 		"import/prefer-default-export": "off",
 		"init-declarations": "off",
 		"jsdoc/require-param-type": "off",
@@ -309,6 +331,12 @@
 		"no-ternary": "off",
 		"no-this-before-super": "error",
 		"no-undefined": "off",
+		"no-underscore-dangle": [
+			"error",
+			{
+				"allow": ["______IGNORE_ME______", "_options", "_tag", "_url"],
+			},
+		],
 		"no-unexpected-multiline": "error",
 		"no-unneeded-ternary": "error",
 		"no-unsafe-finally": "error",
@@ -317,7 +345,17 @@
 		"no-unused-expressions": "error",
 		"no-unused-labels": "error",
 		"no-unused-private-class-members": "error",
-		"no-unused-vars": "error",
+		"no-unused-vars": [
+			"warn",
+			{
+				"argsIgnorePattern": "^_",
+				"caughtErrorsIgnorePattern": "^_",
+				"vars": "all",
+				"varsIgnorePattern": "^logger$|^_",
+			},
+		],
+		// Doesn't work award
+		"no-useless-assignment": "off",
 		"no-useless-backreference": "error",
 		"no-useless-catch": "error",
 		"no-useless-concat": "error",
@@ -325,7 +363,8 @@
 		"no-useless-return": "error",
 		"no-useless-undefined": "off",
 		"no-var": "error",
-		"no-void": "off",
+		"no-void": ["error", { "allowAsStatement": true }],
+		"no-warning-comments": "warn",
 		"no-with": "error",
 		"node/no-new-require": "error",
 		"node/no-process-env": "error",
@@ -346,6 +385,15 @@
 		"prefer-template": "error",
 		"promise/avoid-new": "off",
 		"promise/prefer-await-to-callbacks": "off",
+		"react/jsx-filename-extension": [
+			"error",
+			{
+				"allow": "always",
+				"extensions": ["tsx"],
+				"ignoreFilesWithoutCode": true,
+			},
+		],
+		"react/no-unknown-property": ["off"],
 		"require-yield": "error",
 		"sort-imports": [
 			"error",
@@ -374,15 +422,45 @@
 				"readonly": "generic",
 			},
 		],
-		// nursery... obviously. because it doesn't work.
 		"typescript/consistent-return": "off",
-		"typescript/no-unnecessary-condition": "off",
-		"typescript/no-unsafe-type-assertion": "off",
-		// types can be wrong.
-		"typescript/no-useless-default-assignment": "off",
+		"typescript/no-unnecessary-condition": [
+			"off",
+			{
+				"allowConstantLoopConditions": true,
+				"checkTypePredicates": false,
+			},
+		],
+		"typescript/no-unsafe-type-assertion": "error",
+		// Types can be wrong, especially when dealing with packages that use `.d.ts` instead.
+		// Highly recommended to disable this on a case-by-case basis.
+		"typescript/no-useless-default-assignment": "error",
+		"typescript/prefer-literal-enum-member": [
+			"error",
+			{
+				"allowBitwiseExpressions": true,
+			},
+		],
+		// this shit breaks everything
 		"typescript/prefer-optional-chain": "off",
-		"typescript/prefer-readonly-parameter-types": "off",
+		"typescript/prefer-readonly-parameter-types": [
+			"off",
+			{
+				"allow": [
+					{ "from": "package", "name": "BuildArtifact", "package": "bun" },
+					{ "from": "package", "name": "ResolveMessage", "package": "bun" },
+					{ "from": "file", "name": "BunBuildMessage" },
+				],
+			},
+		],
 		"typescript/strict-boolean-expressions": "off",
+		"typescript/switch-exhaustiveness-check": [
+			"error",
+			{
+				"allowDefaultCaseForExhaustiveSwitch": true,
+				"considerDefaultExhaustiveForUnions": true,
+				"requireDefaultForNonUnion": false,
+			},
+		],
 		"typescript/use-unknown-in-catch-callback-variable": "error",
 		"unicorn/catch-error-name": "error",
 		"unicorn/consistent-assert": "error",
@@ -433,7 +511,7 @@
 		"unicorn/no-useless-switch-case": "error",
 		"unicorn/no-zero-fractions": "error",
 		"unicorn/number-literal-case": "off",
-		"unicorn/numeric-separators-style": "error",
+		"unicorn/numeric-separators-style": "off",
 		"unicorn/prefer-array-find": "error",
 		"unicorn/prefer-array-flat": "error",
 		"unicorn/prefer-array-flat-map": "error",
