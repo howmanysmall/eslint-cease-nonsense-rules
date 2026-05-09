@@ -116,7 +116,7 @@
 		},
 		"build-glm": {
 			"description": "Used to generate a plan.",
-			"model": "zai-coding-plan/glm-5",
+			"model": "zai-coding-plan/glm-5.1",
 			"permission": {
 				"bash": {
 					"*": "ask",
@@ -158,7 +158,7 @@
 		},
 		"build-kimi": {
 			"description": "Used to generate a plan.",
-			"model": "kimi-for-coding/k2p5",
+			"model": "kimi-for-coding/k2p6",
 			"permission": {
 				"bash": {
 					"*": "ask",

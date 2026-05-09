@@ -1,0 +1,14 @@
+min_version = "2024.11.0"
+
+[tools]
+aube = "1.9.1"
+"github:howmanysmall/pullhook" = "latest"
+biome = "latest"
+lefthook = "latest"
+node = "25"
+rumdl = "latest"
+tombi = "latest"
+
+[env]
+PROJECT_NAME = "{{ config_root | basename }}"
+_.path = ["./node_modules/.bin"]
