@@ -45,6 +45,7 @@ export const ruleCategoryDefinitions = {
 		rules: [
 			"rules/ban-react-fc",
 			"rules/no-god-components",
+			"rules/no-manual-children-property",
 			"rules/no-memo-children",
 			"rules/no-new-instance-in-use-memo",
 			"rules/no-underscore-react-props",

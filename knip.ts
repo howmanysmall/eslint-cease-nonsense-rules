@@ -7,7 +7,7 @@ const config: KnipConfig = {
 	commitlint: true,
 	entry: ["scripts/*.ts", "benchmarks/**/*.bench.ts", ".opencode/**/*.ts", "tests/**/*.ts"],
 	eslint: true,
-	ignore: ["scripts/plugins/**/*.ts"],
+	ignore: ["scripts/plugins/**/*.ts", "tests/fixtures/**"],
 	ignoreBinaries: ["lefthook", "notify-send", "osascript", "powershell"],
 	ignoreDependencies: ["source-map", "@mitata/counters", "@rbxts/types", "better-result"],
 	oxlint: true,

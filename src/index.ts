@@ -18,6 +18,7 @@ import noEventsInEventsCallback from "./rules/no-events-in-events-callback";
 import noGodComponents from "./rules/no-god-components";
 import noIdentityMap from "./rules/no-identity-map";
 import noInstanceMethodsWithoutThis from "./rules/no-instance-methods-without-this";
+import noManualChildrenProperty from "./rules/no-manual-children-property";
 import noMemoChildren from "./rules/no-memo-children";
 import noNewInstanceInUseMemo from "./rules/no-new-instance-in-use-memo";
 import noPrint from "./rules/no-print";
@@ -77,6 +78,7 @@ export type { NoEventsInEventsCallbackOptions } from "./rules/no-events-in-event
 export type { NoGodComponentsOptions } from "./rules/no-god-components";
 export type { NoIdentityMapOptions } from "./rules/no-identity-map";
 export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
+export type { NoManualChildrenPropertyOptions } from "./rules/no-manual-children-property";
 export type { NoMemoChildrenOptions } from "./rules/no-memo-children";
 export type { NoNewInstanceInUseMemoOptions } from "./rules/no-new-instance-in-use-memo";
 export type { NoShorthandOptions } from "./rules/no-shorthand-names";
@@ -108,6 +110,7 @@ export {
 	createNoEventsInEventsCallbackOptions,
 	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
+	createNoManualChildrenPropertyOptions,
 	createNoMemoChildrenOptions,
 	createNoNewInstanceInUseMemoOptions,
 	createNoShorthandOptions,
@@ -158,6 +161,7 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"no-god-components": noGodComponents,
 	"no-identity-map": noIdentityMap,
 	"no-instance-methods-without-this": noInstanceMethodsWithoutThis,
+	"no-manual-children-property": noManualChildrenProperty,
 	"no-memo-children": noMemoChildren,
 	"no-new-instance-in-use-memo": noNewInstanceInUseMemo,
 	"no-print": noPrint,

@@ -1,8 +1,12 @@
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
-import { regex } from "arktype";
 import { isPropertyReadonlyInType } from "ts-api-utils";
 
 import { createRule } from "../utilities/create-rule";
+import {
+	isFunctionLikeNode,
+	isLikelyReactComponentName,
+	isReactComponentFunction,
+} from "../utilities/react-component-utilities";
 
 import type { TSESTree } from "@typescript-eslint/utils";
 import type { IndexInfo, Symbol as TSSymbol, Type, TypeChecker } from "typescript";
@@ -10,14 +14,11 @@ import type { IndexInfo, Symbol as TSSymbol, Type, TypeChecker } from "typescrip
 type MessageIds = "preferReadOnlyProps" | "readOnlyProp";
 type Options = [];
 
-const COMPONENT_NAME_PATTERN = regex("^[A-Z]", "u");
-const LOWERCASE_PATTERN = regex("[a-z]", "u");
 const READONLY_WRAPPER_NAMES = new Set(["Readonly", "ReadonlyArray", "ReadonlyDeep", "DeepReadonly", "DeepReadOnly"]);
 const REACT_BUILTIN_PROPS = new Set(["children", "key", "ref"]);
 const REACT_FC_TYPE_NAMES = new Set(["FC", "FunctionComponent", "VFC", "VoidFunctionComponent"]);
 const REACT_FORWARD_REF_NAMES = new Set(["forwardRef"]);
 const REACT_MEMO_NAMES = new Set(["memo"]);
-const REACT_ELEMENT_TYPE_NAMES = new Set(["Element", "ReactElement", "ReactNode", "ReactChild", "ReactFragment"]);
 
 function isPropertyReadonlyInTypeOrBase(checker: TypeChecker, type: Type, property: TSSymbol): boolean {
 	const escapedName = property.getEscapedName();
@@ -63,70 +64,6 @@ function isTypeFullyReadonly(checker: TypeChecker, type: Type, visited = new Wea
 	}
 
 	return true;
-}
-
-function isFunctionLike(
-	node: TSESTree.Node,
-): node is TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression {
-	return (
-		node.type === AST_NODE_TYPES.FunctionDeclaration ||
-		node.type === AST_NODE_TYPES.FunctionExpression ||
-		node.type === AST_NODE_TYPES.ArrowFunctionExpression
-	);
-}
-
-function isComponentName(name: string): boolean {
-	if (name.includes("_") || !LOWERCASE_PATTERN.test(name)) return false;
-	return COMPONENT_NAME_PATTERN.test(name);
-}
-
-function isDefinitelyNotReactReturnType(checker: TypeChecker, type: Type): boolean {
-	if (type.isUnion()) {
-		return type.types.every((memberType) => isDefinitelyNotReactReturnType(checker, memberType));
-	}
-
-	const typeString = checker.typeToString(type);
-
-	if (typeString === "null") return false;
-
-	if (typeString.includes("Element") || typeString.includes("ReactNode") || typeString.includes("ReactElement")) {
-		return false;
-	}
-
-	const symbol = type.getSymbol() ?? type.aliasSymbol;
-	if (symbol) {
-		const name = symbol.getName();
-		if (REACT_ELEMENT_TYPE_NAMES.has(name)) return false;
-	}
-
-	if (
-		typeString === "string" ||
-		typeString === "number" ||
-		typeString === "boolean" ||
-		typeString === "undefined" ||
-		typeString === "void" ||
-		typeString === "never"
-	) {
-		return true;
-	}
-
-	if (symbol) {
-		const name = symbol.getName();
-		if (!(REACT_ELEMENT_TYPE_NAMES.has(name) || name.includes("Element"))) return true;
-	}
-
-	return false;
-}
-
-function isReactComponentFunction(checker: TypeChecker, functionType: Type): boolean {
-	const callSignatures = functionType.getCallSignatures();
-	if (callSignatures.length === 0) return true;
-
-	const [firstSignature] = callSignatures;
-	if (!firstSignature) return true;
-
-	const returnType = checker.getReturnTypeOfSignature(firstSignature);
-	return !isDefinitelyNotReactReturnType(checker, returnType);
 }
 
 function getTypeLiteralFromParameter(parameter: TSESTree.Node | undefined): TSESTree.TSTypeLiteral | undefined {
@@ -186,12 +123,12 @@ const preferReadOnlyPropsRule = createRule<Options, MessageIds>({
 		if (!program) {
 			return {
 				FunctionDeclaration(node): void {
-					if (!(node.id && isComponentName(node.id.name))) return;
+					if (!(node.id && isLikelyReactComponentName(node.id.name))) return;
 					reportPropertiesFromFunction(node);
 				},
 				VariableDeclarator(node): void {
-					if (node.id.type !== AST_NODE_TYPES.Identifier || !isComponentName(node.id.name)) return;
-					if (node.init && isFunctionLike(node.init)) reportPropertiesFromFunction(node.init);
+					if (node.id.type !== AST_NODE_TYPES.Identifier || !isLikelyReactComponentName(node.id.name)) return;
+					if (node.init && isFunctionLikeNode(node.init)) reportPropertiesFromFunction(node.init);
 				},
 			};
 		}
@@ -300,13 +237,13 @@ const preferReadOnlyPropsRule = createRule<Options, MessageIds>({
 
 		return {
 			FunctionDeclaration(node): void {
-				if (!(node.id && isComponentName(node.id.name))) return;
+				if (!(node.id && isLikelyReactComponentName(node.id.name))) return;
 				if (node.params.length === 0) return;
 				if (!isFunctionReactComponent(node)) return;
 				reportIfNotReadonly(node, getPropertiesTypeFromFunctionNode(node));
 			},
 			VariableDeclarator(node): void {
-				if (node.id.type !== AST_NODE_TYPES.Identifier || !isComponentName(node.id.name)) return;
+				if (node.id.type !== AST_NODE_TYPES.Identifier || !isLikelyReactComponentName(node.id.name)) return;
 
 				const { init } = node;
 				if (!init) return;
@@ -317,7 +254,7 @@ const preferReadOnlyPropsRule = createRule<Options, MessageIds>({
 					return;
 				}
 
-				if (isFunctionLike(init)) {
+				if (isFunctionLikeNode(init)) {
 					if (init.params.length === 0) return;
 					if (!isFunctionReactComponent(init)) return;
 					reportIfNotReadonly(node, getPropertiesTypeFromFunctionNode(init));
@@ -337,7 +274,7 @@ const preferReadOnlyPropsRule = createRule<Options, MessageIds>({
 						}
 					}
 
-					if (firstArgument && isFunctionLike(firstArgument)) {
+					if (firstArgument && isFunctionLikeNode(firstArgument)) {
 						if (firstArgument.params.length === 0) return;
 						reportIfNotReadonly(node, getPropertiesTypeFromFunctionNode(firstArgument));
 					}

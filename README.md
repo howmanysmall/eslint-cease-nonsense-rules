@@ -468,6 +468,49 @@ const List = memo(<T,>({ items, renderItem }: ListProps<T>) => {
 });
 ```
 
+#### `no-manual-children-property`
+
+Disallow manually declaring `children` in React component props when a wrapper type should own that shape.
+
+**Why**
+
+Manually repeating `children` across prop types is noisy, easy to get inconsistent, and works against a clean shared
+props model. This rule enforces a hard cutover to wrapper-based children typing.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-manual-children-property": ["error", {
+    "mode": "auto",
+    "wrapperNames": ["PropertiesWithChildren"]
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+import type { ReactNode } from "react";
+
+interface FrameProperties {
+	readonly position: UDim2;
+	readonly zIndex?: number;
+	readonly children?: ReactNode;
+}
+```
+
+**✅ Good**
+
+```typescript
+import type { PropertiesWithChildren } from "react";
+
+interface FrameProperties extends PropertiesWithChildren {
+	readonly position: UDim2;
+	readonly zIndex?: number;
+}
+```
+
 #### `no-unused-use-memo`
 
 Disallow standalone `useMemo` calls that ignore the memoized value.

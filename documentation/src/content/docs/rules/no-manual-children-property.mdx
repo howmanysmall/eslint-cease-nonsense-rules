@@ -1,0 +1,111 @@
+---
+title: no-manual-children-property
+badges:
+    - text: "error"
+      variant: danger
+    - text: "Type-aware"
+      variant: note
+description: Disallow manually declaring React children props when a wrapper type should provide them.
+---
+
+import { Aside, Code, LinkCard, CardGrid } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
+
+Disallow manually declaring `children` in React component props when a configured wrapper type should provide it.
+
+## Rule details :badge[Type-aware]{variant=note}
+
+This rule enforces a wrapper-based children model for React component props. By default it expects
+`PropertiesWithChildren` and reports both:
+
+- manual `children` declarations such as `children?: ReactNode`
+- other wrapper styles such as `PropsWithChildren` unless you explicitly allow them
+
+`mode: "auto"` uses type-aware resolution when project type information is available, then falls back to syntax-only
+inspection when it is not.
+
+<Aside type="tip" title="Hard cutover by default">
+	The default configuration intentionally accepts only `PropertiesWithChildren`. If your codebase uses a different
+	wrapper name, add it through `wrapperNames`.
+</Aside>
+
+## Examples
+
+<RuleExample type="fail" title="Incorrect">
+	### Manual children declaration
+
+    <Code
+    	code={[
+    		'import type { ReactNode } from "react";',
+    		"",
+    		"interface FrameProperties {",
+    		"\treadonly position: UDim2;",
+    		"\treadonly zIndex?: number;",
+    		"\treadonly children?: ReactNode;",
+    		"}",
+    	].join("\n")}
+    	lang="ts"
+    />
+
+</RuleExample>
+
+<RuleExample type="pass" title="Correct">
+	### Wrapper-owned children
+
+    <Code
+    	code={[
+    		'import type { PropertiesWithChildren } from "react";',
+    		"",
+    		"interface FrameProperties extends PropertiesWithChildren {",
+    		"\treadonly position: UDim2;",
+    		"\treadonly zIndex?: number;",
+    		"}",
+    	].join("\n")}
+    	lang="ts"
+    />
+
+</RuleExample>
+
+## Options
+
+| Option         | Type                             | Default                      | Notes                                                          |
+| :------------- | :------------------------------- | :--------------------------- | :------------------------------------------------------------- |
+| `mode`         | `"auto" \| "fast" \| "accurate"` | `"auto"`                     | Chooses syntax-only, type-aware, or automatic behavior.        |
+| `wrapperNames` | `string[]`                       | `["PropertiesWithChildren"]` | Accepted wrapper names that are allowed to provide `children`. |
+
+```js
+import ceaseNonsense from "eslint-plugin-cease-nonsense";
+
+export default [
+	{
+		plugins: {
+			"cease-nonsense": ceaseNonsense,
+		},
+		rules: {
+			"cease-nonsense/no-manual-children-property": [
+				"error",
+				{
+					mode: "auto",
+					wrapperNames: ["PropertiesWithChildren", "AppChildrenProps"],
+				},
+			],
+		},
+	},
+];
+```
+
+## Related rules
+
+<CardGrid>
+	<LinkCard
+		title="ban-react-fc"
+		description="Moves component typing away from React.FC and toward direct prop signatures"
+		href="/eslint-cease-nonsense-rules/rules/ban-react-fc/"
+	/>
+	<LinkCard
+		title="prefer-read-only-props"
+		description="Keeps component props immutable once their shape is established"
+		href="/eslint-cease-nonsense-rules/rules/prefer-read-only-props/"
+	/>
+</CardGrid>

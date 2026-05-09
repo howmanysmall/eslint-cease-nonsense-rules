@@ -4,6 +4,7 @@ export const typeAwareRulePaths = [
 	"rules/dot-notation",
 	"rules/misleading-lua-tuple-checks",
 	"rules/no-empty-array-literal",
+	"rules/no-manual-children-property",
 	"rules/no-memo-children",
 	"rules/prefer-enum-item",
 	"rules/prefer-enum-member",

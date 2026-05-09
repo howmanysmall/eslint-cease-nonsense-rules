@@ -10,6 +10,7 @@ import type { NoEmptyArrayLiteralOptions } from "../rules/no-empty-array-literal
 import type { NoEventsInEventsCallbackOptions } from "../rules/no-events-in-events-callback";
 import type { NoGodComponentsOptions } from "../rules/no-god-components";
 import type { NoInstanceMethodsOptions } from "../rules/no-instance-methods-without-this";
+import type { NoManualChildrenPropertyOptions } from "../rules/no-manual-children-property";
 import type { NoMemoChildrenOptions } from "../rules/no-memo-children";
 import type { NoNewInstanceInUseMemoOptions } from "../rules/no-new-instance-in-use-memo";
 import type { NoShorthandOptions } from "../rules/no-shorthand-names";
@@ -126,6 +127,22 @@ export function createNoInstanceMethodsOptions(
  */
 export function createNoMemoChildrenOptions(options: Partial<NoMemoChildrenOptions> = {}): NoMemoChildrenOptions {
 	return { allowedComponents: [], environment: "roblox-ts", ...options };
+}
+
+/**
+ * Creates options for no-manual-children-property rule
+ *
+ * @param options - Partial configuration options
+ * @returns The full options
+ */
+export function createNoManualChildrenPropertyOptions(
+	options: Partial<NoManualChildrenPropertyOptions> = {},
+): NoManualChildrenPropertyOptions {
+	return {
+		mode: "auto",
+		wrapperNames: ["PropertiesWithChildren"],
+		...options,
+	};
 }
 
 /**
