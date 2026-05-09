@@ -1,4 +1,4 @@
-# eslint-cease-nonsense-rules
+# `eslint-cease-nonsense-rules`
 
 An ESLint plugin that catches common mistakes before they reach production. This collection of rules helps prevent
 patterns that lead to bugs, performance issues, and maintainability problems.
@@ -1650,12 +1650,12 @@ while (true) {
 
 #### `fast-format`
 
-Enforces oxfmt code formatting. Reports INSERT, DELETE, and REPLACE operations for formatting differences.
+Enforces `oxfmt` code formatting. Reports INSERT, DELETE, and REPLACE operations for formatting differences.
 
 **Features**
 
 - ✨ Has auto-fix
-- Uses an LRU cache to avoid re-formatting unchanged files
+- Uses an LRU cache to avoid reformatting unchanged files
 
 #### `no-async-constructor`
 
@@ -1823,7 +1823,7 @@ single-replacement cases.
 
 - ✨ Has auto-fix (for single replacements)
 - Aggressive caching of word and name replacements
-- Pre-compiled regex patterns
+- Precompiled regex patterns
 - Early exits for constants and allow-listed names
 
 **❌ Bad**

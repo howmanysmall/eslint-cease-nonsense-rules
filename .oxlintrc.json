@@ -42,6 +42,12 @@
 			},
 		},
 		{
+			"files": ["*.config.ts"],
+			"rules": {
+				"unicorn/prefer-module": "off",
+			},
+		},
+		{
 			"files": [".opencode/**/*.{ts,tsx,js,jsx}"],
 			"rules": {
 				"typescript/require-await": "off",
