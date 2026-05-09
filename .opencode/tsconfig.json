@@ -29,7 +29,7 @@
 		"strictNullChecks": true,
 		"target": "ESNext",
 		"tsBuildInfoFile": "out/tsconfig.tsbuildinfo",
-		"types": ["node"],
+		"types": ["bun", "node"],
 		"useUnknownInCatchVariables": true,
 	},
 	"exclude": ["node_modules"],

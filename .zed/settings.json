@@ -91,6 +91,7 @@
 					"language_server": { "name": "oxfmt" }
 				}
 			],
+			"language_servers": ["biome", "codebook", "dependi", "deputy", "oxfmt", "oxlint", "harper-ls", "wakatime"],
 			"prettier": { "allowed": false }
 		},
 		"JSON": {
@@ -110,12 +111,14 @@
 			"hard_tabs": true,
 			"language_servers": [
 				"biome",
+				"codebook",
 				"dependi",
 				"deputy",
+				"oxfmt",
+				"oxlint",
+				"harper-ls",
 				"json-language-server",
 				"package-version-server",
-				"codebook",
-				"harper-ls",
 				"wakatime"
 			],
 			"prettier": { "allowed": false },
@@ -330,10 +333,6 @@
 			}
 		},
 		"oxfmt": {
-			"binary": {
-				"arguments": ["run", "format", "--", "--lsp"],
-				"path": "aube"
-			},
 			"initialization_options": {
 				"settings": {
 					"configPath": "./.oxfmtrc.json",
