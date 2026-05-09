@@ -3,12 +3,12 @@ min_version: 2.1.4
 commit-msg:
   jobs:
     - name: commitlint
-      run: bun x --bun commitlint --edit {1}
+      run: aubx commitlint --edit {1}
 
 post-merge:
   jobs:
-    - name: bun-install
-      run: bun install
+    - name: aube-install
+      run: aube install
 
 pre-commit:
   parallel: true
@@ -21,7 +21,7 @@ pre-commit:
         - "*.jsonc"
         - "*.grit"
         - "*.code-workspace"
-      run: bun run biome:check --write --no-errors-on-unmatched {staged_files}
+      run: aube run biome:check --write --no-errors-on-unmatched {staged_files}
       stage_fixed: true
 
     - name: js-ts-fix
@@ -31,16 +31,16 @@ pre-commit:
         - "*.ts"
         - "*.tsx"
       run: |
-        bun run oxc --fix {staged_files}
-        bun run biome:check --write --no-errors-on-unmatched {staged_files}
-        bun run format {staged_files}
+        aube run oxc --fix {staged_files}
+        aube run biome:check --write --no-errors-on-unmatched {staged_files}
+        aube run format {staged_files}
       stage_fixed: true
 
     - name: format-json5-mdx
       glob:
         - "*.json5"
         - "*.mdx"
-      run: bun run format {staged_files}
+      run: aube run format {staged_files}
       stage_fixed: true
 
     - name: md-fix
@@ -61,19 +61,19 @@ pre-push:
   parallel: true
   jobs:
     - name: biome-ci
-      run: bun run biome:ci
+      run: aube run biome:ci
 
     - name: oxc
-      run: bun run oxc .
+      run: aube run oxc .
 
     - name: type-check
-      run: bun run type-check
+      run: aube run type-check
 
     - name: knip
-      run: bun run knip
+      run: aube run knip
 
     - name: build
-      run: bun run build
+      run: aube run build
 
     - name: test-documentation
-      run: bun run test tests/documentation/rule-stats.test.ts
+      run: aube run test tests/documentation/rule-stats.test.ts

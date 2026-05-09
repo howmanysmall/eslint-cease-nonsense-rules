@@ -50,3 +50,7 @@ catalog = {
 		"https://www.schemastore.org/api/json/catalog.json",
 	]
 }
+
+[[schemas]]
+path = "https://raw.githubusercontent.com/rvben/rumdl/main/rumdl.schema.json"
+include = ["**/.rumdl.toml", "**/rumdl.toml"]

@@ -356,6 +356,22 @@
 					"updateImportsOnFileMove": { "enabled": "always" }
 				}
 			}
+		},
+		"yaml-language-server": {
+			"settings": {
+				"yaml": {
+					"format": { "singleQuote": true },
+					"keyOrdering": false,
+					"schemas": {
+						"./schemas/kubernetes.yaml": "k8s/**/*.yaml",
+						"~/global-schemas/docker-compose.yaml": "docker-compose*.yml",
+						"https://raw.githubusercontent.com/rvben/rumdl/main/rumdl.schema.json": [
+							"**/.rumdl.toml",
+							"**/rumdl.toml"
+						]
+					}
+				}
+			}
 		}
 	},
 	"prettier": { "allowed": false },
