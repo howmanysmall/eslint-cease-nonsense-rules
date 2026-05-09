@@ -171,6 +171,21 @@
 			"language_servers": ["!eslint", "oxfmt", "..."],
 			"prettier": { "allowed": false }
 		},
+		"Pkl": {
+			"format_on_save": "on",
+			"formatter": {
+				"external": {
+					"arguments": [
+						"-c",
+						"temp=$(mktemp -t pkl.XXXXXX.pkl) && cat > $temp && pkl format -w $temp > /dev/null && cat $temp && rm -f $temp"
+					],
+					"command": "bash"
+				}
+			},
+			"hard_tabs": true,
+			"language_servers": ["pkl-lsp", "wakatime"],
+			"tab_size": 4
+		},
 		"SCSS": {
 			"format_on_save": "on",
 			"formatter": {
