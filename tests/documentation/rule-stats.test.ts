@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 
 import {
 	ruleAwareness,
@@ -13,7 +13,7 @@ describe("rule stats", () => {
 	it("derives totals from the shared rule catalog", () => {
 		expect(totalCategories).toBe(4);
 		expect(totalRules).toBe(58);
-		expect(ruleAwareness).toEqual({
+		expect(ruleAwareness).toStrictEqual({
 			astOnly: {
 				count: 49,
 				description: "Rules that only inspect syntax and do not need project type information.",
@@ -25,15 +25,15 @@ describe("rule stats", () => {
 				label: "Type-aware rules",
 			},
 		});
-		expect(totalRuleAwareness).toEqual({
+		expect(totalRuleAwareness).toStrictEqual({
 			astOnly: 49,
 			typeAware: 9,
 		});
 	});
 
 	it("keeps category stats aligned with the sidebar groups", () => {
-		expect(Object.keys(ruleCategories)).toEqual(["general", "naming", "react", "roblox"]);
-		expect(ruleCategories).toEqual({
+		expect(Object.keys(ruleCategories)).toStrictEqual(["general", "naming", "react", "roblox"]);
+		expect(ruleCategories).toStrictEqual({
 			general: {
 				astOnlyCount: 10,
 				count: 12,
@@ -70,7 +70,7 @@ describe("rule stats", () => {
 				first: items[0],
 				label,
 			})),
-		).toEqual([
+		).toStrictEqual([
 			{ count: 22, first: "rules/ban-react-fc", label: "React Rules" },
 			{ count: 17, first: "rules/ban-instances", label: "Roblox & Luau Rules" },
 			{ count: 7, first: "rules/array-type-generic", label: "Naming & Conventions" },

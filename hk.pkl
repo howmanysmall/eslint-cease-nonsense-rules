@@ -1,0 +1,70 @@
+amends "package://github.com/jdx/hk/releases/download/v1.45.0/hk@1.45.0#/Config.pkl"
+
+local sourceGlobs = List("*.js", "*.jsx", "*.ts", "*.tsx")
+local dataGlobs = List("*.css", "*.html", "*.json", "*.jsonc", "*.grit", "*.code-workspace")
+hooks {
+  ["commit-msg"] {
+    steps {
+      ["commitlint"] {
+        check = "aube run commitlint --edit {{ hook_args }}"
+      }
+    }
+  }
+  ["post-merge"] {
+    steps {
+      ["install"] {
+        check = "aube install"
+      }
+    }
+  }
+  ["pre-commit"] {
+    fix = true
+    stage = true
+    stash = "git"
+    steps {
+      ["biome-data"] {
+        glob = dataGlobs
+        fix = "aube run biome:check --write --no-errors-on-unmatched {{ files }}"
+      }
+      ["js-ts-fix"] {
+        glob = sourceGlobs
+        fix =
+          "aube run oxc --fix {{ files }} && aube run biome:check --write --no-errors-on-unmatched {{ files }} && aube run format {{ files }}"
+      }
+      ["format-json5-mdx"] {
+        glob = List("*.json5", "*.mdx")
+        fix = "aube run format {{ files }}"
+      }
+      ["md-fix"] {
+        glob = List("*.md")
+        fix = "rumdl check --fix {{ files }} && rumdl fmt {{ files }}"
+      }
+      ["toml-fix"] {
+        glob = List("*.toml")
+        fix = "tombi lint {{ files }} && tombi format {{ files }}"
+      }
+    }
+  }
+  ["pre-push"] {
+    steps {
+      ["biome-ci"] {
+        check = "aube run biome:ci"
+      }
+      ["oxc"] {
+        check = "aube run oxc ."
+      }
+      ["type-check"] {
+        check = "aube run type-check"
+      }
+      ["knip"] {
+        check = "aube run knip"
+      }
+      ["build"] {
+        check = "aube run build"
+      }
+      ["test-documentation"] {
+        check = "AGENT=1 aube run test tests/documentation/rule-stats.test.ts"
+      }
+    }
+  }
+}

@@ -7,7 +7,7 @@
 		"noEmit": true,
 		"strict": true,
 		"target": "es2022",
-		"types": ["bun", "node"]
+		"types": ["node", "vitest/globals"],
 	},
-	"include": ["../src/**/*.ts", "./**/*.ts", "./**/*.tsx"]
+	"include": ["../src/**/*.ts", "./**/*.ts", "./**/*.tsx"],
 }

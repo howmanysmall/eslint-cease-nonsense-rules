@@ -8,7 +8,7 @@ on:
       - "src/**/*.ts"
       - "tests/**/*.ts"
       - "package.json"
-      - "bun.lock"
+      - "aube-lock.yaml"
       - "knip.ts"
       - "tsconfig*.json"
       - ".oxlintrc.json"
@@ -18,7 +18,7 @@ on:
       - "src/**/*.ts"
       - "tests/**/*.ts"
       - "package.json"
-      - "bun.lock"
+      - "aube-lock.yaml"
       - "knip.ts"
       - "tsconfig*.json"
       - ".oxlintrc.json"
@@ -35,41 +35,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Rokit
-        uses: CompeyDev/setup-rokit@v0.1.2
+      - name: Setup Mise
+        uses: jdx/mise-action@v2
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Cache Bun dependencies
+      - name: Cache Aube store
         uses: actions/cache@v4
         with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          path: ~/.local/share/aube/store
+          key: ${{ runner.os }}-aube-${{ hashFiles('aube-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-bun-
+            ${{ runner.os }}-aube-
 
       - name: Install
-        run: |
-          bun ci
-          bun ci --cwd documentation
+        run: aube ci
 
       - name: Biome CI
-        run: bun run biome:ci
+        run: aube run biome:ci
 
       - name: Lint
-        run: bun run oxc .
+        run: aube run oxc .
 
       - name: Type Checking
-        run: bun run type-check
+        run: aube run type-check
 
       - name: Knip
-        run: bun run knip
+        run: aube run knip
 
       - name: Build
-        run: bun run build
+        run: aube run build
 
   test:
     runs-on: ubuntu-latest
@@ -82,29 +75,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Rokit
-        uses: CompeyDev/setup-rokit@v0.1.2
+      - name: Setup Mise
+        uses: jdx/mise-action@v2
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Cache Bun dependencies
+      - name: Cache Aube store
         uses: actions/cache@v4
         with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          path: ~/.local/share/aube/store
+          key: ${{ runner.os }}-aube-${{ hashFiles('aube-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-bun-
+            ${{ runner.os }}-aube-
 
       - name: Install
-        run: bun ci
+        run: aube ci
 
       - name: Get shard test files
         id: shard
         run: |
-          ALL_FILES=$(bun ./scripts/shard-tests.ts ${{ matrix.shard }} ${{ env.TEST_SHARDS }})
+          ALL_FILES=$(./scripts/shard-tests.ts ${{ matrix.shard }} ${{ env.TEST_SHARDS }})
           # Exclude heavy test files (handled by test-heavy job)
           SHARD_FILES=$(echo "$ALL_FILES" | tr ' ' '\n' | grep -v -E '(prevent-abbreviations|naming-convention\.test)' | tr '\n' ' ')
           echo "files=$SHARD_FILES" >> $GITHUB_OUTPUT
@@ -115,7 +103,7 @@ jobs:
         env:
           AGENT: 1
         run: |
-          bun test --bail ${{ steps.shard.outputs.files }}
+          aube run test -- --bail ${{ steps.shard.outputs.files }}
 
   test-heavy:
     runs-on: ubuntu-latest
@@ -131,24 +119,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Rokit
-        uses: CompeyDev/setup-rokit@v0.1.2
+      - name: Setup Mise
+        uses: jdx/mise-action@v2
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Cache Bun dependencies
+      - name: Cache Aube store
         uses: actions/cache@v4
         with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          path: ~/.local/share/aube/store
+          key: ${{ runner.os }}-aube-${{ hashFiles('aube-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-bun-
+            ${{ runner.os }}-aube-
 
       - name: Install
-        run: bun ci
+        run: aube ci
 
       - name: Run heavy test file with case sharding
         env:
@@ -156,4 +139,4 @@ jobs:
           TEST_CASE_SHARD: ${{ matrix.case_shard }}/${{ env.HEAVY_TEST_SHARDS }}
         run: |
           echo "Running ${{ matrix.file }} with case shard ${{ matrix.case_shard }}/${{ env.HEAVY_TEST_SHARDS }}"
-          bun test --bail ${{ matrix.file }}
+          aube run test -- --bail ${{ matrix.file }}

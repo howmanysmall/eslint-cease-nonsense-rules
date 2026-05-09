@@ -4,7 +4,8 @@ min_version = "2024.11.0"
 aube = "1.9.1"
 "github:howmanysmall/pullhook" = "latest"
 biome = "latest"
-lefthook = "latest"
+bun = "latest"
+hk = "latest"
 node = "25"
 rumdl = "latest"
 tombi = "latest"
@@ -12,3 +13,28 @@ tombi = "latest"
 [env]
 PROJECT_NAME = "{{ config_root | basename }}"
 _.path = ["./node_modules/.bin"]
+
+[tasks.install]
+description = "Install root and documentation dependencies with Aube."
+run = "aube ci"
+
+[tasks.lint]
+description = "Run the project lint pipeline through Aube."
+run = "aube run lint"
+
+[tasks.test]
+description = "Run the Vitest suite through Aube."
+env = { AGENT = "1" }
+run = "aube run test"
+
+[tasks.build]
+description = "Build the plugin with the Bun-run TypeScript build script."
+run = "aube run build"
+
+[tasks.type-check]
+description = "Run tsgo type checking through Aube."
+run = "aube run type-check"
+
+[tasks.check]
+depends = ["lint", "type-check", "build"]
+description = "Run the standard non-test verification checks."

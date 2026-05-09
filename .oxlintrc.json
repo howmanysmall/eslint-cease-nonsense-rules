@@ -15,9 +15,7 @@
 		"node": true,
 	},
 	"extends": [],
-	"globals": {
-		"Bun": "readonly",
-	},
+	"globals": {},
 	"ignorePatterns": [
 		"dist",
 		"**/do-not-sync-ever/**",
@@ -261,7 +259,6 @@
 					"**/*.less",
 					"**/*.sass",
 					"@total-typescript/ts-reset",
-					"@polyfills/bun/bun-nanoseconds",
 					"dotenv/config",
 				],
 			},
@@ -458,11 +455,7 @@
 		"typescript/prefer-readonly-parameter-types": [
 			"off",
 			{
-				"allow": [
-					{ "from": "package", "name": "BuildArtifact", "package": "bun" },
-					{ "from": "package", "name": "ResolveMessage", "package": "bun" },
-					{ "from": "file", "name": "BunBuildMessage" },
-				],
+				"allow": [{ "from": "file", "name": "BunBuildMessage" }],
 			},
 		],
 		"typescript/strict-boolean-expressions": "off",

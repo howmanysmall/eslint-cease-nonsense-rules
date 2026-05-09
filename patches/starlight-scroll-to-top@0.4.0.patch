@@ -1,5 +1,4 @@
 diff --git a/index.ts b/index.ts
-index 89995827f5a5e82796d24a2576aab0e2d4b5bafb..832e28fba7a8cff7e00735924d0353ed31afec4a 100644
 --- a/index.ts
 +++ b/index.ts
 @@ -1,6 +1,6 @@
@@ -8,23 +7,22 @@ index 89995827f5a5e82796d24a2576aab0e2d4b5bafb..832e28fba7a8cff7e00735924d0353ed
  import type ScrollToTopOptions from "./common/types.js";
 -import starlightScrollToTopIntegration from "./libs/integration.js";
 +import { starlightScrollToTopIntegration } from "./libs/integration.js";
- 
- 
+
+
  export default function starlightScrollToTop(userConfig: ScrollToTopOptions = {}): StarlightPlugin {
 diff --git a/libs/integration.ts b/libs/integration.ts
-index 108620d291a15012f9fe20df78e33d4bc0cdb6ea..b554af3125ea074e669efdf0a77f2d568bfd251c 100644
 --- a/libs/integration.ts
 +++ b/libs/integration.ts
-@@ -7,7 +7,7 @@ import type ScrollToTopOptions from '../common/types.js';
+@@ -7,7 +7,7 @@
  const __dirname = dirname(fileURLToPath(import.meta.url));
- 
- 
+
+
 -export default function starlightScrollToTopIntegration(options: ScrollToTopOptions = {}): AstroIntegration {
 +export function starlightScrollToTopIntegration(options: ScrollToTopOptions = {}): AstroIntegration {
    // Set default options.
    const config = {
      position: "right",
-@@ -36,7 +36,7 @@ export default function starlightScrollToTopIntegration(options: ScrollToTopOpti
+@@ -36,7 +36,7 @@
          // Using 'page' mode so Vite will automatically minify and optimize the script
          injectScript('page', `
              ${fileContent};
@@ -34,7 +32,6 @@ index 108620d291a15012f9fe20df78e33d4bc0cdb6ea..b554af3125ea074e669efdf0a77f2d56
        },
        'astro:build:done': ({ logger }) => {
 diff --git a/libs/scroll-to-top.js b/libs/scroll-to-top.js
-index d96f9ee7aba6b3d7f3fed48ccbd1a503fe73581b..029866ee6799f78b6b42f42ce8bafb34ed640434 100644
 --- a/libs/scroll-to-top.js
 +++ b/libs/scroll-to-top.js
 @@ -11,7 +11,7 @@
@@ -46,7 +43,7 @@ index d96f9ee7aba6b3d7f3fed48ccbd1a503fe73581b..029866ee6799f78b6b42f42ce8bafb34
    const {
      position = "right",
      smoothScroll = true,
-@@ -497,5 +497,3 @@ function initScrollToTop(config = {}) {
+@@ -497,5 +497,3 @@
      }
    });
  }

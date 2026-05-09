@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 
 import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../../src/rules/no-useless-use-spring";
 import {
@@ -41,13 +41,13 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createBanInstancesOptions();
-			expect(configuration).toEqual({ bannedInstances: [] });
+			expect(configuration).toStrictEqual({ bannedInstances: [] });
 		});
 
 		it("should override defaults", () => {
 			expect.assertions(1);
 			const configuration = createBanInstancesOptions({ bannedInstances: ["Part"] });
-			expect(configuration).toEqual({ bannedInstances: ["Part"] });
+			expect(configuration).toStrictEqual({ bannedInstances: ["Part"] });
 		});
 	});
 
@@ -55,7 +55,7 @@ describe("configure-utilities", () => {
 		it("should create a pair configuration with minimal options", () => {
 			expect.assertions(1);
 			const configuration = createPairConfiguration("debug.profilebegin", "debug.profileend");
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				closer: "debug.profileend",
 				opener: "debug.profilebegin",
 			});
@@ -68,7 +68,7 @@ describe("configure-utilities", () => {
 				requireSync: true,
 			});
 			expect(configuration.opener).toBe("start");
-			expect(configuration.closer).toEqual(["end1", "end2"]);
+			expect(configuration.closer).toStrictEqual(["end1", "end2"]);
 			expect(configuration.platform).toBe("roblox");
 			expect(configuration.requireSync).toBe(true);
 		});
@@ -77,7 +77,7 @@ describe("configure-utilities", () => {
 	describe("defaultRobloxProfilePair", () => {
 		it("should have correct default values", () => {
 			expect.assertions(1);
-			expect(defaultRobloxProfilePair).toEqual({
+			expect(defaultRobloxProfilePair).toStrictEqual({
 				closer: "debug.profileend",
 				opener: "debug.profilebegin",
 				platform: "roblox",
@@ -91,7 +91,7 @@ describe("configure-utilities", () => {
 		it("should create complexity configuration with defaults", () => {
 			expect.assertions(1);
 			const configuration = createComplexityConfiguration();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				baseThreshold: 10,
 				errorThreshold: 25,
 				interfacePenalty: 20,
@@ -112,7 +112,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createNoInstanceMethodsOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				checkPrivate: false,
 				checkProtected: false,
 				checkPublic: false,
@@ -130,7 +130,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createNoMemoChildrenOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				allowedComponents: [],
 				environment: "roblox-ts",
 			});
@@ -142,7 +142,7 @@ describe("configure-utilities", () => {
 				allowedComponents: ["Modal"],
 				environment: "standard",
 			});
-			expect(configuration.allowedComponents).toEqual(["Modal"]);
+			expect(configuration.allowedComponents).toStrictEqual(["Modal"]);
 			expect(configuration.environment).toBe("standard");
 		});
 	});
@@ -151,7 +151,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createNoUselessUseSpringOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				springHooks: ["useSpring"],
 				staticGlobalFactories: DEFAULT_STATIC_GLOBAL_FACTORIES,
 				treatEmptyDepsAsViolation: true,
@@ -165,8 +165,8 @@ describe("configure-utilities", () => {
 				staticGlobalFactories: ["CustomFactory"],
 				treatEmptyDepsAsViolation: false,
 			});
-			expect(configuration.springHooks).toEqual(["useMotion"]);
-			expect(configuration.staticGlobalFactories).toEqual(["CustomFactory"]);
+			expect(configuration.springHooks).toStrictEqual(["useMotion"]);
+			expect(configuration.staticGlobalFactories).toStrictEqual(["CustomFactory"]);
 			expect(configuration.treatEmptyDepsAsViolation).toBe(false);
 		});
 	});
@@ -175,7 +175,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createNoShorthandOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				allowPropertyAccess: [],
 				ignoreShorthands: [],
 				shorthands: {},
@@ -185,13 +185,13 @@ describe("configure-utilities", () => {
 		it("should override defaults", () => {
 			expect.assertions(1);
 			const configuration = createNoShorthandOptions({ shorthands: { plr: "player" } });
-			expect(configuration.shorthands).toEqual({ plr: "player" });
+			expect(configuration.shorthands).toStrictEqual({ plr: "player" });
 		});
 
 		it("should accept ignoreShorthands", () => {
 			expect.assertions(1);
 			const configuration = createNoShorthandOptions({ ignoreShorthands: ["Props", "*Ref"] });
-			expect(configuration.ignoreShorthands).toEqual(["Props", "*Ref"]);
+			expect(configuration.ignoreShorthands).toStrictEqual(["Props", "*Ref"]);
 		});
 	});
 
@@ -199,7 +199,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createEffectFunctionOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				environment: "standard",
 				hooks: [],
 			});
@@ -216,7 +216,7 @@ describe("configure-utilities", () => {
 		it("should create hook configuration with defaults", () => {
 			expect.assertions(1);
 			const configuration = createHookConfiguration("useEffect");
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				allowAsync: false,
 				name: "useEffect",
 			});
@@ -234,7 +234,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createRequirePairedCallsOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				allowConditionalClosers: false,
 				allowMultipleOpeners: true,
 				maxNestingDepth: 0,
@@ -255,7 +255,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createReactKeysOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				allowRootKeys: false,
 				ignoreCallExpressions: [],
 				iterationMethods: ["map", "forEach", "filter"],
@@ -274,7 +274,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createNoGodComponentsOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				enforceTargetLines: true,
 				ignoreComponents: [],
 				maxDestructuredProps: 5,
@@ -290,7 +290,7 @@ describe("configure-utilities", () => {
 			expect.assertions(3);
 			const configuration = createNoGodComponentsOptions({ ignoreComponents: ["Big"], maxLines: 300 });
 			expect(configuration.maxLines).toBe(300);
-			expect(configuration.ignoreComponents).toEqual(["Big"]);
+			expect(configuration.ignoreComponents).toStrictEqual(["Big"]);
 			expect(configuration.targetLines).toBe(120);
 		});
 	});
@@ -299,7 +299,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createUseExhaustiveDependenciesOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				hooks: [],
 				reportMissingDependenciesArray: false,
 				reportUnnecessaryDependencies: false,
@@ -317,7 +317,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createUseHookAtTopLevelOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				ignoreHooks: [],
 				importSources: {},
 				onlyHooks: [],
@@ -332,10 +332,10 @@ describe("configure-utilities", () => {
 				importSources: { react: ["useEffect"] },
 				onlyHooks: ["useEffect"],
 			});
-			expect(configuration.ignoreHooks).toEqual(["useLegacyHook"]);
+			expect(configuration.ignoreHooks).toStrictEqual(["useLegacyHook"]);
 			// @ts-expect-error Testing purposes
-			expect(configuration.importSources).toEqual({ react: ["useEffect"] });
-			expect(configuration.onlyHooks).toEqual(["useEffect"]);
+			expect(configuration.importSources).toStrictEqual({ react: ["useEffect"] });
+			expect(configuration.onlyHooks).toStrictEqual(["useEffect"]);
 		});
 	});
 
@@ -343,7 +343,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createPreferEnumItemOptions();
-			expect(configuration).toEqual({ fixNumericToValue: false, performanceMode: false });
+			expect(configuration).toStrictEqual({ fixNumericToValue: false, performanceMode: false });
 		});
 
 		it("should override defaults", () => {
@@ -357,7 +357,7 @@ describe("configure-utilities", () => {
 		it("should create options with empty patterns by default", () => {
 			expect.assertions(1);
 			const configuration = createPreferPatternReplacementsOptions();
-			expect(configuration).toEqual({ patterns: [] });
+			expect(configuration).toStrictEqual({ patterns: [] });
 		});
 
 		it("should accept an array of patterns", () => {
@@ -376,7 +376,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createRequireReactDisplayNamesOptions();
-			expect(configuration).toEqual({ environment: "roblox-ts" });
+			expect(configuration).toStrictEqual({ environment: "roblox-ts" });
 		});
 
 		it("should override defaults", () => {
@@ -390,7 +390,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createRequireModuleLevelInstantiationOptions();
-			expect(configuration).toEqual({ classes: {} });
+			expect(configuration).toStrictEqual({ classes: {} });
 		});
 
 		it("should override defaults", () => {
@@ -401,7 +401,7 @@ describe("configure-utilities", () => {
 					Server: "@rbxts/net",
 				},
 			});
-			expect(configuration.classes).toEqual({
+			expect(configuration.classes).toStrictEqual({
 				Log: "@rbxts/rbxts-sleitnick-log",
 				Server: "@rbxts/net",
 			});
@@ -413,7 +413,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createNamingConventionOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				format: ["PascalCase"],
 				selector: "interface",
 			});
@@ -422,7 +422,7 @@ describe("configure-utilities", () => {
 		it("should override format", () => {
 			expect.assertions(1);
 			const configuration = createNamingConventionOptions({ format: ["camelCase", "PascalCase"] });
-			expect(configuration.format).toEqual(["camelCase", "PascalCase"]);
+			expect(configuration.format).toStrictEqual(["camelCase", "PascalCase"]);
 		});
 
 		it("should override selector", () => {
@@ -436,7 +436,7 @@ describe("configure-utilities", () => {
 			const configuration = createNamingConventionOptions({
 				custom: { match: true, regex: "^[A-Z]" },
 			});
-			expect(configuration.custom).toEqual({ match: true, regex: "^[A-Z]" });
+			expect(configuration.custom).toStrictEqual({ match: true, regex: "^[A-Z]" });
 		});
 
 		it("should override multiple fields", () => {
@@ -447,10 +447,10 @@ describe("configure-utilities", () => {
 				format: ["camelCase"],
 				selector: "class",
 			});
-			expect(configuration.format).toEqual(["camelCase"]);
+			expect(configuration.format).toStrictEqual(["camelCase"]);
 			expect(configuration.selector).toBe("class");
 			// @ts-expect-error Testing purposes
-			expect(configuration.custom).toEqual({ match: false });
+			expect(configuration.custom).toStrictEqual({ match: false });
 		});
 	});
 
@@ -458,7 +458,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createNoUnusedImportsOptions();
-			expect(configuration).toEqual({ checkJSDoc: true });
+			expect(configuration).toStrictEqual({ checkJSDoc: true });
 		});
 
 		it("should override defaults", () => {
@@ -470,7 +470,7 @@ describe("configure-utilities", () => {
 		it("should merge partial overrides", () => {
 			expect.assertions(1);
 			const configuration = createNoUnusedImportsOptions({ checkJSDoc: false });
-			expect(configuration).toEqual({ checkJSDoc: false });
+			expect(configuration).toStrictEqual({ checkJSDoc: false });
 		});
 	});
 
@@ -478,7 +478,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createNoEventsInEventsCallbackOptions();
-			expect(configuration).toEqual({ eventsImportPaths: [] });
+			expect(configuration).toStrictEqual({ eventsImportPaths: [] });
 		});
 
 		it("should override defaults", () => {
@@ -486,7 +486,7 @@ describe("configure-utilities", () => {
 			const configuration = createNoEventsInEventsCallbackOptions({
 				eventsImportPaths: ["server/networking", "client/networking"],
 			});
-			expect(configuration.eventsImportPaths).toEqual(["server/networking", "client/networking"]);
+			expect(configuration.eventsImportPaths).toStrictEqual(["server/networking", "client/networking"]);
 		});
 	});
 
@@ -494,7 +494,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createNoConstantConditionWithBreakOptions();
-			expect(configuration).toEqual({ loopExitCalls: [] });
+			expect(configuration).toStrictEqual({ loopExitCalls: [] });
 		});
 
 		it("should override defaults", () => {
@@ -502,7 +502,7 @@ describe("configure-utilities", () => {
 			const configuration = createNoConstantConditionWithBreakOptions({
 				loopExitCalls: ["coroutine.yield", "task.wait"],
 			});
-			expect(configuration.loopExitCalls).toEqual(["coroutine.yield", "task.wait"]);
+			expect(configuration.loopExitCalls).toStrictEqual(["coroutine.yield", "task.wait"]);
 		});
 	});
 
@@ -510,7 +510,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createNoEmptyArrayLiteralOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				allowedEmptyArrayContexts: {
 					arrowFunctionBody: true,
 					assignmentExpressions: true,
@@ -543,7 +543,7 @@ describe("configure-utilities", () => {
 			expect(configuration.ignoreInferredNonEmptyLiterals).toBe(false);
 			expect(configuration.inferTypeForEmptyArrayFix).toBe(true);
 			expect(configuration.requireExplicitGenericOnNewArray).toBe(false);
-			expect(configuration.allowedEmptyArrayContexts).toEqual({
+			expect(configuration.allowedEmptyArrayContexts).toStrictEqual({
 				arrowFunctionBody: true,
 				assignmentExpressions: true,
 				assignmentPatterns: true,
@@ -563,7 +563,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createNoArrayConstructorElementsOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				environment: "roblox-ts",
 				requireExplicitGenericOnNewArray: true,
 			});
@@ -584,7 +584,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createNoNewInstanceInUseMemoOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				constructors: ["Instance"],
 				environment: "roblox-ts",
 				maxHelperTraceDepth: 4,
@@ -594,7 +594,7 @@ describe("configure-utilities", () => {
 		it("should override constructors", () => {
 			expect.assertions(1);
 			const configuration = createNoNewInstanceInUseMemoOptions({ constructors: ["Vector3"] });
-			expect(configuration.constructors).toEqual(["Vector3"]);
+			expect(configuration.constructors).toStrictEqual(["Vector3"]);
 		});
 
 		it("should override environment", () => {
@@ -614,7 +614,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createNoUselessUseEffectOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				environment: "roblox-ts",
 				hooks: ["useEffect", "useLayoutEffect", "useInsertionEffect"],
 				propertyCallbackPrefixes: ["on"],
@@ -633,8 +633,8 @@ describe("configure-utilities", () => {
 				reportNotifyParent: false,
 			});
 			expect(configuration.environment).toBe("standard");
-			expect(configuration.hooks).toEqual(["useEffect"]);
-			expect(configuration.propertyCallbackPrefixes).toEqual(["handle"]);
+			expect(configuration.hooks).toStrictEqual(["useEffect"]);
+			expect(configuration.propertyCallbackPrefixes).toStrictEqual(["handle"]);
 			expect(configuration.reportNotifyParent).toBe(false);
 		});
 	});
@@ -643,7 +643,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createNoUselessUseMemoOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				dependencyMode: "non-updating",
 				environment: "roblox-ts",
 				staticGlobalFactories: DEFAULT_STATIC_GLOBAL_FACTORIES,
@@ -659,7 +659,7 @@ describe("configure-utilities", () => {
 			});
 			expect(configuration.dependencyMode).toBe("aggressive");
 			expect(configuration.environment).toBe("standard");
-			expect(configuration.staticGlobalFactories).toEqual(["Foo"]);
+			expect(configuration.staticGlobalFactories).toStrictEqual(["Foo"]);
 		});
 	});
 
@@ -667,7 +667,7 @@ describe("configure-utilities", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
 			const configuration = createPreventAbbreviationsOptions();
-			expect(configuration).toEqual({
+			expect(configuration).toStrictEqual({
 				allowList: {},
 				checkFilenames: true,
 				checkProperties: false,
@@ -680,7 +680,7 @@ describe("configure-utilities", () => {
 		it("should override allowList", () => {
 			expect.assertions(1);
 			const configuration = createPreventAbbreviationsOptions({ allowList: { err: true } });
-			expect(configuration.allowList).toEqual({ err: true });
+			expect(configuration.allowList).toStrictEqual({ err: true });
 		});
 
 		it("should override checkFilenames", () => {
@@ -704,7 +704,7 @@ describe("configure-utilities", () => {
 		it("should override ignore", () => {
 			expect.assertions(1);
 			const configuration = createPreventAbbreviationsOptions({ ignore: ["test", TEST_IGNORE_REGEX] });
-			expect(configuration.ignore).toEqual(["test", TEST_IGNORE_REGEX]);
+			expect(configuration.ignore).toStrictEqual(["test", TEST_IGNORE_REGEX]);
 		});
 
 		it("should override replacements", () => {
@@ -712,7 +712,7 @@ describe("configure-utilities", () => {
 			const configuration = createPreventAbbreviationsOptions({
 				replacements: { err: { error: true } },
 			});
-			expect(configuration.replacements).toEqual({ err: { error: true } });
+			expect(configuration.replacements).toStrictEqual({ err: { error: true } });
 		});
 
 		it("should override multiple fields together", () => {
@@ -723,10 +723,10 @@ describe("configure-utilities", () => {
 				checkProperties: true,
 				ignore: ["test"],
 			});
-			expect(configuration.allowList).toEqual({ fn: true });
+			expect(configuration.allowList).toStrictEqual({ fn: true });
 			expect(configuration.checkFilenames).toBe(false);
 			expect(configuration.checkProperties).toBe(true);
-			expect(configuration.ignore).toEqual(["test"]);
+			expect(configuration.ignore).toStrictEqual(["test"]);
 		});
 	});
 });

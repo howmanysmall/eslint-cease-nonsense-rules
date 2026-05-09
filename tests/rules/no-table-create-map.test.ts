@@ -1,4 +1,4 @@
-import { describe } from "bun:test";
+import { describe } from "vitest";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

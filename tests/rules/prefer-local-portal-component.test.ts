@@ -1,5 +1,5 @@
-import { describe } from "bun:test";
 import { join } from "node:path";
+import { describe } from "vitest";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

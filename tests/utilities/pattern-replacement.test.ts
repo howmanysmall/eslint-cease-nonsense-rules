@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 
 import { generateReplacement, getReplacementIdentifier } from "../../src/utilities/pattern-replacement";

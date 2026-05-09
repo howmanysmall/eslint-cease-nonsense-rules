@@ -1,8 +1,8 @@
-import { describe, setDefaultTimeout } from "bun:test";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, vi } from "vitest";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
-import { fileURLToPath } from "bun";
 
 import rule from "../../src/rules/dot-notation";
 
@@ -10,12 +10,12 @@ import type { InvalidTestCase, ValidTestCase } from "@typescript-eslint/rule-tes
 
 import type { DotNotationOptions } from "../../src/rules/dot-notation";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = import.meta.dirname;
 const testsDir = resolve(__dirname, "..");
 const fixturesDir = join(testsDir, "fixtures", "dot-notation");
 const fixtureProjectPath = join(fixturesDir, "tsconfig.json");
 
-setDefaultTimeout(30_000);
+vi.setConfig({ testTimeout: 30_000 });
 
 const ruleTester = new RuleTester({
 	languageOptions: {

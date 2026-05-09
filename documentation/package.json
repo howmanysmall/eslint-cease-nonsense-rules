@@ -24,7 +24,7 @@
 		"starlight-codeblock-fullscreen": "^0.1.4",
 		"starlight-heading-badges": "^0.7.0",
 		"starlight-links-validator": "^0.21.0",
-		"starlight-scroll-to-top": "^0.4.0"
+		"starlight-scroll-to-top": "0.4.0"
 	},
 	"devDependencies": {
 		"@fontsource/bricolage-grotesque": "^5.2.10",
@@ -34,10 +34,5 @@
 	},
 	"overrides": {
 		"picomatch": "^4.0.3"
-	},
-	"patchedDependencies": {
-		"starlight-scroll-to-top@0.4.0": "patches/starlight-scroll-to-top@0.4.0.patch",
-		"astro@6.1.1": "patches/astro@6.1.1.patch",
-		"astro-vtbot@2.1.12": "patches/astro-vtbot@2.1.12.patch"
 	}
 }

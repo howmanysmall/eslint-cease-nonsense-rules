@@ -8,4 +8,4 @@ readonly OUTPUT_FILE="${FILE_TO_BUILD%.ts}.js"
 
 echo "Building ${FILE_TO_BUILD} into ${OUTPUT_FILE}..."
 
-bun build --target=node --outfile="${OUTPUT_FILE}" --format=esm --production "${FILE_TO_BUILD}"
+aube x esbuild --bundle --platform=node --outfile="${OUTPUT_FILE}" --format=esm "${FILE_TO_BUILD}"

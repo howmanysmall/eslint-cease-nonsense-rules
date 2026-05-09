@@ -41,7 +41,7 @@ An LRU cache (default capacity: 32 files) skips unchanged files so repeated runs
 		Unchanged files get skipped via an internal cache keyed on filename + content.
 	</Card>
 	<Card title="Auto-fix" icon="approve-check">
-		Works with `eslint --fix` and `bun run lint:fix`.
+		Works with `eslint --fix` and `aube run lint:fix`.
 	</Card>
 	<Card title="Unified tooling" icon="rocket">
 		No separate formatter step. Formatting runs alongside your other lint rules.
@@ -55,7 +55,7 @@ An LRU cache (default capacity: 32 files) skips unchanged files so repeated runs
 		### Fixing issues
 		Run the fix command to format your project:
 
-    	<Code code={["bun run lint:fix", "eslint --fix src/"].join("\n")} lang="bash" />
+    	<Code code={["aube run lint:fix", "eslint --fix src/"].join("\n")} lang="bash" />
     </TabItem>
     <TabItem label="Configuration" icon="seti:typescript">
     	### ESLint setup

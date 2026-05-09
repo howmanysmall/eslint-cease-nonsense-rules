@@ -1,13 +1,12 @@
-import { afterEach, describe, expect, it, mock, spyOn } from "bun:test";
-// oxlint-disable-next-line no-namespace
-import * as fs from "node:fs";
+import fs from "node:fs";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { __testing, generateDifferences, getExtension } from "../../src/utilities/format-utilities";
 
 describe("format-utilities", () => {
 	afterEach(() => {
 		__testing.resetConfigCache();
-		mock.restore();
+		vi.restoreAllMocks();
 	});
 
 	it("should load the same configuration", () => {
@@ -19,25 +18,25 @@ describe("format-utilities", () => {
 
 	it("returns empty config when file does not exist", () => {
 		__testing.resetConfigCache();
-		spyOn(fs, "readFileSync").mockImplementation(() => {
+		vi.spyOn(fs, "readFileSync").mockImplementation(() => {
 			throw new Error("ENOENT");
 		});
 		const config = __testing.loadOxfmtConfig();
-		expect(config).toEqual({});
+		expect(config).toStrictEqual({});
 	});
 
 	it("returns empty config when JSON is not an object", () => {
 		__testing.resetConfigCache();
-		spyOn(fs, "readFileSync").mockReturnValue('"just a string"');
+		vi.spyOn(fs, "readFileSync").mockReturnValue('"just a string"');
 		const config = __testing.loadOxfmtConfig();
-		expect(config).toEqual({});
+		expect(config).toStrictEqual({});
 	});
 
 	it("returns empty config when JSON is null", () => {
 		__testing.resetConfigCache();
-		spyOn(fs, "readFileSync").mockReturnValue("null");
+		vi.spyOn(fs, "readFileSync").mockReturnValue("null");
 		const config = __testing.loadOxfmtConfig();
-		expect(config).toEqual({});
+		expect(config).toStrictEqual({});
 	});
 
 	describe("getExtension", () => {
@@ -84,22 +83,22 @@ describe("format-utilities", () => {
 	describe("generateDifferences", () => {
 		it("returns empty array when strings are identical", () => {
 			const result = generateDifferences("hello", "hello");
-			expect(result).toEqual([]);
+			expect(result).toStrictEqual([]);
 		});
 
 		it("detects INSERT operation", () => {
 			const result = generateDifferences("helloworld", "hello world");
-			expect(result).toEqual([{ insertText: " ", offset: 5, operation: "INSERT" }]);
+			expect(result).toStrictEqual([{ insertText: " ", offset: 5, operation: "INSERT" }]);
 		});
 
 		it("detects DELETE operation", () => {
 			const result = generateDifferences("hello  world", "hello world");
-			expect(result).toEqual([{ deleteText: " ", offset: 5, operation: "DELETE" }]);
+			expect(result).toStrictEqual([{ deleteText: " ", offset: 5, operation: "DELETE" }]);
 		});
 
 		it("detects REPLACE operation (DELETE + INSERT merged)", () => {
 			const result = generateDifferences("hello\tworld", "hello world");
-			expect(result).toEqual([{ deleteText: "\t", insertText: " ", offset: 5, operation: "REPLACE" }]);
+			expect(result).toStrictEqual([{ deleteText: "\t", insertText: " ", offset: 5, operation: "REPLACE" }]);
 		});
 
 		it("handles multiple operations", () => {
@@ -111,12 +110,12 @@ describe("format-utilities", () => {
 
 		it("handles beginning of string changes", () => {
 			const result = generateDifferences("  hello", "hello");
-			expect(result).toEqual([{ deleteText: "  ", offset: 0, operation: "DELETE" }]);
+			expect(result).toStrictEqual([{ deleteText: "  ", offset: 0, operation: "DELETE" }]);
 		});
 
 		it("handles end of string changes", () => {
 			const result = generateDifferences("hello", "hello\n");
-			expect(result).toEqual([{ insertText: "\n", offset: 5, operation: "INSERT" }]);
+			expect(result).toStrictEqual([{ insertText: "\n", offset: 5, operation: "INSERT" }]);
 		});
 	});
 });

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { Command } from "@jsr/cliffy__command";
+import { Command } from "@cliffy/command";
 
 import getRulesCommand from "./script-commands/tester/commands/get-rules-command";
 import listRulesCommand from "./script-commands/tester/commands/list-rules-command";

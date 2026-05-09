@@ -1,17 +1,17 @@
-import { describe, setDefaultTimeout } from "bun:test";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, vi } from "vitest";
 import tsParser from "@typescript-eslint/parser";
-import { fileURLToPath } from "bun";
 import { RuleTester } from "eslint";
 
 import rule from "../../src/rules/no-memo-children";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const directoryName = import.meta.dirname;
 
 // Type-aware tests have cold-start overhead from TypeScript project service initialization
-setDefaultTimeout(30_000);
+vi.setConfig({ testTimeout: 30_000 });
 
-const fixturesDir = join(__dirname, "../fixtures/no-memo-children");
+const fixturesDir = join(directoryName, "../fixtures/no-memo-children");
 
 const ruleTester = new RuleTester({
 	languageOptions: {

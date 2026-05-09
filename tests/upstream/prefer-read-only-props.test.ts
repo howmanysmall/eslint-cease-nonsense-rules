@@ -1,11 +1,9 @@
-import { dirname } from "node:path";
 import parser from "@typescript-eslint/parser";
-import { fileURLToPath } from "bun";
 import { RuleTester } from "eslint";
 
 import rule from "../../src/rules/prefer-read-only-props";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const testDirectory = import.meta.dirname;
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -17,7 +15,7 @@ const ruleTester = new RuleTester({
 				allowDefaultProject: ["*.ts", "*.tsx"],
 				maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 64,
 			},
-			tsconfigRootDir: __dirname,
+			tsconfigRootDir: testDirectory,
 		},
 		sourceType: "module",
 	},

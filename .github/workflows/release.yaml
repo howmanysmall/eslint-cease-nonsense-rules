@@ -34,8 +34,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Rokit
-        uses: CompeyDev/setup-rokit@v0.1.2
+      - name: Setup Mise
+        uses: jdx/mise-action@v2
 
       - name: Determine dry run flag
         id: set_dry_run
@@ -50,11 +50,6 @@ jobs:
           echo "DRY_RUN=$DRY_RUN" >> "$GITHUB_ENV"
           echo "dry_run=$DRY_RUN" >> "$GITHUB_OUTPUT"
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
       - name: Setup Node.js for NPM publishing
         uses: actions/setup-node@v4
         with:
@@ -62,16 +57,14 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        run: |
-          bun ci
-          bun ci --cwd documentation
+        run: aube ci
 
       - name: Validate tag matches package.json version
         id: version_check
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-          PACKAGE_VERSION=$(bun --print 'JSON.parse(await Bun.file("package.json").text()).version')
+          PACKAGE_VERSION=$(node -p 'JSON.parse(require("node:fs").readFileSync("package.json", "utf8")).version')
           echo "Tag version: $TAG_VERSION"
           echo "Package version: $PACKAGE_VERSION"
           if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
@@ -92,13 +85,13 @@ jobs:
           fi
 
       - name: Lint
-        run: bun run lint
+        run: aube run lint
 
       - name: Type Checking
-        run: bun run type-check
+        run: aube run type-check
 
       - name: Build
-        run: bun run build
+        run: aube run build
 
       - name: Assert build artifacts exist
         run: |
@@ -133,21 +126,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Rokit
-        uses: CompeyDev/setup-rokit@v0.1.2
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
+      - name: Setup Mise
+        uses: jdx/mise-action@v2
 
       - name: Install dependencies
-        run: bun ci
+        run: aube ci
 
       - name: Get shard test files
         id: shard
         run: |
-          ALL_FILES=$(bun ./scripts/shard-tests.ts ${{ matrix.shard }} ${{ env.TEST_SHARDS }})
+          ALL_FILES=$(./scripts/shard-tests.ts ${{ matrix.shard }} ${{ env.TEST_SHARDS }})
           # Exclude heavy test files (handled by test-heavy job)
           SHARD_FILES=$(echo "$ALL_FILES" | tr ' ' '\n' | grep -v -E '(prevent-abbreviations|naming-convention\.test)' | tr '\n' ' ')
           echo "files=$SHARD_FILES" >> $GITHUB_OUTPUT
@@ -158,7 +146,7 @@ jobs:
         env:
           AGENT: 1
         run: |
-          bun test --bail ${{ steps.shard.outputs.files }}
+          aube run test -- --bail ${{ steps.shard.outputs.files }}
 
   test-heavy:
     runs-on: ubuntu-latest
@@ -174,16 +162,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Rokit
-        uses: CompeyDev/setup-rokit@v0.1.2
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
+      - name: Setup Mise
+        uses: jdx/mise-action@v2
 
       - name: Install dependencies
-        run: bun ci
+        run: aube ci
 
       - name: Run heavy test file with case sharding
         env:
@@ -191,7 +174,7 @@ jobs:
           TEST_CASE_SHARD: ${{ matrix.case_shard }}/${{ env.HEAVY_TEST_SHARDS }}
         run: |
           echo "Running ${{ matrix.file }} with case shard ${{ matrix.case_shard }}/${{ env.HEAVY_TEST_SHARDS }}"
-          bun test --bail ${{ matrix.file }}
+          aube run test -- --bail ${{ matrix.file }}
 
   publish:
     runs-on: ubuntu-latest
@@ -204,13 +187,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Rokit
-        uses: CompeyDev/setup-rokit@v0.1.2
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
+      - name: Setup Mise
+        uses: jdx/mise-action@v2
 
       - name: Setup Node.js for NPM publishing
         uses: actions/setup-node@v4
@@ -219,7 +197,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        run: bun ci
+        run: aube ci
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -232,11 +210,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          bun x changelogithub
+          aube x changelogithub
 
       - name: Publish to NPM (Trusted Publishing)
         if: ${{ env.DRY_RUN != 'true' }}
-        run: bun x npm@latest publish --provenance --access public
+        run: aube x npm@latest publish --provenance --access public
 
       - name: Upload npm debug log on failure
         if: failure()

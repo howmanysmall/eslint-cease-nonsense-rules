@@ -7,7 +7,7 @@
 		"resolveJsonModule": true,
 		"strict": true,
 		"target": "es2022",
-		"types": ["bun", "node"]
+		"types": ["node", "vitest/globals"],
 	},
-	"include": ["../../scripts/**/*.ts", "./**/*.ts"]
+	"include": ["../../scripts/**/*.ts", "./**/*.ts"],
 }

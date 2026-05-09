@@ -3,7 +3,6 @@
 		"allowSyntheticDefaultImports": true,
 		"allowUnreachableCode": false,
 		"checkJs": true,
-		"downlevelIteration": true,
 		"exactOptionalPropertyTypes": false,
 		"experimentalDecorators": true,
 		"forceConsistentCasingInFileNames": true,
@@ -30,9 +29,9 @@
 		"strictNullChecks": true,
 		"target": "ESNext",
 		"tsBuildInfoFile": "out/tsconfig.tsbuildinfo",
-		"types": ["bun", "node"],
-		"useUnknownInCatchVariables": true
+		"types": ["node"],
+		"useUnknownInCatchVariables": true,
 	},
 	"exclude": ["node_modules"],
-	"include": ["plugins/**/*.ts", "tool/**/*.ts", "tools/**/*.ts", "utilities/**/*.ts", "skills/**/*.ts"]
+	"include": ["plugins/**/*.ts", "tool/**/*.ts", "tools/**/*.ts", "utilities/**/*.ts", "skills/**/*.ts"],
 }

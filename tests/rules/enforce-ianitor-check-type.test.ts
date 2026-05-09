@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import parser from "@typescript-eslint/parser";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import { RuleTester } from "eslint";
@@ -398,7 +398,7 @@ interface ComplexService extends Base {
 			visitor.TSTypeAliasDeclaration?.(aliasNode);
 			visitor.TSInterfaceDeclaration?.(interfaceNode);
 
-			expect(reports).toEqual([
+			expect(reports).toStrictEqual([
 				{ messageId: "missingIanitorCheckType" },
 				{ messageId: "complexInterfaceNeedsCheck" },
 			]);

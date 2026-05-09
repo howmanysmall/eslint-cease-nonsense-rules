@@ -21,7 +21,7 @@ patterns that lead to bugs, performance issues, and maintainability problems.
 ## Installation
 
 ```bash
-bun add -D @pobammer-ts/eslint-cease-nonsense-rules
+aube add -D @pobammer-ts/eslint-cease-nonsense-rules
 ```
 
 ## Usage

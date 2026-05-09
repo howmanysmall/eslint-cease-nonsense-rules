@@ -150,7 +150,7 @@ case "${1:---serve}" in
         ;;
     --serve | --launch)
         shift || true
-        exec bun x --bun chrome-devtools-mcp@latest --executablePath "$chrome_path" "$@"
+        exec aube x chrome-devtools-mcp@latest --executablePath "$chrome_path" "$@"
         ;;
     *)
         error "Usage: $0 [--print-path|--serve]"

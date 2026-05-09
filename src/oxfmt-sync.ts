@@ -2,6 +2,8 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { MessageChannel, receiveMessageOnPort, Worker } from "node:worker_threads";
 
+import type { MessagePort } from "node:worker_threads";
+
 import type { FormatConfiguration, FormatRequest, FormatResponse } from "./oxfmt-worker";
 
 const FORMAT_TIMEOUT = 30_000;
@@ -33,7 +35,7 @@ export function __testingResolveWorkerPath(baseUrl: string | URL, exists: (path:
 	const tsFilePath = fileURLToPath(tsPath);
 	if (exists(tsFilePath)) return tsPath;
 
-	throw new Error(`Oxfmt worker not found at ${jsFilePath} or ${tsFilePath}. Did you run 'bun run build'?`);
+	throw new Error(`Oxfmt worker not found at ${jsFilePath} or ${tsFilePath}. Did you run 'aube run build'?`);
 }
 
 function resolveWorkerPath(): URL {

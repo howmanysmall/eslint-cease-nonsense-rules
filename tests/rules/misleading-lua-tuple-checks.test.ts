@@ -1,14 +1,14 @@
-import { describe, setDefaultTimeout } from "bun:test";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, vi } from "vitest";
 import tsParser from "@typescript-eslint/parser";
-import { fileURLToPath } from "bun";
 import { RuleTester } from "eslint";
 
 import rule from "../../src/rules/misleading-lua-tuple-checks";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = import.meta.dirname;
 
-setDefaultTimeout(30_000);
+vi.setConfig({ testTimeout: 30_000 });
 
 const fixturesDir = join(__dirname, "../fixtures/misleading-lua-tuple-checks");
 const filename = join(fixturesDir, "input.ts");

@@ -1,17 +1,17 @@
-import { describe, setDefaultTimeout } from "bun:test";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, vi } from "vitest";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
-import { fileURLToPath } from "bun";
 
 import rule from "../../src/rules/prefer-enum-member";
 
 import type { InvalidTestCase, ValidTestCase } from "@typescript-eslint/rule-tester";
 
-const currentDirectory = dirname(fileURLToPath(import.meta.url));
+const currentDirectory = import.meta.dirname;
 
 // Type-aware tests have cold-start overhead from TypeScript project service initialization
-setDefaultTimeout(30_000);
+vi.setConfig({ testTimeout: 30_000 });
 
 const testsDir = resolve(currentDirectory, "..");
 const eslintProjectPath = join(testsDir, "tsconfig.eslint.json");

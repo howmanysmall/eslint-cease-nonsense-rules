@@ -22,7 +22,7 @@
 			"!**/garbage/**",
 			"!**/include/**",
 			"!**/node_modules/**",
-			"!**/bun.lock",
+			"!**/aube-lock.yaml",
 			"!skills-lock.json",
 			"!**/package.json"
 		]
@@ -43,7 +43,7 @@
 	},
 
 	"files": {
-		"includes": ["**", "!**/bun.lock", "!**/package.json"]
+		"includes": ["**", "!**/aube-lock.yaml", "!**/package.json"]
 	},
 
 	"formatter": {
@@ -61,7 +61,7 @@
 			"!**/garbage/**",
 			"!**/include/**",
 			"!**/node_modules/**",
-			"!bun.lock",
+			"!aube-lock.yaml",
 			"!skills-lock.json"
 		],
 		"indentStyle": "tab",

@@ -1,8 +1,9 @@
 #!/usr/bin/env bun
 
-import { readdir } from "node:fs/promises";
-import { join, resolve } from "node:path";
-import { Command, ValidationError } from "@jsr/cliffy__command";
+import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
+import { argv, cwd } from "node:process";
+import { Command, ValidationError } from "@cliffy/command";
 import { type } from "arktype";
 
 const isV8FunctionCoverage = type({
@@ -37,17 +38,20 @@ type V8Coverage = typeof isV8Coverage.infer;
 async function findCoverageFilesAsync(baseDirectory: string): Promise<Array<string>> {
 	try {
 		const entries = await readdir(baseDirectory, { withFileTypes: true });
+		const coverageFiles: Array<string> = [];
 
-		const coverageFiles = entries
-			.filter((entry) => entry.isDirectory() && entry.name.startsWith("coverage-shard-"))
-			.map((entry) => join(baseDirectory, entry.name, "coverage-final.json"))
-			.filter((filePath) => {
-				try {
-					return Bun.file(filePath).size > 0;
-				} catch {
-					return false;
-				}
-			});
+		for (const entry of entries) {
+			if (!entry.isDirectory() || !entry.name.startsWith("coverage-shard-")) continue;
+
+			const filePath = join(baseDirectory, entry.name, "coverage-final.json");
+			try {
+				// oxlint-disable-next-line no-await-in-loop -- File existence checks are cheap and easier to report sequentially
+				const statistics = await stat(filePath);
+				if (statistics.size > 0) coverageFiles.push(filePath);
+			} catch {
+				// Missing shard output is ignored; absent coverage is handled by the caller.
+			}
+		}
 
 		return coverageFiles;
 	} catch (error) {
@@ -60,7 +64,8 @@ async function findCoverageFilesAsync(baseDirectory: string): Promise<Array<stri
 
 async function readCoverageFileAsync(filePath: string): Promise<V8Coverage> {
 	try {
-		const result = isV8Coverage(await Bun.file(filePath).json());
+		const contents = await readFile(filePath, "utf8");
+		const result = isV8Coverage(JSON.parse(contents));
 		if (result instanceof type.errors) {
 			throw new TypeError(`Invalid V8 coverage format in ${filePath}: ${result.summary}`);
 		}
@@ -93,7 +98,8 @@ function mergeCoverageData(coverageFiles: ReadonlyArray<V8Coverage>): V8Coverage
 
 async function writeMergedCoverageAsync(outputPath: string, coverage: V8Coverage): Promise<void> {
 	try {
-		await Bun.write(outputPath, JSON.stringify(coverage, undefined, 2), { createPath: true });
+		await mkdir(dirname(outputPath), { recursive: true });
+		await writeFile(outputPath, JSON.stringify(coverage, undefined, 2));
 	} catch (error) {
 		throw new Error(
 			`Failed to write merged coverage to ${outputPath}: ${error instanceof Error ? error.message : String(error)}`,
@@ -108,8 +114,8 @@ const command = new Command()
 	.description("Merge coverage files from multiple test shards.")
 	.arguments("<coverage-directory:string> <output-file:string>")
 	.action(async (_, coverageDirectory, outputFile) => {
-		const baseDirectory = resolve(process.cwd(), coverageDirectory);
-		const outputPath = resolve(process.cwd(), outputFile);
+		const baseDirectory = resolve(cwd(), coverageDirectory);
+		const outputPath = resolve(cwd(), outputFile);
 
 		console.log(`Searching for coverage files in ${baseDirectory}...`);
 		const coverageFiles = await findCoverageFilesAsync(baseDirectory);
@@ -131,4 +137,4 @@ const command = new Command()
 		console.log(`Total scripts covered: ${merged.result.length}`);
 	});
 
-await command.parse(Bun.argv.slice(2));
+await command.parse(argv.slice(2));

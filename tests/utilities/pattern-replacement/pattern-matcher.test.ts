@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 
 import {
@@ -35,7 +35,7 @@ describe("resolveCallee", () => {
 			type: "NewExpression",
 		};
 		const result = resolveCallee(node as never);
-		expect(result).toEqual({ kind: "constructor", typeName: "Vector2" });
+		expect(result).toStrictEqual({ kind: "constructor", typeName: "Vector2" });
 	});
 
 	it("should resolve CallExpression with MemberExpression callee", () => {
@@ -49,7 +49,7 @@ describe("resolveCallee", () => {
 			type: "CallExpression",
 		};
 		const result = resolveCallee(node as never);
-		expect(result).toEqual({
+		expect(result).toStrictEqual({
 			kind: "staticMethod",
 			methodName: "fromScale",
 			typeName: "UDim2",
@@ -70,7 +70,7 @@ describe("resolveCallee", () => {
 			type: "CallExpression",
 		};
 		const result = resolveCallee(node as never);
-		expect(result).toEqual({
+		expect(result).toStrictEqual({
 			kind: "staticMethod",
 			methodName: "fromScale",
 			typeName: "UDim2",
@@ -83,7 +83,7 @@ describe("resolveCallee", () => {
 			type: "CallExpression",
 		};
 		const result = resolveCallee(node as never);
-		expect(result).toEqual({ kind: "unknown" });
+		expect(result).toStrictEqual({ kind: "unknown" });
 	});
 
 	it("should return unknown for computed member access", () => {
@@ -97,7 +97,7 @@ describe("resolveCallee", () => {
 			type: "CallExpression",
 		};
 		const result = resolveCallee(node as never);
-		expect(result).toEqual({ kind: "unknown" });
+		expect(result).toStrictEqual({ kind: "unknown" });
 	});
 
 	it("should return unknown for non-identifier object in member expression", () => {
@@ -111,7 +111,7 @@ describe("resolveCallee", () => {
 			type: "CallExpression",
 		};
 		const result = resolveCallee(node as never);
-		expect(result).toEqual({ kind: "unknown" });
+		expect(result).toStrictEqual({ kind: "unknown" });
 	});
 });
 
@@ -184,7 +184,7 @@ describe("matchArgs", () => {
 			{ type: AST_NODE_TYPES.Literal, value: 0 } as never,
 		];
 		const result = matchParameters(pattern.parameters, args, mockSourceCode as never);
-		expect(result).not.toBeUndefined();
+		expect(result).toBeDefined();
 	});
 
 	it("should match capture arguments", () => {
@@ -194,7 +194,7 @@ describe("matchArgs", () => {
 			{ type: AST_NODE_TYPES.Literal, value: 2 } as never,
 		];
 		const result = matchParameters(pattern.parameters, args, mockSourceCode as never);
-		expect(result).not.toBeUndefined();
+		expect(result).toBeDefined();
 		expect(result?.get("x")?.constValue).toBe(1);
 		expect(result?.get("y")?.constValue).toBe(2);
 	});
@@ -206,14 +206,14 @@ describe("matchArgs", () => {
 			{ type: AST_NODE_TYPES.Literal, value: 0 } as never,
 		];
 		const result = matchParameters(pattern.parameters, args, mockSourceCode as never);
-		expect(result).not.toBeUndefined();
+		expect(result).toBeDefined();
 	});
 
 	it("should match optional arguments when missing", () => {
 		const pattern = parsePattern("new Vector2($x, 0?)", "fromX($x)", undefined);
 		const args: Array<TSESTree.Literal> = [{ type: AST_NODE_TYPES.Literal, value: 1 } as never];
 		const result = matchParameters(pattern.parameters, args, mockSourceCode as never);
-		expect(result).not.toBeUndefined();
+		expect(result).toBeDefined();
 	});
 
 	it("should match wildcard arguments", () => {
@@ -223,7 +223,7 @@ describe("matchArgs", () => {
 			{ type: AST_NODE_TYPES.Literal, value: 2 } as never,
 		];
 		const result = matchParameters(pattern.parameters, args, mockSourceCode as never);
-		expect(result).not.toBeUndefined();
+		expect(result).toBeDefined();
 	});
 
 	it("should fail when argument count is wrong", () => {

@@ -1,6 +1,6 @@
-import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
 
 const ASTRO_PATCH_FILE_URL = new URL("../documentation/patches/astro@6.1.1.patch", import.meta.url);
 const TYPED_ANY_PATTERN = /:\s*any\b|\bany\[\]|=>\s*any\b|=\s*any\b/;
@@ -26,6 +26,6 @@ describe("astro content patch", () => {
 		const addedLines = getAddedPatchLines(patchText);
 		const typedAnyLines = addedLines.filter((line) => TYPED_ANY_PATTERN.test(line));
 
-		expect(typedAnyLines).toEqual([]);
+		expect(typedAnyLines).toStrictEqual([]);
 	});
 });

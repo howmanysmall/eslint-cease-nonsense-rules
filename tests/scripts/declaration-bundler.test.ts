@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it } from "bun:test";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
 	__testing,
@@ -20,7 +20,7 @@ const fixtureDirectories = new Array<string>();
 async function writeFixtureFileAsync(rootDirectory: string, relativePath: string, content: string): Promise<void> {
 	const filePath = join(rootDirectory, relativePath);
 	await mkdir(dirname(filePath), { recursive: true });
-	await Bun.write(filePath, content);
+	await writeFile(filePath, content);
 }
 
 async function createFixtureContextAsync(
@@ -149,7 +149,7 @@ describe("declaration-bundler", () => {
 		expect(output).toContain("export type { A };");
 	});
 
-	it("supports direct exports, local export specifiers, default exports, and Bun-friendly external imports", async () => {
+	it("supports direct exports, local export specifiers, default exports, and runtime-friendly external imports", async () => {
 		const context = await createFixtureContextAsync(
 			{
 				"index.d.ts": [

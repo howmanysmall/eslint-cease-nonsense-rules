@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 
 import {
 	parseParameters,
@@ -9,7 +9,7 @@ import {
 describe("parseArgs", () => {
 	it("should parse literal number", () => {
 		const args = parseParameters("1, 2");
-		expect(args).toEqual([
+		expect(args).toStrictEqual([
 			{ kind: "literal", value: 1 },
 			{ kind: "literal", value: 2 },
 		]);
@@ -17,12 +17,12 @@ describe("parseArgs", () => {
 
 	it("should parse optional with ?", () => {
 		const args = parseParameters("0?");
-		expect(args).toEqual([{ kind: "optional", value: 0 }]);
+		expect(args).toStrictEqual([{ kind: "optional", value: 0 }]);
 	});
 
 	it("should parse capture with $", () => {
 		const args = parseParameters("$x, $y");
-		expect(args).toEqual([
+		expect(args).toStrictEqual([
 			{ kind: "capture", name: "x" },
 			{ kind: "capture", name: "y" },
 		]);
@@ -30,12 +30,12 @@ describe("parseArgs", () => {
 
 	it("should parse wildcard _", () => {
 		const args = parseParameters("$x, _");
-		expect(args).toEqual([{ kind: "capture", name: "x" }, { kind: "wildcard" }]);
+		expect(args).toStrictEqual([{ kind: "capture", name: "x" }, { kind: "wildcard" }]);
 	});
 
 	it("should parse mixed args", () => {
 		const args = parseParameters("$x, 0?, 1");
-		expect(args).toEqual([
+		expect(args).toStrictEqual([
 			{ kind: "capture", name: "x" },
 			{ kind: "optional", value: 0 },
 			{ kind: "literal", value: 1 },
@@ -44,12 +44,12 @@ describe("parseArgs", () => {
 
 	it("should handle empty args", () => {
 		const args = parseParameters("");
-		expect(args).toEqual([]);
+		expect(args).toStrictEqual([]);
 	});
 
 	it("should parse negative numbers", () => {
 		const args = parseParameters("-1, -0.5");
-		expect(args).toEqual([
+		expect(args).toStrictEqual([
 			{ kind: "literal", value: -1 },
 			{ kind: "literal", value: -0.5 },
 		]);
@@ -59,27 +59,27 @@ describe("parseArgs", () => {
 describe("parseReplacement", () => {
 	it("should parse simple identifier", () => {
 		const result = parseReplacement("zero");
-		expect(result).toEqual({ kind: "identifier", name: "zero" });
+		expect(result).toStrictEqual({ kind: "identifier", name: "zero" });
 	});
 
 	it("should parse static access", () => {
 		const result = parseReplacement("Vector2.zero");
-		expect(result).toEqual({ kind: "staticAccess", property: "zero", typeName: "Vector2" });
+		expect(result).toStrictEqual({ kind: "staticAccess", property: "zero", typeName: "Vector2" });
 	});
 
 	it("should parse function call", () => {
 		const result = parseReplacement("fromX($x)");
-		expect(result).toEqual({ kind: "call", name: "fromX", parameters: ["$x"] });
+		expect(result).toStrictEqual({ kind: "call", name: "fromX", parameters: ["$x"] });
 	});
 
 	it("should parse function call with multiple args", () => {
 		const result = parseReplacement("combine($x, $y)");
-		expect(result).toEqual({ kind: "call", name: "combine", parameters: ["$x", "$y"] });
+		expect(result).toStrictEqual({ kind: "call", name: "combine", parameters: ["$x", "$y"] });
 	});
 
 	it("should parse function call with literal args", () => {
 		const result = parseReplacement("scale(2)");
-		expect(result).toEqual({ kind: "call", name: "scale", parameters: ["2"] });
+		expect(result).toStrictEqual({ kind: "call", name: "scale", parameters: ["2"] });
 	});
 });
 

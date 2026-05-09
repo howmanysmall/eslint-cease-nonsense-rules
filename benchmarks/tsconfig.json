@@ -6,7 +6,7 @@
 		"noEmit": true,
 		"strict": true,
 		"target": "es2022",
-		"types": ["bun", "node"]
+		"types": ["node"],
 	},
-	"include": ["./**/*.ts"]
+	"include": ["./**/*.ts"],
 }

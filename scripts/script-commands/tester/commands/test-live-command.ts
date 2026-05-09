@@ -1,19 +1,19 @@
-import { rename } from "node:fs/promises";
+import { access, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { resolve } from "node:path";
-import { exit } from "node:process";
-import { Command } from "@jsr/cliffy__command";
+import { env, exit } from "node:process";
+import { Command } from "@cliffy/command";
 import { type } from "arktype";
-import { $, env, file, nanoseconds } from "bun";
 import picocolors from "picocolors";
 import prettyMilliseconds from "pretty-ms";
 
 import { withContext } from "../logging/log-utilities";
 import { isDirectorySimpleAsync } from "../utilities/fs-utilities";
 import { editJsonc } from "../utilities/jsonc-utilities";
-
-import type { BunFile } from "bun";
+import { getCommandTextAsync, runCommandAsync } from "../utilities/process-utilities";
 
 const log = withContext({ namespace: "tester", scope: "test-live" });
+const HOME_PREFIX_REGEXP = /^~\//u;
 
 const isBasePackageJson = type({
 	dependencies: "Record<string, string>",
@@ -24,24 +24,24 @@ const isBasePackageJson = type({
 type BasePackageJson = typeof isBasePackageJson.infer;
 
 async function readPackageJsonAsync(
-	bunFile: BunFile,
+	filePath: string,
 ): Promise<readonly [basePackageJson: BasePackageJson, contents: string]> {
-	const exists = await bunFile.exists();
+	const exists = await fileExistsAsync(filePath);
 	if (!exists) {
 		log.fail("package.json not found in the testing directory.");
 		exit(1);
 	}
 
-	const basePackageJson = await bunFile.json().then(isBasePackageJson.assert);
-	const stringContents = await bunFile.text();
+	const stringContents = await readFile(filePath, "utf8");
+	const basePackageJson = isBasePackageJson.assert(JSON.parse(stringContents));
 
 	return [basePackageJson, stringContents];
 }
 
 interface Parameters {
 	readonly directory: string;
-	readonly livePackageFile: BunFile;
 	readonly livePackageJson: BasePackageJson;
+	readonly livePackagePath: string;
 	readonly packageContents: string;
 	readonly packageFileName: string;
 	readonly thisPackageJson: BasePackageJson;
@@ -54,9 +54,7 @@ function sanitizeForPath(name: string): string {
 
 function expandDirectory(directory: string): string {
 	if (!directory.startsWith("~/")) return directory;
-	const home = env.HOME;
-	if (!home) return directory;
-	return directory.replace(/^~\//u, `${home}/`);
+	return directory.replace(HOME_PREFIX_REGEXP, `${homedir()}/`);
 }
 
 function createPackageFileName(name: string, version: string): string {
@@ -78,11 +76,12 @@ function parsePackOutput(output: string): PackOutput {
 		throw new Error("npm pack output did not include JSON metadata.");
 	}
 
-	const { index: start } = matches.at(-1) as RegExpMatchArray;
-	if (start === undefined) {
+	const lastMatch = matches.at(-1);
+	if (lastMatch?.index === undefined) {
 		throw new Error("npm pack output did not include JSON metadata.");
 	}
 
+	const { index: start } = lastMatch;
 	const jsonText = trimmed.slice(start).trim();
 	const parsed = isValidJson(JSON.parse(jsonText));
 	if (parsed instanceof type.errors) {
@@ -92,9 +91,18 @@ function parsePackOutput(output: string): PackOutput {
 	return parsed;
 }
 
+async function fileExistsAsync(filePath: string): Promise<boolean> {
+	try {
+		await access(filePath);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 async function replacePackageJsonAsync({
 	directory,
-	livePackageFile,
+	livePackagePath,
 	livePackageJson,
 	packageContents,
 	packageFileName,
@@ -119,11 +127,11 @@ async function replacePackageJsonAsync({
 		return draft;
 	});
 
-	await livePackageFile.write(updated);
+	await writeFile(livePackagePath, updated);
 
 	return async function undoAsync(): Promise<void> {
-		await livePackageFile.write(packageContents);
-		await $.cwd(directory)`bun install`.quiet();
+		await writeFile(livePackagePath, packageContents);
+		await runCommandAsync("aube", ["install"], { cwd: directory });
 	};
 }
 
@@ -131,7 +139,7 @@ const testLiveCommand = new Command()
 	.name("test-live")
 	.version("1.2.0")
 	.description("Test the package in a live game environment.")
-	.option("--use-link", "Use 'bun link' instead of patching package.json.", { default: false })
+	.option("--use-link", "Use a package manager link instead of patching package.json.", { default: false })
 	.option("-c, --cache", "Cache ESLint results.")
 	.option("--ci", "Enables CI mode.")
 	.arguments("<directory:string>")
@@ -144,38 +152,44 @@ const testLiveCommand = new Command()
 			exit(1);
 		}
 
-		const livePackageFile = file(resolve(directory, "package.json"));
-		const isLivePackageReal = await livePackageFile.exists();
+		const livePackagePath = resolve(directory, "package.json");
+		const isLivePackageReal = await fileExistsAsync(livePackagePath);
 
 		if (!isLivePackageReal) {
 			log.fail(picocolors.red(`No package.json found in "${picocolors.bold(directory)}".`));
 			exit(1);
 		}
 
-		const [thisPackageJson] = await readPackageJsonAsync(file(resolve(".", "package.json")));
-		const [livePackageJson, packageContents] = await readPackageJsonAsync(livePackageFile);
+		const [thisPackageJson] = await readPackageJsonAsync(resolve(".", "package.json"));
+		const [livePackageJson, packageContents] = await readPackageJsonAsync(livePackagePath);
 
 		const packageFileName = createPackageFileName(thisPackageJson.name, thisPackageJson.version);
 
 		const cleanupAsync = await replacePackageJsonAsync({
 			directory,
-			livePackageFile,
 			livePackageJson,
+			livePackagePath,
 			packageContents,
 			packageFileName,
 			thisPackageJson,
 			useLink,
 		});
 
-		await $`bun run build`.quiet();
+		await runCommandAsync("aube", ["run", "build"]);
 
 		const nodePackages = resolve(directory, "patches", "node");
-		await $`mkdir -p ${nodePackages}`.quiet();
-		//
-		if (useLink) await $`bun link`;
+		await mkdir(nodePackages, { recursive: true });
+
+		if (useLink) await runCommandAsync("aube", ["link"]);
 
 		if (!useLink) {
-			const output = await $`npm pack --ignore-scripts --json --pack-destination ${nodePackages}`.text();
+			const output = await getCommandTextAsync("npm", [
+				"pack",
+				"--ignore-scripts",
+				"--json",
+				"--pack-destination",
+				nodePackages,
+			]);
 			const packMetadata = parsePackOutput(output);
 			const [packData] = packMetadata;
 			const packedFile = packData?.filename;
@@ -187,18 +201,20 @@ const testLiveCommand = new Command()
 		}
 
 		try {
-			const customEnv: Record<string, string> = { ...Bun.env, TIMING: "2000" };
+			const customEnv: NodeJS.ProcessEnv = { ...env, TIMING: "2000" };
 			if (ci) customEnv.CI = "true";
 
-			const shell = $.cwd(directory).env(customEnv);
-
-			await shell`bun install`.quiet();
+			await runCommandAsync("aube", ["install"], { cwd: directory, env: customEnv });
 			log.success(picocolors.green("Dependencies installed successfully."));
 
 			const duration = await profileAsync(async () => {
 				// oxlint-disable-next-line unicorn/prefer-ternary
-				if (cache) await shell`bun run eslint --cache ./src`;
-				else await shell`bun run eslint ./src`;
+				if (cache) {
+					await runCommandAsync("aube", ["run", "eslint", "--cache", "./src"], {
+						cwd: directory,
+						env: customEnv,
+					});
+				} else await runCommandAsync("aube", ["run", "eslint", "./src"], { cwd: directory, env: customEnv });
 			});
 
 			log.success(picocolors.green(`ESLint took ${picocolors.bold(prettyMilliseconds(duration))}.`));
@@ -208,19 +224,18 @@ const testLiveCommand = new Command()
 			await cleanupAsync();
 		}
 
-		const patch = file(resolve(nodePackages, packageFileName));
-		if (await patch.exists()) await patch.delete();
+		const patchPath = resolve(nodePackages, packageFileName);
+		if (await fileExistsAsync(patchPath)) await rm(patchPath);
 	});
 
 export default testLiveCommand;
 
 async function profileAsync(callback: () => Promise<void>): Promise<number> {
-	const startTime = nanoseconds();
+	const startTime = performance.now();
 	try {
 		await callback();
 	} catch (error) {
 		log.fail(picocolors.red(`Error during profiling: ${error instanceof Error ? error.message : String(error)}`));
 	}
-	const finishTime = nanoseconds();
-	return (finishTime - startTime) / 1_000_000;
+	return performance.now() - startTime;
 }

@@ -22,7 +22,9 @@ function isAstroIntegration(value: unknown): value is AstroIntegration {
 function ensureAstroIntegration(value: unknown, integrationName: string): AstroIntegration {
 	if (isAstroIntegration(value)) return value;
 
-	throw new Error(`The ${integrationName} Astro integration did not return a valid integration object.`);
+	const error = new Error(`The ${integrationName} Astro integration did not return a valid integration object.`);
+	Error.captureStackTrace(error, ensureAstroIntegration);
+	throw error;
 }
 
 // https://astro.build/config

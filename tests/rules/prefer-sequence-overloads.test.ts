@@ -1,4 +1,4 @@
-import { describe } from "bun:test";
+import { describe } from "vitest";
 import { RuleTester } from "eslint";
 
 import rule from "../../src/rules/prefer-sequence-overloads";

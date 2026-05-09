@@ -1,10 +1,11 @@
 #!/usr/bin/env bun
 
+import { spawn } from "node:child_process";
 import { cp, mkdir, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { exit } from "node:process";
-import { Command } from "@jsr/cliffy__command";
-import { CompletionsCommand } from "@jsr/cliffy__command/completions";
+import { argv, exit } from "node:process";
+import { Command } from "@cliffy/command";
+import { CompletionsCommand } from "@cliffy/command/completions";
 
 const SKIP_PATTERNS = new Set([
 	".git",
@@ -31,8 +32,38 @@ function shouldSkip(relativePath: string): boolean {
 	return false;
 }
 
+async function getCommandTextAsync(command: string, args: ReadonlyArray<string>): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const stdoutChunks: Array<Uint8Array> = [];
+		const stderrChunks: Array<Uint8Array> = [];
+		const childProcess = spawn(command, [...args], { stdio: ["ignore", "pipe", "pipe"] });
+
+		childProcess.stdout.on("data", (chunk: Uint8Array) => {
+			stdoutChunks.push(chunk);
+		});
+
+		childProcess.stderr.on("data", (chunk: Uint8Array) => {
+			stderrChunks.push(chunk);
+		});
+
+		childProcess.on("error", reject);
+		childProcess.on("close", (exitCode) => {
+			const stdout = Buffer.concat(stdoutChunks).toString("utf8");
+			const stderr = Buffer.concat(stderrChunks).toString("utf8");
+			if (exitCode === 0) {
+				resolve(stdout);
+				return;
+			}
+
+			const renderedCommand = [command, ...args].join(" ");
+			const output = [stderr.trim(), stdout.trim()].filter(Boolean).join("\n");
+			reject(new Error(output ? `${renderedCommand} failed.\n${output}` : `${renderedCommand} failed.`));
+		});
+	});
+}
+
 async function findMainWorktreeAsync(): Promise<string | undefined> {
-	const output = await Bun.$`git worktree list --porcelain`.quiet().text();
+	const output = await getCommandTextAsync("git", ["worktree", "list", "--porcelain"]);
 	const lines = output.split("\n");
 
 	for (const line of lines) {
@@ -64,7 +95,7 @@ async function fileExistsAsync(path: string): Promise<boolean> {
 
 async function isRepositoryAsync(): Promise<boolean> {
 	try {
-		const output = await Bun.$`git rev-parse --is-inside-work-tree`.quiet().text();
+		const output = await getCommandTextAsync("git", ["rev-parse", "--is-inside-work-tree"]);
 		return output.trim() === "true";
 	} catch {
 		return false;
@@ -86,7 +117,7 @@ const command = new Command()
 			exit(1);
 		}
 
-		const destRootRaw = await Bun.$`git rev-parse --show-toplevel`.quiet().text();
+		const destRootRaw = await getCommandTextAsync("git", ["rev-parse", "--show-toplevel"]);
 		const destRoot = destRootRaw.trim();
 
 		const mainRoot = await findMainWorktreeAsync();
@@ -100,7 +131,15 @@ const command = new Command()
 			exit(1);
 		}
 
-		const ignoredOutput = await Bun.$`git -C ${mainRoot} ls-files -z -o -i --exclude-standard`.quiet().text();
+		const ignoredOutput = await getCommandTextAsync("git", [
+			"-C",
+			mainRoot,
+			"ls-files",
+			"-z",
+			"-o",
+			"-i",
+			"--exclude-standard",
+		]);
 		const ignoredFiles = ignoredOutput.split("\0").filter(Boolean);
 
 		if (ignoredFiles.length === 0) {
@@ -153,4 +192,4 @@ const command = new Command()
 	})
 	.command("completions", new CompletionsCommand());
 
-await command.parse(Bun.argv.slice(2));
+await command.parse(argv.slice(2));
