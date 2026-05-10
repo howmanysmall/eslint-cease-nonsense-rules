@@ -180,6 +180,53 @@ const palette: Readonly<Record<Color, string>> = { [Color.Blue]: "#00F" };`,
 				},
 				{
 					code: `${declarations}
+type Palette = Record<Color, string>;
+const palette: Palette = { Blue: "#00F" };`,
+					errors: [{ messageId: "preferEnumMember" }],
+					output: `${declarations}
+type Palette = Record<Color, string>;
+const palette: Palette = { [Color.Blue]: "#00F" };`,
+				},
+				{
+					code: `${declarations}
+type Palette<TKey extends Color> = Record<TKey, string>;
+const palette: Palette<Color> = { Blue: "#00F" };`,
+					errors: [{ messageId: "preferEnumMember" }],
+					output: `${declarations}
+type Palette<TKey extends Color> = Record<TKey, string>;
+const palette: Palette<Color> = { [Color.Blue]: "#00F" };`,
+				},
+				{
+					code: `${declarations}
+type Palette<TKey extends Color> = Readonly<Record<TKey, string>>;
+const palette: Palette<Color> = { Blue: "#00F" };`,
+					errors: [{ messageId: "preferEnumMember" }],
+					output: `${declarations}
+type Palette<TKey extends Color> = Readonly<Record<TKey, string>>;
+const palette: Palette<Color> = { [Color.Blue]: "#00F" };`,
+				},
+				{
+					code: `${declarations}
+type Palette<TKey extends Color> = { [K in (TKey)]: string };
+const palette: Palette<Color> = { Blue: "#00F", Green: "#0F0", Red: "#F00" };`,
+					errors: [
+						{ messageId: "preferEnumMember" },
+						{ messageId: "preferEnumMember" },
+						{ messageId: "preferEnumMember" },
+					],
+					output: `${declarations}
+type Palette<TKey extends Color> = { [K in (TKey)]: string };
+const palette: Palette<Color> = { [Color.Blue]: "#00F", [Color.Green]: "#0F0", [Color.Red]: "#F00" };`,
+				},
+				{
+					code: `${declarations}
+const palette = { Blue: "#00F" } satisfies Record<Color, string>;`,
+					errors: [{ messageId: "preferEnumMember" }],
+					output: `${declarations}
+const palette = { [Color.Blue]: "#00F" } satisfies Record<Color, string>;`,
+				},
+				{
+					code: `${declarations}
 type ColorMap<T extends Color> = { [K in T]: number };
 const values: ColorMap<Color> = { Blue: 1, Green: 2, Red: 3 };`,
 					errors: [
@@ -287,6 +334,18 @@ const theme: Mode = Mode.Dark;`,
 				{
 					code: `${declarations}
 const label = "Blue";`,
+				},
+				{
+					code: `import type { ParsedPath } from "node:path";
+export type { ParsedPath } from "node:path";
+type ImportedPath = import("node:path").ParsedPath;
+import("node:path");
+const label = "Blue";`,
+				},
+				{
+					code: `"use strict";
+${declarations}
+const color = Color.Blue;`,
 				},
 				{
 					code: `${declarations}

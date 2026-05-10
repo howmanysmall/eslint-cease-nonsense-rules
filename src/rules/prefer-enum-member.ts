@@ -341,6 +341,10 @@ const preferEnumMember = createRule<Options, MessageIds>({
 			aliasTypeArguments: ReadonlyArray<Type> | undefined,
 			constraint: TypeScriptNode,
 		): Type | undefined {
+			if (isParenthesizedTypeNode(constraint)) {
+				return resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, constraint.type);
+			}
+
 			if (isTypeReferenceNode(constraint)) {
 				const { typeName } = constraint;
 				if (isIdentifier(typeName)) {
