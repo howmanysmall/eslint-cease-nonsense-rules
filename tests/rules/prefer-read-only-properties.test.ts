@@ -195,6 +195,24 @@ function UnionComponent(props: { value: string }): string | number {
 			},
 			{
 				code: `
+declare function jsxElement(): JSX.Element;
+
+interface PrimaryProps {
+	readonly value: string;
+	readonly variant?: "primary";
+}
+
+interface SecondaryProps {
+	readonly value: string;
+	readonly size?: "small";
+}
+
+function UnionPropsComponent(props: PrimaryProps | SecondaryProps): JSX.Element {
+	return jsxElement();
+}`,
+			},
+			{
+				code: `
 type FancyElement = string;
 function ElementComponent(props: { value: string }): FancyElement {
     return props.value;

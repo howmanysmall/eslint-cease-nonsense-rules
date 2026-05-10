@@ -306,6 +306,7 @@ async function runBuildAsync(options: BuildOptions): Promise<BuildResult> {
 			await cleanDistanceDirectoryAsync(options.verbose);
 			if (options.verbose) console.success("Cleaned dist directory");
 		}
+		await mkdir(DIST_DIRECTORY, { recursive: true });
 
 		if (options.verbose) {
 			console.start("Building with tsdown...");

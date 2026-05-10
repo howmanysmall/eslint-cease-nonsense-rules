@@ -226,6 +226,12 @@ const props: ImageProps = { ScaleType: 999 };`,
 				code: `${typeDeclarations}
 setNonLiteral("anything");`,
 			},
+			// Regression: union contextual type should still resolve enum lookup safely
+			{
+				code: `${typeDeclarations}
+declare function someFunction(value: Enum.ScaleType | string): void;
+someFunction("InvalidName");`,
+			},
 			// Enum.Value usage
 			{
 				code: `${typeDeclarations}

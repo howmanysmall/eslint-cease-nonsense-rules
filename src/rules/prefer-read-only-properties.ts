@@ -22,13 +22,25 @@ const REACT_MEMO_NAMES = new Set(["memo"]);
 function isPropertyReadonlyInTypeOrBase(checker: TypeChecker, type: Type, property: TSSymbol): boolean {
 	const escapedName = property.getEscapedName();
 
-	if (isPropertyReadonlyInType(type, escapedName, checker)) return true;
+	try {
+		if (isPropertyReadonlyInType(type, escapedName, checker)) return true;
+	} catch {
+		// Under TypeScript 6, union types may have TypeFlags.Union set but type.types undefined,
+		// causing ts-api-utils isPropertyReadonlyInType (which calls unionConstituents) to crash.
+		// Treat the property as not readonly to avoid crashing the linter.
+	}
 
 	const baseTypes = type.getBaseTypes?.() ?? [];
 	for (const baseType of baseTypes) {
 		const baseProperties = checker.getPropertiesOfType(baseType);
 		const baseProperty = baseProperties.find((base) => base.getEscapedName() === escapedName);
-		if (baseProperty && isPropertyReadonlyInType(baseType, escapedName, checker)) return true;
+		if (baseProperty) {
+			try {
+				if (isPropertyReadonlyInType(baseType, escapedName, checker)) return true;
+			} catch {
+				// Same TS6 union type crash protection.
+			}
+		}
 	}
 
 	return false;
@@ -44,10 +56,12 @@ function isTypeFullyReadonly(checker: TypeChecker, type: Type, visited = new Wea
 		if (READONLY_WRAPPER_NAMES.has(name)) return true;
 	}
 
-	if (type.isUnion()) return type.types.every((unionType) => isTypeFullyReadonly(checker, unionType, visited));
+	if (type.isUnion()) {
+		return type.types?.every((unionType) => isTypeFullyReadonly(checker, unionType, visited)) ?? true;
+	}
 
 	if (type.isIntersection()) {
-		return type.types.every((intersectionType) => isTypeFullyReadonly(checker, intersectionType, visited));
+		return type.types?.every((intersectionType) => isTypeFullyReadonly(checker, intersectionType, visited)) ?? true;
 	}
 
 	const indexInfos: ReadonlyArray<IndexInfo> = checker.getIndexInfosOfType(type);
