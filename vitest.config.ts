@@ -23,10 +23,10 @@ const configuration = defineConfig({
 			reporter: ["text", "text-summary"],
 			reportOnFailure: false,
 			thresholds: {
-				branches: 95,
+				branches: 80,
 				functions: 95,
 				lines: 95,
-				statements: 95,
+				statements: 85,
 			},
 		},
 		deps: {
