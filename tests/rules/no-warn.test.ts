@@ -1,7 +1,6 @@
 import { describe } from "vitest";
+import rule from "@rules/no-warn";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/no-warn";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

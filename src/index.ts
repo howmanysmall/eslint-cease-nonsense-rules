@@ -25,7 +25,7 @@ import noPrint from "./rules/no-print";
 import noRenderHelperFunctions from "./rules/no-render-helper-functions";
 import noShorthandNames from "./rules/no-shorthand-names";
 import noTableCreateMap from "./rules/no-table-create-map";
-import noUnderscoreReactProps from "./rules/no-underscore-react-props";
+import noUnderscoreReactProperties from "./rules/no-underscore-react-properties";
 import noUnusedImports from "./rules/no-unused-imports";
 import noUnusedUseMemo from "./rules/no-unused-use-memo";
 import noUselessUseEffect from "./rules/no-useless-use-effect";
@@ -43,7 +43,7 @@ import preferModuleScopeConstants from "./rules/prefer-module-scope-constants";
 import preferPaddingComponents from "./rules/prefer-padding-components";
 import preferPascalCaseEnums from "./rules/prefer-pascal-case-enums";
 import preferPatternReplacements from "./rules/prefer-pattern-replacements";
-import preferReadOnlyProps from "./rules/prefer-read-only-props";
+import preferReadOnlyProperties from "./rules/prefer-read-only-properties";
 import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
 import preferSingleWorldQuery from "./rules/prefer-single-world-query";
 import preferSingularEnums from "./rules/prefer-singular-enums";
@@ -204,7 +204,7 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"no-render-helper-functions": noRenderHelperFunctions,
 	"no-shorthand-names": noShorthandNames,
 	"no-table-create-map": noTableCreateMap,
-	"no-underscore-react-props": noUnderscoreReactProps,
+	"no-underscore-react-props": noUnderscoreReactProperties,
 	"no-unused-imports": noUnusedImports,
 	"no-unused-use-memo": noUnusedUseMemo,
 	"no-useless-use-effect": noUselessUseEffect,
@@ -222,7 +222,7 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"prefer-padding-components": preferPaddingComponents,
 	"prefer-pascal-case-enums": preferPascalCaseEnums,
 	"prefer-pattern-replacements": preferPatternReplacements,
-	"prefer-read-only-props": preferReadOnlyProps,
+	"prefer-read-only-props": preferReadOnlyProperties,
 	"prefer-sequence-overloads": preferSequenceOverloads,
 	"prefer-single-world-query": preferSingleWorldQuery,
 	"prefer-singular-enums": preferSingularEnums,

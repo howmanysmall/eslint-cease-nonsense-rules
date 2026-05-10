@@ -3,6 +3,8 @@ import { getEnumNames } from "./get-enum-names";
 import { isMetaSelector, isMethodOrPropertySelector } from "./shared";
 import { createValidator } from "./validator";
 
+import type { Except } from "type-fest";
+
 import type { MetaSelectorsString } from "./enums";
 import type { Context, NormalizedMatchRegex, NormalizedSelector, ParsedOptions, Selector } from "./types";
 
@@ -44,7 +46,7 @@ function normalizeOption(option: Selector): Array<NormalizedSelector> {
 	if (option.types) for (const modifier of option.types) weight += TypeModifierWeights[modifier];
 	if (option.filter !== undefined) weight += 1_000_000_000;
 
-	const normalizedOption: Omit<NormalizedSelector, "selectors" | "selectorPriority"> = {
+	const normalizedOption: Except<NormalizedSelector, "selectors" | "selectorPriority"> = {
 		modifierWeight: weight,
 	};
 

@@ -1,10 +1,8 @@
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 import { describe, vi } from "vitest";
+import rule from "@rules/prefer-enum-member";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
-
-import rule from "../../src/rules/prefer-enum-member";
 
 import type { InvalidTestCase, ValidTestCase } from "@typescript-eslint/rule-tester";
 

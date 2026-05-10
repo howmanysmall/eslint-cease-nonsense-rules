@@ -1,7 +1,6 @@
+import rule from "@rules/prefer-read-only-properties";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/prefer-read-only-props";
 
 const testDirectory = import.meta.dirname;
 
@@ -99,7 +98,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -115,7 +114,7 @@ const invalid = [
             return <div id={id} />
         }
       `,
-		errors: [{ messageId: "preferReadOnlyProps" }],
+		errors: [{ messageId: "preferReadOnlyProperties" }],
 	},
 	// ArrayPattern with type annotation
 	{
@@ -129,7 +128,7 @@ const invalid = [
             return <div>{first}</div>
         }
       `,
-		errors: [{ messageId: "preferReadOnlyProps" }],
+		errors: [{ messageId: "preferReadOnlyProperties" }],
 	},
 	// AssignmentPattern (default parameter value)
 	{
@@ -143,7 +142,7 @@ const invalid = [
             return <div id={id} />
         }
       `,
-		errors: [{ messageId: "preferReadOnlyProps" }],
+		errors: [{ messageId: "preferReadOnlyProperties" }],
 	},
 	// TSIndexSignature in interface (non-readonly)
 	{
@@ -161,7 +160,7 @@ const invalid = [
             return <div id={props.id} />
         }
       `,
-		errors: [{ messageId: "preferReadOnlyProps" }],
+		errors: [{ messageId: "preferReadOnlyProperties" }],
 	},
 	// TSIndexSignature in type literal (non-readonly)
 	{
@@ -175,7 +174,7 @@ const invalid = [
             return <div id={props.id} />
         }
       `,
-		errors: [{ messageId: "preferReadOnlyProps" }],
+		errors: [{ messageId: "preferReadOnlyProperties" }],
 	},
 	// Interface extending non-readonly interface
 	{
@@ -196,7 +195,7 @@ const invalid = [
             return <div id={props.id} className={props.className} />
         }
       `,
-		errors: [{ messageId: "preferReadOnlyProps" }],
+		errors: [{ messageId: "preferReadOnlyProperties" }],
 	},
 	// TSTypeQuery with non-const variable
 	{
@@ -212,7 +211,7 @@ const invalid = [
             return <div id={props.id} />
         }
       `,
-		errors: [{ messageId: "preferReadOnlyProps" }],
+		errors: [{ messageId: "preferReadOnlyProperties" }],
 	},
 	// Nested module declaration
 	{
@@ -232,7 +231,7 @@ const invalid = [
             return <div id={props.id} />
         }
       `,
-		errors: [{ messageId: "preferReadOnlyProps" }],
+		errors: [{ messageId: "preferReadOnlyProperties" }],
 	},
 	// VFC type
 	{
@@ -246,7 +245,7 @@ const invalid = [
             return <div id={props.id} />
         }
       `,
-		errors: [{ messageId: "preferReadOnlyProps" }],
+		errors: [{ messageId: "preferReadOnlyProperties" }],
 	},
 	// FunctionComponent type
 	{
@@ -260,7 +259,7 @@ const invalid = [
             return <div id={props.id} />
         }
       `,
-		errors: [{ messageId: "preferReadOnlyProps" }],
+		errors: [{ messageId: "preferReadOnlyProperties" }],
 	},
 	// VoidFunctionComponent type
 	{
@@ -274,7 +273,7 @@ const invalid = [
             return <div id={props.id} />
         }
       `,
-		errors: [{ messageId: "preferReadOnlyProps" }],
+		errors: [{ messageId: "preferReadOnlyProperties" }],
 	},
 	// FC without React prefix
 	{
@@ -288,7 +287,7 @@ const invalid = [
             return <div id={props.id} />
         }
       `,
-		errors: [{ messageId: "preferReadOnlyProps" }],
+		errors: [{ messageId: "preferReadOnlyProperties" }],
 	},
 	{
 		code: tsx`
@@ -303,7 +302,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -320,7 +319,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -337,7 +336,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -354,7 +353,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -371,7 +370,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -388,7 +387,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -405,7 +404,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -422,7 +421,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -442,7 +441,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -469,7 +468,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -496,7 +495,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -514,7 +513,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -534,7 +533,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -552,7 +551,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -572,7 +571,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -590,7 +589,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -611,7 +610,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -632,7 +631,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -653,7 +652,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -690,7 +689,7 @@ const invalid = [
       `,
 		errors: [
 			{
-				messageId: "preferReadOnlyProps",
+				messageId: "preferReadOnlyProperties",
 			},
 		],
 	},
@@ -1169,7 +1168,7 @@ const valid = [
             const dropFirstBook = () => {
               setBooks(
                 // Error in next line: A function component's props should be read-only.
-                // Source: @eslint-react/prefer-read-only-props
+                // Source: @eslint-react/prefer-read-only-properties
                 (currentBooks: Book[]) => {
                   const newBooks: Book[] = [];
                   // Considerable additional logic is found here in a non-toy example;
@@ -1227,4 +1226,4 @@ const valid = [
 ];
 
 // @ts-expect-error -- Stupid.
-ruleTester.run("prefer-read-only-props", rule, { invalid, valid });
+ruleTester.run("prefer-read-only-properties", rule, { invalid, valid });

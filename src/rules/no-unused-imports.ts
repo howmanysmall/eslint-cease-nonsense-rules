@@ -37,7 +37,7 @@ function getImportIdentifierName(specifier: AnyImportSpecifier): string | undefi
 	return specifier.local.name;
 }
 
-function collectJSDocIdentifiers(sourceCode: TSESLint.SourceCode): Set<string> {
+function collectJSDocumentIdentifiers(sourceCode: TSESLint.SourceCode): Set<string> {
 	const identifiers = new Set<string>();
 	const comments = sourceCode.getAllComments();
 
@@ -59,9 +59,10 @@ function collectJSDocIdentifiers(sourceCode: TSESLint.SourceCode): Set<string> {
 
 const noUnusedImports = createRule<Options, MessageIds>({
 	create(context) {
+		// oxlint-disable-next-line small-rules/prevent-abbreviations
 		const [{ checkJSDoc = true } = {}] = context.options;
 		const { sourceCode } = context;
-		const jsdocIdentifiers = checkJSDoc ? collectJSDocIdentifiers(sourceCode) : new Set<string>();
+		const jsdocIdentifiers = checkJSDoc ? collectJSDocumentIdentifiers(sourceCode) : new Set<string>();
 
 		const imports = new Array<{
 			identifierName: string;
@@ -92,22 +93,22 @@ const noUnusedImports = createRule<Options, MessageIds>({
 					const comma = sourceCode.getTokenAfter(specifierNode, {
 						filter: (token) => token.value === ",",
 					});
-					const prevNode = sourceCode.getTokenBefore(specifierNode);
+					const previousNode = sourceCode.getTokenBefore(specifierNode);
 
-					if (comma && prevNode) {
+					if (comma && previousNode) {
 						return [
-							fixer.removeRange([prevNode.range[1], specifierNode.range[0]]),
+							fixer.removeRange([previousNode.range[1], specifierNode.range[0]]),
 							fixer.remove(specifierNode),
 							fixer.remove(comma),
 						];
 					}
 				}
 
-				const prevToken = sourceCode.getTokenBefore(specifierNode, {
+				const previousToken = sourceCode.getTokenBefore(specifierNode, {
 					filter: (token) => token.value === ",",
 				});
 
-				if (prevToken) return fixer.removeRange([prevToken.range[0], specifierNode.range[1]]);
+				if (previousToken) return fixer.removeRange([previousToken.range[0], specifierNode.range[1]]);
 				return fixer.remove(specifierNode);
 			};
 		}

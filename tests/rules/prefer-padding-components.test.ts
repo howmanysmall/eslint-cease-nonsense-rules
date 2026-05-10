@@ -1,11 +1,10 @@
 import { join } from "node:path";
 import { describe } from "vitest";
+import rule from "@rules/prefer-padding-components";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
-import rule from "../../src/rules/prefer-padding-components";
-
-const FIXTURES = join(import.meta.dir, "..", "fixtures", "prefer-padding-components");
+const FIXTURES = join(import.meta.dirname, "..", "fixtures", "prefer-padding-components");
 const WITH_COMPONENTS = join(FIXTURES, "with-components");
 const WITHOUT_COMPONENTS = join(FIXTURES, "without-components");
 const FIXTURE_ONLY_COMPONENTS = join(FIXTURES, "fixture-only");

@@ -1,3 +1,4 @@
+// oxlint-disable small-rules/prevent-abbreviations
 import { TSESTree } from "@typescript-eslint/types";
 import { regex } from "arktype";
 import Typebox from "typebox";
@@ -50,7 +51,7 @@ const DEFAULT_OPTIONS: Required<NoShorthandOptions> = {
 	},
 };
 
-const REGEX_PATTERN_MATCHER = regex("^/(?<first>.+)/(?<second>[gimsuy]*)$");
+const REGEX_PATTERN_MATCHER = regex("^/(?<first>.+)/(?<second>[gimsuy]*)$", "u");
 
 interface ShorthandMatch {
 	readonly matchedWord: string;
@@ -65,7 +66,7 @@ interface ReplacementResult {
 
 const WORD_BOUNDARY_REGEX = /(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])/u;
 // oxlint-disable-next-line no-template-curly-in-string
-const SPECIAL_CHARACTER_REGEX = regex("[.+^${}()|[\\]\\\\]", "g");
+const SPECIAL_CHARACTER_REGEX = regex("[.+^${}()|[\\]\\\\]", "gu");
 
 // Module-level split cache with bounded size
 const SPLIT_CACHE = new Map<string, ReadonlyArray<string>>();

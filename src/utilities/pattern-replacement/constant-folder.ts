@@ -67,21 +67,25 @@ export function evaluateConstant(node: TSESTree.Expression): number | undefined 
 
 		let result: number;
 		switch (expression.operator) {
-			case "+":
+			case "+": {
 				result = left + right;
 				break;
+			}
 
-			case "-":
+			case "-": {
 				result = left - right;
 				break;
+			}
 
-			case "*":
+			case "*": {
 				result = left * right;
 				break;
+			}
 
-			case "/":
+			case "/": {
 				result = left / right;
 				break;
+			}
 
 			default:
 				return undefined;

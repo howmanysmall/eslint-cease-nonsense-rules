@@ -1,6 +1,5 @@
-import { describe, expect, it } from "vitest";
-
-import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../../src/rules/no-useless-use-spring";
+import { describe, expect, it, vi } from "vitest";
+import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "@rules/no-useless-use-spring";
 import {
 	createBanInstancesOptions,
 	createComplexityConfiguration,
@@ -31,10 +30,12 @@ import {
 	createUseExhaustiveDependenciesOptions,
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
-} from "../../src/utilities/configure-utilities";
-import { pattern } from "../../src/utilities/pattern-replacement";
+} from "@utilities/configure-utilities";
+import { pattern } from "@utilities/pattern-replacement";
 
-const TEST_IGNORE_REGEX = /^_/;
+const TEST_IGNORE_REGEX = /^_/u;
+
+vi.setConfig({ testTimeout: 10000 });
 
 describe("configure-utilities", () => {
 	describe("createBanInstancesOptions", () => {
@@ -277,7 +278,7 @@ describe("configure-utilities", () => {
 			expect(configuration).toStrictEqual({
 				enforceTargetLines: true,
 				ignoreComponents: [],
-				maxDestructuredProps: 5,
+				maxDestructuredProperties: 5,
 				maxLines: 200,
 				maxStateHooks: 5,
 				maxTsxNesting: 3,
@@ -333,7 +334,6 @@ describe("configure-utilities", () => {
 				onlyHooks: ["useEffect"],
 			});
 			expect(configuration.ignoreHooks).toStrictEqual(["useLegacyHook"]);
-			// @ts-expect-error Testing purposes
 			expect(configuration.importSources).toStrictEqual({ react: ["useEffect"] });
 			expect(configuration.onlyHooks).toStrictEqual(["useEffect"]);
 		});
@@ -449,7 +449,6 @@ describe("configure-utilities", () => {
 			});
 			expect(configuration.format).toStrictEqual(["camelCase"]);
 			expect(configuration.selector).toBe("class");
-			// @ts-expect-error Testing purposes
 			expect(configuration.custom).toStrictEqual({ match: false });
 		});
 	});

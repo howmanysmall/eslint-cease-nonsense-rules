@@ -328,7 +328,7 @@ const preferEnumMember = createRule<Options, MessageIds>({
 				if (!typeParameters || typeParameters.length === 0) continue;
 				const map = new Map<string, number>();
 				let index = 0;
-				for (const param of typeParameters) map.set(param.name.text, index++);
+				for (const { name } of typeParameters) map.set(name.text, index++);
 				aliasTypeParameterCache.set(aliasSymbol, map);
 				return map;
 			}

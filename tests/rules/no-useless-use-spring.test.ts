@@ -1,8 +1,7 @@
 import { describe } from "vitest";
+import rule from "@rules/no-useless-use-spring";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/no-useless-use-spring";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

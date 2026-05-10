@@ -337,10 +337,10 @@ const namingConventions = createRule<Options, MessageIds>({
 							| TSESTree.TSEmptyBodyFunctionExpression,
 						validator,
 					): void => {
-						for (const param of node.params) {
-							if (param.type === AST_NODE_TYPES.TSParameterProperty) continue;
+						for (const parameter of node.params) {
+							if (parameter.type === AST_NODE_TYPES.TSParameterProperty) continue;
 
-							const identifiers = getIdentifiersFromPattern(param);
+							const identifiers = getIdentifiersFromPattern(parameter);
 
 							for (const identifier of identifiers) {
 								const modifiers = new Set<Modifiers>();
@@ -368,18 +368,23 @@ const namingConventions = createRule<Options, MessageIds>({
 					const modifiers = new Set<Modifiers>();
 
 					switch (node.type) {
-						case AST_NODE_TYPES.ImportDefaultSpecifier:
+						case AST_NODE_TYPES.ImportDefaultSpecifier: {
 							modifiers.add(Modifiers.default);
 							break;
-						case AST_NODE_TYPES.ImportNamespaceSpecifier:
+						}
+
+						case AST_NODE_TYPES.ImportNamespaceSpecifier: {
 							modifiers.add(Modifiers.namespace);
 							break;
-						case AST_NODE_TYPES.ImportSpecifier:
+						}
+
+						case AST_NODE_TYPES.ImportSpecifier: {
 							if (node.imported.type === AST_NODE_TYPES.Identifier && node.imported.name !== "default") {
 								return;
 							}
 							modifiers.add(Modifiers.default);
 							break;
+						}
 					}
 
 					validator(node.local, modifiers);

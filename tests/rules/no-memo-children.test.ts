@@ -1,10 +1,8 @@
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, vi } from "vitest";
+import rule from "@rules/no-memo-children";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/no-memo-children";
 
 const directoryName = import.meta.dirname;
 

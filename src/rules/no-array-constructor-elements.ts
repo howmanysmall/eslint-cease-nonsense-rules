@@ -147,41 +147,47 @@ function isExpressionSideEffectSafe(expression: TSESTree.Expression): boolean {
 		case AST_NODE_TYPES.ThisExpression:
 			return true;
 
-		case AST_NODE_TYPES.MemberExpression:
+		case AST_NODE_TYPES.MemberExpression: {
 			if (unwrapped.optional || unwrapped.object.type === AST_NODE_TYPES.Super) return false;
 			if (!isExpressionSideEffectSafe(unwrapped.object)) return false;
 			if (!unwrapped.computed) return true;
 			return isExpressionSideEffectSafe(unwrapped.property);
+		}
 
-		case AST_NODE_TYPES.UnaryExpression:
+		case AST_NODE_TYPES.UnaryExpression: {
 			if (unwrapped.operator === "delete") return false;
 			return isExpressionSideEffectSafe(unwrapped.argument);
+		}
 
 		case AST_NODE_TYPES.BinaryExpression:
-		case AST_NODE_TYPES.LogicalExpression:
+		case AST_NODE_TYPES.LogicalExpression: {
 			if (unwrapped.left.type === AST_NODE_TYPES.PrivateIdentifier) return false;
 			return isExpressionSideEffectSafe(unwrapped.left) && isExpressionSideEffectSafe(unwrapped.right);
+		}
 
-		case AST_NODE_TYPES.ConditionalExpression:
+		case AST_NODE_TYPES.ConditionalExpression: {
 			return (
 				isExpressionSideEffectSafe(unwrapped.test) &&
 				isExpressionSideEffectSafe(unwrapped.consequent) &&
 				isExpressionSideEffectSafe(unwrapped.alternate)
 			);
+		}
 
-		case AST_NODE_TYPES.TemplateLiteral:
+		case AST_NODE_TYPES.TemplateLiteral: {
 			for (const part of unwrapped.expressions) if (!isExpressionSideEffectSafe(part)) return false;
 			return true;
+		}
 
-		case AST_NODE_TYPES.ArrayExpression:
+		case AST_NODE_TYPES.ArrayExpression: {
 			for (const element of unwrapped.elements) {
 				if (!element) continue;
 				if (element.type === AST_NODE_TYPES.SpreadElement) return false;
 				if (!isExpressionSideEffectSafe(element)) return false;
 			}
 			return true;
+		}
 
-		case AST_NODE_TYPES.ObjectExpression:
+		case AST_NODE_TYPES.ObjectExpression: {
 			for (const property of unwrapped.properties) {
 				if (property.type === AST_NODE_TYPES.SpreadElement) return false;
 				if (property.type !== AST_NODE_TYPES.Property) return false;
@@ -191,6 +197,7 @@ function isExpressionSideEffectSafe(expression: TSESTree.Expression): boolean {
 				if (!isExpressionSideEffectSafe(property.value)) return false;
 			}
 			return true;
+		}
 
 		case AST_NODE_TYPES.SequenceExpression:
 			return unwrapped.expressions.every(isExpressionSideEffectSafe);

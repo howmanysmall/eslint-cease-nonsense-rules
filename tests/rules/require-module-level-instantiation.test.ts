@@ -1,8 +1,7 @@
 import { describe } from "vitest";
+import rule from "@rules/require-module-level-instantiation";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/require-module-level-instantiation";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

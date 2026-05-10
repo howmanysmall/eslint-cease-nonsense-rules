@@ -1,11 +1,10 @@
 import { join } from "node:path";
 import { describe } from "vitest";
+import rule from "@rules/prefer-context-stack";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
-import rule from "../../src/rules/prefer-context-stack";
-
-const FIXTURES = join(import.meta.dir, "..", "fixtures", "prefer-context-stack");
+const FIXTURES = join(import.meta.dirname, "..", "fixtures", "prefer-context-stack");
 const WITH_CONTEXT_STACK = join(FIXTURES, "with-context-stack");
 const WITHOUT_CONTEXT_STACK = join(FIXTURES, "without-context-stack");
 const FIXTURE_ONLY_CONTEXT_STACK = join(FIXTURES, "fixture-only");

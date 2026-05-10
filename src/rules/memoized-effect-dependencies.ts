@@ -63,9 +63,11 @@ function unwrapExpression(node: TSESTree.Node): TSESTree.Node {
 			case TSESTree.AST_NODE_TYPES.TSInstantiationExpression:
 			case TSESTree.AST_NODE_TYPES.TSNonNullExpression:
 			case TSESTree.AST_NODE_TYPES.TSSatisfiesExpression:
-			case TSESTree.AST_NODE_TYPES.TSTypeAssertion:
+			case TSESTree.AST_NODE_TYPES.TSTypeAssertion: {
 				current = current.expression;
 				continue;
+			}
+
 			default:
 				return current;
 		}
@@ -206,17 +208,17 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 			if (definition.type === DefinitionType.Parameter) return "unknown";
 			if (definition.type === DefinitionType.ImportBinding) return "memoized";
 
-			const defNode = definition.node;
-			if (!defNode) return "unknown";
+			const { node } = definition;
+			if (!node) return "unknown";
 			if (
-				defNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration ||
-				defNode.type === TSESTree.AST_NODE_TYPES.ClassDeclaration
+				node.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration ||
+				node.type === TSESTree.AST_NODE_TYPES.ClassDeclaration
 			) {
 				return "unmemoized";
 			}
-			if (defNode.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator) return "unknown";
+			if (node.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator) return "unknown";
 
-			const declarationParent = defNode.parent;
+			const declarationParent = node.parent;
 			if (
 				declarationParent?.type === TSESTree.AST_NODE_TYPES.VariableDeclaration &&
 				declarationParent.kind !== "const"
@@ -224,21 +226,22 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 				return options.mode === "definite" ? "unknown" : "unmemoized";
 			}
 
-			const init = defNode.init ? unwrapExpression(defNode.init) : undefined;
+			const init = node.init ? unwrapExpression(node.init) : undefined;
 			if (!init) return "unknown";
 			if (isUnmemoizedInline(init)) return "unmemoized";
 
 			if (init.type === TSESTree.AST_NODE_TYPES.CallExpression) {
 				if (isMemoHookCall(init)) return "memoized";
 				const stableKind = getStableHookKind(init);
-				if (stableKind === "whole") return "memoized";
 				if (
-					stableKind === "index1" &&
-					defNode.id.type === TSESTree.AST_NODE_TYPES.ArrayPattern &&
-					isIdentifierAtArrayIndex(defNode.id, variableName, 1)
+					stableKind === "whole" ||
+					(stableKind === "index1" &&
+						node.id.type === TSESTree.AST_NODE_TYPES.ArrayPattern &&
+						isIdentifierAtArrayIndex(node.id, variableName, 1))
 				) {
 					return "memoized";
 				}
+
 				return options.mode === "definite" ? "unknown" : "unmemoized";
 			}
 

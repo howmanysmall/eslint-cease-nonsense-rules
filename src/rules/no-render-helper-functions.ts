@@ -1,18 +1,16 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
+import { isPascalCase } from "@utilities/casing-utilities";
+import { createRule } from "@utilities/create-rule";
 import { regex } from "arktype";
 
-import { isPascalCase } from "../utilities/casing-utilities";
-import { createRule } from "../utilities/create-rule";
-
+import type { ReadonlyRecord } from "@lint-types/utility-types";
 import type { TSESTree } from "@typescript-eslint/types";
-
-import type { ReadonlyRecord } from "../types/utility-types";
 
 type MessageIds = "noRenderHelper";
 
 const REACT_NODE_TYPE_NAMES = new Set(["ReactNode", "ReactElement", "JSXElement"]);
 
-const HOOK_PATTERN = regex("^use[A-Z]");
+const HOOK_PATTERN = regex("^use[A-Z]", "u");
 
 function isHookName(name: string): boolean {
 	return HOOK_PATTERN.test(name);
@@ -140,9 +138,9 @@ const noRenderHelperFunctions = createRule<[], MessageIds>({
 				if (parent?.type !== AST_NODE_TYPES.VariableDeclarator) return;
 				if (parent.id.type !== AST_NODE_TYPES.Identifier) return;
 
-				const varName = parent.id.name;
-				if (isPascalCase(varName)) return;
-				if (isHookName(varName)) return;
+				const variableName = parent.id.name;
+				if (isPascalCase(variableName)) return;
+				if (isHookName(variableName)) return;
 
 				const hasReactNodeAnnotation = parent.id.typeAnnotation
 					? isReactNodeTypeAnnotation(parent.id.typeAnnotation.typeAnnotation)
@@ -153,7 +151,7 @@ const noRenderHelperFunctions = createRule<[], MessageIds>({
 
 				if (hasReactNodeAnnotation || hasReturnTypeAnnotation || hasJSXReturn(node)) {
 					context.report({
-						data: { functionName: varName },
+						data: { functionName: variableName },
 						messageId: "noRenderHelper",
 						node: parent,
 					});
@@ -213,9 +211,9 @@ const noRenderHelperFunctions = createRule<[], MessageIds>({
 				if (parent?.type !== AST_NODE_TYPES.VariableDeclarator) return;
 				if (parent.id.type !== AST_NODE_TYPES.Identifier) return;
 
-				const varName = parent.id.name;
-				if (isPascalCase(varName)) return;
-				if (isHookName(varName)) return;
+				const variableName = parent.id.name;
+				if (isPascalCase(variableName)) return;
+				if (isHookName(variableName)) return;
 
 				const hasReactNodeAnnotation = parent.id.typeAnnotation
 					? isReactNodeTypeAnnotation(parent.id.typeAnnotation.typeAnnotation)
@@ -226,7 +224,7 @@ const noRenderHelperFunctions = createRule<[], MessageIds>({
 
 				if (hasReactNodeAnnotation || hasReturnTypeAnnotation || hasJSXReturn(node)) {
 					context.report({
-						data: { functionName: varName },
+						data: { functionName: variableName },
 						messageId: "noRenderHelper",
 						node: parent,
 					});

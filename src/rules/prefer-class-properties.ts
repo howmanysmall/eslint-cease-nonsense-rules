@@ -30,19 +30,21 @@ function isSimpleLiteral(node: TSESTree.Expression | undefined): boolean {
 		case AST_NODE_TYPES.CallExpression:
 			return node.callee.type === AST_NODE_TYPES.MemberExpression && isSimpleLiteral(node.callee.object);
 
-		case AST_NODE_TYPES.ArrayExpression:
+		case AST_NODE_TYPES.ArrayExpression: {
 			return node.elements.every((element) => {
 				if (element === null) return true;
 				if (element.type === AST_NODE_TYPES.SpreadElement) return false;
 				return isSimpleLiteral(element);
 			});
+		}
 
-		case AST_NODE_TYPES.ObjectExpression:
+		case AST_NODE_TYPES.ObjectExpression: {
 			return node.properties.every((property) =>
 				property.type === AST_NODE_TYPES.SpreadElement || property.type !== AST_NODE_TYPES.Property
 					? false
 					: isSimpleLiteralProperty(property),
 			);
+		}
 
 		default:
 			return false;

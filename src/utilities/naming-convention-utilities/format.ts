@@ -1,4 +1,4 @@
-function isUppercaseChar(character: string): boolean {
+function isUppercaseCharacter(character: string): boolean {
 	return character === character.toUpperCase() && character !== character.toLowerCase();
 }
 
@@ -40,7 +40,7 @@ function hasStrictCamelHumps(name: string, isUpper: boolean): boolean {
 		if (character === undefined) return false;
 		if (character === "_") return false;
 
-		if (isUpperCase === isUppercaseChar(character)) {
+		if (isUpperCase === isUppercaseCharacter(character)) {
 			if (isUpperCase) return false;
 		} else isUpperCase = !isUpperCase;
 	}

@@ -1,8 +1,7 @@
 import { describe } from "vitest";
+import rule from "@rules/prefer-idiv";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/prefer-idiv";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

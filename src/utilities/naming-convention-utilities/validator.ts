@@ -182,7 +182,7 @@ function validateUnderscore(
 			}
 			return trimmedSingleUnderscore;
 		}
-		case "requireDouble":
+		case "requireDouble": {
 			if (!hasDoubleUnderscore) {
 				context.report({
 					data: formatReportData(selectorType, { count: "two", originalName, position }),
@@ -192,6 +192,7 @@ function validateUnderscore(
 				return undefined;
 			}
 			return trimmedDoubleUnderscore;
+		}
 	}
 }
 
@@ -298,20 +299,23 @@ function isCorrectType(
 
 	for (const allowedType of config.types) {
 		switch (allowedType) {
-			case "array":
+			case "array": {
 				if (isAllTypesMatch(type, (innerType) => isArrayLikeType(checker, innerType))) {
 					return true;
 				}
 				break;
-			case "function":
+			}
+
+			case "function": {
 				if (isAllTypesMatch(type, (innerType) => innerType.getCallSignatures().length > 0)) return true;
 				break;
+			}
+
 			case "boolean":
 			case "number":
 			case "string": {
 				const typeString = checker.typeToString(checker.getWidenedType(checker.getBaseTypeOfLiteralType(type)));
 				if (typeString === allowedType) return true;
-
 				break;
 			}
 		}

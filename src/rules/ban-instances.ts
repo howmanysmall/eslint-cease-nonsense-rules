@@ -98,9 +98,9 @@ const banInstances = createRule<Options, MessageIds>({
 				if (name.type !== TSESTree.AST_NODE_TYPES.JSXIdentifier) return;
 
 				const elementName = name.name;
-				const firstChar = elementName.charAt(0);
+				const firstCharacter = elementName.charAt(0);
 
-				if (firstChar !== firstChar.toLowerCase()) return;
+				if (firstCharacter !== firstCharacter.toLowerCase()) return;
 
 				const entry = config.bannedClasses.get(elementName.toLowerCase());
 				if (!entry) return;

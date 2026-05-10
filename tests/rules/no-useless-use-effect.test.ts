@@ -1,8 +1,7 @@
 import { describe } from "vitest";
+import rule from "@rules/no-useless-use-effect";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
-
-import rule from "../../src/rules/no-useless-use-effect";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

@@ -1,3 +1,5 @@
+import { env } from "node:process";
+
 /**
  * Utility for sharding test cases across multiple CI jobs.
  *
@@ -22,22 +24,22 @@
  * @returns The full array if TEST_CASE_SHARD is not set, otherwise a filtered subset
  */
 export function shardCases<TestCase>(cases: ReadonlyArray<TestCase>): ReadonlyArray<TestCase> {
-	const shardEnv = process.env.TEST_CASE_SHARD;
+	const shardEnvironment = env.TEST_CASE_SHARD;
 
 	// No sharding - return all cases (local development)
-	if (!shardEnv) return cases;
+	if (!shardEnvironment) return cases;
 
 	// Parse shard specification
-	const parts = shardEnv.split("/");
+	const parts = shardEnvironment.split("/");
 	if (parts.length !== 2) {
-		throw new TypeError(`Invalid TEST_CASE_SHARD format: expected "index/total", got "${shardEnv}"`);
+		throw new TypeError(`Invalid TEST_CASE_SHARD format: expected "index/total", got "${shardEnvironment}"`);
 	}
 
 	const shardIndex = Number.parseInt(parts[0], 10);
 	const totalShards = Number.parseInt(parts[1], 10);
 
 	if (Number.isNaN(shardIndex) || Number.isNaN(totalShards)) {
-		throw new TypeError(`Invalid TEST_CASE_SHARD format: non-numeric values in "${shardEnv}"`);
+		throw new TypeError(`Invalid TEST_CASE_SHARD format: non-numeric values in "${shardEnvironment}"`);
 	}
 
 	if (shardIndex < 1 || shardIndex > totalShards) {

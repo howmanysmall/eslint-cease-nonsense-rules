@@ -1,8 +1,7 @@
 import { describe } from "vitest";
+import rule from "@rules/no-underscore-react-properties";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
-
-import rule from "../../src/rules/no-underscore-react-props";
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -17,8 +16,8 @@ const ruleTester = new RuleTester({
 	},
 });
 
-describe("no-underscore-react-props", () => {
-	ruleTester.run("no-underscore-react-props", rule, {
+describe("no-underscore-react-properties", () => {
+	ruleTester.run("no-underscore-react-properties", rule, {
 		invalid: [
 			{
 				code: `
@@ -27,7 +26,7 @@ describe("no-underscore-react-props", () => {
     _tooltipGradient={tooltipGradient}
 />;
 `,
-				errors: [{ data: { propName: "_tooltipGradient" }, messageId: "noUnderscoreReactProp" }],
+				errors: [{ data: { propName: "_tooltipGradient" }, messageId: "noUnderscoreReactProperty" }],
 			},
 			{
 				code: `
@@ -36,15 +35,15 @@ function Component() {
 }
 `,
 				errors: [
-					{ data: { propName: "_private" }, messageId: "noUnderscoreReactProp" },
-					{ data: { propName: "_version" }, messageId: "noUnderscoreReactProp" },
+					{ data: { propName: "_private" }, messageId: "noUnderscoreReactProperty" },
+					{ data: { propName: "_version" }, messageId: "noUnderscoreReactProperty" },
 				],
 			},
 			{
 				code: `
 const view = <panel _ />;
 `,
-				errors: [{ data: { propName: "_" }, messageId: "noUnderscoreReactProp" }],
+				errors: [{ data: { propName: "_" }, messageId: "noUnderscoreReactProperty" }],
 			},
 		],
 		valid: [

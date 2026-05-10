@@ -1,8 +1,7 @@
 import { describe } from "vitest";
+import rule from "@rules/no-unused-imports";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/no-unused-imports";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

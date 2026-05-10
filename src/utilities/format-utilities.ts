@@ -1,12 +1,11 @@
-import { readFileSync } from "node:fs";
+import fs from "node:fs";
 import { resolve } from "node:path";
+import { formatSync } from "@oxfmt-sync";
 import { regex } from "arktype";
 import { parseJSONC } from "confbox";
 import fastDiff from "fast-diff";
 
-import { formatSync } from "../oxfmt-sync";
-
-import type { FormatConfiguration } from "../oxfmt-worker";
+import type { FormatConfiguration } from "@oxfmt-worker";
 
 export interface Difference {
 	readonly deleteText?: string;
@@ -22,7 +21,7 @@ function loadOxfmtConfig(): FormatConfiguration {
 
 	try {
 		const configPath = resolve(process.cwd(), ".oxfmtrc.json");
-		const configText = readFileSync(configPath, "utf8");
+		const configText = fs.readFileSync(configPath, "utf8");
 		const parsed = parseJSONC<Record<string, unknown>>(configText);
 
 		if (typeof parsed !== "object" || parsed === null) {
@@ -113,12 +112,12 @@ export function generateDifferences(original: string, formatted: string): Readon
 
 			const previous = diffs[index - 1];
 			if (previous?.[0] === 0) {
-				const [, prevText] = previous;
+				const [, previousText] = previous;
 				let shiftCount = 0;
 				while (
-					shiftCount < prevText.length &&
+					shiftCount < previousText.length &&
 					shiftCount < text.length &&
-					prevText[prevText.length - 1 - shiftCount] === text[shiftCount]
+					previousText[previousText.length - 1 - shiftCount] === text[shiftCount]
 				) {
 					shiftCount += 1;
 				}
@@ -157,7 +156,7 @@ const SYMBOLS: Record<string, string> = {
 	" ": "\u{00B7}",
 };
 
-const WHITESPACE_REGEXP = regex("[\r\n\t ]", "g");
+const WHITESPACE_REGEXP = regex("[\r\n\t ]", "gu");
 function toSymbol(character: string): string {
 	return SYMBOLS[character] ?? character;
 }

@@ -192,7 +192,7 @@ function classifyNodeTaint(node: TSESTree.Node, state: CallbackState): TaintKind
 	const unwrapped = unwrapNode(node);
 
 	switch (unwrapped.type) {
-		case AST_NODE_TYPES.ArrayExpression:
+		case AST_NODE_TYPES.ArrayExpression: {
 			for (const element of unwrapped.elements) {
 				if (!element) continue;
 
@@ -205,24 +205,31 @@ function classifyNodeTaint(node: TSESTree.Node, state: CallbackState): TaintKind
 			}
 
 			return "none";
+		}
+
 		case AST_NODE_TYPES.AssignmentExpression:
 			return classifyNodeTaint(unwrapped.right, state);
+
 		case AST_NODE_TYPES.ConditionalExpression: {
 			const consequent = classifyNodeTaint(unwrapped.consequent, state);
 			const alternate = classifyNodeTaint(unwrapped.alternate, state);
 			if (consequent === alternate) return consequent;
 			return "none";
 		}
-		case AST_NODE_TYPES.Identifier:
+
+		case AST_NODE_TYPES.Identifier: {
 			if (state.playerValues.has(unwrapped.name)) return "value";
 			if (state.playerContainers.has(unwrapped.name)) return "container";
 			return "none";
+		}
+
 		case AST_NODE_TYPES.MemberExpression: {
 			const objectKind = classifyNodeTaint(unwrapped.object, state);
 			if (objectKind === "container") return "value";
 			return "none";
 		}
-		case AST_NODE_TYPES.ObjectExpression:
+
+		case AST_NODE_TYPES.ObjectExpression: {
 			for (const property of unwrapped.properties) {
 				if (property.type === AST_NODE_TYPES.SpreadElement) {
 					if (classifyNodeTaint(property.argument, state) !== "none") return "container";
@@ -233,11 +240,14 @@ function classifyNodeTaint(node: TSESTree.Node, state: CallbackState): TaintKind
 			}
 
 			return "none";
+		}
+
 		case AST_NODE_TYPES.SequenceExpression: {
 			const lastExpression = unwrapped.expressions.at(-1);
 			if (!lastExpression) return "none";
 			return classifyNodeTaint(lastExpression, state);
 		}
+
 		default:
 			return "none";
 	}

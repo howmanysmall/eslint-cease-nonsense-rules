@@ -1,7 +1,7 @@
+import rule from "@rules/no-unused-imports";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
-import rule from "../../src/rules/no-unused-imports";
 import casesJs from "./no-unused-imports/cases-js";
 import casesTs from "./no-unused-imports/cases-ts";
 

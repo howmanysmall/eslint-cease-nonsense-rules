@@ -234,11 +234,11 @@ const messages = {
 type MessageIds = keyof typeof messages;
 type Options = [Partial<RequirePairedCallsOptions>?];
 
-interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
+interface WithRecommended extends TSESLint.RuleMetaDataDocs {
 	recommended?: boolean;
 }
 
-const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRecommended> = {
+const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, WithRecommended> = {
 	create(context): TSESLint.RuleListener {
 		const [rawOptions] = context.options;
 		const baseOptions = isRuleOptions.Check(rawOptions) ? rawOptions : {};

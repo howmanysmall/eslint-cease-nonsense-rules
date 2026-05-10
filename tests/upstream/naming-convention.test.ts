@@ -1,7 +1,7 @@
+import rule from "@rules/naming-convention";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 
-import rule from "../../src/rules/naming-convention";
 import { invalid, valid } from "./naming-convention/cases";
 
 const testDirectory = import.meta.dirname;

@@ -3,9 +3,9 @@ import { regex } from "arktype";
 import type { Detector } from "./detector";
 
 // oxlint-disable-next-line prefer-string-raw
-const WHITESPACE_GLOBAL_REGEX = regex("\\s+", "g");
+const WHITESPACE_GLOBAL_REGEX = regex("\\s+", "gu");
 // oxlint-disable-next-line prefer-string-raw
-const ESCAPE = regex("[-/\\^$*+?.()|[\\]{}]", "g");
+const ESCAPE = regex("[-/\\^$*+?.()|[\\]{}]", "gu");
 
 function escapeForRegex(value: string): string {
 	return value.replaceAll(ESCAPE, String.raw`\$&`);

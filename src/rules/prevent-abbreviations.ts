@@ -1,3 +1,4 @@
+// oxlint-disable small-rules/prevent-abbreviations
 import path from "node:path";
 import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";

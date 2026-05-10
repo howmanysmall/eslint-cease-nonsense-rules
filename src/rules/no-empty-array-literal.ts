@@ -5,6 +5,7 @@ import { createRule } from "../utilities/create-rule";
 
 import type { TSESTree } from "@typescript-eslint/types";
 import type { TSESLint } from "@typescript-eslint/utils";
+import type { Except } from "type-fest";
 import type { Type } from "typescript";
 
 type MessageIds = "noEmptyArrayLiteral" | "suggestUseNewArray";
@@ -40,7 +41,7 @@ type ResolvedOptions = Required<NoEmptyArrayLiteralOptions> & {
 	readonly allowedEmptyArrayContexts: NoEmptyArrayLiteralContextDefaults;
 };
 
-const DEFAULT_OPTIONS: Omit<Required<NoEmptyArrayLiteralOptions>, "allowedEmptyArrayContexts"> & {
+const DEFAULT_OPTIONS: Except<Required<NoEmptyArrayLiteralOptions>, "allowedEmptyArrayContexts"> & {
 	readonly allowedEmptyArrayContexts: NoEmptyArrayLiteralContextDefaults;
 } = {
 	allowedEmptyArrayContexts: {

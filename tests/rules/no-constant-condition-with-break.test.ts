@@ -1,7 +1,6 @@
 import { describe } from "vitest";
+import rule from "@rules/no-constant-condition-with-break";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/no-constant-condition-with-break";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

@@ -17,13 +17,11 @@ export function isFunctionLikeNode(
 
 export function isLikelyReactComponentName(name: string): boolean {
 	const [firstCharacter] = name;
-	if (firstCharacter === undefined || firstCharacter < "A" || firstCharacter > "Z") return false;
-	if (name.includes("_")) return false;
-
-	for (const character of name) {
-		if (character >= "a" && character <= "z") return true;
+	if (firstCharacter === undefined || firstCharacter < "A" || firstCharacter > "Z" || name.includes("_")) {
+		return false;
 	}
 
+	for (const character of name) if (character >= "a" && character <= "z") return true;
 	return false;
 }
 
@@ -33,10 +31,12 @@ function isDefinitelyNotReactReturnType(checker: TypeChecker, type: Type): boole
 	}
 
 	const typeString = checker.typeToString(type);
-
-	if (typeString === "null") return false;
-
-	if (typeString.includes("Element") || typeString.includes("ReactNode") || typeString.includes("ReactElement")) {
+	if (
+		typeString === "null" ||
+		typeString.includes("Element") ||
+		typeString.includes("ReactNode") ||
+		typeString.includes("ReactElement")
+	) {
 		return false;
 	}
 

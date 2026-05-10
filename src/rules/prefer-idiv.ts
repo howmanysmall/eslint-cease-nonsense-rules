@@ -49,11 +49,11 @@ const preferIdiv = createRule<Options, MessageIds>({
 				const [firstArgument] = node.arguments;
 				if (firstArgument === undefined || firstArgument.type === AST_NODE_TYPES.SpreadElement) return;
 
-				const arg = unwrapExpression(firstArgument);
-				if (arg.type !== AST_NODE_TYPES.BinaryExpression || arg.operator !== "/") return;
+				const argument = unwrapExpression(firstArgument);
+				if (argument.type !== AST_NODE_TYPES.BinaryExpression || argument.operator !== "/") return;
 
-				const leftText = getReceiverText(context.sourceCode, arg.left);
-				const rightText = context.sourceCode.getText(arg.right);
+				const leftText = getReceiverText(context.sourceCode, argument.left);
+				const rightText = context.sourceCode.getText(argument.right);
 
 				context.report({
 					data: { left: leftText, right: rightText },

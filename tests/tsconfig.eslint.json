@@ -9,5 +9,6 @@
 		"target": "es2022",
 		"types": ["node", "vitest/globals"],
 	},
+	"extends": "../tsconfig.paths.json",
 	"include": ["../src/**/*.ts", "./**/*.ts", "./**/*.tsx"],
 }

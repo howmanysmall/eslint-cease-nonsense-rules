@@ -3,7 +3,7 @@ import { regex } from "arktype";
 import type { Detector } from "./detector";
 
 // oxlint-disable-next-line prefer-string-raw
-const WHITESPACE_REGEX = regex("\\s");
+const WHITESPACE_REGEX = regex("\\s", "u");
 
 /**
  * Creates a detector for lines ending with specific characters. Scans backwards, skipping whitespace and comment

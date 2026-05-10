@@ -1,5 +1,7 @@
 import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "../rules/no-useless-use-spring";
 
+import type { Except } from "type-fest";
+
 import type { BanInstancesOptions } from "../rules/ban-instances";
 import type { DotNotationOptions } from "../rules/dot-notation";
 import type { ComplexityConfiguration } from "../rules/enforce-ianitor-check-type";
@@ -42,7 +44,7 @@ import type { Pattern, PreferPatternReplacementsOptions } from "./pattern-replac
 export function createPairConfiguration(
 	opener: string,
 	closer: string | ReadonlyArray<string>,
-	options: Partial<Omit<PairConfiguration, "opener" | "closer">> = {},
+	options: Partial<Except<PairConfiguration, "opener" | "closer">> = {},
 ): PairConfiguration {
 	return { closer, opener, ...options };
 }
@@ -174,7 +176,7 @@ export function createEffectFunctionOptions(options: Partial<EffectFunctionOptio
  */
 export function createHookConfiguration(
 	name: string,
-	options: Partial<Omit<HookConfiguration, "name">> = {},
+	options: Partial<Except<HookConfiguration, "name">> = {},
 ): HookConfiguration {
 	return { allowAsync: false, name, ...options };
 }
@@ -223,7 +225,7 @@ export function createNoGodComponentsOptions(options: Partial<NoGodComponentsOpt
 	return {
 		enforceTargetLines: true,
 		ignoreComponents: [],
-		maxDestructuredProps: 5,
+		maxDestructuredProperties: 5,
 		maxLines: 200,
 		maxStateHooks: 5,
 		maxTsxNesting: 3,

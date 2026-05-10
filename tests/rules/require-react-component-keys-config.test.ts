@@ -1,8 +1,7 @@
 import { describe } from "vitest";
+import rule from "@rules/require-react-component-keys";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/require-react-component-keys";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

@@ -247,7 +247,7 @@
 	},
 	"formatter": {
 		"biome": {
-			"command": ["aube", "run", "biome", "format", "--", "--write", "$FILE"],
+			"command": ["biome", "format", "--write", "$FILE"],
 			"disabled": false,
 			"extensions": [
 				".astro",
@@ -273,7 +273,7 @@
 			],
 		},
 		"oxfmt": {
-			"command": ["aube", "run", "format", "$FILE"],
+			"command": ["oxfmt", "$FILE"],
 			"disabled": false,
 			"environment": {},
 			"extensions": [
@@ -330,7 +330,7 @@
 	"layout": "stretch",
 	"lsp": {
 		"biome": {
-			"command": ["aube", "run", "biome", "lsp-proxy"],
+			"command": ["biome", "lsp-proxy"],
 			"disabled": false,
 			"env": {},
 			"extensions": [
@@ -358,7 +358,7 @@
 		},
 		"eslint": { "disabled": true },
 		"oxfmt": {
-			"command": ["aube", "run", "format", "--", "--lsp"],
+			"command": ["oxfmt", "--lsp"],
 			"disabled": false,
 			"env": {},
 			"extensions": [
@@ -391,7 +391,7 @@
 			"initialization": {},
 		},
 		"oxlint": {
-			"command": ["aube", "run", "oxc", "--", "--lsp"],
+			"command": ["oxlint", "--lsp"],
 			"disabled": false,
 			"env": {},
 			"extensions": [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts", ".jsx", ".tsx", ".vue", ".svelte", ".astro"],
@@ -419,7 +419,7 @@
 			"extensions": [".toml"],
 		},
 		"typescript": {
-			"command": ["aube", "run", "typescript", "--", "--lsp", "--stdio"],
+			"command": ["tsgo", "--lsp", "--stdio"],
 			"disabled": false,
 			"extensions": [".ts", ".tsx"],
 		},
@@ -447,7 +447,7 @@
 		},
 		"minimax": {
 			"command": ["uvx", "minimax-coding-plan-mcp", "-y"],
-			"enabled": true,
+			"enabled": false,
 			"environment": {
 				"MINIMAX_API_HOST": "https://api.minimax.io",
 				"MINIMAX_API_KEY": "{env:MINIMAX_API_KEY}",

@@ -58,7 +58,7 @@ function typeHasChildrenProperty(checker: TypeChecker, type: Type, visited = new
 	visited.add(type);
 
 	const allProperties = checker.getPropertiesOfType(type);
-	for (const prop of allProperties) if (prop.getName() === "children") return true;
+	for (const property of allProperties) if (property.getName() === "children") return true;
 
 	if (type.isUnion()) {
 		for (const constituent of type.types) if (typeHasChildrenProperty(checker, constituent, visited)) return true;
@@ -97,11 +97,11 @@ function getPropertiesTypeFromMemoCall(
 	}
 
 	if (node.typeArguments && node.typeArguments.params.length > 0) {
-		const [typeArgNode] = node.typeArguments.params;
-		if (typeArgNode) {
-			const tsTypeArgNode = services.esTreeNodeToTSNodeMap.get(typeArgNode);
-			if (tsTypeArgNode) {
-				const typeFromArgument = checker.getTypeAtLocation(tsTypeArgNode);
+		const [typeArgumentNode] = node.typeArguments.params;
+		if (typeArgumentNode) {
+			const tsTypeArgumentNode = services.esTreeNodeToTSNodeMap.get(typeArgumentNode);
+			if (tsTypeArgumentNode) {
+				const typeFromArgument = checker.getTypeAtLocation(tsTypeArgumentNode);
 				if (typeFromArgument) return typeFromArgument;
 			}
 		}
@@ -171,10 +171,10 @@ const noMemoChildren = createRule<Options, MessageIds>({
 				const componentName = getComponentName(node);
 				if (componentName && allowedSet.has(componentName)) return;
 
-				const propsType = getPropertiesTypeFromMemoCall(services, checker, node);
-				if (!propsType) return;
+				const propertiesType = getPropertiesTypeFromMemoCall(services, checker, node);
+				if (!propertiesType) return;
 
-				if (typeHasChildrenProperty(checker, propsType)) {
+				if (typeHasChildrenProperty(checker, propertiesType)) {
 					context.report({
 						data: { componentName: componentName ?? "Component" },
 						messageId: "memoWithChildren",

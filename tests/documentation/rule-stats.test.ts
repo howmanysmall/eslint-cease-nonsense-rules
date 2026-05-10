@@ -11,6 +11,7 @@ import {
 
 describe("rule stats", () => {
 	it("derives totals from the shared rule catalog", () => {
+		expect.assertions(4);
 		expect(totalCategories).toBe(4);
 		expect(totalRules).toBe(58);
 		expect(ruleAwareness).toStrictEqual({
@@ -29,9 +30,10 @@ describe("rule stats", () => {
 			astOnly: 49,
 			typeAware: 9,
 		});
-	});
+	}, 1000);
 
 	it("keeps category stats aligned with the sidebar groups", () => {
+		expect.assertions(3);
 		expect(Object.keys(ruleCategories)).toStrictEqual(["general", "naming", "react", "roblox"]);
 		expect(ruleCategories).toStrictEqual({
 			general: {
@@ -76,5 +78,5 @@ describe("rule stats", () => {
 			{ count: 7, first: "rules/array-type-generic", label: "Naming & Conventions" },
 			{ count: 12, first: "rules/dot-notation", label: "General Logic & Style" },
 		]);
-	});
+	}, 1000);
 });

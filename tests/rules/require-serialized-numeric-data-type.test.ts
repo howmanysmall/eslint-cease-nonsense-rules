@@ -1,8 +1,7 @@
 import { describe } from "vitest";
+import rule from "@rules/require-serialized-numeric-data-type";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/require-serialized-numeric-data-type";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

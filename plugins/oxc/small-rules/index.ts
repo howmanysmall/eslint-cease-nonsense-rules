@@ -8,6 +8,7 @@ import preferPascalCaseEnums from "@rules/prefer-pascal-case-enums";
 import preferSingularEnums from "@rules/prefer-singular-enums";
 import preventAbbreviations from "@rules/prevent-abbreviations";
 import requireSwitchCaseBraces from "@rules/require-switch-case-braces";
+import requireUnicodeRegex from "@rules/require-unicode-regex";
 import { definePlugin } from "oxlint-plugin-utilities";
 
 const smallRules = definePlugin({
@@ -23,6 +24,7 @@ const smallRules = definePlugin({
 		"prefer-singular-enums": preferSingularEnums,
 		"prevent-abbreviations": preventAbbreviations,
 		"require-switch-case-braces": requireSwitchCaseBraces,
+		"require-unicode-regex": requireUnicodeRegex,
 	},
 });
 

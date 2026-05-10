@@ -4,7 +4,7 @@ import { MetaSelectors } from "./enums";
 
 import type { IndividualAndMetaSelectorsString, MetaSelectorsString } from "./enums";
 
-const ALPHABETICAL = regex("([A-Z])", "g");
+const ALPHABETICAL = regex("([A-Z])", "gu");
 
 export function selectorTypeToMessageString(selectorType: string): string {
 	const notCamelCase = selectorType.replaceAll(ALPHABETICAL, " $1");

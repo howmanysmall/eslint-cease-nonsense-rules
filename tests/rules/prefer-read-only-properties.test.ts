@@ -1,10 +1,8 @@
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, vi } from "vitest";
+import rule from "@rules/prefer-read-only-properties";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/prefer-read-only-props";
 
 const __dirname = import.meta.dirname;
 
@@ -47,58 +45,58 @@ describe("prefer-read-only-props", () => {
 			// Non-destructured props in parameter
 			{
 				code: "function Component(props: { value: string }) { return null; }",
-				errors: [{ data: { name: "value" }, messageId: "readOnlyProp" }],
+				errors: [{ data: { name: "value" }, messageId: "readOnlyProperty" }],
 				output: "function Component(props: { readonly value: string }) { return null; }",
 			},
 			// Multiple props without readonly
 			{
 				code: "function Component(props: { a: number; b: string }) { return null; }",
 				errors: [
-					{ data: { name: "a" }, messageId: "readOnlyProp" },
-					{ data: { name: "b" }, messageId: "readOnlyProp" },
+					{ data: { name: "a" }, messageId: "readOnlyProperty" },
+					{ data: { name: "b" }, messageId: "readOnlyProperty" },
 				],
 				output: "function Component(props: { readonly a: number; readonly b: string }) { return null; }",
 			},
 			// FunctionExpression with non-readonly props
 			{
 				code: "const Component = function(props: { value: string }) { return null; };",
-				errors: [{ data: { name: "value" }, messageId: "readOnlyProp" }],
+				errors: [{ data: { name: "value" }, messageId: "readOnlyProperty" }],
 				output: "const Component = function(props: { readonly value: string }) { return null; };",
 			},
 			// Arrow function with non-readonly props
 			{
 				code: "const Component = (props: { value: string }) => null;",
-				errors: [{ data: { name: "value" }, messageId: "readOnlyProp" }],
+				errors: [{ data: { name: "value" }, messageId: "readOnlyProperty" }],
 				output: "const Component = (props: { readonly value: string }) => null;",
 			},
 			// VariableDeclarator with function expression
 			{
 				code: "const Component = function(props: { name: string }) { return null; };",
-				errors: [{ data: { name: "name" }, messageId: "readOnlyProp" }],
+				errors: [{ data: { name: "name" }, messageId: "readOnlyProperty" }],
 				output: "const Component = function(props: { readonly name: string }) { return null; };",
 			},
 			// VariableDeclarator with arrow function
 			{
 				code: "const Component = (props: { name: string }) => { return null; };",
-				errors: [{ data: { name: "name" }, messageId: "readOnlyProp" }],
+				errors: [{ data: { name: "name" }, messageId: "readOnlyProperty" }],
 				output: "const Component = (props: { readonly name: string }) => { return null; };",
 			},
 			// Property with string literal key
 			{
 				code: "function Component(props: { 'prop-name': string }) { return null; }",
-				errors: [{ data: { name: "unknown" }, messageId: "readOnlyProp" }],
+				errors: [{ data: { name: "unknown" }, messageId: "readOnlyProperty" }],
 				output: "function Component(props: { readonly 'prop-name': string }) { return null; }",
 			},
 			// Optional property without readonly
 			{
 				code: "function Component(props: { value?: string }) { return null; }",
-				errors: [{ data: { name: "value" }, messageId: "readOnlyProp" }],
+				errors: [{ data: { name: "value" }, messageId: "readOnlyProperty" }],
 				output: "function Component(props: { readonly value?: string }) { return null; }",
 			},
 			// Multiple parameters, props not first
 			{
 				code: "function Component(other: number, props: { value: string }) { return null; }",
-				errors: [{ data: { name: "value" }, messageId: "readOnlyProp" }],
+				errors: [{ data: { name: "value" }, messageId: "readOnlyProperty" }],
 				output: "function Component(other: number, props: { readonly value: string }) { return null; }",
 			},
 		],
@@ -185,7 +183,7 @@ declare function jsxElement(): JSX.Element;
 function Component(props: { value: string }): JSX.Element {
     return jsxElement();
 }`,
-				errors: [{ messageId: "preferReadOnlyProps" }],
+				errors: [{ messageId: "preferReadOnlyProperties" }],
 			},
 		],
 		valid: [

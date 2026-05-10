@@ -1,14 +1,11 @@
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 import { describe, vi } from "vitest";
+import rule from "@rules/dot-notation";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 
-import rule from "../../src/rules/dot-notation";
-
+import type { DotNotationOptions } from "@rules/dot-notation";
 import type { InvalidTestCase, ValidTestCase } from "@typescript-eslint/rule-tester";
-
-import type { DotNotationOptions } from "../../src/rules/dot-notation";
 
 const __dirname = import.meta.dirname;
 const testsDir = resolve(__dirname, "..");

@@ -4,6 +4,9 @@ import { defineConfig } from "vitest/config";
 const isFocusedRun = argv.slice(2).some((argument) => argument.endsWith(".test.ts") || argument.startsWith("tests/"));
 
 const configuration = defineConfig({
+	resolve: {
+		tsconfigPaths: true,
+	},
 	// oxlint-disable-next-line unicorn/no-null
 	server: { watch: null },
 	test: {

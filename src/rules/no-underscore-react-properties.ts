@@ -2,7 +2,7 @@ import { TSESTree } from "@typescript-eslint/types";
 
 import { createRule } from "../utilities/create-rule";
 
-type MessageIds = "noUnderscoreReactProp";
+type MessageIds = "noUnderscoreReactProperty";
 
 const noUnderscoreReactProperties = createRule<[], MessageIds>({
 	create(context) {
@@ -13,7 +13,7 @@ const noUnderscoreReactProperties = createRule<[], MessageIds>({
 
 				context.report({
 					data: { propName: node.name.name },
-					messageId: "noUnderscoreReactProp",
+					messageId: "noUnderscoreReactProperty",
 					node: node.name,
 				});
 			},
@@ -25,7 +25,7 @@ const noUnderscoreReactProperties = createRule<[], MessageIds>({
 			description: "Ban React property names that begin with an underscore in JSX.",
 		},
 		messages: {
-			noUnderscoreReactProp:
+			noUnderscoreReactProperty:
 				"React prop '{{propName}}' starts with '_'. Remove the leading underscore from the prop name.",
 		},
 		schema: [],

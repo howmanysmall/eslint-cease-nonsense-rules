@@ -7,7 +7,7 @@ import type { ReadonlyRecord } from "../types/utility-types";
 export interface NoGodComponentsOptions {
 	readonly enforceTargetLines?: boolean;
 	readonly ignoreComponents?: ReadonlyArray<string>;
-	readonly maxDestructuredProps?: number;
+	readonly maxDestructuredProperties?: number;
 	readonly maxLines?: number;
 	readonly maxStateHooks?: number;
 	readonly maxTsxNesting?: number;
@@ -110,14 +110,14 @@ function getComponentNameFromCallParent(callExpr: TSESTree.CallExpression): stri
 
 	let nameFromExportDefault: string | undefined;
 	if (parent.type === TSESTree.AST_NODE_TYPES.ExportDefaultDeclaration && callExpr.arguments.length > 0) {
-		const [firstArg] = callExpr.arguments;
+		const [firstArgument] = callExpr.arguments;
 		if (
-			firstArg &&
-			firstArg.type === TSESTree.AST_NODE_TYPES.FunctionExpression &&
-			firstArg.id &&
-			isComponentName(firstArg.id.name)
+			firstArgument &&
+			firstArgument.type === TSESTree.AST_NODE_TYPES.FunctionExpression &&
+			firstArgument.id &&
+			isComponentName(firstArgument.id.name)
 		) {
-			nameFromExportDefault = firstArg.id.name;
+			nameFromExportDefault = firstArgument.id.name;
 		}
 	}
 
@@ -139,19 +139,19 @@ function getHookName(callExpression: TSESTree.CallExpression): string | undefine
 	return undefined;
 }
 
-function countDestructuredProps(
+function countDestructuredProperties(
 	node: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
 ): number | undefined {
-	const [firstParam] = node.params;
-	if (!firstParam) return undefined;
+	const [firstParameter] = node.params;
+	if (!firstParameter) return undefined;
 
 	let pattern: TSESTree.ObjectPattern | undefined;
-	if (firstParam.type === TSESTree.AST_NODE_TYPES.ObjectPattern) pattern = firstParam;
+	if (firstParameter.type === TSESTree.AST_NODE_TYPES.ObjectPattern) pattern = firstParameter;
 	if (
-		firstParam.type === TSESTree.AST_NODE_TYPES.AssignmentPattern &&
-		firstParam.left.type === TSESTree.AST_NODE_TYPES.ObjectPattern
+		firstParameter.type === TSESTree.AST_NODE_TYPES.AssignmentPattern &&
+		firstParameter.left.type === TSESTree.AST_NODE_TYPES.ObjectPattern
 	) {
-		pattern = firstParam.left;
+		pattern = firstParameter.left;
 	}
 
 	if (!pattern) return undefined;
@@ -265,7 +265,7 @@ function parseOptions(options: unknown): Required<NoGodComponentsOptions> {
 	const defaults: Required<NoGodComponentsOptions> = {
 		enforceTargetLines: true,
 		ignoreComponents: [],
-		maxDestructuredProps: 5,
+		maxDestructuredProperties: 5,
 		maxLines: 200,
 		maxStateHooks: 5,
 		maxTsxNesting: 3,
@@ -280,8 +280,10 @@ function parseOptions(options: unknown): Required<NoGodComponentsOptions> {
 		enforceTargetLines:
 			typeof cast.enforceTargetLines === "boolean" ? cast.enforceTargetLines : defaults.enforceTargetLines,
 		ignoreComponents: Array.isArray(cast.ignoreComponents) ? cast.ignoreComponents : defaults.ignoreComponents,
-		maxDestructuredProps:
-			typeof cast.maxDestructuredProps === "number" ? cast.maxDestructuredProps : defaults.maxDestructuredProps,
+		maxDestructuredProperties:
+			typeof cast.maxDestructuredProperties === "number"
+				? cast.maxDestructuredProperties
+				: defaults.maxDestructuredProperties,
 		maxLines: typeof cast.maxLines === "number" ? cast.maxLines : defaults.maxLines,
 		maxStateHooks: typeof cast.maxStateHooks === "number" ? cast.maxStateHooks : defaults.maxStateHooks,
 		maxTsxNesting: typeof cast.maxTsxNesting === "number" ? cast.maxTsxNesting : defaults.maxTsxNesting,
@@ -324,11 +326,11 @@ const noGodComponents: Rule.RuleModule = {
 				}
 			}
 
-			const propsCount = countDestructuredProps(node);
-			if (typeof propsCount === "number" && propsCount > configuration.maxDestructuredProps) {
+			const propertiesCount = countDestructuredProperties(node);
+			if (typeof propertiesCount === "number" && propertiesCount > configuration.maxDestructuredProperties) {
 				context.report({
-					data: { count: propsCount, max: configuration.maxDestructuredProps, name },
-					messageId: "tooManyProps",
+					data: { count: propertiesCount, max: configuration.maxDestructuredProperties, name },
+					messageId: "tooManyProperties",
 					node,
 				});
 			}
@@ -373,20 +375,20 @@ const noGodComponents: Rule.RuleModule = {
 
 		function checkHigherOrderComponentCall(node: unknown): void {
 			if (!isCallExpression(node) || !isReactComponentHOC(node)) return;
-			const [firstArg] = node.arguments;
+			const [firstArgument] = node.arguments;
 			if (
-				!firstArg ||
-				(firstArg.type !== TSESTree.AST_NODE_TYPES.FunctionExpression &&
-					firstArg.type !== TSESTree.AST_NODE_TYPES.ArrowFunctionExpression)
+				!firstArgument ||
+				(firstArgument.type !== TSESTree.AST_NODE_TYPES.FunctionExpression &&
+					firstArgument.type !== TSESTree.AST_NODE_TYPES.ArrowFunctionExpression)
 			) {
 				return;
 			}
 
 			const nameFromParent = getComponentNameFromCallParent(node);
-			const nameFromArg = getComponentNameFromFunction(firstArg);
-			const name = nameFromParent ?? nameFromArg;
+			const nameFromArgument = getComponentNameFromFunction(firstArgument);
+			const name = nameFromParent ?? nameFromArgument;
 			if (typeof name !== "string" || name.length === 0) return;
-			checkComponent(firstArg, name);
+			checkComponent(firstArgument, name);
 		}
 
 		return {
@@ -416,7 +418,7 @@ const noGodComponents: Rule.RuleModule = {
 			exceedsTargetLines:
 				"Component '{{name}}' is {{lines}} lines; target is {{target}} (max {{max}}). Consider extracting hooks/components.",
 			nullLiteral: "Avoid `null` in components; use `undefined` instead.",
-			tooManyProps:
+			tooManyProperties:
 				"Component '{{name}}' destructures {{count}} props; max allowed is {{max}}. Group props or split the component.",
 			tooManyStateHooks:
 				"Component '{{name}}' has {{count}} state hooks ({{hooks}}); max allowed is {{max}}. Extract cohesive state into a custom hook.",
@@ -437,7 +439,7 @@ const noGodComponents: Rule.RuleModule = {
 						items: { type: "string" },
 						type: "array",
 					},
-					maxDestructuredProps: {
+					maxDestructuredProperties: {
 						default: 5,
 						description: "Maximum number of destructured props in a component parameter.",
 						type: "number",

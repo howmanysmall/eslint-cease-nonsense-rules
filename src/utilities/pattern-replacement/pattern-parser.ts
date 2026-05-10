@@ -4,10 +4,10 @@ import { regex } from "arktype";
 
 import type { ParsedParameter, ParsedPattern, ParsedReplacement, WhenCondition } from "./pattern-types";
 
-const CONSTRUCTOR_PATTERN = regex("^new\\s+(?<typeName>\\w+)\\((?<argumentsString>.*)\\)$");
-const STATIC_METHOD_PATTERN = regex("^(?<typeName>\\w+)\\.(?<methodName>\\w+)\\((?<argumentsString>.*)\\)$");
-const STATIC_ACCESS_PATTERN = regex("^(?<typeName>\\w+)\\.(?<property>\\w+)$");
-const CALL_PATTERN = regex("^(?<name>\\w+)\\((?<argumentsString>.*)\\)$");
+const CONSTRUCTOR_PATTERN = regex("^new\\s+(?<typeName>\\w+)\\((?<argumentsString>.*)\\)$", "u");
+const STATIC_METHOD_PATTERN = regex("^(?<typeName>\\w+)\\.(?<methodName>\\w+)\\((?<argumentsString>.*)\\)$", "u");
+const STATIC_ACCESS_PATTERN = regex("^(?<typeName>\\w+)\\.(?<property>\\w+)$", "u");
+const CALL_PATTERN = regex("^(?<name>\\w+)\\((?<argumentsString>.*)\\)$", "u");
 
 /**
  * Parse argument string into ParsedArg array

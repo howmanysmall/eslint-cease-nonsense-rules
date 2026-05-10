@@ -1,7 +1,6 @@
 import { describe } from "vitest";
+import rule from "@rules/prefer-module-scope-constants";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/prefer-module-scope-constants";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

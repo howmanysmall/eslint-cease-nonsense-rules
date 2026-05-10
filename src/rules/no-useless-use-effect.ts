@@ -349,44 +349,52 @@ function hasReturnWithArgument(body: TSESTree.BlockStatement): boolean {
 			case TSESTree.AST_NODE_TYPES.ArrowFunctionExpression:
 				continue;
 
-			case TSESTree.AST_NODE_TYPES.ReturnStatement:
+			case TSESTree.AST_NODE_TYPES.ReturnStatement: {
 				if (current.argument) return true;
 				continue;
+			}
 
-			case TSESTree.AST_NODE_TYPES.BlockStatement:
+			case TSESTree.AST_NODE_TYPES.BlockStatement: {
 				stack.push(...current.body);
 				continue;
+			}
 
-			case TSESTree.AST_NODE_TYPES.IfStatement:
+			case TSESTree.AST_NODE_TYPES.IfStatement: {
 				stack.push(current.consequent);
 				if (current.alternate) stack.push(current.alternate);
 				continue;
+			}
 
 			case TSESTree.AST_NODE_TYPES.ForStatement:
 			case TSESTree.AST_NODE_TYPES.ForInStatement:
 			case TSESTree.AST_NODE_TYPES.ForOfStatement:
 			case TSESTree.AST_NODE_TYPES.WhileStatement:
-			case TSESTree.AST_NODE_TYPES.DoWhileStatement:
+			case TSESTree.AST_NODE_TYPES.DoWhileStatement: {
 				stack.push(current.body);
 				continue;
+			}
 
-			case TSESTree.AST_NODE_TYPES.SwitchStatement:
+			case TSESTree.AST_NODE_TYPES.SwitchStatement: {
 				for (const switchCase of current.cases) stack.push(...switchCase.consequent);
 				continue;
+			}
 
-			case TSESTree.AST_NODE_TYPES.TryStatement:
+			case TSESTree.AST_NODE_TYPES.TryStatement: {
 				stack.push(current.block);
 				if (current.handler?.body) stack.push(current.handler.body);
 				if (current.finalizer) stack.push(current.finalizer);
 				continue;
+			}
 
-			case TSESTree.AST_NODE_TYPES.LabeledStatement:
+			case TSESTree.AST_NODE_TYPES.LabeledStatement: {
 				stack.push(current.body);
 				continue;
+			}
 
-			case TSESTree.AST_NODE_TYPES.WithStatement:
+			case TSESTree.AST_NODE_TYPES.WithStatement: {
 				stack.push(current.body);
 				continue;
+			}
 
 			default:
 				continue;
@@ -594,8 +602,8 @@ function expressionContainsIdentifier(node: TSESTree.Expression): boolean {
 
 		if (current.type === TSESTree.AST_NODE_TYPES.CallExpression) {
 			stack.push(current.callee);
-			for (const arg of current.arguments) {
-				if (arg.type !== TSESTree.AST_NODE_TYPES.SpreadElement) stack.push(arg);
+			for (const argument of current.arguments) {
+				if (argument.type !== TSESTree.AST_NODE_TYPES.SpreadElement) stack.push(argument);
 			}
 
 			continue;
@@ -1051,7 +1059,7 @@ function hasRefPassedToParent(
 	return false;
 }
 
-function hasConditionalSetterBasedOnProp(
+function hasConditionalSetterBasedOnProperty(
 	statements: ReadonlyArray<TSESTree.Statement>,
 	stateSetterIdentifiers: ReadonlySet<string>,
 	stateValueIdentifiers: ReadonlySet<string>,
@@ -1060,11 +1068,11 @@ function hasConditionalSetterBasedOnProp(
 	for (const statement of statements) {
 		if (statement.type === TSESTree.AST_NODE_TYPES.IfStatement) {
 			const conditionIdentifiers = collectIdentifiers(statement.test);
-			const hasPropInCondition = [...conditionIdentifiers].some(
+			const hasPropertyInCondition = [...conditionIdentifiers].some(
 				(id) => depIdentifiers.has(id) && !stateValueIdentifiers.has(id),
 			);
 
-			if (hasPropInCondition) {
+			if (hasPropertyInCondition) {
 				const consequentStatements = getStatementsFromConsequent(statement.consequent);
 				const hasSetterInConsequent = consequentStatements.some((stmt) => {
 					const call = getCallExpressionFromStatement(stmt);
@@ -1080,7 +1088,7 @@ function hasConditionalSetterBasedOnProp(
 						? statement.alternate.body
 						: [statement.alternate];
 				if (
-					hasConditionalSetterBasedOnProp(
+					hasConditionalSetterBasedOnProperty(
 						alternateStatements,
 						stateSetterIdentifiers,
 						stateValueIdentifiers,
@@ -1525,10 +1533,10 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 
 			// 3. resetState - constant/reset value setters + prop deps
 			if (options.reportResetState && hasOnlyResetValueSetterCalls(statements, stateSetterIdentifiers)) {
-				const hasPropDeps = [...depIdentifiers].some(
+				const hasPropertyDependencies = [...depIdentifiers].some(
 					(id) => !(stateValueIdentifiers.has(id) || stateSetterIdentifiers.has(id)),
 				);
-				if (hasPropDeps) {
+				if (hasPropertyDependencies) {
 					context.report({ messageId: "resetState", node });
 					return;
 				}
@@ -1555,7 +1563,7 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 			// 6. adjustState - conditional setter on prop change (check BEFORE derivedState)
 			if (
 				options.reportAdjustState &&
-				hasConditionalSetterBasedOnProp(
+				hasConditionalSetterBasedOnProperty(
 					statements,
 					stateSetterIdentifiers,
 					stateValueIdentifiers,
@@ -1660,8 +1668,8 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 					if (setterEffectIndices && setterEffectIndices.size > 0) {
 						// This effect depends on state that is set by other effects
 						// Check if all setter effects are pure state-setters
-						const allSettersArePure = [...setterEffectIndices].every((idx) => {
-							const setterEffect = componentEffects[idx];
+						const allSettersArePure = [...setterEffectIndices].every((index) => {
+							const setterEffect = componentEffects[index];
 							return (
 								setterEffect &&
 								!setterEffect.hasNonSetterSideEffect &&
@@ -1702,9 +1710,9 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 				}
 
 				if (duplicates.length > 1) {
-					for (const idx of duplicates) {
-						reported.add(idx);
-						const effect = componentEffects[idx];
+					for (const jndex of duplicates) {
+						reported.add(jndex);
+						const effect = componentEffects[jndex];
 						if (effect) context.report({ messageId: "duplicateDeps", node: effect.node });
 					}
 				}
@@ -1722,11 +1730,11 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 
 				// Handle named function reference
 				if (callback.type === TSESTree.AST_NODE_TYPES.Identifier) {
-					const namedFunc = namedFunctions.get(callback.name);
-					if (namedFunc) {
-						const body = getFunctionBody(namedFunc);
+					const namedFunction = namedFunctions.get(callback.name);
+					if (namedFunction) {
+						const body = getFunctionBody(namedFunction);
 						if (body) {
-							if (namedFunc.async) return;
+							if (namedFunction.async) return;
 
 							const statements = body.body.filter(
 								(statement) => statement.type !== TSESTree.AST_NODE_TYPES.EmptyStatement,

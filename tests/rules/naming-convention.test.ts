@@ -1,10 +1,7 @@
-import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe } from "vitest";
+import rule from "@rules/naming-convention";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
-
-import rule from "../../src/rules/naming-convention";
 
 const __dirname = import.meta.dirname;
 

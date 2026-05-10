@@ -68,10 +68,10 @@ const strictComponentBoundaries = createRule<[Options], "noReachingIntoComponent
 				const traversals = countParentTraversals(pathDifference);
 
 				const isDescendingOnly = traversals <= 1;
-				const hasComponentsDir = hasDirectoryInPath(pathParts, "components");
+				const hasComponentsDirectory = hasDirectoryInPath(pathParts, "components");
 
 				if (
-					(!isDescendingOnly || hasComponentsDir) &&
+					(!isDescendingOnly || hasComponentsDirectory) &&
 					hasAnotherComponentInPath(pathParts) &&
 					pathParts.length > maxDepth &&
 					!isIndexFile(pathDifference) &&

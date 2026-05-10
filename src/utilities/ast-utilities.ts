@@ -12,9 +12,11 @@ export function unwrapExpression(expression: TSESTree.Expression): TSESTree.Expr
 			case AST_NODE_TYPES.TSNonNullExpression:
 			case AST_NODE_TYPES.TSSatisfiesExpression:
 			case AST_NODE_TYPES.TSTypeAssertion:
-			case AST_NODE_TYPES.ChainExpression:
+			case AST_NODE_TYPES.ChainExpression: {
 				current = current.expression;
 				continue;
+			}
+
 			default:
 				return current;
 		}

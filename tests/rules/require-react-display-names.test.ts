@@ -1,8 +1,7 @@
 import { describe } from "vitest";
+import rule from "@rules/require-react-display-names";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/require-react-display-names";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

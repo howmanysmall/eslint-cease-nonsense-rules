@@ -1,4 +1,4 @@
-import { selectorTypeToMessageString } from "../../../../src/utilities/naming-convention-utilities";
+import { selectorTypeToMessageString } from "@utilities/naming-convention-utilities";
 
 import type { InvalidTestCase, ValidTestCase } from "@typescript-eslint/rule-tester";
 
@@ -40,7 +40,7 @@ export const formatTestNames: FormatTestNames = {
 const REPLACE_REGEX = /%/gu;
 const IGNORED_FILTER = {
 	match: false,
-	regex: /.gnored/.source,
+	regex: /.gnored/u.source,
 };
 
 export type Cases = Array<{ code: ReadonlyArray<string>; options: Record<string, unknown> }>;
@@ -89,7 +89,7 @@ function buildInvalidCase(
 	const selectors: Array<unknown> = Array.isArray(selector) ? selector : [selector];
 	const errors: Array<{ data?: { name: string; type: string }; messageId: string }> = [];
 
-	for (const _codeEntry of context.code) {
+	for (let remainingCodeCount = context.code.length; remainingCodeCount > 0; remainingCodeCount -= 1) {
 		for (const selectorName of selectors) {
 			if (typeof selectorName === "string" && !EXCLUDED_SELECTORS.has(selectorName)) {
 				errors.push({

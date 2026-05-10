@@ -42,7 +42,7 @@ interface ComponentCandidate {
 		| TSESTree.FunctionDeclaration
 		| TSESTree.FunctionExpression;
 	readonly name: string;
-	readonly propsTypeNode: TSESTree.TypeNode;
+	readonly propertiesTypeNode: TSESTree.TypeNode;
 	readonly reportNode: TSESTree.Node;
 }
 
@@ -78,13 +78,13 @@ function getFunctionCandidate(
 	const [firstParameter] = node.params;
 	if (!firstParameter) return undefined;
 
-	const propsTypeNode = getParameterTypeAnnotation(firstParameter);
-	if (!propsTypeNode) return undefined;
+	const propertiesTypeNode = getParameterTypeAnnotation(firstParameter);
+	if (!propertiesTypeNode) return undefined;
 
 	return {
 		functionNode: node,
 		name,
-		propsTypeNode,
+		propertiesTypeNode,
 		reportNode: firstParameter,
 	};
 }
@@ -521,7 +521,7 @@ function createFastModeListeners(
 
 	function maybeReportCandidate(candidate: ComponentCandidate): void {
 		const inspectionResult = inspectTypeNodeFast(
-			candidate.propsTypeNode,
+			candidate.propertiesTypeNode,
 			wrapperNames,
 			interfaceDeclarations,
 			typeAliasDeclarations,
@@ -595,12 +595,12 @@ function createAccurateModeListeners(
 		const tsFunctionNode = services.esTreeNodeToTSNodeMap.get(candidate.functionNode);
 		if (!isTSFunctionLike(tsFunctionNode)) return;
 
-		const tsTypeNode = services.esTreeNodeToTSNodeMap.get(candidate.propsTypeNode);
+		const tsTypeNode = services.esTreeNodeToTSNodeMap.get(candidate.propertiesTypeNode);
 		if (!isTSTypeNode(tsTypeNode)) return;
 
 		const accurateInspectionResult = inspectTsTypeNodeAccurate(tsTypeNode, checker, wrapperNames, new Set());
 		const fastInspectionResult = inspectTypeNodeFast(
-			candidate.propsTypeNode,
+			candidate.propertiesTypeNode,
 			wrapperNames,
 			interfaceDeclarations,
 			typeAliasDeclarations,

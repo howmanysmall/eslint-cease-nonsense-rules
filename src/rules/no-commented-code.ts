@@ -1,4 +1,4 @@
-import path from "node:path";
+import { extname } from "node:path";
 import { parseSync } from "oxc-parser";
 
 import { hasCodeLines } from "../recognizers/code-recognizer";
@@ -212,14 +212,14 @@ function isValidParseResult(result: ParseResult): boolean {
 }
 
 function tryParse(value: string, filename: string): ParseResult | undefined {
-	const ext = path.extname(filename);
-	const parseFilename = `file${ext || ".js"}`;
+	const extension = extname(filename);
+	const parseFilename = `file${extension || ".js"}`;
 	const result = parseSync(parseFilename, value);
 
 	if (isValidParseResult(result)) return result;
 
 	// Retry with .tsx for JSX support if original ext wasn't jsx/tsx
-	if (ext !== ".tsx" && ext !== ".jsx") {
+	if (extension !== ".tsx" && extension !== ".jsx") {
 		const jsxResult = parseSync("file.tsx", value);
 		if (isValidParseResult(jsxResult)) return jsxResult;
 	}

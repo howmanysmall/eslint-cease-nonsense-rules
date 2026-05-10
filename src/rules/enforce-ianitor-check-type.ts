@@ -206,15 +206,17 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 				case TSESTree.AST_NODE_TYPES.TSUndefinedKeyword:
 				case TSESTree.AST_NODE_TYPES.TSVoidKeyword:
 				case TSESTree.AST_NODE_TYPES.TSSymbolKeyword:
-				case TSESTree.AST_NODE_TYPES.TSBigIntKeyword:
+				case TSESTree.AST_NODE_TYPES.TSBigIntKeyword: {
 					score = 1;
 					break;
+				}
 
 				case TSESTree.AST_NODE_TYPES.TSNeverKeyword:
 				case TSESTree.AST_NODE_TYPES.TSUnknownKeyword:
-				case TSESTree.AST_NODE_TYPES.TSAnyKeyword:
+				case TSESTree.AST_NODE_TYPES.TSAnyKeyword: {
 					score = 0;
 					break;
+				}
 
 				case TSESTree.AST_NODE_TYPES.TSInterfaceDeclaration: {
 					score = config.interfacePenalty;
@@ -264,9 +266,10 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 					break;
 				}
 
-				case TSESTree.AST_NODE_TYPES.TSArrayType:
+				case TSESTree.AST_NODE_TYPES.TSArrayType: {
 					score = addScore(calculateStructuralComplexity(node.elementType, nextDepth), 1);
 					break;
+				}
 
 				case TSESTree.AST_NODE_TYPES.TSTupleType: {
 					const { elementTypes } = node;

@@ -1,7 +1,6 @@
 import { describe } from "vitest";
+import rule from "@rules/prefer-class-properties";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/prefer-class-properties";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

@@ -11,7 +11,7 @@ import {
 import type { TSESTree } from "@typescript-eslint/utils";
 import type { IndexInfo, Symbol as TSSymbol, Type, TypeChecker } from "typescript";
 
-type MessageIds = "preferReadOnlyProps" | "readOnlyProp";
+type MessageIds = "preferReadOnlyProperties" | "readOnlyProperty";
 type Options = [];
 
 const READONLY_WRAPPER_NAMES = new Set(["Readonly", "ReadonlyArray", "ReadonlyDeep", "DeepReadonly", "DeepReadOnly"]);
@@ -86,7 +86,7 @@ function getPropertyName(member: TSESTree.TSPropertySignature): string {
 	return "unknown";
 }
 
-const preferReadOnlyPropsRule = createRule<Options, MessageIds>({
+const preferReadOnlyProperties = createRule<Options, MessageIds>({
 	create(context) {
 		function reportTypeLiteral(typeLiteral: TSESTree.TSTypeLiteral): void {
 			for (const member of typeLiteral.members) {
@@ -102,7 +102,7 @@ const preferReadOnlyPropsRule = createRule<Options, MessageIds>({
 					fix(fixer) {
 						return fixer.insertTextBefore(key, "readonly ");
 					},
-					messageId: "readOnlyProp",
+					messageId: "readOnlyProperty",
 					node: member,
 				});
 			}
@@ -171,7 +171,7 @@ const preferReadOnlyPropsRule = createRule<Options, MessageIds>({
 			return aliasTypeArguments[0];
 		}
 
-		function getPropertiesTypeFromCallExpressionTypeArgs(callExpr: TSESTree.CallExpression): Type | undefined {
+		function getPropertiesTypeFromCallExpression(callExpr: TSESTree.CallExpression): Type | undefined {
 			if (!callExpr.typeArguments || callExpr.typeArguments.params.length === 0) return undefined;
 
 			const { callee } = callExpr;
@@ -217,7 +217,7 @@ const preferReadOnlyPropsRule = createRule<Options, MessageIds>({
 			if (!isTypeFullyReadonly(checker, propertiesType)) {
 				reportedComponents.add(componentNode);
 				context.report({
-					messageId: "preferReadOnlyProps",
+					messageId: "preferReadOnlyProperties",
 					node: componentNode,
 				});
 			}
@@ -259,15 +259,15 @@ const preferReadOnlyPropsRule = createRule<Options, MessageIds>({
 					if (!isFunctionReactComponent(init)) return;
 					reportIfNotReadonly(node, getPropertiesTypeFromFunctionNode(init));
 				} else if (init.type === AST_NODE_TYPES.CallExpression) {
-					const propertiesFromTypeArgs = getPropertiesTypeFromCallExpressionTypeArgs(init);
-					if (propertiesFromTypeArgs) {
-						reportIfNotReadonly(node, propertiesFromTypeArgs);
+					const propertiesFromTypeArguments = getPropertiesTypeFromCallExpression(init);
+					if (propertiesFromTypeArguments) {
+						reportIfNotReadonly(node, propertiesFromTypeArguments);
 						return;
 					}
 
 					const [firstArgument] = init.arguments;
 					if (firstArgument?.type === AST_NODE_TYPES.CallExpression) {
-						const propertiesFromInnerCall = getPropertiesTypeFromCallExpressionTypeArgs(firstArgument);
+						const propertiesFromInnerCall = getPropertiesTypeFromCallExpression(firstArgument);
 						if (propertiesFromInnerCall) {
 							reportIfNotReadonly(node, propertiesFromInnerCall);
 							return;
@@ -289,13 +289,13 @@ const preferReadOnlyPropsRule = createRule<Options, MessageIds>({
 		},
 		fixable: "code",
 		messages: {
-			preferReadOnlyProps: "A function component's props should be read-only.",
-			readOnlyProp: "Prop '{{name}}' should be read-only.",
+			preferReadOnlyProperties: "A function component's props should be read-only.",
+			readOnlyProperty: "Prop '{{name}}' should be read-only.",
 		},
 		schema: [],
 		type: "suggestion",
 	},
-	name: "prefer-read-only-props",
+	name: "prefer-read-only-properties",
 });
 
-export default preferReadOnlyPropsRule;
+export default preferReadOnlyProperties;

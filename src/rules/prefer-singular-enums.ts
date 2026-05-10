@@ -75,7 +75,7 @@ const PROGRAMMING_PLURALS = new Set<string>([
 	"pages",
 ]);
 
-const SINGULAR_ENUM_REGEX = regex("[A-Z]+(?![a-z])|[A-Z]?[a-z]+|\\d+", "g");
+const SINGULAR_ENUM_REGEX = regex("[A-Z]+(?![a-z])|[A-Z]?[a-z]+|\\d+", "gu");
 
 function tokenizeIdentifier(name: string): ReadonlyArray<string> {
 	const parts = name.split("_");
@@ -87,7 +87,7 @@ function tokenizeIdentifier(name: string): ReadonlyArray<string> {
 	return tokens;
 }
 
-const INTEGER_REGEXP = regex("^\\d+$");
+const INTEGER_REGEXP = regex("^\\d+$", "u");
 
 interface AlphaToken {
 	readonly lower: string;
@@ -106,12 +106,12 @@ function getLastAlphaToken(name: string): AlphaToken | undefined {
 	return alphaToken;
 }
 
-const ACRONYM_REGEXP = regex("^[A-Z]{2,}[sS]$");
+const ACRONYM_REGEXP = regex("^[A-Z]{2,}[sS]$", "u");
 function isAcronymPlural(original: string): boolean {
 	return ACRONYM_REGEXP.test(original);
 }
 
-const ES_VOWELS_REGEXP = regex("((ch|sh|x|z|ss|o)es|xes|zes|ches|shes|sses|oes)$");
+const ES_VOWELS_REGEXP = regex("((ch|sh|x|z|ss|o)es|xes|zes|ches|shes|sses|oes)$", "u");
 function isPluralWord(lower: string, original: string): boolean {
 	if (IRREGULAR_PLURALS.has(lower) || PROGRAMMING_PLURALS.has(lower)) return true;
 	if (SINGULAR_EXCEPTIONS.has(lower)) return false;

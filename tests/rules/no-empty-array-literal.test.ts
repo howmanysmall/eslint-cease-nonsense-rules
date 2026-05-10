@@ -1,10 +1,7 @@
-import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe } from "vitest";
+import rule from "@rules/no-empty-array-literal";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
-
-import rule from "../../src/rules/no-empty-array-literal";
 
 const __dirname = import.meta.dirname;
 

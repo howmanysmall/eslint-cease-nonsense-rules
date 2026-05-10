@@ -1,8 +1,7 @@
 import { describe } from "vitest";
+import rule from "@rules/prefer-single-world-query";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/prefer-single-world-query";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

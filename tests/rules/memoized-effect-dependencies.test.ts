@@ -1,8 +1,7 @@
 import { describe } from "vitest";
+import rule from "@rules/memoized-effect-dependencies";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
-
-import rule from "../../src/rules/memoized-effect-dependencies";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

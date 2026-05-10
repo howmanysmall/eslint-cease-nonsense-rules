@@ -1,10 +1,8 @@
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, vi } from "vitest";
+import rule from "@rules/prefer-enum-item";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/prefer-enum-item";
 
 const __dirname = import.meta.dirname;
 const fixturesDir = join(__dirname, "../fixtures/prefer-enum-item");
