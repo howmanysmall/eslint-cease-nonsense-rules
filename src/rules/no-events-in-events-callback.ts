@@ -41,18 +41,23 @@ function normalizeImportPaths(options: NoEventsInEventsCallbackOptions | undefin
 }
 
 function unwrapNode(node: TSESTree.Node): TSESTree.Node {
-	if (node.type === AST_NODE_TYPES.ChainExpression) return unwrapNode(node.expression);
-	if (node.type === AST_NODE_TYPES.TSAsExpression) return unwrapNode(node.expression);
-	if (node.type === AST_NODE_TYPES.TSInstantiationExpression) return unwrapNode(node.expression);
-	if (node.type === AST_NODE_TYPES.TSNonNullExpression) return unwrapNode(node.expression);
-	if (node.type === AST_NODE_TYPES.TSTypeAssertion) return unwrapNode(node.expression);
-	return node;
+	switch (node.type) {
+		case AST_NODE_TYPES.ChainExpression:
+		case AST_NODE_TYPES.TSAsExpression:
+		case AST_NODE_TYPES.TSInstantiationExpression:
+		case AST_NODE_TYPES.TSNonNullExpression:
+		case AST_NODE_TYPES.TSTypeAssertion:
+			return unwrapNode(node.expression);
+
+		default:
+			return node;
+	}
 }
 
-function getMemberPropertyName(node: TSESTree.MemberExpression): string | undefined {
-	if (!node.computed && node.property.type === AST_NODE_TYPES.Identifier) return node.property.name;
-	if (node.computed && node.property.type === AST_NODE_TYPES.Literal && typeof node.property.value === "string") {
-		return node.property.value;
+function getMemberPropertyName({ computed, property }: TSESTree.MemberExpression): string | undefined {
+	if (!computed && property.type === AST_NODE_TYPES.Identifier) return property.name;
+	if (computed && property.type === AST_NODE_TYPES.Literal && typeof property.value === "string") {
+		return property.value;
 	}
 
 	return undefined;
@@ -79,11 +84,14 @@ function getConnectCallback(
 	if (!(rootIdentifier && eventsIdentifiers.has(rootIdentifier))) return undefined;
 
 	const [callbackArgument] = node.arguments;
-	if (!callbackArgument) return undefined;
-	if (callbackArgument.type === AST_NODE_TYPES.ArrowFunctionExpression) return callbackArgument;
-	if (callbackArgument.type === AST_NODE_TYPES.FunctionExpression) return callbackArgument;
+	switch (callbackArgument?.type) {
+		case AST_NODE_TYPES.ArrowFunctionExpression:
+		case AST_NODE_TYPES.FunctionExpression:
+			return callbackArgument;
 
-	return undefined;
+		default:
+			return undefined;
+	}
 }
 
 function isEventsMethodCall(node: TSESTree.CallExpression, eventsIdentifiers: ReadonlySet<string>): boolean {
@@ -91,8 +99,7 @@ function isEventsMethodCall(node: TSESTree.CallExpression, eventsIdentifiers: Re
 	if (unwrappedCallee.type !== AST_NODE_TYPES.MemberExpression) return false;
 
 	const rootIdentifier = getRootIdentifierName(unwrappedCallee);
-	if (!rootIdentifier) return false;
-	return eventsIdentifiers.has(rootIdentifier);
+	return rootIdentifier ? eventsIdentifiers.has(rootIdentifier) : false;
 }
 
 function addIfMissing(set: Set<string>, value: string): boolean {
@@ -119,10 +126,13 @@ function markPatternValues(pattern: TSESTree.Node, state: CallbackState): boolea
 			}
 			return changed;
 		}
+
 		case AST_NODE_TYPES.AssignmentPattern:
 			return markPatternValues(pattern.left, state);
+
 		case AST_NODE_TYPES.Identifier:
 			return markAsPlayerValue(pattern.name, state);
+
 		case AST_NODE_TYPES.ObjectPattern: {
 			let changed = false;
 			for (const property of pattern.properties) {
@@ -136,8 +146,10 @@ function markPatternValues(pattern: TSESTree.Node, state: CallbackState): boolea
 
 			return changed;
 		}
+
 		case AST_NODE_TYPES.RestElement:
 			return markPatternValues(pattern.argument, state);
+
 		default:
 			return false;
 	}
@@ -211,9 +223,7 @@ function classifyNodeTaint(node: TSESTree.Node, state: CallbackState): TaintKind
 
 		case AST_NODE_TYPES.ConditionalExpression: {
 			const consequent = classifyNodeTaint(unwrapped.consequent, state);
-			const alternate = classifyNodeTaint(unwrapped.alternate, state);
-			if (consequent === alternate) return consequent;
-			return "none";
+			return consequent === classifyNodeTaint(unwrapped.alternate, state) ? consequent : "none";
 		}
 
 		case AST_NODE_TYPES.Identifier: {
@@ -224,8 +234,7 @@ function classifyNodeTaint(node: TSESTree.Node, state: CallbackState): TaintKind
 
 		case AST_NODE_TYPES.MemberExpression: {
 			const objectKind = classifyNodeTaint(unwrapped.object, state);
-			if (objectKind === "container") return "value";
-			return "none";
+			return objectKind === "container" ? "value" : "none";
 		}
 
 		case AST_NODE_TYPES.ObjectExpression: {
@@ -243,23 +252,12 @@ function classifyNodeTaint(node: TSESTree.Node, state: CallbackState): TaintKind
 
 		case AST_NODE_TYPES.SequenceExpression: {
 			const lastExpression = unwrapped.expressions.at(-1);
-			if (!lastExpression) return "none";
-			return classifyNodeTaint(lastExpression, state);
+			return lastExpression ? classifyNodeTaint(lastExpression, state) : "none";
 		}
 
 		default:
 			return "none";
 	}
-}
-
-function seedPlayerValueFromParameter(parameter: TSESTree.Parameter, state: CallbackState): void {
-	if (parameter.type === AST_NODE_TYPES.TSParameterProperty) {
-		markPatternValues(parameter.parameter, state);
-
-		return;
-	}
-
-	markPatternValues(parameter, state);
 }
 
 const noEventsInEventsCallback = createRule<Options, MessageIds>({
@@ -271,8 +269,7 @@ const noEventsInEventsCallback = createRule<Options, MessageIds>({
 
 		function getCurrentTopLevelCallbackState(): CallbackState | undefined {
 			const current = functionStack.at(-1);
-			if (!current?.callbackState) return undefined;
-			if (current.callbackDepth > 0) return undefined;
+			if (!current?.callbackState || current.callbackDepth > 0) return undefined;
 			return current.callbackState;
 		}
 
@@ -309,12 +306,10 @@ const noEventsInEventsCallback = createRule<Options, MessageIds>({
 
 			AssignmentExpression(node): void {
 				const callbackState = getCurrentTopLevelCallbackState();
-				if (!callbackState) return;
-				if (node.operator !== "=") return;
+				if (!callbackState || node.operator !== "=") return;
 
 				const taint = classifyNodeTaint(node.right, callbackState);
-				if (taint === "none") return;
-				markAssignmentTarget(node.left, taint, callbackState);
+				if (taint !== "none") markAssignmentTarget(node.left, taint, callbackState);
 			},
 
 			CallExpression(node): void {
@@ -326,24 +321,23 @@ const noEventsInEventsCallback = createRule<Options, MessageIds>({
 					};
 
 					const [playerParameter] = callback.params;
-					if (playerParameter) seedPlayerValueFromParameter(playerParameter, callbackState);
+					if (playerParameter) markPatternValues(playerParameter, callbackState);
 
 					callbackStateByFunction.set(callback, callbackState);
 				}
 
 				const currentCallbackState = getCurrentTopLevelCallbackState();
-				if (!currentCallbackState) return;
-				if (!isEventsMethodCall(node, trackedEventsIdentifiers)) return;
+				if (!currentCallbackState || !isEventsMethodCall(node, trackedEventsIdentifiers)) return;
 
 				const [firstArgument] = node.arguments;
 				if (!firstArgument || firstArgument.type === AST_NODE_TYPES.SpreadElement) return;
 
-				if (classifyNodeTaint(firstArgument, currentCallbackState) !== "value") return;
-
-				context.report({
-					messageId: "preferFunctions",
-					node,
-				});
+				if (classifyNodeTaint(firstArgument, currentCallbackState) === "value") {
+					context.report({
+						messageId: "preferFunctions",
+						node,
+					});
+				}
 			},
 
 			FunctionDeclaration: onFunctionEnter,

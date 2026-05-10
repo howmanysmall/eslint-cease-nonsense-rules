@@ -153,6 +153,98 @@ describe("no-empty-array-literal", () => {
 				options: [{ allowedEmptyArrayContexts: { conditionalExpressions: false } }],
 				output: undefined,
 			},
+			{
+				code: "const createValues = () => [];",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "const createValues = () => new Array();",
+							},
+						],
+					},
+				],
+				options: [{ allowedEmptyArrayContexts: { arrowFunctionBody: false } }],
+				output: undefined,
+			},
+			{
+				code: "function createValues() { return []; }",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "function createValues() { return new Array(); }",
+							},
+						],
+					},
+				],
+				options: [{ allowedEmptyArrayContexts: { returnStatements: false } }],
+				output: undefined,
+			},
+			{
+				code: "const payload = { items: [] };",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "const payload = { items: new Array() };",
+							},
+						],
+					},
+				],
+				options: [{ allowedEmptyArrayContexts: { propertyValues: false } }],
+				output: undefined,
+			},
+			{
+				code: "const values = cache ?? [];",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "const values = cache ?? new Array();",
+							},
+						],
+					},
+				],
+				options: [{ allowedEmptyArrayContexts: { logicalExpressions: false } }],
+				output: undefined,
+			},
+			{
+				code: "const values = <Widget items={[]} />;",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "const values = <Widget items={new Array()} />;",
+							},
+						],
+					},
+				],
+				options: [{ allowedEmptyArrayContexts: { jsxAttributes: false } }],
+				output: undefined,
+			},
+			{
+				code: "const values = [] as Array<number>;",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [{ allowedEmptyArrayContexts: { typeAssertions: false }, inferTypeForEmptyArrayFix: true }],
+				output: "const values = new Array<number>() as Array<number>;",
+			},
+			{
+				code: "class Box { values: Array<number> = []; }",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [{ inferTypeForEmptyArrayFix: true }],
+				output: "class Box { values: Array<number> = new Array<number>(); }",
+			},
 		],
 		valid: [
 			"const xs = [1, 2, 3];",
@@ -327,13 +419,18 @@ class Container {
 const container = new Container([]);
             `,
 			`
-			function buildResult(shouldBeEmpty: boolean): Array<number> {
-			    if (shouldBeEmpty) return [];
-			    return [1];
-			}
-			            `,
+				function buildResult(shouldBeEmpty: boolean): Array<number> {
+				    if (shouldBeEmpty) return [];
+				    return [1];
+				}
+				            `,
 			"type MyReadonly = ReadonlyArray<number>; const values: MyReadonly = [];",
 			"const values: readonly number[] = [];",
+			"const cache = [1, 2, 3]; const values = cache ?? [];",
+			"const createValues = () => [];",
+			"function createValues() { return []; }",
+			"const payload = { items: [] };",
+			"const view = <Widget items={[]} />;",
 		],
 	});
 });
@@ -401,13 +498,17 @@ describe("no-empty-array-literal (type-aware inference)", () => {
 			},
 			{
 				code: `
-function useValues<T>(): void {
-    type ComponentList<U> = ReadonlyArray<U>;
+	function useValues<T>(): void {
+	    type ComponentList<U> = ReadonlyArray<U>;
     const values = [] as ComponentList<T>;
     void values;
 }
-					`,
+						`,
 				options: [{ inferTypeForEmptyArrayFix: true }],
+			},
+			{
+				code: "const values = [] as Array<number>;",
+				options: [{ allowedEmptyArrayContexts: { typeAssertions: true }, inferTypeForEmptyArrayFix: true }],
 			},
 		],
 	});
