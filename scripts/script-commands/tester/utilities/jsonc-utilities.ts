@@ -3,9 +3,9 @@ import { applyEdits, modify, parse } from "jsonc-parser";
 import { diff } from "just-diff";
 
 // oxlint-disable-next-line unicorn/prefer-string-raw
-const INDENTATION_REGEXP = regex("^(?<whitespace>\\s+)");
+const INDENTATION_REGEXP = regex("^(?<whitespace>\\s+)", "u");
 // oxlint-disable-next-line unicorn/prefer-string-raw
-const MISSING_SPACE_AFTER_COLON_REGEXP = regex('":(?!\\s)', "g");
+const MISSING_SPACE_AFTER_COLON_REGEXP = regex('":(?!\\s)', "gu");
 
 function getIndentation(line: string): string | undefined {
 	return INDENTATION_REGEXP.exec(line)?.groups.whitespace ?? undefined;

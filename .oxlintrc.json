@@ -40,6 +40,12 @@
 			},
 		},
 		{
+			"files": ["*.astro"],
+			"rules": {
+				"small-rules/prevent-abbreviations": "off",
+			},
+		},
+		{
 			"files": ["*.config.ts"],
 			"rules": {
 				"unicorn/prefer-module": "off",

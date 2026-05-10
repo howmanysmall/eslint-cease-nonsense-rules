@@ -69,7 +69,7 @@ function getJavaScriptMinifyLabel(minify: boolean): string {
 	return minify ? green("yes") : gray("no");
 }
 
-async function cleanDistDirectoryAsync(verbose: boolean): Promise<void> {
+async function cleanDistanceDirectoryAsync(verbose: boolean): Promise<void> {
 	if (!existsSync(DIST_DIRECTORY)) return;
 	if (verbose) console.info(`Removing ${cyan(DIST_DIRECTORY)}...`);
 	await rm(DIST_DIRECTORY, { recursive: true });
@@ -193,9 +193,9 @@ async function syncSourceDeclarationFilesAsync(
 	await writeFile(manifestPath, JSON.stringify(relativePaths));
 }
 
-async function getCommandOutputAsync(command: string, args: ReadonlyArray<string>): Promise<CommandOutput> {
+async function getCommandOutputAsync(command: string, parameters: ReadonlyArray<string>): Promise<CommandOutput> {
 	return new Promise((_resolve, reject) => {
-		const childProcess = spawn(command, [...args], {
+		const childProcess = spawn(command, [...parameters], {
 			stdio: ["ignore", "pipe", "pipe"],
 		});
 		const stderrChunks = new Array<Buffer>();
@@ -218,10 +218,10 @@ async function getCommandOutputAsync(command: string, args: ReadonlyArray<string
 	});
 }
 
-async function runCommandAsync(command: string, args: ReadonlyArray<string>, verbose: boolean): Promise<void> {
-	if (verbose) console.log(`Calling ${cyan(command)} ${args.join(" ")}`);
+async function runCommandAsync(command: string, parameters: ReadonlyArray<string>, verbose: boolean): Promise<void> {
+	if (verbose) console.log(`Calling ${cyan(command)} ${parameters.join(" ")}`);
 
-	const output = await getCommandOutputAsync(command, args);
+	const output = await getCommandOutputAsync(command, parameters);
 	if (output.exitCode === 0) return;
 
 	if (output.stderr.length > 0) console.error(output.stderr);
@@ -303,7 +303,7 @@ async function runBuildAsync(options: BuildOptions): Promise<BuildResult> {
 	try {
 		if (options.clean) {
 			if (options.verbose) console.start("Cleaning dist directory...");
-			await cleanDistDirectoryAsync(options.verbose);
+			await cleanDistanceDirectoryAsync(options.verbose);
 			if (options.verbose) console.success("Cleaned dist directory");
 		}
 

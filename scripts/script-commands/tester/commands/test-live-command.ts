@@ -201,10 +201,10 @@ const testLiveCommand = new Command()
 		}
 
 		try {
-			const customEnv: NodeJS.ProcessEnv = { ...env, TIMING: "2000" };
-			if (ci) customEnv.CI = "true";
+			const customEnvironment: NodeJS.ProcessEnv = { ...env, TIMING: "2000" };
+			if (ci) customEnvironment.CI = "true";
 
-			await runCommandAsync("aube", ["install"], { cwd: directory, env: customEnv });
+			await runCommandAsync("aube", ["install"], { cwd: directory, env: customEnvironment });
 			log.success(picocolors.green("Dependencies installed successfully."));
 
 			const duration = await profileAsync(async () => {
@@ -212,9 +212,14 @@ const testLiveCommand = new Command()
 				if (cache) {
 					await runCommandAsync("aube", ["run", "eslint", "--cache", "./src"], {
 						cwd: directory,
-						env: customEnv,
+						env: customEnvironment,
 					});
-				} else await runCommandAsync("aube", ["run", "eslint", "./src"], { cwd: directory, env: customEnv });
+				} else {
+					await runCommandAsync("aube", ["run", "eslint", "./src"], {
+						cwd: directory,
+						env: customEnvironment,
+					});
+				}
 			});
 
 			log.success(picocolors.green(`ESLint took ${picocolors.bold(prettyMilliseconds(duration))}.`));

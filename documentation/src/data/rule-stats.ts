@@ -4,8 +4,8 @@ import { ruleCategoryDefinitions, ruleCategoryOrder, ruleSidebarGroups } from ".
 import type { RuleCategoryDefinition, RuleCategoryKey } from "./rule-sidebar";
 
 interface RuleCategoryStats {
-	readonly count: number;
 	readonly astOnlyCount: number;
+	readonly count: number;
 	readonly label: string;
 	readonly slug: string;
 	readonly typeAwareCount: number;

@@ -33,7 +33,7 @@ for (let index = 0; index < SIZE; index += 1) {
 			value: Math.random() * 1000,
 		};
 	} else if (nextValue < 0.93) values[index] = new Date(Date.now() - ((Math.random() * 1e10) | 0));
-	else values[index] = /test_\d+/i;
+	else values[index] = /test_\d+/iu;
 }
 
 barplot(() => {

@@ -733,7 +733,7 @@ function stripExportModifiers(statement: SupportedDeclarationStatement): Support
 	return ts.factory.updateVariableStatement(statement, modifiers, statement.declarationList);
 }
 
-const ALPHA_NUMERIC = /[A-Za-z0-9]/;
+const ALPHA_NUMERIC = /[A-Za-z0-9]/u;
 
 function toPascalCase(value: string): string {
 	let output = "";

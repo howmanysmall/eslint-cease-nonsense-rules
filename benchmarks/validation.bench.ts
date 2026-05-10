@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+// oxlint-disable small-rules/prevent-abbreviations
 
 import { readFile } from "node:fs/promises";
 import { type } from "arktype";
@@ -215,6 +216,7 @@ const fromSury = sury.schema({
 	jsxSingleQuote: sury.optional(sury.boolean),
 	objectWrap: sury.optional(sury.union(["preserve", "collapse", "always"])),
 	printWidth: sury.optional(sury.int32),
+	// oxlint-disable-next-line small-rules/prevent-abbreviations
 	quoteProps: sury.optional(sury.union(["as-needed", "consistent", "preserve"])),
 	semi: sury.optional(sury.boolean),
 	singleAttributePerLine: sury.optional(sury.boolean),

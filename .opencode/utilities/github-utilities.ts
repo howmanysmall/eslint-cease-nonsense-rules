@@ -8,6 +8,7 @@ import XmlBuilder from "fast-xml-builder";
 import { objectToCamel } from "ts-case-convert";
 
 import type { ObjectToCamel } from "ts-case-convert";
+import type { Except } from "type-fest";
 
 const environment = arkenv(
 	{
@@ -283,7 +284,7 @@ export const isSearchRepositoriesQuery = type({
 }).readonly();
 export type SearchRepositoriesQuery = typeof isSearchRepositoriesQuery.infer;
 export type GetSearchRepositoriesData = GetGitHubData<typeof github.rest.search.repos>;
-export type GetSearchRepositoriesMinimalData = Omit<GetSearchRepositoriesData, "items"> & {
+export type GetSearchRepositoriesMinimalData = Except<GetSearchRepositoriesData, "items"> & {
 	readonly items: ReadonlyArray<{
 		readonly description: string | null;
 		readonly forks: number;

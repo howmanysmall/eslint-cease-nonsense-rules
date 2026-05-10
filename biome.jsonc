@@ -418,6 +418,31 @@
 					"allowTrailingCommas": false
 				}
 			}
+		},
+
+		{
+			"includes": ["benchmarks/**"],
+			"linter": {
+				"rules": {
+					"performance": {
+						"noNamespaceImport": "off"
+					}
+				}
+			}
+		},
+
+		{
+			"includes": ["tests/**/*.d.ts"],
+			"linter": {
+				"rules": {
+					"complexity": {
+						"noBannedTypes": "off"
+					},
+					"style": {
+						"noNamespace": "off"
+					}
+				}
+			}
 		}
 	],
 

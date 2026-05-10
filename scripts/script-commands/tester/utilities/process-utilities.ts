@@ -11,8 +11,8 @@ interface CommandResult {
 	readonly stdout: string;
 }
 
-function createCommandError(command: string, args: ReadonlyArray<string>, result: CommandResult): Error {
-	const renderedCommand = [command, ...args].join(" ");
+function createCommandError(command: string, parameters: ReadonlyArray<string>, result: CommandResult): Error {
+	const renderedCommand = [command, ...parameters].join(" ");
 	const output = [result.stderr.trim(), result.stdout.trim()].filter(Boolean).join("\n");
 	const message = output ? `${renderedCommand} failed.\n${output}` : `${renderedCommand} failed.`;
 	return new Error(message);
@@ -20,13 +20,13 @@ function createCommandError(command: string, args: ReadonlyArray<string>, result
 
 export async function runCommandAsync(
 	command: string,
-	args: ReadonlyArray<string>,
+	parameters: ReadonlyArray<string>,
 	options: CommandOptions = {},
 ): Promise<CommandResult> {
 	return new Promise((resolve, reject) => {
 		const stdoutChunks: Array<Uint8Array> = [];
 		const stderrChunks: Array<Uint8Array> = [];
-		const childProcess = spawn(command, [...args], {
+		const childProcess = spawn(command, [...parameters], {
 			cwd: options.cwd,
 			env: options.env,
 			stdio: ["ignore", "pipe", "pipe"],
@@ -49,16 +49,16 @@ export async function runCommandAsync(
 			};
 
 			if (exitCode === 0) resolve(result);
-			else reject(createCommandError(command, args, result));
+			else reject(createCommandError(command, parameters, result));
 		});
 	});
 }
 
 export async function getCommandTextAsync(
 	command: string,
-	args: ReadonlyArray<string>,
+	parameters: ReadonlyArray<string>,
 	options?: CommandOptions,
 ): Promise<string> {
-	const result = await runCommandAsync(command, args, options);
+	const result = await runCommandAsync(command, parameters, options);
 	return result.stdout;
 }

@@ -32,11 +32,11 @@ function shouldSkip(relativePath: string): boolean {
 	return false;
 }
 
-async function getCommandTextAsync(command: string, args: ReadonlyArray<string>): Promise<string> {
+async function getCommandTextAsync(command: string, parameters: ReadonlyArray<string>): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const stdoutChunks: Array<Uint8Array> = [];
 		const stderrChunks: Array<Uint8Array> = [];
-		const childProcess = spawn(command, [...args], { stdio: ["ignore", "pipe", "pipe"] });
+		const childProcess = spawn(command, [...parameters], { stdio: ["ignore", "pipe", "pipe"] });
 
 		childProcess.stdout.on("data", (chunk: Uint8Array) => {
 			stdoutChunks.push(chunk);
@@ -55,7 +55,7 @@ async function getCommandTextAsync(command: string, args: ReadonlyArray<string>)
 				return;
 			}
 
-			const renderedCommand = [command, ...args].join(" ");
+			const renderedCommand = [command, ...parameters].join(" ");
 			const output = [stderr.trim(), stdout.trim()].filter(Boolean).join("\n");
 			reject(new Error(output ? `${renderedCommand} failed.\n${output}` : `${renderedCommand} failed.`));
 		});
@@ -117,8 +117,8 @@ const command = new Command()
 			exit(1);
 		}
 
-		const destRootRaw = await getCommandTextAsync("git", ["rev-parse", "--show-toplevel"]);
-		const destRoot = destRootRaw.trim();
+		const destinationRootRaw = await getCommandTextAsync("git", ["rev-parse", "--show-toplevel"]);
+		const destinationRoot = destinationRootRaw.trim();
 
 		const mainRoot = await findMainWorktreeAsync();
 		if (!mainRoot) {
@@ -126,7 +126,7 @@ const command = new Command()
 			exit(1);
 		}
 
-		if (mainRoot === destRoot) {
+		if (mainRoot === destinationRoot) {
 			console.error("You are in the main worktree already; nothing to copy.");
 			exit(1);
 		}
@@ -155,7 +155,7 @@ const command = new Command()
 		}
 
 		console.info(`SRC (main worktree): ${mainRoot}`);
-		console.info(`DEST (current):      ${destRoot}`);
+		console.info(`DEST (current):      ${destinationRoot}`);
 		console.info(`Paths selected:      ${filesToCopy.length}`);
 		console.info(
 			`Mode:                ${dryRun ? "dry-run" : "copy"}, ${overwrite ? "overwrite" : "no-overwrite"}`,
@@ -165,11 +165,11 @@ const command = new Command()
 		let skipped = 0;
 
 		for (const relativePath of filesToCopy) {
-			const src = join(mainRoot, relativePath);
-			const dst = join(destRoot, relativePath);
+			const source = join(mainRoot, relativePath);
+			const destination = join(destinationRoot, relativePath);
 
 			// oxlint-disable-next-line no-await-in-loop -- Sequential file operations are safer
-			if (!overwrite && (await fileExistsAsync(dst))) {
+			if (!overwrite && (await fileExistsAsync(destination))) {
 				skipped += 1;
 				continue;
 			}
@@ -181,9 +181,9 @@ const command = new Command()
 			}
 
 			// oxlint-disable-next-line no-await-in-loop -- Sequential file operations are safer
-			await mkdir(dirname(dst), { recursive: true });
+			await mkdir(dirname(destination), { recursive: true });
 			// oxlint-disable-next-line no-await-in-loop -- Sequential file operations are safer
-			await cp(src, dst);
+			await cp(source, destination);
 			copied += 1;
 		}
 

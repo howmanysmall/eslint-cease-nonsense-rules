@@ -4,8 +4,8 @@ export type RuleCategoryKey = "general" | "naming" | "react" | "roblox";
 
 export interface RuleCategoryDefinition {
 	readonly label: string;
-	readonly slug: string;
 	readonly rules: ReadonlyArray<string>;
+	readonly slug: string;
 }
 
 export const ruleCategoryDefinitions = {
