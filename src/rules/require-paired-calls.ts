@@ -138,7 +138,7 @@ function getValidClosers(configuration: PairConfiguration): ReadonlyArray<string
 	if (isStringArray.Check(configuration.closer)) result.push(...configuration.closer);
 	else if (typeof configuration.closer === "string") result.push(configuration.closer);
 
-	if (configuration.alternatives) for (const alternative of configuration.alternatives) result.push(alternative);
+	if (configuration.alternatives) result.push(...configuration.alternatives);
 
 	return result;
 }
@@ -156,9 +156,7 @@ function formatOpenerList(openers: ReadonlyArray<string>): string {
 }
 
 function isLoopLikeStatement(node?: TSESTree.Node): node is LoopLikeStatement {
-	if (!node) return false;
-
-	return LOOP_NODE_TYPES.has(node.type);
+	return node ? LOOP_NODE_TYPES.has(node.type) : false;
 }
 
 function isSwitchStatement(node?: TSESTree.Node): node is TSESTree.SwitchStatement {
