@@ -45,6 +45,7 @@
 		"prepublishOnly": "aube run build",
 		"release": "bumpp",
 		"test": "vitest run --sequence.shuffle",
+		"test:agent": "vitest run --reporter agent --sequence.shuffle",
 		"test:watch": "vitest --watch",
 		"type-check": "tsgo --noEmit",
 		"typescript": "tsgo"
