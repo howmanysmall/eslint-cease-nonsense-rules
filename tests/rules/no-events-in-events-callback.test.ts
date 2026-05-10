@@ -79,6 +79,88 @@ ServerEvents.units.unequipUnit.connect((player: Player): void => {
 				errors: [{ messageId: "preferFunctions" }],
 				options,
 			},
+			{
+				code: `
+import Events from "server/networking";
+
+Events.x.connect(({ player }): void => {
+    Events.y.fire(player, "msg");
+});
+`,
+				errors: [{ messageId: "preferFunctions" }],
+				options,
+			},
+			{
+				code: `
+import { "Events" as E } from "server/networking";
+
+E.x.connect((player: Player): void => {
+    E.y.fire(player, "msg");
+});
+`,
+				errors: [{ messageId: "preferFunctions" }],
+				options,
+			},
+			{
+				code: `
+import { Events } from "server/networking";
+
+Events.x.connect((player: Player): void => {
+    const arr = ["other"];
+    Events.y.fire([...arr, player][0], "msg");
+});
+`,
+				errors: [{ messageId: "preferFunctions" }],
+				options,
+			},
+			{
+				code: `
+import { Events } from "server/networking";
+
+Events.x.connect((player: Player): void => {
+    let container: { player: Player } | undefined;
+    container = { player };
+    Events.y.fire(container.player, "msg");
+});
+`,
+				errors: [{ messageId: "preferFunctions" }],
+				options,
+			},
+			{
+				code: `
+import { Events } from "server/networking";
+
+Events.x.connect((player: Player): void => {
+    const container = { player };
+    Events.y.fire(container.player, "msg");
+});
+`,
+				errors: [{ messageId: "preferFunctions" }],
+				options,
+			},
+			{
+				code: `
+import { Events } from "server/networking";
+
+Events.x.connect((player: Player): void => {
+    const obj = { other: "value" };
+    Events.y.fire({ ...obj, player }.player, "msg");
+});
+`,
+				errors: [{ messageId: "preferFunctions" }],
+				options,
+			},
+			{
+				code: `
+import { Events } from "server/networking";
+
+Events.x.connect((player: Player): void => {
+    Events.y.fire((void 0, player), "msg");
+});
+`,
+				errors: [{ messageId: "preferFunctions" }],
+				options,
+			},
 		],
 		valid: [
 			{
@@ -127,6 +209,30 @@ Events.units.unequipUnit.connect((player: Player): void => {
 import { Events } from "server/networking";
 
 Events.promptNotification.fire(player, "error");
+`,
+				options,
+			},
+			{
+				code: `
+import { Events } from "server/networking";
+
+Events.x.connect((player: Player, other: Player, cond: boolean): void => {
+    Events.y.fire(cond ? player : other, "msg");
+});
+`,
+				options,
+			},
+			{
+				code: `
+import { Events } from "server/networking";
+
+Events.x.connect((player: Player): void => {
+    function send(): void {
+        Events.y.fire(player, "msg");
+    }
+
+    send();
+});
 `,
 				options,
 			},

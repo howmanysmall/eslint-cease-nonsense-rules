@@ -107,6 +107,24 @@ function Frame(props: FrameProperties) {
 `,
 				errors: [{ messageId: "manualChildrenProperty" }],
 			},
+			{
+				code: `
+import type { ReactNode } from "react";
+
+interface BaseProperties {
+	readonly children?: ReactNode;
+}
+
+interface FrameProperties extends BaseProperties {
+	readonly position: UDim2;
+}
+
+function Frame(props: FrameProperties) {
+	return <div>{props.children}</div>;
+}
+`,
+				errors: [{ messageId: "manualChildrenProperty" }],
+			},
 		],
 		valid: [
 			{
@@ -220,6 +238,36 @@ function Frame(props: FrameProperties): JSX.Element {
 `,
 				errors: [{ messageId: "manualChildrenProperty" }],
 			},
+			{
+				code: `
+import type { ReactNode } from "react";
+
+interface FrameProperties {
+	readonly position: UDim2;
+	readonly "children"?: ReactNode;
+}
+
+const Frame = (props: FrameProperties): JSX.Element => {
+	return <div>{props.children}</div>;
+};
+`,
+				errors: [{ messageId: "manualChildrenProperty" }],
+			},
+			{
+				code: `
+import type { ReactNode } from "react";
+
+type FrameProperties = {
+	readonly position: UDim2;
+	readonly "children"?: ReactNode;
+};
+
+function Frame(props: FrameProperties): JSX.Element {
+	return <div>{props.children}</div>;
+}
+`,
+				errors: [{ messageId: "manualChildrenProperty" }],
+			},
 		],
 		valid: [
 			{
@@ -240,10 +288,83 @@ import type { PropertiesWithChildren as Wrapper } from "react";
 
 interface SharedFrameProps extends Wrapper<{ readonly position: UDim2 }> {}
 
-function Frame(props: SharedFrameProps): JSX.Element {
+				function Frame(props: SharedFrameProps): JSX.Element {
 	return <div>{props.children}</div>;
 }
 `,
+			},
+			{
+				code: `
+import type { PropsWithChildren } from "react";
+
+const Frame = (props: PropsWithChildren<{ readonly position: UDim2 }>): JSX.Element => {
+	return <div>{props.children}</div>;
+};
+`,
+				options: [{ mode: "accurate", wrapperNames: ["PropsWithChildren"] }],
+			},
+			{
+				code: `
+type CustomChildren<TProperties> = TProperties & {
+	readonly children?: JSX.Element;
+};
+
+function Frame(props: CustomChildren<{ readonly position: UDim2 }>): JSX.Element {
+	return <div>{props.children}</div>;
+}
+`,
+				options: [{ mode: "accurate", wrapperNames: ["CustomChildren"] }],
+			},
+			{
+				code: `
+type LoopA = LoopB;
+type LoopB = LoopA;
+
+function Frame(props: LoopA): JSX.Element {
+	return <div>{props}</div>;
+}
+`,
+				options: [{ mode: "accurate" }],
+			},
+			{
+				code: `
+function Frame(props: string): JSX.Element {
+	return <div>{props}</div>;
+}
+`,
+				options: [{ mode: "accurate" }],
+			},
+			{
+				code: `
+type ImportedProperties = React.ReactNode;
+
+function Frame(props: ImportedProperties): JSX.Element {
+	return <div>{props}</div>;
+}
+`,
+				options: [{ mode: "accurate" }],
+			},
+			{
+				code: `
+interface FrameProperties extends MissingBase {
+	readonly position: UDim2;
+}
+
+function Frame(props: FrameProperties): JSX.Element {
+	return <div>{props.position}</div>;
+}
+`,
+				options: [{ mode: "accurate" }],
+			},
+			{
+				code: `
+type FrameProperties = MissingProperties;
+
+function Frame(props: FrameProperties): JSX.Element {
+	return <div>{props}</div>;
+}
+`,
+				options: [{ mode: "accurate" }],
 			},
 		],
 	});

@@ -327,18 +327,65 @@ class Container {
 const container = new Container([]);
             `,
 			`
-function buildResult(shouldBeEmpty: boolean): Array<number> {
-    if (shouldBeEmpty) return [];
-    return [1];
-}
-            `,
+			function buildResult(shouldBeEmpty: boolean): Array<number> {
+			    if (shouldBeEmpty) return [];
+			    return [1];
+			}
+			            `,
+			"type MyReadonly = ReadonlyArray<number>; const values: MyReadonly = [];",
+			"const values: readonly number[] = [];",
 		],
 	});
 });
 
 describe("no-empty-array-literal (type-aware inference)", () => {
 	typeAwareRuleTester.run("no-empty-array-literal-type-aware", rule, {
-		invalid: [],
+		invalid: [
+			{
+				code: "const values: Array<number> = [];",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [{ inferTypeForEmptyArrayFix: true }],
+				output: "const values: Array<number> = new Array<number>();",
+			},
+			{
+				code: "declare function consume(values: Array<number>): void;\nconsume([]);",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [{ allowedEmptyArrayContexts: { callArguments: false }, inferTypeForEmptyArrayFix: true }],
+				output: "declare function consume(values: Array<number>): void;\nconsume(new Array<number>());",
+			},
+			{
+				code: "function build(values: Array<number> = []) { return values; }",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [
+					{ allowedEmptyArrayContexts: { assignmentPatterns: false }, inferTypeForEmptyArrayFix: true },
+				],
+				output: "function build(values: Array<number> = new Array<number>()) { return values; }",
+			},
+			{
+				code: "function build(values: ReadonlyArray<number> = []) { return values; }",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [
+					{ allowedEmptyArrayContexts: { assignmentPatterns: false }, inferTypeForEmptyArrayFix: true },
+				],
+				output: "function build(values: ReadonlyArray<number> = new Array<number>()) { return values; }",
+			},
+			{
+				code: "function build([values]: Array<Array<number>> = []) { void values; }",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [
+					{ allowedEmptyArrayContexts: { assignmentPatterns: false }, inferTypeForEmptyArrayFix: true },
+				],
+				output: "function build([values]: Array<Array<number>> = new Array<Array<number>>()) { void values; }",
+			},
+			{
+				code: "function build({ length }: Array<number> = []) { void length; }",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [
+					{ allowedEmptyArrayContexts: { assignmentPatterns: false }, inferTypeForEmptyArrayFix: true },
+				],
+				output: "function build({ length }: Array<number> = new Array<number>()) { void length; }",
+			},
+		],
 		valid: [
 			{
 				code: "function create(): Array<number> { return [1, 2, 3]; }",
@@ -359,7 +406,7 @@ function useValues<T>(): void {
     const values = [] as ComponentList<T>;
     void values;
 }
-                    `,
+					`,
 				options: [{ inferTypeForEmptyArrayFix: true }],
 			},
 		],
