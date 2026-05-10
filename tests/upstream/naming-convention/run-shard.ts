@@ -11,11 +11,9 @@ function partitionForShard<TestCase>(
 	shardIndex: number,
 	totalShards: number,
 ): Array<TestCase> {
-	const result: Array<TestCase> = [];
-	for (let index = shardIndex; index < cases.length; index += totalShards) {
-		result.push(cases[index] as TestCase);
-	}
-	return result;
+	const array = new Array<TestCase>();
+	for (let index = shardIndex; index < cases.length; index += totalShards) array.push(cases[index]);
+	return array;
 }
 
 export function runNamingConventionShard(shardIndex: number, totalShards: number): void {
@@ -37,9 +35,10 @@ export function runNamingConventionShard(shardIndex: number, totalShards: number
 	const invalidShard = partitionForShard(invalid, shardIndex, totalShards);
 	const validShard = partitionForShard(valid, shardIndex, totalShards);
 
-	// @ts-expect-error -- Upstream typing mismatch with @typescript-eslint/rule-tester.
 	ruleTester.run("naming-convention", rule, {
+		// @ts-expect-error -- Upstream typing mismatch with @typescript-eslint/rule-tester.
 		invalid: invalidShard,
+		// @ts-expect-error -- Upstream typing mismatch with @typescript-eslint/rule-tester.
 		valid: validShard,
 	});
 }
