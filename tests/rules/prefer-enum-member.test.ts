@@ -412,6 +412,35 @@ declare const targetCFrame: CFrame;
 
 tween(basePart, { CFrame: targetCFrame });`,
 				},
+				{
+					code: `${declarations}
+type Palette = Partial<Record<Color | "Purple", string>>;
+const palette: Palette = {
+    Purple: "#90F",
+};`,
+				},
+				{
+					code: `${declarations}
+type Shade = Color | "Purple";
+const shade: Shade = "Purple";`,
+				},
+				{
+					code: `${declarations}
+type WrappedPalette<TKey extends string> = Readonly<Record<TKey, string>>;
+const palette: WrappedPalette<"Blue"> = { Blue: "#00F" };`,
+				},
+				{
+					code: `${declarations}
+type Palette<TKey extends Color | "Purple"> = Partial<{ [K in TKey]: string }>;
+const palette: Palette<Color | "Purple"> = {
+    Purple: "#90F",
+};`,
+				},
+				{
+					code: `${declarations}
+const importer = async () => import("node:path");
+void importer;`,
+				},
 			],
 			"prefer-enum-member-valid",
 		),
