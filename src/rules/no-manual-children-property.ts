@@ -1,21 +1,20 @@
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
+import { createRule } from "@utilities/create-rule";
+import { isLikelyReactComponentName } from "@utilities/react-component-utilities";
 import {
 	isExpressionWithTypeArguments,
 	isInterfaceDeclaration,
 	isIntersectionTypeNode,
-	isFunctionLike as isTSFunctionLike,
-	isIdentifier as isTSIdentifier,
-	isPropertySignature as isTSPropertySignature,
-	isStringLiteral as isTSStringLiteral,
-	isTypeNode as isTSTypeNode,
 	isTypeAliasDeclaration,
 	isTypeLiteralNode,
 	isTypeReferenceNode,
+	isFunctionLike as isTypeScriptFunctionLike,
+	isIdentifier as isTypeScriptIdentifier,
+	isPropertySignature as isTypeScriptPropertySignature,
+	isStringLiteral as isTypeScriptStringLiteral,
+	isTypeNode as isTypeScriptTypeNode,
 	SymbolFlags,
 } from "typescript";
-
-import { createRule } from "../utilities/create-rule";
-import { isLikelyReactComponentName } from "../utilities/react-component-utilities";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import type { Declaration, Symbol as TSSymbol, TypeNode as TsTypeNode, TypeChecker } from "typescript";
@@ -392,12 +391,12 @@ function inspectTsDeclarationAccurate(
 	if (isInterfaceDeclaration(declaration)) {
 		let hasManualChildren = false;
 		for (const member of declaration.members) {
-			if (!isTSPropertySignature(member) || member.name === undefined) continue;
-			if (isTSIdentifier(member.name) && CHILDREN_PROPERTY_NAMES.has(member.name.text)) {
+			if (!isTypeScriptPropertySignature(member) || member.name === undefined) continue;
+			if (isTypeScriptIdentifier(member.name) && CHILDREN_PROPERTY_NAMES.has(member.name.text)) {
 				hasManualChildren = true;
 				break;
 			}
-			if (isTSStringLiteral(member.name) && CHILDREN_PROPERTY_NAMES.has(member.name.text)) {
+			if (isTypeScriptStringLiteral(member.name) && CHILDREN_PROPERTY_NAMES.has(member.name.text)) {
 				hasManualChildren = true;
 				break;
 			}
@@ -435,15 +434,15 @@ function inspectTsTypeNodeAccurate(
 ): InspectionResult {
 	if (isTypeLiteralNode(typeNode)) {
 		for (const member of typeNode.members) {
-			if (!isTSPropertySignature(member) || member.name === undefined) continue;
-			if (isTSIdentifier(member.name) && CHILDREN_PROPERTY_NAMES.has(member.name.text)) {
+			if (!isTypeScriptPropertySignature(member) || member.name === undefined) continue;
+			if (isTypeScriptIdentifier(member.name) && CHILDREN_PROPERTY_NAMES.has(member.name.text)) {
 				return {
 					hasChildren: true,
 					hasManualChildren: true,
 					usesApprovedWrapper: false,
 				};
 			}
-			if (isTSStringLiteral(member.name) && CHILDREN_PROPERTY_NAMES.has(member.name.text)) {
+			if (isTypeScriptStringLiteral(member.name) && CHILDREN_PROPERTY_NAMES.has(member.name.text)) {
 				return {
 					hasChildren: true,
 					hasManualChildren: true,
@@ -593,10 +592,10 @@ function createAccurateModeListeners(
 
 	function maybeReportCandidate(candidate: ComponentCandidate): void {
 		const tsFunctionNode = services.esTreeNodeToTSNodeMap.get(candidate.functionNode);
-		if (!isTSFunctionLike(tsFunctionNode)) return;
+		if (!isTypeScriptFunctionLike(tsFunctionNode)) return;
 
 		const tsTypeNode = services.esTreeNodeToTSNodeMap.get(candidate.propertiesTypeNode);
-		if (!isTSTypeNode(tsTypeNode)) return;
+		if (!isTypeScriptTypeNode(tsTypeNode)) return;
 
 		const accurateInspectionResult = inspectTsTypeNodeAccurate(tsTypeNode, checker, wrapperNames, new Set());
 		const fastInspectionResult = inspectTypeNodeFast(

@@ -1,7 +1,6 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { createRule } from "@utilities/create-rule";
 import { regex } from "arktype";
-
-import { createRule } from "../utilities/create-rule";
 
 import type { Reference } from "@typescript-eslint/scope-manager";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";

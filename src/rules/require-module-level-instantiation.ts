@@ -1,13 +1,11 @@
 import { ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { createRule } from "@utilities/create-rule";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
 
-import { createRule } from "../utilities/create-rule";
-
+import type { ReadonlyRecord } from "@lint-types/utility-types";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
-
-import type { ReadonlyRecord } from "../types/utility-types";
 
 /**
  * Configuration for classes that must be instantiated at module level.

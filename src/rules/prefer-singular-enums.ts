@@ -1,6 +1,5 @@
+import { createRule } from "@utilities/create-rule";
 import { regex } from "arktype";
-
-import { createRule } from "../utilities/create-rule";
 
 // oxlint-disable prefer-string-raw
 import type { TSESTree } from "@typescript-eslint/utils";

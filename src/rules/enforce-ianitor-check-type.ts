@@ -1,5 +1,5 @@
 import { TSESTree } from "@typescript-eslint/types";
-import { ESLintUtils } from "@typescript-eslint/utils";
+import { createRule } from "@utilities/create-rule";
 
 export interface ComplexityConfiguration {
 	readonly baseThreshold: number;
@@ -156,10 +156,6 @@ function calculateIanitorComplexity(node: {
 
 type MessageIds = "complexInterfaceNeedsCheck" | "missingIanitorCheckType";
 type Options = [Partial<ComplexityConfiguration>];
-
-const createRule = ESLintUtils.RuleCreator(
-	(name) => `https://github.com/howmanysmall/eslint-cease-nonsense-rules/blob/main/docs/rules/${name}.md`,
-);
 
 const enforceIanitorCheckType = createRule<Options, MessageIds>({
 	create(context) {

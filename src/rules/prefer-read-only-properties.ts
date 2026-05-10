@@ -1,12 +1,11 @@
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
-import { isPropertyReadonlyInType } from "ts-api-utils";
-
-import { createRule } from "../utilities/create-rule";
+import { createRule } from "@utilities/create-rule";
 import {
 	isFunctionLikeNode,
 	isLikelyReactComponentName,
 	isReactComponentFunction,
-} from "../utilities/react-component-utilities";
+} from "@utilities/react-component-utilities";
+import { isPropertyReadonlyInType } from "ts-api-utils";
 
 import type { TSESTree } from "@typescript-eslint/utils";
 import type { IndexInfo, Symbol as TSSymbol, Type, TypeChecker } from "typescript";

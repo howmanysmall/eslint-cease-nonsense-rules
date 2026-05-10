@@ -1,7 +1,6 @@
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
+import { createRule } from "@utilities/create-rule";
 import { isArrayBindingOrAssignmentPattern, isTypeReference } from "ts-api-utils";
-
-import { createRule } from "../utilities/create-rule";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import type { Type, TypeChecker } from "typescript";

@@ -1,4 +1,5 @@
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
+import { createRule } from "@utilities/create-rule";
 import { isUnionType, unionConstituents } from "ts-api-utils";
 import {
 	forEachChild,
@@ -14,8 +15,6 @@ import {
 	isUnionTypeNode,
 	SymbolFlags,
 } from "typescript";
-
-import { createRule } from "../utilities/create-rule";
 
 import type { TSESTree } from "@typescript-eslint/utils";
 import type {

@@ -15,6 +15,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("use-hook-at-top-level", () => {
+	// @ts-expect-error -- wrong
 	ruleTester.run("use-hook-at-top-level", rule, {
 		invalid: [
 			// Conditional execution - if statement

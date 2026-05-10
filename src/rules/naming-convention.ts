@@ -1,13 +1,11 @@
 import { PatternVisitor, ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
+import { createRule } from "@utilities/create-rule";
+import { Modifiers, parseOptions, SCHEMA } from "@utilities/naming-convention-utilities";
 import { isIdentifierPart, isIdentifierStart, ScriptTarget } from "typescript";
 
-import { createRule } from "../utilities/create-rule";
-import { Modifiers, parseOptions, SCHEMA } from "../utilities/naming-convention-utilities";
-
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
-
-import type { Selector, ValidatorFunction } from "../utilities/naming-convention-utilities";
+import type { Selector, ValidatorFunction } from "@utilities/naming-convention-utilities";
 
 export type MessageIds =
 	| "doesNotMatchFormat"

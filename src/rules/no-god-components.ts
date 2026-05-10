@@ -1,8 +1,7 @@
 import { TSESTree } from "@typescript-eslint/utils";
 
+import type { ReadonlyRecord } from "@lint-types/utility-types";
 import type { Rule } from "eslint";
-
-import type { ReadonlyRecord } from "../types/utility-types";
 
 export interface NoGodComponentsOptions {
 	readonly enforceTargetLines?: boolean;

@@ -10,6 +10,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("prefer-udim2-shorthand", () => {
+	// @ts-expect-error -- wrong
 	ruleTester.run("prefer-udim2-shorthand", rule, {
 		invalid: [
 			// FromScale pattern tests

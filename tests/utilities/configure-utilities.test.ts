@@ -3,6 +3,7 @@ import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "@rules/no-useless-use-spring";
 import {
 	createBanInstancesOptions,
 	createComplexityConfiguration,
+	createDotNotationOptions,
 	createEffectFunctionOptions,
 	createHookConfiguration,
 	createNamingConventionOptions,
@@ -12,10 +13,12 @@ import {
 	createNoEventsInEventsCallbackOptions,
 	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
+	createNoManualChildrenPropertyOptions,
 	createNoMemoChildrenOptions,
 	createNoNewInstanceInUseMemoOptions,
 	createNoShorthandOptions,
 	createNoUnusedImportsOptions,
+	createNoUnusedUseMemoOptions,
 	createNoUselessUseEffectOptions,
 	createNoUselessUseMemoOptions,
 	createNoUselessUseSpringOptions,
@@ -27,6 +30,7 @@ import {
 	createRequireModuleLevelInstantiationOptions,
 	createRequirePairedCallsOptions,
 	createRequireReactDisplayNamesOptions,
+	createRequireSerializedNumericDataTypeOptions,
 	createUseExhaustiveDependenciesOptions,
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
@@ -109,6 +113,32 @@ describe("configure-utilities", () => {
 		});
 	});
 
+	describe("createDotNotationOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createDotNotationOptions();
+			expect(configuration).toStrictEqual({
+				allowInaccessibleClassPropertyAccess: false,
+				allowIndexSignaturePropertyAccess: false,
+				allowKeywords: true,
+				allowPattern: "",
+				allowPrivateClassPropertyAccess: false,
+				allowProtectedClassPropertyAccess: false,
+				environment: "standard",
+			});
+		});
+
+		it("should override defaults", () => {
+			expect.assertions(2);
+			const configuration = createDotNotationOptions({
+				allowKeywords: false,
+				environment: "roblox-ts",
+			});
+			expect(configuration.allowKeywords).toBe(false);
+			expect(configuration.environment).toBe("roblox-ts");
+		});
+	});
+
 	describe("createNoInstanceMethodsOptions", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
@@ -145,6 +175,27 @@ describe("configure-utilities", () => {
 			});
 			expect(configuration.allowedComponents).toStrictEqual(["Modal"]);
 			expect(configuration.environment).toBe("standard");
+		});
+	});
+
+	describe("createNoManualChildrenPropertyOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createNoManualChildrenPropertyOptions();
+			expect(configuration).toStrictEqual({
+				mode: "auto",
+				wrapperNames: ["PropertiesWithChildren"],
+			});
+		});
+
+		it("should override defaults", () => {
+			expect.assertions(2);
+			const configuration = createNoManualChildrenPropertyOptions({
+				mode: "fast",
+				wrapperNames: ["CustomWrapper"],
+			});
+			expect(configuration.mode).toBe("fast");
+			expect(configuration.wrapperNames).toStrictEqual(["CustomWrapper"]);
 		});
 	});
 
@@ -609,6 +660,20 @@ describe("configure-utilities", () => {
 		});
 	});
 
+	describe("createNoUnusedUseMemoOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createNoUnusedUseMemoOptions();
+			expect(configuration).toStrictEqual({ environment: "roblox-ts" });
+		});
+
+		it("should override defaults", () => {
+			expect.assertions(1);
+			const configuration = createNoUnusedUseMemoOptions({ environment: "standard" });
+			expect(configuration.environment).toBe("standard");
+		});
+	});
+
 	describe("createNoUselessUseEffectOptions", () => {
 		it("should create options with defaults", () => {
 			expect.assertions(1);
@@ -726,6 +791,30 @@ describe("configure-utilities", () => {
 			expect(configuration.checkFilenames).toBe(false);
 			expect(configuration.checkProperties).toBe(true);
 			expect(configuration.ignore).toStrictEqual(["test"]);
+		});
+	});
+
+	describe("createRequireSerializedNumericDataTypeOptions", () => {
+		it("should create options with defaults", () => {
+			expect.assertions(1);
+			const configuration = createRequireSerializedNumericDataTypeOptions();
+			expect(configuration).toStrictEqual({
+				functionNames: ["registerComponent"],
+				mode: "type-arguments",
+				strict: false,
+			});
+		});
+
+		it("should override defaults", () => {
+			expect.assertions(3);
+			const configuration = createRequireSerializedNumericDataTypeOptions({
+				functionNames: ["registerComponent", "registerGlobalComponent"],
+				mode: "all",
+				strict: true,
+			});
+			expect(configuration.functionNames).toStrictEqual(["registerComponent", "registerGlobalComponent"]);
+			expect(configuration.mode).toBe("all");
+			expect(configuration.strict).toBe(true);
 		});
 	});
 });

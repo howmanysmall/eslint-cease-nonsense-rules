@@ -1,13 +1,11 @@
+import { getReactSources, isReactImport } from "@constants/react-sources";
+import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "@rules/no-useless-use-spring";
 import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { createRule } from "@utilities/create-rule";
 
-import { getReactSources, isReactImport } from "../constants/react-sources";
-import { createRule } from "../utilities/create-rule";
-import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "./no-useless-use-spring";
-
+import type { EnvironmentMode } from "@lint-types/environment-mode";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
-
-import type { EnvironmentMode } from "../types/environment-mode";
 
 type DependencyMode = "empty-or-omitted" | "non-updating" | "aggressive";
 type MessageIds = "uselessUseMemo";

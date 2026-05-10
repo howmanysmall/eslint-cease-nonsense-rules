@@ -5,44 +5,38 @@ function isUppercaseCharacter(character: string): boolean {
 function isPascalCase(name: string): boolean {
 	if (name.length === 0) return true;
 	const [first] = name;
-	if (first === undefined) return false;
-	return first === first.toUpperCase() && !name.includes("_");
+	return first !== undefined && first === first.toUpperCase() && !name.includes("_");
 }
 
 function isStrictPascalCase(name: string): boolean {
 	if (name.length === 0) return true;
 	const [first] = name;
-	if (first === undefined) return false;
-	return first === first.toUpperCase() && hasStrictCamelHumps(name, true);
+	return first !== undefined && first === first.toUpperCase() && hasStrictCamelHumps(name, true);
 }
 
 function isCamelCase(name: string): boolean {
 	if (name.length === 0) return true;
 	const [first] = name;
-	if (first === undefined) return false;
-	return first === first.toLowerCase() && !name.includes("_");
+	return first !== undefined && first === first.toLowerCase() && !name.includes("_");
 }
 
 function isStrictCamelCase(name: string): boolean {
 	if (name.length === 0) return true;
 	const [first] = name;
-	if (first === undefined) return false;
-	return first === first.toLowerCase() && hasStrictCamelHumps(name, false);
+	return first !== undefined && first === first.toLowerCase() && hasStrictCamelHumps(name, false);
 }
 
 function hasStrictCamelHumps(name: string, isUpper: boolean): boolean {
-	if (name.startsWith("_")) return false;
+	if (name.length === 0 || name.startsWith("_")) return false;
 
-	// oxlint-disable-next-line no-shadow
-	let isUpperCase = isUpper;
+	let boolean = isUpper;
 	for (let index = 1; index < name.length; index += 1) {
 		const character = name[index];
-		if (character === undefined) return false;
-		if (character === "_") return false;
+		if (character === undefined || character === "_") return false;
 
-		if (isUpperCase === isUppercaseCharacter(character)) {
-			if (isUpperCase) return false;
-		} else isUpperCase = !isUpperCase;
+		if (boolean === isUppercaseCharacter(character)) {
+			if (boolean) return false;
+		} else boolean = !boolean;
 	}
 	return true;
 }
@@ -56,18 +50,18 @@ function isUpperCase(name: string): boolean {
 }
 
 function validateUnderscores(name: string): boolean {
-	if (name.startsWith("_")) return false;
+	if (name.length === 0 || name.startsWith("_")) return false;
 
-	let wasUnderscore = false;
+	let boolean = false;
 	for (let index = 1; index < name.length; index += 1) {
 		const character = name[index];
 		if (character === undefined) return false;
 		if (character === "_") {
-			if (wasUnderscore) return false;
-			wasUnderscore = true;
-		} else wasUnderscore = false;
+			if (boolean) return false;
+			boolean = true;
+		} else boolean = false;
 	}
-	return !wasUnderscore;
+	return !boolean;
 }
 
 export const PredefinedFormatToCheckFunction: Record<string, (name: string) => boolean> = {

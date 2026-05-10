@@ -1,8 +1,5 @@
 import { DefinitionType } from "@typescript-eslint/scope-manager";
-import Typebox from "typebox";
-import { Compile } from "typebox/compile";
-
-import { createRule } from "../utilities/create-rule";
+import { createRule } from "@utilities/create-rule";
 import {
 	buildPatternIndex,
 	canSafelySubstitute,
@@ -12,12 +9,13 @@ import {
 	matchParameters,
 	parsePattern,
 	resolveCallee,
-} from "../utilities/pattern-replacement";
+} from "@utilities/pattern-replacement";
+import Typebox from "typebox";
+import { Compile } from "typebox/compile";
 
 import type { TSESTree } from "@typescript-eslint/types";
 import type { TSESLint } from "@typescript-eslint/utils";
-
-import type { ParsedPattern, Pattern, PatternIndex } from "../utilities/pattern-replacement";
+import type { ParsedPattern, Pattern, PatternIndex } from "@utilities/pattern-replacement";
 
 const isRuleOptions = Compile(
 	Typebox.Object({

@@ -1,8 +1,7 @@
 import { TSESTree } from "@typescript-eslint/types";
+import { createRule } from "@utilities/create-rule";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
-
-import { createRule } from "../utilities/create-rule";
 
 import type { TSESLint } from "@typescript-eslint/utils";
 

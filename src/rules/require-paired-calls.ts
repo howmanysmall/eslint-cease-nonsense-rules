@@ -1,9 +1,9 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
+import { createRule } from "@utilities/create-rule";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
 
 import type { TSESTree } from "@typescript-eslint/types";
-import type { TSESLint } from "@typescript-eslint/utils";
 import type { Writable } from "type-fest";
 
 const isStringArray = Compile(Typebox.Readonly(Typebox.Array(Typebox.String())));
@@ -234,13 +234,8 @@ const messages = {
 type MessageIds = keyof typeof messages;
 type Options = [Partial<RequirePairedCallsOptions>?];
 
-interface WithRecommended extends TSESLint.RuleMetaDataDocs {
-	recommended?: boolean;
-}
-
-const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, WithRecommended> = {
-	create(context): TSESLint.RuleListener {
-		const [rawOptions] = context.options;
+const requirePairedCalls = createRule<Options, MessageIds>({
+	create(context, [rawOptions]) {
 		const baseOptions = isRuleOptions.Check(rawOptions) ? rawOptions : {};
 
 		const options: Writable<RequirePairedCallsOptions> = {
@@ -337,8 +332,7 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, W
 
 		function updateContext(updates: Partial<ControlFlowContext>): void {
 			const last = contextStack.at(-1);
-			if (!last) return;
-			contextStack[contextStack.length - 1] = { ...last, ...updates };
+			if (last) contextStack[contextStack.length - 1] = { ...last, ...updates };
 		}
 
 		function cloneStack(): Array<OpenerStackEntry> {
@@ -360,13 +354,9 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, W
 			if (configuration.platform !== "roblox") return false;
 
 			const yieldingFunctions = configuration.yieldingFunctions ?? DEFAULT_ROBLOX_YIELDING_FUNCTIONS;
-			return yieldingFunctions.some((pattern) => {
-				if (pattern.startsWith("*.")) {
-					const methodName = pattern.slice(2);
-					return functionName.endsWith(`.${methodName}`);
-				}
-				return functionName === pattern;
-			});
+			return yieldingFunctions.some((pattern) =>
+				pattern.startsWith("*.") ? functionName.endsWith(`.${pattern.slice(2)}`) : functionName === pattern,
+			);
 		}
 
 		function onFunctionEnter(
@@ -608,10 +598,6 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, W
 			pushContext({ inFinally: true });
 		}
 
-		function onFinallyBlockExit(): void {
-			popContext();
-		}
-
 		function onSwitchStatementEnter(node: TSESTree.SwitchStatement): void {
 			pushContext({ inConditional: true });
 			saveSnapshot(node);
@@ -704,13 +690,12 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, W
 				const closer = validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
 
 				const statementType = statementNode.type === AST_NODE_TYPES.ReturnStatement ? "return" : "throw";
-				const lineNumber = statementNode.loc?.start.line ?? 0;
 
 				context.report({
 					data: {
 						closer,
 						opener,
-						paths: `${statementType} at line ${lineNumber}`,
+						paths: `${statementType} at line ${statementNode.loc?.start.line ?? 0}`,
 					},
 					messageId: "unpairedOpener",
 					node,
@@ -729,19 +714,18 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, W
 			if (!targetLoop) return;
 
 			for (const { node: openerNode, config, opener, loopAncestors } of openerStack) {
-				if (!loopAncestors.some((loopNode) => loopNode === targetLoop)) continue;
+				if (!loopAncestors.includes(targetLoop)) continue;
 
 				const validClosers = getValidClosers(config);
 				const closer = validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
 
 				const statementType = node.type === AST_NODE_TYPES.BreakStatement ? "break" : "continue";
-				const lineNumber = node.loc.start.line;
 
 				context.report({
 					data: {
 						closer,
 						opener,
-						paths: `${statementType} at line ${lineNumber}`,
+						paths: `${statementType} at line ${node.loc.start.line}`,
 					},
 					messageId: "unpairedOpener",
 					node: openerNode,
@@ -751,7 +735,7 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, W
 
 		function onCallExpression(node: TSESTree.CallExpression): void {
 			const callName = getCallName(node);
-			if (callName === undefined || callName === "") return;
+			if (callName === undefined || callName.length === 0) return;
 
 			const openerConfig = findPairConfiguration(callName, true);
 			if (openerConfig) {
@@ -829,25 +813,19 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, W
 				const topEntry = openerStack.at(-1);
 				if (topEntry) {
 					const expectedClosers = getExpectedClosersForOpener(topEntry.opener);
-					const closerDescription = formatOpenerList(expectedClosers);
+					const expected = formatOpenerList(expectedClosers);
 
 					context.report({
-						data: {
-							closer,
-							expected: closerDescription,
-						},
+						data: { closer, expected },
 						messageId: "unexpectedCloser",
 						node,
 					});
 				} else {
 					const openerCandidates = getConfiguredOpenersForCloser(closer);
-					const openerDescription = formatOpenerList(openerCandidates);
+					const opener = formatOpenerList(openerCandidates);
 
 					context.report({
-						data: {
-							closer,
-							opener: openerDescription,
-						},
+						data: { closer, opener },
 						messageId: "unpairedCloser",
 						node,
 					});
@@ -926,7 +904,7 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, W
 			"DoWhileStatement:exit": onLoopExit,
 			ForInStatement: onLoopEnter,
 			"ForInStatement:exit": onLoopExit,
-			ForOfStatement: (node: TSESTree.ForOfStatement) => {
+			ForOfStatement: (node: TSESTree.ForOfStatement): void => {
 				if (node.await) onAsyncYield(node);
 				onLoopEnter(node);
 			},
@@ -955,19 +933,17 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, W
 			"TryStatement > .block": onTryBlockEnter,
 			"TryStatement > .block:exit": onTryBlockExit,
 			"TryStatement > .finalizer": onFinallyBlockEnter,
-			"TryStatement > .finalizer:exit": onFinallyBlockExit,
+			"TryStatement > .finalizer:exit": popContext,
 			"TryStatement:exit": onTryStatementExit,
 			WhileStatement: onLoopEnter,
 			"WhileStatement:exit": onLoopExit,
 			YieldExpression: onAsyncYield,
 		};
 	},
-	defaultOptions: [],
+	defaultOptions: [{}],
 	meta: {
 		docs: {
 			description: "Enforces balanced opener/closer function calls across all execution paths",
-			recommended: false,
-			url: "https://github.com/howmanysmall/eslint-idiot-lint/tree/main/docs/rules/require-paired-calls.md",
 		},
 		fixable: "code",
 		messages,
@@ -1040,6 +1016,7 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, W
 		],
 		type: "problem",
 	},
-};
+	name: "require-paired-calls",
+});
 
 export default requirePairedCalls;

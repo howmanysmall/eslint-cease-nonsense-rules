@@ -1,11 +1,9 @@
 import { DefinitionType } from "@typescript-eslint/scope-manager";
 import { TSESTree } from "@typescript-eslint/types";
+import { createRule } from "@utilities/create-rule";
 
-import { createRule } from "../utilities/create-rule";
-
+import type { EnvironmentMode } from "@lint-types/environment-mode";
 import type { TSESLint } from "@typescript-eslint/utils";
-
-import type { EnvironmentMode } from "../types/environment-mode";
 
 export interface HookConfiguration {
 	readonly allowAsync: boolean;
