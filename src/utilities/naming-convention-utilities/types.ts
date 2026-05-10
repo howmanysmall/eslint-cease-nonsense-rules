@@ -9,7 +9,7 @@ import type {
 	UnderscoreOptionsString,
 } from "./enums";
 
-export interface MatchRegex {
+interface MatchRegex {
 	match: boolean;
 	regex: string;
 }

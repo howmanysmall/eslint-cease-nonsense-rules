@@ -4,8 +4,11 @@ packages:
 allowBuilds:
   esbuild: true
   sharp: true
+  msgpackr-extract: set this to true or false
+
 
 trustPolicyExclude:
+  - effect
   - starlight-scroll-to-top
   - skills
 

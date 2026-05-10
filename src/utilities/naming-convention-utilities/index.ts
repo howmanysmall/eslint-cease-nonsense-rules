@@ -3,5 +3,5 @@ import { parseOptions } from "./parse-options";
 import { SCHEMA } from "./schema";
 import { selectorTypeToMessageString } from "./shared";
 
-export type { Context, Selector, ValidatorFunction } from "./types";
+export type { Selector, ValidatorFunction } from "./types";
 export { Modifiers, parseOptions, SCHEMA, selectorTypeToMessageString };

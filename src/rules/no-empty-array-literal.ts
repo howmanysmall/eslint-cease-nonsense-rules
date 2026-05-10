@@ -20,7 +20,7 @@ type NoEmptyArrayLiteralContextDefaults = {
 	readonly [ContextKey in keyof NoEmptyArrayLiteralAllowedContexts]-?: boolean;
 };
 
-export interface NoEmptyArrayLiteralAllowedContexts {
+interface NoEmptyArrayLiteralAllowedContexts {
 	readonly arrowFunctionBody?: boolean;
 	readonly assignmentExpressions?: boolean;
 	readonly assignmentPatterns?: boolean;
