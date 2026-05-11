@@ -274,6 +274,13 @@ const rewards = gameMode === "story" ? cache.rewards ?? [] : [];
 			"type UnitCostRefundArray = Array<number>;\nconst unitsOfCostId: UnitCostRefundArray = [];",
 			"type ComponentList = ReadonlyArray<string>; const values = [] as ComponentList;",
 			`
+function useValues<T>(): void {
+    type ComponentList<U> = ReadonlyArray<U>;
+    const values = [] as ComponentList<T>;
+    void values;
+}
+            `,
+			`
 type BreakpointValue = number;
 type BreakpointList<T> = ReadonlyArray<T>;
 

@@ -243,11 +243,13 @@ function isAllowedEmptyArrayContext(
 	return false;
 }
 
-function findTypeAliasDeclaration(
-	sourceCode: Readonly<TSESLint.SourceCode>,
+type TypeAliasScopeBody = TSESTree.BlockStatement["body"] | TSESTree.Program["body"];
+
+function findTypeAliasDeclarationInBody(
+	body: TypeAliasScopeBody,
 	typeName: string,
 ): TSESTree.TSTypeAliasDeclaration | undefined {
-	for (const statement of sourceCode.ast.body) {
+	for (const statement of body) {
 		if (statement.type === AST_NODE_TYPES.TSTypeAliasDeclaration && statement.id.name === typeName) {
 			return statement;
 		}
@@ -260,6 +262,37 @@ function findTypeAliasDeclaration(
 	}
 
 	return undefined;
+}
+
+function getTypeAliasScopeBody(node: TSESTree.Node): TypeAliasScopeBody | undefined {
+	switch (node.type) {
+		case AST_NODE_TYPES.BlockStatement:
+			return node.body;
+		case AST_NODE_TYPES.Program:
+			return node.body;
+		case AST_NODE_TYPES.TSModuleBlock:
+			return node.body;
+		default:
+			return undefined;
+	}
+}
+
+function findTypeAliasDeclaration(
+	typeNode: TSESTree.TypeNode,
+	sourceCode: Readonly<TSESLint.SourceCode>,
+	typeName: string,
+): TSESTree.TSTypeAliasDeclaration | undefined {
+	let currentNode: TSESTree.Node | undefined = typeNode;
+
+	while (currentNode) {
+		const scopeBody = getTypeAliasScopeBody(currentNode);
+		const declaration = scopeBody ? findTypeAliasDeclarationInBody(scopeBody, typeName) : undefined;
+		if (declaration) return declaration;
+
+		currentNode = currentNode.parent;
+	}
+
+	return findTypeAliasDeclarationInBody(sourceCode.ast.body, typeName);
 }
 
 function isReadonlyArrayTypeNode(
@@ -275,7 +308,7 @@ function isReadonlyArrayTypeNode(
 			if (name === "Array") return false;
 			if (seenAliases.has(name)) return false;
 
-			const aliasDeclaration = findTypeAliasDeclaration(sourceCode, name);
+			const aliasDeclaration = findTypeAliasDeclaration(typeNode, sourceCode, name);
 			if (!aliasDeclaration) return false;
 
 			seenAliases.add(name);
@@ -304,7 +337,7 @@ function isArrayTypeNode(
 			if (name === "Array") return allowDirectArray;
 			if (seenAliases.has(name)) return false;
 
-			const aliasDeclaration = findTypeAliasDeclaration(sourceCode, name);
+			const aliasDeclaration = findTypeAliasDeclaration(typeNode, sourceCode, name);
 			if (!aliasDeclaration) return false;
 
 			seenAliases.add(name);
