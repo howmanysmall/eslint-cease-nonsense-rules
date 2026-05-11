@@ -1,6 +1,7 @@
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { createRule } from "@utilities/create-rule";
 import { isArrayBindingOrAssignmentPattern, isTypeReference } from "ts-api-utils";
+import { isCallExpression, isIdentifier, isTypeReferenceNode } from "typescript";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import type { Type, TypeChecker } from "typescript";
@@ -239,6 +240,42 @@ function handleIterableFunction(
 	}
 }
 
+function getCallExpressionReturnConstraintCandidate(
+	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
+	node: TSESTree.Node,
+): Type | undefined {
+	if (node.type !== AST_NODE_TYPES.CallExpression) return undefined;
+
+	const { program } = parserServices;
+	if (!program) return undefined;
+
+	const checker = program.getTypeChecker();
+	const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
+	if (!isCallExpression(tsNode)) return undefined;
+
+	const signature = checker.getResolvedSignature(tsNode);
+	if (!signature) return undefined;
+
+	const declaration = signature.getDeclaration();
+	const returnTypeNode = declaration.type;
+	if (!returnTypeNode || !isTypeReferenceNode(returnTypeNode) || !isIdentifier(returnTypeNode.typeName)) {
+		return undefined;
+	}
+
+	const { typeParameters } = declaration;
+	if (!typeParameters) return undefined;
+
+	for (const typeParameter of typeParameters) {
+		if (typeParameter.name.text !== returnTypeNode.typeName.text || !typeParameter.constraint) continue;
+
+		const constraintType = checker.getTypeFromTypeNode(typeParameter.constraint);
+		const luaTupleCandidate = getIterableFunctionLuaTupleCandidate(program, constraintType);
+		if (luaTupleCandidate) return luaTupleCandidate;
+	}
+
+	return undefined;
+}
+
 function validateAssignmentExpression(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
@@ -265,6 +302,12 @@ function validateForOfStatement(
 			handleIterableFunction(context, parserServices, node, luaTupleCandidate);
 			return;
 		}
+	}
+
+	const callExpressionCandidate = getCallExpressionReturnConstraintCandidate(parserServices, rightNode);
+	if (callExpressionCandidate) {
+		handleIterableFunction(context, parserServices, node, callExpressionCandidate);
+		return;
 	}
 
 	checkLuaTupleUsage(context, parserServices, rightNode);
