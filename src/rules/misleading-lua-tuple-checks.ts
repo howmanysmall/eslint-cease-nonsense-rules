@@ -52,6 +52,9 @@ function isLuaTupleType(type: Type | undefined): boolean {
 }
 
 function getConstrainedLuaTupleType(checker: TypeChecker, type: Type): Type | undefined {
+	const typeConstraint = type.getConstraint();
+	if (typeConstraint && typeConstraint !== type && isLuaTupleType(typeConstraint)) return typeConstraint;
+
 	const constrainedType = checker.getBaseConstraintOfType(type) ?? type;
 	if (isLuaTupleType(constrainedType)) return constrainedType;
 	if (constrainedType !== type && isLuaTupleType(type)) return type;
@@ -122,6 +125,15 @@ function getIterableFunctionLuaTupleCandidate(
 	seenTypes.add(type);
 
 	const checker = program.getTypeChecker();
+	const typeConstraint = type.getConstraint();
+	if (typeConstraint && typeConstraint !== type) {
+		const typeConstraintCandidate = getIterableFunctionLuaTupleCandidate(program, typeConstraint, seenTypes);
+		if (typeConstraintCandidate) {
+			iterableFunctionCache.set(type, typeConstraintCandidate);
+			return typeConstraintCandidate;
+		}
+	}
+
 	const constrainedType = checker.getBaseConstraintOfType(type);
 	if (constrainedType && constrainedType !== type) {
 		const constrainedCandidate = getIterableFunctionLuaTupleCandidate(program, constrainedType, seenTypes);
