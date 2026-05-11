@@ -1,10 +1,10 @@
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { createRule } from "@utilities/create-rule";
 import { isArrayBindingOrAssignmentPattern, isTypeReference } from "ts-api-utils";
-import { isCallExpression, isIdentifier, isTypeReferenceNode } from "typescript";
+import { isCallExpression, isFunctionLike, isIdentifier, isParameter, isTypeReferenceNode } from "typescript";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
-import type { Signature, Type, TypeChecker } from "typescript";
+import type { Node, Signature, Type, TypeChecker } from "typescript";
 
 type MessageIds = "misleadingLuaTupleCheck" | "luaTupleDeclaration";
 
@@ -228,14 +228,11 @@ function ensureArrayDestructuring(
 	});
 }
 
-function handleIterableFunction(
+function reportForOfLuaTupleDeclaration(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
 	node: TSESTree.ForOfStatement,
-	luaTupleCandidate: Type,
 ): void {
-	if (!isLuaTupleType(luaTupleCandidate)) return;
-
 	if (node.left.type === AST_NODE_TYPES.Identifier) {
 		ensureArrayDestructuring(context, parserServices, node.left);
 		return;
@@ -247,6 +244,17 @@ function handleIterableFunction(
 	if (variableDeclarator !== undefined && variableDeclarator.id.type === AST_NODE_TYPES.Identifier) {
 		ensureArrayDestructuring(context, parserServices, variableDeclarator.id);
 	}
+}
+
+function handleIterableFunction(
+	context: TSESLint.RuleContext<MessageIds, Options>,
+	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
+	node: TSESTree.ForOfStatement,
+	luaTupleCandidate: Type,
+): void {
+	if (!isLuaTupleType(luaTupleCandidate)) return;
+
+	reportForOfLuaTupleDeclaration(context, parserServices, node);
 }
 
 function getSignatureConstraintCandidate(
@@ -274,6 +282,51 @@ function getSignatureConstraintCandidate(
 	}
 
 	return undefined;
+}
+
+function typeNodeReferencesIdentifier(node: Node, name: string): boolean {
+	if (isTypeReferenceNode(node) && isIdentifier(node.typeName) && node.typeName.text === name) return true;
+
+	const childResult = node.forEachChild((childNode) =>
+		typeNodeReferencesIdentifier(childNode, name) ? true : undefined,
+	);
+	return childResult === true;
+}
+
+function typeNodeReferencesTupleIterable(node: Node): boolean {
+	return typeNodeReferencesIdentifier(node, "IterableFunction") && typeNodeReferencesIdentifier(node, "LuaTuple");
+}
+
+function hasTupleIterableParameterConstraint(
+	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
+	node: TSESTree.Node,
+): boolean {
+	if (node.type !== AST_NODE_TYPES.Identifier) return false;
+
+	const { program } = parserServices;
+	if (!program) return false;
+
+	const checker = program.getTypeChecker();
+	const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
+	if (!isIdentifier(tsNode)) return false;
+
+	const symbol = checker.getSymbolAtLocation(tsNode);
+	if (!symbol) return false;
+
+	for (const declaration of symbol.declarations ?? []) {
+		if (!isParameter(declaration) || !declaration.type || !isTypeReferenceNode(declaration.type)) continue;
+		if (!isIdentifier(declaration.type.typeName)) continue;
+
+		const { parent } = declaration;
+		if (!isFunctionLike(parent) || !parent.typeParameters) continue;
+
+		for (const typeParameter of parent.typeParameters) {
+			if (typeParameter.name.text !== declaration.type.typeName.text || !typeParameter.constraint) continue;
+			if (typeNodeReferencesTupleIterable(typeParameter.constraint)) return true;
+		}
+	}
+
+	return false;
 }
 
 function getCallExpressionReturnConstraintCandidate(
@@ -346,6 +399,11 @@ function validateForOfStatement(
 	const callExpressionCandidate = getCallExpressionReturnConstraintCandidate(parserServices, rightNode);
 	if (callExpressionCandidate) {
 		handleIterableFunction(context, parserServices, node, callExpressionCandidate);
+		return;
+	}
+
+	if (hasTupleIterableParameterConstraint(parserServices, rightNode)) {
+		reportForOfLuaTupleDeclaration(context, parserServices, node);
 		return;
 	}
 
