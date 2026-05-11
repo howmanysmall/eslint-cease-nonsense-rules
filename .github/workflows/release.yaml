@@ -37,6 +37,16 @@ jobs:
       - name: Setup Mise
         uses: jdx/mise-action@v2
 
+      - name: Cache Aube store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/aube/store
+            ~/.cache/aube
+          key: ${{ runner.os }}-aube-v3-${{ hashFiles('aube-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-aube-v3-
+
       - name: Determine dry run flag
         id: set_dry_run
         run: |
@@ -57,7 +67,16 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        run: aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000
+        run: |
+          for attempt in 1 2 3; do
+            if aube ci --enable-global-virtual-store --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
+              exit 0
+            fi
+            if [ "$attempt" = "3" ]; then
+              exit 1
+            fi
+            sleep $((attempt * 10))
+          done
 
       - name: Validate tag matches package.json version
         id: version_check
@@ -129,8 +148,27 @@ jobs:
       - name: Setup Mise
         uses: jdx/mise-action@v2
 
+      - name: Cache Aube store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/aube/store
+            ~/.cache/aube
+          key: ${{ runner.os }}-aube-v3-${{ hashFiles('aube-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-aube-v3-
+
       - name: Install dependencies
-        run: aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000
+        run: |
+          for attempt in 1 2 3; do
+            if aube ci --enable-global-virtual-store --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
+              exit 0
+            fi
+            if [ "$attempt" = "3" ]; then
+              exit 1
+            fi
+            sleep $((attempt * 10))
+          done
 
       - name: Get shard test files
         id: shard
@@ -164,8 +202,27 @@ jobs:
       - name: Setup Mise
         uses: jdx/mise-action@v2
 
+      - name: Cache Aube store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/aube/store
+            ~/.cache/aube
+          key: ${{ runner.os }}-aube-v3-${{ hashFiles('aube-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-aube-v3-
+
       - name: Install dependencies
-        run: aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000
+        run: |
+          for attempt in 1 2 3; do
+            if aube ci --enable-global-virtual-store --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
+              exit 0
+            fi
+            if [ "$attempt" = "3" ]; then
+              exit 1
+            fi
+            sleep $((attempt * 10))
+          done
 
       - name: Run heavy test file with case sharding
         env:
@@ -189,6 +246,16 @@ jobs:
       - name: Setup Mise
         uses: jdx/mise-action@v2
 
+      - name: Cache Aube store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/aube/store
+            ~/.cache/aube
+          key: ${{ runner.os }}-aube-v3-${{ hashFiles('aube-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-aube-v3-
+
       - name: Setup Node.js for NPM publishing
         uses: actions/setup-node@v4
         with:
@@ -196,7 +263,16 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        run: aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000
+        run: |
+          for attempt in 1 2 3; do
+            if aube ci --enable-global-virtual-store --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
+              exit 0
+            fi
+            if [ "$attempt" = "3" ]; then
+              exit 1
+            fi
+            sleep $((attempt * 10))
+          done
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
