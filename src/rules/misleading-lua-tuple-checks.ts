@@ -1,10 +1,18 @@
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { createRule } from "@utilities/create-rule";
 import { isArrayBindingOrAssignmentPattern, isTypeReference } from "ts-api-utils";
-import { isCallExpression, isFunctionLike, isIdentifier, isParameter, isTypeReferenceNode } from "typescript";
+import {
+	isCallExpression,
+	isFunctionLike,
+	isIdentifier,
+	isParameter,
+	isTypeAliasDeclaration,
+	isTypeReferenceNode,
+	isVariableDeclaration,
+} from "typescript";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
-import type { Node, Signature, Type, TypeChecker, TypeParameterDeclaration } from "typescript";
+import type { Node, Signature, Type, TypeChecker, TypeParameterDeclaration, TypeReferenceNode } from "typescript";
 
 type MessageIds = "misleadingLuaTupleCheck" | "luaTupleDeclaration";
 
@@ -311,6 +319,48 @@ function typeParametersReferenceTupleIterable(
 	return false;
 }
 
+function typeReferenceUsesArray(checker: TypeChecker, typeNode: TypeReferenceNode): boolean {
+	if (isIdentifier(typeNode.typeName) && ["Array", "ReadonlyArray"].includes(typeNode.typeName.text)) return true;
+
+	const symbol = checker.getSymbolAtLocation(typeNode.typeName);
+	if (!symbol) return false;
+
+	for (const declaration of symbol.declarations ?? []) {
+		if (!isTypeAliasDeclaration(declaration)) continue;
+		if (typeNodeReferencesIdentifier(declaration.type, "Array")) return true;
+		if (typeNodeReferencesIdentifier(declaration.type, "ReadonlyArray")) return true;
+	}
+
+	return false;
+}
+
+function hasLuaTupleArrayDeclaration(
+	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
+	node: TSESTree.Node,
+): boolean {
+	if (node.type !== AST_NODE_TYPES.Identifier) return false;
+
+	const { program } = parserServices;
+	if (!program) return false;
+
+	const checker = program.getTypeChecker();
+	const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
+	if (!isIdentifier(tsNode)) return false;
+
+	const symbol = checker.getSymbolAtLocation(tsNode);
+	if (!symbol) return false;
+
+	for (const declaration of symbol.declarations ?? []) {
+		if (!isVariableDeclaration(declaration) || !declaration.type || !isTypeReferenceNode(declaration.type)) {
+			continue;
+		}
+		if (!typeNodeReferencesIdentifier(declaration.type, "LuaTuple")) continue;
+		if (typeReferenceUsesArray(checker, declaration.type)) return true;
+	}
+
+	return false;
+}
+
 function hasTupleIterableParameterConstraint(
 	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
 	node: TSESTree.Node,
@@ -445,6 +495,11 @@ function validateForOfStatement(
 	}
 
 	if (hasTupleIterableParameterConstraint(parserServices, rightNode)) {
+		reportForOfLuaTupleDeclaration(context, parserServices, node);
+		return;
+	}
+
+	if (hasLuaTupleArrayDeclaration(parserServices, rightNode)) {
 		reportForOfLuaTupleDeclaration(context, parserServices, node);
 		return;
 	}
