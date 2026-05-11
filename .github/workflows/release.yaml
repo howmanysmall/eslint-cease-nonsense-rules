@@ -209,7 +209,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          aube x changelogithub
+          aubx changelogithub
 
       - name: Publish to NPM (Trusted Publishing)
         if: ${{ env.DRY_RUN != 'true' }}
