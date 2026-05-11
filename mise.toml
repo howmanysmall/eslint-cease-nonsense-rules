@@ -9,6 +9,7 @@ hk = "latest"
 node = "25"
 rumdl = "latest"
 tombi = "latest"
+pkl = "latest"
 
 [env]
 PROJECT_NAME = "{{ config_root | basename }}"
