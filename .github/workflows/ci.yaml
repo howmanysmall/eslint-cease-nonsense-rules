@@ -41,15 +41,17 @@ jobs:
       - name: Cache Aube store
         uses: actions/cache@v4
         with:
-          path: ~/.local/share/aube/store
-          key: ${{ runner.os }}-aube-${{ hashFiles('aube-lock.yaml') }}
+          path: |
+            ~/.local/share/aube/store
+            ~/.cache/aube/virtual-store
+          key: ${{ runner.os }}-aube-v2-${{ hashFiles('aube-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-aube-
+            ${{ runner.os }}-aube-v2-
 
       - name: Install
         run: |
           for attempt in 1 2 3; do
-            if aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
+            if aube ci --enable-global-virtual-store --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
               exit 0
             fi
             if [ "$attempt" = "3" ]; then
@@ -90,15 +92,17 @@ jobs:
       - name: Cache Aube store
         uses: actions/cache@v4
         with:
-          path: ~/.local/share/aube/store
-          key: ${{ runner.os }}-aube-${{ hashFiles('aube-lock.yaml') }}
+          path: |
+            ~/.local/share/aube/store
+            ~/.cache/aube/virtual-store
+          key: ${{ runner.os }}-aube-v2-${{ hashFiles('aube-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-aube-
+            ${{ runner.os }}-aube-v2-
 
       - name: Install
         run: |
           for attempt in 1 2 3; do
-            if aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
+            if aube ci --enable-global-virtual-store --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
               exit 0
             fi
             if [ "$attempt" = "3" ]; then
@@ -142,15 +146,17 @@ jobs:
       - name: Cache Aube store
         uses: actions/cache@v4
         with:
-          path: ~/.local/share/aube/store
-          key: ${{ runner.os }}-aube-${{ hashFiles('aube-lock.yaml') }}
+          path: |
+            ~/.local/share/aube/store
+            ~/.cache/aube/virtual-store
+          key: ${{ runner.os }}-aube-v2-${{ hashFiles('aube-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-aube-
+            ${{ runner.os }}-aube-v2-
 
       - name: Install
         run: |
           for attempt in 1 2 3; do
-            if aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
+            if aube ci --enable-global-virtual-store --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
               exit 0
             fi
             if [ "$attempt" = "3" ]; then
