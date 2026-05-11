@@ -3,6 +3,7 @@ import { createRule } from "@utilities/create-rule";
 import { isArrayBindingOrAssignmentPattern, isTypeReference } from "ts-api-utils";
 import {
 	isCallExpression,
+	isFunctionDeclaration,
 	isFunctionLike,
 	isIdentifier,
 	isParameter,
@@ -12,7 +13,15 @@ import {
 } from "typescript";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
-import type { Node, Signature, Type, TypeChecker, TypeParameterDeclaration, TypeReferenceNode } from "typescript";
+import type {
+	Node,
+	Signature,
+	Type,
+	TypeChecker,
+	TypeNode,
+	TypeParameterDeclaration,
+	TypeReferenceNode,
+} from "typescript";
 
 type MessageIds = "misleadingLuaTupleCheck" | "luaTupleDeclaration";
 
@@ -319,19 +328,65 @@ function typeParametersReferenceTupleIterable(
 	return false;
 }
 
-function typeReferenceUsesArray(checker: TypeChecker, typeNode: TypeReferenceNode): boolean {
-	if (isIdentifier(typeNode.typeName) && ["Array", "ReadonlyArray"].includes(typeNode.typeName.text)) return true;
+function findTypeAliasTypeNode(node: Node, name: string): TypeNode | undefined {
+	if (isTypeAliasDeclaration(node) && node.name.text === name) return node.type;
 
-	const symbol = checker.getSymbolAtLocation(typeNode.typeName);
-	if (!symbol) return false;
+	return node.forEachChild((childNode) => findTypeAliasTypeNode(childNode, name));
+}
 
-	for (const declaration of symbol.declarations ?? []) {
-		if (!isTypeAliasDeclaration(declaration)) continue;
-		if (typeNodeReferencesIdentifier(declaration.type, "Array")) return true;
-		if (typeNodeReferencesIdentifier(declaration.type, "ReadonlyArray")) return true;
-	}
+function typeReferenceUsesArray(
+	sourceFile: Node,
+	typeNode: TypeReferenceNode,
+	seenAliases = new Set<string>(),
+): boolean {
+	if (!isIdentifier(typeNode.typeName)) return false;
+
+	const typeName = typeNode.typeName.text;
+	if (["Array", "ReadonlyArray"].includes(typeName)) return true;
+	if (seenAliases.has(typeName)) return false;
+
+	seenAliases.add(typeName);
+
+	const aliasType = findTypeAliasTypeNode(sourceFile, typeName);
+	if (!aliasType) return false;
+	if (isTypeReferenceNode(aliasType)) return typeReferenceUsesArray(sourceFile, aliasType, seenAliases);
+	if (typeNodeReferencesIdentifier(aliasType, "Array")) return true;
+	if (typeNodeReferencesIdentifier(aliasType, "ReadonlyArray")) return true;
 
 	return false;
+}
+
+function findVariableTypeNode(node: Node, name: string): TypeNode | undefined {
+	if (isVariableDeclaration(node) && isIdentifier(node.name) && node.name.text === name) return node.type;
+
+	return node.forEachChild((childNode) => findVariableTypeNode(childNode, name));
+}
+
+function findFunctionNode(node: Node, name: string): Node | undefined {
+	if (isFunctionDeclaration(node) && node.name?.text === name) return node;
+
+	return node.forEachChild((childNode) => findFunctionNode(childNode, name));
+}
+
+function nodeContainsNode(parentNode: Node, childNode: Node): boolean {
+	return parentNode.pos <= childNode.pos && childNode.end <= parentNode.end;
+}
+
+function nodeHasTupleIterableParameter(node: Node, name: string, targetNode: Node): boolean {
+	if (isFunctionLike(node) && nodeContainsNode(node, targetNode)) {
+		for (const parameter of node.parameters) {
+			if (!isIdentifier(parameter.name) || parameter.name.text !== name) continue;
+			if (!parameter.type || !isTypeReferenceNode(parameter.type) || !isIdentifier(parameter.type.typeName)) {
+				continue;
+			}
+			if (typeParametersReferenceTupleIterable(parameter.type.typeName.text, node.typeParameters)) return true;
+		}
+	}
+
+	const childResult = node.forEachChild((childNode) =>
+		nodeHasTupleIterableParameter(childNode, name, targetNode) ? true : undefined,
+	);
+	return childResult === true;
 }
 
 function hasLuaTupleArrayDeclaration(
@@ -347,6 +402,15 @@ function hasLuaTupleArrayDeclaration(
 	const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
 	if (!isIdentifier(tsNode)) return false;
 
+	const variableTypeNode = findVariableTypeNode(tsNode.getSourceFile(), tsNode.text);
+	if (
+		variableTypeNode &&
+		isTypeReferenceNode(variableTypeNode) &&
+		typeNodeReferencesIdentifier(variableTypeNode, "LuaTuple")
+	) {
+		return typeReferenceUsesArray(tsNode.getSourceFile(), variableTypeNode);
+	}
+
 	const symbol = checker.getSymbolAtLocation(tsNode);
 	if (!symbol) return false;
 
@@ -355,7 +419,7 @@ function hasLuaTupleArrayDeclaration(
 			continue;
 		}
 		if (!typeNodeReferencesIdentifier(declaration.type, "LuaTuple")) continue;
-		if (typeReferenceUsesArray(checker, declaration.type)) return true;
+		if (typeReferenceUsesArray(tsNode.getSourceFile(), declaration.type)) return true;
 	}
 
 	return false;
@@ -373,6 +437,8 @@ function hasTupleIterableParameterConstraint(
 	const checker = program.getTypeChecker();
 	const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
 	if (!isIdentifier(tsNode)) return false;
+
+	if (nodeHasTupleIterableParameter(tsNode.getSourceFile(), tsNode.text, tsNode)) return true;
 
 	const symbol = checker.getSymbolAtLocation(tsNode);
 	if (!symbol) return false;
@@ -401,6 +467,19 @@ function hasTupleIterableCallConstraint(
 	const checker = program.getTypeChecker();
 	const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
 	if (!isCallExpression(tsNode)) return false;
+
+	if (isIdentifier(tsNode.expression)) {
+		const functionNode = findFunctionNode(tsNode.getSourceFile(), tsNode.expression.text);
+		if (
+			functionNode &&
+			isFunctionLike(functionNode) &&
+			functionNode.type &&
+			isTypeReferenceNode(functionNode.type) &&
+			isIdentifier(functionNode.type.typeName)
+		) {
+			return typeParametersReferenceTupleIterable(functionNode.type.typeName.text, functionNode.typeParameters);
+		}
+	}
 
 	const symbol = checker.getSymbolAtLocation(tsNode.expression);
 	if (!symbol) return false;
