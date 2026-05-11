@@ -47,7 +47,16 @@ jobs:
             ${{ runner.os }}-aube-
 
       - name: Install
-        run: aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000
+        run: |
+          for attempt in 1 2 3; do
+            if aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
+              exit 0
+            fi
+            if [ "$attempt" = "3" ]; then
+              exit 1
+            fi
+            sleep $((attempt * 10))
+          done
 
       - name: Biome CI
         run: aube run biome:ci
@@ -87,7 +96,16 @@ jobs:
             ${{ runner.os }}-aube-
 
       - name: Install
-        run: aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000
+        run: |
+          for attempt in 1 2 3; do
+            if aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
+              exit 0
+            fi
+            if [ "$attempt" = "3" ]; then
+              exit 1
+            fi
+            sleep $((attempt * 10))
+          done
 
       - name: Get shard test files
         id: shard
@@ -130,7 +148,16 @@ jobs:
             ${{ runner.os }}-aube-
 
       - name: Install
-        run: aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000
+        run: |
+          for attempt in 1 2 3; do
+            if aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
+              exit 0
+            fi
+            if [ "$attempt" = "3" ]; then
+              exit 1
+            fi
+            sleep $((attempt * 10))
+          done
 
       - name: Run heavy test file with case sharding
         env:
