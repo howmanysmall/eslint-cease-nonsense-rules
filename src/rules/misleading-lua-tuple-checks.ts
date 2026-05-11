@@ -4,7 +4,7 @@ import { isArrayBindingOrAssignmentPattern, isTypeReference } from "ts-api-utils
 import { isCallExpression, isIdentifier, isTypeReferenceNode } from "typescript";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
-import type { Type, TypeChecker } from "typescript";
+import type { Signature, Type, TypeChecker } from "typescript";
 
 type MessageIds = "misleadingLuaTupleCheck" | "luaTupleDeclaration";
 
@@ -240,6 +240,33 @@ function handleIterableFunction(
 	}
 }
 
+function getSignatureConstraintCandidate(
+	program: ReturnType<typeof ESLintUtils.getParserServices>["program"],
+	signature: Signature,
+): Type | undefined {
+	if (!program) return undefined;
+
+	const returnType = signature.getReturnType();
+	const returnTypeSymbol = returnType.getSymbol();
+	if (!returnTypeSymbol) return undefined;
+
+	const typeParameters = signature.getTypeParameters();
+	if (!typeParameters) return undefined;
+
+	for (const typeParameter of typeParameters) {
+		const typeParameterSymbol = typeParameter.getSymbol();
+		if (!typeParameterSymbol || typeParameterSymbol.escapedName !== returnTypeSymbol.escapedName) continue;
+
+		const constraintType = typeParameter.getConstraint();
+		if (!constraintType) continue;
+
+		const luaTupleCandidate = getIterableFunctionLuaTupleCandidate(program, constraintType);
+		if (luaTupleCandidate) return luaTupleCandidate;
+	}
+
+	return undefined;
+}
+
 function getCallExpressionReturnConstraintCandidate(
 	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
 	node: TSESTree.Node,
@@ -255,6 +282,9 @@ function getCallExpressionReturnConstraintCandidate(
 
 	const signature = checker.getResolvedSignature(tsNode);
 	if (!signature) return undefined;
+
+	const signatureCandidate = getSignatureConstraintCandidate(program, signature);
+	if (signatureCandidate) return signatureCandidate;
 
 	const declaration = signature.getDeclaration();
 	const returnTypeNode = declaration.type;
