@@ -47,7 +47,7 @@ jobs:
             ${{ runner.os }}-aube-
 
       - name: Install
-        run: aube ci
+        run: aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000
 
       - name: Biome CI
         run: aube run biome:ci
@@ -87,7 +87,7 @@ jobs:
             ${{ runner.os }}-aube-
 
       - name: Install
-        run: aube ci
+        run: aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000
 
       - name: Get shard test files
         id: shard
@@ -113,7 +113,6 @@ jobs:
       matrix:
         file:
           - tests/upstream/prevent-abbreviations.test.ts
-          - tests/upstream/naming-convention.test.ts
         case_shard: [1, 2, 3, 4]
     steps:
       - name: Checkout
@@ -131,7 +130,7 @@ jobs:
             ${{ runner.os }}-aube-
 
       - name: Install
-        run: aube ci
+        run: aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000
 
       - name: Run heavy test file with case sharding
         env:

@@ -32,7 +32,7 @@ jobs:
           node-version: "22.12.0"
 
       - name: Install dependencies
-        run: aube ci
+        run: aube ci --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000
 
       - name: Build documentation
         run: aube run -F docs build
