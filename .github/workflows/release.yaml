@@ -146,7 +146,7 @@ jobs:
         env:
           AGENT: 1
         run: |
-          aube run test -- --bail ${{ steps.shard.outputs.files }}
+          aube run test:agent ${{ steps.shard.outputs.files }}
 
   test-heavy:
     runs-on: ubuntu-latest
@@ -173,7 +173,7 @@ jobs:
           TEST_CASE_SHARD: ${{ matrix.case_shard }}/${{ env.HEAVY_TEST_SHARDS }}
         run: |
           echo "Running ${{ matrix.file }} with case shard ${{ matrix.case_shard }}/${{ env.HEAVY_TEST_SHARDS }}"
-          aube run test -- --bail ${{ matrix.file }}
+          aube run test:agent ${{ matrix.file }}
 
   publish:
     runs-on: ubuntu-latest

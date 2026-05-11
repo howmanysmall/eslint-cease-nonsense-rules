@@ -51,6 +51,13 @@ function isLuaTupleType(type: Type | undefined): boolean {
 	return aliasSymbol !== undefined && aliasSymbol.escapedName.toString() === "LuaTuple";
 }
 
+function getConstrainedLuaTupleType(checker: TypeChecker, type: Type): Type | undefined {
+	const constrainedType = checker.getBaseConstraintOfType(type) ?? type;
+	if (isLuaTupleType(constrainedType)) return constrainedType;
+	if (constrainedType !== type && isLuaTupleType(type)) return type;
+	return undefined;
+}
+
 function isLuaTupleCached(
 	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
 	node: TSESTree.Node,
@@ -81,8 +88,7 @@ function isLuaTupleCached(
 	}
 
 	const checker = program.getTypeChecker();
-	const constrainedType = checker.getBaseConstraintOfType(rawType) ?? rawType;
-	const result = isLuaTupleType(constrainedType) || (rawType !== constrainedType && isLuaTupleType(rawType));
+	const result = getConstrainedLuaTupleType(checker, rawType) !== undefined;
 	luaTupleCache.set(node, result);
 	return result;
 }
@@ -91,11 +97,8 @@ function getIterableLuaTupleReturnType(checker: TypeChecker, type: Type): Type |
 	const apparentType = checker.getApparentType(type);
 	for (const signature of apparentType.getCallSignatures()) {
 		const returnType = signature.getReturnType();
-		const constrainedReturnType = checker.getBaseConstraintOfType(returnType) ?? returnType;
-		const { aliasSymbol } = constrainedReturnType;
-		if (aliasSymbol && aliasSymbol.escapedName.toString() === "LuaTuple") {
-			return constrainedReturnType;
-		}
+		const constrainedReturnType = getConstrainedLuaTupleType(checker, returnType);
+		if (constrainedReturnType) return constrainedReturnType;
 	}
 
 	return undefined;
@@ -131,10 +134,10 @@ function getIterableFunctionLuaTupleCandidate(
 	if (isTypeReference(type)) {
 		const [firstTypeArgument] = checker.getTypeArguments(type);
 		if (firstTypeArgument) {
-			const constrainedArgument = checker.getBaseConstraintOfType(firstTypeArgument) ?? firstTypeArgument;
-			if (isLuaTupleType(constrainedArgument)) {
-				iterableFunctionCache.set(type, constrainedArgument);
-				return constrainedArgument;
+			const luaTupleArgument = getConstrainedLuaTupleType(checker, firstTypeArgument);
+			if (luaTupleArgument) {
+				iterableFunctionCache.set(type, luaTupleArgument);
+				return luaTupleArgument;
 			}
 		}
 
@@ -209,8 +212,7 @@ function handleIterableFunction(
 	node: TSESTree.ForOfStatement,
 	luaTupleCandidate: Type,
 ): void {
-	const { aliasSymbol } = luaTupleCandidate;
-	if (!aliasSymbol || aliasSymbol.escapedName.toString() !== "LuaTuple") return;
+	if (!isLuaTupleType(luaTupleCandidate)) return;
 
 	if (node.left.type === AST_NODE_TYPES.Identifier) {
 		ensureArrayDestructuring(context, parserServices, node.left);
