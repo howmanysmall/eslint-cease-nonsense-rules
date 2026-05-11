@@ -4,8 +4,8 @@ export type RuleCategoryKey = "general" | "naming" | "react" | "roblox";
 
 export interface RuleCategoryDefinition {
 	readonly label: string;
-	readonly slug: string;
 	readonly rules: ReadonlyArray<string>;
+	readonly slug: string;
 }
 
 export const ruleCategoryDefinitions = {
@@ -45,6 +45,7 @@ export const ruleCategoryDefinitions = {
 		rules: [
 			"rules/ban-react-fc",
 			"rules/no-god-components",
+			"rules/no-manual-children-property",
 			"rules/no-memo-children",
 			"rules/no-new-instance-in-use-memo",
 			"rules/no-underscore-react-props",

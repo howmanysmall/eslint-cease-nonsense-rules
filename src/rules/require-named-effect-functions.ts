@@ -1,380 +1,278 @@
+import { DefinitionType } from "@typescript-eslint/scope-manager";
 import { TSESTree } from "@typescript-eslint/types";
-import Typebox from "typebox";
-import { Compile } from "typebox/compile";
+import { createRule } from "@utilities/create-rule";
 
-import { isEnvironmentMode } from "../types/environment-mode";
-
-import type { Rule } from "eslint";
-
-import type { EnvironmentMode } from "../types/environment-mode";
+import type { EnvironmentMode } from "@lint-types/environment-mode";
+import type { TSESLint } from "@typescript-eslint/utils";
 
 export interface HookConfiguration {
 	readonly allowAsync: boolean;
 	readonly name: string;
 }
 
+export interface EffectFunctionOptions {
+	readonly environment?: EnvironmentMode;
+	readonly hooks?: ReadonlyArray<HookConfiguration>;
+}
+
+type MessageIds =
+	| "anonymousFunction"
+	| "arrowFunction"
+	| "asyncAnonymousFunction"
+	| "asyncArrowFunction"
+	| "asyncFunctionDeclaration"
+	| "asyncFunctionExpression"
+	| "functionExpression"
+	| "identifierReferencesArrow"
+	| "identifierReferencesAsyncArrow"
+	| "identifierReferencesAsyncFunction"
+	| "identifierReferencesCallback";
+
+type Options = [EffectFunctionOptions?];
+
+interface NormalizedOptions {
+	readonly environment: EnvironmentMode;
+	readonly hooks: ReadonlyArray<HookConfiguration>;
+}
+
+type ResolvedFunction =
+	| {
+			readonly isAsync: boolean;
+			readonly node: TSESTree.ArrowFunctionExpression;
+			readonly type: "arrow";
+	  }
+	| {
+			readonly isAsync: boolean;
+			readonly node: TSESTree.FunctionDeclaration;
+			readonly type: "function-declaration";
+	  }
+	| {
+			readonly isAsync: boolean;
+			readonly node: TSESTree.FunctionExpression;
+			readonly type: "function-expression";
+	  };
+
 const DEFAULT_HOOKS: ReadonlyArray<HookConfiguration> = [
 	{ allowAsync: false, name: "useEffect" },
 	{ allowAsync: false, name: "useLayoutEffect" },
 	{ allowAsync: false, name: "useInsertionEffect" },
-] as const;
+];
 
-export interface EffectFunctionOptions {
-	readonly environment: EnvironmentMode;
-	readonly hooks: ReadonlyArray<HookConfiguration>;
-}
-const isHookConfiguration = Typebox.Object({
-	allowAsync: Typebox.Boolean(),
-	name: Typebox.String(),
-});
+const DEFAULT_OPTIONS: NormalizedOptions = {
+	environment: "roblox-ts",
+	hooks: DEFAULT_HOOKS,
+};
 
-const isRuleOptions = Compile(
-	Typebox.Object(
-		{
-			environment: isEnvironmentMode,
-			hooks: Typebox.Array(isHookConfiguration),
-		},
-		{ additionalProperties: true },
-	),
-);
-
-function parseOptions(options: unknown): EffectFunctionOptions {
-	if (options === undefined) {
-		return {
-			environment: "roblox-ts",
-			hooks: DEFAULT_HOOKS,
-		};
-	}
-
-	if (!isRuleOptions.Check(options)) {
-		return {
-			environment: "roblox-ts",
-			hooks: DEFAULT_HOOKS,
-		};
-	}
+function normalizeOptions(options?: EffectFunctionOptions): NormalizedOptions {
+	const hooks = options?.hooks;
 
 	return {
-		environment: options.environment === "standard" ? "standard" : "roblox-ts",
-		hooks: options.hooks,
+		environment: options?.environment ?? DEFAULT_OPTIONS.environment,
+		hooks: hooks !== undefined && hooks.length > 0 ? hooks : DEFAULT_OPTIONS.hooks,
 	};
 }
 
-interface Callee {
-	readonly name?: string;
-	readonly property?: { readonly name?: string; readonly type: string };
-	readonly type: string;
-}
-interface CallExpression {
-	readonly callee: Callee;
-}
-
-function getHookName(callExpression: CallExpression): string | undefined {
-	const { callee } = callExpression;
-	if (
-		callee.type === TSESTree.AST_NODE_TYPES.Identifier &&
-		typeof callee.name === "string" &&
-		callee.name.length > 0
-	) {
-		return callee.name;
-	}
-
+function getHookName({ callee }: TSESTree.CallExpression): string | undefined {
+	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return callee.name;
 	if (
 		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-		callee.property?.type === TSESTree.AST_NODE_TYPES.Identifier &&
-		typeof callee.property.name === "string" &&
-		callee.property.name.length > 0
+		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
 	) {
 		return callee.property.name;
 	}
+	return undefined;
+}
+
+function getVariableByName(scope: TSESLint.Scope.Scope | null, name: string): TSESLint.Scope.Variable | undefined {
+	let currentScope = scope;
+
+	while (currentScope !== null) {
+		const variable = currentScope.set.get(name);
+		if (variable !== undefined) return variable;
+		currentScope = currentScope.upper;
+	}
 
 	return undefined;
 }
 
-interface ResolvedFunction {
-	readonly isAsync: boolean;
-	readonly node: TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression | TSESTree.FunctionDeclaration;
-	readonly type: "arrow" | "function-expression" | "function-declaration";
-}
+function resolveFunctionFromVariable(variable: TSESLint.Scope.Variable): ResolvedFunction | undefined {
+	for (const definition of variable.defs) {
+		if (definition.type === DefinitionType.FunctionName) {
+			const { node } = definition;
+			if (node.type !== TSESTree.AST_NODE_TYPES.FunctionDeclaration) continue;
 
-function findVariableInScope(identifier: TSESTree.Identifier, scope: unknown): unknown {
-	let variable: unknown;
-	let currentScope: unknown = scope;
+			return {
+				isAsync: node.async,
+				node,
+				type: "function-declaration",
+			};
+		}
 
-	while (typeof currentScope === "object" && currentScope !== null) {
-		const current = currentScope as { set: Map<string, unknown>; upper?: unknown };
-		variable = current.set.get(identifier.name);
-		if (typeof variable === "object" && variable !== null) break;
-		currentScope = current.upper;
+		if (definition.type !== DefinitionType.Variable) continue;
+
+		const { init } = definition.node;
+		if (init === null) continue;
+
+		if (init.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression) {
+			return {
+				isAsync: init.async,
+				node: init,
+				type: "arrow",
+			};
+		}
+
+		if (init.type === TSESTree.AST_NODE_TYPES.FunctionExpression) {
+			return {
+				isAsync: init.async,
+				node: init,
+				type: "function-expression",
+			};
+		}
 	}
 
-	return variable;
-}
-
-function processFunctionDeclaration(node: unknown): ResolvedFunction {
-	const castNode = node as { async?: boolean };
-	return {
-		isAsync: Boolean(castNode.async),
-		node: node as TSESTree.FunctionDeclaration,
-		type: "function-declaration",
-	};
-}
-
-function processArrowFunction(init: unknown): ResolvedFunction {
-	const arrowNode = init as TSESTree.ArrowFunctionExpression;
-	return {
-		isAsync: Boolean((init as { async?: boolean }).async),
-		node: arrowNode,
-		type: "arrow",
-	};
-}
-
-function processFunctionExpression(init: unknown): ResolvedFunction {
-	const exprNode = init as TSESTree.FunctionExpression;
-	return {
-		isAsync: Boolean((init as { async?: boolean }).async),
-		node: exprNode,
-		type: "function-expression",
-	};
-}
-
-function checkVariableDeclaratorDef(node: unknown): ResolvedFunction | undefined {
-	const castNode = node as { type?: string; init?: unknown };
-	if (castNode.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator) return undefined;
-	if (typeof castNode.init !== "object" || castNode.init === null) return undefined;
-
-	const castInit = castNode.init as { type?: string };
-	if (castInit.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression) return processArrowFunction(castNode.init);
-	if (castInit.type === TSESTree.AST_NODE_TYPES.FunctionExpression) return processFunctionExpression(castNode.init);
 	return undefined;
 }
 
-function processSingleDefinition(definition: unknown): ResolvedFunction | undefined {
-	if (typeof definition !== "object" || definition === null) return undefined;
+function isCallbackHookResult(sourceCode: TSESLint.SourceCode, identifier: TSESTree.Identifier): boolean {
+	const variable = getVariableByName(sourceCode.getScope(identifier), identifier.name);
+	if (variable === undefined) return false;
 
-	const castDef = definition as { node?: unknown };
-	const { node } = castDef;
-	if (typeof node !== "object" || node === null) return undefined;
+	for (const definition of variable.defs) {
+		if (definition.type !== DefinitionType.Variable) continue;
 
-	const castNode = node as { type?: string };
-	if (castNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration) return processFunctionDeclaration(node);
+		const { init } = definition.node;
+		if (init?.type !== TSESTree.AST_NODE_TYPES.CallExpression) continue;
 
-	return checkVariableDeclaratorDef(node);
-}
-
-function resolveIdentifierToFunction(
-	identifier: TSESTree.Identifier,
-	context: Rule.RuleContext,
-): ResolvedFunction | undefined {
-	try {
-		const scope = context.sourceCode.getScope?.(identifier) as unknown;
-		if (typeof scope !== "object" || scope === null) return undefined;
-
-		const scopeObj = scope as { set: Map<string, unknown>; upper?: unknown };
-		const setVal = scopeObj.set;
-		if (!(setVal instanceof Map)) return undefined;
-
-		const variable = findVariableInScope(identifier, scope);
-		if (typeof variable !== "object" || variable === null) return undefined;
-
-		const castVariable = variable as { defs: Array<unknown> };
-		if (!Array.isArray(castVariable.defs) || castVariable.defs.length === 0) return undefined;
-
-		for (const definition of castVariable.defs) {
-			const result = processSingleDefinition(definition);
-			if (result !== undefined) return result;
-		}
-
-		return undefined;
-	} catch {
-		return undefined;
+		const calleeHookName = getHookName(init);
+		if (calleeHookName === "useCallback" || calleeHookName === "useMemo") return true;
 	}
+
+	return false;
 }
 
-function isCallbackHookResult(identifier: TSESTree.Identifier, context: Rule.RuleContext): boolean {
-	try {
-		const scope = context.sourceCode.getScope?.(identifier) as unknown;
-		if (typeof scope !== "object" || scope === null) return false;
-
-		const scopeObj = scope as { set: Map<string, unknown>; upper?: unknown };
-		const setVal = scopeObj.set;
-		if (!(setVal instanceof Map)) return false;
-
-		let variable: unknown;
-		let currentScope: unknown = scope;
-
-		while (typeof currentScope === "object" && currentScope !== null) {
-			const current = currentScope as { set: Map<string, unknown>; upper?: unknown };
-			variable = current.set.get(identifier.name);
-			if (typeof variable === "object" && variable !== null) break;
-			currentScope = current.upper;
-		}
-
-		if (typeof variable !== "object" || variable === null) return false;
-
-		const castVariable = variable as { defs: Array<unknown> };
-		if (!Array.isArray(castVariable.defs) || castVariable.defs.length === 0) return false;
-
-		for (const definition of castVariable.defs) {
-			if (typeof definition !== "object" || definition === null) continue;
-
-			const castDefinition = definition as { node?: unknown };
-			const { node } = castDefinition;
-			if (typeof node !== "object" || node === null) continue;
-
-			const castNode = node as { type?: string; init?: unknown };
-			if (castNode.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator) continue;
-			if (typeof castNode.init !== "object" || castNode.init === null) continue;
-
-			const init = castNode.init as { type?: string; callee?: unknown };
-			if (init.type !== TSESTree.AST_NODE_TYPES.CallExpression) continue;
-
-			const calleeHookName = getHookName(init as Parameters<typeof getHookName>[0]);
-			if (calleeHookName === "useCallback" || calleeHookName === "useMemo") return true;
-		}
-
-		return false;
-	} catch {
-		return false;
-	}
-}
-
-const requireNamedEffectFunctions: Rule.RuleModule = {
+const requireNamedEffectFunctions = createRule<Options, MessageIds>({
 	create(context) {
-		const { hooks, environment } = parseOptions(context.options[0]);
+		const { environment, hooks } = normalizeOptions(context.options[0]);
 		const hookAsyncConfig = new Map(hooks.map((hookConfig) => [hookConfig.name, hookConfig.allowAsync]));
 		const effectHooks = new Set(hookAsyncConfig.keys());
 		const isRobloxTsMode = environment === "roblox-ts";
 
 		function isAsyncAllowed(hookName: string): boolean {
-			const result = hookAsyncConfig.get(hookName);
-			return typeof result === "boolean" ? result : false;
+			return hookAsyncConfig.get(hookName) ?? false;
+		}
+
+		function report(node: TSESTree.CallExpression, messageId: MessageIds, hook: string): void {
+			context.report({
+				data: { hook },
+				messageId,
+				node,
+			});
+		}
+
+		function checkResolvedIdentifier(
+			node: TSESTree.CallExpression,
+			hookName: string,
+			resolved: ResolvedFunction,
+		): void {
+			if (resolved.type === "arrow") {
+				if (resolved.isAsync) {
+					if (!isAsyncAllowed(hookName)) report(node, "identifierReferencesAsyncArrow", hookName);
+					return;
+				}
+
+				report(node, "identifierReferencesArrow", hookName);
+				return;
+			}
+
+			if (resolved.type === "function-expression") {
+				if (isRobloxTsMode) {
+					report(node, "functionExpression", hookName);
+					return;
+				}
+
+				if (resolved.node.id === null) {
+					report(node, "anonymousFunction", hookName);
+				}
+				return;
+			}
+
+			if (resolved.isAsync && !isAsyncAllowed(hookName)) {
+				report(node, "identifierReferencesAsyncFunction", hookName);
+			}
+		}
+
+		function checkIdentifier(
+			node: TSESTree.CallExpression,
+			hookName: string,
+			identifier: TSESTree.Identifier,
+		): void {
+			const variable = getVariableByName(context.sourceCode.getScope(identifier), identifier.name);
+			const resolved = variable === undefined ? undefined : resolveFunctionFromVariable(variable);
+
+			if (resolved !== undefined) {
+				checkResolvedIdentifier(node, hookName, resolved);
+				return;
+			}
+
+			if (isCallbackHookResult(context.sourceCode, identifier)) {
+				report(node, "identifierReferencesCallback", hookName);
+			}
+		}
+
+		function checkInlineFunctionExpression(
+			node: TSESTree.CallExpression,
+			hookName: string,
+			functionExpression: TSESTree.FunctionExpression,
+		): void {
+			const functionHasId = functionExpression.id !== null;
+
+			if (functionHasId && functionExpression.async) {
+				report(node, "asyncFunctionExpression", hookName);
+				return;
+			}
+
+			if (functionHasId && isRobloxTsMode) {
+				report(node, "functionExpression", hookName);
+				return;
+			}
+
+			if (functionExpression.async) {
+				report(node, "asyncAnonymousFunction", hookName);
+				return;
+			}
+
+			if (!functionHasId) report(node, "anonymousFunction", hookName);
 		}
 
 		return {
-			CallExpression(node: Rule.Node) {
-				const callExpression = node as unknown as { arguments: ReadonlyArray<unknown>; callee: unknown };
+			CallExpression(node): void {
+				const hookName = getHookName(node);
+				if (hookName === undefined || !effectHooks.has(hookName)) return;
 
-				const hookName = getHookName(callExpression as Parameters<typeof getHookName>[0]);
-				if (typeof hookName !== "string" || !effectHooks.has(hookName)) return;
-
-				const firstArgument = callExpression.arguments?.[0];
+				const [firstArgument] = node.arguments;
 				if (firstArgument === undefined) return;
 
-				const argumentNode = firstArgument as { id?: unknown; type: string; async?: boolean };
-				if (argumentNode.type === TSESTree.AST_NODE_TYPES.Identifier) {
-					const identifier = argumentNode as unknown as TSESTree.Identifier;
-					const resolved = resolveIdentifierToFunction(identifier, context);
-
-					if (resolved === undefined) {
-						if (isCallbackHookResult(identifier, context)) {
-							context.report({
-								data: { hook: hookName },
-								messageId: "identifierReferencesCallback",
-								node,
-							});
-						}
-						return;
-					}
-
-					if (resolved.type === "arrow") {
-						if (resolved.isAsync) {
-							if (!isAsyncAllowed(hookName)) {
-								context.report({
-									data: { hook: hookName },
-									messageId: "identifierReferencesAsyncArrow",
-									node,
-								});
-							}
-						} else {
-							context.report({
-								data: { hook: hookName },
-								messageId: "identifierReferencesArrow",
-								node,
-							});
-						}
-					} else if (resolved.type === "function-expression") {
-						const castNode = resolved.node as unknown as { id?: unknown };
-						if (castNode.id === undefined) {
-							context.report({
-								data: { hook: hookName },
-								messageId: "anonymousFunction",
-								node,
-							});
-						} else if (isRobloxTsMode) {
-							context.report({
-								data: { hook: hookName },
-								messageId: "functionExpression",
-								node,
-							});
-						}
-					} else if (
-						resolved.type === "function-declaration" &&
-						resolved.isAsync &&
-						!isAsyncAllowed(hookName)
-					) {
-						context.report({
-							data: { hook: hookName },
-							messageId: "identifierReferencesAsyncFunction",
-							node,
-						});
-					}
+				if (firstArgument.type === TSESTree.AST_NODE_TYPES.Identifier) {
+					checkIdentifier(node, hookName, firstArgument);
 					return;
 				}
 
-				if (argumentNode.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression) {
-					if (argumentNode.async) {
-						context.report({
-							data: { hook: hookName },
-							messageId: "asyncArrowFunction",
-							node,
-						});
-					} else {
-						context.report({
-							data: { hook: hookName },
-							messageId: "arrowFunction",
-							node,
-						});
-					}
+				if (firstArgument.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression) {
+					report(node, firstArgument.async ? "asyncArrowFunction" : "arrowFunction", hookName);
 					return;
 				}
 
-				if (argumentNode.type === TSESTree.AST_NODE_TYPES.FunctionExpression) {
-					const functionHasId = Boolean(argumentNode.id);
-
-					if (functionHasId && argumentNode.async) {
-						context.report({
-							data: { hook: hookName },
-							messageId: "asyncFunctionExpression",
-							node,
-						});
-					} else if (functionHasId && isRobloxTsMode) {
-						context.report({
-							data: { hook: hookName },
-							messageId: "functionExpression",
-							node,
-						});
-					} else if (!functionHasId && argumentNode.async) {
-						context.report({
-							data: { hook: hookName },
-							messageId: "asyncAnonymousFunction",
-							node,
-						});
-					} else if (!functionHasId) {
-						context.report({
-							data: { hook: hookName },
-							messageId: "anonymousFunction",
-							node,
-						});
-					}
+				if (firstArgument.type === TSESTree.AST_NODE_TYPES.FunctionExpression) {
+					checkInlineFunctionExpression(node, hookName, firstArgument);
 				}
 			},
 		};
 	},
+	defaultOptions: [],
 	meta: {
 		docs: {
 			description:
 				"Enforce named effect functions for better debuggability. Prevents inline arrow functions in useEffect and similar hooks.",
-			recommended: false,
 		},
 		messages: {
 			anonymousFunction:
@@ -412,7 +310,6 @@ const requireNamedEffectFunctions: Rule.RuleModule = {
 						type: "string",
 					},
 					hooks: {
-						default: DEFAULT_HOOKS,
 						description: "Array of hook configuration objects with name and allowAsync settings",
 						items: {
 							additionalProperties: false,
@@ -437,6 +334,7 @@ const requireNamedEffectFunctions: Rule.RuleModule = {
 		],
 		type: "problem",
 	},
-};
+	name: "require-named-effect-functions",
+});
 
 export default requireNamedEffectFunctions;

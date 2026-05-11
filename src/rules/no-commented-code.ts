@@ -1,8 +1,7 @@
-import path from "node:path";
+import { extname } from "node:path";
+import { hasCodeLines } from "@recognizers/code-recognizer";
+import { createJavaScriptDetectors } from "@recognizers/javascript-footprint";
 import { parseSync } from "oxc-parser";
-
-import { hasCodeLines } from "../recognizers/code-recognizer";
-import { createJavaScriptDetectors } from "../recognizers/javascript-footprint";
 
 import type { Rule } from "eslint";
 import type { Comment } from "estree";
@@ -104,8 +103,8 @@ function groupComments(
 }
 
 function injectMissingBraces(value: string): string {
-	const openCount = (value.match(/{/g) ?? []).length;
-	const closeCount = (value.match(/}/g) ?? []).length;
+	const openCount = (value.match(/\{/gu) ?? []).length;
+	const closeCount = (value.match(/\}/gu) ?? []).length;
 	const diff = openCount - closeCount;
 
 	if (diff > 0) return value + "}".repeat(diff);
@@ -191,7 +190,7 @@ function isExclusion(statements: ReadonlyArray<ParsedStatement>, codeText: strin
 	return false;
 }
 
-const ALLOWED_PARSE_ERROR_PATTERNS = [/A 'return' statement can only be used within a function body/] as const;
+const ALLOWED_PARSE_ERROR_PATTERNS = [/A 'return' statement can only be used within a function body/u] as const;
 type Errors = ReadonlyArray<{ readonly message: string }>;
 function hasOnlyAllowedErrors(errors: Errors): boolean {
 	return errors.every((error) => ALLOWED_PARSE_ERROR_PATTERNS.some((pattern) => pattern.test(error.message)));
@@ -212,14 +211,14 @@ function isValidParseResult(result: ParseResult): boolean {
 }
 
 function tryParse(value: string, filename: string): ParseResult | undefined {
-	const ext = path.extname(filename);
-	const parseFilename = `file${ext || ".js"}`;
+	const extension = extname(filename);
+	const parseFilename = `file${extension || ".js"}`;
 	const result = parseSync(parseFilename, value);
 
 	if (isValidParseResult(result)) return result;
 
 	// Retry with .tsx for JSX support if original ext wasn't jsx/tsx
-	if (ext !== ".tsx" && ext !== ".jsx") {
+	if (extension !== ".tsx" && extension !== ".jsx") {
 		const jsxResult = parseSync("file.tsx", value);
 		if (isValidParseResult(jsxResult)) return jsxResult;
 	}

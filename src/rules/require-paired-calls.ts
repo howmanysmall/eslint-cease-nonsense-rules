@@ -1,9 +1,9 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
+import { createRule } from "@utilities/create-rule";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
 
 import type { TSESTree } from "@typescript-eslint/types";
-import type { TSESLint } from "@typescript-eslint/utils";
 import type { Writable } from "type-fest";
 
 const isStringArray = Compile(Typebox.Readonly(Typebox.Array(Typebox.String())));
@@ -138,7 +138,7 @@ function getValidClosers(configuration: PairConfiguration): ReadonlyArray<string
 	if (isStringArray.Check(configuration.closer)) result.push(...configuration.closer);
 	else if (typeof configuration.closer === "string") result.push(configuration.closer);
 
-	if (configuration.alternatives) for (const alternative of configuration.alternatives) result.push(alternative);
+	if (configuration.alternatives) result.push(...configuration.alternatives);
 
 	return result;
 }
@@ -156,9 +156,7 @@ function formatOpenerList(openers: ReadonlyArray<string>): string {
 }
 
 function isLoopLikeStatement(node?: TSESTree.Node): node is LoopLikeStatement {
-	if (!node) return false;
-
-	return LOOP_NODE_TYPES.has(node.type);
+	return node ? LOOP_NODE_TYPES.has(node.type) : false;
 }
 
 function isSwitchStatement(node?: TSESTree.Node): node is TSESTree.SwitchStatement {
@@ -234,13 +232,8 @@ const messages = {
 type MessageIds = keyof typeof messages;
 type Options = [Partial<RequirePairedCallsOptions>?];
 
-interface RuleDocsWithRecommended extends TSESLint.RuleMetaDataDocs {
-	recommended?: boolean;
-}
-
-const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, RuleDocsWithRecommended> = {
-	create(context): TSESLint.RuleListener {
-		const [rawOptions] = context.options;
+const requirePairedCalls = createRule<Options, MessageIds>({
+	create(context, [rawOptions]) {
 		const baseOptions = isRuleOptions.Check(rawOptions) ? rawOptions : {};
 
 		const options: Writable<RequirePairedCallsOptions> = {
@@ -337,8 +330,7 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 
 		function updateContext(updates: Partial<ControlFlowContext>): void {
 			const last = contextStack.at(-1);
-			if (!last) return;
-			contextStack[contextStack.length - 1] = { ...last, ...updates };
+			if (last) contextStack[contextStack.length - 1] = { ...last, ...updates };
 		}
 
 		function cloneStack(): Array<OpenerStackEntry> {
@@ -360,21 +352,14 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			if (configuration.platform !== "roblox") return false;
 
 			const yieldingFunctions = configuration.yieldingFunctions ?? DEFAULT_ROBLOX_YIELDING_FUNCTIONS;
-			return yieldingFunctions.some((pattern) => {
-				if (pattern.startsWith("*.")) {
-					const methodName = pattern.slice(2);
-					return functionName.endsWith(`.${methodName}`);
-				}
-				return functionName === pattern;
-			});
+			return yieldingFunctions.some((pattern) =>
+				pattern.startsWith("*.") ? functionName.endsWith(`.${pattern.slice(2)}`) : functionName === pattern,
+			);
 		}
 
-		function onFunctionEnter(node: unknown): void {
-			const functionNode = node as
-				| TSESTree.FunctionDeclaration
-				| TSESTree.FunctionExpression
-				| TSESTree.ArrowFunctionExpression;
-
+		function onFunctionEnter(
+			node: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
+		): void {
 			functionStacks.push([...openerStack]);
 			openerStack.length = 0;
 
@@ -382,8 +367,8 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			yieldingReportedFirst = false;
 
 			pushContext({
-				asyncContext: functionNode.async ?? false,
-				currentFunction: functionNode,
+				asyncContext: node.async ?? false,
+				currentFunction: node,
 				hasEarlyExit: false,
 				inCatch: false,
 				inConditional: false,
@@ -496,10 +481,7 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			branchStacks.delete(ifNode);
 		}
 
-		function onIfConsequentExit(node: unknown): void {
-			const consequentNode = node as TSESTree.Statement;
-			const { parent } = consequentNode;
-
+		function onIfConsequentExit({ parent }: TSESTree.Statement): void {
 			if (parent?.type === AST_NODE_TYPES.IfStatement) {
 				const branches = branchStacks.get(parent) ?? [];
 				branches.push(cloneStack());
@@ -513,10 +495,7 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			}
 		}
 
-		function onIfAlternateExit(node: unknown): void {
-			const alternateNode = node as TSESTree.Statement;
-			const { parent } = alternateNode;
-
+		function onIfAlternateExit({ parent }: TSESTree.Statement): void {
 			if (parent?.type === AST_NODE_TYPES.IfStatement) {
 				const branches = branchStacks.get(parent) ?? [];
 				branches.push(cloneStack());
@@ -524,19 +503,13 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			}
 		}
 
-		function onTryStatementEnter(node: unknown): void {
-			const tryNode = node as TSESTree.TryStatement;
-			saveSnapshot(tryNode);
-		}
+		function onTryStatementExit(node: TSESTree.TryStatement): void {
+			const originalStack = stackSnapshots.get(node);
+			const branches = branchStacks.get(node);
 
-		function onTryStatementExit(node: unknown): void {
-			const tryNode = node as TSESTree.TryStatement;
-			const originalStack = stackSnapshots.get(tryNode);
-			const branches = branchStacks.get(tryNode);
-
-			if (tryNode.finalizer) {
-				stackSnapshots.delete(tryNode);
-				branchStacks.delete(tryNode);
+			if (node.finalizer) {
+				stackSnapshots.delete(node);
+				branchStacks.delete(node);
 				return;
 			}
 
@@ -575,18 +548,15 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 				openerStack.push(...commonOpeners);
 			}
 
-			stackSnapshots.delete(tryNode);
-			branchStacks.delete(tryNode);
+			stackSnapshots.delete(node);
+			branchStacks.delete(node);
 		}
 
 		function onTryBlockEnter(): void {
 			pushContext({ inTry: true });
 		}
 
-		function onTryBlockExit(node: unknown): void {
-			const blockNode = node as TSESTree.BlockStatement;
-			const { parent } = blockNode;
-
+		function onTryBlockExit({ parent }: TSESTree.BlockStatement): void {
 			if (parent?.type === AST_NODE_TYPES.TryStatement) {
 				const branches = branchStacks.get(parent) ?? [];
 				branches.push(cloneStack());
@@ -606,10 +576,7 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			pushContext({ inCatch: true });
 		}
 
-		function onCatchClauseExit(node: unknown): void {
-			const catchNode = node as TSESTree.CatchClause;
-			const { parent } = catchNode;
-
+		function onCatchClauseExit({ parent }: TSESTree.CatchClause): void {
 			if (parent?.type === AST_NODE_TYPES.TryStatement) {
 				const branches = branchStacks.get(parent) ?? [];
 				branches.push(cloneStack());
@@ -629,27 +596,21 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			pushContext({ inFinally: true });
 		}
 
-		function onFinallyBlockExit(): void {
-			popContext();
-		}
-
-		function onSwitchStatementEnter(node: unknown): void {
-			const switchNode = node as TSESTree.SwitchStatement;
+		function onSwitchStatementEnter(node: TSESTree.SwitchStatement): void {
 			pushContext({ inConditional: true });
-			saveSnapshot(switchNode);
+			saveSnapshot(node);
 		}
 
-		function onSwitchStatementExit(node: unknown): void {
-			const switchNode = node as TSESTree.SwitchStatement;
+		function onSwitchStatementExit(node: TSESTree.SwitchStatement): void {
 			popContext();
 
-			const originalStack = stackSnapshots.get(switchNode);
-			const branches = branchStacks.get(switchNode);
+			const originalStack = stackSnapshots.get(node);
+			const branches = branchStacks.get(node);
 
 			if (originalStack && branches && branches.length > 0) {
-				const hasDefault = switchNode.cases.some((caseNode) => caseNode.test === null);
+				const hasDefault = node.cases.some((caseNode) => caseNode.test === null);
 
-				if (hasDefault && branches.length === switchNode.cases.length) {
+				if (hasDefault && branches.length === node.cases.length) {
 					for (const opener of originalStack) {
 						const branchesWithOpener = branches.filter((branchStack) =>
 							branchStack.some((entry) => entry.index === opener.index),
@@ -688,14 +649,11 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 				}
 			}
 
-			stackSnapshots.delete(switchNode);
-			branchStacks.delete(switchNode);
+			stackSnapshots.delete(node);
+			branchStacks.delete(node);
 		}
 
-		function onSwitchCaseExit(node: unknown): void {
-			const caseNode = node as TSESTree.SwitchCase;
-			const { parent } = caseNode;
-
+		function onSwitchCaseExit({ parent }: TSESTree.SwitchCase): void {
 			if (parent?.type === AST_NODE_TYPES.SwitchStatement) {
 				const branches = branchStacks.get(parent) ?? [];
 				branches.push(cloneStack());
@@ -709,9 +667,8 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			}
 		}
 
-		function onLoopEnter(node: unknown): void {
-			const loopNode = node as LoopLikeStatement;
-			loopStack.push(loopNode);
+		function onLoopEnter(node: LoopLikeStatement): void {
+			loopStack.push(node);
 			pushContext({ inLoop: true });
 		}
 
@@ -731,45 +688,42 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 				const closer = validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
 
 				const statementType = statementNode.type === AST_NODE_TYPES.ReturnStatement ? "return" : "throw";
-				const lineNumber = statementNode.loc?.start.line ?? 0;
 
 				context.report({
 					data: {
 						closer,
 						opener,
-						paths: `${statementType} at line ${lineNumber}`,
+						paths: `${statementType} at line ${statementNode.loc?.start.line ?? 0}`,
 					},
 					messageId: "unpairedOpener",
-					node: node,
+					node,
 				});
 			}
 		}
 
-		function onBreakContinue(node: unknown): void {
-			const statementNode = node as TSESTree.BreakStatement | TSESTree.ContinueStatement;
+		function onBreakContinue(node: TSESTree.BreakStatement | TSESTree.ContinueStatement): void {
 			if (openerStack.length === 0) return;
 
 			const targetLoop =
-				statementNode.type === AST_NODE_TYPES.ContinueStatement
-					? resolveContinueTargetLoop(statementNode)
-					: resolveBreakTargetLoop(statementNode);
+				node.type === AST_NODE_TYPES.ContinueStatement
+					? resolveContinueTargetLoop(node)
+					: resolveBreakTargetLoop(node);
 
 			if (!targetLoop) return;
 
 			for (const { node: openerNode, config, opener, loopAncestors } of openerStack) {
-				if (!loopAncestors.some((loopNode) => loopNode === targetLoop)) continue;
+				if (!loopAncestors.includes(targetLoop)) continue;
 
 				const validClosers = getValidClosers(config);
 				const closer = validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
 
-				const statementType = statementNode.type === AST_NODE_TYPES.BreakStatement ? "break" : "continue";
-				const lineNumber = statementNode.loc.start.line;
+				const statementType = node.type === AST_NODE_TYPES.BreakStatement ? "break" : "continue";
 
 				context.report({
 					data: {
 						closer,
 						opener,
-						paths: `${statementType} at line ${lineNumber}`,
+						paths: `${statementType} at line ${node.loc.start.line}`,
 					},
 					messageId: "unpairedOpener",
 					node: openerNode,
@@ -777,26 +731,25 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			}
 		}
 
-		function onCallExpression(node: unknown): void {
-			const callNode = node as TSESTree.CallExpression;
-			const callName = getCallName(callNode);
-			if (callName === undefined || callName === "") return;
+		function onCallExpression(node: TSESTree.CallExpression): void {
+			const callName = getCallName(node);
+			if (callName === undefined || callName.length === 0) return;
 
 			const openerConfig = findPairConfiguration(callName, true);
 			if (openerConfig) {
-				handleOpener(callNode, callName, openerConfig);
+				handleOpener(node, callName, openerConfig);
 				return;
 			}
 
 			if (findPairConfiguration(callName, false)) {
-				handleCloser(callNode, callName);
+				handleCloser(node, callName);
 				return;
 			}
 
 			for (const entry of openerStack) {
 				if (!isRobloxYieldingFunction(callName, entry.config)) continue;
 
-				handleRobloxYield(callNode, callName, entry);
+				handleRobloxYield(node, callName, entry);
 				openerStack.length = 0;
 				yieldingAutoClosed = true;
 				return;
@@ -858,25 +811,19 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 				const topEntry = openerStack.at(-1);
 				if (topEntry) {
 					const expectedClosers = getExpectedClosersForOpener(topEntry.opener);
-					const closerDescription = formatOpenerList(expectedClosers);
+					const expected = formatOpenerList(expectedClosers);
 
 					context.report({
-						data: {
-							closer,
-							expected: closerDescription,
-						},
+						data: { closer, expected },
 						messageId: "unexpectedCloser",
 						node,
 					});
 				} else {
 					const openerCandidates = getConfiguredOpenersForCloser(closer);
-					const openerDescription = formatOpenerList(openerCandidates);
+					const opener = formatOpenerList(openerCandidates);
 
 					context.report({
-						data: {
-							closer,
-							opener: openerDescription,
-						},
+						data: { closer, opener },
 						messageId: "unpairedCloser",
 						node,
 					});
@@ -921,8 +868,9 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			});
 		}
 
-		function onAsyncYield(node: unknown): void {
-			const asyncNode = node as TSESTree.AwaitExpression | TSESTree.YieldExpression;
+		function onAsyncYield(
+			asyncNode: TSESTree.AwaitExpression | TSESTree.ForOfStatement | TSESTree.YieldExpression,
+		): void {
 			for (const { opener, config } of openerStack) {
 				if (config.requireSync !== true) continue;
 
@@ -954,7 +902,7 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			"DoWhileStatement:exit": onLoopExit,
 			ForInStatement: onLoopEnter,
 			"ForInStatement:exit": onLoopExit,
-			ForOfStatement: (node: TSESTree.ForOfStatement) => {
+			ForOfStatement: (node: TSESTree.ForOfStatement): void => {
 				if (node.await) onAsyncYield(node);
 				onLoopEnter(node);
 			},
@@ -979,23 +927,21 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 			"SwitchStatement:exit": onSwitchStatementExit,
 			ThrowStatement: onEarlyExit,
 
-			TryStatement: onTryStatementEnter,
+			TryStatement: saveSnapshot,
 			"TryStatement > .block": onTryBlockEnter,
 			"TryStatement > .block:exit": onTryBlockExit,
 			"TryStatement > .finalizer": onFinallyBlockEnter,
-			"TryStatement > .finalizer:exit": onFinallyBlockExit,
+			"TryStatement > .finalizer:exit": popContext,
 			"TryStatement:exit": onTryStatementExit,
 			WhileStatement: onLoopEnter,
 			"WhileStatement:exit": onLoopExit,
 			YieldExpression: onAsyncYield,
 		};
 	},
-	defaultOptions: [],
+	defaultOptions: [{}],
 	meta: {
 		docs: {
 			description: "Enforces balanced opener/closer function calls across all execution paths",
-			recommended: false,
-			url: "https://github.com/howmanysmall/eslint-idiot-lint/tree/main/docs/rules/require-paired-calls.md",
 		},
 		fixable: "code",
 		messages,
@@ -1068,6 +1014,7 @@ const requirePairedCalls: TSESLint.RuleModuleWithMetaDocs<MessageIds, Options, R
 		],
 		type: "problem",
 	},
-};
+	name: "require-paired-calls",
+});
 
 export default requirePairedCalls;

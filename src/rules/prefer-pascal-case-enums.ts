@@ -1,13 +1,12 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { toPascalCase } from "@utilities/casing-utilities";
+import { createRule } from "@utilities/create-rule";
 import { regex } from "arktype";
-
-import { toPascalCase } from "../utilities/casing-utilities";
-import { createRule } from "../utilities/create-rule";
 
 import type { TSESTree } from "@typescript-eslint/utils";
 
 // oxlint-disable-next-line prefer-string-raw
-const STARTS_WITH_DIGIT = regex("^\\d");
+const STARTS_WITH_DIGIT = regex("^\\d", "u");
 
 function getIdentifierName(node: TSESTree.TSEnumMember["id"] | TSESTree.Identifier): string | undefined {
 	if (node.type === AST_NODE_TYPES.Identifier) return node.name;

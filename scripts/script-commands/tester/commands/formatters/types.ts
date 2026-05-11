@@ -1,5 +1,8 @@
 import { type } from "arktype";
 
+const isRule = type(["0 | 1 | 2", "...", "unknown[]"]).readonly();
+type Rule = typeof isRule.infer;
+
 /** An entry for a rule lookup result. */
 export interface RuleEntry {
 	readonly name: string;
@@ -8,9 +11,6 @@ export interface RuleEntry {
 
 /** Formatter function signature. */
 export type RuleFormatter = (entries: ReadonlyArray<RuleEntry>) => string;
-
-const isRule = type(["0 | 1 | 2", "...", "unknown[]"]).readonly();
-export type Rule = typeof isRule.infer;
 
 export const isValidRules = type({
 	"[string]": "unknown",

@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it } from "bun:test";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
 	__testing,
@@ -20,7 +20,7 @@ const fixtureDirectories = new Array<string>();
 async function writeFixtureFileAsync(rootDirectory: string, relativePath: string, content: string): Promise<void> {
 	const filePath = join(rootDirectory, relativePath);
 	await mkdir(dirname(filePath), { recursive: true });
-	await Bun.write(filePath, content);
+	await writeFile(filePath, content);
 }
 
 async function createFixtureContextAsync(
@@ -59,6 +59,8 @@ function createBundledOutput(context: FixtureContext, entryFileName: string): st
 	});
 }
 
+vi.setConfig({ testTimeout: 10000 });
+
 describe("declaration-bundler", () => {
 	afterEach(async () => {
 		await Promise.all(
@@ -69,6 +71,7 @@ describe("declaration-bundler", () => {
 	});
 
 	it("bundles aliased type exports without leaking relative re-exports", async () => {
+		expect.assertions(5);
 		const context = await createFixtureContextAsync({
 			"alpha.d.ts": "export interface Options {\n\treadonly alpha: string;\n}\n",
 			"beta.d.ts": "export interface Options {\n\treadonly beta: number;\n}\n",
@@ -88,6 +91,7 @@ describe("declaration-bundler", () => {
 	});
 
 	it("keeps external imports and inlines only the local declaration graph", async () => {
+		expect.assertions(7);
 		const context = await createFixtureContextAsync(
 			{
 				"helper.d.ts": "export interface Helper {\n\treadonly value: string;\n}\n",
@@ -118,6 +122,7 @@ describe("declaration-bundler", () => {
 	});
 
 	it("includes copied source declaration files when emitted output references .d modules", async () => {
+		expect.assertions(4);
 		const context = await createFixtureContextAsync({
 			"index.d.ts": [
 				'import type { ReadonlyRecord } from "./types/utility-types.d";',
@@ -136,6 +141,7 @@ describe("declaration-bundler", () => {
 	});
 
 	it("handles local declaration cycles without duplicating statements", async () => {
+		expect.assertions(3);
 		const context = await createFixtureContextAsync({
 			"a.d.ts": ['import type { B } from "./b";', "export interface A {", "\treadonly b: B;", "}"].join("\n"),
 			"b.d.ts": ['import type { A } from "./a";', "export interface B {", "\treadonly a: A;", "}"].join("\n"),
@@ -144,12 +150,13 @@ describe("declaration-bundler", () => {
 
 		const output = createBundledOutput(context, "index.d.ts");
 
-		expect(output.match(/interface A/g)?.length).toBe(1);
-		expect(output.match(/interface B/g)?.length).toBe(1);
+		expect(output.match(/interface A/gu)?.length).toBe(1);
+		expect(output.match(/interface B/gu)?.length).toBe(1);
 		expect(output).toContain("export type { A };");
 	});
 
-	it("supports direct exports, local export specifiers, default exports, and Bun-friendly external imports", async () => {
+	it("supports direct exports, local export specifiers, default exports, and runtime-friendly external imports", async () => {
+		expect.assertions(10);
 		const context = await createFixtureContextAsync(
 			{
 				"index.d.ts": [
@@ -197,6 +204,7 @@ describe("declaration-bundler", () => {
 	});
 
 	it("throws for unsupported export stars", async () => {
+		expect.assertions(1);
 		const context = await createFixtureContextAsync({
 			"index.d.ts": 'export * from "./other";\n',
 			"other.d.ts": "export interface Other {\n\treadonly value: string;\n}\n",
@@ -206,6 +214,7 @@ describe("declaration-bundler", () => {
 	});
 
 	it("throws when the entrypoint does not exist", async () => {
+		expect.assertions(1);
 		const context = await createFixtureContextAsync({});
 		const program = createDeclarationBundlerProgram({ declarationDirectories: [context.bundleDirectory] });
 
@@ -218,6 +227,7 @@ describe("declaration-bundler", () => {
 	});
 
 	it("exposes stable testing helpers for scope and name generation", () => {
+		expect.assertions(5);
 		const usedNames = new Set(["Options", "FeatureOptions"]);
 
 		expect(__testing.getFileStem("/tmp/types/utility-types.d.ts")).toBe("utility-types");

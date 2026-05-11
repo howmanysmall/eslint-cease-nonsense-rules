@@ -1,10 +1,11 @@
 #!/usr/bin/env bun
 
+import { spawn } from "node:child_process";
 import { cp, mkdir, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { exit } from "node:process";
-import { Command } from "@jsr/cliffy__command";
-import { CompletionsCommand } from "@jsr/cliffy__command/completions";
+import { argv, exit } from "node:process";
+import { Command } from "@cliffy/command";
+import { CompletionsCommand } from "@cliffy/command/completions";
 
 const SKIP_PATTERNS = new Set([
 	".git",
@@ -31,8 +32,38 @@ function shouldSkip(relativePath: string): boolean {
 	return false;
 }
 
+async function getCommandTextAsync(command: string, parameters: ReadonlyArray<string>): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const stdoutChunks: Array<Uint8Array> = [];
+		const stderrChunks: Array<Uint8Array> = [];
+		const childProcess = spawn(command, [...parameters], { stdio: ["ignore", "pipe", "pipe"] });
+
+		childProcess.stdout.on("data", (chunk: Uint8Array) => {
+			stdoutChunks.push(chunk);
+		});
+
+		childProcess.stderr.on("data", (chunk: Uint8Array) => {
+			stderrChunks.push(chunk);
+		});
+
+		childProcess.on("error", reject);
+		childProcess.on("close", (exitCode) => {
+			const stdout = Buffer.concat(stdoutChunks).toString("utf8");
+			const stderr = Buffer.concat(stderrChunks).toString("utf8");
+			if (exitCode === 0) {
+				resolve(stdout);
+				return;
+			}
+
+			const renderedCommand = [command, ...parameters].join(" ");
+			const output = [stderr.trim(), stdout.trim()].filter(Boolean).join("\n");
+			reject(new Error(output ? `${renderedCommand} failed.\n${output}` : `${renderedCommand} failed.`));
+		});
+	});
+}
+
 async function findMainWorktreeAsync(): Promise<string | undefined> {
-	const output = await Bun.$`git worktree list --porcelain`.quiet().text();
+	const output = await getCommandTextAsync("git", ["worktree", "list", "--porcelain"]);
 	const lines = output.split("\n");
 
 	for (const line of lines) {
@@ -64,7 +95,7 @@ async function fileExistsAsync(path: string): Promise<boolean> {
 
 async function isRepositoryAsync(): Promise<boolean> {
 	try {
-		const output = await Bun.$`git rev-parse --is-inside-work-tree`.quiet().text();
+		const output = await getCommandTextAsync("git", ["rev-parse", "--is-inside-work-tree"]);
 		return output.trim() === "true";
 	} catch {
 		return false;
@@ -86,8 +117,8 @@ const command = new Command()
 			exit(1);
 		}
 
-		const destRootRaw = await Bun.$`git rev-parse --show-toplevel`.quiet().text();
-		const destRoot = destRootRaw.trim();
+		const destinationRootRaw = await getCommandTextAsync("git", ["rev-parse", "--show-toplevel"]);
+		const destinationRoot = destinationRootRaw.trim();
 
 		const mainRoot = await findMainWorktreeAsync();
 		if (!mainRoot) {
@@ -95,12 +126,20 @@ const command = new Command()
 			exit(1);
 		}
 
-		if (mainRoot === destRoot) {
+		if (mainRoot === destinationRoot) {
 			console.error("You are in the main worktree already; nothing to copy.");
 			exit(1);
 		}
 
-		const ignoredOutput = await Bun.$`git -C ${mainRoot} ls-files -z -o -i --exclude-standard`.quiet().text();
+		const ignoredOutput = await getCommandTextAsync("git", [
+			"-C",
+			mainRoot,
+			"ls-files",
+			"-z",
+			"-o",
+			"-i",
+			"--exclude-standard",
+		]);
 		const ignoredFiles = ignoredOutput.split("\0").filter(Boolean);
 
 		if (ignoredFiles.length === 0) {
@@ -116,7 +155,7 @@ const command = new Command()
 		}
 
 		console.info(`SRC (main worktree): ${mainRoot}`);
-		console.info(`DEST (current):      ${destRoot}`);
+		console.info(`DEST (current):      ${destinationRoot}`);
 		console.info(`Paths selected:      ${filesToCopy.length}`);
 		console.info(
 			`Mode:                ${dryRun ? "dry-run" : "copy"}, ${overwrite ? "overwrite" : "no-overwrite"}`,
@@ -126,11 +165,11 @@ const command = new Command()
 		let skipped = 0;
 
 		for (const relativePath of filesToCopy) {
-			const src = join(mainRoot, relativePath);
-			const dst = join(destRoot, relativePath);
+			const source = join(mainRoot, relativePath);
+			const destination = join(destinationRoot, relativePath);
 
 			// oxlint-disable-next-line no-await-in-loop -- Sequential file operations are safer
-			if (!overwrite && (await fileExistsAsync(dst))) {
+			if (!overwrite && (await fileExistsAsync(destination))) {
 				skipped += 1;
 				continue;
 			}
@@ -142,9 +181,9 @@ const command = new Command()
 			}
 
 			// oxlint-disable-next-line no-await-in-loop -- Sequential file operations are safer
-			await mkdir(dirname(dst), { recursive: true });
+			await mkdir(dirname(destination), { recursive: true });
 			// oxlint-disable-next-line no-await-in-loop -- Sequential file operations are safer
-			await cp(src, dst);
+			await cp(source, destination);
 			copied += 1;
 		}
 
@@ -153,4 +192,4 @@ const command = new Command()
 	})
 	.command("completions", new CompletionsCommand());
 
-await command.parse(Bun.argv.slice(2));
+await command.parse(argv.slice(2));

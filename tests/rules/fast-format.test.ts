@@ -1,8 +1,7 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
+import rule, { createFastFormatRule, createFormatCache, getLocFromIndex } from "@rules/fast-format";
+import { generateDifferences, showInvisibles } from "@utilities/format-utilities";
 import { RuleTester } from "eslint";
-
-import rule, { createFastFormatRule, createFormatCache, getLocFromIndex } from "../../src/rules/fast-format";
-import { generateDifferences, showInvisibles } from "../../src/utilities/format-utilities";
 
 const languageOptions = {
 	ecmaVersion: 2022,
@@ -158,15 +157,15 @@ describe("fast-format", () => {
 		expect.assertions(2);
 		const cache = createFormatCache(1);
 		const stored = cache.set("key", { kind: "error", message: "boom" });
-		expect(stored).toEqual({ kind: "error", message: "boom" });
+		expect(stored).toStrictEqual({ kind: "error", message: "boom" });
 		cache.clear();
 		expect(cache.get("key")).toBeUndefined();
-	});
+	}, 250);
 });
 
 describe("getLocFromIndex", () => {
 	it("returns a minimal location when getLocFromIndex is missing", () => {
 		expect.assertions(1);
-		expect(getLocFromIndex({ text: "abc" }, 2)).toEqual({ column: 2, line: 1 });
-	});
+		expect(getLocFromIndex({ text: "abc" }, 2)).toStrictEqual({ column: 2, line: 1 });
+	}, 250);
 });

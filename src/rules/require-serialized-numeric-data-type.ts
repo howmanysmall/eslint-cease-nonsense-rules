@@ -1,6 +1,5 @@
 import { TSESTree } from "@typescript-eslint/types";
-
-import { createRule } from "../utilities/create-rule";
+import { createRule } from "@utilities/create-rule";
 
 import type { TypeChecker, TypeNode } from "typescript";
 

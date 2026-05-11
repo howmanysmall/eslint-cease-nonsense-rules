@@ -18,13 +18,14 @@ import noEventsInEventsCallback from "./rules/no-events-in-events-callback";
 import noGodComponents from "./rules/no-god-components";
 import noIdentityMap from "./rules/no-identity-map";
 import noInstanceMethodsWithoutThis from "./rules/no-instance-methods-without-this";
+import noManualChildrenProperty from "./rules/no-manual-children-property";
 import noMemoChildren from "./rules/no-memo-children";
 import noNewInstanceInUseMemo from "./rules/no-new-instance-in-use-memo";
 import noPrint from "./rules/no-print";
 import noRenderHelperFunctions from "./rules/no-render-helper-functions";
 import noShorthandNames from "./rules/no-shorthand-names";
 import noTableCreateMap from "./rules/no-table-create-map";
-import noUnderscoreReactProps from "./rules/no-underscore-react-props";
+import noUnderscoreReactProperties from "./rules/no-underscore-react-properties";
 import noUnusedImports from "./rules/no-unused-imports";
 import noUnusedUseMemo from "./rules/no-unused-use-memo";
 import noUselessUseEffect from "./rules/no-useless-use-effect";
@@ -42,7 +43,7 @@ import preferModuleScopeConstants from "./rules/prefer-module-scope-constants";
 import preferPaddingComponents from "./rules/prefer-padding-components";
 import preferPascalCaseEnums from "./rules/prefer-pascal-case-enums";
 import preferPatternReplacements from "./rules/prefer-pattern-replacements";
-import preferReadOnlyProps from "./rules/prefer-read-only-props";
+import preferReadOnlyProperties from "./rules/prefer-read-only-properties";
 import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
 import preferSingleWorldQuery from "./rules/prefer-single-world-query";
 import preferSingularEnums from "./rules/prefer-singular-enums";
@@ -59,6 +60,42 @@ import requireSerializedNumericDataType from "./rules/require-serialized-numeric
 import strictComponentBoundaries from "./rules/strict-component-boundaries";
 import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
 import useHookAtTopLevel from "./rules/use-hook-at-top-level";
+import {
+	createBanInstancesOptions,
+	createComplexityConfiguration,
+	createDotNotationOptions,
+	createEffectFunctionOptions,
+	createHookConfiguration,
+	createNamingConventionOptions,
+	createNoArrayConstructorElementsOptions,
+	createNoConstantConditionWithBreakOptions,
+	createNoEmptyArrayLiteralOptions,
+	createNoEventsInEventsCallbackOptions,
+	createNoGodComponentsOptions,
+	createNoInstanceMethodsOptions,
+	createNoManualChildrenPropertyOptions,
+	createNoMemoChildrenOptions,
+	createNoNewInstanceInUseMemoOptions,
+	createNoShorthandOptions,
+	createNoUnusedImportsOptions,
+	createNoUnusedUseMemoOptions,
+	createNoUselessUseEffectOptions,
+	createNoUselessUseMemoOptions,
+	createNoUselessUseSpringOptions,
+	createPairConfiguration,
+	createPreferEnumItemOptions,
+	createPreferPatternReplacementsOptions,
+	createPreventAbbreviationsOptions,
+	createReactKeysOptions,
+	createRequireModuleLevelInstantiationOptions,
+	createRequirePairedCallsOptions,
+	createRequireReactDisplayNamesOptions,
+	createRequireSerializedNumericDataTypeOptions,
+	createUseExhaustiveDependenciesOptions,
+	createUseHookAtTopLevelOptions,
+	defaultRobloxProfilePair,
+} from "./utilities/configure-utilities";
+import { pattern } from "./utilities/pattern-replacement";
 
 import type { LooseRuleDefinition } from "@typescript-eslint/utils/ts-eslint";
 
@@ -77,6 +114,7 @@ export type { NoEventsInEventsCallbackOptions } from "./rules/no-events-in-event
 export type { NoGodComponentsOptions } from "./rules/no-god-components";
 export type { NoIdentityMapOptions } from "./rules/no-identity-map";
 export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
+export type { NoManualChildrenPropertyOptions } from "./rules/no-manual-children-property";
 export type { NoMemoChildrenOptions } from "./rules/no-memo-children";
 export type { NoNewInstanceInUseMemoOptions } from "./rules/no-new-instance-in-use-memo";
 export type { NoShorthandOptions } from "./rules/no-shorthand-names";
@@ -108,6 +146,7 @@ export {
 	createNoEventsInEventsCallbackOptions,
 	createNoGodComponentsOptions,
 	createNoInstanceMethodsOptions,
+	createNoManualChildrenPropertyOptions,
 	createNoMemoChildrenOptions,
 	createNoNewInstanceInUseMemoOptions,
 	createNoShorthandOptions,
@@ -128,9 +167,9 @@ export {
 	createUseExhaustiveDependenciesOptions,
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
-} from "./utilities/configure-utilities";
+};
 export type { Pattern, PreferPatternReplacementsOptions } from "./utilities/pattern-replacement";
-export { pattern } from "./utilities/pattern-replacement";
+export { pattern };
 
 /**
  * ESLint plugin entry for eslint-cease-nonsense-rules.
@@ -158,13 +197,14 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"no-god-components": noGodComponents,
 	"no-identity-map": noIdentityMap,
 	"no-instance-methods-without-this": noInstanceMethodsWithoutThis,
+	"no-manual-children-property": noManualChildrenProperty,
 	"no-memo-children": noMemoChildren,
 	"no-new-instance-in-use-memo": noNewInstanceInUseMemo,
 	"no-print": noPrint,
 	"no-render-helper-functions": noRenderHelperFunctions,
 	"no-shorthand-names": noShorthandNames,
 	"no-table-create-map": noTableCreateMap,
-	"no-underscore-react-props": noUnderscoreReactProps,
+	"no-underscore-react-props": noUnderscoreReactProperties,
 	"no-unused-imports": noUnusedImports,
 	"no-unused-use-memo": noUnusedUseMemo,
 	"no-useless-use-effect": noUselessUseEffect,
@@ -182,7 +222,7 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"prefer-padding-components": preferPaddingComponents,
 	"prefer-pascal-case-enums": preferPascalCaseEnums,
 	"prefer-pattern-replacements": preferPatternReplacements,
-	"prefer-read-only-props": preferReadOnlyProps,
+	"prefer-read-only-props": preferReadOnlyProperties,
 	"prefer-sequence-overloads": preferSequenceOverloads,
 	"prefer-single-world-query": preferSingleWorldQuery,
 	"prefer-singular-enums": preferSingularEnums,

@@ -1,8 +1,7 @@
 import { TSESTree } from "@typescript-eslint/types";
+import { createRule } from "@utilities/create-rule";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
-
-import { createRule } from "../utilities/create-rule";
 
 import type { TSESLint } from "@typescript-eslint/utils";
 
@@ -399,25 +398,23 @@ function isComputedPropertyIdentifier(identifier: TSESTree.Identifier): boolean 
 }
 
 function isInTypePosition(identifier: TSESTree.Identifier): boolean {
-	// oxlint-disable-next-line prefer-destructuring - you cannot
-	let parent: TSESTree.Node | undefined = identifier.parent;
+	let parent: TSESTree.Node | undefined = identifier.parent ?? undefined;
 
 	while (parent) {
 		if (TS_RUNTIME_EXPRESSIONS.has(parent.type)) {
-			({ parent } = parent);
+			parent = parent.parent ?? undefined;
 			continue;
 		}
 		if (parent.type.startsWith("TS")) return true;
 		if (IS_CEASE_BOUNDARY.has(parent.type)) return false;
-		({ parent } = parent);
+		parent = parent.parent ?? undefined;
 	}
 
 	return false;
 }
 
 function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree.Node): boolean {
-	// oxlint-disable-next-line prefer-destructuring - you cannot
-	let parent: TSESTree.Node | undefined = closureNode.parent;
+	let { parent } = closureNode;
 
 	while (parent) {
 		const isFunction = FUNCTION_DECLARATIONS.has(parent.type);
@@ -432,7 +429,6 @@ function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree
 
 			if (isParameter) return true;
 
-			// oxlint-disable-next-line array-callback-return -- extremely dumb false positive
 			return variable.defs.some((definition) => {
 				let node: TSESTree.Node | undefined = definition.node.parent;
 				while (node && node !== functionParent) node = node.parent;

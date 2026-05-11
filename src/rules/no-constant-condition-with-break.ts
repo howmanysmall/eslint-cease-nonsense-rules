@@ -1,6 +1,5 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-
-import { createRule } from "../utilities/create-rule";
+import { createRule } from "@utilities/create-rule";
 
 import type { TSESTree } from "@typescript-eslint/utils";
 
@@ -114,7 +113,7 @@ function expressionContainsConfiguredLoopExit(
 	const unwrapped = unwrapExpression(expression);
 
 	switch (unwrapped.type) {
-		case AST_NODE_TYPES.ArrayExpression:
+		case AST_NODE_TYPES.ArrayExpression: {
 			for (const element of unwrapped.elements) {
 				if (!element) continue;
 				if (element.type === AST_NODE_TYPES.SpreadElement) {
@@ -126,6 +125,7 @@ function expressionContainsConfiguredLoopExit(
 			}
 
 			return false;
+		}
 
 		case AST_NODE_TYPES.AssignmentExpression:
 			return expressionContainsConfiguredLoopExit(unwrapped.right, loopExitCalls);
@@ -133,7 +133,7 @@ function expressionContainsConfiguredLoopExit(
 		case AST_NODE_TYPES.AwaitExpression:
 			return expressionContainsConfiguredLoopExit(unwrapped.argument, loopExitCalls);
 
-		case AST_NODE_TYPES.BinaryExpression:
+		case AST_NODE_TYPES.BinaryExpression: {
 			if (
 				unwrapped.left.type !== AST_NODE_TYPES.PrivateIdentifier &&
 				expressionContainsConfiguredLoopExit(unwrapped.left, loopExitCalls)
@@ -141,12 +141,14 @@ function expressionContainsConfiguredLoopExit(
 				return true;
 			}
 			return expressionContainsConfiguredLoopExit(unwrapped.right, loopExitCalls);
+		}
 
-		case AST_NODE_TYPES.LogicalExpression:
+		case AST_NODE_TYPES.LogicalExpression: {
 			return (
 				expressionContainsConfiguredLoopExit(unwrapped.left, loopExitCalls) ||
 				expressionContainsConfiguredLoopExit(unwrapped.right, loopExitCalls)
 			);
+		}
 
 		case AST_NODE_TYPES.CallExpression: {
 			if (isConfiguredLoopExitCall(unwrapped, loopExitCalls)) return true;
@@ -170,14 +172,15 @@ function expressionContainsConfiguredLoopExit(
 			return false;
 		}
 
-		case AST_NODE_TYPES.ConditionalExpression:
+		case AST_NODE_TYPES.ConditionalExpression: {
 			return (
 				expressionContainsConfiguredLoopExit(unwrapped.test, loopExitCalls) ||
 				expressionContainsConfiguredLoopExit(unwrapped.consequent, loopExitCalls) ||
 				expressionContainsConfiguredLoopExit(unwrapped.alternate, loopExitCalls)
 			);
+		}
 
-		case AST_NODE_TYPES.MemberExpression:
+		case AST_NODE_TYPES.MemberExpression: {
 			if (
 				unwrapped.object.type !== AST_NODE_TYPES.Super &&
 				expressionContainsConfiguredLoopExit(unwrapped.object, loopExitCalls)
@@ -190,8 +193,9 @@ function expressionContainsConfiguredLoopExit(
 			}
 
 			return false;
+		}
 
-		case AST_NODE_TYPES.NewExpression:
+		case AST_NODE_TYPES.NewExpression: {
 			if (expressionContainsConfiguredLoopExit(unwrapped.callee, loopExitCalls)) return true;
 
 			for (const argument of unwrapped.arguments) {
@@ -204,15 +208,17 @@ function expressionContainsConfiguredLoopExit(
 			}
 
 			return false;
+		}
 
 		case AST_NODE_TYPES.SequenceExpression:
 			return unwrapped.expressions.some((part) => expressionContainsConfiguredLoopExit(part, loopExitCalls));
 
-		case AST_NODE_TYPES.TaggedTemplateExpression:
+		case AST_NODE_TYPES.TaggedTemplateExpression: {
 			if (expressionContainsConfiguredLoopExit(unwrapped.tag, loopExitCalls)) return true;
 			return unwrapped.quasi.expressions.some((part) =>
 				expressionContainsConfiguredLoopExit(part, loopExitCalls),
 			);
+		}
 
 		case AST_NODE_TYPES.TemplateLiteral:
 			return unwrapped.expressions.some((part) => expressionContainsConfiguredLoopExit(part, loopExitCalls));
@@ -246,11 +252,12 @@ function getConstantValue(expression: TSESTree.Expression): ConstantValueResult 
 		case AST_NODE_TYPES.FunctionExpression:
 			return toConstantValue(true);
 
-		case AST_NODE_TYPES.Identifier:
+		case AST_NODE_TYPES.Identifier: {
 			if (unwrapped.name === "undefined") return toConstantValue(undefined);
 			if (unwrapped.name === "NaN") return toConstantValue(Number.NaN);
 			if (unwrapped.name === "Infinity") return toConstantValue(Number.POSITIVE_INFINITY);
 			return toNonConstantValue();
+		}
 
 		case AST_NODE_TYPES.Literal:
 			return toConstantValue(unwrapped.value);
@@ -282,10 +289,11 @@ function getConstantValue(expression: TSESTree.Expression): ConstantValueResult 
 			return getConstantValue(lastExpression);
 		}
 
-		case AST_NODE_TYPES.TemplateLiteral:
+		case AST_NODE_TYPES.TemplateLiteral: {
 			if (unwrapped.expressions.length > 0) return toNonConstantValue();
 			if (unwrapped.quasis.length === 0) return toConstantValue("");
 			return toConstantValue(unwrapped.quasis[0]?.value.cooked ?? "");
+		}
 
 		case AST_NODE_TYPES.UnaryExpression: {
 			if (unwrapped.operator === "typeof") return toConstantValue("string");
@@ -441,11 +449,12 @@ function loopHeaderContainsConfiguredLoopExit(loopNode: LoopNode, loopExitCalls:
 		case AST_NODE_TYPES.WhileStatement:
 			return expressionContainsConfiguredLoopExit(loopNode.test, loopExitCalls);
 
-		case AST_NODE_TYPES.ForStatement:
+		case AST_NODE_TYPES.ForStatement: {
 			if (forStatementInitContainsConfiguredLoopExit(loopNode.init, loopExitCalls)) return true;
 			if (loopNode.test && expressionContainsConfiguredLoopExit(loopNode.test, loopExitCalls)) return true;
 			if (loopNode.update && expressionContainsConfiguredLoopExit(loopNode.update, loopExitCalls)) return true;
 			return false;
+		}
 
 		case AST_NODE_TYPES.ForInStatement:
 		case AST_NODE_TYPES.ForOfStatement:
@@ -462,10 +471,11 @@ function statementContainsLoopExit(
 	loopExitCalls: ReadonlySet<string>,
 ): boolean {
 	switch (statement.type) {
-		case AST_NODE_TYPES.BlockStatement:
+		case AST_NODE_TYPES.BlockStatement: {
 			return statement.body.some((bodyStatement) =>
 				statementContainsLoopExit(bodyStatement, loopNode, loopExitCalls),
 			);
+		}
 
 		case AST_NODE_TYPES.BreakStatement:
 			return breaksTargetLoop(statement, loopNode);
@@ -473,44 +483,50 @@ function statementContainsLoopExit(
 		case AST_NODE_TYPES.ReturnStatement:
 			return true;
 
-		case AST_NODE_TYPES.DoWhileStatement:
+		case AST_NODE_TYPES.DoWhileStatement: {
 			if (expressionContainsConfiguredLoopExit(statement.test, loopExitCalls)) return true;
 			return statementContainsLoopExit(statement.body, loopNode, loopExitCalls);
+		}
 
 		case AST_NODE_TYPES.ExpressionStatement:
 			return expressionContainsConfiguredLoopExit(statement.expression, loopExitCalls);
 
-		case AST_NODE_TYPES.ForInStatement:
+		case AST_NODE_TYPES.ForInStatement: {
 			if (expressionContainsConfiguredLoopExit(statement.right, loopExitCalls)) return true;
 			return statementContainsLoopExit(statement.body, loopNode, loopExitCalls);
+		}
 
-		case AST_NODE_TYPES.ForOfStatement:
+		case AST_NODE_TYPES.ForOfStatement: {
 			if (expressionContainsConfiguredLoopExit(statement.right, loopExitCalls)) return true;
 			return statementContainsLoopExit(statement.body, loopNode, loopExitCalls);
+		}
 
-		case AST_NODE_TYPES.ForStatement:
+		case AST_NODE_TYPES.ForStatement: {
 			if (forStatementInitContainsConfiguredLoopExit(statement.init, loopExitCalls)) return true;
 			if (statement.test && expressionContainsConfiguredLoopExit(statement.test, loopExitCalls)) return true;
 			if (statement.update && expressionContainsConfiguredLoopExit(statement.update, loopExitCalls)) return true;
 			return statementContainsLoopExit(statement.body, loopNode, loopExitCalls);
+		}
 
-		case AST_NODE_TYPES.IfStatement:
+		case AST_NODE_TYPES.IfStatement: {
 			if (statementContainsLoopExit(statement.consequent, loopNode, loopExitCalls)) return true;
 			return statement.alternate
 				? statementContainsLoopExit(statement.alternate, loopNode, loopExitCalls)
 				: false;
+		}
 
 		case AST_NODE_TYPES.LabeledStatement:
 			return statementContainsLoopExit(statement.body, loopNode, loopExitCalls);
 
-		case AST_NODE_TYPES.SwitchStatement:
+		case AST_NODE_TYPES.SwitchStatement: {
 			return statement.cases.some((switchCase) =>
 				switchCase.consequent.some((consequent) =>
 					statementContainsLoopExit(consequent, loopNode, loopExitCalls),
 				),
 			);
+		}
 
-		case AST_NODE_TYPES.TryStatement:
+		case AST_NODE_TYPES.TryStatement: {
 			if (statementContainsLoopExit(statement.block, loopNode, loopExitCalls)) return true;
 			if (statement.handler && statementContainsLoopExit(statement.handler.body, loopNode, loopExitCalls)) {
 				return true;
@@ -519,19 +535,23 @@ function statementContainsLoopExit(
 				return true;
 			}
 			return false;
+		}
 
-		case AST_NODE_TYPES.VariableDeclaration:
+		case AST_NODE_TYPES.VariableDeclaration: {
 			return statement.declarations.some((declaration) =>
 				declaration.init ? expressionContainsConfiguredLoopExit(declaration.init, loopExitCalls) : false,
 			);
+		}
 
-		case AST_NODE_TYPES.WhileStatement:
+		case AST_NODE_TYPES.WhileStatement: {
 			if (expressionContainsConfiguredLoopExit(statement.test, loopExitCalls)) return true;
 			return statementContainsLoopExit(statement.body, loopNode, loopExitCalls);
+		}
 
-		case AST_NODE_TYPES.WithStatement:
+		case AST_NODE_TYPES.WithStatement: {
 			if (expressionContainsConfiguredLoopExit(statement.object, loopExitCalls)) return true;
 			return statementContainsLoopExit(statement.body, loopNode, loopExitCalls);
+		}
 
 		default:
 			return false;

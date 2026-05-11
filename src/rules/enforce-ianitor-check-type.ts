@@ -1,5 +1,5 @@
 import { TSESTree } from "@typescript-eslint/types";
-import { ESLintUtils } from "@typescript-eslint/utils";
+import { createRule } from "@utilities/create-rule";
 
 export interface ComplexityConfiguration {
 	readonly baseThreshold: number;
@@ -157,10 +157,6 @@ function calculateIanitorComplexity(node: {
 type MessageIds = "complexInterfaceNeedsCheck" | "missingIanitorCheckType";
 type Options = [Partial<ComplexityConfiguration>];
 
-const createRule = ESLintUtils.RuleCreator(
-	(name) => `https://github.com/howmanysmall/eslint-cease-nonsense-rules/blob/main/docs/rules/${name}.md`,
-);
-
 const enforceIanitorCheckType = createRule<Options, MessageIds>({
 	create(context) {
 		const [rawOptions] = context.options;
@@ -184,7 +180,7 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 		function addScore(current: number, addition: number): number {
 			const nextScore = current + addition;
 			if (!config.performanceMode) return nextScore;
-			return nextScore > complexityCeiling ? complexityCeiling : nextScore;
+			return Math.min(nextScore, complexityCeiling);
 		}
 
 		function calculateStructuralComplexity(node: TSESTree.Node, depth = 0): number {
@@ -206,15 +202,17 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 				case TSESTree.AST_NODE_TYPES.TSUndefinedKeyword:
 				case TSESTree.AST_NODE_TYPES.TSVoidKeyword:
 				case TSESTree.AST_NODE_TYPES.TSSymbolKeyword:
-				case TSESTree.AST_NODE_TYPES.TSBigIntKeyword:
+				case TSESTree.AST_NODE_TYPES.TSBigIntKeyword: {
 					score = 1;
 					break;
+				}
 
 				case TSESTree.AST_NODE_TYPES.TSNeverKeyword:
 				case TSESTree.AST_NODE_TYPES.TSUnknownKeyword:
-				case TSESTree.AST_NODE_TYPES.TSAnyKeyword:
+				case TSESTree.AST_NODE_TYPES.TSAnyKeyword: {
 					score = 0;
 					break;
+				}
 
 				case TSESTree.AST_NODE_TYPES.TSInterfaceDeclaration: {
 					score = config.interfacePenalty;
@@ -264,9 +262,10 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 					break;
 				}
 
-				case TSESTree.AST_NODE_TYPES.TSArrayType:
+				case TSESTree.AST_NODE_TYPES.TSArrayType: {
 					score = addScore(calculateStructuralComplexity(node.elementType, nextDepth), 1);
 					break;
+				}
 
 				case TSESTree.AST_NODE_TYPES.TSTupleType: {
 					const { elementTypes } = node;

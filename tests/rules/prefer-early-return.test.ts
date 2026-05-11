@@ -1,7 +1,6 @@
-import { describe } from "bun:test";
+import { describe } from "vitest";
+import rule from "@rules/prefer-early-return";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/prefer-early-return";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

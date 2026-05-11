@@ -1,4 +1,4 @@
-# eslint-cease-nonsense-rules
+# `eslint-cease-nonsense-rules`
 
 An ESLint plugin that catches common mistakes before they reach production. This collection of rules helps prevent
 patterns that lead to bugs, performance issues, and maintainability problems.
@@ -21,7 +21,7 @@ patterns that lead to bugs, performance issues, and maintainability problems.
 ## Installation
 
 ```bash
-bun add -D @pobammer-ts/eslint-cease-nonsense-rules
+aube add -D @pobammer-ts/eslint-cease-nonsense-rules
 ```
 
 ## Usage
@@ -466,6 +466,49 @@ interface ListProps<T> {
 const List = memo(<T,>({ items, renderItem }: ListProps<T>) => {
 	return <frame>{items.map(renderItem)}</frame>;
 });
+```
+
+#### `no-manual-children-property`
+
+Disallow manually declaring `children` in React component props when a wrapper type should own that shape.
+
+**Why**
+
+Manually repeating `children` across prop types is noisy, easy to get inconsistent, and works against a clean shared
+props model. This rule enforces a hard cutover to wrapper-based children typing.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-manual-children-property": ["error", {
+    "mode": "auto",
+    "wrapperNames": ["PropertiesWithChildren"]
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+import type { ReactNode } from "react";
+
+interface FrameProperties {
+	readonly position: UDim2;
+	readonly zIndex?: number;
+	readonly children?: ReactNode;
+}
+```
+
+**✅ Good**
+
+```typescript
+import type { PropertiesWithChildren } from "react";
+
+interface FrameProperties extends PropertiesWithChildren {
+	readonly position: UDim2;
+	readonly zIndex?: number;
+}
 ```
 
 #### `no-unused-use-memo`
@@ -1607,12 +1650,12 @@ while (true) {
 
 #### `fast-format`
 
-Enforces oxfmt code formatting. Reports INSERT, DELETE, and REPLACE operations for formatting differences.
+Enforces `oxfmt` code formatting. Reports INSERT, DELETE, and REPLACE operations for formatting differences.
 
 **Features**
 
 - ✨ Has auto-fix
-- Uses an LRU cache to avoid re-formatting unchanged files
+- Uses an LRU cache to avoid reformatting unchanged files
 
 #### `no-async-constructor`
 
@@ -1780,7 +1823,7 @@ single-replacement cases.
 
 - ✨ Has auto-fix (for single replacements)
 - Aggressive caching of word and name replacements
-- Pre-compiled regex patterns
+- Precompiled regex patterns
 - Early exits for constants and allow-listed names
 
 **❌ Bad**

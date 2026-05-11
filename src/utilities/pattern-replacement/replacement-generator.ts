@@ -52,8 +52,9 @@ export function generateReplacement(
 			return `${replacement.name}(${parameters.join(", ")})`;
 		}
 
-		default:
+		default: {
 			kind satisfies never;
 			throw new Error(`Unknown replacement kind: ${kind as string}`);
+		}
 	}
 }

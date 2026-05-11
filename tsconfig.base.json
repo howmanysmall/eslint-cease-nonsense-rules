@@ -27,9 +27,10 @@
 		"sourceMap": true,
 		"strict": true,
 		"target": "es2023",
-		"types": ["bun", "node"],
+		"types": ["node"],
 		"useUnknownInCatchVariables": true,
 		"verbatimModuleSyntax": true,
 	},
 	"exclude": ["dist", "node_modules"],
+	"extends": "./tsconfig.paths.json",
 }

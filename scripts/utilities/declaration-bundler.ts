@@ -108,7 +108,9 @@ export function bundleDeclarationEntryPoint(options: BundleDeclarationOptions): 
 	const entrySourceFile = options.program.getSourceFile(entryFilePath);
 
 	if (entrySourceFile === undefined) {
-		throw new Error(`Declaration entrypoint not found: ${entryFilePath}`);
+		const error = new Error(`Declaration entrypoint not found: ${entryFilePath}`);
+		Error.captureStackTrace(error, bundleDeclarationEntryPoint);
+		throw error;
 	}
 
 	const checker = options.program.getTypeChecker();
@@ -137,15 +139,20 @@ export function bundleDeclarationEntryPoint(options: BundleDeclarationOptions): 
 		.map((binding) => printExternalImport(binding, externalImportNames));
 	if (printedExternalImports.length > 0) sections.push(printedExternalImports.join("\n"));
 
-	const printedExternalExports = rootExports
-		.filter((record): record is ExternalExportRecord => record.kind === "external")
-		.map(({ statement }) => printer.printNode(ts.EmitHint.Unspecified, statement, entrySourceFile));
+	const printedExternalExports = new Array<string>();
+	for (const record of rootExports) {
+		if (record.kind !== "external") continue;
+		printedExternalExports.push(printer.printNode(ts.EmitHint.Unspecified, record.statement, entrySourceFile));
+	}
+
 	if (printedExternalExports.length > 0) sections.push(printedExternalExports.join("\n"));
 
 	const printedDeclarations = state.orderedSymbols.map((symbol) => {
 		const record = state.collectedSymbols.get(symbol);
 		if (record === undefined) {
-			throw new Error(`Missing collected declaration for symbol: ${symbol.getName()}`);
+			const error = new Error(`Missing collected declaration for symbol: ${symbol.getName()}`);
+			Error.captureStackTrace(error, bundleDeclarationEntryPoint);
+			throw error;
 		}
 
 		const transformed = transformStatement(record.statement, state, localSymbolNames, externalImportNames);
@@ -161,7 +168,9 @@ export function bundleDeclarationEntryPoint(options: BundleDeclarationOptions): 
 		if (rootExport.kind === "external") continue;
 		const emittedName = localSymbolNames.get(rootExport.symbol);
 		if (emittedName === undefined) {
-			throw new Error(`Missing emitted declaration name for symbol: ${rootExport.symbol.getName()}`);
+			const error = new Error(`Missing emitted declaration name for symbol: ${rootExport.symbol.getName()}`);
+			Error.captureStackTrace(error, bundleDeclarationEntryPoint);
+			throw error;
 		}
 
 		if (rootExport.kind === "default") {
@@ -221,7 +230,11 @@ function assignLocalSymbolNames(
 		if (rootExport.kind === "external" || results.has(rootExport.symbol)) continue;
 		const collectedRecord = collectedSymbols.get(rootExport.symbol);
 		if (collectedRecord === undefined) {
-			throw new Error(`Missing collected declaration for exported symbol: ${rootExport.symbol.getName()}`);
+			const error = new Error(
+				`Missing collected declaration for exported symbol: ${rootExport.symbol.getName()}`,
+			);
+			Error.captureStackTrace(error, assignLocalSymbolNames);
+			throw error;
 		}
 
 		const preferredName = preferredPublicNames.get(rootExport.symbol) ?? collectedRecord.originalName;
@@ -235,7 +248,9 @@ function assignLocalSymbolNames(
 		if (results.has(symbol)) continue;
 		const collectedRecord = collectedSymbols.get(symbol);
 		if (collectedRecord === undefined) {
-			throw new Error(`Missing collected declaration for symbol: ${symbol.getName()}`);
+			const error = new Error(`Missing collected declaration for symbol: ${symbol.getName()}`);
+			Error.captureStackTrace(error, assignLocalSymbolNames);
+			throw error;
 		}
 
 		results.set(
@@ -257,15 +272,21 @@ function collectRootExports(entrySourceFile: ts.SourceFile, checker: ts.TypeChec
 	for (const statement of entrySourceFile.statements) {
 		if (ts.isExportAssignment(statement)) {
 			if (statement.isExportEquals) {
-				throw new Error(`CommonJS export assignments are not supported in ${entrySourceFile.fileName}`);
+				const error = new Error(`CommonJS export assignments are not supported in ${entrySourceFile.fileName}`);
+				Error.captureStackTrace(error, collectRootExports);
+				throw error;
 			}
 			if (!ts.isIdentifier(statement.expression)) {
-				throw new Error(`Unsupported default export in ${entrySourceFile.fileName}`);
+				const error = new Error(`Unsupported default export in ${entrySourceFile.fileName}`);
+				Error.captureStackTrace(error, collectRootExports);
+				throw error;
 			}
 
 			const symbol = checker.getSymbolAtLocation(statement.expression);
 			if (symbol === undefined) {
-				throw new Error(`Unable to resolve default export in ${entrySourceFile.fileName}`);
+				const error = new Error(`Unable to resolve default export in ${entrySourceFile.fileName}`);
+				Error.captureStackTrace(error, collectRootExports);
+				throw error;
 			}
 
 			records.push({ kind: "default", symbol: resolveAliasedSymbol(symbol, checker) });
@@ -298,10 +319,14 @@ function collectExportDeclarationRecords(
 	checker: ts.TypeChecker,
 ): void {
 	if (statement.exportClause === undefined) {
-		throw new Error(`Unsupported export star declaration in ${statement.getSourceFile().fileName}`);
+		const error = new Error(`Unsupported export star declaration in ${statement.getSourceFile().fileName}`);
+		Error.captureStackTrace(error, collectExportDeclarationRecords);
+		throw error;
 	}
 	if (!ts.isNamedExports(statement.exportClause)) {
-		throw new Error(`Unsupported namespace export declaration in ${statement.getSourceFile().fileName}`);
+		const error = new Error(`Unsupported namespace export declaration in ${statement.getSourceFile().fileName}`);
+		Error.captureStackTrace(error, collectExportDeclarationRecords);
+		throw error;
 	}
 
 	const moduleSpecifier = getModuleSpecifierText(statement.moduleSpecifier);
@@ -328,7 +353,11 @@ function collectExportDeclarationRecords(
 		}
 
 		if (symbol === undefined) {
-			throw new Error(`Unable to resolve export '${publicName}' in ${statement.getSourceFile().fileName}`);
+			const error = new Error(
+				`Unable to resolve export '${publicName}' in ${statement.getSourceFile().fileName}`,
+			);
+			Error.captureStackTrace(error, collectExportDeclarationRecords);
+			throw error;
 		}
 
 		records.push({
@@ -353,7 +382,9 @@ function collectSymbol(state: BundlerState, symbol: ts.Symbol): void {
 
 	const originalName = getStatementPrimaryName(statement);
 	if (originalName === undefined) {
-		throw new Error(`Unsupported declaration statement in ${statement.getSourceFile().fileName}`);
+		const error = new Error(`Unsupported declaration statement in ${statement.getSourceFile().fileName}`);
+		Error.captureStackTrace(error, collectSymbol);
+		throw error;
 	}
 
 	state.collectedSymbols.set(resolvedSymbol, {
@@ -526,7 +557,9 @@ function getImportDeclaration(node: ts.ImportClause | ts.ImportSpecifier | ts.Na
 	}
 
 	if (ts.isImportDeclaration(currentNode)) return currentNode;
-	throw new Error("Expected import binding parent to be an import declaration");
+	const error = new Error("Expected import binding parent to be an import declaration");
+	Error.captureStackTrace(error, getImportDeclaration);
+	throw error;
 }
 
 function getModuleSpecifierText(node: ts.Expression | undefined): string | undefined {
@@ -642,7 +675,9 @@ function printExternalImport(
 ): string {
 	const emittedName = externalImportNames.get(binding.symbol);
 	if (emittedName === undefined) {
-		throw new Error(`Missing emitted external import name for symbol: ${binding.symbol.getName()}`);
+		const error = new Error(`Missing emitted external import name for symbol: ${binding.symbol.getName()}`);
+		Error.captureStackTrace(error, printExternalImport);
+		throw error;
 	}
 
 	if (binding.kind === "default") {
@@ -733,7 +768,7 @@ function stripExportModifiers(statement: SupportedDeclarationStatement): Support
 	return ts.factory.updateVariableStatement(statement, modifiers, statement.declarationList);
 }
 
-const ALPHA_NUMERIC = /[A-Za-z0-9]/;
+const ALPHA_NUMERIC = /[A-Za-z0-9]/u;
 
 function toPascalCase(value: string): string {
 	let output = "";
@@ -780,7 +815,9 @@ function transformStatement(
 	transformResult.dispose();
 
 	if (firstStatement === undefined || !isSupportedDeclarationStatement(firstStatement)) {
-		throw new Error(`Failed to transform declaration statement in ${statement.getSourceFile().fileName}`);
+		const error = new Error(`Failed to transform declaration statement in ${statement.getSourceFile().fileName}`);
+		Error.captureStackTrace(error, transformStatement);
+		throw error;
 	}
 
 	return stripExportModifiers(firstStatement);

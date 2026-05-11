@@ -31,8 +31,8 @@ to end up anonymous in stack traces and DevTools. Prefer plain function declarat
 2. **Convert to Function** Change `const Component: React.FC<Props> = (...)` to `function Component(...)`.
 3. **Type Props Directly** Move the prop type from the variable annotation to the function parameter list:
    `(props: Props)`.
-4. **Clean Up** Check if your component uses `children`. If so, explicitly add `children: ReactNode` to your props
-   interface.
+4. **Clean Up** If your component accepts `children`, move that into your shared wrapper type such as
+   `PropertiesWithChildren` instead of manually declaring `children` on the props interface.
 {/* oxfmt-ignore */}
 
 </Steps>

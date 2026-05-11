@@ -21,8 +21,8 @@ const values = [
 const SPLIT_MARKER = "\0";
 const SPLIT_REPLACE_VALUE = `$1${SPLIT_MARKER}$2`;
 
-const SPLIT_LOWER_TO_UPPER_ASCII = /([a-z\d])([A-Z])/g;
-const SPLIT_UPPER_TO_UPPER_ASCII = /([A-Z])([A-Z][a-z])/g;
+const SPLIT_LOWER_TO_UPPER_ASCII = /([a-z\d])([A-Z])/gu;
+const SPLIT_UPPER_TO_UPPER_ASCII = /([A-Z])([A-Z][a-z])/gu;
 
 const SPLIT_LOWER_TO_UPPER_UNICODE = regex("([\\p{Ll}\\d])(\\p{Lu})", "gu");
 const SPLIT_UPPER_TO_UPPER_UNICODE = regex("(\\p{Lu})([\\p{Lu}][\\p{Ll}])", "gu");

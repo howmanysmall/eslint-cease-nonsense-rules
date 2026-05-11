@@ -1,16 +1,14 @@
-import { describe, setDefaultTimeout } from "bun:test";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
+import { describe, vi } from "vitest";
+import rule from "@rules/misleading-lua-tuple-checks";
 import tsParser from "@typescript-eslint/parser";
-import { fileURLToPath } from "bun";
 import { RuleTester } from "eslint";
 
-import rule from "../../src/rules/misleading-lua-tuple-checks";
+const testDirectory = import.meta.dirname;
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+vi.setConfig({ testTimeout: 30_000 });
 
-setDefaultTimeout(30_000);
-
-const fixturesDir = join(__dirname, "../fixtures/misleading-lua-tuple-checks");
+const fixturesDir = join(testDirectory, "../fixtures/misleading-lua-tuple-checks");
 const filename = join(fixturesDir, "input.ts");
 
 const ruleTester = new RuleTester({
@@ -32,6 +30,21 @@ const ruleTester = new RuleTester({
 
 const iterableDeclarations =
 	"interface IterableFunction<T> { (this: unknown): T; } declare function getIterable(): IterableFunction<LuaTuple<[string]>>;";
+
+const callableIterableDeclarations =
+	"type CallableTupleIterable = { (): LuaTuple<[string]>; }; declare const callableTupleIterable: CallableTupleIterable;";
+
+const constrainedIterableDeclarations =
+	"declare function getConstrainedIterable<T extends IterableFunction<LuaTuple<[string]>>>(): T;";
+
+const wrappedIterableDeclarations =
+	"type WrappedIterable<T> = IterableFunction<T>; declare function getWrappedIterable(): WrappedIterable<LuaTuple<[string]>>;";
+
+const wrappedTargetDeclarations =
+	"type TupleAlias = LuaTuple<[string]>; type WrappedTarget = IterableFunction<TupleAlias>; declare const wrappedTarget: WrappedTarget;";
+
+const wrappedArrayDeclarations =
+	"type WrappedArray<T> = Array<T>; declare const wrappedArray: WrappedArray<LuaTuple<[string]>>;";
 
 const tupleDeclarations = `
 type LuaTuple<T extends unknown[]> = T & { readonly LUA_TUPLE: never };
@@ -57,6 +70,8 @@ const validSamples = [
 	"do {} while (game.Loaded.Wait()[0]);",
 	"for (const [i] of [1, 2, 3]) {}",
 	"for (let i = 0; game.Loaded.Wait()[0]; i++) {}",
+	`${wrappedIterableDeclarations} for (const [value] of getWrappedIterable()) {}`,
+	`${wrappedTargetDeclarations} for (const [value] of wrappedTarget) {}`,
 	"if (!game.Loaded.Wait()[0]) {}",
 	"if (a && game.Loaded.Wait()[0]) {}",
 	"if (game.Loaded.Wait()[0] || b) {}",
@@ -167,6 +182,26 @@ const invalidCases = [
 		code: `${iterableDeclarations} let x; for (x of getIterable()) {}`,
 		errors: [{ messageId: "luaTupleDeclaration" }],
 		output: `${iterableDeclarations} let x; for ([x] of getIterable()) {}`,
+	},
+	{
+		code: `${callableIterableDeclarations} for (const value of callableTupleIterable) {}`,
+		errors: [{ messageId: "luaTupleDeclaration" }],
+		output: `${callableIterableDeclarations} for (const [value] of callableTupleIterable) {}`,
+	},
+	{
+		code: `${constrainedIterableDeclarations} for (const value of getConstrainedIterable()) {}`,
+		errors: [{ messageId: "luaTupleDeclaration" }],
+		output: `${constrainedIterableDeclarations} for (const [value] of getConstrainedIterable()) {}`,
+	},
+	{
+		code: "function iterate<T extends IterableFunction<LuaTuple<[string]>>>(iterable: T) { for (const value of iterable) {} }",
+		errors: [{ messageId: "luaTupleDeclaration" }],
+		output: "function iterate<T extends IterableFunction<LuaTuple<[string]>>>(iterable: T) { for (const [value] of iterable) {} }",
+	},
+	{
+		code: `${wrappedArrayDeclarations} for (const value of wrappedArray) {}`,
+		errors: [{ messageId: "luaTupleDeclaration" }],
+		output: `${wrappedArrayDeclarations} for (const [value] of wrappedArray) {}`,
 	},
 ];
 

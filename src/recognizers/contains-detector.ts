@@ -3,9 +3,9 @@ import { regex } from "arktype";
 import type { Detector } from "./detector";
 
 // oxlint-disable-next-line prefer-string-raw
-const WHITESPACE_GLOBAL_REGEX = regex("\\s+", "g");
+const WHITESPACE_GLOBAL_REGEX = regex("\\s+", "gu");
 // oxlint-disable-next-line prefer-string-raw
-const ESCAPE = regex("[-/\\^$*+?.()|[\\]{}]", "g");
+const ESCAPE = regex("[-/\\^$*+?.()|[\\]{}]", "gu");
 
 function escapeForRegex(value: string): string {
 	return value.replaceAll(ESCAPE, String.raw`\$&`);
@@ -21,7 +21,7 @@ function escapeForRegex(value: string): string {
  */
 export function createContainsDetector(probability: number, patterns: ReadonlyArray<string | RegExp>): Detector {
 	const compiledPatterns = patterns.map((pattern) =>
-		typeof pattern === "string" ? new RegExp(escapeForRegex(pattern), "g") : new RegExp(pattern.source, "g"),
+		typeof pattern === "string" ? new RegExp(escapeForRegex(pattern), "gu") : new RegExp(pattern.source, "gu"),
 	);
 
 	return {

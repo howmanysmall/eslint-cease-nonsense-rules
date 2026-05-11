@@ -1,7 +1,6 @@
-import { describe } from "bun:test";
+import { describe } from "vitest";
+import rule from "@rules/use-hook-at-top-level";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/use-hook-at-top-level";
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -16,6 +15,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("use-hook-at-top-level", () => {
+	// @ts-expect-error -- wrong
 	ruleTester.run("use-hook-at-top-level", rule, {
 		invalid: [
 			// Conditional execution - if statement

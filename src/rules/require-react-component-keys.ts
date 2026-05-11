@@ -1,6 +1,5 @@
 import { TSESTree } from "@typescript-eslint/types";
-
-import { createRule } from "../utilities/create-rule";
+import { createRule } from "@utilities/create-rule";
 
 import type { TSESLint } from "@typescript-eslint/utils";
 
@@ -347,7 +346,7 @@ function isIgnoredCallExpression(
 	node: TSESTree.JSXElement | TSESTree.JSXFragment,
 	ignoreList: ReadonlyArray<string>,
 ): boolean {
-	// oxlint-disable-next-line prefer-destructuring - not possible
+	// oxlint-disable-next-line prefer-destructuring
 	let parent: TSESTree.Node | undefined = node.parent;
 	if (!parent) return false;
 
@@ -394,7 +393,7 @@ function isChildrenAttributeName(attributeName: string): boolean {
 	return attributeName.toLowerCase().endsWith(CHILD_PROP_NAME_SUFFIX);
 }
 
-function isJSXPropValue(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
+function isJsxPropertyValue(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
 	let { parent } = node;
 	if (!parent) return false;
 
@@ -509,7 +508,7 @@ const requireReactComponentKeys = createRule<Options, MessageIds>({
 			}
 
 			if (isIgnoredCallExpression(node, options.ignoreCallExpressions)) return;
-			if (isJSXPropValue(node)) return;
+			if (isJsxPropertyValue(node)) return;
 			if (isTernaryJSXChild(node)) return;
 			if (node.type === TSESTree.AST_NODE_TYPES.JSXFragment && isLogicalJSXChild(node)) return;
 			if (

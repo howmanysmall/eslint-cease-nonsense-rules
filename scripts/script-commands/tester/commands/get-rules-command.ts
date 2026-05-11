@@ -1,12 +1,12 @@
 import { resolve } from "node:path";
-import { cwd, exit } from "node:process";
-import { Command, EnumType } from "@jsr/cliffy__command";
+import { exit } from "node:process";
+import { Command, EnumType } from "@cliffy/command";
 import { type } from "arktype";
-import { $ } from "bun";
 
 import { withContext } from "../logging/log-utilities";
 import { getConfigurationPathAsync } from "../utilities/eslint-utilities";
 import { isDirectorySimpleAsync } from "../utilities/fs-utilities";
+import { getCommandTextAsync } from "../utilities/process-utilities";
 import { formatRulesAsJson } from "./formatters/json-formatter";
 import { formatRulesAsMinimal } from "./formatters/minimal-formatter";
 import { formatRulesAsTable } from "./formatters/table-formatter";
@@ -15,8 +15,6 @@ import { isValidRules } from "./formatters/types";
 import type { RuleEntry } from "./formatters/types";
 
 const log = withContext({ namespace: "tester", scope: "get-rules" });
-
-const CURRENT_WORKING_DIRECTORY = cwd();
 
 enum OutputFormat {
 	Json = "json",
@@ -62,9 +60,9 @@ const getRulesCommand = new Command()
 
 		log.verbose("Loading ESLint configuration...");
 
-		process.chdir(directory);
-		const text = await $`bun x --bun eslint --print-config ${configurationPath}`.quiet(true).text();
-		process.chdir(CURRENT_WORKING_DIRECTORY);
+		const text = await getCommandTextAsync("aube", ["x", "eslint", "--print-config", configurationPath], {
+			cwd: directory,
+		});
 
 		const json = isValidRules(JSON.parse(text));
 		if (json instanceof type.errors) {
@@ -74,7 +72,7 @@ const getRulesCommand = new Command()
 
 		const { rules } = json;
 
-		const uniqueRuleNames = [...new Set<string>([ruleName, ...ruleNames])];
+		const uniqueRuleNames = [...new Set([ruleName, ...ruleNames])];
 		const entries: Array<RuleEntry> = uniqueRuleNames.map((name) => ({
 			name,
 			rule: rules[name],

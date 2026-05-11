@@ -13,7 +13,12 @@
 		"**/*.json",
 		".context/**",
 		"!package.json",
+		"aube-lock.yaml",
 	],
+	"insertFinalNewline": true,
+	"jsdoc": true,
+	"jsxSingleQuote": false,
+	"objectWrap": "preserve",
 	"overrides": [
 		{
 			"files": ["**/*.{yaml,yml}"],
@@ -35,10 +40,6 @@
 			},
 		},
 	],
-	"insertFinalNewline": true,
-	"jsdoc": true,
-	"jsxSingleQuote": false,
-	"objectWrap": "preserve",
 	"printWidth": 120,
 	"proseWrap": "always",
 	"quoteProps": "as-needed",

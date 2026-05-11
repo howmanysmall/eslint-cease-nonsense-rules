@@ -42,3 +42,7 @@ export function toPascalCase(value: string): string {
 
 	return result;
 }
+
+export function isPascalCase([firstCharacter]: string): boolean {
+	return firstCharacter !== undefined && firstCharacter >= "A" && firstCharacter <= "Z";
+}

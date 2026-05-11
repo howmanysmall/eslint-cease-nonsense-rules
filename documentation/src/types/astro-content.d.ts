@@ -1,13 +1,11 @@
 declare module "astro:content" {
-	export interface DocsEntry {
-		id: string;
-		collection: "docs";
-		data: {
-			title: string;
-		};
+	export interface DocumentationEntry {
 		body: string;
+		collection: "docs";
+		data: { title: string };
+		id: string;
 	}
 
-	export function getCollection(collection: "docs"): Promise<Array<DocsEntry>>;
-	export function getEntry(collection: "docs", id: string): Promise<DocsEntry | undefined>;
+	export function getCollection(collection: "docs"): Promise<Array<DocumentationEntry>>;
+	export function getEntry(collection: "docs", id: string): Promise<DocumentationEntry | undefined>;
 }

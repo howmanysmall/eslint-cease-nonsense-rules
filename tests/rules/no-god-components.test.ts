@@ -1,8 +1,7 @@
-import { describe } from "bun:test";
+import { describe } from "vitest";
+import rule from "@rules/no-god-components";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/no-god-components";
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -115,7 +114,7 @@ function Propsy({ a, b, c }) {
     return <div />;
 }
 `,
-				errors: [{ messageId: "tooManyProps" }],
+				errors: [{ messageId: "tooManyProperties" }],
 				languageOptions: {
 					parser,
 					parserOptions: {
@@ -125,7 +124,7 @@ function Propsy({ a, b, c }) {
 				options: [
 					{
 						enforceTargetLines: false,
-						maxDestructuredProps: 2,
+						maxDestructuredProperties: 2,
 						maxLines: 1000,
 						targetLines: 1000,
 					},
@@ -173,7 +172,7 @@ const MemberState = () => {
 				options: [
 					{
 						enforceTargetLines: false,
-						maxDestructuredProps: 1000,
+						maxDestructuredProperties: 1000,
 						maxLines: 1000,
 						maxStateHooks: 1,
 						maxTsxNesting: 1000,
@@ -200,7 +199,7 @@ const BadMemo = memo(() => {
 				options: [
 					{
 						enforceTargetLines: false,
-						maxDestructuredProps: 1000,
+						maxDestructuredProperties: 1000,
 						maxLines: 1000,
 						maxStateHooks: 1,
 						maxTsxNesting: 1000,
@@ -226,7 +225,7 @@ const ReactBad = React.memo(function ReactBad() {
 				options: [
 					{
 						enforceTargetLines: false,
-						maxDestructuredProps: 1000,
+						maxDestructuredProperties: 1000,
 						maxLines: 1000,
 						maxStateHooks: 1000,
 						maxTsxNesting: 1000,
@@ -271,7 +270,7 @@ const Components = {
 				options: [
 					{
 						enforceTargetLines: false,
-						maxDestructuredProps: 1000,
+						maxDestructuredProperties: 1000,
 						maxLines: 1000,
 						maxStateHooks: 1000,
 						maxTsxNesting: 1000,
@@ -298,7 +297,7 @@ class View {
 				options: [
 					{
 						enforceTargetLines: false,
-						maxDestructuredProps: 1000,
+						maxDestructuredProperties: 1000,
 						maxLines: 1000,
 						maxStateHooks: 1000,
 						maxTsxNesting: 1000,
@@ -462,7 +461,7 @@ function Ignored() {
 					{
 						enforceTargetLines: false,
 						ignoreComponents: ["Ignored"],
-						maxDestructuredProps: 1000,
+						maxDestructuredProperties: 1000,
 						maxLines: 1000,
 						maxStateHooks: 1000,
 						maxTsxNesting: 1000,

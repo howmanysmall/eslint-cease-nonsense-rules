@@ -1,7 +1,6 @@
 import { ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES, AST_TOKEN_TYPES } from "@typescript-eslint/utils";
-
-import { createRule } from "../utilities/create-rule";
+import { createRule } from "@utilities/create-rule";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
@@ -13,19 +12,11 @@ export interface NoUnusedImportsOptions {
 
 type Options = [NoUnusedImportsOptions?];
 
-const JSDOC_PATTERN = new RegExp(
-	`(?:@(?:link|linkcode|linkplain|see)\\s+\\{?\\w+\\b\\}?)|` +
-		`(?:\\{@(?:link|linkcode|linkplain|see)\\s+\\w+\\b\\})|` +
-		`(?:[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\\s+[^}]*\\b\\w+\\b)`,
-	"u",
-);
+const JSDOC_PATTERN =
+	/(?:@(?:link|linkcode|linkplain|see)\s+\{?\w+\b\}?)|(?:\{@(?:link|linkcode|linkplain|see)\s+\w+\b\})|(?:[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\s+[^}]*\b\w+\b)/u;
 
-const JSDOC_IDENTIFIER_PATTERN = new RegExp(
-	`(?:@(?:link|linkcode|linkplain|see)\\s+\\{?(\\w+)\\b\\}?)|` +
-		`(?:\\{@(?:link|linkcode|linkplain|see)\\s+(\\w+)\\b\\})|` +
-		`(?:[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\\s+[^}]*\\b(\\w+)\\b)`,
-	"gu",
-);
+const JSDOC_IDENTIFIER_PATTERN =
+	/(?:@(?:link|linkcode|linkplain|see)\s+\{?(\w+)\b\}?)|(?:\{@(?:link|linkcode|linkplain|see)\s+(\w+)\b\})|(?:[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\s+[^}]*\b(\w+)\b)/gu;
 
 type AnyImportSpecifier =
 	| TSESTree.ImportDefaultSpecifier
@@ -45,7 +36,7 @@ function getImportIdentifierName(specifier: AnyImportSpecifier): string | undefi
 	return specifier.local.name;
 }
 
-function collectJSDocIdentifiers(sourceCode: TSESLint.SourceCode): Set<string> {
+function collectJSDocumentIdentifiers(sourceCode: TSESLint.SourceCode): Set<string> {
 	const identifiers = new Set<string>();
 	const comments = sourceCode.getAllComments();
 
@@ -67,9 +58,10 @@ function collectJSDocIdentifiers(sourceCode: TSESLint.SourceCode): Set<string> {
 
 const noUnusedImports = createRule<Options, MessageIds>({
 	create(context) {
+		// oxlint-disable-next-line small-rules/prevent-abbreviations
 		const [{ checkJSDoc = true } = {}] = context.options;
 		const { sourceCode } = context;
-		const jsdocIdentifiers = checkJSDoc ? collectJSDocIdentifiers(sourceCode) : new Set<string>();
+		const jsdocIdentifiers = checkJSDoc ? collectJSDocumentIdentifiers(sourceCode) : new Set<string>();
 
 		const imports = new Array<{
 			identifierName: string;
@@ -100,22 +92,22 @@ const noUnusedImports = createRule<Options, MessageIds>({
 					const comma = sourceCode.getTokenAfter(specifierNode, {
 						filter: (token) => token.value === ",",
 					});
-					const prevNode = sourceCode.getTokenBefore(specifierNode);
+					const previousNode = sourceCode.getTokenBefore(specifierNode);
 
-					if (comma && prevNode) {
+					if (comma && previousNode) {
 						return [
-							fixer.removeRange([prevNode.range[1], specifierNode.range[0]]),
+							fixer.removeRange([previousNode.range[1], specifierNode.range[0]]),
 							fixer.remove(specifierNode),
 							fixer.remove(comma),
 						];
 					}
 				}
 
-				const prevToken = sourceCode.getTokenBefore(specifierNode, {
+				const previousToken = sourceCode.getTokenBefore(specifierNode, {
 					filter: (token) => token.value === ",",
 				});
 
-				if (prevToken) return fixer.removeRange([prevToken.range[0], specifierNode.range[1]]);
+				if (previousToken) return fixer.removeRange([previousToken.range[0], specifierNode.range[1]]);
 				return fixer.remove(specifierNode);
 			};
 		}

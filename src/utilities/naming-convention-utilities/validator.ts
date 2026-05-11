@@ -1,7 +1,6 @@
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { TypeFlags } from "typescript";
 
-import { TypeModifiers } from "./enums";
 import { PredefinedFormatToCheckFunction } from "./format";
 import { selectorTypeToMessageString } from "./shared";
 
@@ -183,7 +182,7 @@ function validateUnderscore(
 			}
 			return trimmedSingleUnderscore;
 		}
-		case "requireDouble":
+		case "requireDouble": {
 			if (!hasDoubleUnderscore) {
 				context.report({
 					data: formatReportData(selectorType, { count: "two", originalName, position }),
@@ -193,6 +192,7 @@ function validateUnderscore(
 				return undefined;
 			}
 			return trimmedDoubleUnderscore;
+		}
 	}
 }
 
@@ -299,20 +299,23 @@ function isCorrectType(
 
 	for (const allowedType of config.types) {
 		switch (allowedType) {
-			case TypeModifiers.array:
+			case "array": {
 				if (isAllTypesMatch(type, (innerType) => isArrayLikeType(checker, innerType))) {
 					return true;
 				}
 				break;
-			case TypeModifiers.function:
+			}
+
+			case "function": {
 				if (isAllTypesMatch(type, (innerType) => innerType.getCallSignatures().length > 0)) return true;
 				break;
-			case TypeModifiers.boolean:
-			case TypeModifiers.number:
-			case TypeModifiers.string: {
+			}
+
+			case "boolean":
+			case "number":
+			case "string": {
 				const typeString = checker.typeToString(checker.getWidenedType(checker.getBaseTypeOfLiteralType(type)));
 				if (typeString === allowedType) return true;
-
 				break;
 			}
 		}

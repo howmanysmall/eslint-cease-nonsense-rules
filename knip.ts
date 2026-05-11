@@ -3,13 +3,12 @@ import type { KnipConfig } from "knip";
 const config: KnipConfig = {
 	biome: true,
 	bumpp: true,
-	bun: true,
 	commitlint: true,
-	entry: ["scripts/*.ts", "benchmarks/**/*.bench.ts", ".opencode/**/*.ts", "tests/**/*.ts"],
+	entry: ["scripts/*.ts", "benchmarks/**/*.bench.ts", ".opencode/**/*.ts", "tests/**/*.ts", "plugins/**/*.ts"],
 	eslint: true,
-	ignore: ["scripts/plugins/**/*.ts"],
-	ignoreBinaries: ["lefthook", "notify-send", "osascript", "powershell"],
-	ignoreDependencies: ["source-map", "@mitata/counters", "@rbxts/types", "better-result"],
+	ignore: ["tests/fixtures/**"],
+	ignoreBinaries: ["aube", "hk", "notify-send", "osascript", "powershell"],
+	ignoreDependencies: ["source-map", "@mitata/counters", "@rbxts/types", "skills"],
 	oxlint: true,
 	project: ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts"],
 	rules: {

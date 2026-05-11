@@ -1,7 +1,6 @@
 import { DefinitionType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-
-import { createRule } from "../utilities/create-rule";
+import { createRule } from "@utilities/create-rule";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
@@ -15,21 +14,21 @@ type Options = [NoIdentityMapOptions?];
 
 const DEFAULT_BINDING_PATTERNS: ReadonlyArray<string> = ["binding"];
 
-function getParameterName(param: TSESTree.Parameter): string | undefined {
-	if (param.type === AST_NODE_TYPES.Identifier) return param.name;
-	if (param.type === AST_NODE_TYPES.AssignmentPattern && param.left.type === AST_NODE_TYPES.Identifier) {
-		return param.left.name;
+function getParameterName(parameter: TSESTree.Parameter): string | undefined {
+	if (parameter.type === AST_NODE_TYPES.Identifier) return parameter.name;
+	if (parameter.type === AST_NODE_TYPES.AssignmentPattern && parameter.left.type === AST_NODE_TYPES.Identifier) {
+		return parameter.left.name;
 	}
 	return undefined;
 }
 
-function isBlockReturningIdentity(body: TSESTree.BlockStatement, paramName: string): boolean {
+function isBlockReturningIdentity(body: TSESTree.BlockStatement, parameterName: string): boolean {
 	if (body.body.length !== 1) return false;
 	const [statement] = body.body;
 	if (statement?.type !== AST_NODE_TYPES.ReturnStatement) return false;
 	if (!statement.argument) return false;
 	if (statement.argument.type !== AST_NODE_TYPES.Identifier) return false;
-	return statement.argument.name === paramName;
+	return statement.argument.name === parameterName;
 }
 
 function isIdentityCallback(callback: TSESTree.Expression): boolean {
@@ -90,9 +89,9 @@ function isJoinBindingsCall(node: TSESTree.CallExpression): boolean {
 }
 
 function isBindingInitialization(variable: TSESLint.Scope.Variable): boolean {
-	for (const def of variable.defs) {
-		if (def.type !== DefinitionType.Variable) continue;
-		const { init } = def.node;
+	for (const definition of variable.defs) {
+		if (definition.type !== DefinitionType.Variable) continue;
+		const { init } = definition.node;
 		if (!init || init.type !== AST_NODE_TYPES.CallExpression) continue;
 
 		const hookName = getHookName(init);
@@ -164,7 +163,7 @@ const noIdentityMap = createRule<Options, MessageIds>({
 						return fixer.replaceText(node, objectText);
 					},
 					messageId: isBinding ? "identityBindingMap" : "identityArrayMap",
-					node: node,
+					node,
 				});
 			},
 		};

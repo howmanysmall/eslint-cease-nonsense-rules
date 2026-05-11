@@ -1,6 +1,5 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-
-import { createRule } from "../utilities/create-rule";
+import { createRule } from "@utilities/create-rule";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
@@ -34,16 +33,18 @@ function unwrapExpression(expression: TSESTree.Expression): TSESTree.Expression 
 
 	while (true) {
 		switch (current.type) {
-			case AST_NODE_TYPES.ChainExpression:
+			case AST_NODE_TYPES.ChainExpression: {
 				current = current.expression;
 				continue;
+			}
 			case AST_NODE_TYPES.TSAsExpression:
 			case AST_NODE_TYPES.TSInstantiationExpression:
 			case AST_NODE_TYPES.TSNonNullExpression:
 			case AST_NODE_TYPES.TSSatisfiesExpression:
-			case AST_NODE_TYPES.TSTypeAssertion:
+			case AST_NODE_TYPES.TSTypeAssertion: {
 				current = current.expression;
 				continue;
+			}
 			default:
 				return current;
 		}
@@ -115,38 +116,39 @@ function areEquivalentExpression(
 		case AST_NODE_TYPES.Literal:
 			return normalizedRight.type === AST_NODE_TYPES.Literal && normalizedLeft.value === normalizedRight.value;
 
-		case AST_NODE_TYPES.UnaryExpression:
+		case AST_NODE_TYPES.UnaryExpression: {
 			return (
 				normalizedRight.type === AST_NODE_TYPES.UnaryExpression &&
 				normalizedLeft.operator === normalizedRight.operator &&
 				areEquivalentExpression(normalizedLeft.argument, normalizedRight.argument, sourceCode)
 			);
+		}
 
-		case AST_NODE_TYPES.BinaryExpression:
+		case AST_NODE_TYPES.BinaryExpression: {
 			return (
 				normalizedRight.type === AST_NODE_TYPES.BinaryExpression &&
 				normalizedLeft.operator === normalizedRight.operator &&
 				areEquivalentOperand(normalizedLeft.left, normalizedRight.left, sourceCode) &&
 				areEquivalentOperand(normalizedLeft.right, normalizedRight.right, sourceCode)
 			);
+		}
 
-		case AST_NODE_TYPES.LogicalExpression:
+		case AST_NODE_TYPES.LogicalExpression: {
 			return (
 				normalizedRight.type === AST_NODE_TYPES.LogicalExpression &&
 				normalizedLeft.operator === normalizedRight.operator &&
 				areEquivalentExpression(normalizedLeft.left, normalizedRight.left, sourceCode) &&
 				areEquivalentExpression(normalizedLeft.right, normalizedRight.right, sourceCode)
 			);
+		}
 
-		case AST_NODE_TYPES.MemberExpression:
-			if (normalizedRight.type !== AST_NODE_TYPES.MemberExpression) return false;
+		case AST_NODE_TYPES.MemberExpression: {
 			if (
+				normalizedRight.type !== AST_NODE_TYPES.MemberExpression ||
 				normalizedLeft.computed !== normalizedRight.computed ||
-				normalizedLeft.optional !== normalizedRight.optional
+				normalizedLeft.optional !== normalizedRight.optional ||
+				!areEquivalentExpressionOrSuper(normalizedLeft.object, normalizedRight.object, sourceCode)
 			) {
-				return false;
-			}
-			if (!areEquivalentExpressionOrSuper(normalizedLeft.object, normalizedRight.object, sourceCode)) {
 				return false;
 			}
 
@@ -166,14 +168,17 @@ function areEquivalentExpression(
 				normalizedRight.property.type === AST_NODE_TYPES.PrivateIdentifier &&
 				normalizedLeft.property.name === normalizedRight.property.name
 			);
+		}
 
-		case AST_NODE_TYPES.CallExpression:
-			if (normalizedRight.type !== AST_NODE_TYPES.CallExpression) return false;
-			if (normalizedLeft.optional !== normalizedRight.optional) return false;
-			if (!areEquivalentExpressionOrSuper(normalizedLeft.callee, normalizedRight.callee, sourceCode)) {
+		case AST_NODE_TYPES.CallExpression: {
+			if (
+				normalizedRight.type !== AST_NODE_TYPES.CallExpression ||
+				normalizedLeft.optional !== normalizedRight.optional ||
+				!areEquivalentExpressionOrSuper(normalizedLeft.callee, normalizedRight.callee, sourceCode) ||
+				normalizedLeft.arguments.length !== normalizedRight.arguments.length
+			) {
 				return false;
 			}
-			if (normalizedLeft.arguments.length !== normalizedRight.arguments.length) return false;
 
 			for (let index = 0; index < normalizedLeft.arguments.length; index += 1) {
 				const leftArgument = normalizedLeft.arguments[index];
@@ -183,6 +188,7 @@ function areEquivalentExpression(
 			}
 
 			return true;
+		}
 
 		default:
 			return sourceCode.getText(normalizedLeft) === sourceCode.getText(normalizedRight);

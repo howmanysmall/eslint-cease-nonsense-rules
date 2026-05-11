@@ -1,16 +1,14 @@
-import { describe, setDefaultTimeout } from "bun:test";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
+import { describe, vi } from "vitest";
+import rule from "@rules/prefer-enum-item";
 import tsParser from "@typescript-eslint/parser";
-import { fileURLToPath } from "bun";
 import { RuleTester } from "eslint";
 
-import rule from "../../src/rules/prefer-enum-item";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = import.meta.dirname;
 const fixturesDir = join(__dirname, "../fixtures/prefer-enum-item");
 
 // Type-aware tests have cold-start overhead from TypeScript project service initialization
-setDefaultTimeout(30_000);
+vi.setConfig({ testTimeout: 30_000 });
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -214,19 +212,25 @@ const props: ImageProps = { ScaleType: 999 };`,
 				options: [{ performanceMode: true }],
 			},
 			{
-				code: `const x: number = 999;`,
+				code: "const x: number = 999;",
 				options: [{ performanceMode: true }],
 			},
 			// Non-enum string (no contextual enum type)
 			{ code: `const name: string = "Slice";` },
 			// Non-enum number
-			{ code: `const count: number = 1;` },
+			{ code: "const count: number = 1;" },
 			// Boolean literal (not string or number)
-			{ code: `const flag: boolean = true;` },
+			{ code: "const flag: boolean = true;" },
 			// Non-literal enum type (Name/Value are string/number, not specific literals)
 			{
 				code: `${typeDeclarations}
 setNonLiteral("anything");`,
+			},
+			// Regression: union contextual type should still resolve enum lookup safely
+			{
+				code: `${typeDeclarations}
+declare function someFunction(value: Enum.ScaleType | string): void;
+someFunction("InvalidName");`,
 			},
 			// Enum.Value usage
 			{

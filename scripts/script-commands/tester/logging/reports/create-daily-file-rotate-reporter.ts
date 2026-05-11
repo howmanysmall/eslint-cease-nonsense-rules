@@ -37,6 +37,7 @@ export default function createDailyFileRotateReporter({
 	});
 
 	return {
+		// oxlint-disable-next-line small-rules/prevent-abbreviations
 		log: ({ date, level, tag, args }: LogObject): void => {
 			if (!levelFilter(level)) return;
 

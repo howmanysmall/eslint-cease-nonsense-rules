@@ -1,15 +1,16 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, vi } from "vitest";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-
-import { generateReplacement, getReplacementIdentifier } from "../../src/utilities/pattern-replacement";
+import { generateReplacement, getReplacementIdentifier } from "@utilities/pattern-replacement";
 
 import type { TSESTree } from "@typescript-eslint/types";
+import type { CapturedValue, ParsedReplacement } from "@utilities/pattern-replacement/pattern-types";
 
-import type { CapturedValue, ParsedReplacement } from "../../src/utilities/pattern-replacement/pattern-types";
+vi.setConfig({ testTimeout: 10000 });
 
 describe("pattern-replacement utilities", () => {
 	describe("getReplacementIdentifier", () => {
 		it("should return identifier name for identifier replacement", () => {
+			expect.assertions(1);
 			const replacement: ParsedReplacement = {
 				kind: "identifier",
 				name: "Vector2.zero",
@@ -18,6 +19,7 @@ describe("pattern-replacement utilities", () => {
 		});
 
 		it("should return function name for call replacement", () => {
+			expect.assertions(1);
 			const replacement: ParsedReplacement = {
 				kind: "call",
 				name: "fromX",
@@ -27,6 +29,7 @@ describe("pattern-replacement utilities", () => {
 		});
 
 		it("should return undefined for static access replacement", () => {
+			expect.assertions(1);
 			const replacement: ParsedReplacement = {
 				kind: "staticAccess",
 				property: "zero",
@@ -38,6 +41,7 @@ describe("pattern-replacement utilities", () => {
 
 	describe("generateReplacement", () => {
 		it("should generate identifier replacement", () => {
+			expect.assertions(1);
 			const replacement: ParsedReplacement = {
 				kind: "identifier",
 				name: "Vector2.zero",
@@ -47,6 +51,7 @@ describe("pattern-replacement utilities", () => {
 		});
 
 		it("should generate static access replacement", () => {
+			expect.assertions(1);
 			const replacement: ParsedReplacement = {
 				kind: "staticAccess",
 				property: "zero",
@@ -57,6 +62,7 @@ describe("pattern-replacement utilities", () => {
 		});
 
 		it("should generate call replacement with literal args", () => {
+			expect.assertions(1);
 			const replacement: ParsedReplacement = {
 				kind: "call",
 				name: "fromValues",
@@ -67,6 +73,7 @@ describe("pattern-replacement utilities", () => {
 		});
 
 		it("should generate call replacement with captured args", () => {
+			expect.assertions(1);
 			const replacement: ParsedReplacement = {
 				kind: "call",
 				name: "fromValues",
@@ -93,6 +100,7 @@ describe("pattern-replacement utilities", () => {
 		});
 
 		it("should throw error for missing capture", () => {
+			expect.assertions(1);
 			const replacement: ParsedReplacement = {
 				kind: "call",
 				name: "fromX",
@@ -103,11 +111,17 @@ describe("pattern-replacement utilities", () => {
 		});
 
 		it("should throw error for unknown replacement kind", () => {
-			const replacement = {
-				kind: "unknown",
-			} as unknown as ParsedReplacement;
+			expect.assertions(1);
 			const captures = new Map<string, CapturedValue>();
-			expect(() => generateReplacement(replacement, captures)).toThrow("Unknown replacement kind: unknown");
+			expect(() =>
+				generateReplacement(
+					{
+						// @ts-expect-error - We are intentionally testing an invalid replacement kind, so we can mock it with a partial
+						kind: "unknown",
+					},
+					captures,
+				),
+			).toThrow("Unknown replacement kind: unknown");
 		});
 	});
 });

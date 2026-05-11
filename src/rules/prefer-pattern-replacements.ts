@@ -1,8 +1,5 @@
 import { DefinitionType } from "@typescript-eslint/scope-manager";
-import Typebox from "typebox";
-import { Compile } from "typebox/compile";
-
-import { createRule } from "../utilities/create-rule";
+import { createRule } from "@utilities/create-rule";
 import {
 	buildPatternIndex,
 	canSafelySubstitute,
@@ -12,12 +9,13 @@ import {
 	matchParameters,
 	parsePattern,
 	resolveCallee,
-} from "../utilities/pattern-replacement";
+} from "@utilities/pattern-replacement";
+import Typebox from "typebox";
+import { Compile } from "typebox/compile";
 
 import type { TSESTree } from "@typescript-eslint/types";
 import type { TSESLint } from "@typescript-eslint/utils";
-
-import type { ParsedPattern, Pattern, PatternIndex } from "../utilities/pattern-replacement";
+import type { ParsedPattern, Pattern, PatternIndex } from "@utilities/pattern-replacement";
 
 const isRuleOptions = Compile(
 	Typebox.Object({
@@ -26,9 +24,7 @@ const isRuleOptions = Compile(
 );
 
 function parsePatterns(patterns: ReadonlyArray<Pattern>): ReadonlyArray<ParsedPattern> {
-	return patterns.map((pattern) =>
-		parsePattern(pattern.match, pattern.replacement, pattern.when as Record<string, never> | undefined),
-	);
+	return patterns.map((pattern) => parsePattern(pattern.match, pattern.replacement, pattern.when));
 }
 
 const preferPatternReplacements = createRule({
@@ -67,11 +63,7 @@ const preferPatternReplacements = createRule({
 			const skippedConflicts: Array<{ replacement: string; conflict: string }> = [];
 
 			for (const pattern of candidates) {
-				const captures = matchParameters(
-					pattern.parameters,
-					node.arguments as ReadonlyArray<TSESTree.Expression>,
-					sourceCode,
-				);
+				const captures = matchParameters(pattern.parameters, node.arguments, sourceCode);
 				if (!(captures && evaluateConditions(pattern.conditions, captures) && canSafelySubstitute(captures))) {
 					continue;
 				}

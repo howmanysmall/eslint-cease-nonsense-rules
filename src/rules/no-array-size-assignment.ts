@@ -1,6 +1,5 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-
-import { createRule } from "../utilities/create-rule";
+import { createRule } from "@utilities/create-rule";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
@@ -70,9 +69,10 @@ function areEquivalentTargets(
 			return left.property.name === right.property.name;
 		}
 
-		case AST_NODE_TYPES.CallExpression:
+		case AST_NODE_TYPES.CallExpression: {
 			if (right.type !== AST_NODE_TYPES.CallExpression) return false;
 			return sourceCode.getText(left) === sourceCode.getText(right);
+		}
 
 		default:
 			return false;
@@ -86,7 +86,7 @@ function isSafeMemberKey(node: TSESTree.Expression): boolean {
 		case AST_NODE_TYPES.ThisExpression:
 			return true;
 
-		case AST_NODE_TYPES.MemberExpression:
+		case AST_NODE_TYPES.MemberExpression: {
 			if (node.optional) return false;
 			if (!isSafeFixTarget(node.object)) return false;
 			if (node.computed) {
@@ -98,6 +98,7 @@ function isSafeMemberKey(node: TSESTree.Expression): boolean {
 				node.property.type === AST_NODE_TYPES.Identifier ||
 				node.property.type === AST_NODE_TYPES.PrivateIdentifier
 			);
+		}
 
 		default:
 			return false;
@@ -110,19 +111,15 @@ function isSafeFixTarget(node: TSESTree.Expression | TSESTree.Super): boolean {
 		case AST_NODE_TYPES.ThisExpression:
 			return true;
 
-		case AST_NODE_TYPES.MemberExpression:
-			if (node.optional) return false;
-			if (!isSafeFixTarget(node.object)) return false;
-
-			if (node.computed) {
-				if (!isExpressionNode(node.property)) return false;
-				return isSafeMemberKey(node.property);
-			}
+		case AST_NODE_TYPES.MemberExpression: {
+			if (node.optional || !isSafeFixTarget(node.object)) return false;
+			if (node.computed) return isExpressionNode(node.property) ? isSafeMemberKey(node.property) : false;
 
 			return (
 				node.property.type === AST_NODE_TYPES.Identifier ||
 				node.property.type === AST_NODE_TYPES.PrivateIdentifier
 			);
+		}
 
 		default:
 			return false;

@@ -2,11 +2,13 @@ import { Octokit } from "@octokit/rest";
 import { encode } from "@toon-format/toon";
 import arkenv from "arkenv";
 import { type } from "arktype";
+import { env, YAML } from "bun";
 import { stringifyINI, stringifyJSON5, stringifyTOML } from "confbox";
-import { XMLBuilder } from "fast-xml-parser";
+import XmlBuilder from "fast-xml-builder";
 import { objectToCamel } from "ts-case-convert";
 
 import type { ObjectToCamel } from "ts-case-convert";
+import type { Except } from "type-fest";
 
 const environment = arkenv(
 	{
@@ -14,7 +16,7 @@ const environment = arkenv(
 		"NODE_ENV?": "string",
 	},
 	{
-		env: Bun.env,
+		env,
 		onUndeclaredKey: "ignore",
 	},
 );
@@ -24,7 +26,7 @@ const IS_DEVELOPMENT = environment.NODE_ENV !== "production";
 const github = new Octokit({
 	auth: environment.GITHUB_TOKEN,
 });
-const xmlBuilder = new XMLBuilder();
+const xmlBuilder = new XmlBuilder();
 
 const isBoolean = type("boolean");
 
@@ -157,7 +159,7 @@ function stringify(data: object, formatType: NonRawFormatType): string {
 			return xmlBuilder.build(data);
 
 		case FormatType.Yaml:
-			return Bun.YAML.stringify(data);
+			return YAML.stringify(data);
 
 		case FormatType.Ini:
 			return stringifyINI(data);
@@ -282,7 +284,7 @@ export const isSearchRepositoriesQuery = type({
 }).readonly();
 export type SearchRepositoriesQuery = typeof isSearchRepositoriesQuery.infer;
 export type GetSearchRepositoriesData = GetGitHubData<typeof github.rest.search.repos>;
-export type GetSearchRepositoriesMinimalData = Omit<GetSearchRepositoriesData, "items"> & {
+export type GetSearchRepositoriesMinimalData = Except<GetSearchRepositoriesData, "items"> & {
 	readonly items: ReadonlyArray<{
 		readonly description: string | null;
 		readonly forks: number;

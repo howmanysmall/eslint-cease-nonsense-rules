@@ -1,7 +1,6 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { createRule } from "@utilities/create-rule";
 import { regex } from "arktype";
-
-import { createRule } from "../utilities/create-rule";
 
 import type { Reference } from "@typescript-eslint/scope-manager";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
@@ -28,11 +27,12 @@ function isWorldQueryCall(node: TSESTree.Node, queryType: QueryType): node is TS
 	if (node.type !== AST_NODE_TYPES.CallExpression) return false;
 
 	const { callee } = node;
-	if (callee.type !== AST_NODE_TYPES.MemberExpression) return false;
-	if (callee.computed) return false;
-	if (callee.property.type !== AST_NODE_TYPES.Identifier) return false;
-	if (callee.property.name !== queryType) return false;
-	if (!isLengthOfTwo(node.arguments)) return false;
+	if (callee.type !== AST_NODE_TYPES.MemberExpression || callee.computed) return false;
+
+	const { property } = callee;
+	if (property.type !== AST_NODE_TYPES.Identifier || property.name !== queryType || !isLengthOfTwo(node.arguments)) {
+		return false;
+	}
 
 	const [entity, component] = node.arguments;
 	return !(entity.type === AST_NODE_TYPES.SpreadElement || component.type === AST_NODE_TYPES.SpreadElement);
@@ -133,7 +133,7 @@ function getVariableName(call: WorldQueryCall): string {
 }
 
 // oxlint-disable-next-line unicorn/prefer-string-raw
-const ONLY_WHITESPACE_SEMICOLON = regex("^[\\s;]*$");
+const ONLY_WHITESPACE_SEMICOLON = regex("^[\\s;]*$", "u");
 
 function callsAreConsecutive(
 	previousCall: WorldQueryCall | undefined,

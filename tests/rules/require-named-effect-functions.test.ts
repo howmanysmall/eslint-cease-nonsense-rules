@@ -1,8 +1,7 @@
-import { describe } from "bun:test";
+import { describe } from "vitest";
+import rule from "@rules/require-named-effect-functions";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/require-named-effect-functions";
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -18,6 +17,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("require-named-effect-functions", () => {
+	// @ts-expect-error -- Coal
 	ruleTester.run("require-named-effect-functions", rule, {
 		invalid: [
 			// Arrow functions
@@ -420,6 +420,7 @@ function makeComponent() {
 			},
 		});
 
+		// @ts-expect-error -- Coal
 		ruleTestStandard.run("require-named-effect-functions-standard-mode", rule, {
 			invalid: [
 				// Arrow functions should still fail in standard mode
@@ -479,6 +480,7 @@ useEffect(effect, []);
 			},
 		});
 
+		// @ts-expect-error -- Coal
 		ruleTestCustomHooks.run("require-named-effect-functions-custom-hooks", rule, {
 			invalid: [
 				// Custom hook with arrow function

@@ -1,4 +1,5 @@
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
+import { createRule } from "@utilities/create-rule";
 import { isUnionType, unionConstituents } from "ts-api-utils";
 import {
 	forEachChild,
@@ -14,8 +15,6 @@ import {
 	isUnionTypeNode,
 	SymbolFlags,
 } from "typescript";
-
-import { createRule } from "../utilities/create-rule";
 
 import type { TSESTree } from "@typescript-eslint/utils";
 import type {
@@ -166,7 +165,8 @@ const preferEnumMember = createRule<Options, MessageIds>({
 		function getUnionTypesCached(type: Type): ReadonlyArray<Type> {
 			const cached = unionTypesCache.get(type);
 			if (cached !== undefined) return cached;
-			const resolved = isUnionType(type) ? unionConstituents(type) : [type];
+			const constituents = isUnionType(type) ? unionConstituents(type) : undefined;
+			const resolved = constituents && constituents.length > 0 ? constituents : [type];
 			unionTypesCache.set(type, resolved);
 			return resolved;
 		}
@@ -327,7 +327,7 @@ const preferEnumMember = createRule<Options, MessageIds>({
 				if (!typeParameters || typeParameters.length === 0) continue;
 				const map = new Map<string, number>();
 				let index = 0;
-				for (const param of typeParameters) map.set(param.name.text, index++);
+				for (const { name } of typeParameters) map.set(name.text, index++);
 				aliasTypeParameterCache.set(aliasSymbol, map);
 				return map;
 			}
@@ -341,6 +341,10 @@ const preferEnumMember = createRule<Options, MessageIds>({
 			aliasTypeArguments: ReadonlyArray<Type> | undefined,
 			constraint: TypeScriptNode,
 		): Type | undefined {
+			if (isParenthesizedTypeNode(constraint)) {
+				return resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, constraint.type);
+			}
+
 			if (isTypeReferenceNode(constraint)) {
 				const { typeName } = constraint;
 				if (isIdentifier(typeName)) {

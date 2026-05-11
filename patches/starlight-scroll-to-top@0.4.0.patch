@@ -1,0 +1,51 @@
+diff --git a/index.ts b/index.ts
+--- a/index.ts
++++ b/index.ts
+@@ -1,6 +1,6 @@
+-import type { StarlightPlugin } from '@astrojs/starlight/types'
++import type { StarlightPlugin } from '@astrojs/starlight/types';
+ import type ScrollToTopOptions from "./common/types.js";
+-import starlightScrollToTopIntegration from "./libs/integration.js";
++import { starlightScrollToTopIntegration } from "./libs/integration.js";
+
+
+ export default function starlightScrollToTop(userConfig: ScrollToTopOptions = {}): StarlightPlugin {
+diff --git a/libs/integration.ts b/libs/integration.ts
+--- a/libs/integration.ts
++++ b/libs/integration.ts
+@@ -7,7 +7,7 @@
+ const __dirname = dirname(fileURLToPath(import.meta.url));
+
+
+-export default function starlightScrollToTopIntegration(options: ScrollToTopOptions = {}): AstroIntegration {
++export function starlightScrollToTopIntegration(options: ScrollToTopOptions = {}): AstroIntegration {
+   // Set default options.
+   const config = {
+     position: "right",
+@@ -36,7 +36,7 @@
+         // Using 'page' mode so Vite will automatically minify and optimize the script
+         injectScript('page', `
+             ${fileContent};
+-            initScrollToTop(${JSON.stringify(config)});          
++            initScrollToTop2(${JSON.stringify(config)});          
+           `);
+       },
+       'astro:build:done': ({ logger }) => {
+diff --git a/libs/scroll-to-top.js b/libs/scroll-to-top.js
+--- a/libs/scroll-to-top.js
++++ b/libs/scroll-to-top.js
+@@ -11,7 +11,7 @@
+  * @param {boolean} config.svgStrokeWidth - The SVG icon stroke width
+  * @param {boolean} config.showOnHomepage - Whether to show the button on homepage/landing pages
+  */
+-function initScrollToTop(config = {}) {
++export function initScrollToTop2(config = {}) {
+   const {
+     position = "right",
+     smoothScroll = true,
+@@ -497,5 +497,3 @@
+     }
+   });
+ }
+-
+-export default initScrollToTop;

@@ -12,7 +12,7 @@ function colorizeValue(value: unknown): string {
 	if (typeof value === "boolean") return magenta(String(value));
 	if (Array.isArray(value)) return `[${value.map(colorizeValue).join(", ")}]`;
 	if (isRecord(value)) {
-		const pairs = Object.entries(value).map(([key, val]) => `${key}: ${colorizeValue(val)}`);
+		const pairs = Object.entries(value).map(([key, subValue]) => `${key}: ${colorizeValue(subValue)}`);
 		return `{ ${pairs.join(", ")} }`;
 	}
 	return dim(String(value));

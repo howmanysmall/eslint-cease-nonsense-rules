@@ -1,13 +1,11 @@
+import { getReactSources, isReactImport } from "@constants/react-sources";
+import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "@rules/no-useless-use-spring";
 import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { createRule } from "@utilities/create-rule";
 
-import { getReactSources, isReactImport } from "../constants/react-sources";
-import { createRule } from "../utilities/create-rule";
-import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "./no-useless-use-spring";
-
+import type { EnvironmentMode } from "@lint-types/environment-mode";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
-
-import type { EnvironmentMode } from "../types/environment-mode";
 
 type DependencyMode = "empty-or-omitted" | "non-updating" | "aggressive";
 type MessageIds = "uselessUseMemo";
@@ -317,42 +315,46 @@ function isStaticExpression(
 			return true;
 		case AST_NODE_TYPES.TemplateLiteral:
 			return unwrapped.expressions.length === 0;
-		case AST_NODE_TYPES.UnaryExpression:
+		case AST_NODE_TYPES.UnaryExpression: {
 			return (
 				STATIC_UNARY_OPERATORS.has(unwrapped.operator) &&
 				isStaticExpression(context, unwrapped.argument, seen, options)
 			);
+		}
 		case AST_NODE_TYPES.BinaryExpression:
 		case AST_NODE_TYPES.LogicalExpression:
 			return checkStaticBinaryOrLogical(context, unwrapped, seen, options);
-		case AST_NODE_TYPES.ConditionalExpression:
+		case AST_NODE_TYPES.ConditionalExpression: {
 			return (
 				isStaticExpression(context, unwrapped.test, seen, options) &&
 				isStaticExpression(context, unwrapped.consequent, seen, options) &&
 				isStaticExpression(context, unwrapped.alternate, seen, options)
 			);
+		}
 		case AST_NODE_TYPES.ArrayExpression:
 			return context !== undefined && isStaticArrayExpression(context, unwrapped, seen, options);
 		case AST_NODE_TYPES.ObjectExpression:
 			return context !== undefined && isStaticObjectExpression(context, unwrapped, seen, options);
 		case AST_NODE_TYPES.Identifier:
 			return context !== undefined && isStaticIdentifier(context, unwrapped, seen, options);
-		case AST_NODE_TYPES.MemberExpression:
+		case AST_NODE_TYPES.MemberExpression: {
 			return (
 				isStaticExpression(context, unwrapped.object, seen, options) &&
 				(!unwrapped.computed || isStaticMemberProperty(context, unwrapped.property, seen, options))
 			);
+		}
 		case AST_NODE_TYPES.ChainExpression:
 			return isStaticExpression(context, unwrapped.expression, seen, options);
 		case AST_NODE_TYPES.CallExpression:
 			return checkStaticCallOrNewExpression(context, unwrapped.arguments, unwrapped.callee, seen, options);
 		case AST_NODE_TYPES.NewExpression:
 			return checkStaticCallOrNewExpression(context, unwrapped.arguments, unwrapped.callee, seen, options);
-		case AST_NODE_TYPES.SequenceExpression:
+		case AST_NODE_TYPES.SequenceExpression: {
 			return (
 				unwrapped.expressions.length > 0 &&
 				unwrapped.expressions.every((expr) => isStaticExpression(context, expr, seen, options))
 			);
+		}
 		default:
 			return false;
 	}
@@ -360,14 +362,14 @@ function isStaticExpression(
 
 function checkStaticCallOrNewExpression(
 	context: TSESLint.RuleContext<MessageIds, Options> | undefined,
-	args: ReadonlyArray<TSESTree.CallExpressionArgument> | undefined,
+	parameters: ReadonlyArray<TSESTree.CallExpressionArgument> | undefined,
 	callee: TSESTree.Expression,
 	seen: Set<TSESTree.Node>,
 	options: NormalizedOptions,
 ): boolean {
 	if (!isStaticCallCallee(context, callee, seen, options)) return false;
 
-	return (args ?? []).every(
+	return (parameters ?? []).every(
 		(argument) =>
 			argument.type !== AST_NODE_TYPES.SpreadElement && isStaticExpression(context, argument, seen, options),
 	);
@@ -418,12 +420,13 @@ function dependenciesAreNonUpdating(kind: DependenciesKind, options: NormalizedO
 	switch (options.dependencyMode) {
 		case "empty-or-omitted":
 			return kind === DependenciesKind.MissingOrOmitted || kind === DependenciesKind.EmptyArray;
-		case "non-updating":
+		case "non-updating": {
 			return (
 				kind === DependenciesKind.MissingOrOmitted ||
 				kind === DependenciesKind.EmptyArray ||
 				kind === DependenciesKind.StaticArray
 			);
+		}
 		case "aggressive":
 			return true;
 	}

@@ -2,6 +2,8 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { MessageChannel, receiveMessageOnPort, Worker } from "node:worker_threads";
 
+import type { MessagePort } from "node:worker_threads";
+
 import type { FormatConfiguration, FormatRequest, FormatResponse } from "./oxfmt-worker";
 
 const FORMAT_TIMEOUT = 30_000;
@@ -14,6 +16,15 @@ interface OxfmtWorkerState {
 
 let workerState: OxfmtWorkerState | undefined;
 
+function isFormatResponse(value: unknown): value is FormatResponse {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		(!("code" in value) || typeof value.code === "string") &&
+		(!("error" in value) || typeof value.error === "string")
+	);
+}
+
 export function __testingResolveWorkerPath(baseUrl: string | URL, exists: (path: string) => boolean): URL {
 	// Try .js first (production/dist), then .ts (development/source)
 	const jsPath = new URL("oxfmt-worker.js", baseUrl);
@@ -24,7 +35,7 @@ export function __testingResolveWorkerPath(baseUrl: string | URL, exists: (path:
 	const tsFilePath = fileURLToPath(tsPath);
 	if (exists(tsFilePath)) return tsPath;
 
-	throw new Error(`Oxfmt worker not found at ${jsFilePath} or ${tsFilePath}. Did you run 'bun run build'?`);
+	throw new Error(`Oxfmt worker not found at ${jsFilePath} or ${tsFilePath}. Did you run 'aube run build'?`);
 }
 
 function resolveWorkerPath(): URL {
@@ -73,7 +84,8 @@ export function formatSync(fileName: string, sourceText: string, options: Format
 	const received = receiveMessageOnPort(responsePort);
 	if (received === undefined) throw new Error("No response received from oxfmt worker");
 
-	const response = received.message as FormatResponse;
+	const response: unknown = received.message;
+	if (!isFormatResponse(response)) throw new Error("Invalid response received from oxfmt worker");
 	if (response.error !== undefined) throw new Error(response.error);
 	if (response.code === undefined) throw new Error("Oxfmt returned undefined code");
 

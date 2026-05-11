@@ -1,3 +1,4 @@
+// oxlint-disable small-rules/prevent-abbreviations
 import { TSESTree } from "@typescript-eslint/types";
 import { regex } from "arktype";
 import Typebox from "typebox";
@@ -50,7 +51,7 @@ const DEFAULT_OPTIONS: Required<NoShorthandOptions> = {
 	},
 };
 
-const REGEX_PATTERN_MATCHER = regex("^/(?<first>.+)/(?<second>[gimsuy]*)$");
+const REGEX_PATTERN_MATCHER = regex("^/(?<first>.+)/(?<second>[gimsuy]*)$", "u");
 
 interface ShorthandMatch {
 	readonly matchedWord: string;
@@ -63,9 +64,9 @@ interface ReplacementResult {
 	readonly replaced: string;
 }
 
-const WORD_BOUNDARY_REGEX = /(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])/;
+const WORD_BOUNDARY_REGEX = /(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])/u;
 // oxlint-disable-next-line no-template-curly-in-string
-const SPECIAL_CHARACTER_REGEX = regex("[.+^${}()|[\\]\\\\]", "g");
+const SPECIAL_CHARACTER_REGEX = regex("[.+^${}()|[\\]\\\\]", "gu");
 
 // Module-level split cache with bounded size
 const SPLIT_CACHE = new Map<string, ReadonlyArray<string>>();
@@ -91,7 +92,7 @@ type MatcherResult =
 	| { type: "exact"; original: string; replacement: string }
 	| { type: "pattern"; matcher: ShorthandMatcher };
 
-const DOLLAR_REGEXPS = /\$(\d+)/g;
+const DOLLAR_REGEXPS = /\$(\d+)/gu;
 
 function countCaptureGroups(replacement: string): number {
 	const matches = replacement.match(DOLLAR_REGEXPS);
@@ -108,7 +109,7 @@ const REPLACEMENT_PATTERN_CACHE = new Map<number, RegExp>();
 function getReplacementPattern(index: number): RegExp {
 	let pattern = REPLACEMENT_PATTERN_CACHE.get(index);
 	if (pattern === undefined) {
-		pattern = new RegExp(`\\$${index}`, "g");
+		pattern = new RegExp(`\\$${index}`, "gu");
 		REPLACEMENT_PATTERN_CACHE.set(index, pattern);
 	}
 	return pattern;
@@ -151,7 +152,7 @@ function createMatcher(key: string, replacement: string): MatcherResult {
 		return {
 			matcher: {
 				original: key,
-				pattern: new RegExp(`^${regexPattern}$`),
+				pattern: new RegExp(`^${regexPattern}$`, "u"),
 				replacement: regexReplacement,
 				replacementPatterns: buildReplacementPatterns(regexReplacement),
 			},

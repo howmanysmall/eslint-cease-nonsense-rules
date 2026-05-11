@@ -18,7 +18,7 @@ function colorizeValue(value: unknown, indent: string): string {
 	}
 
 	if (typeof value === "object" && value !== null) {
-		const entries = Object.entries(value as Record<string, unknown>);
+		const entries = Object.entries(value);
 		if (entries.length === 0) return dim("{}");
 
 		const lines = entries.map(

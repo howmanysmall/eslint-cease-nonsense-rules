@@ -4,7 +4,7 @@
 		"moduleResolution": "bundler",
 		"strict": true,
 		"target": "ESNext",
-		"types": ["@rbxts/types"]
+		"types": ["@rbxts/types"],
 	},
-	"include": ["*.ts", "*.tsx", "types.d.ts"]
+	"include": ["*.ts", "*.tsx", "types.d.ts"],
 }

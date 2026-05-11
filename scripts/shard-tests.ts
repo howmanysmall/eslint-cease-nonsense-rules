@@ -1,16 +1,29 @@
 #!/usr/bin/env bun
 
+import { readdir } from "node:fs/promises";
 import { resolve } from "node:path";
-import { Command, ValidationError } from "@jsr/cliffy__command";
+import { argv, cwd } from "node:process";
+import { Command, ValidationError } from "@cliffy/command";
 
-const MATCH_TEST = new Bun.Glob("**/*.test.ts");
-
-async function collectUnitTestsAsync(cwd: string): Promise<[paths: ReadonlyArray<string>, size: number]> {
+async function collectUnitTestsAsync(rootDirectory: string): Promise<ReadonlyArray<string>> {
 	const unitTests = new Array<string>();
-	let size = 0;
 
-	for await (const path of MATCH_TEST.scan({ cwd, onlyFiles: true })) unitTests[size++] = resolve(cwd, path);
-	return [unitTests, size];
+	async function walk(directory: string): Promise<void> {
+		const entries = await readdir(directory, { withFileTypes: true });
+		await Promise.all(
+			entries.map(async (entry): Promise<void> => {
+				const path = resolve(directory, entry.name);
+				if (entry.isDirectory()) {
+					await walk(path);
+					return;
+				}
+				if (entry.isFile() && path.endsWith(".test.ts")) unitTests.push(path);
+			}),
+		);
+	}
+
+	await walk(rootDirectory);
+	return unitTests.toSorted();
 }
 
 function validateShardArgumentsOrThrow(shardIndex: number, totalShards: number, testFileCount: number): void {
@@ -27,8 +40,6 @@ function selectShardFiles(
 	shardIndex: number,
 	totalShards: number,
 ): ReadonlyArray<string> {
-	// Use round-robin distribution for better load balancing
-	// Shard index is 1-based, so we convert to 0-based for modulo arithmetic
 	return allFiles.filter((_, index) => index % totalShards === shardIndex - 1);
 }
 
@@ -38,16 +49,13 @@ const command = new Command()
 	.description("Shard unit tests for parallel execution.")
 	.arguments("<shard-index:integer> <total-shards:integer>")
 	.action(async (_, shardIndex, totalShards) => {
-		const cwd = resolve(process.cwd(), "tests");
-		const [unitTests, size] = await collectUnitTestsAsync(cwd);
+		const rootDirectory = resolve(cwd(), "tests");
+		const unitTests = await collectUnitTestsAsync(rootDirectory);
 
-		validateShardArgumentsOrThrow(shardIndex, totalShards, size);
+		validateShardArgumentsOrThrow(shardIndex, totalShards, unitTests.length);
 
 		const shardFiles = selectShardFiles(unitTests, shardIndex, totalShards);
-
-		// Output space-separated file paths to stdout
-		// Some shards may be empty if totalShards > test file count
 		if (shardFiles.length > 0) console.log(shardFiles.join(" "));
 	});
 
-await command.parse(Bun.argv.slice(2));
+await command.parse(argv.slice(2));

@@ -1,12 +1,9 @@
-import { describe } from "bun:test";
-import { dirname } from "node:path";
+import { describe } from "vitest";
+import rule from "@rules/no-empty-array-literal";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
-import { fileURLToPath } from "bun";
 
-import rule from "../../src/rules/no-empty-array-literal";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = import.meta.dirname;
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -155,6 +152,98 @@ describe("no-empty-array-literal", () => {
 				],
 				options: [{ allowedEmptyArrayContexts: { conditionalExpressions: false } }],
 				output: undefined,
+			},
+			{
+				code: "const createValues = () => [];",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "const createValues = () => new Array();",
+							},
+						],
+					},
+				],
+				options: [{ allowedEmptyArrayContexts: { arrowFunctionBody: false } }],
+				output: undefined,
+			},
+			{
+				code: "function createValues() { return []; }",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "function createValues() { return new Array(); }",
+							},
+						],
+					},
+				],
+				options: [{ allowedEmptyArrayContexts: { returnStatements: false } }],
+				output: undefined,
+			},
+			{
+				code: "const payload = { items: [] };",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "const payload = { items: new Array() };",
+							},
+						],
+					},
+				],
+				options: [{ allowedEmptyArrayContexts: { propertyValues: false } }],
+				output: undefined,
+			},
+			{
+				code: "const values = cache ?? [];",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "const values = cache ?? new Array();",
+							},
+						],
+					},
+				],
+				options: [{ allowedEmptyArrayContexts: { logicalExpressions: false } }],
+				output: undefined,
+			},
+			{
+				code: "const values = <Widget items={[]} />;",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "const values = <Widget items={new Array()} />;",
+							},
+						],
+					},
+				],
+				options: [{ allowedEmptyArrayContexts: { jsxAttributes: false } }],
+				output: undefined,
+			},
+			{
+				code: "const values = [] as Array<number>;",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [{ allowedEmptyArrayContexts: { typeAssertions: false }, inferTypeForEmptyArrayFix: true }],
+				output: "const values = new Array<number>() as Array<number>;",
+			},
+			{
+				code: "class Box { values: Array<number> = []; }",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [{ inferTypeForEmptyArrayFix: true }],
+				output: "class Box { values: Array<number> = new Array<number>(); }",
 			},
 		],
 		valid: [
@@ -330,18 +419,70 @@ class Container {
 const container = new Container([]);
             `,
 			`
-function buildResult(shouldBeEmpty: boolean): Array<number> {
-    if (shouldBeEmpty) return [];
-    return [1];
-}
-            `,
+				function buildResult(shouldBeEmpty: boolean): Array<number> {
+				    if (shouldBeEmpty) return [];
+				    return [1];
+				}
+				            `,
+			"type MyReadonly = ReadonlyArray<number>; const values: MyReadonly = [];",
+			"const values: readonly number[] = [];",
+			"const cache = [1, 2, 3]; const values = cache ?? [];",
+			"const createValues = () => [];",
+			"function createValues() { return []; }",
+			"const payload = { items: [] };",
+			"const view = <Widget items={[]} />;",
 		],
 	});
 });
 
 describe("no-empty-array-literal (type-aware inference)", () => {
 	typeAwareRuleTester.run("no-empty-array-literal-type-aware", rule, {
-		invalid: [],
+		invalid: [
+			{
+				code: "const values: Array<number> = [];",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [{ inferTypeForEmptyArrayFix: true }],
+				output: "const values: Array<number> = new Array<number>();",
+			},
+			{
+				code: "declare function consume(values: Array<number>): void;\nconsume([]);",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [{ allowedEmptyArrayContexts: { callArguments: false }, inferTypeForEmptyArrayFix: true }],
+				output: "declare function consume(values: Array<number>): void;\nconsume(new Array<number>());",
+			},
+			{
+				code: "function build(values: Array<number> = []) { return values; }",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [
+					{ allowedEmptyArrayContexts: { assignmentPatterns: false }, inferTypeForEmptyArrayFix: true },
+				],
+				output: "function build(values: Array<number> = new Array<number>()) { return values; }",
+			},
+			{
+				code: "function build(values: ReadonlyArray<number> = []) { return values; }",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [
+					{ allowedEmptyArrayContexts: { assignmentPatterns: false }, inferTypeForEmptyArrayFix: true },
+				],
+				output: "function build(values: ReadonlyArray<number> = new Array<number>()) { return values; }",
+			},
+			{
+				code: "function build([values]: Array<Array<number>> = []) { void values; }",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [
+					{ allowedEmptyArrayContexts: { assignmentPatterns: false }, inferTypeForEmptyArrayFix: true },
+				],
+				output: "function build([values]: Array<Array<number>> = new Array<Array<number>>()) { void values; }",
+			},
+			{
+				code: "function build({ length }: Array<number> = []) { void length; }",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [
+					{ allowedEmptyArrayContexts: { assignmentPatterns: false }, inferTypeForEmptyArrayFix: true },
+				],
+				output: "function build({ length }: Array<number> = new Array<number>()) { void length; }",
+			},
+		],
 		valid: [
 			{
 				code: "function create(): Array<number> { return [1, 2, 3]; }",
@@ -357,13 +498,17 @@ describe("no-empty-array-literal (type-aware inference)", () => {
 			},
 			{
 				code: `
-function useValues<T>(): void {
-    type ComponentList<U> = ReadonlyArray<U>;
+	function useValues<T>(): void {
+	    type ComponentList<U> = ReadonlyArray<U>;
     const values = [] as ComponentList<T>;
     void values;
 }
-                    `,
+						`,
 				options: [{ inferTypeForEmptyArrayFix: true }],
+			},
+			{
+				code: "const values = [] as Array<number>;",
+				options: [{ allowedEmptyArrayContexts: { typeAssertions: true }, inferTypeForEmptyArrayFix: true }],
 			},
 		],
 	});

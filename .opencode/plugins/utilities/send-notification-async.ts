@@ -25,21 +25,24 @@ export async function sendNotificationAsync(pluginInput: PluginInput): Promise<v
 	const body = buildNotificationMessage(pluginInput);
 
 	switch (process.platform) {
-		case "darwin":
+		case "darwin": {
 			await failSilentAsync(
 				async () => $`osascript -e ${`display notification "${body}" with title "${TITLE}"`}`,
 			);
 			break;
+		}
 
-		case "win32":
+		case "win32": {
 			await failSilentAsync(
 				async () => $`powershell -Command ${`New-BurntToastNotification -Text '${TITLE}', '${body}'`}`,
 			);
 			break;
+		}
 
-		case "linux":
+		case "linux": {
 			await failSilentAsync(async () => $`notify-send ${TITLE} ${body}`);
 			break;
+		}
 
 		default:
 			break;

@@ -1,8 +1,7 @@
-import { describe } from "bun:test";
+import { describe } from "vitest";
+import rule from "@rules/no-new-instance-in-use-memo";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
-
-import rule from "../../src/rules/no-new-instance-in-use-memo";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

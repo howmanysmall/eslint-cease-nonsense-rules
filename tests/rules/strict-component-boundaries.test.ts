@@ -1,8 +1,7 @@
-import { describe } from "bun:test";
 import { join } from "node:path";
+import { describe } from "vitest";
+import rule from "@rules/strict-component-boundaries";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/strict-component-boundaries";
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -11,7 +10,7 @@ const ruleTester = new RuleTester({
 	},
 });
 
-const FIXTURES = join(import.meta.dir, "..", "fixtures", "strict-boundaries");
+const FIXTURES = join(import.meta.dirname, "..", "fixtures", "strict-boundaries");
 const BASIC_APP = join(FIXTURES, "basic-app", "app");
 
 const errors = [

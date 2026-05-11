@@ -1,10 +1,10 @@
 import { extname } from "node:path";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { createRule } from "@utilities/create-rule";
+import { discoverLocalComponent, inspectLocalComponentFile } from "@utilities/local-component-discovery";
+import { resolveRelativeImport } from "@utilities/resolve-import";
 
-import { createRule } from "../utilities/create-rule";
-import { discoverLocalComponent, inspectLocalComponentFile } from "../utilities/local-component-discovery";
-import { resolveRelativeImport } from "../utilities/resolve-import";
-
+import type { ReadonlyRecord } from "@lint-types/utility-types";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds = "preferDirectionalPadding" | "preferEqualPadding";
@@ -29,6 +29,10 @@ interface PaddingAttributes {
 	readonly paddingLeft: TSESTree.JSXAttribute;
 	readonly paddingRight: TSESTree.JSXAttribute;
 	readonly paddingTop: TSESTree.JSXAttribute;
+}
+
+function isRecord(value: unknown): value is ReadonlyRecord<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function unwrapComparableNode(node: TSESTree.Expression | TSESTree.Literal): TSESTree.Expression | TSESTree.Literal {
@@ -72,18 +76,15 @@ function areStructurallyEqual(left: unknown, right: unknown): boolean {
 		return true;
 	}
 
-	if (Array.isArray(right)) return false;
-
-	if (typeof left !== "object" || typeof right !== "object") return false;
+	if (Array.isArray(right) || !isRecord(left) || !isRecord(right)) return false;
 
 	const leftEntries = Object.entries(left).filter(([key]) => !IGNORED_COMPARISON_KEYS.has(key));
 	const rightEntries = Object.entries(right).filter(([key]) => !IGNORED_COMPARISON_KEYS.has(key));
 	if (leftEntries.length !== rightEntries.length) return false;
 
-	const rightRecord = right as Record<string, unknown>;
 	for (const [key, value] of leftEntries) {
-		if (!(key in rightRecord)) return false;
-		if (!areStructurallyEqual(value, rightRecord[key])) return false;
+		if (!(key in right)) return false;
+		if (!areStructurallyEqual(value, right[key])) return false;
 	}
 
 	return true;

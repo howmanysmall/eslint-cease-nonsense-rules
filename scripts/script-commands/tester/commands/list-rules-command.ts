@@ -1,17 +1,16 @@
 import { resolve } from "node:path";
-import { cwd, exit } from "node:process";
-import { Command } from "@jsr/cliffy__command";
+import { exit } from "node:process";
+import { Command } from "@cliffy/command";
 import { type } from "arktype";
-import { $ } from "bun";
 import picocolors from "picocolors";
 
 import { withContext } from "../logging/log-utilities";
 import { getConfigurationPathAsync } from "../utilities/eslint-utilities";
 import { isDirectorySimpleAsync } from "../utilities/fs-utilities";
+import { getCommandTextAsync } from "../utilities/process-utilities";
 import { isValidRules } from "./formatters/types";
 
 const log = withContext({ namespace: "tester", scope: "list-rules" });
-const CURRENT_WORKING_DIRECTORY = cwd();
 
 const getRulesCommand = new Command()
 	.name("list-rules")
@@ -34,9 +33,9 @@ const getRulesCommand = new Command()
 
 		log.verbose("Loading ESLint configuration...");
 
-		process.chdir(directory);
-		const text = await $`bun x --bun eslint --print-config ${configurationPath}`.quiet(true).text();
-		process.chdir(CURRENT_WORKING_DIRECTORY);
+		const text = await getCommandTextAsync("aube", ["x", "eslint", "--print-config", configurationPath], {
+			cwd: directory,
+		});
 
 		const json = isValidRules(JSON.parse(text));
 		if (json instanceof type.errors) {

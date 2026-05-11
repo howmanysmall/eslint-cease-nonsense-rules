@@ -1,12 +1,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import vueParser from "vue-eslint-parser";
 import babelParser from "@babel/eslint-parser";
+import rule from "@rules/prevent-abbreviations";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
-import rule from "../../src/rules/prevent-abbreviations";
 import { shardCases } from "../utilities/shard-cases";
 
 type Variant = "default" | "babel" | "typescript" | "vue";
@@ -78,14 +77,9 @@ function stripParserMarkers(code: string): string {
 }
 
 function normalizeValidCase(testCase: UpstreamValidCase): UpstreamValidCase {
-	if (typeof testCase === "string") {
-		return stripParserMarkers(testCase);
-	}
+	if (typeof testCase === "string") return stripParserMarkers(testCase);
 
-	return {
-		...testCase,
-		code: stripParserMarkers(testCase.code),
-	};
+	return { ...testCase, code: stripParserMarkers(testCase.code) };
 }
 
 function normalizeInvalidCase(testCase: UpstreamInvalidCase): UpstreamInvalidCase {
@@ -94,10 +88,7 @@ function normalizeInvalidCase(testCase: UpstreamInvalidCase): UpstreamInvalidCas
 
 	if (typeof output === "string" && output === code) {
 		const { output: _output, ...rest } = testCase;
-		return {
-			...rest,
-			code,
-		};
+		return { ...rest, code };
 	}
 
 	return {
@@ -117,7 +108,7 @@ function getDefaultParserOptions(variant: Variant): Record<string, unknown> {
 	return {};
 }
 
-const casesPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "prevent-abbreviations.cases.json");
+const casesPath = path.join(import.meta.dirname, "prevent-abbreviations.cases.json");
 const collected: unknown = JSON.parse(readFileSync(casesPath, "utf8"));
 
 if (!isCollectedTests(collected)) {
@@ -132,8 +123,8 @@ const ruleTester = new RuleTester({
 	},
 });
 
-const valid: Array<UpstreamValidCase> = [];
-const invalid: Array<UpstreamInvalidCase> = [];
+const valid = new Array<UpstreamValidCase>();
+const invalid = new Array<UpstreamInvalidCase>();
 
 for (const group of collected) {
 	const baseOptions = group.tests.testerOptions?.languageOptions ?? {};

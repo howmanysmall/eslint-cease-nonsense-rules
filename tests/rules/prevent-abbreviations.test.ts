@@ -1,10 +1,9 @@
-import { describe } from "bun:test";
+import { describe } from "vitest";
+import rule from "@rules/prevent-abbreviations";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
-import rule from "../../src/rules/prevent-abbreviations";
-
-const TEST_IGNORE_PATTERN = /^test/;
+const TEST_IGNORE_PATTERN = /^test/u;
 
 const ruleTester = new RuleTester({
 	languageOptions: {

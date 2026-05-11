@@ -1,6 +1,7 @@
-import { TSESTree } from "@typescript-eslint/types";
+import { AST_NODE_TYPES } from "@typescript-eslint/types";
+import { createRule } from "@utilities/create-rule";
 
-import type { Rule } from "eslint";
+import type { TSESTree } from "@typescript-eslint/types";
 
 /*
  * Rule: use-hook-at-top-level
@@ -38,8 +39,8 @@ export interface UseHookAtTopLevelOptions {
 	readonly onlyHooks?: ReadonlyArray<string>;
 }
 
-const HOOK_NAME_PATTERN = /^use[A-Z]/;
-const COMPONENT_NAME_PATTERN = /^[A-Z]/;
+const HOOK_NAME_PATTERN = /^use[A-Z]/u;
+const COMPONENT_NAME_PATTERN = /^[A-Z]/u;
 function isReactHook(name: string): boolean {
 	return HOOK_NAME_PATTERN.test(name);
 }
@@ -51,38 +52,26 @@ function isComponent(name: string): boolean {
 function isComponentOrHook(
 	node: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
 ): boolean {
-	if (node.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration && node.id) {
+	if (node.type === AST_NODE_TYPES.FunctionDeclaration && node.id) {
 		const { name } = node.id;
 		return isComponent(name) || isReactHook(name);
 	}
 
-	if (
-		node.type === TSESTree.AST_NODE_TYPES.FunctionExpression ||
-		node.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression
-	) {
+	if (node.type === AST_NODE_TYPES.FunctionExpression || node.type === AST_NODE_TYPES.ArrowFunctionExpression) {
 		const { parent } = node;
 		if (parent === undefined) return false;
 
-		if (
-			parent.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
-			parent.id.type === TSESTree.AST_NODE_TYPES.Identifier
-		) {
+		if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.id.type === AST_NODE_TYPES.Identifier) {
 			const { name } = parent.id;
 			return isComponent(name) || isReactHook(name);
 		}
 
-		if (
-			parent.type === TSESTree.AST_NODE_TYPES.Property &&
-			parent.key.type === TSESTree.AST_NODE_TYPES.Identifier
-		) {
+		if (parent.type === AST_NODE_TYPES.Property && parent.key.type === AST_NODE_TYPES.Identifier) {
 			const { name } = parent.key;
 			return isComponent(name) || isReactHook(name);
 		}
 
-		if (
-			parent.type === TSESTree.AST_NODE_TYPES.MethodDefinition &&
-			parent.key.type === TSESTree.AST_NODE_TYPES.Identifier
-		) {
+		if (parent.type === AST_NODE_TYPES.MethodDefinition && parent.key.type === AST_NODE_TYPES.Identifier) {
 			const { name } = parent.key;
 			return isComponent(name) || isReactHook(name);
 		}
@@ -94,22 +83,19 @@ function isComponentOrHook(
 function isHookCall(node: TSESTree.CallExpression): boolean {
 	const { callee } = node;
 
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return isReactHook(callee.name);
+	if (callee.type === AST_NODE_TYPES.Identifier) return isReactHook(callee.name);
 
-	if (
-		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-	) {
+	if (callee.type === AST_NODE_TYPES.MemberExpression && callee.property.type === AST_NODE_TYPES.Identifier) {
 		return isReactHook(callee.property.name);
 	}
 
 	return false;
 }
 
-const FUNCTION_BOUNDARIES = new Set<TSESTree.AST_NODE_TYPES>([
-	TSESTree.AST_NODE_TYPES.FunctionDeclaration,
-	TSESTree.AST_NODE_TYPES.FunctionExpression,
-	TSESTree.AST_NODE_TYPES.ArrowFunctionExpression,
+const FUNCTION_BOUNDARIES = new Set<AST_NODE_TYPES>([
+	AST_NODE_TYPES.FunctionDeclaration,
+	AST_NODE_TYPES.FunctionExpression,
+	AST_NODE_TYPES.ArrowFunctionExpression,
 ]);
 
 function isInFinallyBlock(node: TSESTree.Node): boolean {
@@ -120,7 +106,7 @@ function isInFinallyBlock(node: TSESTree.Node): boolean {
 	for (let depth = 0; depth < maxDepth && current; depth += 1) {
 		if (FUNCTION_BOUNDARIES.has(current.type)) break;
 
-		if (current.type === TSESTree.AST_NODE_TYPES.TryStatement) {
+		if (current.type === AST_NODE_TYPES.TryStatement) {
 			let checkNode: TSESTree.Node | undefined = node;
 			while (checkNode && checkNode !== current) {
 				if (checkNode === current.finalizer) {
@@ -145,9 +131,18 @@ function isRecursiveCall(node: TSESTree.CallExpression, functionName: string | u
 	return callee.type === "Identifier" && callee.name === functionName;
 }
 
-const useHookAtTopLevel: Rule.RuleModule = {
-	create(context) {
-		const configuration = (context.options[0] ?? {}) as UseHookAtTopLevelOptions;
+type MessageIds =
+	| "afterEarlyReturn"
+	| "conditionalHook"
+	| "loopHook"
+	| "nestedFunction"
+	| "recursiveHookCall"
+	| "tryBlockHook";
+type Options = [UseHookAtTopLevelOptions?];
+
+const useHookAtTopLevel = createRule<Options, MessageIds>({
+	create(context, [rawOptions]) {
+		const configuration = rawOptions ?? {};
 		const contextStack = new Array<ControlFlowContext>();
 		let currentFunctionName: string | undefined;
 
@@ -173,17 +168,15 @@ const useHookAtTopLevel: Rule.RuleModule = {
 			if (ignoreHooks?.includes(hookName)) return true;
 
 			if (importSources && Object.keys(importSources).length > 0) {
-				if (node.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
+				if (node.callee.type === AST_NODE_TYPES.MemberExpression) {
 					const objectName =
-						node.callee.object.type === TSESTree.AST_NODE_TYPES.Identifier
-							? node.callee.object.name
-							: undefined;
+						node.callee.object.type === AST_NODE_TYPES.Identifier ? node.callee.object.name : undefined;
 
 					if (objectName && importSources[objectName] === false) return true;
 					if (objectName && importSources[objectName] === true) return false;
 				}
 
-				if (node.callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
+				if (node.callee.type === AST_NODE_TYPES.Identifier) {
 					const importSource = importSourceMap.get(hookName);
 					if (importSource && importSources[importSource] === false) return true;
 					if (importSource && importSources[importSource] === true) return false;
@@ -202,7 +195,7 @@ const useHookAtTopLevel: Rule.RuleModule = {
 			const depth = current ? current.functionDepth + 1 : 0;
 
 			const isComponentOrHookFlag = isComponentOrHook(functionNode);
-			if (functionNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration && functionNode.id) {
+			if (functionNode.type === AST_NODE_TYPES.FunctionDeclaration && functionNode.id) {
 				currentFunctionName = functionNode.id.name;
 			}
 
@@ -238,17 +231,17 @@ const useHookAtTopLevel: Rule.RuleModule = {
 			ArrowFunctionExpression: handleFunctionEnter,
 			"ArrowFunctionExpression:exit": handleFunctionExit,
 
-			CallExpression(node) {
+			CallExpression(node): void {
 				const callNode = node as unknown as TSESTree.CallExpression;
 
 				if (!isHookCall(callNode)) return;
 
 				const { callee } = callNode;
 				const hookName =
-					callee.type === TSESTree.AST_NODE_TYPES.Identifier
+					callee.type === AST_NODE_TYPES.Identifier
 						? callee.name
-						: callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-							  callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
+						: callee.type === AST_NODE_TYPES.MemberExpression &&
+							  callee.property.type === AST_NODE_TYPES.Identifier
 							? callee.property.name
 							: undefined;
 
@@ -307,38 +300,38 @@ const useHookAtTopLevel: Rule.RuleModule = {
 				}
 			},
 
-			ConditionalExpression() {
+			ConditionalExpression(): void {
 				updateContext({ inConditional: true });
 			},
-			"ConditionalExpression:exit"() {
+			"ConditionalExpression:exit"(): void {
 				updateContext({ inConditional: false });
 			},
 
-			DoWhileStatement() {
+			DoWhileStatement(): void {
 				updateContext({ inLoop: true });
 			},
-			"DoWhileStatement:exit"() {
+			"DoWhileStatement:exit"(): void {
 				updateContext({ inLoop: false });
 			},
 
-			ForInStatement() {
+			ForInStatement(): void {
 				updateContext({ inLoop: true });
 			},
-			"ForInStatement:exit"() {
+			"ForInStatement:exit"(): void {
 				updateContext({ inLoop: false });
 			},
 
-			ForOfStatement() {
+			ForOfStatement(): void {
 				updateContext({ inLoop: true });
 			},
-			"ForOfStatement:exit"() {
+			"ForOfStatement:exit"(): void {
 				updateContext({ inLoop: false });
 			},
 
-			ForStatement() {
+			ForStatement(): void {
 				updateContext({ inLoop: true });
 			},
-			"ForStatement:exit"() {
+			"ForStatement:exit"(): void {
 				updateContext({ inLoop: false });
 			},
 			FunctionDeclaration: handleFunctionEnter,
@@ -347,67 +340,66 @@ const useHookAtTopLevel: Rule.RuleModule = {
 			FunctionExpression: handleFunctionEnter,
 			"FunctionExpression:exit": handleFunctionExit,
 
-			IfStatement() {
+			IfStatement(): void {
 				updateContext({ inConditional: true });
 			},
-			"IfStatement:exit"() {
+			"IfStatement:exit"(): void {
 				updateContext({ inConditional: false });
 			},
 
-			ImportDeclaration(node) {
+			ImportDeclaration(node): void {
 				const importNode = node as unknown as TSESTree.ImportDeclaration;
 				const source = importNode.source.value;
 
 				if (!configuration.importSources || Object.keys(configuration.importSources).length === 0) return;
 
 				for (const specifier of importNode.specifiers) {
-					if (specifier.type !== TSESTree.AST_NODE_TYPES.ImportSpecifier) continue;
+					if (specifier.type !== AST_NODE_TYPES.ImportSpecifier) continue;
 
 					const { imported } = specifier;
-					if (imported.type !== TSESTree.AST_NODE_TYPES.Identifier) continue;
+					if (imported.type !== AST_NODE_TYPES.Identifier) continue;
 					if (isReactHook(imported.name)) importSourceMap.set(specifier.local.name, source);
 				}
 			},
 
-			LogicalExpression() {
+			LogicalExpression(): void {
 				updateContext({ inConditional: true });
 			},
-			"LogicalExpression:exit"() {
+			"LogicalExpression:exit"(): void {
 				updateContext({ inConditional: false });
 			},
 
-			"ReturnStatement:exit"() {
+			"ReturnStatement:exit"(): void {
 				updateContext({ afterEarlyReturn: true });
 			},
 
-			SwitchStatement() {
+			SwitchStatement(): void {
 				updateContext({ inConditional: true });
 			},
-			"SwitchStatement:exit"() {
+			"SwitchStatement:exit"(): void {
 				updateContext({ inConditional: false });
 			},
 
-			TryStatement() {
+			TryStatement(): void {
 				updateContext({ inTryBlock: true });
 			},
-			"TryStatement:exit"() {
+			"TryStatement:exit"(): void {
 				updateContext({ inTryBlock: false });
 			},
 
-			WhileStatement() {
+			WhileStatement(): void {
 				updateContext({ inLoop: true });
 			},
-			"WhileStatement:exit"() {
+			"WhileStatement:exit"(): void {
 				updateContext({ inLoop: false });
 			},
 		};
 	},
+	defaultOptions: [{}],
 	meta: {
 		docs: {
 			description:
 				"Enforce that React hooks are only called at the top level of components or custom hooks, never conditionally or in nested functions",
-			recommended: true,
-			url: "https://react.dev/reference/rules/rules-of-hooks",
 		},
 		messages: {
 			afterEarlyReturn:
@@ -449,6 +441,7 @@ const useHookAtTopLevel: Rule.RuleModule = {
 		],
 		type: "problem",
 	},
-};
+	name: "use-hook-at-top-level",
+});
 
 export default useHookAtTopLevel;

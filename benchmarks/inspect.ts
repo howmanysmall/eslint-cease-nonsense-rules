@@ -1,3 +1,5 @@
+import { inspect } from "node:util";
+
 export interface InspectOptions extends Record<string, unknown> {
 	readonly breakLength?: number;
 	readonly colors?: boolean;
@@ -6,25 +8,6 @@ export interface InspectOptions extends Record<string, unknown> {
 }
 export type InspectFunction = (value: unknown, options?: InspectOptions) => string;
 
-interface BunLike {
-	readonly inspect: InspectFunction;
-}
-interface DenoLike extends BunLike {
-	readonly writeTextFile: (filePath: string, content: string) => Promise<void>;
-}
-interface InGlobalThis {
-	readonly Bun?: BunLike;
-	readonly Deno?: DenoLike;
-}
-
-export async function getInspectAsync(): Promise<InspectFunction> {
-	const { Bun, Deno } = globalThis as typeof globalThis & InGlobalThis;
-	if (Bun) return Bun.inspect;
-	if (Deno !== undefined) {
-		const { inspect } = Deno;
-		if (typeof inspect === "function") return inspect;
-	}
-
-	const { inspect } = await import("node:util");
+export function getInspectAsync(): InspectFunction {
 	return inspect;
 }

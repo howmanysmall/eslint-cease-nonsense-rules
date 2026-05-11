@@ -1,6 +1,6 @@
 import type { Detector } from "./detector";
 
-const WORD_SPLIT_REGEX = /[ \t(),{}]/;
+const WORD_SPLIT_REGEX = /[ \t(),{}]/u;
 
 /**
  * Creates a detector that counts keyword occurrences. Splits line by word boundaries and counts matches.

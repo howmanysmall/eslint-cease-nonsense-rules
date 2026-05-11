@@ -40,7 +40,7 @@ const files = descendants
 
 const VALID_EXTS = new Set([".tsx", ".ts", ".jsx", ".js", ".mts", ".mjs", ".cts", ".cjs"]);
 
-function getExtensionExtName(filePath: string): string | undefined {
+function getExtensionExtensionName(filePath: string): string | undefined {
 	const extension = extname(filePath);
 	return VALID_EXTS.has(extension) ? extension : undefined;
 }
@@ -58,10 +58,10 @@ function getExtension(filePath: string): string | undefined {
 }
 
 function getExtensionBranching(filePath: string): string | undefined {
-	const len = filePath.length;
-	if (len < 3) return undefined;
+	const { length } = filePath;
+	if (length < 3) return undefined;
 
-	const last = filePath.charCodeAt(len - 1);
+	const last = filePath.charCodeAt(length - 1);
 
 	if (last === 120) {
 		if (filePath.endsWith(".tsx")) return ".tsx";
@@ -82,21 +82,21 @@ function getExtensionBranching(filePath: string): string | undefined {
 }
 
 function getExtensionMicro(filePath: string): string | undefined {
-	const len = filePath.length;
+	const { length } = filePath;
 
 	// .ts, .js (3 chars)
-	if (len >= 3 && filePath.charCodeAt(len - 3) === 46) {
-		const c1 = filePath.charCodeAt(len - 2);
-		const c2 = filePath.charCodeAt(len - 1);
+	if (length >= 3 && filePath.charCodeAt(length - 3) === 46) {
+		const c1 = filePath.charCodeAt(length - 2);
+		const c2 = filePath.charCodeAt(length - 1);
 		if (c1 === 116 && c2 === 115) return ".ts";
 		if (c1 === 106 && c2 === 115) return ".js";
 	}
 
 	// .tsx, .jsx, .mts, .mjs, .cts, .cjs (4 chars)
-	if (len >= 4 && filePath.charCodeAt(len - 4) === 46) {
-		const c1 = filePath.charCodeAt(len - 3);
-		const c2 = filePath.charCodeAt(len - 2);
-		const c3 = filePath.charCodeAt(len - 1);
+	if (length >= 4 && filePath.charCodeAt(length - 4) === 46) {
+		const c1 = filePath.charCodeAt(length - 3);
+		const c2 = filePath.charCodeAt(length - 2);
+		const c3 = filePath.charCodeAt(length - 1);
 		if (c1 === 116 && c2 === 115 && c3 === 120) return ".tsx";
 		if (c1 === 106 && c2 === 115 && c3 === 120) return ".jsx";
 		if (c2 === 116 && c3 === 115) {
@@ -115,21 +115,21 @@ function getExtensionMicro(filePath: string): string | undefined {
 }
 
 function getExtensionFunny(filePath: string): string | undefined {
-	const len = filePath.length;
+	const { length } = filePath;
 
 	// Check for .ts or .js (3-char extensions) — most common case
-	if (len >= 3 && filePath.charCodeAt(len - 3) === 0x2e) {
-		const c1 = filePath.charCodeAt(len - 2);
-		const c2 = filePath.charCodeAt(len - 1);
+	if (length >= 3 && filePath.charCodeAt(length - 3) === 0x2e) {
+		const c1 = filePath.charCodeAt(length - 2);
+		const c2 = filePath.charCodeAt(length - 1);
 		if (c1 === 0x74 && c2 === 0x73) return ".ts";
 		if (c1 === 0x6a && c2 === 0x73) return ".js";
 	}
 
 	// Check for 4-char extensions: .tsx, .jsx, .mts, .mjs, .cts, .cjs
-	if (len >= 4 && filePath.charCodeAt(len - 4) === 0x2e) {
-		const c1 = filePath.charCodeAt(len - 3);
-		const c2 = filePath.charCodeAt(len - 2);
-		const c3 = filePath.charCodeAt(len - 1);
+	if (length >= 4 && filePath.charCodeAt(length - 4) === 0x2e) {
+		const c1 = filePath.charCodeAt(length - 3);
+		const c2 = filePath.charCodeAt(length - 2);
+		const c3 = filePath.charCodeAt(length - 1);
 
 		if (c3 === 0x78) {
 			if (c1 === 0x74 && c2 === 0x73) return ".tsx";
@@ -153,7 +153,7 @@ barplot(() => {
 		files.map((file) => getExtension(file));
 	}).baseline(true);
 	bench("getExtensionExtName", () => {
-		files.map((file) => getExtensionExtName(file));
+		files.map((file) => getExtensionExtensionName(file));
 	});
 	bench("getExtensionBranching", () => {
 		files.map((file) => getExtensionBranching(file));

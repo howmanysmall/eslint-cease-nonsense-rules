@@ -1,8 +1,7 @@
 import { basename, extname, relative } from "node:path";
-
-import { toPascalCase } from "../utilities/casing-utilities";
-import { createRule } from "../utilities/create-rule";
-import { resolveRelativeImport } from "../utilities/resolve-import";
+import { toPascalCase } from "@utilities/casing-utilities";
+import { createRule } from "@utilities/create-rule";
+import { resolveRelativeImport } from "@utilities/resolve-import";
 
 import type { TSESTree } from "@typescript-eslint/utils";
 
@@ -12,7 +11,7 @@ interface Options {
 }
 
 function toRegExp(pattern: string): RegExp {
-	return new RegExp(pattern, "i");
+	return new RegExp(pattern, "iu");
 }
 
 function pathSegmentsFromSource(source: string): ReadonlyArray<string> {
@@ -46,6 +45,7 @@ function isValidFixtureImport(pathParts: ReadonlyArray<string>): boolean {
 
 const strictComponentBoundaries = createRule<[Options], "noReachingIntoComponent">({
 	create(context) {
+		// oxlint-disable-next-line typescript/no-useless-default-assignment
 		const [{ allow = [], maxDepth = 1 } = {}] = context.options;
 		// oxlint-disable-next-line no-array-callback-reference
 		const allowPatterns = allow.map(toRegExp);
@@ -67,10 +67,10 @@ const strictComponentBoundaries = createRule<[Options], "noReachingIntoComponent
 				const traversals = countParentTraversals(pathDifference);
 
 				const isDescendingOnly = traversals <= 1;
-				const hasComponentsDir = hasDirectoryInPath(pathParts, "components");
+				const hasComponentsDirectory = hasDirectoryInPath(pathParts, "components");
 
 				if (
-					(!isDescendingOnly || hasComponentsDir) &&
+					(!isDescendingOnly || hasComponentsDirectory) &&
 					hasAnotherComponentInPath(pathParts) &&
 					pathParts.length > maxDepth &&
 					!isIndexFile(pathDifference) &&

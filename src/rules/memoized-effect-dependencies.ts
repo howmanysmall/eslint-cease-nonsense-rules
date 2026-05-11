@@ -1,12 +1,10 @@
+import { getReactSources, isReactImport } from "@constants/react-sources";
 import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
 import { TSESTree } from "@typescript-eslint/types";
+import { createRule } from "@utilities/create-rule";
 
-import { getReactSources, isReactImport } from "../constants/react-sources";
-import { createRule } from "../utilities/create-rule";
-
+import type { EnvironmentMode } from "@lint-types/environment-mode";
 import type { TSESLint } from "@typescript-eslint/utils";
-
-import type { EnvironmentMode } from "../types/environment-mode";
 
 type Mode = "definite" | "moderate" | "aggressive";
 
@@ -47,14 +45,6 @@ const UNMEMOIZED_INLINE_TYPES = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.NewExpression,
 ]);
 
-const TS_RUNTIME_EXPRESSIONS = new Set<TSESTree.AST_NODE_TYPES>([
-	TSESTree.AST_NODE_TYPES.TSNonNullExpression,
-	TSESTree.AST_NODE_TYPES.TSAsExpression,
-	TSESTree.AST_NODE_TYPES.TSSatisfiesExpression,
-	TSESTree.AST_NODE_TYPES.TSTypeAssertion,
-	TSESTree.AST_NODE_TYPES.TSInstantiationExpression,
-]);
-
 const DEFAULT_OPTIONS: Required<MemoizedEffectDependenciesOptions> = {
 	environment: "roblox-ts",
 	hooks: [],
@@ -65,25 +55,21 @@ function unwrapExpression(node: TSESTree.Node): TSESTree.Node {
 	let current: TSESTree.Node = node;
 
 	while (true) {
-		if (current.type === TSESTree.AST_NODE_TYPES.ChainExpression) {
-			current = current.expression;
-			continue;
-		}
-		if (TS_RUNTIME_EXPRESSIONS.has(current.type)) {
-			current = (
-				current as
-					| TSESTree.TSAsExpression
-					| TSESTree.TSNonNullExpression
-					| TSESTree.TSSatisfiesExpression
-					| TSESTree.TSTypeAssertion
-					| TSESTree.TSInstantiationExpression
-			).expression;
-			continue;
-		}
-		break;
-	}
+		switch (current.type) {
+			case TSESTree.AST_NODE_TYPES.ChainExpression:
+			case TSESTree.AST_NODE_TYPES.TSAsExpression:
+			case TSESTree.AST_NODE_TYPES.TSInstantiationExpression:
+			case TSESTree.AST_NODE_TYPES.TSNonNullExpression:
+			case TSESTree.AST_NODE_TYPES.TSSatisfiesExpression:
+			case TSESTree.AST_NODE_TYPES.TSTypeAssertion: {
+				current = current.expression;
+				continue;
+			}
 
-	return current;
+			default:
+				return current;
+		}
+	}
 }
 
 function getMemberHookName(callee: TSESTree.MemberExpression, reactNamespaces: Set<string>): string | undefined {
@@ -220,17 +206,17 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 			if (definition.type === DefinitionType.Parameter) return "unknown";
 			if (definition.type === DefinitionType.ImportBinding) return "memoized";
 
-			const defNode = definition.node;
-			if (!defNode) return "unknown";
+			const { node } = definition;
+			if (!node) return "unknown";
 			if (
-				defNode.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration ||
-				defNode.type === TSESTree.AST_NODE_TYPES.ClassDeclaration
+				node.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration ||
+				node.type === TSESTree.AST_NODE_TYPES.ClassDeclaration
 			) {
 				return "unmemoized";
 			}
-			if (defNode.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator) return "unknown";
+			if (node.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator) return "unknown";
 
-			const declarationParent = defNode.parent;
+			const declarationParent = node.parent;
 			if (
 				declarationParent?.type === TSESTree.AST_NODE_TYPES.VariableDeclaration &&
 				declarationParent.kind !== "const"
@@ -238,21 +224,22 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 				return options.mode === "definite" ? "unknown" : "unmemoized";
 			}
 
-			const init = defNode.init ? unwrapExpression(defNode.init) : undefined;
+			const init = node.init ? unwrapExpression(node.init) : undefined;
 			if (!init) return "unknown";
 			if (isUnmemoizedInline(init)) return "unmemoized";
 
 			if (init.type === TSESTree.AST_NODE_TYPES.CallExpression) {
 				if (isMemoHookCall(init)) return "memoized";
 				const stableKind = getStableHookKind(init);
-				if (stableKind === "whole") return "memoized";
 				if (
-					stableKind === "index1" &&
-					defNode.id.type === TSESTree.AST_NODE_TYPES.ArrayPattern &&
-					isIdentifierAtArrayIndex(defNode.id, variableName, 1)
+					stableKind === "whole" ||
+					(stableKind === "index1" &&
+						node.id.type === TSESTree.AST_NODE_TYPES.ArrayPattern &&
+						isIdentifierAtArrayIndex(node.id, variableName, 1))
 				) {
 					return "memoized";
 				}
+
 				return options.mode === "definite" ? "unknown" : "unmemoized";
 			}
 

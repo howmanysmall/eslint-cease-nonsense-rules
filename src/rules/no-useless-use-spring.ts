@@ -1,7 +1,6 @@
 import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-
-import { createRule } from "../utilities/create-rule";
+import { createRule } from "@utilities/create-rule";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
@@ -247,11 +246,10 @@ function hasFromAndToProperties(
 	if (unwrapped.type === AST_NODE_TYPES.Identifier) {
 		const variable = findVariable(context, unwrapped);
 		if (variable === undefined) return false;
-		if (!isModuleLevelScope(variable.scope)) return false;
-		if (isImport(variable)) return false;
+		if (!isModuleLevelScope(variable.scope) || isImport(variable)) return false;
 
-		for (const def of variable.defs) {
-			const initializer = getConstInitializer(def);
+		for (const definition of variable.defs) {
+			const initializer = getConstInitializer(definition);
 			if (initializer === undefined) continue;
 			const normalizedInitializer = unwrapExpression(initializer);
 			if (normalizedInitializer.type !== AST_NODE_TYPES.ObjectExpression) continue;
@@ -279,8 +277,8 @@ function isStaticObjectLikeConfig(
 		if (!isModuleLevelScope(variable.scope)) return false;
 		if (isImport(variable)) return false;
 
-		for (const def of variable.defs) {
-			const initializer = getConstInitializer(def);
+		for (const definition of variable.defs) {
+			const initializer = getConstInitializer(definition);
 			if (initializer === undefined) continue;
 			const normalizedInitializer = unwrapExpression(initializer);
 			if (normalizedInitializer.type !== AST_NODE_TYPES.ObjectExpression) continue;
@@ -329,14 +327,14 @@ function checkStaticBinaryOrLogical(
 
 function checkStaticCallOrNewExpression(
 	context: TSESLint.RuleContext<MessageIds, Options> | undefined,
-	args: ReadonlyArray<TSESTree.CallExpressionArgument> | undefined,
+	parameters: ReadonlyArray<TSESTree.CallExpressionArgument> | undefined,
 	callee: TSESTree.Expression,
 	seen: Set<TSESTree.Node>,
 	options: NormalizedOptions,
 ): boolean {
 	if (context === undefined) return false;
 	if (!isStaticCallCallee(context, callee, seen, options)) return false;
-	return (args ?? []).every(
+	return (parameters ?? []).every(
 		(argument) =>
 			argument.type !== AST_NODE_TYPES.SpreadElement && isStaticExpression(context, argument, seen, options),
 	);
@@ -355,46 +353,62 @@ function isStaticExpression(
 	switch (unwrapped.type) {
 		case AST_NODE_TYPES.Literal:
 			return true;
+
 		case AST_NODE_TYPES.TemplateLiteral:
 			return unwrapped.expressions.length === 0;
-		case AST_NODE_TYPES.UnaryExpression:
+
+		case AST_NODE_TYPES.UnaryExpression: {
 			return (
 				STATIC_UNARY_OPERATORS.has(unwrapped.operator) &&
 				isStaticExpression(context, unwrapped.argument, seen, options)
 			);
+		}
+
 		case AST_NODE_TYPES.BinaryExpression:
 		case AST_NODE_TYPES.LogicalExpression:
 			return checkStaticBinaryOrLogical(context, unwrapped, seen, options);
-		case AST_NODE_TYPES.ConditionalExpression:
+
+		case AST_NODE_TYPES.ConditionalExpression: {
 			return (
 				isStaticExpression(context, unwrapped.test, seen, options) &&
 				isStaticExpression(context, unwrapped.consequent, seen, options) &&
 				isStaticExpression(context, unwrapped.alternate, seen, options)
 			);
+		}
+
 		case AST_NODE_TYPES.ArrayExpression:
 			return context !== undefined && isStaticArrayExpression(context, unwrapped, seen, options);
+
 		case AST_NODE_TYPES.ObjectExpression:
 			return context !== undefined && isStaticObjectExpression(context, unwrapped, seen, options);
+
 		case AST_NODE_TYPES.Identifier:
 			return context !== undefined && isStaticIdentifier(context, unwrapped, seen, options);
-		case AST_NODE_TYPES.MemberExpression:
+
+		case AST_NODE_TYPES.MemberExpression: {
 			return (
 				isStaticExpression(context, unwrapped.object, seen, options) &&
 				(!unwrapped.computed || isStaticMemberProperty(unwrapped.property, seen, options))
 			);
+		}
+
 		case AST_NODE_TYPES.ChainExpression:
 			return isStaticExpression(context, unwrapped.expression, seen, options);
+
 		case AST_NODE_TYPES.CallExpression:
-			return checkStaticCallOrNewExpression(context, unwrapped.arguments, unwrapped.callee, seen, options);
 		case AST_NODE_TYPES.NewExpression:
 			return checkStaticCallOrNewExpression(context, unwrapped.arguments, unwrapped.callee, seen, options);
-		case AST_NODE_TYPES.SequenceExpression:
+
+		case AST_NODE_TYPES.SequenceExpression: {
 			return (
 				unwrapped.expressions.length > 0 &&
 				unwrapped.expressions.every((expr) => isStaticExpression(context, expr, seen, options))
 			);
+		}
+
 		case AST_NODE_TYPES.AssignmentExpression:
 			return isStaticExpression(context, unwrapped.right, seen, options);
+
 		default:
 			return false;
 	}

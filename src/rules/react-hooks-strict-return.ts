@@ -1,12 +1,11 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-
-import { createRule } from "../utilities/create-rule";
+import { createRule } from "@utilities/create-rule";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 const MAX_RETURN_ELEMENTS = 2;
 
-const HOOK_PATTERN = /^use[A-Z0-9].*$/;
+const HOOK_PATTERN = /^use[A-Z0-9].*$/u;
 
 type FunctionNode = TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression;
 

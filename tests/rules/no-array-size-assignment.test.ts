@@ -1,7 +1,6 @@
-import { describe } from "bun:test";
+import { describe } from "vitest";
+import rule from "@rules/no-array-size-assignment";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/no-array-size-assignment";
 
 const ruleTester = new RuleTester({
 	languageOptions: {

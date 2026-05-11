@@ -1,19 +1,17 @@
-import { describe, setDefaultTimeout } from "bun:test";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
+import { describe, vi } from "vitest";
+import rule from "@rules/prefer-enum-member";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
-import { fileURLToPath } from "bun";
-
-import rule from "../../src/rules/prefer-enum-member";
 
 import type { InvalidTestCase, ValidTestCase } from "@typescript-eslint/rule-tester";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const currentDirectory = import.meta.dirname;
 
 // Type-aware tests have cold-start overhead from TypeScript project service initialization
-setDefaultTimeout(30_000);
+vi.setConfig({ testTimeout: 30_000 });
 
-const testsDir = resolve(__dirname, "..");
+const testsDir = resolve(currentDirectory, "..");
 const eslintProjectPath = join(testsDir, "tsconfig.eslint.json");
 const fixturesRelativeDir = "fixtures/prefer-enum-member";
 
@@ -182,6 +180,53 @@ const palette: Readonly<Record<Color, string>> = { [Color.Blue]: "#00F" };`,
 				},
 				{
 					code: `${declarations}
+type Palette = Record<Color, string>;
+const palette: Palette = { Blue: "#00F" };`,
+					errors: [{ messageId: "preferEnumMember" }],
+					output: `${declarations}
+type Palette = Record<Color, string>;
+const palette: Palette = { [Color.Blue]: "#00F" };`,
+				},
+				{
+					code: `${declarations}
+type Palette<TKey extends Color> = Record<TKey, string>;
+const palette: Palette<Color> = { Blue: "#00F" };`,
+					errors: [{ messageId: "preferEnumMember" }],
+					output: `${declarations}
+type Palette<TKey extends Color> = Record<TKey, string>;
+const palette: Palette<Color> = { [Color.Blue]: "#00F" };`,
+				},
+				{
+					code: `${declarations}
+type Palette<TKey extends Color> = Readonly<Record<TKey, string>>;
+const palette: Palette<Color> = { Blue: "#00F" };`,
+					errors: [{ messageId: "preferEnumMember" }],
+					output: `${declarations}
+type Palette<TKey extends Color> = Readonly<Record<TKey, string>>;
+const palette: Palette<Color> = { [Color.Blue]: "#00F" };`,
+				},
+				{
+					code: `${declarations}
+type Palette<TKey extends Color> = { [K in (TKey)]: string };
+const palette: Palette<Color> = { Blue: "#00F", Green: "#0F0", Red: "#F00" };`,
+					errors: [
+						{ messageId: "preferEnumMember" },
+						{ messageId: "preferEnumMember" },
+						{ messageId: "preferEnumMember" },
+					],
+					output: `${declarations}
+type Palette<TKey extends Color> = { [K in (TKey)]: string };
+const palette: Palette<Color> = { [Color.Blue]: "#00F", [Color.Green]: "#0F0", [Color.Red]: "#F00" };`,
+				},
+				{
+					code: `${declarations}
+const palette = { Blue: "#00F" } satisfies Record<Color, string>;`,
+					errors: [{ messageId: "preferEnumMember" }],
+					output: `${declarations}
+const palette = { [Color.Blue]: "#00F" } satisfies Record<Color, string>;`,
+				},
+				{
+					code: `${declarations}
 type ColorMap<T extends Color> = { [K in T]: number };
 const values: ColorMap<Color> = { Blue: 1, Green: 2, Red: 3 };`,
 					errors: [
@@ -291,6 +336,18 @@ const theme: Mode = Mode.Dark;`,
 const label = "Blue";`,
 				},
 				{
+					code: `import type { ParsedPath } from "node:path";
+export type { ParsedPath } from "node:path";
+type ImportedPath = import("node:path").ParsedPath;
+import("node:path");
+const label = "Blue";`,
+				},
+				{
+					code: `"use strict";
+${declarations}
+const color = Color.Blue;`,
+				},
+				{
 					code: `${declarations}
 type Loose = { foo: string };
 const loose: Loose = { foo: "bar" };`,
@@ -335,6 +392,54 @@ enum AltColor {
 }
 type Ambiguous = Record<Color, number> | Record<AltColor, number>;
 const values: Ambiguous = { Blue: 1, Green: 2, Red: 3 };`,
+				},
+				{
+					code: `${declarations}
+type Tweenable = CFrame | number;
+type ExtractMembers<TInstance, TValue> = {
+    [K in keyof TInstance as TInstance[K] extends TValue ? K : never]: TInstance[K];
+};
+
+interface BasePart {
+    CFrame: CFrame;
+    Name: string;
+}
+
+declare class CFrame {}
+declare function tween<TInstance>(instance: TInstance, properties: Partial<ExtractMembers<TInstance, Tweenable>>): void;
+declare const basePart: BasePart;
+declare const targetCFrame: CFrame;
+
+tween(basePart, { CFrame: targetCFrame });`,
+				},
+				{
+					code: `${declarations}
+type Palette = Partial<Record<Color | "Purple", string>>;
+const palette: Palette = {
+    Purple: "#90F",
+};`,
+				},
+				{
+					code: `${declarations}
+type Shade = Color | "Purple";
+const shade: Shade = "Purple";`,
+				},
+				{
+					code: `${declarations}
+type WrappedPalette<TKey extends string> = Readonly<Record<TKey, string>>;
+const palette: WrappedPalette<"Blue"> = { Blue: "#00F" };`,
+				},
+				{
+					code: `${declarations}
+type Palette<TKey extends Color | "Purple"> = Partial<{ [K in TKey]: string }>;
+const palette: Palette<Color | "Purple"> = {
+    Purple: "#90F",
+};`,
+				},
+				{
+					code: `${declarations}
+const importer = async () => import("node:path");
+void importer;`,
 				},
 			],
 			"prefer-enum-member-valid",

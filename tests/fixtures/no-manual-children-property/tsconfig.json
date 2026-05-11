@@ -1,0 +1,11 @@
+{
+	"compilerOptions": {
+		"jsx": "react-jsx",
+		"lib": ["ES2022"],
+		"module": "ESNext",
+		"target": "ES2022",
+		"types": [],
+	},
+	"extends": "../../../tsconfig.base.json",
+	"include": ["./**/*.ts", "./**/*.tsx", "./types.d.ts"],
+}

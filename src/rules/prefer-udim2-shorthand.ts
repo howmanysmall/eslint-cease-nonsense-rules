@@ -1,6 +1,5 @@
-import { TSESTree } from "@typescript-eslint/utils";
-
-import type { Rule } from "eslint";
+import { AST_NODE_TYPES } from "@typescript-eslint/types";
+import { createRule } from "@utilities/create-rule";
 
 interface ArgumentsCollection {
 	readonly offsetXText: string;
@@ -8,8 +7,6 @@ interface ArgumentsCollection {
 	readonly scaleXText: string;
 	readonly scaleYText: string;
 }
-
-type RuleContext = Rule.RuleContext;
 
 function isNumber(value: unknown): value is number {
 	return typeof value === "number" && !Number.isNaN(value);
@@ -30,17 +27,17 @@ function reconstructText(node: Record<PropertyKey, unknown>): string | undefined
 	const nodeType = node.type;
 	let text: string | undefined;
 
-	if (nodeType === TSESTree.AST_NODE_TYPES.Literal) {
+	if (nodeType === AST_NODE_TYPES.Literal) {
 		const { value } = node;
 		text = isNumber(value) ? String(value) : undefined;
 	}
 
-	if (nodeType === TSESTree.AST_NODE_TYPES.Identifier) {
+	if (nodeType === AST_NODE_TYPES.Identifier) {
 		const { name } = node;
 		text = typeof name === "string" ? name : undefined;
 	}
 
-	if (nodeType === TSESTree.AST_NODE_TYPES.UnaryExpression) {
+	if (nodeType === AST_NODE_TYPES.UnaryExpression) {
 		const { operator } = node;
 		if (typeof operator === "string") {
 			const { argument } = node;
@@ -51,7 +48,7 @@ function reconstructText(node: Record<PropertyKey, unknown>): string | undefined
 		}
 	}
 
-	if (nodeType === TSESTree.AST_NODE_TYPES.BinaryExpression) {
+	if (nodeType === AST_NODE_TYPES.BinaryExpression) {
 		const { operator } = node;
 		if (typeof operator === "string" && OPERATORS.has(operator)) {
 			const { left, right } = node;
@@ -120,13 +117,13 @@ function evaluateExpression(node: unknown): number | undefined {
 	if (!isRecord(node)) return undefined;
 
 	switch (node.type) {
-		case TSESTree.AST_NODE_TYPES.Literal:
+		case AST_NODE_TYPES.Literal:
 			return evaluateLiteral(node);
 
-		case TSESTree.AST_NODE_TYPES.UnaryExpression:
+		case AST_NODE_TYPES.UnaryExpression:
 			return evaluateUnary(node);
 
-		case TSESTree.AST_NODE_TYPES.BinaryExpression:
+		case AST_NODE_TYPES.BinaryExpression:
 			return evaluateBinary(node);
 
 		default:
@@ -134,7 +131,7 @@ function evaluateExpression(node: unknown): number | undefined {
 	}
 }
 
-function collectArguments(_context: RuleContext, parameters: ReadonlyArray<unknown>): ArgumentsCollection | undefined {
+function collectArguments(parameters: ReadonlyArray<unknown>): ArgumentsCollection | undefined {
 	if (parameters.length !== 4) return undefined;
 
 	const texts = new Array<string | undefined>(4);
@@ -143,7 +140,7 @@ function collectArguments(_context: RuleContext, parameters: ReadonlyArray<unkno
 		const parameter = parameters[index];
 		if (!(isRecord(parameter) && hasTypeProperty(parameter))) return undefined;
 
-		if (parameter.type === TSESTree.AST_NODE_TYPES.SpreadElement) return undefined;
+		if (parameter.type === AST_NODE_TYPES.SpreadElement) return undefined;
 
 		const text = reconstructText(parameter);
 		if (text === undefined) return undefined;
@@ -164,13 +161,15 @@ function collectArguments(_context: RuleContext, parameters: ReadonlyArray<unkno
 	return { offsetXText, offsetYText, scaleXText, scaleYText };
 }
 
-const preferUDim2Shorthand: Rule.RuleModule = {
+type MessageIds = "preferFromOffset" | "preferFromScale";
+
+const preferUDim2Shorthand = createRule<[], MessageIds>({
 	create(context) {
 		return {
-			NewExpression(node) {
-				if (node.callee.type !== TSESTree.AST_NODE_TYPES.Identifier || node.callee.name !== "UDim2") return;
+			NewExpression(node): void {
+				if (node.callee.type !== AST_NODE_TYPES.Identifier || node.callee.name !== "UDim2") return;
 
-				const collected = collectArguments(context, node.arguments);
+				const collected = collectArguments(node.arguments);
 				if (!collected) return;
 
 				const { offsetXText, offsetYText, scaleXText, scaleYText } = collected;
@@ -201,11 +200,11 @@ const preferUDim2Shorthand: Rule.RuleModule = {
 			},
 		};
 	},
+	defaultOptions: [],
 	meta: {
 		docs: {
 			description:
 				"Prefer UDim2.fromScale() or UDim2.fromOffset() over new UDim2() when all offsets or all scales are zero.",
-			recommended: true,
 		},
 		fixable: "code",
 		messages: {
@@ -217,6 +216,7 @@ const preferUDim2Shorthand: Rule.RuleModule = {
 		schema: [],
 		type: "suggestion",
 	},
-};
+	name: "prefer-udim2-shorthand",
+});
 
 export default preferUDim2Shorthand;

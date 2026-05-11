@@ -1,7 +1,6 @@
-import { describe } from "bun:test";
+import { describe } from "vitest";
+import rule from "@rules/prefer-udim2-shorthand";
 import { RuleTester } from "eslint";
-
-import rule from "../../src/rules/prefer-udim2-shorthand";
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -11,6 +10,7 @@ const ruleTester = new RuleTester({
 });
 
 describe("prefer-udim2-shorthand", () => {
+	// @ts-expect-error -- wrong
 	ruleTester.run("prefer-udim2-shorthand", rule, {
 		invalid: [
 			// FromScale pattern tests

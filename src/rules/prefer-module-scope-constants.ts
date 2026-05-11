@@ -1,13 +1,12 @@
 import { ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-
-import { createRule } from "../utilities/create-rule";
+import { createRule } from "@utilities/create-rule";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds = "mustUseConst" | "mustBeModuleScope";
 
-const SCREAMING_SNAKE_CASE = /^[A-Z][A-Z0-9_]*$/;
+const SCREAMING_SNAKE_CASE = /^[A-Z][A-Z0-9_]*$/u;
 
 function isTopScope(scope: TSESLint.Scope.Scope): boolean {
 	const { type } = scope;

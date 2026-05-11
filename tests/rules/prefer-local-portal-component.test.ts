@@ -1,11 +1,10 @@
-import { describe } from "bun:test";
 import { join } from "node:path";
+import { describe } from "vitest";
+import rule from "@rules/prefer-local-portal-component";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
-import rule from "../../src/rules/prefer-local-portal-component";
-
-const FIXTURES = join(import.meta.dir, "..", "fixtures", "prefer-local-portal-component");
+const FIXTURES = join(import.meta.dirname, "..", "fixtures", "prefer-local-portal-component");
 const WITH_PORTAL = join(FIXTURES, "with-portal");
 const WITHOUT_PORTAL = join(FIXTURES, "without-portal");
 const AMBIGUOUS_PORTAL = join(FIXTURES, "ambiguous-portal");
