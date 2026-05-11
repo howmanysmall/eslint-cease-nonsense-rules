@@ -73,19 +73,25 @@ function parsePackOutput(output: string): PackOutput {
 	const trimmed = output.trim();
 	const matches = [...trimmed.matchAll(/(?:^|\n)\[/gu)];
 	if (matches.length === 0) {
-		throw new Error("npm pack output did not include JSON metadata.");
+		const error = new Error("npm pack output did not include JSON metadata.");
+		Error.captureStackTrace(error, parsePackOutput);
+		throw error;
 	}
 
 	const lastMatch = matches.at(-1);
 	if (lastMatch?.index === undefined) {
-		throw new Error("npm pack output did not include JSON metadata.");
+		const error = new Error("npm pack output did not include JSON metadata.");
+		Error.captureStackTrace(error, parsePackOutput);
+		throw error;
 	}
 
 	const { index: start } = lastMatch;
 	const jsonText = trimmed.slice(start).trim();
 	const parsed = isValidJson(JSON.parse(jsonText));
 	if (parsed instanceof type.errors) {
-		throw new TypeError(`Unexpected npm pack JSON payload shape - ${parsed.summary}`);
+		const error = new TypeError(`Unexpected npm pack JSON payload shape - ${parsed.summary}`);
+		Error.captureStackTrace(error, parsePackOutput);
+		throw error;
 	}
 
 	return parsed;
@@ -204,7 +210,10 @@ const testLiveCommand = new Command()
 			const customEnvironment: NodeJS.ProcessEnv = { ...env, TIMING: "2000" };
 			if (ci) customEnvironment.CI = "true";
 
-			await runCommandAsync("aube", ["install"], { cwd: directory, env: customEnvironment });
+			await runCommandAsync("aube", ["install", "--no-frozen-lockfile"], {
+				cwd: directory,
+				env: customEnvironment,
+			});
 			log.success(picocolors.green("Dependencies installed successfully."));
 
 			const duration = await profileAsync(async () => {
