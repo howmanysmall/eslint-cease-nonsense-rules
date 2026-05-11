@@ -289,7 +289,7 @@ jobs:
 
       - name: Publish to NPM (Trusted Publishing)
         if: ${{ env.DRY_RUN != 'true' }}
-        run: aube x npm@latest publish --provenance --access public
+        run: aubx npm@latest publish --provenance --access public
 
       - name: Upload npm debug log on failure
         if: failure()
