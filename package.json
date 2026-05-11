@@ -44,6 +44,7 @@
 		"prepare": "hk install",
 		"prepublishOnly": "aube run build",
 		"release": "bumpp",
+		"release:undo": "bash ./scripts/release-undo.sh",
 		"test": "vitest run --sequence.shuffle",
 		"test:agent": "vitest run --reporter agent --sequence.shuffle",
 		"test:watch": "vitest --watch",
