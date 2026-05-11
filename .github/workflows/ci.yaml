@@ -43,10 +43,10 @@ jobs:
         with:
           path: |
             ~/.local/share/aube/store
-            ~/.cache/aube/virtual-store
-          key: ${{ runner.os }}-aube-v2-${{ hashFiles('aube-lock.yaml') }}
+            ~/.cache/aube
+          key: ${{ runner.os }}-aube-v3-${{ hashFiles('aube-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-aube-v2-
+            ${{ runner.os }}-aube-v3-
 
       - name: Install
         run: |
@@ -94,10 +94,10 @@ jobs:
         with:
           path: |
             ~/.local/share/aube/store
-            ~/.cache/aube/virtual-store
-          key: ${{ runner.os }}-aube-v2-${{ hashFiles('aube-lock.yaml') }}
+            ~/.cache/aube
+          key: ${{ runner.os }}-aube-v3-${{ hashFiles('aube-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-aube-v2-
+            ${{ runner.os }}-aube-v3-
 
       - name: Install
         run: |
@@ -148,10 +148,10 @@ jobs:
         with:
           path: |
             ~/.local/share/aube/store
-            ~/.cache/aube/virtual-store
-          key: ${{ runner.os }}-aube-v2-${{ hashFiles('aube-lock.yaml') }}
+            ~/.cache/aube
+          key: ${{ runner.os }}-aube-v3-${{ hashFiles('aube-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-aube-v2-
+            ${{ runner.os }}-aube-v3-
 
       - name: Install
         run: |

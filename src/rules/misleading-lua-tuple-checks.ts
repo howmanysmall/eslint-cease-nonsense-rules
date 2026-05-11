@@ -161,6 +161,15 @@ function getIterableFunctionLuaTupleCandidate(
 		}
 	}
 
+	const indexedElementType = type.getNumberIndexType();
+	if (indexedElementType) {
+		const luaTupleElement = getConstrainedLuaTupleType(checker, indexedElementType);
+		if (luaTupleElement) {
+			iterableFunctionCache.set(type, luaTupleElement);
+			return luaTupleElement;
+		}
+	}
+
 	const apparentCandidate = getIterableLuaTupleReturnType(checker, type);
 	if (apparentCandidate) {
 		iterableFunctionCache.set(type, apparentCandidate);
