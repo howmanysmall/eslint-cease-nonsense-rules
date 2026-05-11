@@ -4,7 +4,7 @@ import { isArrayBindingOrAssignmentPattern, isTypeReference } from "ts-api-utils
 import { isCallExpression, isFunctionLike, isIdentifier, isParameter, isTypeReferenceNode } from "typescript";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
-import type { Node, Signature, Type, TypeChecker } from "typescript";
+import type { Node, Signature, Type, TypeChecker, TypeParameterDeclaration } from "typescript";
 
 type MessageIds = "misleadingLuaTupleCheck" | "luaTupleDeclaration";
 
@@ -297,6 +297,20 @@ function typeNodeReferencesTupleIterable(node: Node): boolean {
 	return typeNodeReferencesIdentifier(node, "IterableFunction") && typeNodeReferencesIdentifier(node, "LuaTuple");
 }
 
+function typeParametersReferenceTupleIterable(
+	typeName: string,
+	typeParameters: ReadonlyArray<TypeParameterDeclaration> | undefined,
+): boolean {
+	if (!typeParameters) return false;
+
+	for (const typeParameter of typeParameters) {
+		if (typeParameter.name.text !== typeName || !typeParameter.constraint) continue;
+		if (typeNodeReferencesTupleIterable(typeParameter.constraint)) return true;
+	}
+
+	return false;
+}
+
 function hasTupleIterableParameterConstraint(
 	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
 	node: TSESTree.Node,
@@ -318,11 +332,34 @@ function hasTupleIterableParameterConstraint(
 		if (!isIdentifier(declaration.type.typeName)) continue;
 
 		const { parent } = declaration;
-		if (!isFunctionLike(parent) || !parent.typeParameters) continue;
+		if (!isFunctionLike(parent)) continue;
+		if (typeParametersReferenceTupleIterable(declaration.type.typeName.text, parent.typeParameters)) return true;
+	}
 
-		for (const typeParameter of parent.typeParameters) {
-			if (typeParameter.name.text !== declaration.type.typeName.text || !typeParameter.constraint) continue;
-			if (typeNodeReferencesTupleIterable(typeParameter.constraint)) return true;
+	return false;
+}
+
+function hasTupleIterableCallConstraint(
+	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
+	node: TSESTree.Node,
+): boolean {
+	if (node.type !== AST_NODE_TYPES.CallExpression) return false;
+
+	const { program } = parserServices;
+	if (!program) return false;
+
+	const checker = program.getTypeChecker();
+	const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
+	if (!isCallExpression(tsNode)) return false;
+
+	const symbol = checker.getSymbolAtLocation(tsNode.expression);
+	if (!symbol) return false;
+
+	for (const declaration of symbol.declarations ?? []) {
+		if (!isFunctionLike(declaration) || !declaration.type || !isTypeReferenceNode(declaration.type)) continue;
+		if (!isIdentifier(declaration.type.typeName)) continue;
+		if (typeParametersReferenceTupleIterable(declaration.type.typeName.text, declaration.typeParameters)) {
+			return true;
 		}
 	}
 
@@ -399,6 +436,11 @@ function validateForOfStatement(
 	const callExpressionCandidate = getCallExpressionReturnConstraintCandidate(parserServices, rightNode);
 	if (callExpressionCandidate) {
 		handleIterableFunction(context, parserServices, node, callExpressionCandidate);
+		return;
+	}
+
+	if (hasTupleIterableCallConstraint(parserServices, rightNode)) {
+		reportForOfLuaTupleDeclaration(context, parserServices, node);
 		return;
 	}
 
