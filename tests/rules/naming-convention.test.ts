@@ -599,6 +599,18 @@ describe("naming-convention", () => {
 				options: [{ filter: "Test$", format: ["camelCase"], selector: "variable" }],
 			},
 
+			// Test types option without parser services - falls back to allowing the name
+			{
+				code: "const fooBar = 1;",
+				options: [{ format: ["camelCase"], selector: "variable", types: ["string"] }],
+			},
+
+			// Test empty format array - validator returns early
+			{
+				code: "const anythingGoes = 1;",
+				options: [{ format: [], selector: "variable" }],
+			},
+
 			// Test PascalCase valid cases
 			{
 				code: "class FooBar {}",
@@ -1146,6 +1158,18 @@ describe("naming-convention", () => {
 			// Test type: string - matching format
 			{
 				code: "const FOO_BAR: string = 'test';",
+				options: [{ format: ["UPPER_CASE"], selector: "variable", types: ["string"] }],
+			},
+
+			// Test multiple allowed types - hits the function branch before matching string
+			{
+				code: "const FOO_BAR: string = 'test';",
+				options: [{ format: ["UPPER_CASE"], selector: "variable", types: ["function", "string"] }],
+			},
+
+			// Test repeated typed variables to exercise cached type-info path
+			{
+				code: "const FOO_FIRST: string = 'a'; const FOO_SECOND: string = 'b';",
 				options: [{ format: ["UPPER_CASE"], selector: "variable", types: ["string"] }],
 			},
 

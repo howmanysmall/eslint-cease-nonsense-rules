@@ -43,6 +43,16 @@ describe("format-utilities", () => {
 		expect(config).toStrictEqual({});
 	});
 
+	it("loads object config and strips non-format keys", () => {
+		expect.assertions(1);
+		__testing.resetConfigCache();
+		vi.spyOn(fs, "readFileSync").mockReturnValue(
+			'{"$schema":"https://example.test/schema.json","ignorePatterns":["dist/**"],"lineWidth":120}',
+		);
+		const config = __testing.loadOxfmtConfig();
+		expect(config).toStrictEqual({ lineWidth: 120 });
+	});
+
 	describe("getExtension", () => {
 		it("returns .tsx for .tsx files", () => {
 			expect.assertions(1);

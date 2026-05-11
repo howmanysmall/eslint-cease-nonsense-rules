@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	__testing,
 	ruleAwareness,
 	ruleCategories,
 	ruleSidebarGroups,
@@ -8,6 +9,8 @@ import {
 	totalRuleAwareness,
 	totalRules,
 } from "../../documentation/src/data/rule-stats";
+
+import type { RuleCategoryDefinition } from "../../documentation/src/data/rule-sidebar";
 
 describe("rule stats", () => {
 	it("derives totals from the shared rule catalog", () => {
@@ -78,5 +81,18 @@ describe("rule stats", () => {
 			{ count: 7, first: "rules/array-type-generic", label: "Naming & Conventions" },
 			{ count: 12, first: "rules/dot-notation", label: "General Logic & Style" },
 		]);
+	}, 1000);
+
+	it("throws when a category has no rules", () => {
+		expect.assertions(1);
+		const emptyCategory: RuleCategoryDefinition = {
+			label: "Empty Category",
+			rules: [],
+			slug: "/eslint-cease-nonsense-rules/rules/empty/",
+		};
+
+		expect(() => __testing.createRuleCategoryStats(emptyCategory)).toThrow(
+			'Rule category "Empty Category" must contain at least one rule.',
+		);
 	}, 1000);
 });

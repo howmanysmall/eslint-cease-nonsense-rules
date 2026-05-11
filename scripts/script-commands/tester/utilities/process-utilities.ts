@@ -15,7 +15,10 @@ function createCommandError(command: string, parameters: ReadonlyArray<string>, 
 	const renderedCommand = [command, ...parameters].join(" ");
 	const output = [result.stderr.trim(), result.stdout.trim()].filter(Boolean).join("\n");
 	const message = output ? `${renderedCommand} failed.\n${output}` : `${renderedCommand} failed.`;
-	return new Error(message);
+
+	const error = new Error(message);
+	Error.captureStackTrace(error, createCommandError);
+	return error;
 }
 
 export async function runCommandAsync(
@@ -59,6 +62,6 @@ export async function getCommandTextAsync(
 	parameters: ReadonlyArray<string>,
 	options?: CommandOptions,
 ): Promise<string> {
-	const result = await runCommandAsync(command, parameters, options);
-	return result.stdout;
+	const { stdout } = await runCommandAsync(command, parameters, options);
+	return stdout;
 }

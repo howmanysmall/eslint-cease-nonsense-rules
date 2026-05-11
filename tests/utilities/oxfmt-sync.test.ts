@@ -47,4 +47,22 @@ describe("oxfmt-sync", () => {
 		expect.assertions(1);
 		expect(() => __testingResolveWorkerPath(new URL("file:///tmp/oxfmt-sync.test.ts"), () => false)).toThrow();
 	}, 1000);
+
+	it("prefers the built worker when both files exist", () => {
+		expect.assertions(2);
+		const existingPaths = new Set<string>(["/tmp/oxfmt-worker.js", "/tmp/oxfmt-worker.ts"]);
+		const result = __testingResolveWorkerPath(new URL("file:///tmp/oxfmt-sync.test.ts"), (path): boolean =>
+			existingPaths.has(path),
+		);
+		expect(result.pathname.endsWith("oxfmt-worker.js")).toBe(true);
+		expect(result.pathname.endsWith("oxfmt-worker.ts")).toBe(false);
+	}, 1000);
+
+	it("terminates the worker idempotently", () => {
+		expect.assertions(1);
+		formatSync("test.ts", "const x=1", { useTabs: true });
+		terminateWorker();
+		terminateWorker();
+		expect(true).toBe(true);
+	}, 1000);
 });

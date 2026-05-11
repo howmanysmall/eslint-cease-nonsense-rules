@@ -72,7 +72,7 @@ const getRulesCommand = new Command()
 
 		const { rules } = json;
 
-		const uniqueRuleNames = [...new Set<string>([ruleName, ...ruleNames])];
+		const uniqueRuleNames = [...new Set([ruleName, ...ruleNames])];
 		const entries: Array<RuleEntry> = uniqueRuleNames.map((name) => ({
 			name,
 			rule: rules[name],

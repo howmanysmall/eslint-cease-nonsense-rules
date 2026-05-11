@@ -38,6 +38,8 @@ export const ruleCategories = {
 export { ruleSidebarGroups };
 export { ruleAwareness };
 
+export const __testing = { createRuleCategoryStats };
+
 export const totalCategories = ruleCategoryOrder.length;
 export const totalRules = ruleCategoryOrder.reduce((sum, category) => sum + ruleCategories[category].count, 0);
 

@@ -11,7 +11,7 @@ type Options = [];
 
 const luaTupleCache = new WeakMap<TSESTree.Node, boolean>();
 const rawTypeCache = new WeakMap<TSESTree.Node, Type>();
-const iterableFunctionCache = new WeakMap<Type, boolean>();
+const iterableFunctionCache = new WeakMap<Type, Type | false>();
 
 function isLuaTupleCandidate(node: TSESTree.Node): boolean {
 	switch (node.type) {
@@ -101,70 +101,68 @@ function getIterableLuaTupleReturnType(checker: TypeChecker, type: Type): Type |
 	return undefined;
 }
 
-function isIterableFunctionType(
+function getIterableFunctionLuaTupleCandidate(
 	program: ReturnType<typeof ESLintUtils.getParserServices>["program"],
 	type: Type,
 	seenTypes: WeakSet<Type> = new WeakSet<Type>(),
-): boolean {
-	if (!program) return false;
+): Type | undefined {
+	if (!program) return undefined;
 
 	const cached = iterableFunctionCache.get(type);
-	if (cached !== undefined) return cached;
+	if (cached !== undefined) return cached === false ? undefined : cached;
 
 	if (seenTypes.has(type)) {
 		iterableFunctionCache.set(type, false);
-		return false;
+		return undefined;
 	}
 
 	seenTypes.add(type);
 
 	const checker = program.getTypeChecker();
-	const directSymbol = type.aliasSymbol ?? type.getSymbol();
-	if (directSymbol && directSymbol.escapedName.toString() === "IterableFunction") {
-		iterableFunctionCache.set(type, true);
-		return true;
-	}
-
 	const constrainedType = checker.getBaseConstraintOfType(type);
-	if (constrainedType && constrainedType !== type && isIterableFunctionType(program, constrainedType, seenTypes)) {
-		iterableFunctionCache.set(type, true);
-		return true;
-	}
-
-	if (getIterableLuaTupleReturnType(checker, type)) {
-		iterableFunctionCache.set(type, true);
-		return true;
+	if (constrainedType && constrainedType !== type) {
+		const constrainedCandidate = getIterableFunctionLuaTupleCandidate(program, constrainedType, seenTypes);
+		if (constrainedCandidate) {
+			iterableFunctionCache.set(type, constrainedCandidate);
+			return constrainedCandidate;
+		}
 	}
 
 	if (isTypeReference(type)) {
 		const [firstTypeArgument] = checker.getTypeArguments(type);
 		if (firstTypeArgument) {
-			const { aliasSymbol } = firstTypeArgument;
-			if (aliasSymbol && aliasSymbol.escapedName.toString() === "LuaTuple") {
-				iterableFunctionCache.set(type, true);
-				return true;
+			const constrainedArgument = checker.getBaseConstraintOfType(firstTypeArgument) ?? firstTypeArgument;
+			if (isLuaTupleType(constrainedArgument)) {
+				iterableFunctionCache.set(type, constrainedArgument);
+				return constrainedArgument;
 			}
 		}
 
-		const targetSymbol = type.target.getSymbol();
-		if (targetSymbol && targetSymbol.escapedName.toString() === "IterableFunction") {
-			iterableFunctionCache.set(type, true);
-			return true;
+		const targetCandidate = getIterableFunctionLuaTupleCandidate(program, type.target, seenTypes);
+		if (targetCandidate) {
+			iterableFunctionCache.set(type, targetCandidate);
+			return targetCandidate;
 		}
+	}
 
-		const targetResult = isIterableFunctionType(program, type.target, seenTypes);
-		iterableFunctionCache.set(type, targetResult);
-		return targetResult;
+	const apparentCandidate = getIterableLuaTupleReturnType(checker, type);
+	if (apparentCandidate) {
+		iterableFunctionCache.set(type, apparentCandidate);
+		return apparentCandidate;
 	}
 
 	if (type.isUnionOrIntersection()) {
-		const unionResult = type.types.some((innerType) => isIterableFunctionType(program, innerType, seenTypes));
-		iterableFunctionCache.set(type, unionResult);
-		return unionResult;
+		for (const innerType of type.types) {
+			const innerCandidate = getIterableFunctionLuaTupleCandidate(program, innerType, seenTypes);
+			if (innerCandidate) {
+				iterableFunctionCache.set(type, innerCandidate);
+				return innerCandidate;
+			}
+		}
 	}
 
 	iterableFunctionCache.set(type, false);
-	return false;
+	return undefined;
 }
 
 function checkLuaTupleUsage(
@@ -209,18 +207,8 @@ function handleIterableFunction(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	parserServices: ReturnType<typeof ESLintUtils.getParserServices>,
 	node: TSESTree.ForOfStatement,
-	type: Type,
+	luaTupleCandidate: Type,
 ): void {
-	const { program } = parserServices;
-	if (!program) return;
-
-	const checker = program.getTypeChecker();
-	const luaTupleCandidate = isTypeReference(type)
-		? checker.getTypeArguments(type)[0]
-		: getIterableLuaTupleReturnType(checker, type);
-
-	if (!luaTupleCandidate) return;
-
 	const { aliasSymbol } = luaTupleCandidate;
 	if (!aliasSymbol || aliasSymbol.escapedName.toString() !== "LuaTuple") return;
 
@@ -257,9 +245,12 @@ function validateForOfStatement(
 	const iterableType = getTypeAtLocationCached(parserServices, rightNode);
 	const { program } = parserServices;
 
-	if (iterableType && program && isIterableFunctionType(program, iterableType)) {
-		handleIterableFunction(context, parserServices, node, iterableType);
-		return;
+	if (iterableType && program) {
+		const luaTupleCandidate = getIterableFunctionLuaTupleCandidate(program, iterableType);
+		if (luaTupleCandidate) {
+			handleIterableFunction(context, parserServices, node, luaTupleCandidate);
+			return;
+		}
 	}
 
 	checkLuaTupleUsage(context, parserServices, rightNode);
