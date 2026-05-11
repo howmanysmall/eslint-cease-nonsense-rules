@@ -39,7 +39,6 @@ async function readPackageJsonAsync(
 }
 
 interface Parameters {
-	readonly directory: string;
 	readonly livePackageJson: BasePackageJson;
 	readonly livePackagePath: string;
 	readonly packageContents: string;
@@ -107,7 +106,6 @@ async function fileExistsAsync(filePath: string): Promise<boolean> {
 }
 
 async function replacePackageJsonAsync({
-	directory,
 	livePackagePath,
 	livePackageJson,
 	packageContents,
@@ -118,7 +116,7 @@ async function replacePackageJsonAsync({
 	const { name } = thisPackageJson;
 	const { dependencies, devDependencies } = livePackageJson;
 
-	const pathToUse = `./patches/node/${packageFileName}`;
+	const pathToUse = `file:./patches/node/${packageFileName}`;
 
 	if (name in dependencies) dependencies[name] = useLink ? `link:${name}` : pathToUse;
 	else if (name in devDependencies) devDependencies[name] = useLink ? `link:${name}` : pathToUse;
@@ -137,7 +135,6 @@ async function replacePackageJsonAsync({
 
 	return async function undoAsync(): Promise<void> {
 		await writeFile(livePackagePath, packageContents);
-		await runCommandAsync("aube", ["install"], { cwd: directory });
 	};
 }
 
@@ -172,7 +169,6 @@ const testLiveCommand = new Command()
 		const packageFileName = createPackageFileName(thisPackageJson.name, thisPackageJson.version);
 
 		const cleanupAsync = await replacePackageJsonAsync({
-			directory,
 			livePackageJson,
 			livePackagePath,
 			packageContents,

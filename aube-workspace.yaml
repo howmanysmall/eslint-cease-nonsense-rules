@@ -4,8 +4,7 @@ packages:
 allowBuilds:
   esbuild: true
   sharp: true
-  msgpackr-extract: set this to true or false
-
+  msgpackr-extract: true
 
 trustPolicyExclude:
   - effect
