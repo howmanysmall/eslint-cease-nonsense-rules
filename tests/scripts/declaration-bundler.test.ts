@@ -9,6 +9,8 @@ import {
 	createDeclarationBundlerProgram,
 } from "../../scripts/utilities/declaration-bundler";
 
+import type { CompilerOptions } from "typescript";
+
 interface FixtureContext {
 	readonly bundleDirectory: string;
 	readonly rootDirectory: string;
@@ -50,6 +52,22 @@ async function createFixtureContextAsync(
 
 function createBundledOutput(context: FixtureContext, entryFileName: string): string {
 	const program = createDeclarationBundlerProgram({
+		declarationDirectories: [context.bundleDirectory, context.supportDirectory],
+	});
+
+	return bundleDeclarationEntryPoint({
+		entryFilePath: join(context.bundleDirectory, entryFileName),
+		program,
+	});
+}
+
+function createBundledOutputWithCompilerOptions(
+	context: FixtureContext,
+	entryFileName: string,
+	compilerOptions: CompilerOptions,
+): string {
+	const program = createDeclarationBundlerProgram({
+		compilerOptions,
 		declarationDirectories: [context.bundleDirectory, context.supportDirectory],
 	});
 
@@ -119,6 +137,28 @@ describe("declaration-bundler", () => {
 		expect(output).not.toContain("./helper");
 		expect(output).not.toContain("./module");
 		expect(output).not.toContain("export type { Helper }");
+	});
+
+	it("inlines local path-mapped imports instead of preserving package-style aliases", async () => {
+		expect.assertions(5);
+		const context = await createFixtureContextAsync({
+			"index.d.ts":
+				'import type { EnvironmentMode } from "@lint-types/environment-mode";\nexport interface Config {\n\treadonly environment: EnvironmentMode;\n}\n',
+			"types/environment-mode.d.ts": 'export type EnvironmentMode = "roblox-ts" | "standard";\n',
+		});
+
+		const output = createBundledOutputWithCompilerOptions(context, "index.d.ts", {
+			baseUrl: context.bundleDirectory,
+			paths: {
+				"@lint-types/*": ["types/*"],
+			},
+		});
+
+		expect(output).toContain('type EnvironmentMode = "roblox-ts" | "standard";');
+		expect(output).toContain("interface Config");
+		expect(output).toContain("export type { Config };");
+		expect(output).not.toContain('from "@lint-types/environment-mode"');
+		expect(output).not.toContain("import type { EnvironmentMode }");
 	});
 
 	it("includes copied source declaration files when emitted output references .d modules", async () => {

@@ -14,6 +14,7 @@ import prettyBytes from "pretty-bytes";
 import prettyMilliseconds from "pretty-ms";
 import { build } from "tsdown";
 
+import { readDeclarationBundlerPaths } from "./utilities/declaration-bundler-paths";
 import {
 	getStaleDeclarationSupportPaths,
 	normalizeDeclarationSupportPaths,
@@ -23,6 +24,7 @@ const scriptPath = new URL(import.meta.url).pathname;
 const SCRIPT_NAME = basename(scriptPath, extname(scriptPath));
 const DIST_DIRECTORY = resolve(".", "dist");
 const SOURCE_DIRECTORY = resolve(".", "src");
+const TSCONFIG_PATHS_FILE = resolve(".", "tsconfig.paths.json");
 const ENTRY_POINTS = ["./src/index.ts", "./src/oxfmt-worker.ts"];
 const CRITICAL_FILES = ["dist/index.js", "dist/oxfmt-worker.js", "dist/index.d.ts", "dist/oxfmt-worker.d.ts"];
 const EXTERNAL_PACKAGES = [
@@ -241,6 +243,7 @@ async function generateBundledDeclarationsAsync(verbose: boolean): Promise<void>
 		DECLARATION_CACHE_OUTPUT_DIRECTORY,
 		DECLARATION_CACHE_MANIFEST_PATH,
 	);
+	const declarationBundlerPaths = readDeclarationBundlerPaths(TSCONFIG_PATHS_FILE, basename(SOURCE_DIRECTORY));
 
 	const { bundleDeclarationEntryPoint, createDeclarationBundlerProgram } = await declarationBundlerPromise;
 	const bundledEntrypoints = [
@@ -248,6 +251,10 @@ async function generateBundledDeclarationsAsync(verbose: boolean): Promise<void>
 		{ entryFileName: "oxfmt-worker.d.ts", outputFileName: resolve(DIST_DIRECTORY, "oxfmt-worker.d.ts") },
 	];
 	const program = createDeclarationBundlerProgram({
+		compilerOptions: {
+			baseUrl: DECLARATION_CACHE_OUTPUT_DIRECTORY,
+			paths: declarationBundlerPaths,
+		},
 		entryFilePaths: bundledEntrypoints.map(({ entryFileName }) =>
 			resolve(DECLARATION_CACHE_OUTPUT_DIRECTORY, entryFileName),
 		),
