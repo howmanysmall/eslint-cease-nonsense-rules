@@ -88,6 +88,7 @@
 		"env-paths": "^4.0.0",
 		"eslint": "^9.39.4",
 		"fast-xml-builder": "^1.2.0",
+		"get-tsconfig": "^4.14.0",
 		"jsonc-parser": "^3.3.1",
 		"just-diff": "^6.0.2",
 		"knip": "^6.12.2",

@@ -114,7 +114,7 @@ export function bundleDeclarationEntryPoint(options: BundleDeclarationOptions): 
 	}
 
 	const checker = options.program.getTypeChecker();
-	const rootExports = collectRootExports(entrySourceFile, checker);
+	const rootExports = collectRootExports(entrySourceFile, checker, options.program);
 	const state: BundlerState = {
 		checker,
 		collectedSymbols: new Map(),
@@ -266,7 +266,11 @@ function assignLocalSymbolNames(
 	return results;
 }
 
-function collectRootExports(entrySourceFile: ts.SourceFile, checker: ts.TypeChecker): ReadonlyArray<RootExportRecord> {
+function collectRootExports(
+	entrySourceFile: ts.SourceFile,
+	checker: ts.TypeChecker,
+	program: ts.Program,
+): ReadonlyArray<RootExportRecord> {
 	const records = new Array<RootExportRecord>();
 
 	for (const statement of entrySourceFile.statements) {
@@ -294,7 +298,7 @@ function collectRootExports(entrySourceFile: ts.SourceFile, checker: ts.TypeChec
 		}
 
 		if (ts.isExportDeclaration(statement)) {
-			collectExportDeclarationRecords(records, statement, checker);
+			collectExportDeclarationRecords(records, statement, checker, program);
 			continue;
 		}
 
@@ -317,6 +321,7 @@ function collectExportDeclarationRecords(
 	records: Array<RootExportRecord>,
 	statement: ts.ExportDeclaration,
 	checker: ts.TypeChecker,
+	program: ts.Program,
 ): void {
 	if (statement.exportClause === undefined) {
 		const error = new Error(`Unsupported export star declaration in ${statement.getSourceFile().fileName}`);
@@ -329,15 +334,10 @@ function collectExportDeclarationRecords(
 		throw error;
 	}
 
-	const moduleSpecifier = getModuleSpecifierText(statement.moduleSpecifier);
-	if (moduleSpecifier !== undefined && !isRelativeModuleSpecifier(moduleSpecifier)) {
-		records.push({ kind: "external", statement });
-		return;
-	}
-
 	const moduleSourceSymbol =
 		statement.moduleSpecifier === undefined ? undefined : checker.getSymbolAtLocation(statement.moduleSpecifier);
 	const moduleExports = moduleSourceSymbol === undefined ? undefined : checker.getExportsOfModule(moduleSourceSymbol);
+	const moduleSpecifier = getModuleSpecifierText(statement.moduleSpecifier);
 
 	for (const exportSpecifier of statement.exportClause.elements) {
 		const publicName = exportSpecifier.name.text;
@@ -360,12 +360,28 @@ function collectExportDeclarationRecords(
 			throw error;
 		}
 
-		records.push({
-			kind: "named",
-			publicName,
-			symbol,
-			typeOnly: statement.isTypeOnly || exportSpecifier.isTypeOnly,
-		});
+		if (isLocalResolvedSymbol(symbol, checker, program)) {
+			records.push({
+				kind: "named",
+				publicName,
+				symbol,
+				typeOnly: statement.isTypeOnly || exportSpecifier.isTypeOnly,
+			});
+			continue;
+		}
+
+		if (moduleSpecifier === undefined || isRelativeModuleSpecifier(moduleSpecifier)) {
+			records.push({
+				kind: "named",
+				publicName,
+				symbol,
+				typeOnly: statement.isTypeOnly || exportSpecifier.isTypeOnly,
+			});
+			continue;
+		}
+
+		records.push({ kind: "external", statement });
+		return;
 	}
 }
 
@@ -416,8 +432,8 @@ function collectIdentifierDependency(
 
 	const importBinding = getExternalOrLocalImportBinding(symbol);
 	if (importBinding !== undefined) {
-		if (isRelativeModuleSpecifier(importBinding.moduleSpecifier)) {
-			const targetSymbol = state.checker.getAliasedSymbol(symbol);
+		const targetSymbol = state.checker.getAliasedSymbol(symbol);
+		if (isLocalResolvedSymbol(targetSymbol, state.checker, state.program)) {
 			collectSymbol(state, targetSymbol);
 		} else if (!state.externalImports.has(symbol)) state.externalImports.set(symbol, importBinding);
 
@@ -659,6 +675,15 @@ function isLocalDeclarationSourceFile(sourceFile: ts.SourceFile, program: ts.Pro
 
 function isRelativeModuleSpecifier(moduleSpecifier: string): boolean {
 	return moduleSpecifier.startsWith(".") || moduleSpecifier.startsWith("/");
+}
+
+function isLocalResolvedSymbol(symbol: ts.Symbol, checker: ts.TypeChecker, program: ts.Program): boolean {
+	const resolvedSymbol = resolveAliasedSymbol(symbol, checker);
+	for (const declaration of resolvedSymbol.getDeclarations() ?? []) {
+		if (isLocalDeclarationSourceFile(declaration.getSourceFile(), program)) return true;
+	}
+
+	return false;
 }
 
 function isSupportedDeclarationStatement(node: ts.Node): node is SupportedDeclarationStatement {
