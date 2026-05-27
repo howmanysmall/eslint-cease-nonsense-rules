@@ -5,10 +5,10 @@ import { PredefinedFormatToCheckFunction } from "./format";
 import { selectorTypeToMessageString } from "./shared";
 
 import type { TSESTree } from "@typescript-eslint/utils";
-import type { Type, TypeChecker } from "typescript";
+import type { Symbol as TsSymbol, Type, TypeChecker } from "typescript";
 
 import type { ModifiersString, SelectorsString } from "./enums";
-import type { Context, NormalizedSelector, ValidatorFunction } from "./types";
+import type { Context, NormalizedSelector, TypeReference, ValidatorFunction } from "./types";
 
 interface ParserServicesWithTypeInformation {
 	getTypeAtLocation: (node: TSESTree.Node) => Type;
@@ -297,31 +297,120 @@ function isCorrectType(
 	const { checker, services } = typeInfo;
 	const type = services.getTypeAtLocation(node).getNonNullableType();
 
+	const predicates: Array<(innerType: Type) => boolean> = [];
 	for (const allowedType of config.types) {
+		if (typeof allowedType === "object") {
+			predicates.push((innerType) => matchesTypeReference(innerType, allowedType));
+			continue;
+		}
+
 		switch (allowedType) {
 			case "array": {
-				if (isAllTypesMatch(type, (innerType) => isArrayLikeType(checker, innerType))) {
-					return true;
-				}
+				predicates.push((innerType) => isArrayLikeType(checker, innerType));
 				break;
 			}
 
 			case "function": {
-				if (isAllTypesMatch(type, (innerType) => innerType.getCallSignatures().length > 0)) return true;
+				predicates.push((innerType) => innerType.getCallSignatures().length > 0);
 				break;
 			}
 
 			case "boolean":
 			case "number":
 			case "string": {
-				const typeString = checker.typeToString(checker.getWidenedType(checker.getBaseTypeOfLiteralType(type)));
-				if (typeString === allowedType) return true;
+				predicates.push((innerType) => {
+					const typeString = checker.typeToString(
+						checker.getWidenedType(checker.getBaseTypeOfLiteralType(innerType)),
+					);
+					return typeString === allowedType;
+				});
 				break;
 			}
 		}
 	}
 
+	return isAllTypesMatch(type, (innerType) => predicates.some((predicate) => predicate(innerType)));
+}
+
+function matchesTypeReference(type: Type, reference: TypeReference): boolean {
+	if (isAnyType(type)) return false;
+	if (symbolMatchesTypeReference(type.aliasSymbol, reference)) return true;
+	if (symbolMatchesTypeReference(type.symbol, reference)) return true;
+
+	if (type.isIntersection() || type.isUnion()) {
+		for (const innerType of type.types) {
+			if (matchesTypeReference(innerType, reference)) return true;
+		}
+	}
+
 	return false;
+}
+
+function symbolMatchesTypeReference(symbol: TsSymbol | undefined, reference: TypeReference): boolean {
+	if (!symbol || symbol.name !== reference.name) return false;
+	if (reference.from === undefined) return true;
+
+	const { declarations } = symbol;
+	if (!declarations || declarations.length === 0) return false;
+
+	for (const declaration of declarations) {
+		const { fileName } = declaration.getSourceFile();
+		if (moduleSpecifierMatches(fileName, reference.from)) return true;
+	}
+
+	return false;
+}
+
+/**
+ * Checks whether a declaration's source file matches a module specifier.
+ *
+ * Two specifier shapes are supported:
+ *
+ * 1. **Bare package specifier** (e.g. `"@rbxts/jecs"`, `"lodash"`) — matches when the
+ *    declaration's file path contains `/node_modules/<specifier>/` as a substring.
+ *    Handles flat and pnpm-style layouts (pnpm paths still contain a final
+ *    `/node_modules/<specifier>/` segment after the virtual store directory).
+ *    **Not** supported: Yarn Plug'n'Play (no `node_modules` on disk), vendored
+ *    packages outside `node_modules`, or types provided by separate `@types/*`
+ *    packages.
+ *
+ * 2. **Path specifier** (starts with `.`, `/`, or a Windows drive letter) — matches
+ *    against the normalized declaration path with `.d.ts` / `.tsx?` stripped.
+ *    Windows absolute paths require exact equality. POSIX-style absolute or
+ *    relative paths are normalized to a bare tail and matched as a suffix; this
+ *    means `"./shared/network"` matches a declaration at `<root>/shared/network.ts`.
+ */
+const BACKSLASH_PATTERN = /\\/gu;
+const TYPESCRIPT_EXTENSION_PATTERN = /\.d\.ts$|\.tsx?$/u;
+const WINDOWS_DRIVE_PATTERN = /^[A-Za-z]:\//u;
+const LEADING_DOT_SLASH_OR_SLASH_PATTERN = /^(\.\/|\/)/u;
+
+function moduleSpecifierMatches(declarationFile: string, specifier: string): boolean {
+	const normalizedFile = declarationFile.replace(BACKSLASH_PATTERN, "/");
+	const normalizedSpecifier = specifier.replace(BACKSLASH_PATTERN, "/");
+
+	if (looksLikePath(normalizedSpecifier)) {
+		const stripped = normalizedFile.replace(TYPESCRIPT_EXTENSION_PATTERN, "");
+		if (WINDOWS_DRIVE_PATTERN.test(normalizedSpecifier)) return stripped === normalizedSpecifier;
+
+		const tail = normalizedSpecifier.replace(LEADING_DOT_SLASH_OR_SLASH_PATTERN, "");
+		if (stripped === tail) return true;
+		return stripped.endsWith(`/${tail}`);
+	}
+
+	return normalizedFile.includes(`/node_modules/${normalizedSpecifier}/`);
+}
+
+/**
+ * Path-form specifiers start with `.`, `/`, or a Windows drive letter (e.g. `C:/`).
+ *
+ * @param specifier - the module specifier to classify
+ * @returns true if the specifier should be treated as a filesystem path rather than a package name
+ */
+function looksLikePath(specifier: string): boolean {
+	if (specifier.startsWith(".")) return true;
+	if (specifier.startsWith("/")) return true;
+	return WINDOWS_DRIVE_PATTERN.test(specifier);
 }
 
 function isAllTypesMatch(type: Type, callback: (innerType: Type) => boolean): boolean {

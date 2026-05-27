@@ -106,6 +106,7 @@ export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type
 export type { DotNotationOptions } from "./rules/dot-notation";
 export type { MemoizedEffectDependenciesOptions } from "./rules/memoized-effect-dependencies";
 export type { NamingConventionOptions } from "./rules/naming-convention";
+export type { TypeMatcher, TypeReference } from "./utilities/naming-convention-utilities/types";
 export type { NoArrayConstructorElementsOptions } from "./rules/no-array-constructor-elements";
 export type { NoArraySizeAssignmentOptions } from "./rules/no-array-size-assignment";
 export type { NoConstantConditionWithBreakOptions } from "./rules/no-constant-condition-with-break";

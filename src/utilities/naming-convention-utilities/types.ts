@@ -14,6 +14,13 @@ interface MatchRegex {
 	regex: string;
 }
 
+export interface TypeReference {
+	from?: string;
+	name: string;
+}
+
+export type TypeMatcher = TypeModifiersString | TypeReference;
+
 export interface Selector {
 	custom?: MatchRegex;
 	filter?: string | MatchRegex;
@@ -24,7 +31,7 @@ export interface Selector {
 	selector: IndividualAndMetaSelectorsString | Array<IndividualAndMetaSelectorsString>;
 	suffix?: Array<string>;
 	trailingUnderscore?: UnderscoreOptionsString;
-	types?: Array<TypeModifiersString>;
+	types?: Array<TypeMatcher>;
 }
 
 export interface NormalizedMatchRegex {
@@ -44,7 +51,7 @@ export interface NormalizedSelector {
 	selectors: Array<string>;
 	suffix?: Array<string> | undefined;
 	trailingUnderscore?: UnderscoreOptionsString | undefined;
-	types?: Array<TypeModifiersString> | undefined;
+	types?: Array<TypeMatcher> | undefined;
 }
 
 export type ValidatorFunction = (

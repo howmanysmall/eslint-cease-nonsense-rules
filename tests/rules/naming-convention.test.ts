@@ -1,9 +1,13 @@
+import { join, resolve } from "node:path";
 import { describe } from "vitest";
 import rule from "@rules/naming-convention";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 
 const __dirname = import.meta.dirname;
+const fromFixturesDir = resolve(__dirname, "..", "fixtures", "naming-convention", "from-match");
+const fromFixturesProject = join(fromFixturesDir, "tsconfig.json");
+const fromFixturesCase = "case.ts";
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -23,6 +27,18 @@ const ruleTesterWithTypes = new RuleTester({
 				maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 64,
 			},
 			tsconfigRootDir: __dirname,
+		},
+		sourceType: "module",
+	},
+});
+
+const ruleTesterWithFromFixtures = new RuleTester({
+	languageOptions: {
+		ecmaVersion: 2022,
+		parser,
+		parserOptions: {
+			project: fromFixturesProject,
+			tsconfigRootDir: fromFixturesDir,
 		},
 		sourceType: "module",
 	},
@@ -1136,6 +1152,78 @@ describe("naming-convention", () => {
 				errors: [{ messageId: "doesNotMatchFormat" }],
 				options: [{ format: ["UPPER_CASE"], selector: "variable", types: ["boolean"] }],
 			},
+
+			// Test type reference (loose name-only) - PascalCase enforced; camelCase rejected
+			{
+				code: "type Entity<TData = unknown> = number & { readonly __type: TData }; declare function component<T = unknown>(): Entity<T>; const myComponent = component();",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "Entity" }],
+					},
+				],
+			},
+
+			// Test type reference - snake_case rejected on Pair-typed const
+			{
+				code: "type Pair<P = unknown, O = unknown> = { readonly __pred: P; readonly __obj: O }; declare function pair<P, O>(p: P, o: O): Pair<P, O>; const my_pair = pair(1, 2);",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "Pair" }],
+					},
+				],
+			},
+
+			// Test type reference - any-cast must bypass the match and fall back to default rule
+			{
+				code: "const NotEntity = 42 as any;",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "Entity" }],
+					},
+					{ format: ["camelCase"], selector: "variable" },
+				],
+			},
+
+			// Test type reference - union of two referenced types with snake_case rejected under PascalCase
+			{
+				code: "type Entity<TData = unknown> = { readonly __type: TData }; type Pair<P = unknown, O = unknown> = { readonly __pred: P; readonly __obj: O }; type Id<T = unknown> = Entity<T> | Pair<T, unknown>; declare function resolveId<T>(): Id<T>; const resolved_id = resolveId();",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "Entity" }, { name: "Pair" }],
+					},
+				],
+			},
+
+			// Test type reference - `from` mismatch falls back to default rule (declaration not in expected module)
+			{
+				code: "type LocalEntity = { readonly __local: true }; declare function component(): LocalEntity; const MyComponent = component();",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ from: "some-other-pkg", name: "LocalEntity" }],
+					},
+					{ format: ["camelCase"], selector: "variable" },
+				],
+			},
 		],
 		valid: [
 			// Test type: array - matching format
@@ -1224,6 +1312,192 @@ describe("naming-convention", () => {
 			{
 				code: "function test(FOO_BAR: string[]) {}",
 				options: [{ format: ["UPPER_CASE"], selector: "parameter", types: ["array"] }],
+			},
+
+			// Test type reference (loose name-only) - matches Entity from a typed call
+			{
+				code: "type Entity<TData = unknown> = { readonly __type: TData }; declare const world: { component<T = unknown>(): Entity<T> }; const Health = world.component();",
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "Entity" }],
+					},
+				],
+			},
+
+			// Test type reference - matches an alias chain through a Tag subtype
+			{
+				code: "type Entity<TData = unknown> = { readonly __type: TData }; type TagDiscriminator = { readonly __tag: true }; type Tag = Entity<TagDiscriminator>; declare function registerTag(): Tag; const Dead = registerTag();",
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "Entity" }],
+					},
+				],
+			},
+
+			// Test type reference - matches branded Pair from pair()
+			{
+				code: "type Pair<P = unknown, O = unknown> = { readonly __pred: P; readonly __obj: O }; declare function pair<P, O>(p: P, o: O): Pair<P, O>; const MaxHealth = pair(1, 2);",
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "Pair" }],
+					},
+				],
+			},
+
+			// Test type reference - single config allows multiple referenced types
+			{
+				code: "type Entity<TData = unknown> = { readonly __type: TData }; type Pair<P = unknown, O = unknown> = { readonly __pred: P; readonly __obj: O }; declare function component<T = unknown>(): Entity<T>; declare function pair<P, O>(p: P, o: O): Pair<P, O>; const Health = component(); const MaxHealth = pair(1, 2);",
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "Entity" }, { name: "Pair" }],
+					},
+				],
+			},
+
+			// Test type reference - union of (Entity | Pair) matches when each arm hits some configured type
+			{
+				code: "type Entity<TData = unknown> = { readonly __type: TData }; type Pair<P = unknown, O = unknown> = { readonly __pred: P; readonly __obj: O }; type Id<T = unknown> = Entity<T> | Pair<T, unknown>; declare function resolveId<T>(): Id<T>; const ResolvedId = resolveId();",
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "Entity" }, { name: "Pair" }],
+					},
+				],
+			},
+
+			// Test type reference - optional union flows through getNonNullableType
+			{
+				code: "type Entity<TData = unknown> = { readonly __type: TData }; declare function component<T = unknown>(): Entity<T> | undefined; const Health = component();",
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "Entity" }],
+					},
+				],
+			},
+
+			// Test type reference miss - non-Entity type falls back to default rule
+			{
+				code: "const myCount: number = 1;",
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "Entity" }],
+					},
+					{ format: ["camelCase"], selector: "variable" },
+				],
+			},
+
+			// Test type reference - structural type (no nominal brand symbol) matches by alias name alone;
+			// confirms the matcher does not rely on the `__nominal_*` brand pattern.
+			{
+				code: "type ServerEvents<T> = { fire(event: keyof T): void }; declare function createServer<T>(handlers: T): ServerEvents<T>; const Events = createServer({ x: 1 });",
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "ServerEvents" }],
+					},
+				],
+			},
+
+			// Test type reference - nested union INSIDE an intersection matches via the recursive union branch
+			{
+				code: "type Entity<T = unknown> = { readonly __type: T }; type Pair<P = unknown, O = unknown> = { readonly __pred: P; readonly __obj: O }; type Inner = Pair<1, 2> | Pair<3, 4>; type Combined = Entity<unknown> & Inner; declare function make(): Combined; const Made = make();",
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "Entity" }, { name: "Pair" }],
+					},
+				],
+			},
+
+			// `from` positive matches (bare package + relative path) are exercised by a fixture-backed
+			// RuleTester block below — see `naming-convention-with-from-fixtures`.
+		],
+	});
+
+	ruleTesterWithFromFixtures.run("naming-convention-with-from-fixtures", rule, {
+		invalid: [
+			// camelCase const typed via `fake-pkg` Entity rejected under PascalCase — proves the
+			// bare-package `from` substring against `/node_modules/fake-pkg/` is active.
+			{
+				code: `import { component } from "fake-pkg"; const myComponent = component();`,
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				filename: fromFixturesCase,
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ from: "fake-pkg", name: "Entity" }],
+					},
+				],
+			},
+		],
+		valid: [
+			// `from` (bare package): PascalCase const typed via `fake-pkg` Entity passes.
+			{
+				code: `import { component } from "fake-pkg"; const Health = component();`,
+				filename: fromFixturesCase,
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ from: "fake-pkg", name: "Entity" }],
+					},
+				],
+			},
+
+			// `from` (relative path-form): PascalCase const typed via a project-local type passes.
+			{
+				code: `import { makeLocal } from "./src/shared/local-thing"; const LocalValue = makeLocal();`,
+				filename: fromFixturesCase,
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ from: "./src/shared/local-thing", name: "LocalThing" }],
+					},
+				],
+			},
+
+			// `from` mismatch (right name, wrong module): falls back to the second clause; camelCase Allowed.
+			{
+				code: `import { component } from "fake-pkg"; const myComponent = component();`,
+				filename: fromFixturesCase,
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ from: "some-other-pkg", name: "Entity" }],
+					},
+					{ format: ["camelCase"], selector: "variable" },
+				],
 			},
 		],
 	});

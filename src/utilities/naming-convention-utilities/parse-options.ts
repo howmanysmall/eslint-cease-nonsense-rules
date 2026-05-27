@@ -1,4 +1,11 @@
-import { MetaSelectors, ModifierWeights, Selectors, TypeModifierWeights } from "./enums";
+import {
+	MetaSelectors,
+	ModifierWeights,
+	Selectors,
+	TYPE_REFERENCE_LOOSE_MODIFIER_WEIGHT,
+	TYPE_REFERENCE_STRICT_MODIFIER_WEIGHT,
+	TypeModifierWeights,
+} from "./enums";
 import { getEnumNames } from "./get-enum-names";
 import { isMetaSelector, isMethodOrPropertySelector } from "./shared";
 import { createValidator } from "./validator";
@@ -43,7 +50,18 @@ function normalizeCustom(option: Selector): NormalizedMatchRegex | undefined {
 function normalizeOption(option: Selector): Array<NormalizedSelector> {
 	let weight = 0;
 	if (option.modifiers) for (const modifier of option.modifiers) weight += ModifierWeights[modifier];
-	if (option.types) for (const modifier of option.types) weight += TypeModifierWeights[modifier];
+	if (option.types) {
+		for (const matcher of option.types) {
+			if (typeof matcher === "string") {
+				weight += TypeModifierWeights[matcher];
+			} else {
+				weight +=
+					matcher.from === undefined
+						? TYPE_REFERENCE_LOOSE_MODIFIER_WEIGHT
+						: TYPE_REFERENCE_STRICT_MODIFIER_WEIGHT;
+			}
+		}
+	}
 	if (option.filter !== undefined) weight += 1_000_000_000;
 
 	const normalizedOption: Except<NormalizedSelector, "selectors" | "selectorPriority"> = {
