@@ -115,3 +115,6 @@ export const TypeModifierWeights: Record<TypeModifiersString, number> = {
 	number: 2 ** 19,
 	string: 2 ** 18,
 };
+
+export const TYPE_REFERENCE_LOOSE_MODIFIER_WEIGHT = 2 ** 22;
+export const TYPE_REFERENCE_STRICT_MODIFIER_WEIGHT = 2 ** 23;
