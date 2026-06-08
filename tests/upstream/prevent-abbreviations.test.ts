@@ -4,11 +4,21 @@ import vueParser from "vue-eslint-parser";
 import babelParser from "@babel/eslint-parser";
 import rule from "@rules/prevent-abbreviations";
 import tsParser from "@typescript-eslint/parser";
-import { RuleTester } from "eslint";
+import { Linter, RuleTester } from "eslint";
 
 import { shardCases } from "../utilities/shard-cases";
 
+/**
+ * ESLint v10 requires the parser-provided `ScopeManager` to implement `addGlobals`. `@babel/eslint-parser` (bundles
+ * eslint-scope 5) and `vue-eslint-parser` do not yet support ESLint v10, so their variants are skipped on v10+. The
+ * plugin's own logic remains fully covered by the `default` and `typescript` variants. Remove this guard once those
+ * parsers ship ESLint v10 support.
+ */
 type Variant = "default" | "babel" | "typescript" | "vue";
+
+const ESLINT_MAJOR = Number.parseInt(new Linter().version.split(".")[0] ?? "0", 10);
+const SKIP_VARIANTS: ReadonlySet<Variant> =
+	ESLINT_MAJOR >= 10 ? new Set<Variant>(["babel", "vue"]) : new Set<Variant>();
 
 interface LanguageOptions {
 	readonly globals?: Record<string, "readonly" | "writable" | "off">;
@@ -127,6 +137,8 @@ const valid = new Array<UpstreamValidCase>();
 const invalid = new Array<UpstreamInvalidCase>();
 
 for (const group of collected) {
+	if (SKIP_VARIANTS.has(group.variant)) continue;
+
 	const baseOptions = group.tests.testerOptions?.languageOptions ?? {};
 	const parser = getParserForVariant(group.variant);
 	const baseParserOptions = {

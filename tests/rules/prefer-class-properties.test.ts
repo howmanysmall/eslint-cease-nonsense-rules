@@ -13,14 +13,12 @@ const classPropErrors = [
 	{
 		message:
 			"Class property declarations are disabled by rule configuration (mode: 'never'). Move initialization into the constructor: this.propertyName = value; inside constructor().",
-		type: "PropertyDefinition",
 	},
 ];
 const assignErrors = [
 	{
 		message:
 			"Constructor assigns a literal value to this.property. Literals are static and known at class definition time. Move to a class property declaration: propertyName = value; at class level. This clarifies intent and reduces constructor complexity.",
-		type: "AssignmentExpression",
 	},
 ];
 

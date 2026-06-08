@@ -11,10 +11,9 @@ const ruleTester = new RuleTester({
 	},
 });
 
-function errorWithName(name: string): { message: string; type: string } {
+function errorWithName(name: string): { message: string } {
 	return {
 		message: `Enum '${name}' uses plural naming. Enums define a type of which only ONE value is selected at a time, so singular naming is semantically correct. Use 'Status' not 'Statuses', 'Color' not 'Colors'. Rename the enum to its singular form.`,
-		type: "TSEnumDeclaration",
 	};
 }
 

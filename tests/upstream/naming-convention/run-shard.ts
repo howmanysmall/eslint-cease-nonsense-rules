@@ -1,10 +1,11 @@
+import { fileURLToPath } from "node:url";
 import rule from "@rules/naming-convention";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 
 import { invalid, valid } from "./cases";
 
-const testDirectory = new URL(".", import.meta.url).pathname;
+const testDirectory = import.meta.dirname;
 
 function partitionForShard<TestCase>(
 	cases: ReadonlyArray<TestCase>,

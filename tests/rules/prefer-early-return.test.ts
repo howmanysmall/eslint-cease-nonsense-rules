@@ -12,7 +12,6 @@ const ruleTester = new RuleTester({
 const error = {
 	message:
 		"Function body is wrapped in a single conditional without an else branch. This increases nesting depth and cognitive load. Invert the condition and return early: if (!condition) return; then place the main logic at the top level.",
-	type: "BlockStatement",
 };
 
 describe("prefer-early-return", () => {
