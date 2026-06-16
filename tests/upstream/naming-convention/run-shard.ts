@@ -4,7 +4,7 @@ import { RuleTester } from "@typescript-eslint/rule-tester";
 
 import { invalid, valid } from "./cases";
 
-const testDirectory = new URL(".", import.meta.url).pathname;
+const testDirectory = import.meta.dirname;
 
 function partitionForShard<TestCase>(
 	cases: ReadonlyArray<TestCase>,
