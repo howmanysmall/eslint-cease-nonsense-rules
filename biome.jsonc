@@ -1,16 +1,20 @@
 {
-	"$schema": "https://biomejs.dev/schemas/latest/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
 	"assist": {
 		"actions": {
-			"recommended": true,
+			"preset": "recommended",
 			"source": {
 				"noDuplicateClasses": "on",
 				"organizeImports": "off",
-				"recommended": true,
+				"preset": "recommended",
 				"useSortedAttributes": "on",
+				"useSortedEnumMembers": "on",
 				"useSortedInterfaceMembers": "on",
-				"useSortedKeys": "off",
-				"useSortedProperties": "on"
+				"useSortedKeys": "on",
+				"useSortedPackageJson": "off",
+				"useSortedProperties": "on",
+				"useSortedSelectionSet": "on",
+				"useSortedTypeFields": "on"
 			}
 		},
 		"enabled": true,
@@ -23,7 +27,7 @@
 			"!**/include/**",
 			"!**/node_modules/**",
 			"!**/aube-lock.yaml",
-			"!skills-lock.json",
+			"!**/skills-lock.json",
 			"!**/package.json"
 		]
 	},
@@ -162,7 +166,7 @@
 			"!**/node_modules/**"
 		],
 		"rules": {
-			"a11y": { "recommended": true },
+			"a11y": { "noAmbiguousAnchorText": "error", "preset": "none" },
 			"complexity": {
 				"noAdjacentSpacesInRegex": "error",
 				"noBannedTypes": "error",
@@ -179,7 +183,7 @@
 				"noUselessSwitchCase": "off",
 				"noUselessThisAlias": "error",
 				"noUselessTypeConstraint": "error",
-				"recommended": true,
+				"preset": "recommended",
 				"useArrowFunction": "off",
 				"useDateNow": "error",
 				"useFlatMap": "error"
@@ -213,7 +217,7 @@
 				"noUnusedLabels": "off",
 				"noUnusedPrivateClassMembers": "off",
 				"noUnusedVariables": "off",
-				"recommended": true,
+				"preset": "recommended",
 				"useIsNan": "error",
 				"useValidForDirection": "error",
 				"useValidTypeof": "error",
@@ -221,25 +225,9 @@
 			},
 
 			"nursery": {
-				"noAmbiguousAnchorText": "error",
-				"noDuplicatedSpreadProps": "error",
-				"noDuplicateEnumValues": "error",
-				"noExcessiveClassesPerFile": {
-					"level": "error",
-					"options": { "maxClasses": 1 }
-				},
-				"noForIn": "off",
-				"noIncrementDecrement": "off",
-				"noJsxPropsBind": "error",
-				"noLeakedRender": "error",
 				"noMisusedPromises": "off",
-				"noNestedPromises": "error",
-				"noProto": "error",
-				"noReturnAssign": "error",
-				"recommended": true,
-				"useErrorCause": "off",
-				"useSortedClasses": "error",
-				"useSpread": "error"
+				"preset": "recommended",
+				"useSortedClasses": "error"
 			},
 
 			"performance": {
@@ -247,9 +235,10 @@
 				"noBarrelFile": "error",
 				"noDelete": "error",
 				"noDynamicNamespaceImportAccess": "error",
+				"noJsxPropsBind": "error",
 				"noNamespaceImport": "error",
 				"noReExportAll": "error",
-				"recommended": true,
+				"preset": "recommended",
 				"useTopLevelRegex": "error"
 			},
 			"security": {
@@ -257,11 +246,16 @@
 				"noDangerouslySetInnerHtml": "off",
 				"noGlobalEval": "error",
 				"noSecrets": "off",
-				"recommended": true
+				"preset": "recommended"
 			},
 			"style": {
 				"noCommonJs": "error",
 				"noEnum": "off",
+				"noExcessiveClassesPerFile": {
+					"level": "error",
+					"options": { "maxClasses": 1 }
+				},
+				"noIncrementDecrement": "off",
 				"noInferrableTypes": "error",
 				"noNamespace": "error",
 				"noNegationElse": "error",
@@ -270,7 +264,7 @@
 				"noShoutyConstants": "error",
 				"noUnusedTemplateLiteral": "error",
 				"noUselessElse": "error",
-				"recommended": true,
+				"preset": "recommended",
 				"useArrayLiterals": "off",
 				"useAsConstAssertion": "error",
 				"useBlockStatements": "off",
@@ -281,6 +275,7 @@
 				"useConsistentMemberAccessibility": "off",
 				"useDefaultParameterLast": "error",
 				"useEnumInitializers": "error",
+				"useErrorCause": "off",
 				"useExplicitLengthCheck": "error",
 				"useExportType": "error",
 				"useFilenamingConvention": {
@@ -297,6 +292,7 @@
 				"useSelfClosingElements": "error",
 				"useShorthandFunctionType": "error",
 				"useSingleVarDeclarator": "error",
+				"useSpreadOverApply": "error",
 				"useTemplate": "error",
 				"useThrowNewError": "error",
 				"useThrowOnlyError": "error"
@@ -312,20 +308,27 @@
 				"noDebugger": "error",
 				"noDuplicateCase": "error",
 				"noDuplicateClassMembers": "error",
+				"noDuplicatedSpreadProps": "error",
+				"noDuplicateEnumValues": "error",
 				"noDuplicateObjectKeys": "error",
 				"noDuplicateParameters": "error",
 				"noEmptyBlockStatements": "error",
 				"noExplicitAny": "error",
 				"noExtraNonNullAssertion": "error",
 				"noFallthroughSwitchClause": "error",
+				"noForIn": "off",
 				"noFunctionAssign": "error",
 				"noGlobalAssign": "error",
 				"noImplicitAnyLet": "error",
 				"noImportAssign": "error",
+				"noLeakedRender": "error",
 				"noMisleadingCharacterClass": "error",
 				"noMisleadingInstantiator": "error",
+				"noNestedPromises": "error",
+				"noProto": "error",
 				"noPrototypeBuiltins": "error",
 				"noRedeclare": "error",
+				"noReturnAssign": "error",
 				"noShadowRestrictedNames": "error",
 				"noSparseArray": "error",
 				"noTemplateCurlyInString": "off",
@@ -333,7 +336,7 @@
 				"noUnsafeDeclarationMerging": "error",
 				"noUnsafeNegation": "error",
 				"noWith": "error",
-				"recommended": true,
+				"preset": "recommended",
 				"useErrorMessage": "error",
 				"useGetterReturn": "error",
 				"useIsArray": "error",
@@ -356,11 +359,11 @@
 		{
 			"assist": {
 				"actions": {
-					"recommended": true,
+					"preset": "recommended",
 					"source": {
 						"noDuplicateClasses": "on",
 						"organizeImports": "off",
-						"recommended": true,
+						"preset": "recommended",
 						"useSortedAttributes": "on",
 						"useSortedInterfaceMembers": "on",
 						"useSortedKeys": "on",

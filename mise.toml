@@ -1,7 +1,7 @@
-min_version = "2024.11.0"
+min_version = "2026.6.14"
 
 [tools]
-aube = "1.16.0"
+aube = "latest"
 "github:howmanysmall/pullhook" = "latest"
 bun = "latest"
 hk = "latest"
@@ -20,20 +20,20 @@ run = "aube ci"
 
 [tasks.lint]
 description = "Run the project lint pipeline through Aube."
-run = "aube run lint"
+run = "node --run lint"
 
 [tasks.test]
 description = "Run the Vitest suite through Aube."
 env = { AGENT = "1" }
-run = "aube run test"
+run = "node --run test"
 
 [tasks.build]
 description = "Build the plugin with the Bun-run TypeScript build script."
-run = "aube run build"
+run = "node --run build"
 
 [tasks.type-check]
 description = "Run tsgo type checking through Aube."
-run = "aube run type-check"
+run = "node --run type-check"
 
 [tasks.check]
 depends = ["lint", "type-check", "build"]

@@ -1,6 +1,11 @@
 import { availableParallelism } from "node:os";
 import { argv } from "node:process";
+import tsconfigPaths from "vite-tsconfig-paths";
 import { defineConfig } from "vitest/config";
+
+const tsconfig = tsconfigPaths({
+	projects: ["tsconfig.json", "tests/tsconfig.json"],
+});
 
 const isFocusedRun = argv.slice(2).some((argument) => argument.endsWith(".test.ts") || argument.startsWith("tests/"));
 
@@ -27,7 +32,7 @@ const typeAwareTestGlobs = [
 ];
 
 const configuration = defineConfig({
-	resolve: { tsconfigPaths: true },
+	plugins: [tsconfig],
 	// oxlint-disable-next-line unicorn/no-null
 	server: { watch: null },
 	test: {
