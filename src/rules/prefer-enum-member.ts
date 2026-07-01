@@ -69,13 +69,14 @@ function isPropertyKeyLiteral(node: TSESTree.Literal): boolean {
 function isModuleSpecifierLiteral(node: TSESTree.Literal): boolean {
 	const { parent } = node;
 	if (!parent) return false;
+
 	switch (parent.type) {
 		case AST_NODE_TYPES.ImportDeclaration:
 		case AST_NODE_TYPES.ExportNamedDeclaration:
 		case AST_NODE_TYPES.ExportAllDeclaration:
-			return parent.source === node;
 		case AST_NODE_TYPES.ImportExpression:
 			return parent.source === node;
+
 		default:
 			return false;
 	}
@@ -83,8 +84,7 @@ function isModuleSpecifierLiteral(node: TSESTree.Literal): boolean {
 
 function isDirectiveLiteral(node: TSESTree.Literal): boolean {
 	const { parent } = node;
-	if (!parent || parent.type !== AST_NODE_TYPES.ExpressionStatement) return false;
-	if (parent.expression !== node) return false;
+	if (parent?.type !== AST_NODE_TYPES.ExpressionStatement || parent.expression !== node) return false;
 	return typeof parent.directive === "string";
 }
 
@@ -107,7 +107,10 @@ function buildEnumValueIndex(program: Program, checker: TypeChecker): EnumValueI
 		forEachChild(node, visit);
 	}
 
-	for (const sourceFile of program.getSourceFiles()) visit(sourceFile);
+	for (const sourceFile of program.getSourceFiles()) {
+		if (program.isSourceFileDefaultLibrary(sourceFile)) continue;
+		visit(sourceFile);
+	}
 
 	if (!hasEnumDeclaration) isComplete = false;
 	return { isComplete, numberSet, stringSet };
@@ -143,22 +146,63 @@ function getPropertyKeyInfo(node: TSESTree.Property): PropertyKeyInfo | undefine
 	return undefined;
 }
 
+interface PreferEnumMemberCaches {
+	readonly aliasDeclarationKeyTypeCache: WeakMap<Type, Type | false>;
+	readonly aliasTargetCache: WeakMap<TypeScriptSymbol, Type | false>;
+	readonly aliasTypeParameterCache: WeakMap<TypeScriptSymbol, Map<string, number> | false>;
+	readonly enumCandidateCache: WeakMap<Type, ReadonlyArray<EnumCandidate> | false>;
+	readonly enumMemberCache: WeakMap<TypeScriptSymbol, EnumMemberLookup | false>;
+	readonly enumSymbolCache: WeakMap<Type, TypeScriptSymbol | false>;
+	readonly objectKeyTypeCache: WeakMap<Type, Type | false>;
+	readonly unionTypesCache: WeakMap<Type, ReadonlyArray<Type>>;
+}
+
+const cachesByChecker = new WeakMap<TypeChecker, PreferEnumMemberCaches>();
+const enumValueIndexByChecker = new WeakMap<TypeChecker, EnumValueIndex>();
+
+function getCaches(checker: TypeChecker): PreferEnumMemberCaches {
+	const existing = cachesByChecker.get(checker);
+	if (existing) return existing;
+	const created: PreferEnumMemberCaches = {
+		aliasDeclarationKeyTypeCache: new WeakMap<Type, Type | false>(),
+		aliasTargetCache: new WeakMap<TypeScriptSymbol, Type | false>(),
+		aliasTypeParameterCache: new WeakMap<TypeScriptSymbol, Map<string, number> | false>(),
+		enumCandidateCache: new WeakMap<Type, ReadonlyArray<EnumCandidate> | false>(),
+		enumMemberCache: new WeakMap<TypeScriptSymbol, EnumMemberLookup | false>(),
+		enumSymbolCache: new WeakMap<Type, TypeScriptSymbol | false>(),
+		objectKeyTypeCache: new WeakMap<Type, Type | false>(),
+		unionTypesCache: new WeakMap<Type, ReadonlyArray<Type>>(),
+	};
+	cachesByChecker.set(checker, created);
+	return created;
+}
+
+function getEnumValueIndex(program: Program, checker: TypeChecker): EnumValueIndex {
+	const existing = enumValueIndexByChecker.get(checker);
+	if (existing !== undefined) return existing;
+	const built = buildEnumValueIndex(program, checker);
+	enumValueIndexByChecker.set(checker, built);
+	return built;
+}
+
 const preferEnumMember = createRule<Options, MessageIds>({
 	create(context) {
 		const services = ESLintUtils.getParserServices(context);
 		const checker = services.program.getTypeChecker();
 		const { sourceCode } = context;
-		const enumMemberCache = new WeakMap<TypeScriptSymbol, EnumMemberLookup | false>();
-		const enumCandidateCache = new WeakMap<Type, ReadonlyArray<EnumCandidate> | false>();
-		const enumSymbolCache = new WeakMap<Type, TypeScriptSymbol | false>();
-		const objectKeyTypeCache = new WeakMap<Type, Type | false>();
-		const aliasDeclarationKeyTypeCache = new WeakMap<Type, Type | false>();
-		const aliasTargetCache = new WeakMap<TypeScriptSymbol, Type | false>();
-		const aliasTypeParameterCache = new WeakMap<TypeScriptSymbol, Map<string, number> | false>();
-		const unionTypesCache = new WeakMap<Type, ReadonlyArray<Type>>();
+		const {
+			aliasDeclarationKeyTypeCache,
+			aliasTargetCache,
+			aliasTypeParameterCache,
+			enumCandidateCache,
+			enumMemberCache,
+			enumSymbolCache,
+			objectKeyTypeCache,
+			unionTypesCache,
+		} = getCaches(checker);
 		const contextualTypeCache = new WeakMap<TSESTree.Node, Type | false>();
 		const declaredTypeCache = new WeakMap<TSESTree.Node, Type | false>();
-		const enumValueIndex = buildEnumValueIndex(services.program, checker);
+		const enumValueIndex = getEnumValueIndex(services.program, checker);
 		const lintedSourceFile = services.program.getSourceFile(context.filename);
 		const shouldUseEnumIndex = enumValueIndex.isComplete && lintedSourceFile !== undefined;
 
@@ -213,8 +257,7 @@ const preferEnumMember = createRule<Options, MessageIds>({
 		function hasSameEnumSymbol(left: Type, right: Type): boolean {
 			const leftEnumSymbol = getEnumSymbolFromType(left);
 			if (!leftEnumSymbol) return false;
-			const rightEnumSymbol = getEnumSymbolFromType(right);
-			return rightEnumSymbol === leftEnumSymbol;
+			return leftEnumSymbol ? getEnumSymbolFromType(right) === leftEnumSymbol : false;
 		}
 
 		function mergeCompatibleKeyTypes(resolved: Type, candidate: Type): Type | undefined {
