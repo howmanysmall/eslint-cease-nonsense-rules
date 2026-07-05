@@ -1,11 +1,11 @@
-#!/usr/bin/env bun
+#!/usr/bin/env nub
 
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, dirname, extname, resolve } from "node:path";
+import nodePath from "node:path";
 import { argv, cwd, env, exit } from "node:process";
 import { Command } from "@cliffy/command";
 import console from "consola";
@@ -21,10 +21,10 @@ import {
 } from "./utilities/declaration-support-cache";
 
 const scriptPath = new URL(import.meta.url).pathname;
-const SCRIPT_NAME = basename(scriptPath, extname(scriptPath));
-const DIST_DIRECTORY = resolve(".", "dist");
-const SOURCE_DIRECTORY = resolve(".", "src");
-const TSCONFIG_PATHS_FILE = resolve(".", "tsconfig.paths.json");
+const SCRIPT_NAME = nodePath.basename(scriptPath, nodePath.extname(scriptPath));
+const DIST_DIRECTORY = nodePath.resolve(".", "dist");
+const SOURCE_DIRECTORY = nodePath.resolve(".", "src");
+const TSCONFIG_PATHS_FILE = nodePath.resolve(".", "tsconfig.paths.json");
 const ENTRY_POINTS = ["./src/index.ts", "./src/oxfmt-worker.ts"];
 const CRITICAL_FILES = ["dist/index.js", "dist/oxfmt-worker.js", "dist/index.d.ts", "dist/oxfmt-worker.d.ts"];
 const EXTERNAL_PACKAGES = [
@@ -38,10 +38,10 @@ const EXTERNAL_PACKAGES = [
 	"oxc-parser",
 ];
 const DECLARATION_CACHE_KEY = createHash("sha1").update(cwd()).digest("hex").slice(0, 12);
-const DECLARATION_CACHE_DIRECTORY = resolve(tmpdir(), `${SCRIPT_NAME}-${DECLARATION_CACHE_KEY}`);
-const DECLARATION_CACHE_MANIFEST_PATH = resolve(DECLARATION_CACHE_DIRECTORY, "support-manifest.json");
-const DECLARATION_CACHE_OUTPUT_DIRECTORY = resolve(DECLARATION_CACHE_DIRECTORY, "out");
-const DECLARATION_CACHE_BUILD_INFO_PATH = resolve(DECLARATION_CACHE_DIRECTORY, "tsgo.tsbuildinfo");
+const DECLARATION_CACHE_DIRECTORY = nodePath.resolve(tmpdir(), `${SCRIPT_NAME}-${DECLARATION_CACHE_KEY}`);
+const DECLARATION_CACHE_MANIFEST_PATH = nodePath.resolve(DECLARATION_CACHE_DIRECTORY, "support-manifest.json");
+const DECLARATION_CACHE_OUTPUT_DIRECTORY = nodePath.resolve(DECLARATION_CACHE_DIRECTORY, "out");
+const DECLARATION_CACHE_BUILD_INFO_PATH = nodePath.resolve(DECLARATION_CACHE_DIRECTORY, "tsgo.tsbuildinfo");
 
 interface BuildOptions {
 	readonly clean: boolean;
@@ -72,9 +72,8 @@ function getJavaScriptMinifyLabel(minify: boolean): string {
 }
 
 async function cleanDistanceDirectoryAsync(verbose: boolean): Promise<void> {
-	if (!existsSync(DIST_DIRECTORY)) return;
 	if (verbose) console.info(`Removing ${cyan(DIST_DIRECTORY)}...`);
-	await rm(DIST_DIRECTORY, { recursive: true });
+	await rm(DIST_DIRECTORY, { force: true, recursive: true });
 }
 
 function createDeclarationEmitFlags(outputDirectory: string, buildInfoPath: string): ReadonlyArray<string> {
@@ -134,7 +133,7 @@ async function collectDeclarationPathsAsync(sourceDirectory: string): Promise<Re
 		const entries = await readdir(directory, { withFileTypes: true });
 		await Promise.all(
 			entries.map(async (entry): Promise<void> => {
-				const path = resolve(directory, entry.name);
+				const path = nodePath.resolve(directory, entry.name);
 				if (entry.isDirectory()) {
 					await walk(path);
 					return;
@@ -171,12 +170,12 @@ async function syncSourceDeclarationFilesAsync(
 	const previousPaths = await readDeclarationSupportManifestAsync(manifestPath);
 	const stalePaths = getStaleDeclarationSupportPaths(previousPaths, relativePaths);
 	const targetDirectories = new Set(
-		relativePaths.map((relativePath) => dirname(resolve(targetDirectory, relativePath))),
+		relativePaths.map((relativePath) => nodePath.dirname(nodePath.resolve(targetDirectory, relativePath))),
 	);
 
 	await Promise.all([
 		...stalePaths.map(async (relativePath): Promise<void> => {
-			await rm(resolve(targetDirectory, relativePath), { force: true });
+			await rm(nodePath.resolve(targetDirectory, relativePath), { force: true });
 		}),
 		...[...targetDirectories].map(async (directoryPath): Promise<void> => {
 			await mkdir(directoryPath, { recursive: true });
@@ -186,8 +185,8 @@ async function syncSourceDeclarationFilesAsync(
 	await Promise.all(
 		relativePaths.map(async (relativePath): Promise<void> => {
 			await writeFile(
-				resolve(targetDirectory, relativePath),
-				await readFile(resolve(sourceDirectory, relativePath)),
+				nodePath.resolve(targetDirectory, relativePath),
+				await readFile(nodePath.resolve(sourceDirectory, relativePath)),
 			);
 		}),
 	);
@@ -243,12 +242,15 @@ async function generateBundledDeclarationsAsync(verbose: boolean): Promise<void>
 		DECLARATION_CACHE_OUTPUT_DIRECTORY,
 		DECLARATION_CACHE_MANIFEST_PATH,
 	);
-	const declarationBundlerPaths = readDeclarationBundlerPaths(TSCONFIG_PATHS_FILE, basename(SOURCE_DIRECTORY));
+	const declarationBundlerPaths = readDeclarationBundlerPaths(
+		TSCONFIG_PATHS_FILE,
+		nodePath.basename(SOURCE_DIRECTORY),
+	);
 
 	const { bundleDeclarationEntryPoint, createDeclarationBundlerProgram } = await declarationBundlerPromise;
 	const bundledEntrypoints = [
-		{ entryFileName: "index.d.ts", outputFileName: resolve(DIST_DIRECTORY, "index.d.ts") },
-		{ entryFileName: "oxfmt-worker.d.ts", outputFileName: resolve(DIST_DIRECTORY, "oxfmt-worker.d.ts") },
+		{ entryFileName: "index.d.ts", outputFileName: nodePath.resolve(DIST_DIRECTORY, "index.d.ts") },
+		{ entryFileName: "oxfmt-worker.d.ts", outputFileName: nodePath.resolve(DIST_DIRECTORY, "oxfmt-worker.d.ts") },
 	];
 	const program = createDeclarationBundlerProgram({
 		compilerOptions: {
@@ -256,14 +258,14 @@ async function generateBundledDeclarationsAsync(verbose: boolean): Promise<void>
 			paths: declarationBundlerPaths,
 		},
 		entryFilePaths: bundledEntrypoints.map(({ entryFileName }) =>
-			resolve(DECLARATION_CACHE_OUTPUT_DIRECTORY, entryFileName),
+			nodePath.resolve(DECLARATION_CACHE_OUTPUT_DIRECTORY, entryFileName),
 		),
 	});
 
 	await Promise.all(
 		bundledEntrypoints.map(async ({ entryFileName, outputFileName }): Promise<void> => {
 			const bundledDeclaration = bundleDeclarationEntryPoint({
-				entryFilePath: resolve(DECLARATION_CACHE_OUTPUT_DIRECTORY, entryFileName),
+				entryFilePath: nodePath.resolve(DECLARATION_CACHE_OUTPUT_DIRECTORY, entryFileName),
 				program,
 			});
 			await writeFile(outputFileName, bundledDeclaration);
@@ -280,17 +282,17 @@ async function writeBuildMetadataAsync(): Promise<void> {
 		version: env.npm_package_version ?? "unknown",
 	};
 
-	await writeFile(resolve(DIST_DIRECTORY, "build-metadata.json"), JSON.stringify(metadata, undefined, 2));
+	await writeFile(nodePath.resolve(DIST_DIRECTORY, "build-metadata.json"), JSON.stringify(metadata, undefined, 2));
 }
 
 async function getOutputFilesAsync(directory: string): Promise<ReadonlyArray<OutputFile>> {
-	const resolvedDirectory = resolve(directory);
+	const resolvedDirectory = nodePath.resolve(directory);
 
 	async function walk(walkDirectory: string): Promise<ReadonlyArray<OutputFile>> {
 		const entries = await readdir(walkDirectory, { withFileTypes: true });
 		const results = await Promise.all(
 			entries.map(async (entry): Promise<ReadonlyArray<OutputFile>> => {
-				const fullPath = resolve(walkDirectory, entry.name);
+				const fullPath = nodePath.resolve(walkDirectory, entry.name);
 				if (entry.isDirectory()) return walk(fullPath);
 				if (!entry.isFile()) return [];
 

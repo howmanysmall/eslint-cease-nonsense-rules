@@ -1,11 +1,13 @@
 import { PatternVisitor, ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { createRule } from "@utilities/create-rule";
-import { Modifiers, parseOptions, SCHEMA } from "@utilities/naming-convention-utilities";
+import { Modifiers } from "@utilities/naming-convention-utilities/enums";
+import { parseOptions } from "@utilities/naming-convention-utilities/parse-options";
+import { SCHEMA } from "@utilities/naming-convention-utilities/schema";
 import { isIdentifierPart, isIdentifierStart, ScriptTarget } from "typescript";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
-import type { Selector, ValidatorFunction } from "@utilities/naming-convention-utilities";
+import type { Selector, ValidatorFunction } from "@utilities/naming-convention-utilities/types";
 
 export type MessageIds =
 	| "doesNotMatchFormat"
@@ -60,6 +62,71 @@ function isAsyncVariableIdentifier(identifier: TSESTree.Identifier): boolean {
 			"async" in identifier.parent.init &&
 			identifier.parent.init.async),
 	);
+}
+function isDestructured(identifier: TSESTree.Identifier): boolean {
+	return (
+		(identifier.parent.type === AST_NODE_TYPES.Property && identifier.parent.shorthand) ||
+		(identifier.parent.type === AST_NODE_TYPES.AssignmentPattern &&
+			identifier.parent.parent.type === AST_NODE_TYPES.Property &&
+			identifier.parent.parent.shorthand)
+	);
+}
+
+function getMemberModifiers(
+	node:
+		| TSESTree.AccessorProperty
+		| TSESTree.MethodDefinition
+		| TSESTree.PropertyDefinition
+		| TSESTree.TSAbstractAccessorProperty
+		| TSESTree.TSAbstractMethodDefinition
+		| TSESTree.TSAbstractPropertyDefinition
+		| TSESTree.TSParameterProperty,
+): Set<Modifiers> {
+	const modifiers = new Set<Modifiers>();
+	if ("key" in node && node.key.type === AST_NODE_TYPES.PrivateIdentifier) {
+		modifiers.add(Modifiers["#private"]);
+	} else if (node.accessibility) modifiers.add(Modifiers[node.accessibility]);
+	else modifiers.add(Modifiers.public);
+
+	if (node.static) modifiers.add(Modifiers.static);
+	if ("readonly" in node && node.readonly) modifiers.add(Modifiers.readonly);
+	if ("override" in node && node.override) modifiers.add(Modifiers.override);
+
+	if (
+		node.type === AST_NODE_TYPES.TSAbstractPropertyDefinition ||
+		node.type === AST_NODE_TYPES.TSAbstractMethodDefinition ||
+		node.type === AST_NODE_TYPES.TSAbstractAccessorProperty
+	) {
+		modifiers.add(Modifiers.abstract);
+	}
+
+	return modifiers;
+}
+
+function isExported(node: TSESTree.Node | undefined, name: string, scope: TSESLint.Scope.Scope | undefined): boolean {
+	if (
+		node?.parent?.type === AST_NODE_TYPES.ExportDefaultDeclaration ||
+		node?.parent?.type === AST_NODE_TYPES.ExportNamedDeclaration
+	) {
+		return true;
+	}
+
+	if (!scope) return false;
+
+	const variable = scope.set.get(name);
+	if (variable) {
+		for (const reference of variable.references) {
+			const referenceParent = reference.identifier.parent;
+			if (
+				referenceParent.type === AST_NODE_TYPES.ExportDefaultDeclaration ||
+				referenceParent.type === AST_NODE_TYPES.ExportSpecifier
+			) {
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 function isGlobal(scope?: TSESLint.Scope.Scope): boolean {
@@ -140,76 +207,6 @@ const namingConventions = createRule<Options, MessageIds>({
 			validator(key, modifiers);
 		}
 
-		function getMemberModifiers(
-			node:
-				| TSESTree.AccessorProperty
-				| TSESTree.MethodDefinition
-				| TSESTree.PropertyDefinition
-				| TSESTree.TSAbstractAccessorProperty
-				| TSESTree.TSAbstractMethodDefinition
-				| TSESTree.TSAbstractPropertyDefinition
-				| TSESTree.TSParameterProperty,
-		): Set<Modifiers> {
-			const modifiers = new Set<Modifiers>();
-			if ("key" in node && node.key.type === AST_NODE_TYPES.PrivateIdentifier) {
-				modifiers.add(Modifiers["#private"]);
-			} else if (node.accessibility) modifiers.add(Modifiers[node.accessibility]);
-			else modifiers.add(Modifiers.public);
-
-			if (node.static) modifiers.add(Modifiers.static);
-			if ("readonly" in node && node.readonly) modifiers.add(Modifiers.readonly);
-			if ("override" in node && node.override) modifiers.add(Modifiers.override);
-
-			if (
-				node.type === AST_NODE_TYPES.TSAbstractPropertyDefinition ||
-				node.type === AST_NODE_TYPES.TSAbstractMethodDefinition ||
-				node.type === AST_NODE_TYPES.TSAbstractAccessorProperty
-			) {
-				modifiers.add(Modifiers.abstract);
-			}
-
-			return modifiers;
-		}
-
-		function isDestructured(identifier: TSESTree.Identifier): boolean {
-			return (
-				(identifier.parent.type === AST_NODE_TYPES.Property && identifier.parent.shorthand) ||
-				(identifier.parent.type === AST_NODE_TYPES.AssignmentPattern &&
-					identifier.parent.parent.type === AST_NODE_TYPES.Property &&
-					identifier.parent.parent.shorthand)
-			);
-		}
-
-		function isExported(
-			node: TSESTree.Node | undefined,
-			name: string,
-			scope: TSESLint.Scope.Scope | undefined,
-		): boolean {
-			if (
-				node?.parent?.type === AST_NODE_TYPES.ExportDefaultDeclaration ||
-				node?.parent?.type === AST_NODE_TYPES.ExportNamedDeclaration
-			) {
-				return true;
-			}
-
-			if (!scope) return false;
-
-			const variable = scope.set.get(name);
-			if (variable) {
-				for (const reference of variable.references) {
-					const referenceParent = reference.identifier.parent;
-					if (
-						referenceParent.type === AST_NODE_TYPES.ExportDefaultDeclaration ||
-						referenceParent.type === AST_NODE_TYPES.ExportSpecifier
-					) {
-						return true;
-					}
-				}
-			}
-
-			return false;
-		}
-
 		function isExportedCached(
 			node: TSESTree.Node | undefined,
 			name: string,
@@ -229,6 +226,7 @@ const namingConventions = createRule<Options, MessageIds>({
 		}
 
 		type SelectorHandler = {
+			// oxlint-disable-next-line typescript/method-signature-style -- naur
 			bivarianceHack(node: TSESTree.Node, validator: ValidatorFunction): void;
 		}["bivarianceHack"];
 
@@ -557,9 +555,7 @@ const namingConventions = createRule<Options, MessageIds>({
 			Object.entries(selectors).map(([selector, { handler, validator }]) => [
 				selector,
 				(node: TSESTree.Node): void => {
-					if (!validator) {
-						return;
-					}
+					if (!validator) return;
 					handler(node, validator);
 				},
 			]),
@@ -588,7 +584,7 @@ const namingConventions = createRule<Options, MessageIds>({
 export default namingConventions;
 
 function getIdentifiersFromPattern(pattern: TSESTree.DestructuringPattern): Array<TSESTree.Identifier> {
-	const identifiers: Array<TSESTree.Identifier> = [];
+	const identifiers = new Array<TSESTree.Identifier>();
 	const visitor = new PatternVisitor({}, pattern, (identifier) => {
 		identifiers.push(identifier);
 	});

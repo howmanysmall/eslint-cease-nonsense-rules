@@ -1,11 +1,12 @@
+// oxlint-disable-next-line sort-keys -- coal!
 export const PredefinedFormats = {
 	camelCase: "camelCase",
 	PascalCase: "PascalCase",
+	StrictPascalCase: "StrictPascalCase",
 	snake_case: "snake_case",
 	strictCamelCase: "strictCamelCase",
-	StrictPascalCase: "StrictPascalCase",
 	UPPER_CASE: "UPPER_CASE",
-};
+} as const;
 export type PredefinedFormatsString = keyof typeof PredefinedFormats;
 export type PredefinedFormats = (typeof PredefinedFormats)[PredefinedFormatsString];
 
@@ -16,7 +17,7 @@ export const UnderscoreOptions = {
 	forbid: "forbid",
 	require: "require",
 	requireDouble: "requireDouble",
-};
+} as const;
 export type UnderscoreOptionsString = keyof typeof UnderscoreOptions;
 export type UnderscoreOptions = (typeof UnderscoreOptions)[UnderscoreOptionsString];
 
@@ -40,7 +41,7 @@ export const Selectors = {
 	typeParameter: "typeParameter",
 	typeProperty: "typeProperty",
 	variable: "variable",
-};
+} as const;
 export type SelectorsString = keyof typeof Selectors;
 export type Selectors = (typeof Selectors)[SelectorsString];
 
@@ -52,7 +53,7 @@ export const MetaSelectors = {
 	property: "property",
 	typeLike: "typeLike",
 	variableLike: "variableLike",
-};
+} as const;
 export type MetaSelectorsString = keyof typeof MetaSelectors;
 export type IndividualAndMetaSelectorsString = MetaSelectorsString | SelectorsString;
 
@@ -74,7 +75,7 @@ export const Modifiers = {
 	requiresQuotes: "requiresQuotes",
 	static: "static",
 	unused: "unused",
-};
+} as const;
 export type ModifiersString = keyof typeof Modifiers;
 export type Modifiers = (typeof Modifiers)[ModifiersString];
 
@@ -84,7 +85,7 @@ export const TypeModifiers = {
 	function: "function",
 	number: "number",
 	string: "string",
-};
+} as const;
 export type TypeModifiersString = keyof typeof TypeModifiers;
 export type TypeModifiers = (typeof TypeModifiers)[TypeModifiersString];
 
@@ -106,7 +107,7 @@ export const ModifierWeights: Record<ModifiersString, number> = {
 	requiresQuotes: 2 ** 12,
 	static: 4,
 	unused: 2 ** 11,
-};
+} as const;
 
 export const TypeModifierWeights: Record<TypeModifiersString, number> = {
 	array: 2 ** 21,
@@ -114,7 +115,7 @@ export const TypeModifierWeights: Record<TypeModifiersString, number> = {
 	function: 2 ** 20,
 	number: 2 ** 19,
 	string: 2 ** 18,
-};
+} as const;
 
 export const TYPE_REFERENCE_LOOSE_MODIFIER_WEIGHT = 2 ** 22;
 export const TYPE_REFERENCE_STRICT_MODIFIER_WEIGHT = 2 ** 23;
