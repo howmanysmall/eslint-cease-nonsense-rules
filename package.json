@@ -28,6 +28,7 @@
 	},
 	"scripts": {
 		"biome": "biome",
+		"biome:check:agent": "biome check --reporter concise",
 		"biome:ci": "biome ci",
 		"biome:lint": "biome lint",
 		"build": "tsdown",
@@ -45,6 +46,7 @@
 		"lint:agent": "bash -c 'a=$(bash scripts/get-defaults.sh \"$@\"); node --run oxlint -- --format agent $a && node --run biome -- check --reporter concise $a' _",
 		"oxfmt": "oxfmt",
 		"oxlint": "oxlint",
+		"oxlint:agent": "oxlint --format agent",
 		"prepare": "node --run hooks:install",
 		"prepublishOnly": "node --run build -- --minify",
 		"release": "bumpp",
