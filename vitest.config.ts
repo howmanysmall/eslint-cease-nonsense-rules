@@ -78,6 +78,11 @@ const configuration = defineConfig({
 			},
 		],
 		reporters: ["github-actions", "tree"],
+		// `typescript` ships `typescript.js` with a `//# sourceMappingURL=typescript.js.map`
+		// comment but never publishes the map, so type-aware suites that pull it through Vite's
+		// SSR transform spam "Failed to load source map". Externalizing sends the 6MB CJS bundle
+		// straight to Node (no transform, faster) and silences the ENOENT noise.
+		server: { deps: { external: [/[/\\]node_modules[/\\]typescript[/\\]/u] } },
 		testTimeout: 30_000,
 		typecheck: {
 			checker: "tsgo",
