@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { resolve } from "node:path";
+import nodePath from "node:path";
 import { formatSync } from "$oxfmt-sync";
 import { regex } from "arktype";
 import { parseJSONC } from "confbox";
@@ -22,7 +22,7 @@ function loadOxfmtConfig(): FormatConfiguration {
 	if (cachedConfig !== undefined) return cachedConfig;
 
 	try {
-		const configPath = resolve(process.cwd(), ".oxfmtrc.json");
+		const configPath = nodePath.resolve(process.cwd(), ".oxfmtrc.json");
 		const configText = fs.readFileSync(configPath, "utf8");
 		const parsed = parseJSONC<Record<string, unknown>>(configText);
 

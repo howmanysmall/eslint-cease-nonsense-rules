@@ -1,4 +1,4 @@
-import process from "node:process";
+import nodeProcess from "node:process";
 
 type JsonRecord = Readonly<Record<string, unknown>>;
 type Quote = '"' | "'" | "";
@@ -13,8 +13,8 @@ async function mainAsync(): Promise<void> {
 
 	if (denial.length === 0) return;
 
-	process.stderr.write(`${denial}\n`);
-	process.stdout.write(
+	nodeProcess.stderr.write(`${denial}\n`);
+	nodeProcess.stdout.write(
 		JSON.stringify({
 			hookSpecificOutput: {
 				hookEventName: "PreToolUse",
@@ -23,15 +23,15 @@ async function mainAsync(): Promise<void> {
 			},
 		}),
 	);
-	process.stdout.write("\n");
-	process.exitCode = 2;
+	nodeProcess.stdout.write("\n");
+	nodeProcess.exitCode = 2;
 }
 
 async function readStdinAsync(): Promise<string> {
 	let data = "";
-	process.stdin.setEncoding("utf8");
+	nodeProcess.stdin.setEncoding("utf8");
 
-	for await (const chunk of process.stdin) data += chunk;
+	for await (const chunk of nodeProcess.stdin) data += chunk;
 
 	return data;
 }
