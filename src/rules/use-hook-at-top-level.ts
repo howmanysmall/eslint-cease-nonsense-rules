@@ -169,6 +169,7 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 			if (current) contextStack[contextStack.length - 1] = { ...current, ...updates };
 		}
 
+		// oxlint-disable-next-line sonar/cognitive-complexity -- sybau
 		function shouldIgnoreHook(hookName: string, node: TSESTree.CallExpression): boolean {
 			const { onlyHooks, ignoreHooks, importSources } = configuration;
 			if (onlyHooks && onlyHooks.length > 0) return !onlyHooks.includes(hookName);
