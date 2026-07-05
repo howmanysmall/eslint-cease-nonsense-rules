@@ -1,7 +1,10 @@
+import { isString } from "$utilities/type-utilities";
 import { TSESTree } from "@typescript-eslint/utils";
 
 import type { ReadonlyRecord } from "$types/utility-types";
 import type { Rule } from "eslint";
+
+type FunctionNode = TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression;
 
 export interface NoGodComponentsOptions {
 	readonly enforceTargetLines?: boolean;
@@ -45,9 +48,7 @@ function isReactComponentHOC(callExpr: TSESTree.CallExpression): boolean {
 	return false;
 }
 
-function getComponentNameFromFunction(
-	node: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
-): string | undefined {
+function getComponentNameFromFunction(node: FunctionNode): string | undefined {
 	if (node.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration && node.id && isComponentName(node.id.name)) {
 		return node.id.name;
 	}
@@ -138,9 +139,7 @@ function getHookName(callExpression: TSESTree.CallExpression): string | undefine
 	return undefined;
 }
 
-function countDestructuredProperties(
-	node: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
-): number | undefined {
+function countDestructuredProperties(node: FunctionNode): number | undefined {
 	const [firstParameter] = node.params;
 	if (!firstParameter) return undefined;
 
@@ -172,9 +171,7 @@ function isNode(value: unknown): value is TSESTree.Node {
 	return typeof value === "object" && value !== null && "type" in value;
 }
 
-function isFunctionNode(
-	value: unknown,
-): value is TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression {
+function isFunctionNode(value: unknown): value is FunctionNode {
 	if (!isNode(value)) return false;
 	return (
 		value.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration ||
@@ -198,7 +195,7 @@ interface BodyAnalysis {
 }
 
 function analyzeComponentBody(
-	functionNode: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
+	functionNode: FunctionNode,
 	sourceCode: Rule.RuleContext["sourceCode"],
 	stateHooks: Set<string>,
 ): BodyAnalysis {
@@ -206,6 +203,7 @@ function analyzeComponentBody(
 	let stateHookCount = 0;
 	const nullLiterals = new Array<TSESTree.Literal>();
 
+	// oxlint-disable-next-line sonar/cognitive-complexity -- lol.
 	function visit(current: TSESTree.Node, jsxDepth: number): void {
 		if (FUNCTION_BOUNDARIES.has(current.type) && current !== functionNode) return;
 
@@ -220,7 +218,7 @@ function analyzeComponentBody(
 
 		if (current.type === TSESTree.AST_NODE_TYPES.CallExpression) {
 			const hookName = getHookName(current);
-			if (typeof hookName === "string" && hookName.length > 0 && stateHooks.has(hookName)) stateHookCount += 1;
+			if (hookName !== undefined && hookName.length > 0 && stateHooks.has(hookName)) stateHookCount += 1;
 		}
 
 		if (
@@ -232,10 +230,12 @@ function analyzeComponentBody(
 		}
 
 		function getVisitorKeysForNodeType(nodeType: string): ReadonlyArray<string> {
-			const keys = new Array<string>();
 			const keysUnknown = sourceCode.visitorKeys[nodeType];
-			if (!Array.isArray(keysUnknown)) return keys;
-			for (const key of keysUnknown) if (typeof key === "string") keys.push(key);
+			if (!Array.isArray(keysUnknown)) return [];
+
+			const keys = new Array<string>();
+			let size = 0;
+			for (const key of keysUnknown) if (isString(key)) keys[size++] = key;
 			return keys;
 		}
 
@@ -245,9 +245,7 @@ function analyzeComponentBody(
 		for (const key of keys) {
 			const value = current[key];
 			if (Array.isArray(value)) {
-				for (const item of value) {
-					if (isNode(item)) visit(item, nextDepth);
-				}
+				for (const item of value) if (isNode(item)) visit(item, nextDepth);
 				continue;
 			}
 
@@ -292,19 +290,15 @@ function parseOptions(options: unknown): Required<NoGodComponentsOptions> {
 }
 
 const noGodComponents: Rule.RuleModule = {
-	create(context) {
+	create(context): Rule.RuleListener {
 		const configuration = parseOptions(context.options[0]);
 		const ignoreSet = new Set(configuration.ignoreComponents);
 		const stateHooks = new Set(configuration.stateHooks);
 		const checked = new WeakSet<TSESTree.Node>();
 		const { sourceCode } = context;
 
-		function checkComponent(
-			node: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
-			name: string,
-		): void {
-			if (ignoreSet.has(name)) return;
-			if (checked.has(node)) return;
+		function checkComponent(node: FunctionNode, name: string): void {
+			if (ignoreSet.has(name) || checked.has(node)) return;
 			checked.add(node);
 
 			const location = node.loc;
@@ -391,18 +385,10 @@ const noGodComponents: Rule.RuleModule = {
 		}
 
 		return {
-			ArrowFunctionExpression(node) {
-				maybeCheckFunction(node);
-			},
-			CallExpression(node) {
-				checkHigherOrderComponentCall(node);
-			},
-			FunctionDeclaration(node) {
-				maybeCheckFunction(node);
-			},
-			FunctionExpression(node) {
-				maybeCheckFunction(node);
-			},
+			ArrowFunctionExpression: maybeCheckFunction,
+			CallExpression: checkHigherOrderComponentCall,
+			FunctionDeclaration: maybeCheckFunction,
+			FunctionExpression: maybeCheckFunction,
 		};
 	},
 	meta: {

@@ -278,9 +278,9 @@ const DEFAULT_REPLACEMENTS: Record<string, Record<string, boolean>> = {
 };
 
 const DEFAULT_ALLOW_LIST: Record<string, boolean> = {
+	EmberENV: true,
 	defaultProps: true,
 	devDependencies: true,
-	EmberENV: true,
 	getDerivedStateFromProps: true,
 	getInitialProps: true,
 	getServerSideProps: true,

@@ -1,5 +1,6 @@
-import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import { createRule } from "$utilities/create-rule";
+import { isRecordFast } from "$utilities/type-utilities";
+import { AST_NODE_TYPES } from "@typescript-eslint/types";
 
 import type { ReadonlyRecord } from "$types/utility-types";
 import type { TSESTree } from "@typescript-eslint/utils";
@@ -30,8 +31,7 @@ function normalizeOptions(rawOptions: NoInstanceMethodsOptions | undefined): Nor
 }
 
 function shouldCheckMethod(node: TSESTree.MethodDefinition, options: NormalizedOptions): boolean {
-	if (node.static) return false;
-	if (node.kind !== "method") return false;
+	if (node.static || node.kind !== "method") return false;
 
 	const accessibility = node.accessibility ?? "public";
 	if (accessibility === "private" && !options.checkPrivate) return false;
@@ -42,7 +42,7 @@ function shouldCheckMethod(node: TSESTree.MethodDefinition, options: NormalizedO
 }
 
 function isNode(value: unknown): value is TSESTree.Node {
-	return typeof value === "object" && value !== null && "type" in value;
+	return isRecordFast(value) && "type" in value;
 }
 
 // Widen node to allow safe enumeration without producing implicit any values
@@ -50,6 +50,7 @@ function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & Re
 	return true;
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- lol.
 function traverseForThis(currentNode: TSESTree.Node, visited: WeakSet<TSESTree.Node>): boolean {
 	if (visited.has(currentNode)) return false;
 	visited.add(currentNode);
@@ -57,6 +58,7 @@ function traverseForThis(currentNode: TSESTree.Node, visited: WeakSet<TSESTree.N
 
 	if (!hasDynamicProperties(currentNode)) return false;
 
+	// biome-ignore lint/suspicious/noForIn: We want to enumerate all properties of the node, including inherited ones, to ensure we don't miss any potential child nodes that could contain 'this' or 'super'.
 	for (const key in currentNode) {
 		if (!Object.hasOwn(currentNode, key)) continue;
 

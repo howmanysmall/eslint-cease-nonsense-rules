@@ -35,7 +35,7 @@ import {
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
 } from "$utilities/configure-utilities";
-import { pattern } from "$utilities/pattern-replacement";
+import { pattern } from "$utilities/pattern-replacement/pattern-types";
 
 const TEST_IGNORE_REGEX = /^_/u;
 

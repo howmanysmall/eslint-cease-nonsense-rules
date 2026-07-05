@@ -1,7 +1,7 @@
 import { getReactSources, isReactImport } from "$constants/react-sources";
+import { createRule } from "$utilities/create-rule";
 import { DefinitionType } from "@typescript-eslint/scope-manager";
 import { TSESTree } from "@typescript-eslint/types";
-import { createRule } from "$utilities/create-rule";
 
 import type { EnvironmentMode } from "$types/environment-mode";
 import type { TSESLint } from "@typescript-eslint/utils";
@@ -140,6 +140,7 @@ function findVariable(
 	return undefined;
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- lol.
 function resolveVariableToFunctionIds(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	variable: TSESLint.Scope.Variable,
@@ -164,8 +165,7 @@ function resolveVariableToFunctionIds(
 			continue;
 		}
 
-		if (definition.type !== DefinitionType.Variable) continue;
-		if (definition.node.init === null) continue;
+		if (definition.type !== DefinitionType.Variable || definition.node.init === null) continue;
 
 		const initializer = unwrapExpression(definition.node.init);
 		if (isFunctionLikeExpression(initializer)) {
@@ -220,9 +220,7 @@ function collectReachableFunctions(
 	while (queueIndex < queue.length) {
 		const current = queue[queueIndex];
 		queueIndex += 1;
-		if (current === undefined) continue;
-
-		if (current.depth >= maxHelperTraceDepth) continue;
+		if (current === undefined || current.depth >= maxHelperTraceDepth) continue;
 
 		const functionInfo = functionInfosById.get(current.functionId);
 		if (functionInfo === undefined) continue;
@@ -337,8 +335,8 @@ const noNewInstanceInUseMemo = createRule<Options, MessageIds>({
 			if (existing !== undefined) return existing;
 
 			const created: FunctionInfo = {
-				callees: new Set<number>(),
 				callIdentifiers: [],
+				callees: new Set<number>(),
 				id: functionCounter,
 			};
 
@@ -368,13 +366,8 @@ const noNewInstanceInUseMemo = createRule<Options, MessageIds>({
 		}
 
 		return {
-			ArrowFunctionExpression(node): void {
-				enterFunction(node);
-			},
-
-			"ArrowFunctionExpression:exit"(): void {
-				exitFunction();
-			},
+			ArrowFunctionExpression: enterFunction,
+			"ArrowFunctionExpression:exit": exitFunction,
 
 			CallExpression(node): void {
 				if (node.callee.type === TSESTree.AST_NODE_TYPES.Identifier) recordFunctionCall(node.callee);
@@ -390,23 +383,10 @@ const noNewInstanceInUseMemo = createRule<Options, MessageIds>({
 
 				if (isFunctionLikeExpression(callback)) useMemoInlineCallbacks.push(callback);
 			},
-
-			FunctionDeclaration(node): void {
-				enterFunction(node);
-			},
-
-			"FunctionDeclaration:exit"(): void {
-				exitFunction();
-			},
-
-			FunctionExpression(node): void {
-				enterFunction(node);
-			},
-
-			"FunctionExpression:exit"(): void {
-				exitFunction();
-			},
-
+			FunctionDeclaration: enterFunction,
+			"FunctionDeclaration:exit": exitFunction,
+			FunctionExpression: enterFunction,
+			"FunctionExpression:exit": exitFunction,
 			ImportDeclaration(node): void {
 				if (!isReactImport(node, reactSources)) return;
 

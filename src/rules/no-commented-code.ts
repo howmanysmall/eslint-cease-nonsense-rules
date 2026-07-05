@@ -1,6 +1,7 @@
 import { extname } from "node:path";
 import { hasCodeLines } from "$recognizers/code-recognizer";
 import { createJavaScriptDetectors } from "$recognizers/javascript-footprint";
+import { isNumber, isRecord, isString } from "$utilities/type-utilities";
 import { parseSync } from "oxc-parser";
 
 import type { Rule } from "eslint";
@@ -47,6 +48,7 @@ function areAdjacentLineComments(
 	return tokenAfterPrevious.loc.start.line > nextLine;
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- the price we pay for speed.
 function groupComments(
 	comments: ReadonlyArray<Comment>,
 	sourceCode: Rule.RuleContext["sourceCode"],
@@ -93,7 +95,7 @@ function groupComments(
 
 	// Flush remaining line comments
 	if (size > 0) {
-		groups[groupsSize++] = {
+		groups[groupsSize] = {
 			comments: currentLineComments,
 			value: currentLineComments.map(({ value }) => value).join("\n"),
 		};
@@ -113,8 +115,7 @@ function injectMissingBraces(value: string): string {
 }
 
 function couldBeJsCode(input: string): boolean {
-	const lines = input.split("\n");
-	return hasCodeLines(detectors, lines);
+	return hasCodeLines(detectors, input.split("\n"));
 }
 
 function isReturnOrThrowExclusion(statement: { type: string; argument?: { type: string } | undefined }): boolean {
@@ -128,7 +129,7 @@ function isUnaryPlusMinus(expression: { type: string; operator?: string }): bool
 
 function isExcludedLiteral(expression: { type: string; value?: unknown }): boolean {
 	if (expression.type !== "Literal") return false;
-	return typeof expression.value === "string" || typeof expression.value === "number";
+	return isString(expression.value) || isNumber(expression.value);
 }
 
 interface ParsedExpression {
@@ -143,20 +144,14 @@ interface ParsedStatement {
 	type: string;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== undefined;
-}
-
 function isParsedStatement(value: unknown): value is ParsedStatement {
-	if (!isRecord(value)) return false;
-	return typeof value.type === "string";
+	return isRecord(value) && isString(value.type);
 }
 
 function toParsedStatements(body: ReadonlyArray<unknown>): ReadonlyArray<ParsedStatement> {
-	const result: Array<ParsedStatement> = [];
-	for (const item of body) {
-		if (isParsedStatement(item)) result.push(item);
-	}
+	const result = new Array<ParsedStatement>();
+	let size = 0;
+	for (const item of body) if (isParsedStatement(item)) result[size++] = item;
 	return result;
 }
 
@@ -166,15 +161,13 @@ function isExpressionExclusion(statement: ParsedStatement, codeText: string): bo
 	const { expression } = statement;
 	if (!expression) return false;
 
-	if (expression.type === "Identifier") return true;
-	if (expression.type === "SequenceExpression") return true;
-	if (isUnaryPlusMinus(expression)) return true;
-	if (isExcludedLiteral(expression)) return true;
-
-	// Check for missing semicolon (code doesn't end with ;)
-	if (!codeText.trimEnd().endsWith(";")) return true;
-
-	return false;
+	return (
+		expression.type === "Identifier" ||
+		expression.type === "SequenceExpression" ||
+		isUnaryPlusMinus(expression) ||
+		isExcludedLiteral(expression) ||
+		!codeText.trimEnd().endsWith(";")
+	);
 }
 
 function isExclusion(statements: ReadonlyArray<ParsedStatement>, codeText: string): boolean {
@@ -183,11 +176,11 @@ function isExclusion(statements: ReadonlyArray<ParsedStatement>, codeText: strin
 	const statement = statements.at(0);
 	if (!statement) return false;
 
-	if (EXCLUDED_STATEMENTS.has(statement.type)) return true;
-	if (isReturnOrThrowExclusion(statement)) return true;
-	if (isExpressionExclusion(statement, codeText)) return true;
-
-	return false;
+	return (
+		EXCLUDED_STATEMENTS.has(statement.type) ||
+		isReturnOrThrowExclusion(statement) ||
+		isExpressionExclusion(statement, codeText)
+	);
 }
 
 const ALLOWED_PARSE_ERROR_PATTERNS = [/A 'return' statement can only be used within a function body/u] as const;
@@ -232,14 +225,13 @@ function containsCode(value: string, filename: string): boolean {
 	const result = tryParse(value, filename);
 	if (!result) return false;
 
-	const statements = toParsedStatements(result.program.body);
-	return !isExclusion(statements, value);
+	return !isExclusion(toParsedStatements(result.program.body), value);
 }
 
 const noCommentedCode: Rule.RuleModule = {
-	create(context) {
+	create(context): Rule.RuleListener {
 		return {
-			"Program:exit"() {
+			"Program:exit"(): void {
 				const allComments = context.sourceCode.getAllComments();
 				const groups = groupComments(allComments, context.sourceCode);
 

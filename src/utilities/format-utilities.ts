@@ -5,6 +5,8 @@ import { regex } from "arktype";
 import { parseJSONC } from "confbox";
 import fastDiff from "fast-diff";
 
+import { isRecordFast } from "./type-utilities";
+
 import type { FormatConfiguration } from "$oxfmt-worker";
 
 export interface Difference {
@@ -24,11 +26,12 @@ function loadOxfmtConfig(): FormatConfiguration {
 		const configText = fs.readFileSync(configPath, "utf8");
 		const parsed = parseJSONC<Record<string, unknown>>(configText);
 
-		if (typeof parsed !== "object" || parsed === null) {
+		if (!isRecordFast(parsed)) {
 			cachedConfig = {};
 			return cachedConfig;
 		}
 
+		// oxlint-disable-next-line sonar/no-unused-vars -- garbage!
 		const { $schema: _schema, ignorePatterns: _ignore, ...formatOptions } = parsed;
 
 		cachedConfig = formatOptions;
@@ -49,6 +52,7 @@ const enum CharacterType {
 	LowerX = 0x78,
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- optimization
 export function getExtension(filePath: string): string | undefined {
 	const { length } = filePath;
 
@@ -93,6 +97,7 @@ export function formatWithOxfmtSync(source: string, filePath: string): string {
 	return formatSync(filePath, source, config);
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- diff algo
 export function generateDifferences(original: string, formatted: string): ReadonlyArray<Difference> {
 	if (original === formatted) return [];
 
@@ -153,11 +158,12 @@ export function generateDifferences(original: string, formatted: string): Readon
 }
 
 const MAX_LENGTH = 60;
+// oxlint-disable-next-line sort-keys -- conflict.
 const SYMBOLS: Record<string, string> = {
-	"\t": "\u{2192}",
+	" ": "\u{00B7}",
 	"\n": "\u{240A}",
 	"\r": "\u{240D}",
-	" ": "\u{00B7}",
+	"\t": "\u{2192}",
 };
 
 const WHITESPACE_REGEXP = regex("[\r\n\t ]", "gu");

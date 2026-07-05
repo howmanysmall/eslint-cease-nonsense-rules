@@ -892,6 +892,12 @@
 				}
 			}
 		],
+		"unicorn/max-nested-calls": [
+			"error",
+			{
+				"max": 5
+			}
+		],
 		"unicorn/new-for-builtins": "error",
 		"unicorn/no-abusive-eslint-disable": "error",
 		"unicorn/no-accessor-recursion": "error",

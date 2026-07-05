@@ -1,5 +1,6 @@
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "$utilities/create-rule";
+import { AST_NODE_TYPES } from "@typescript-eslint/utils";
+import { regex } from "arktype";
 import { IndexKind, isExpression, isTypeNode } from "typescript";
 
 import type { TSESTree } from "@typescript-eslint/types";
@@ -68,7 +69,6 @@ const RULE_DOCS = {
 
 function getTransparentParentExpression(expression: TSESTree.Expression): TSESTree.Expression | undefined {
 	const { parent } = expression;
-	if (!parent) return undefined;
 
 	switch (parent.type) {
 		case AST_NODE_TYPES.ChainExpression:
@@ -112,6 +112,7 @@ function isArgumentOfExpressionCall(
 	return false;
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- lol.
 function isAllowedEmptyArrayContext(
 	node: TSESTree.ArrayExpression,
 	sourceCode: Readonly<TSESLint.SourceCode>,
@@ -120,7 +121,6 @@ function isAllowedEmptyArrayContext(
 ): boolean {
 	const usageExpression = getOutermostUsageExpression(node);
 	const { parent } = usageExpression;
-	if (!parent) return false;
 
 	if (
 		options.allowedEmptyArrayContexts.arrowFunctionBody &&
@@ -284,7 +284,7 @@ function findTypeAliasDeclaration(
 ): TSESTree.TSTypeAliasDeclaration | undefined {
 	let currentNode: TSESTree.Node | undefined = typeNode;
 
-	while (currentNode) {
+	while (currentNode !== undefined) {
 		const scopeBody = getTypeAliasScopeBody(currentNode);
 		const declaration = scopeBody ? findTypeAliasDeclarationInBody(scopeBody, typeName) : undefined;
 		if (declaration) return declaration;
@@ -438,8 +438,8 @@ function isReadonlyArrayConstInitializer(
 ): boolean {
 	const usageExpression = getOutermostUsageExpression(node);
 	const { parent } = usageExpression;
-	if (!(parent && parent.type === AST_NODE_TYPES.VariableDeclarator && parent.init === usageExpression)) return false;
-	if (!(parent.parent && parent.parent.type === AST_NODE_TYPES.VariableDeclaration)) return false;
+	if (!(parent.type === AST_NODE_TYPES.VariableDeclarator && parent.init === usageExpression)) return false;
+	if (parent.parent.type !== AST_NODE_TYPES.VariableDeclaration) return false;
 	if (parent.parent.kind !== "const") return false;
 
 	const typeAnnotation = getBindingTypeAnnotation(parent.id);
@@ -455,16 +455,13 @@ function extractElementTypeFromTypeText(typeText: string): string | undefined {
 	return undefined;
 }
 
-const IS_ANNOTATION = /:\s*(Array<.+>|ReadonlyArray<.+>)\s*=/u;
+// oxlint-disable-next-line unicorn/prefer-string-raw -- naur
+const IS_ANNOTATION = regex(":\\s*(?<typeText>Array<.+>|ReadonlyArray<.+>)\\s*=", "u");
 
 function extractElementTypeFromAssignmentPatternText(assignmentText: string): string | undefined {
 	const annotationMatch = IS_ANNOTATION.exec(assignmentText);
 	if (!annotationMatch) return undefined;
-
-	const [, typeText] = annotationMatch;
-	if (!typeText) return undefined;
-
-	return extractElementTypeFromTypeText(typeText.trim());
+	return extractElementTypeFromTypeText(annotationMatch.groups.typeText.trim());
 }
 
 function extractElementTypeFromGenericReference(
@@ -474,7 +471,7 @@ function extractElementTypeFromGenericReference(
 	if (typeNode.type !== AST_NODE_TYPES.TSTypeReference) return undefined;
 	if (typeNode.typeName.type !== AST_NODE_TYPES.Identifier) return undefined;
 	if (typeNode.typeName.name !== "Array" && typeNode.typeName.name !== "ReadonlyArray") return undefined;
-	if (!typeNode.typeArguments || typeNode.typeArguments.params.length !== 1) return undefined;
+	if (typeNode.typeArguments?.params.length !== 1) return undefined;
 
 	const [elementType] = typeNode.typeArguments.params;
 	if (!elementType) return undefined;
@@ -503,7 +500,6 @@ function getExplicitElementTypeFromContext(
 
 	const usageExpression = getOutermostUsageExpression(node);
 	const { parent } = usageExpression;
-	if (!parent) return undefined;
 
 	if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.init === usageExpression) {
 		const typeAnnotation = getBindingTypeAnnotation(parent.id);
@@ -546,7 +542,7 @@ function getElementTypeFromTypeChecker(
 	const contextualType = checker.getContextualType(tsNode);
 	if (contextualType) {
 		const contextualElement = toElementTypeText(contextualType);
-		if (contextualElement) return contextualElement;
+		if (contextualElement !== undefined && contextualElement.length > 0) return contextualElement;
 	}
 
 	const fallbackType = checker.getTypeAtLocation(tsNode);
@@ -557,8 +553,9 @@ function createReplacementText(
 	elementType: string | undefined,
 	options: Readonly<Required<NoEmptyArrayLiteralOptions>>,
 ): string {
-	if (options.requireExplicitGenericOnNewArray && elementType) return `new Array<${elementType}>()`;
-	return "new Array()";
+	return options.requireExplicitGenericOnNewArray && elementType !== undefined && elementType.length > 0
+		? `new Array<${elementType}>()`
+		: "new Array()";
 }
 
 const noEmptyArrayLiteral = createRule<Options, MessageIds>({

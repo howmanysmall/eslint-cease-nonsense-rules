@@ -1,6 +1,7 @@
 import { getReactSources, isReactImport } from "$constants/react-sources";
-import { TSESTree } from "@typescript-eslint/types";
 import { createRule } from "$utilities/create-rule";
+import { isString } from "$utilities/type-utilities";
+import { TSESTree } from "@typescript-eslint/types";
 
 import type { EnvironmentMode } from "$types/environment-mode";
 
@@ -244,13 +245,9 @@ function normalizeOptions(raw: NoUselessUseEffectOptions | undefined): Normalize
 	};
 }
 
-function getImportedName(specifier: TSESTree.ImportSpecifier): string | undefined {
-	const { imported } = specifier;
-	return imported.type === TSESTree.AST_NODE_TYPES.Identifier
-		? imported.name
-		: imported.type === TSESTree.AST_NODE_TYPES.Literal && typeof imported.value === "string"
-			? imported.value
-			: undefined;
+function getImportedName({ imported }: TSESTree.ImportSpecifier): string | undefined {
+	if (imported.type === TSESTree.AST_NODE_TYPES.Identifier) return imported.name;
+	return imported.type === TSESTree.AST_NODE_TYPES.Literal && isString(imported.value) ? imported.value : undefined;
 }
 
 function isHookCall(
@@ -290,7 +287,6 @@ function getFunctionName(node: FunctionNode): string | undefined {
 	}
 
 	const { parent } = node;
-	if (!parent) return undefined;
 
 	if (
 		parent.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
@@ -368,7 +364,9 @@ function hasReturnWithArgument(body: TSESTree.BlockStatement): boolean {
 			case TSESTree.AST_NODE_TYPES.ForInStatement:
 			case TSESTree.AST_NODE_TYPES.ForOfStatement:
 			case TSESTree.AST_NODE_TYPES.WhileStatement:
-			case TSESTree.AST_NODE_TYPES.DoWhileStatement: {
+			case TSESTree.AST_NODE_TYPES.DoWhileStatement:
+			case TSESTree.AST_NODE_TYPES.WithStatement:
+			case TSESTree.AST_NODE_TYPES.LabeledStatement: {
 				stack.push(current.body);
 				continue;
 			}
@@ -382,16 +380,6 @@ function hasReturnWithArgument(body: TSESTree.BlockStatement): boolean {
 				stack.push(current.block);
 				if (current.handler?.body) stack.push(current.handler.body);
 				if (current.finalizer) stack.push(current.finalizer);
-				continue;
-			}
-
-			case TSESTree.AST_NODE_TYPES.LabeledStatement: {
-				stack.push(current.body);
-				continue;
-			}
-
-			case TSESTree.AST_NODE_TYPES.WithStatement: {
-				stack.push(current.body);
 				continue;
 			}
 
@@ -440,16 +428,12 @@ function isFalseLiteral(node: TSESTree.Node): boolean {
 function isConstantLiteral(node: TSESTree.Node): boolean {
 	if (node.type === TSESTree.AST_NODE_TYPES.Literal) return node.value === null || node.value === undefined;
 
-	if (
+	return (
 		node.type === TSESTree.AST_NODE_TYPES.UnaryExpression &&
 		node.operator === "void" &&
 		node.argument.type === TSESTree.AST_NODE_TYPES.Literal &&
 		node.argument.value === 0
-	) {
-		return true;
-	}
-
-	return false;
+	);
 }
 
 function isEmptyArrayExpression(node: TSESTree.Node): boolean {
@@ -622,8 +606,7 @@ function expressionContainsIdentifier(node: TSESTree.Expression): boolean {
 		}
 
 		if (current.type === TSESTree.AST_NODE_TYPES.ConditionalExpression) {
-			stack.push(current.test, current.consequent);
-			stack.push(current.alternate);
+			stack.push(current.test, current.consequent, current.alternate);
 			continue;
 		}
 
@@ -1144,8 +1127,7 @@ function collectIdentifiers(node: TSESTree.Node): Set<string> {
 		}
 
 		if (current.type === TSESTree.AST_NODE_TYPES.ConditionalExpression) {
-			stack.push(current.test, current.consequent);
-			stack.push(current.alternate);
+			stack.push(current.test, current.consequent, current.alternate);
 			continue;
 		}
 

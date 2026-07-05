@@ -1,5 +1,5 @@
-import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import { createRule } from "$utilities/create-rule";
+import { AST_NODE_TYPES } from "@typescript-eslint/types";
 
 import type { ReadonlyRecord } from "$types/utility-types";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
@@ -62,7 +62,7 @@ function isThisAsyncMethodCall(node: TSESTree.CallExpression, asyncMethods: Set<
 	return asyncMethods.has(methodName) ? methodName : undefined;
 }
 
-function isAssignedToThisProperty(node: TSESTree.Node, parent: TSESTree.Node | undefined): boolean {
+function isAssignedToThisProperty(node: TSESTree.Node, parent?: TSESTree.Node): boolean {
 	if (!parent) return false;
 	if (parent.type !== AST_NODE_TYPES.AssignmentExpression) return false;
 	if (parent.right !== node) return false;
@@ -71,7 +71,7 @@ function isAssignedToThisProperty(node: TSESTree.Node, parent: TSESTree.Node | u
 	return left.type === AST_NODE_TYPES.MemberExpression && left.object.type === AST_NODE_TYPES.ThisExpression;
 }
 
-function getLocalVariableAssignment(node: TSESTree.Node, parent: TSESTree.Node | undefined): string | undefined {
+function getLocalVariableAssignment(node: TSESTree.Node, parent?: TSESTree.Node): string | undefined {
 	if (!parent) return undefined;
 	if (parent.type !== AST_NODE_TYPES.VariableDeclarator) return undefined;
 	if (parent.init !== node) return undefined;
@@ -125,9 +125,7 @@ function isNonIIFEFunction(node: TSESTree.Node, parent: TSESTree.Node | undefine
 		return false;
 	}
 
-	if (parent?.type === AST_NODE_TYPES.CallExpression && parent.callee === node) return false;
-
-	return true;
+	return !(parent?.type === AST_NODE_TYPES.CallExpression && parent.callee === node);
 }
 
 function findConstructorViolations(
@@ -164,6 +162,7 @@ function findConstructorViolations(
 
 		if (!hasDynamicProperties(current)) return;
 
+		// biome-ignore lint/suspicious/noForIn: iterating over AST node properties
 		for (const key in current) {
 			if (Object.hasOwn(current, key)) {
 				const childValue = current[key];
@@ -171,7 +170,7 @@ function findConstructorViolations(
 
 				if (Array.isArray(childValue)) {
 					for (const item of childValue) {
-						// oxlint-disable-next-line max-depth
+						// oxlint-disable-next-line max-depth -- lol
 						if (!isNode(item)) continue;
 						parentMap.set(item, current);
 						traverse(item);

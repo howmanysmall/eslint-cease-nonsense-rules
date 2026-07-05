@@ -1,5 +1,5 @@
-import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import { createRule } from "$utilities/create-rule";
+import { AST_NODE_TYPES } from "@typescript-eslint/types";
 
 import type { TSESTree } from "@typescript-eslint/types";
 
@@ -140,6 +140,13 @@ type MessageIds =
 	| "tryBlockHook";
 type Options = [UseHookAtTopLevelOptions?];
 
+function getHookName(callee: TSESTree.Expression): string | undefined {
+	if (callee.type === AST_NODE_TYPES.Identifier) return callee.name;
+	return callee.type === AST_NODE_TYPES.MemberExpression && callee.property.type === AST_NODE_TYPES.Identifier
+		? callee.property.name
+		: undefined;
+}
+
 const useHookAtTopLevel = createRule<Options, MessageIds>({
 	create(context, [rawOptions]) {
 		const configuration = rawOptions ?? {};
@@ -168,9 +175,10 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 			if (ignoreHooks?.includes(hookName) === true) return true;
 
 			if (importSources && Object.keys(importSources).length > 0) {
-				if (node.callee.type === AST_NODE_TYPES.MemberExpression) {
+				const { callee } = node;
+				if (callee.type === AST_NODE_TYPES.MemberExpression) {
 					const objectName =
-						node.callee.object.type === AST_NODE_TYPES.Identifier ? node.callee.object.name : undefined;
+						callee.object.type === AST_NODE_TYPES.Identifier ? callee.object.name : undefined;
 
 					if (objectName !== undefined && objectName.length > 0 && importSources[objectName] === false) {
 						return true;
@@ -180,7 +188,7 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 					}
 				}
 
-				if (node.callee.type === AST_NODE_TYPES.Identifier) {
+				if (callee.type === AST_NODE_TYPES.Identifier) {
 					const importSource = importSourceMap.get(hookName);
 					if (
 						importSource !== undefined &&
@@ -198,18 +206,14 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 			return false;
 		}
 
-		function handleFunctionEnter(node: unknown): void {
-			const functionNode = node as
-				| TSESTree.FunctionDeclaration
-				| TSESTree.FunctionExpression
-				| TSESTree.ArrowFunctionExpression;
+		function handleFunctionEnter(
+			node: TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
+		): void {
 			const current = getCurrentContext();
 			const depth = current ? current.functionDepth + 1 : 0;
 
-			const isComponentOrHookFlag = isComponentOrHook(functionNode);
-			if (functionNode.type === AST_NODE_TYPES.FunctionDeclaration && functionNode.id) {
-				currentFunctionName = functionNode.id.name;
-			}
+			const isComponentOrHookFlag = isComponentOrHook(node);
+			if (node.type === AST_NODE_TYPES.FunctionDeclaration && node.id) currentFunctionName = node.id.name;
 
 			if (current?.isComponentOrHook === true) {
 				pushContext({
@@ -244,30 +248,20 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 			"ArrowFunctionExpression:exit": handleFunctionExit,
 
 			CallExpression(node): void {
-				const callNode = node;
+				if (!isHookCall(node)) return;
 
-				if (!isHookCall(callNode)) return;
-
-				const { callee } = callNode;
-				const hookName =
-					callee.type === AST_NODE_TYPES.Identifier
-						? callee.name
-						: callee.type === AST_NODE_TYPES.MemberExpression &&
-							  callee.property.type === AST_NODE_TYPES.Identifier
-							? callee.property.name
-							: undefined;
-
-				if (hookName === undefined || hookName.length === 0 || shouldIgnoreHook(hookName, callNode)) return;
+				const { callee } = node;
+				const hookName = getHookName(callee);
+				if (hookName === undefined || hookName.length === 0 || shouldIgnoreHook(hookName, node)) return;
 
 				const current = getCurrentContext();
 				if (!current) return;
-				if (!(current.isComponentOrHook || current.inNestedFunction)) return;
-				if (isInFinallyBlock(callNode)) return;
+				if (!(current.isComponentOrHook || current.inNestedFunction) || isInFinallyBlock(node)) return;
 
-				if (isRecursiveCall(callNode, currentFunctionName)) {
+				if (isRecursiveCall(node, currentFunctionName)) {
 					context.report({
 						messageId: "recursiveHookCall",
-						node: callNode,
+						node,
 					});
 					return;
 				}
@@ -275,7 +269,7 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 				if (current.inNestedFunction) {
 					context.report({
 						messageId: "nestedFunction",
-						node: callNode,
+						node,
 					});
 					return;
 				}
@@ -283,7 +277,7 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 				if (current.inConditional) {
 					context.report({
 						messageId: "conditionalHook",
-						node: callNode,
+						node,
 					});
 					return;
 				}
@@ -291,7 +285,7 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 				if (current.inLoop) {
 					context.report({
 						messageId: "loopHook",
-						node: callNode,
+						node,
 					});
 					return;
 				}
@@ -299,7 +293,7 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 				if (current.inTryBlock) {
 					context.report({
 						messageId: "tryBlockHook",
-						node: callNode,
+						node,
 					});
 					return;
 				}
@@ -307,7 +301,7 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 				if (current.afterEarlyReturn) {
 					context.report({
 						messageId: "afterEarlyReturn",
-						node: callNode,
+						node,
 					});
 				}
 			},

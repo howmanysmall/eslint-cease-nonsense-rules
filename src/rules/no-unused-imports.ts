@@ -1,6 +1,6 @@
+import { createRule } from "$utilities/create-rule";
 import { ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES, AST_TOKEN_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "$utilities/create-rule";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
@@ -13,10 +13,10 @@ export interface NoUnusedImportsOptions {
 type Options = [NoUnusedImportsOptions?];
 
 const JSDOC_PATTERN =
-	/(?:@(?:link|linkcode|linkplain|see)\s+\{?\w+\b\}?)|(?:\{@(?:link|linkcode|linkplain|see)\s+\w+\b\})|(?:[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\s+[^}]*\b\w+\b)/u;
+	/@(?:link|linkcode|linkplain|see)\s+\{?\w+\b\}?|\{@(?:link|linkcode|linkplain|see)\s+\w+\b\}|[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\s[^}]*\b\w+\b/u;
 
 const JSDOC_IDENTIFIER_PATTERN =
-	/(?:@(?:link|linkcode|linkplain|see)\s+\{?(\w+)\b\}?)|(?:\{@(?:link|linkcode|linkplain|see)\s+(\w+)\b\})|(?:[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\s+[^}]*\b(\w+)\b)/gu;
+	/@(?:link|linkcode|linkplain|see)\s+\{?(\w+)\b\}?|\{@(?:link|linkcode|linkplain|see)\s+(\w+)\b\}|[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\s[^}]*\b(\w+)\b/gu;
 
 type AnyImportSpecifier =
 	| TSESTree.ImportDefaultSpecifier
@@ -49,7 +49,7 @@ function collectJSDocumentIdentifiers(sourceCode: TSESLint.SourceCode): Set<stri
 		JSDOC_IDENTIFIER_PATTERN.lastIndex = 0;
 		for (const match of value.matchAll(JSDOC_IDENTIFIER_PATTERN)) {
 			const identifier = match[1] ?? match[2] ?? match[3];
-			if (identifier) identifiers.add(identifier);
+			if (identifier !== undefined && identifier.length > 0) identifiers.add(identifier);
 		}
 	}
 
@@ -58,7 +58,7 @@ function collectJSDocumentIdentifiers(sourceCode: TSESLint.SourceCode): Set<stri
 
 const noUnusedImports = createRule<Options, MessageIds>({
 	create(context) {
-		// oxlint-disable-next-line small-rules/prevent-abbreviations
+		// oxlint-disable-next-line small-rules/prevent-abbreviations -- lol
 		const [{ checkJSDoc = true } = {}] = context.options;
 		const { sourceCode } = context;
 		const jsdocIdentifiers = checkJSDoc ? collectJSDocumentIdentifiers(sourceCode) : new Set<string>();
