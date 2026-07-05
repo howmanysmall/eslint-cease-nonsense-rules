@@ -1,5 +1,5 @@
-import { TSESTree } from "@typescript-eslint/types";
 import { createRule } from "$utilities/create-rule";
+import { TSESTree } from "@typescript-eslint/types";
 
 import type { TypeChecker, TypeNode } from "typescript";
 
@@ -64,6 +64,19 @@ function isDataTypeReference(node: TSESTree.TypeNode): boolean {
 	return false;
 }
 
+function onTypeLiteral(node: TSESTree.TSTypeLiteral): boolean {
+	for (const member of node.members) {
+		if (
+			member.type === TSESTree.AST_NODE_TYPES.TSPropertySignature &&
+			member.typeAnnotation?.typeAnnotation !== undefined &&
+			containsRawNumber(member.typeAnnotation.typeAnnotation)
+		) {
+			return true;
+		}
+	}
+	return false;
+}
+
 function containsRawNumber(node: TSESTree.TypeNode): boolean {
 	if (isRawNumberType(node)) return true;
 	if (isDataTypeReference(node)) return false;
@@ -72,20 +85,7 @@ function containsRawNumber(node: TSESTree.TypeNode): boolean {
 		return node.types.some(containsRawNumber);
 	}
 
-	if (node.type === TSESTree.AST_NODE_TYPES.TSTypeLiteral) {
-		for (const member of node.members) {
-			if (
-				member.type === TSESTree.AST_NODE_TYPES.TSPropertySignature &&
-				member.typeAnnotation !== undefined &&
-				member.typeAnnotation.typeAnnotation !== undefined &&
-				containsRawNumber(member.typeAnnotation.typeAnnotation)
-			) {
-				return true;
-			}
-		}
-		return false;
-	}
-
+	if (node.type === TSESTree.AST_NODE_TYPES.TSTypeLiteral) return onTypeLiteral(node);
 	if (node.type === TSESTree.AST_NODE_TYPES.TSArrayType) return containsRawNumber(node.elementType);
 	if (node.type === TSESTree.AST_NODE_TYPES.TSTupleType) return node.elementTypes.some(containsRawNumber);
 	if (node.type === TSESTree.AST_NODE_TYPES.TSIndexedAccessType) return containsRawNumber(node.objectType);
@@ -203,14 +203,13 @@ const requireSerializedNumericDataType = createRule<Options, MessageIds>({
 			},
 
 			MethodDefinition(node: TSESTree.MethodDefinition): void {
-				if (node.value.type === TSESTree.AST_NODE_TYPES.FunctionExpression) {
-					for (const parameter of node.value.params) {
-						if (parameter.type === TSESTree.AST_NODE_TYPES.Identifier) {
-							checkTypeAnnotation(parameter.typeAnnotation);
-						}
+				if (node.value.type !== TSESTree.AST_NODE_TYPES.FunctionExpression) return;
+				for (const parameter of node.value.params) {
+					if (parameter.type === TSESTree.AST_NODE_TYPES.Identifier) {
+						checkTypeAnnotation(parameter.typeAnnotation);
 					}
-					checkTypeAnnotation(node.value.returnType);
 				}
+				checkTypeAnnotation(node.value.returnType);
 			},
 
 			PropertyDefinition(node: TSESTree.PropertyDefinition): void {

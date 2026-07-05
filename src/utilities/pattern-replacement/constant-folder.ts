@@ -29,6 +29,42 @@ export function unwrap(node: TSESTree.Expression): TSESTree.Expression {
 	}
 }
 
+function onBinaryExpression(expression: TSESTree.BinaryExpression): number | undefined {
+	if (expression.left.type === AST_NODE_TYPES.PrivateIdentifier) return undefined;
+
+	const left = evaluateConstant(expression.left);
+	const right = evaluateConstant(expression.right);
+	if (left === undefined || right === undefined) return undefined;
+
+	let result: number;
+	switch (expression.operator) {
+		case "+": {
+			result = left + right;
+			break;
+		}
+
+		case "-": {
+			result = left - right;
+			break;
+		}
+
+		case "*": {
+			result = left * right;
+			break;
+		}
+
+		case "/": {
+			result = left / right;
+			break;
+		}
+
+		default:
+			return undefined;
+	}
+
+	return Number.isFinite(result) ? normalizeZero(result) : undefined;
+}
+
 /**
  * Evaluate a constant expression at lint time. Returns undefined if the expression cannot be evaluated to a constant.
  *
@@ -58,41 +94,6 @@ export function evaluateConstant(node: TSESTree.Expression): number | undefined 
 		}
 	}
 
-	if (expression.type === AST_NODE_TYPES.BinaryExpression) {
-		if (expression.left.type === AST_NODE_TYPES.PrivateIdentifier) return undefined;
-
-		const left = evaluateConstant(expression.left);
-		const right = evaluateConstant(expression.right);
-		if (left === undefined || right === undefined) return undefined;
-
-		let result: number;
-		switch (expression.operator) {
-			case "+": {
-				result = left + right;
-				break;
-			}
-
-			case "-": {
-				result = left - right;
-				break;
-			}
-
-			case "*": {
-				result = left * right;
-				break;
-			}
-
-			case "/": {
-				result = left / right;
-				break;
-			}
-
-			default:
-				return undefined;
-		}
-
-		return Number.isFinite(result) ? normalizeZero(result) : undefined;
-	}
-
+	if (expression.type === AST_NODE_TYPES.BinaryExpression) return onBinaryExpression(expression);
 	return undefined;
 }
