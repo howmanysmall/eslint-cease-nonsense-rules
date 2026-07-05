@@ -1,11 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
+import { generateReplacement, getReplacementIdentifier } from "$utilities/pattern-replacement/replacement-generator";
 import { parse } from "@typescript-eslint/parser";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import { generateReplacement, getReplacementIdentifier } from "$utilities/pattern-replacement/replacement-generator";
 
+import type { CapturedValue, ParsedReplacement } from "$utilities/pattern-replacement/pattern-types";
 import type { TSESTree } from "@typescript-eslint/types";
-
-import type { CapturedValue, ParsedReplacement } from "../../../src/utilities/pattern-replacement/pattern-types";
 
 function parseExpression(code: string): TSESTree.Expression {
 	const program = parse(`const value = ${code};`, { loc: false, range: false });

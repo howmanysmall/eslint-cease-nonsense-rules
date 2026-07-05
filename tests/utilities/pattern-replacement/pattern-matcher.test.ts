@@ -1,6 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import { parse } from "@typescript-eslint/parser";
-import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import {
 	buildPatternIndex,
 	canSafelySubstitute,
@@ -10,9 +8,11 @@ import {
 	resolveCallee,
 } from "$utilities/pattern-replacement/pattern-matcher";
 import { parsePattern } from "$utilities/pattern-replacement/pattern-parser";
+import { parse } from "@typescript-eslint/parser";
+import { AST_NODE_TYPES } from "@typescript-eslint/types";
 
-import type { TSESTree } from "@typescript-eslint/types";
 import type { CapturedValue, WhenCondition } from "$utilities/pattern-replacement/pattern-types";
+import type { TSESTree } from "@typescript-eslint/types";
 
 vi.setConfig({ testTimeout: 10000 });
 

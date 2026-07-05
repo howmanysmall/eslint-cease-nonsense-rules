@@ -95,8 +95,8 @@
 		"editor.formatOnSaveMode": "file",
 
 		"files.associations": {
-			".ox*rc.json": "jsonc",
-			"*.code-workspace": "jsonc"
+			"*.code-workspace": "jsonc",
+			".ox*rc.json": "jsonc"
 		},
 
 		"js/ts.experimental.useTsgo": true,

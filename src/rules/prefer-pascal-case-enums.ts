@@ -1,6 +1,6 @@
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { toPascalCase } from "$utilities/casing-utilities";
 import { createRule } from "$utilities/create-rule";
+import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { regex } from "arktype";
 
 import type { TSESTree } from "@typescript-eslint/utils";

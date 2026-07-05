@@ -1,6 +1,6 @@
 import { getReactSources, isReactImport } from "$constants/react-sources";
-import { TSESTree } from "@typescript-eslint/types";
 import { createRule } from "$utilities/create-rule";
+import { TSESTree } from "@typescript-eslint/types";
 
 import type { EnvironmentMode } from "$types/environment-mode";
 

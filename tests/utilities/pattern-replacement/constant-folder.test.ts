@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { evaluateConstant, normalizeZero } from "$utilities/pattern-replacement/constant-folder";
 import { parse } from "@typescript-eslint/parser";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import { evaluateConstant, normalizeZero } from "$utilities/pattern-replacement/constant-folder";
 
 import type { TSESTree } from "@typescript-eslint/types";
 

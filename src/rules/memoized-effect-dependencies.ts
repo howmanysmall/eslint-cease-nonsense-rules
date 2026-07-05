@@ -1,7 +1,7 @@
 import { getReactSources, isReactImport } from "$constants/react-sources";
+import { createRule } from "$utilities/create-rule";
 import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
 import { TSESTree } from "@typescript-eslint/types";
-import { createRule } from "$utilities/create-rule";
 
 import type { EnvironmentMode } from "$types/environment-mode";
 import type { TSESLint } from "@typescript-eslint/utils";

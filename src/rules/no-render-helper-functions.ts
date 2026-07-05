@@ -1,6 +1,6 @@
-import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import { isPascalCase } from "$utilities/casing-utilities";
 import { createRule } from "$utilities/create-rule";
+import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import { regex } from "arktype";
 
 import type { ReadonlyRecord } from "$types/utility-types";

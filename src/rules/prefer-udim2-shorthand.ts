@@ -1,5 +1,5 @@
-import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import { createRule } from "$utilities/create-rule";
+import { AST_NODE_TYPES } from "@typescript-eslint/types";
 
 interface ArgumentsCollection {
 	readonly offsetXText: string;

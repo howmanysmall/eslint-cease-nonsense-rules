@@ -1,5 +1,5 @@
-import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { createRule } from "$utilities/create-rule";
+import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { isArrayBindingOrAssignmentPattern, isTypeReference } from "ts-api-utils";
 import {
 	isCallExpression,

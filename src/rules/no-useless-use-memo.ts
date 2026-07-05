@@ -1,8 +1,8 @@
 import { getReactSources, isReactImport } from "$constants/react-sources";
 import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "$rules/no-useless-use-spring";
+import { createRule } from "$utilities/create-rule";
 import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "$utilities/create-rule";
 
 import type { EnvironmentMode } from "$types/environment-mode";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";

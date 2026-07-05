@@ -55,6 +55,7 @@
 		"test:dot": "node --run test -- --reporter dot",
 		"test:watch": "vitest --watch",
 		"type-check": "node --run typescript -- --noEmit",
+		"type-check:agent": "node --run typescript -- --noEmit --pretty false",
 		"typescript": "tsgo"
 	},
 	"dependencies": {
