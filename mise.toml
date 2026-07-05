@@ -1,7 +1,6 @@
 min_version = "2026.6.14"
 
 [tools]
-aube = "latest"
 "github:howmanysmall/pullhook" = "latest"
 bun = "latest"
 hk = "latest"
@@ -9,6 +8,9 @@ node = "25"
 rumdl = "latest"
 tombi = "latest"
 pkl = "latest"
+nub = "latest"
+pnpm = "11.9.0"
+ni = "latest"
 
 [env]
 PROJECT_NAME = "{{ config_root | basename }}"
