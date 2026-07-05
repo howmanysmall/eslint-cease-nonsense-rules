@@ -57,7 +57,8 @@ function expandDirectory(directory: string): string {
 }
 
 function createPackageFileName(name: string, version: string): string {
-	return `${sanitizeForPath(`${name}-${version}`)}-${Date.now()}.tgz`;
+	const correctedPath = sanitizeForPath(`${name}-${version}`);
+	return `${correctedPath}-${Date.now()}.tgz`;
 }
 
 const isValidJson = type({
@@ -177,12 +178,12 @@ const testLiveCommand = new Command()
 			useLink,
 		});
 
-		await runCommandAsync("aube", ["run", "build"]);
+		await runCommandAsync("nr", ["build"]);
 
 		const nodePackages = resolve(directory, "patches", "node");
 		await mkdir(nodePackages, { recursive: true });
 
-		if (useLink) await runCommandAsync("aube", ["link"]);
+		if (useLink) await runCommandAsync("pnpm", ["link", resolve(".")], { cwd: directory });
 
 		if (!useLink) {
 			const output = await getCommandTextAsync("npm", [
@@ -195,7 +196,7 @@ const testLiveCommand = new Command()
 			const packMetadata = parsePackOutput(output);
 			const [packData] = packMetadata;
 			const packedFile = packData?.filename;
-			if (!packedFile) {
+			if (packedFile === undefined || packedFile.length === 0) {
 				log.fail("Failed to produce plugin package for live test.");
 				exit(1);
 			}
@@ -206,28 +207,29 @@ const testLiveCommand = new Command()
 			const customEnvironment: NodeJS.ProcessEnv = { ...env, TIMING: "2000" };
 			if (ci) customEnvironment.CI = "true";
 
-			await runCommandAsync("aube", ["install", "--no-frozen-lockfile"], {
+			await runCommandAsync("ni", ["--no-frozen-lockfile"], {
 				cwd: directory,
 				env: customEnvironment,
 			});
 			log.success(picocolors.green("Dependencies installed successfully."));
 
 			const duration = await profileAsync(async () => {
-				// oxlint-disable-next-line unicorn/prefer-ternary
+				// oxlint-disable-next-line unicorn/prefer-ternary -- yurr
 				if (cache) {
-					await runCommandAsync("aube", ["run", "eslint", "--cache", "./src"], {
+					await runCommandAsync("nr", ["eslint", "--cache", "./src"], {
 						cwd: directory,
 						env: customEnvironment,
 					});
 				} else {
-					await runCommandAsync("aube", ["run", "eslint", "./src"], {
+					await runCommandAsync("nr", ["eslint", "./src"], {
 						cwd: directory,
 						env: customEnvironment,
 					});
 				}
 			});
 
-			log.success(picocolors.green(`ESLint took ${picocolors.bold(prettyMilliseconds(duration))}.`));
+			const length = picocolors.bold(prettyMilliseconds(duration));
+			log.success(picocolors.green(`ESLint took ${length}.`));
 		} catch (error) {
 			log.error(picocolors.red(`Error running lint: ${error instanceof Error ? error.message : String(error)}`));
 		} finally {

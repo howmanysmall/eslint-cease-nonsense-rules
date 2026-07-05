@@ -23,8 +23,7 @@ interface WorkerData {
 // oxlint-disable-next-line consistent-type-imports
 type FormatFunction = typeof import("oxfmt").format;
 
-const OXFMT_NOT_INSTALLED_ERROR =
-	"oxfmt is not installed. Install it with: aube add -D oxfmt (or npm install -D oxfmt)";
+const OXFMT_NOT_INSTALLED_ERROR = "oxfmt is not installed. Install it with: ni -D oxfmt (or npm install -D oxfmt)";
 
 let oxfmtFormat: FormatFunction | undefined;
 let loadError: string | undefined;

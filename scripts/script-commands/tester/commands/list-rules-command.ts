@@ -33,7 +33,7 @@ const getRulesCommand = new Command()
 
 		log.verbose("Loading ESLint configuration...");
 
-		const text = await getCommandTextAsync("aube", ["x", "eslint", "--print-config", configurationPath], {
+		const text = await getCommandTextAsync("nlx", ["eslint", "--print-config", configurationPath], {
 			cwd: directory,
 		});
 

@@ -30,8 +30,11 @@ function getFormatter(format: OutputFormat): (entries: ReadonlyArray<RuleEntry>)
 			return formatRulesAsMinimal;
 		case OutputFormat.Table:
 			return formatRulesAsTable;
-		default:
-			throw new Error(`Unsupported output format: ${String(format)}`);
+		default: {
+			const error = new Error(`Unsupported output format: ${String(format)}`);
+			Error.captureStackTrace(error, getFormatter);
+			throw error;
+		}
 	}
 }
 
@@ -60,7 +63,7 @@ const getRulesCommand = new Command()
 
 		log.verbose("Loading ESLint configuration...");
 
-		const text = await getCommandTextAsync("aube", ["x", "eslint", "--print-config", configurationPath], {
+		const text = await getCommandTextAsync("nlx", ["eslint", "--print-config", configurationPath], {
 			cwd: directory,
 		});
 

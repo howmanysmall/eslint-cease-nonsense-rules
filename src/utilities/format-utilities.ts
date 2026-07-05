@@ -150,10 +150,10 @@ export function generateDifferences(original: string, formatted: string): Readon
 
 const MAX_LENGTH = 60;
 const SYMBOLS: Record<string, string> = {
-	"\t": "\u{2192}",
+	" ": "\u{00B7}",
 	"\n": "\u{240A}",
 	"\r": "\u{240D}",
-	" ": "\u{00B7}",
+	"\t": "\u{2192}",
 };
 
 const WHITESPACE_REGEXP = regex("[\r\n\t ]", "gu");

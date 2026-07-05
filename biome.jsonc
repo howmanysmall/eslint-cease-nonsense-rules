@@ -20,14 +20,12 @@
 		"enabled": true,
 		"includes": [
 			"**/*.{json,jsonc,grit,ts,tsx,js,jsx,code-workspace}",
-			"!plugins/oxc/**/*.js",
 			"!**/dist/**",
 			"!**/do-not-sync-ever/**",
 			"!**/garbage/**",
 			"!**/include/**",
 			"!**/node_modules/**",
-			"!**/aube-lock.yaml",
-			"!**/skills-lock.json",
+			"!**/*-lock.{yaml,yml,json}",
 			"!**/package.json"
 		]
 	},
@@ -47,7 +45,7 @@
 	},
 
 	"files": {
-		"includes": ["**", "!**/aube-lock.yaml", "!**/package.json"]
+		"includes": ["**", "!**/*-lock.{yaml,yml,json}", "!**/package.json"]
 	},
 
 	"formatter": {
@@ -59,14 +57,12 @@
 		"formatWithErrors": true,
 		"includes": [
 			"**/*.{json,jsonc,grit,ts,tsx,js,jsx,code-workspace}",
-			"!**/plugins/oxc/**/*.js",
 			"!**/dist/**",
 			"!**/do-not-sync-ever/**",
 			"!**/garbage/**",
 			"!**/include/**",
 			"!**/node_modules/**",
-			"!aube-lock.yaml",
-			"!skills-lock.json"
+			"!**/*-lock.{yaml,yml,json}"
 		],
 		"indentStyle": "tab",
 		"indentWidth": 4,

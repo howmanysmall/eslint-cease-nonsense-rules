@@ -13,7 +13,7 @@
 		"**/*.json",
 		".context/**",
 		"!package.json",
-		"aube-lock.yaml",
+		"**/*-lock.{yaml,yml,json}",
 	],
 	"insertFinalNewline": true,
 	"jsdoc": true,
