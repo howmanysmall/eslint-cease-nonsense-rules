@@ -9,3 +9,12 @@ type = "command"
 command = 'bun run --bun "$(git rev-parse --show-toplevel)/.codex/hooks/pre-tool-use.ts"'
 timeout = 10
 statusMessage = "Checking protected config files"
+
+[[hooks.PostToolUse]]
+matcher = "^apply_patch$|^Edit$|^Write$"
+
+[[hooks.PostToolUse.hooks]]
+type = "command"
+command = 'bun run --bun "$(git rev-parse --show-toplevel)/.codex/hooks/post-tool-use.ts"'
+timeout = 30
+statusMessage = "Checking lint for edited files"
