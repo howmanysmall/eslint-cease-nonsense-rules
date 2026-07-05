@@ -13,10 +13,10 @@ function run-check() {
 	echo "✅ ${name} passed"
 }
 
-run-check "Format (auto-fix)" "bun run format"
-run-check "Lint" "bun run lint"
-run-check "Type check" "bun run type-check"
-# run-check "Tests" "AGENT=1 bun run test"
+run-check "Format (auto-fix)" "nr format"
+run-check "Lint" "nr lint:agent"
+run-check "Type check" "nr type-check"
+# run-check "Tests" "AGENT=1 nr test"
 
 echo "🎉 All quality checks passed - codebase is clean!"
 exit 0
