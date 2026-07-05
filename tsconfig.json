@@ -1,8 +1,6 @@
 {
-	"compilerOptions": {
-		"pretty": true,
-	},
+	"compilerOptions": { "rootDir": "." },
 	"extends": "./tsconfig.base.json",
-	"include": ["src/**/*.ts"],
+	"include": ["src/**/*.ts", "*.config.ts"],
 	"mdx": { "checkMdx": true, "plugins": [] },
 }
