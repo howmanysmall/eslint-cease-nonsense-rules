@@ -35,7 +35,9 @@ export function __testingResolveWorkerPath(baseUrl: string | URL, exists: (path:
 	const tsFilePath = fileURLToPath(tsPath);
 	if (exists(tsFilePath)) return tsPath;
 
-	throw new Error(`Oxfmt worker not found at ${jsFilePath} or ${tsFilePath}. Did you run 'aube run build'?`);
+	const error = new Error(`Oxfmt worker not found at ${jsFilePath} or ${tsFilePath}. Did you run 'nr build'?`);
+	Error.captureStackTrace(error, __testingResolveWorkerPath);
+	throw error;
 }
 
 function resolveWorkerPath(): URL {
@@ -76,24 +78,46 @@ export function formatSync(fileName: string, sourceText: string, options: Format
 		sourceText,
 	};
 
+	// oxlint-disable-next-line unicorn/require-post-message-target-origin -- ???
 	responsePort.postMessage(request);
 
 	const waitResult = Atomics.wait(control, 0, 0, FORMAT_TIMEOUT);
-	if (waitResult === "timed-out") throw new Error(`Oxfmt timed out after ${FORMAT_TIMEOUT}ms`);
+	if (waitResult === "timed-out") {
+		const error = new Error(`Oxfmt timed out after ${FORMAT_TIMEOUT}ms`);
+		Error.captureStackTrace(error, formatSync);
+		throw error;
+	}
 
 	const received = receiveMessageOnPort(responsePort);
-	if (received === undefined) throw new Error("No response received from oxfmt worker");
+	if (received === undefined) {
+		const error = new Error("No response received from oxfmt worker");
+		Error.captureStackTrace(error, formatSync);
+		throw error;
+	}
 
 	const response: unknown = received.message;
-	if (!isFormatResponse(response)) throw new Error("Invalid response received from oxfmt worker");
-	if (response.error !== undefined) throw new Error(response.error);
-	if (response.code === undefined) throw new Error("Oxfmt returned undefined code");
+	if (!isFormatResponse(response)) {
+		const error = new Error("Invalid response received from oxfmt worker");
+		Error.captureStackTrace(error, formatSync);
+		throw error;
+	}
+	if (response.error !== undefined) {
+		const error = new Error(response.error);
+		Error.captureStackTrace(error, formatSync);
+		throw error;
+	}
+	if (response.code === undefined) {
+		const error = new Error("Oxfmt returned undefined code");
+		Error.captureStackTrace(error, formatSync);
+		throw error;
+	}
 
 	return response.code;
 }
 
 export function terminateWorker(): void {
 	if (workerState === undefined) return;
+	// oxlint-disable-next-line sonar/void-use -- allowed.
 	void workerState.worker.terminate();
 	workerState = undefined;
 }

@@ -1,3 +1,4 @@
+// oxlint-disable vitest/no-conditional-in-test -- some bullshit
 import { describe, expect, it } from "vitest";
 import rule from "@rules/enforce-ianitor-check-type";
 import parser from "@typescript-eslint/parser";
@@ -347,16 +348,13 @@ export type SpinOptions = Readonly<Ianitor.Static<typeof isSpinOptions>>;
 	it("reports complex types without Ianitor checks", () => {
 		expect.assertions(1);
 		const originalLog2Local = Math.log2;
-		// oxlint-disable-next-line vitest/no-conditional-in-test
 		Math.log2 = (value: number): number => (value === 1 ? 1 : originalLog2Local(value));
 		try {
 			const reports: Array<{ messageId: string }> = [];
 			const fakeContext = {
 				options: [{ baseThreshold: 1, interfacePenalty: 1 }],
 				report(descriptor: Rule.ReportDescriptor): void {
-					// oxlint-disable-next-line vitest/no-conditional-in-test
 					if (typeof descriptor === "string") return;
-					// oxlint-disable-next-line vitest/no-conditional-in-test
 					if ("messageId" in descriptor && typeof descriptor.messageId === "string") {
 						reports.push({ messageId: descriptor.messageId });
 					}
@@ -386,14 +384,12 @@ interface ComplexService extends Base {
 				(statement): statement is TSESTree.TSTypeAliasDeclaration =>
 					statement.type === AST_NODE_TYPES.TSTypeAliasDeclaration,
 			);
-			// oxlint-disable-next-line vitest/no-conditional-in-test
 			if (!aliasNode) throw new Error("Expected type alias node");
 
 			const interfaceNode = parsed.body.find(
 				(statement): statement is TSESTree.TSInterfaceDeclaration =>
 					statement.type === AST_NODE_TYPES.TSInterfaceDeclaration,
 			);
-			// oxlint-disable-next-line vitest/no-conditional-in-test
 			if (!interfaceNode) throw new Error("Expected interface node");
 
 			// The rule expects a full ESLint context; for this focused assertion, provide the minimal shape.

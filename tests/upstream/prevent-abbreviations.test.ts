@@ -16,9 +16,10 @@ import { shardCases } from "../utilities/shard-cases";
  */
 type Variant = "default" | "babel" | "typescript" | "vue";
 
-const ESLINT_MAJOR = Number.parseInt(new Linter().version.split(".")[0] ?? "0", 10);
 const SKIP_VARIANTS: ReadonlySet<Variant> =
-	ESLINT_MAJOR >= 10 ? new Set<Variant>(["babel", "vue"]) : new Set<Variant>();
+	Math.trunc(Number(new Linter().version.split(".")[0] ?? "0")) >= 10
+		? new Set<Variant>(["babel", "vue"])
+		: new Set<Variant>();
 
 interface LanguageOptions {
 	readonly globals?: Record<string, "readonly" | "writable" | "off">;
@@ -97,6 +98,7 @@ function normalizeInvalidCase(testCase: UpstreamInvalidCase): UpstreamInvalidCas
 	const output = typeof testCase.output === "string" ? stripParserMarkers(testCase.output) : undefined;
 
 	if (typeof output === "string" && output === code) {
+		// oxlint-disable-next-line sonar/no-unused-vars -- lol.
 		const { output: _output, ...rest } = testCase;
 		return { ...rest, code };
 	}

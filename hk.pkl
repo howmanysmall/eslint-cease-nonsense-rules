@@ -2,18 +2,19 @@ amends "package://github.com/jdx/hk/releases/download/v1.45.0/hk@1.45.0#/Config.
 
 local sourceGlobs = List("*.js", "*.jsx", "*.ts", "*.tsx")
 local dataGlobs = List("*.css", "*.html", "*.json", "*.jsonc", "*.grit", "*.code-workspace")
+
 hooks {
   ["commit-msg"] {
     steps {
       ["commitlint"] {
-        check = "aube run commitlint --edit {{ hook_args }}"
+        check = "node --run commitlint -- --edit {{ hook_args }}"
       }
     }
   }
   ["post-merge"] {
     steps {
       ["install"] {
-        check = "aube install"
+        check = "ni"
       }
     }
   }
@@ -24,16 +25,16 @@ hooks {
     steps {
       ["biome-data"] {
         glob = dataGlobs
-        fix = "aube run biome:check --write --no-errors-on-unmatched {{ files }}"
+        fix = "node --run biome -- check --write --no-errors-on-unmatched {{ files }}"
       }
       ["js-ts-fix"] {
         glob = sourceGlobs
         fix =
-          "aube run oxc --fix {{ files }} && aube run biome:check --write --no-errors-on-unmatched {{ files }} && aube run format {{ files }}"
+          "node --run oxc -- --fix {{ files }} && node --run biome -- check --write --no-errors-on-unmatched {{ files }} && node --run format -- {{ files }}"
       }
       ["format-json5-mdx"] {
         glob = List("*.json5", "*.mdx")
-        fix = "aube run format {{ files }}"
+        fix = "node --run format -- {{ files }}"
       }
       ["md-fix"] {
         glob = List("*.md")
@@ -48,22 +49,22 @@ hooks {
   ["pre-push"] {
     steps {
       ["biome-ci"] {
-        check = "aube run biome:ci"
+        check = "node --run biome -- ci"
       }
       ["oxc"] {
-        check = "aube run oxc ."
+        check = "node --run oxc"
       }
       ["type-check"] {
-        check = "aube run type-check"
+        check = "node --run type-check"
       }
       ["knip"] {
-        check = "aube run knip"
+        check = "node --run knip"
       }
       ["build"] {
-        check = "aube run build"
+        check = "node --run build"
       }
       ["test-documentation"] {
-        check = "AGENT=1 aube run test tests/documentation/rule-stats.test.ts"
+        check = "AGENT=1 node --run test -- tests/documentation/rule-stats.test.ts"
       }
     }
   }

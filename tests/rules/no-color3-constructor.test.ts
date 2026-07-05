@@ -16,7 +16,6 @@ describe("no-color3-constructor", () => {
 			{
 				code: "new Color3(value);",
 				errors: [{ messageId: "useFromRGB" }],
-				// oxlint-disable-next-line no-null -- test fails otherwise
 				output: null,
 			},
 			{
@@ -72,7 +71,6 @@ describe("no-color3-constructor", () => {
 			{
 				code: "new Color3(255, green, 64);",
 				errors: [{ messageId: "onlyZeroArgs" }],
-				// oxlint-disable-next-line no-null -- test fails otherwise
 				output: null,
 			},
 		],

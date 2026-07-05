@@ -31,6 +31,7 @@ patchedDependencies:
   astro@6.1.1: patches/astro@6.1.1.patch
   astro-vtbot@2.1.12: patches/astro-vtbot@2.1.12.patch
   package-manager-detector@1.6.0: patches/package-manager-detector@1.6.0.patch
+  '@vitest/expect@4.1.9': patches/@vitest__expect@4.1.9.patch
 
 enableGlobalVirtualStore: true
 

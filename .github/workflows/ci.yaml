@@ -8,7 +8,8 @@ on:
       - "src/**/*.ts"
       - "tests/**/*.ts"
       - "package.json"
-      - "aube-lock.yaml"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - "knip.ts"
       - "tsconfig*.json"
       - ".oxlintrc.json"
@@ -18,7 +19,8 @@ on:
       - "src/**/*.ts"
       - "tests/**/*.ts"
       - "package.json"
-      - "aube-lock.yaml"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - "knip.ts"
       - "tsconfig*.json"
       - ".oxlintrc.json"
@@ -38,20 +40,22 @@ jobs:
       - name: Setup Mise
         uses: jdx/mise-action@v2
 
-      - name: Cache Aube store
+      - name: Get pnpm store directory
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.local/share/aube/store
-            ~/.cache/aube
-          key: ${{ runner.os }}-aube-v3-${{ hashFiles('aube-lock.yaml') }}
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-v1-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-aube-v3-
+            ${{ runner.os }}-pnpm-v1-
 
       - name: Install
         run: |
           for attempt in 1 2 3; do
-            if aube ci --enable-global-virtual-store --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
+            if pnpm install --frozen-lockfile; then
               exit 0
             fi
             if [ "$attempt" = "3" ]; then
@@ -61,19 +65,19 @@ jobs:
           done
 
       - name: Biome CI
-        run: aube run biome:ci
+        run: pnpm run biome:ci
 
       - name: Lint
-        run: aube run oxc .
+        run: pnpm run oxc .
 
       - name: Type Checking
-        run: aube run type-check
+        run: pnpm run type-check
 
       - name: Knip
-        run: aube run knip
+        run: pnpm run knip
 
       - name: Build
-        run: aube run build
+        run: pnpm run build
 
   test:
     runs-on: ubuntu-latest
@@ -89,20 +93,22 @@ jobs:
       - name: Setup Mise
         uses: jdx/mise-action@v2
 
-      - name: Cache Aube store
+      - name: Get pnpm store directory
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.local/share/aube/store
-            ~/.cache/aube
-          key: ${{ runner.os }}-aube-v3-${{ hashFiles('aube-lock.yaml') }}
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-v1-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-aube-v3-
+            ${{ runner.os }}-pnpm-v1-
 
       - name: Install
         run: |
           for attempt in 1 2 3; do
-            if aube ci --enable-global-virtual-store --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
+            if pnpm install --frozen-lockfile; then
               exit 0
             fi
             if [ "$attempt" = "3" ]; then
@@ -125,7 +131,7 @@ jobs:
         env:
           AGENT: 1
         run: |
-          aube run test:agent ${{ steps.shard.outputs.files }}
+          pnpm run test:agent ${{ steps.shard.outputs.files }}
 
   test-heavy:
     runs-on: ubuntu-latest
@@ -143,20 +149,22 @@ jobs:
       - name: Setup Mise
         uses: jdx/mise-action@v2
 
-      - name: Cache Aube store
+      - name: Get pnpm store directory
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.local/share/aube/store
-            ~/.cache/aube
-          key: ${{ runner.os }}-aube-v3-${{ hashFiles('aube-lock.yaml') }}
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-v1-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-aube-v3-
+            ${{ runner.os }}-pnpm-v1-
 
       - name: Install
         run: |
           for attempt in 1 2 3; do
-            if aube ci --enable-global-virtual-store --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
+            if pnpm install --frozen-lockfile; then
               exit 0
             fi
             if [ "$attempt" = "3" ]; then
@@ -171,4 +179,4 @@ jobs:
           TEST_CASE_SHARD: ${{ matrix.case_shard }}/${{ env.HEAVY_TEST_SHARDS }}
         run: |
           echo "Running ${{ matrix.file }} with case shard ${{ matrix.case_shard }}/${{ env.HEAVY_TEST_SHARDS }}"
-          aube run test:agent ${{ matrix.file }}
+          pnpm run test:agent ${{ matrix.file }}

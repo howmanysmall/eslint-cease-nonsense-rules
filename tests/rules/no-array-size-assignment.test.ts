@@ -59,35 +59,30 @@ describe("no-array-size-assignment", () => {
 				code: "array[array.size()] = value;",
 				errors: [{ messageId: "usePush" }],
 				options: [{ allowAutofix: false }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{
 				code: "const x = (array[array.size()] = value);",
 				errors: [{ messageId: "usePush" }],
 				options: [{ allowAutofix: true }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{
 				code: "getArray()[getArray().size()] = value;",
 				errors: [{ messageId: "usePush" }],
 				options: [{ allowAutofix: true }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{
 				code: "registry[getKey().value][registry[getKey().value].size()] = item;",
 				errors: [{ messageId: "usePush" }],
 				options: [{ allowAutofix: true }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{
 				code: "class Base { items = []; } class Child extends Base { add(item) { super.items[super.items.size()] = item; } }",
 				errors: [{ messageId: "usePush" }],
 				options: [{ allowAutofix: true }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 		],

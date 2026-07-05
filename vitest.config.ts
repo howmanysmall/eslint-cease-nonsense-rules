@@ -33,7 +33,6 @@ const typeAwareTestGlobs = [
 
 const configuration = defineConfig({
 	plugins: [tsconfig],
-	// oxlint-disable-next-line unicorn/no-null
 	server: { watch: null },
 	test: {
 		bail: 1,

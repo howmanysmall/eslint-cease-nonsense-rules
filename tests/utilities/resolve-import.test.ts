@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { resolveRelativeImport } from "@utilities/resolve-import";
 
-const FIXTURES_DIR = join(__dirname, "..", "fixtures");
+const FIXTURES_DIR = join(import.meta.dirname, "..", "fixtures");
 
 vi.setConfig({ testTimeout: 10000 });
 

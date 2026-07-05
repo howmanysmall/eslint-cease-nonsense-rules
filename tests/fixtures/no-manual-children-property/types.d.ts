@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 declare module "react" {
 	export type ReactNode = string | number | boolean | null | undefined | ReactElement;
 
@@ -16,9 +18,9 @@ declare module "react" {
 	};
 }
 
-type UDim2 = {
+interface UDim2 {
 	readonly scale: number;
-};
+}
 
 declare namespace JSX {
 	interface Element {
@@ -27,7 +29,7 @@ declare namespace JSX {
 
 	interface IntrinsicElements {
 		div: {
-			readonly children?: import("react").ReactNode;
+			readonly children?: ReactNode;
 		};
 	}
 }

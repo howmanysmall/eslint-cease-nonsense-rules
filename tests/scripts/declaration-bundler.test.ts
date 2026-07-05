@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
 	__testing,
@@ -17,8 +17,6 @@ interface FixtureContext {
 	readonly supportDirectory: string;
 }
 
-const fixtureDirectories = new Array<string>();
-
 async function writeFixtureFileAsync(rootDirectory: string, relativePath: string, content: string): Promise<void> {
 	const filePath = join(rootDirectory, relativePath);
 	await mkdir(dirname(filePath), { recursive: true });
@@ -33,8 +31,6 @@ async function createFixtureContextAsync(
 	const bundleDirectory = join(rootDirectory, "bundle");
 	const supportDirectory = join(rootDirectory, "support");
 
-	fixtureDirectories.push(rootDirectory);
-
 	await Promise.all(
 		Object.entries(bundleFiles).map(async ([relativePath, content]): Promise<void> => {
 			await writeFixtureFileAsync(bundleDirectory, relativePath, content);
@@ -48,6 +44,20 @@ async function createFixtureContextAsync(
 	);
 
 	return { bundleDirectory, rootDirectory, supportDirectory };
+}
+
+async function withFixtureContextAsync<Result>(
+	bundleFiles: Readonly<Record<string, string>>,
+	runAsync: (context: FixtureContext) => Promise<Result> | Result,
+	supportFiles: Readonly<Record<string, string>> = {},
+): Promise<Result> {
+	const context = await createFixtureContextAsync(bundleFiles, supportFiles);
+
+	try {
+		return await runAsync(context);
+	} finally {
+		await rm(context.rootDirectory, { force: true, recursive: true });
+	}
 }
 
 function createBundledOutput(context: FixtureContext, entryFileName: string): string {
@@ -80,37 +90,32 @@ function createBundledOutputWithCompilerOptions(
 vi.setConfig({ testTimeout: 10000 });
 
 describe("declaration-bundler", () => {
-	afterEach(async () => {
-		await Promise.all(
-			fixtureDirectories.splice(0).map(async (directory): Promise<void> => {
-				await rm(directory, { force: true, recursive: true });
-			}),
-		);
-	});
-
 	it("bundles aliased type exports without leaking relative re-exports", async () => {
 		expect.assertions(5);
-		const context = await createFixtureContextAsync({
-			"alpha.d.ts": "export interface Options {\n\treadonly alpha: string;\n}\n",
-			"beta.d.ts": "export interface Options {\n\treadonly beta: number;\n}\n",
-			"index.d.ts": [
-				'export type { Options as AlphaOptions } from "./alpha";',
-				'export type { Options as BetaOptions } from "./beta";',
-			].join("\n"),
-		});
+		await withFixtureContextAsync(
+			{
+				"alpha.d.ts": "export interface Options {\n\treadonly alpha: string;\n}\n",
+				"beta.d.ts": "export interface Options {\n\treadonly beta: number;\n}\n",
+				"index.d.ts": [
+					'export type { Options as AlphaOptions } from "./alpha";',
+					'export type { Options as BetaOptions } from "./beta";',
+				].join("\n"),
+			},
+			(context) => {
+				const output = createBundledOutput(context, "index.d.ts");
 
-		const output = createBundledOutput(context, "index.d.ts");
-
-		expect(output).toContain("interface AlphaOptions");
-		expect(output).toContain("interface BetaOptions");
-		expect(output).toContain("export type { AlphaOptions, BetaOptions };");
-		expect(output).not.toContain("./alpha");
-		expect(output).not.toContain("./beta");
+				expect(output).toContain("interface AlphaOptions");
+				expect(output).toContain("interface BetaOptions");
+				expect(output).toContain("export type { AlphaOptions, BetaOptions };");
+				expect(output).not.toContain("./alpha");
+				expect(output).not.toContain("./beta");
+			},
+		);
 	});
 
 	it("keeps external imports and inlines only the local declaration graph", async () => {
 		expect.assertions(7);
-		const context = await createFixtureContextAsync(
+		await withFixtureContextAsync(
 			{
 				"helper.d.ts": "export interface Helper {\n\treadonly value: string;\n}\n",
 				"index.d.ts": 'export type { PublicThing } from "./module";\n',
@@ -123,81 +128,91 @@ describe("declaration-bundler", () => {
 					"}",
 				].join("\n"),
 			},
+			(context) => {
+				const output = createBundledOutput(context, "index.d.ts");
+
+				expect(output).toContain('import type { External } from "pkg";');
+				expect(output).toContain("interface Helper");
+				expect(output).toContain("interface PublicThing");
+				expect(output).toContain("export type { PublicThing };");
+				expect(output).not.toContain("./helper");
+				expect(output).not.toContain("./module");
+				expect(output).not.toContain("export type { Helper }");
+			},
 			{
 				"node_modules/pkg/index.d.ts": "export interface External {\n\treadonly tag: string;\n}\n",
 			},
 		);
-
-		const output = createBundledOutput(context, "index.d.ts");
-
-		expect(output).toContain('import type { External } from "pkg";');
-		expect(output).toContain("interface Helper");
-		expect(output).toContain("interface PublicThing");
-		expect(output).toContain("export type { PublicThing };");
-		expect(output).not.toContain("./helper");
-		expect(output).not.toContain("./module");
-		expect(output).not.toContain("export type { Helper }");
 	});
 
 	it("inlines local path-mapped imports instead of preserving package-style aliases", async () => {
 		expect.assertions(5);
-		const context = await createFixtureContextAsync({
-			"index.d.ts":
-				'import type { EnvironmentMode } from "@lint-types/environment-mode";\nexport interface Config {\n\treadonly environment: EnvironmentMode;\n}\n',
-			"types/environment-mode.d.ts": 'export type EnvironmentMode = "roblox-ts" | "standard";\n',
-		});
-
-		const output = createBundledOutputWithCompilerOptions(context, "index.d.ts", {
-			baseUrl: context.bundleDirectory,
-			paths: {
-				"@lint-types/*": ["types/*"],
+		await withFixtureContextAsync(
+			{
+				"index.d.ts":
+					'import type { EnvironmentMode } from "@lint-types/environment-mode";\nexport interface Config {\n\treadonly environment: EnvironmentMode;\n}\n',
+				"types/environment-mode.d.ts": 'export type EnvironmentMode = "roblox-ts" | "standard";\n',
 			},
-		});
+			(context) => {
+				const output = createBundledOutputWithCompilerOptions(context, "index.d.ts", {
+					baseUrl: context.bundleDirectory,
+					paths: {
+						"@lint-types/*": ["types/*"],
+					},
+				});
 
-		expect(output).toContain('type EnvironmentMode = "roblox-ts" | "standard";');
-		expect(output).toContain("interface Config");
-		expect(output).toContain("export type { Config };");
-		expect(output).not.toContain('from "@lint-types/environment-mode"');
-		expect(output).not.toContain("import type { EnvironmentMode }");
+				expect(output).toContain('type EnvironmentMode = "roblox-ts" | "standard";');
+				expect(output).toContain("interface Config");
+				expect(output).toContain("export type { Config };");
+				expect(output).not.toContain('from "@lint-types/environment-mode"');
+				expect(output).not.toContain("import type { EnvironmentMode }");
+			},
+		);
 	});
 
 	it("includes copied source declaration files when emitted output references .d modules", async () => {
 		expect.assertions(4);
-		const context = await createFixtureContextAsync({
-			"index.d.ts": [
-				'import type { ReadonlyRecord } from "./types/utility-types.d";',
-				"export declare const rules: ReadonlyRecord<string, number>;",
-			].join("\n"),
-			"types/utility-types.d.ts":
-				"export type ReadonlyRecord<Key extends number | string | symbol, Value> = Readonly<Record<Key, Value>>;\n",
-		});
+		await withFixtureContextAsync(
+			{
+				"index.d.ts": [
+					'import type { ReadonlyRecord } from "./types/utility-types.d";',
+					"export declare const rules: ReadonlyRecord<string, number>;",
+				].join("\n"),
+				"types/utility-types.d.ts":
+					"export type ReadonlyRecord<Key extends number | string | symbol, Value> = Readonly<Record<Key, Value>>;\n",
+			},
+			(context) => {
+				const output = createBundledOutput(context, "index.d.ts");
 
-		const output = createBundledOutput(context, "index.d.ts");
-
-		expect(output).toContain("type ReadonlyRecord");
-		expect(output).toContain("declare const rules");
-		expect(output).toContain("export { rules };");
-		expect(output).not.toContain("utility-types.d");
+				expect(output).toContain("type ReadonlyRecord");
+				expect(output).toContain("declare const rules");
+				expect(output).toContain("export { rules };");
+				expect(output).not.toContain("utility-types.d");
+			},
+		);
 	});
 
 	it("handles local declaration cycles without duplicating statements", async () => {
 		expect.assertions(3);
-		const context = await createFixtureContextAsync({
-			"a.d.ts": ['import type { B } from "./b";', "export interface A {", "\treadonly b: B;", "}"].join("\n"),
-			"b.d.ts": ['import type { A } from "./a";', "export interface B {", "\treadonly a: A;", "}"].join("\n"),
-			"index.d.ts": 'export type { A } from "./a";\n',
-		});
+		await withFixtureContextAsync(
+			{
+				"a.d.ts": ['import type { B } from "./b";', "export interface A {", "\treadonly b: B;", "}"].join("\n"),
+				"b.d.ts": ['import type { A } from "./a";', "export interface B {", "\treadonly a: A;", "}"].join("\n"),
+				"index.d.ts": 'export type { A } from "./a";\n',
+			},
+			(context) => {
+				const output = createBundledOutput(context, "index.d.ts");
 
-		const output = createBundledOutput(context, "index.d.ts");
-
-		expect(output.match(/interface A/gu)?.length).toBe(1);
-		expect(output.match(/interface B/gu)?.length).toBe(1);
-		expect(output).toContain("export type { A };");
+				expect(output.match(/interface A/gu)?.length).toBe(1);
+				expect(output.match(/interface B/gu)?.length).toBe(1);
+				expect(output).toContain("export type { A };");
+			},
+		);
 	});
 
 	it("supports direct exports, local export specifiers, default exports, and runtime-friendly external imports", async () => {
 		expect.assertions(10);
-		const context = await createFixtureContextAsync(
+		await withFixtureContextAsync(
 			{
 				"index.d.ts": [
 					'import DefaultTool from "pkg-default";',
@@ -218,6 +233,20 @@ describe("declaration-bundler", () => {
 					"export default plugin;",
 				].join("\n"),
 			},
+			(context) => {
+				const output = createBundledOutput(context, "index.d.ts");
+
+				expect(output).toContain('import DefaultTool from "pkg-default";');
+				expect(output).toContain('import * as Toolkit from "pkg-ns";');
+				expect(output).toContain("declare namespace Shapes");
+				expect(output).toContain("declare class Example");
+				expect(output).toContain("type ExampleAlias = Example;");
+				expect(output).toContain("declare function makeThing(input: DefaultTool): ExampleAlias;");
+				expect(output).toContain("declare const namedPlugin: ExampleAlias;");
+				expect(output).toContain("export type { ExampleAlias };");
+				expect(output).toContain("export { Shapes, Example, makeThing, namedPlugin };");
+				expect(output).toContain("export default namedPlugin;");
+			},
 			{
 				"node_modules/pkg-default/index.d.ts": [
 					"declare class DefaultTool {",
@@ -228,42 +257,33 @@ describe("declaration-bundler", () => {
 				"node_modules/pkg-ns/index.d.ts": "export interface Widget {\n\treadonly label: string;\n}\n",
 			},
 		);
-
-		const output = createBundledOutput(context, "index.d.ts");
-
-		expect(output).toContain('import DefaultTool from "pkg-default";');
-		expect(output).toContain('import * as Toolkit from "pkg-ns";');
-		expect(output).toContain("declare namespace Shapes");
-		expect(output).toContain("declare class Example");
-		expect(output).toContain("type ExampleAlias = Example;");
-		expect(output).toContain("declare function makeThing(input: DefaultTool): ExampleAlias;");
-		expect(output).toContain("declare const namedPlugin: ExampleAlias;");
-		expect(output).toContain("export type { ExampleAlias };");
-		expect(output).toContain("export { Shapes, Example, makeThing, namedPlugin };");
-		expect(output).toContain("export default namedPlugin;");
 	});
 
 	it("throws for unsupported export stars", async () => {
 		expect.assertions(1);
-		const context = await createFixtureContextAsync({
-			"index.d.ts": 'export * from "./other";\n',
-			"other.d.ts": "export interface Other {\n\treadonly value: string;\n}\n",
-		});
-
-		expect(() => createBundledOutput(context, "index.d.ts")).toThrow("Unsupported export star declaration");
+		await withFixtureContextAsync(
+			{
+				"index.d.ts": 'export * from "./other";\n',
+				"other.d.ts": "export interface Other {\n\treadonly value: string;\n}\n",
+			},
+			(context) => {
+				expect(() => createBundledOutput(context, "index.d.ts")).toThrow("Unsupported export star declaration");
+			},
+		);
 	});
 
 	it("throws when the entrypoint does not exist", async () => {
 		expect.assertions(1);
-		const context = await createFixtureContextAsync({});
-		const program = createDeclarationBundlerProgram({ declarationDirectories: [context.bundleDirectory] });
+		await withFixtureContextAsync({}, (context) => {
+			const program = createDeclarationBundlerProgram({ declarationDirectories: [context.bundleDirectory] });
 
-		expect(() =>
-			bundleDeclarationEntryPoint({
-				entryFilePath: join(context.bundleDirectory, "missing.d.ts"),
-				program,
-			}),
-		).toThrow("Declaration entrypoint not found");
+			expect(() =>
+				bundleDeclarationEntryPoint({
+					entryFilePath: join(context.bundleDirectory, "missing.d.ts"),
+					program,
+				}),
+			).toThrow("Declaration entrypoint not found");
+		});
 	});
 
 	it("exposes stable testing helpers for scope and name generation", () => {

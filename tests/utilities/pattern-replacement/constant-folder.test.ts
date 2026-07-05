@@ -8,11 +8,19 @@ import type { TSESTree } from "@typescript-eslint/types";
 function parseExpression(code: string): TSESTree.Expression {
 	const program = parse(`const value = ${code};`, { loc: false, range: false });
 	const [statement] = program.body;
-	if (statement?.type !== AST_NODE_TYPES.VariableDeclaration) throw new Error(`Could not parse expression: ${code}`);
+	if (statement?.type !== AST_NODE_TYPES.VariableDeclaration) {
+		const error = new Error(`Could not parse expression: ${code}`);
+		Error.captureStackTrace(error, parseExpression);
+		throw error;
+	}
 
 	const [declaration] = statement.declarations;
 	const expression = declaration?.init;
-	if (expression === null || expression === undefined) throw new Error(`Could not parse expression: ${code}`);
+	if (expression === null || expression === undefined) {
+		const error = new Error(`Could not parse expression: ${code}`);
+		Error.captureStackTrace(error, parseExpression);
+		throw error;
+	}
 
 	return expression;
 }

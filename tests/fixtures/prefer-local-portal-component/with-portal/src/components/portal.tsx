@@ -4,5 +4,5 @@ export interface PortalProperties {
 }
 
 export default function Portal({ target, children }: PortalProperties): unknown {
-	return target ? children : undefined;
+	return target === undefined ? undefined : children;
 }

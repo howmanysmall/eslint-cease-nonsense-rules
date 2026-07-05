@@ -27,23 +27,31 @@ export function shardCases<TestCase>(cases: ReadonlyArray<TestCase>): ReadonlyAr
 	const shardEnvironment = env.TEST_CASE_SHARD;
 
 	// No sharding - return all cases (local development)
-	if (!shardEnvironment) return cases;
+	if (shardEnvironment === undefined || shardEnvironment.length === 0) return cases;
 
 	// Parse shard specification
 	const parts = shardEnvironment.split("/");
 	if (parts.length !== 2) {
-		throw new TypeError(`Invalid TEST_CASE_SHARD format: expected "index/total", got "${shardEnvironment}"`);
+		const error = new TypeError(
+			`Invalid TEST_CASE_SHARD format: expected "index/total", got "${shardEnvironment}"`,
+		);
+		Error.captureStackTrace(error, shardCases);
+		throw error;
 	}
 
-	const shardIndex = Number.parseInt(parts[0], 10);
-	const totalShards = Number.parseInt(parts[1], 10);
+	const shardIndex = Math.trunc(Number(parts[0]));
+	const totalShards = Math.trunc(Number(parts[1]));
 
 	if (Number.isNaN(shardIndex) || Number.isNaN(totalShards)) {
-		throw new TypeError(`Invalid TEST_CASE_SHARD format: non-numeric values in "${shardEnvironment}"`);
+		const error = new TypeError(`Invalid TEST_CASE_SHARD format: non-numeric values in "${shardEnvironment}"`);
+		Error.captureStackTrace(error, shardCases);
+		throw error;
 	}
 
 	if (shardIndex < 1 || shardIndex > totalShards) {
-		throw new TypeError(`Invalid TEST_CASE_SHARD: index ${shardIndex} out of range [1, ${totalShards}]`);
+		const error = new TypeError(`Invalid TEST_CASE_SHARD: index ${shardIndex} out of range [1, ${totalShards}]`);
+		Error.captureStackTrace(error, shardCases);
+		throw error;
 	}
 
 	// Use round-robin distribution for even load balancing

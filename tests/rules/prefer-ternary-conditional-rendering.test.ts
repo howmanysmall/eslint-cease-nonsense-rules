@@ -51,19 +51,16 @@ function Component({ gradient, gradientToUse, rarityStyle }) {
 			{
 				code: "function Component() { return <>{isReady() && <A />}{!isReady() && <B />}</>; }",
 				errors: [{ messageId: "preferTernaryConditionalRendering" }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{
 				code: "function Component({ mode }) { return <>{mode === getMode() && <A />}{mode !== getMode() && <B />}</>; }",
 				errors: [{ messageId: "preferTernaryConditionalRendering" }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{
 				code: "function Component({ state }) { return <>{state.value === 1 && <A />}{state.value !== 1 && <B />}</>; }",
 				errors: [{ messageId: "preferTernaryConditionalRendering" }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{
@@ -79,61 +76,51 @@ function Component({ gradient, gradientToUse, rarityStyle }) {
 			{
 				code: "function Component({ flag }) { return <>{identity<boolean>(flag) && <A />}{!identity<boolean>(flag) && <B />}</>; }",
 				errors: [{ messageId: "preferTernaryConditionalRendering" }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{
 				code: "function Component({ args }) { return <>{fn(...args) && <A />}{!fn(...args) && <B />}</>; }",
 				errors: [{ messageId: "preferTernaryConditionalRendering" }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{
 				code: 'function Component({ obj }) { return <>{obj["key"] && <A />}{!obj["key"] && <B />}</>; }',
 				errors: [{ messageId: "preferTernaryConditionalRendering" }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{
 				code: "function Component({ x }) { return <>{-x && <A />}{!-x && <B />}</>; }",
 				errors: [{ messageId: "preferTernaryConditionalRendering" }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{
 				code: "function Component({ x }) { return <>{x + 1 && <A />}{!(x + 1) && <B />}</>; }",
 				errors: [{ messageId: "preferTernaryConditionalRendering" }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{
 				code: "function Component({ a, b }) { return <>{(a && b) && <A />}{!(a && b) && <B />}</>; }",
 				errors: [{ messageId: "preferTernaryConditionalRendering" }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{
 				code: "function Component() { return <>{tag`ready` && <A />}{!tag`ready` && <B />}</>; }",
 				errors: [{ messageId: "preferTernaryConditionalRendering" }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{
 				code: "class Component extends Base { render() { return <>{super.ready && <A />}{!super.ready && <B />}</>; } }",
 				errors: [{ messageId: "preferTernaryConditionalRendering" }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{
 				code: "class Component extends React.Component { #ready = true; render() { return <>{this.#ready && <A />}{!this.#ready && <B />}</>; } }",
 				errors: [{ messageId: "preferTernaryConditionalRendering" }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{
 				code: "class Component extends React.Component { render() { return <>{this.state && <A />}{!this.state && <B />}</>; } }",
 				errors: [{ messageId: "preferTernaryConditionalRendering" }],
-				// oxlint-disable-next-line no-null -- RuleTester requires null for no-fix invalid cases
 				output: null,
 			},
 			{

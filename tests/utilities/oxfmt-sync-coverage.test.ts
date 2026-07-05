@@ -15,6 +15,6 @@ describe("oxfmt-sync coverage", () => {
 		expect.assertions(1);
 		expect(() =>
 			__testingResolveWorkerPath(new URL("file:///tmp/oxfmt-sync.test.ts"), (): boolean => false),
-		).toThrow();
+		).toThrow(Error);
 	}, 1000);
 });
