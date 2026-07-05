@@ -1,9 +1,11 @@
 import { readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
-import { bold, cyan, dim, gray, green } from "picocolors";
+import picocolors from "picocolors";
 import prettyBytes from "pretty-bytes";
 import prettyMilliseconds from "pretty-ms";
 import { defineConfig } from "tsdown";
+
+const { bold, cyan, dim, gray, green } = picocolors;
 
 const bundledPackages = [
 	"@typescript-eslint/scope-manager",
