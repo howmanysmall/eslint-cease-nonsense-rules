@@ -5,5 +5,3 @@ export interface EqualPaddingProperties {
 export function EqualPadding({ padding }: EqualPaddingProperties): unknown {
 	return padding;
 }
-
-export default EqualPadding;

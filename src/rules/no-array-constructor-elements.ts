@@ -1,6 +1,6 @@
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { getMemberPropertyName, hasShadowedBinding, unwrapExpression } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
+import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 
 import type { EnvironmentMode } from "$types/environment-mode";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
@@ -43,13 +43,13 @@ function extractElementTypeFromArrayAnnotation(
 	if (typeNode.type !== AST_NODE_TYPES.TSTypeReference) return undefined;
 	if (typeNode.typeName.type !== AST_NODE_TYPES.Identifier) return undefined;
 	if (typeNode.typeName.name !== "Array" && typeNode.typeName.name !== "ReadonlyArray") return undefined;
-	if (!typeNode.typeArguments || typeNode.typeArguments.params.length !== 1) return undefined;
+	if (typeNode.typeArguments?.params.length !== 1) return undefined;
 
 	const [elementType] = typeNode.typeArguments.params;
 	return elementType ? sourceCode.getText(elementType) : undefined;
 }
 
-const IS_ANNOTATION = /:\s*(Array<.+>|ReadonlyArray<.+>)\s*=/u;
+const IS_ANNOTATION = /:\s*(?:Array<.+>|ReadonlyArray<.+>)\s*=/u;
 
 function hasArrayAnnotationInAssignmentPatternText(assignmentText: string): boolean {
 	const annotationMatch = IS_ANNOTATION.exec(assignmentText);
@@ -68,8 +68,6 @@ function hasContextualArrayAnnotation(
 	sourceCode: Readonly<TSESLint.SourceCode>,
 ): boolean {
 	const { parent } = node;
-	if (!parent) return false;
-
 	if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.init === node) {
 		const typeAnnotation = getBindingTypeAnnotation(parent.id);
 		if (!typeAnnotation) return false;
@@ -121,7 +119,7 @@ function isDefinitelyNonNumericExpression(expression: TSESTree.Expression): bool
 			return unwrapped.expressions.length === 0;
 
 		case AST_NODE_TYPES.UnaryExpression:
-			return unwrapped.operator === "void" || (unwrapped.operator === "typeof" && !unwrapped.prefix);
+			return unwrapped.operator === "void" || unwrapped.operator === "typeof";
 
 		default:
 			return false;
@@ -136,6 +134,36 @@ function isObjectPropertyValueExpression(value: TSESTree.Node): value is TSESTre
 	);
 }
 
+function onMemberExpression(unwrapped: TSESTree.MemberExpression): boolean {
+	if (
+		unwrapped.optional ||
+		unwrapped.object.type === AST_NODE_TYPES.Super ||
+		!isExpressionSideEffectSafe(unwrapped.object)
+	) {
+		return false;
+	}
+	if (!unwrapped.computed) return true;
+	return isExpressionSideEffectSafe(unwrapped.property);
+}
+function onObjectExpression(unwrapped: TSESTree.ObjectExpression): boolean {
+	for (const property of unwrapped.properties) {
+		if (property.type === AST_NODE_TYPES.SpreadElement) return false;
+		if (property.type !== AST_NODE_TYPES.Property) return false;
+		if (property.kind !== "init" || property.method) return false;
+		if (property.computed && !isExpressionSideEffectSafe(property.key)) return false;
+		if (!isObjectPropertyValueExpression(property.value)) return false;
+		if (!isExpressionSideEffectSafe(property.value)) return false;
+	}
+	return true;
+}
+function onArrayExpression(unwrapped: TSESTree.ArrayExpression): boolean {
+	for (const element of unwrapped.elements) {
+		if (element === null) continue;
+		if (element.type === AST_NODE_TYPES.SpreadElement || !isExpressionSideEffectSafe(element)) return false;
+	}
+	return true;
+}
+
 function isExpressionSideEffectSafe(expression: TSESTree.Expression): boolean {
 	const unwrapped = unwrapExpression(expression);
 
@@ -145,12 +173,8 @@ function isExpressionSideEffectSafe(expression: TSESTree.Expression): boolean {
 		case AST_NODE_TYPES.ThisExpression:
 			return true;
 
-		case AST_NODE_TYPES.MemberExpression: {
-			if (unwrapped.optional || unwrapped.object.type === AST_NODE_TYPES.Super) return false;
-			if (!isExpressionSideEffectSafe(unwrapped.object)) return false;
-			if (!unwrapped.computed) return true;
-			return isExpressionSideEffectSafe(unwrapped.property);
-		}
+		case AST_NODE_TYPES.MemberExpression:
+			return onMemberExpression(unwrapped);
 
 		case AST_NODE_TYPES.UnaryExpression: {
 			if (unwrapped.operator === "delete") return false;
@@ -176,26 +200,11 @@ function isExpressionSideEffectSafe(expression: TSESTree.Expression): boolean {
 			return true;
 		}
 
-		case AST_NODE_TYPES.ArrayExpression: {
-			for (const element of unwrapped.elements) {
-				if (!element) continue;
-				if (element.type === AST_NODE_TYPES.SpreadElement) return false;
-				if (!isExpressionSideEffectSafe(element)) return false;
-			}
-			return true;
-		}
+		case AST_NODE_TYPES.ArrayExpression:
+			return onArrayExpression(unwrapped);
 
-		case AST_NODE_TYPES.ObjectExpression: {
-			for (const property of unwrapped.properties) {
-				if (property.type === AST_NODE_TYPES.SpreadElement) return false;
-				if (property.type !== AST_NODE_TYPES.Property) return false;
-				if (property.kind !== "init" || property.method) return false;
-				if (property.computed && !isExpressionSideEffectSafe(property.key)) return false;
-				if (!isObjectPropertyValueExpression(property.value)) return false;
-				if (!isExpressionSideEffectSafe(property.value)) return false;
-			}
-			return true;
-		}
+		case AST_NODE_TYPES.ObjectExpression:
+			return onObjectExpression(unwrapped);
 
 		case AST_NODE_TYPES.SequenceExpression:
 			return unwrapped.expressions.every(isExpressionSideEffectSafe);

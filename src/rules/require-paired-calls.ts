@@ -1,5 +1,5 @@
-import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import { createRule } from "$utilities/create-rule";
+import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
 
@@ -334,7 +334,6 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 		}
 
 		function cloneStack(): Array<OpenerStackEntry> {
-			// oxlint-disable-next-line no-array-callback-reference -- this is fine. leave it alone.
 			return openerStack.map(cloneEntry);
 		}
 

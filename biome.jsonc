@@ -1,6 +1,8 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
 	"assist": {
+		"enabled": true,
+		"includes": ["**", "!**/*.js", "!**/*-lock.{json,yaml}"],
 		"actions": {
 			"source": {
 				"noDuplicateClasses": "on",
@@ -9,28 +11,32 @@
 				"useSortedAttributes": "on",
 				"useSortedEnumMembers": "on",
 				"useSortedInterfaceMembers": "on",
-				"useSortedKeys": "on",
 				"useSortedPackageJson": "off",
 				"useSortedProperties": "on",
 				"useSortedSelectionSet": "on",
-				"useSortedTypeFields": "on"
+				"useSortedTypeFields": "on",
+				"useSortedKeys": {
+					"level": "on",
+					"options": {
+						"groupByNesting": false,
+						"sortOrder": "lexicographic"
+					}
+				}
 			}
-		},
-		"enabled": true,
-		"includes": ["**", "!**/*.js", "!**/*-lock.{json,yaml}"]
+		}
 	},
 
 	"css": {
 		"assist": { "enabled": true },
+		"globals": [],
+		"linter": { "enabled": true },
 		"formatter": {
 			"enabled": true,
 			"indentStyle": "tab",
 			"indentWidth": 4,
 			"lineWidth": 120,
 			"quoteStyle": "double"
-		},
-		"globals": [],
-		"linter": { "enabled": true }
+		}
 	},
 
 	"files": {
@@ -54,6 +60,7 @@
 
 	"graphql": {
 		"assist": { "enabled": true },
+		"linter": { "enabled": true },
 		"formatter": {
 			"bracketSpacing": true,
 			"enabled": true,
@@ -61,24 +68,24 @@
 			"indentWidth": 4,
 			"lineWidth": 120,
 			"quoteStyle": "double"
-		},
-		"linter": { "enabled": true }
+		}
 	},
 
 	"grit": {
 		"assist": { "enabled": true },
+		"linter": { "enabled": true },
 		"formatter": {
 			"enabled": true,
 			"indentStyle": "tab",
 			"indentWidth": 4,
 			"lineWidth": 120
-		},
-		"linter": { "enabled": true }
+		}
 	},
 
 	"html": {
 		"assist": { "enabled": true },
 		"experimentalFullSupportEnabled": true,
+		"linter": { "enabled": true },
 		"formatter": {
 			"attributePosition": "auto",
 			"bracketSameLine": true,
@@ -91,7 +98,6 @@
 			"selfCloseVoidElements": "always",
 			"whitespaceSensitivity": "strict"
 		},
-		"linter": { "enabled": true },
 		"parser": {
 			"interpolation": true,
 			"vue": false
@@ -99,6 +105,8 @@
 	},
 
 	"javascript": {
+		"globals": ["Bun"],
+		"linter": { "enabled": true },
 		"formatter": {
 			"arrowParentheses": "always",
 			"attributePosition": "auto",
@@ -115,13 +123,13 @@
 			"quoteStyle": "double",
 			"semicolons": "always",
 			"trailingCommas": "all"
-		},
-		"globals": ["Bun"],
-		"linter": { "enabled": true }
+		}
 	},
 
 	"json": {
 		"assist": { "enabled": true },
+		"linter": { "enabled": true },
+		"parser": {},
 		"formatter": {
 			"bracketSpacing": true,
 			"enabled": true,
@@ -130,9 +138,7 @@
 			"indentWidth": 4,
 			"lineWidth": 120,
 			"trailingCommas": "none"
-		},
-		"linter": { "enabled": true },
-		"parser": {}
+		}
 	},
 
 	"linter": {
@@ -157,27 +163,19 @@
 				"useDateNow": "error",
 				"useFlatMap": "error",
 				"useLiteralKeys": "error",
-				"useMaxParams": {
-					"level": "error",
-					"options": { "max": 7 }
-				},
 				"useOptionalChain": "error",
 				"useSimpleNumberKeys": "error",
 				"useSimplifiedLogicExpression": "error",
-				"useWhile": "error"
+				"useWhile": "error",
+				"useMaxParams": {
+					"level": "error",
+					"options": { "max": 7 }
+				}
 			},
 
 			"correctness": {
 				"noGlobalDirnameFilename": "error",
 				"noNodejsModules": "off",
-				"noUndeclaredDependencies": {
-					"level": "error",
-					"options": {}
-				},
-				"noUndeclaredVariables": {
-					"level": "error",
-					"options": { "checkTypes": true }
-				},
 				"noUnresolvedImports": "off",
 				"noUnusedImports": "error",
 				"noUnusedInstantiation": "error",
@@ -186,17 +184,20 @@
 				"preset": "recommended",
 				"useInlineScriptId": "error",
 				"useJsonImportAttributes": "off",
-				"useSingleJsDocAsterisk": "error"
+				"useSingleJsDocAsterisk": "error",
+				"noUndeclaredDependencies": {
+					"level": "error",
+					"options": {}
+				},
+				"noUndeclaredVariables": {
+					"level": "error",
+					"options": { "checkTypes": true }
+				}
 			},
 
 			"nursery": {
 				"noBaseToString": "error",
 				"noConditionalExpect": "error",
-				"noExcessiveNestedCallbacks": {
-					// temporarily disabled
-					"level": "off",
-					"options": { "max": 5 }
-				},
 				"noFloatingPromises": "error",
 				"noIdenticalTestTitle": "error",
 				"noImpliedEval": "error",
@@ -230,7 +231,12 @@
 				"useTestHooksOnTop": "error",
 				"useThisInClassMethods": "error",
 				"useUnicodeRegex": "error",
-				"useVarsOnTop": "error"
+				"useVarsOnTop": "error",
+				"noExcessiveNestedCallbacks": {
+					// temporarily disabled
+					"level": "off",
+					"options": { "max": 5 }
+				}
 			},
 
 			"performance": {
@@ -255,17 +261,6 @@
 				"noDescendingSpecificity": "error",
 				"noDoneCallback": "error",
 				"noEnum": "off",
-				"noExcessiveClassesPerFile": {
-					"level": "error",
-					"options": { "maxClasses": 3 }
-				},
-				"noExcessiveLinesPerFile": {
-					"level": "off",
-					"options": {
-						"maxLines": 200,
-						"skipBlankLines": true
-					}
-				},
 				"noExportedImports": "error",
 				"noHeadElement": "error",
 				"noImplicitBoolean": "error",
@@ -283,6 +278,28 @@
 				"noProcessEnv": "error",
 				"noRestrictedGlobals": "error",
 				"noRestrictedImports": "error",
+				"preset": "recommended",
+				"useArrayLiterals": "off",
+				"useBlockStatements": "off",
+				"useConsistentEnumValueType": "error",
+				"useConsistentMemberAccessibility": "off",
+				"useConsistentMethodSignatures": "off",
+				"useDefaultParameterLast": "error",
+				"useDestructuring": "off",
+				"useErrorCause": "error",
+				"useGlobalThis": "error",
+				"useSpreadOverApply": "error",
+				"noExcessiveClassesPerFile": {
+					"level": "error",
+					"options": { "maxClasses": 3 }
+				},
+				"noExcessiveLinesPerFile": {
+					"level": "off",
+					"options": {
+						"maxLines": 200,
+						"skipBlankLines": true
+					}
+				},
 				"noRestrictedTypes": {
 					"level": "error",
 					"options": {
@@ -294,28 +311,17 @@
 						}
 					}
 				},
-				"preset": "recommended",
-				"useArrayLiterals": "off",
-				"useBlockStatements": "off",
-				"useConsistentEnumValueType": "error",
-				"useConsistentMemberAccessibility": "off",
-				"useConsistentMethodSignatures": "off",
 				"useConst": {
 					"fix": "safe",
 					"level": "error"
 				},
-				"useDefaultParameterLast": "error",
-				"useDestructuring": "off",
-				"useErrorCause": "error",
 				"useFilenamingConvention": {
 					"level": "error",
 					"options": {
 						"filenameCases": ["kebab-case"],
 						"requireAscii": true
 					}
-				},
-				"useGlobalThis": "error",
-				"useSpreadOverApply": "error"
+				}
 			},
 
 			"suspicious": {
@@ -332,18 +338,18 @@
 				"noParametersOnlyUsedInRecursion": "error",
 				"noProto": "error",
 				"noReturnAssign": "error",
+				"noTemplateCurlyInString": "off",
+				"noUndeclaredEnvVars": "error",
+				"noUnnecessaryConditions": "off",
+				"preset": "recommended",
+				"useArraySortCompare": "error",
 				"noShadow": {
 					"level": "off",
 					"options": {
 						"ignoreFunctionTypeParameterNameValueShadow": false,
 						"ignoreTypeValueShadow": false
 					}
-				},
-				"noTemplateCurlyInString": "off",
-				"noUndeclaredEnvVars": "error",
-				"noUnnecessaryConditions": "off",
-				"preset": "recommended",
-				"useArraySortCompare": "error"
+				}
 			}
 		}
 	},
@@ -353,6 +359,7 @@
 		{
 			"includes": ["**/*.jsonc", "!**/biome.jsonc"],
 			"json": {
+				"linter": { "enabled": true },
 				"formatter": {
 					"enabled": true,
 					"indentStyle": "tab",
@@ -360,7 +367,6 @@
 					"lineWidth": 120,
 					"trailingCommas": "all"
 				},
-				"linter": { "enabled": true },
 				"parser": {
 					"allowComments": true,
 					"allowTrailingCommas": true
@@ -372,6 +378,7 @@
 		{
 			"includes": [],
 			"json": {
+				"linter": { "enabled": true },
 				"formatter": {
 					"enabled": true,
 					"indentStyle": "tab",
@@ -379,7 +386,6 @@
 					"lineWidth": 120,
 					"trailingCommas": "none"
 				},
-				"linter": { "enabled": true },
 				"parser": {
 					"allowComments": false,
 					"allowTrailingCommas": false
@@ -462,6 +468,31 @@
 				"rules": {
 					"correctness": {
 						"noUndeclaredDependencies": "off"
+					}
+				}
+			}
+		},
+
+		{
+			"includes": ["**/*.d.ts"],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"noUnusedVariables": "off"
+					},
+					"style": {
+						"noNamespace": "off"
+					}
+				}
+			}
+		},
+
+		{
+			"includes": ["tests/fixtures/strict-boundaries/basic-app/app/components/**/*.ts"],
+			"linter": {
+				"rules": {
+					"style": {
+						"useFilenamingConvention": "off"
 					}
 				}
 			}

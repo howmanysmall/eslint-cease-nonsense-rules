@@ -15,7 +15,7 @@ export function getReplacementIdentifier(replacement: ParsedReplacement): string
 		case "call":
 			return replacement.name;
 
-		case "staticAccess":
+		default:
 			return undefined;
 	}
 }
@@ -54,7 +54,9 @@ export function generateReplacement(
 
 		default: {
 			kind satisfies never;
-			throw new Error(`Unknown replacement kind: ${kind as string}`);
+			const error = new Error(`Unknown replacement kind: ${kind as string}`);
+			Error.captureStackTrace(error, generateReplacement);
+			throw error;
 		}
 	}
 }

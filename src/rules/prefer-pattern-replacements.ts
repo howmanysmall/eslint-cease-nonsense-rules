@@ -1,25 +1,26 @@
-import { DefinitionType } from "@typescript-eslint/scope-manager";
 import { createRule } from "$utilities/create-rule";
 import {
 	buildPatternIndex,
 	canSafelySubstitute,
 	evaluateConditions,
-	generateReplacement,
-	getReplacementIdentifier,
 	matchParameters,
-	parsePattern,
 	resolveCallee,
-} from "$utilities/pattern-replacement";
+} from "$utilities/pattern-replacement/pattern-matcher";
+import { parsePattern } from "$utilities/pattern-replacement/pattern-parser";
+import { getReplacementIdentifier, generateReplacement } from "$utilities/pattern-replacement/replacement-generator";
+import { DefinitionType } from "@typescript-eslint/scope-manager";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
 
+import type { PatternIndex } from "$utilities/pattern-replacement/pattern-matcher";
+import type { ParsedPattern, Pattern } from "$utilities/pattern-replacement/pattern-types";
 import type { TSESTree } from "@typescript-eslint/types";
 import type { TSESLint } from "@typescript-eslint/utils";
-import type { ParsedPattern, Pattern, PatternIndex } from "$utilities/pattern-replacement";
 
+const isObject = Typebox.Object({}, { additionalProperties: true });
 const isRuleOptions = Compile(
 	Typebox.Object({
-		patterns: Typebox.Array(Typebox.Object({}, { additionalProperties: true })),
+		patterns: Typebox.Array(isObject),
 	}),
 );
 
@@ -40,7 +41,7 @@ const preferPatternReplacements = createRule({
 			let scope = sourceCode.getScope(node) as TSESLint.Scope.Scope | undefined;
 			while (scope) {
 				const variable = scope.set.get(identifierName);
-				if (variable?.defs.some((definition) => definition.type !== DefinitionType.ImportBinding)) {
+				if (variable?.defs.some((definition) => definition.type !== DefinitionType.ImportBinding) === true) {
 					return true;
 				}
 				scope = scope.upper ?? undefined;
@@ -69,7 +70,7 @@ const preferPatternReplacements = createRule({
 				}
 
 				const replacementId = getReplacementIdentifier(pattern.replacement);
-				if (replacementId && hasNameConflict(node, replacementId)) {
+				if (replacementId !== undefined && replacementId.length > 0 && hasNameConflict(node, replacementId)) {
 					skippedConflicts.push({
 						conflict: replacementId,
 						replacement: generateReplacement(pattern.replacement, captures),

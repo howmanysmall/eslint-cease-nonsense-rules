@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import vueParser from "vue-eslint-parser";
-import babelParser from "@babel/eslint-parser";
 import rule from "$rules/prevent-abbreviations";
+import babelParser from "@babel/eslint-parser";
 import tsParser from "@typescript-eslint/parser";
 import { Linter, RuleTester } from "eslint";
 
@@ -80,7 +80,7 @@ function getParserForVariant(variant: Variant): unknown {
 	return tsParser;
 }
 
-const PARSER_MARKER_PATTERN = /\/\*\s*(babel|typescript)\s*\*\//gu;
+const PARSER_MARKER_PATTERN = /\/\*\s*(?:babel|typescript)\s*\*\//gu;
 
 function stripParserMarkers(code: string): string {
 	const withoutMarkers = code.replace(PARSER_MARKER_PATTERN, "");

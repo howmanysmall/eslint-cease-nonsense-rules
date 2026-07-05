@@ -24,6 +24,7 @@ import { env } from "node:process";
  * @returns The full array if TEST_CASE_SHARD is not set, otherwise a filtered subset
  */
 export function shardCases<TestCase>(cases: ReadonlyArray<TestCase>): ReadonlyArray<TestCase> {
+	// biome-ignore lint/style/noProcessEnv: just shut up
 	const shardEnvironment = env.TEST_CASE_SHARD;
 
 	// No sharding - return all cases (local development)

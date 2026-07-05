@@ -1,5 +1,5 @@
-import { TSESTree } from "@typescript-eslint/types";
 import { createRule } from "$utilities/create-rule";
+import { TSESTree } from "@typescript-eslint/types";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
 
@@ -289,7 +289,7 @@ function isStableValue(
 		if (STABLE_VALUE_TYPES.has(type)) return true;
 
 		if (type === "Variable" && node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator) {
-			const { parent } = node as TSESTree.VariableDeclarator;
+			const { parent } = node;
 			if (!parent || parent.type !== TSESTree.AST_NODE_TYPES.VariableDeclaration || parent.kind !== "const") {
 				continue;
 			}
@@ -336,7 +336,7 @@ function isStableValue(
 
 			const variableDefinition = variable.defs.find((matchedDefinition) => matchedDefinition.node === node);
 			if (variableDefinition && variableDefinition.node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator) {
-				const declarationParent = (variableDefinition.node as TSESTree.VariableDeclarator).parent?.parent;
+				const declarationParent = variableDefinition.node.parent?.parent;
 				if (
 					declarationParent &&
 					(declarationParent.type === TSESTree.AST_NODE_TYPES.Program ||
@@ -507,7 +507,7 @@ function collectCaptures(node: TSESTree.Node, sourceCode: TSESLint.SourceCode): 
 				});
 
 				if (!isDefinedInClosure) {
-					if (!isDeclaredInComponentBody(variable as VariableLike, node)) {
+					if (!isDeclaredInComponentBody(variable, node)) {
 						testingMetrics.outerScopeSkip += 1;
 						return;
 					}
@@ -522,7 +522,7 @@ function collectCaptures(node: TSESTree.Node, sourceCode: TSESLint.SourceCode): 
 						name,
 						node: depthNode,
 						usagePath,
-						variable: variable as VariableLike,
+						variable: variable,
 					});
 				}
 			}
@@ -713,7 +713,6 @@ const useExhaustiveDependencies = createRule<Options, MessageIds>({
 					);
 
 					if (requiredCaptures.length > 0) {
-						// oxlint-disable-next-line no-array-callback-reference
 						const missingNames = [...new Set(requiredCaptures.map(returnName))].join(", ");
 
 						const usagePaths = requiredCaptures.map(({ usagePath }) => usagePath);
@@ -761,7 +760,6 @@ const useExhaustiveDependencies = createRule<Options, MessageIds>({
 						if (options.reportUnnecessaryDependencies) {
 							const newDependencies = dependencies
 								.filter((value) => value.name !== dependency.name)
-								// oxlint-disable-next-line no-array-callback-reference
 								.map(returnName);
 							const dependenciesString = `[${newDependencies.join(", ")}]`;
 
@@ -787,7 +785,6 @@ const useExhaustiveDependencies = createRule<Options, MessageIds>({
 					if (dependency.depth > maxCaptureDepth && options.reportUnnecessaryDependencies) {
 						const newDependencies = dependencies
 							.filter(({ name }) => name !== dependency.name)
-							// oxlint-disable-next-line no-array-callback-reference
 							.map(returnName);
 						const dependencyString = `[${newDependencies.join(", ")}]`;
 

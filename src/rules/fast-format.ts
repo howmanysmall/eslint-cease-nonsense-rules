@@ -26,9 +26,9 @@ type FormatCacheEntry =
 	  };
 
 interface FormatCache {
-	clear(): void;
-	get(key: string): FormatCacheEntry | undefined;
-	set(key: string, value: FormatCacheEntry): FormatCacheEntry;
+	readonly clear: () => void;
+	readonly get: (key: string) => FormatCacheEntry | undefined;
+	readonly set: (key: string, value: FormatCacheEntry) => FormatCacheEntry;
 }
 
 interface FastFormatServices {
@@ -138,14 +138,14 @@ export function createFastFormatRule(options: FastFormatOptions = {}): Rule.Rule
 	};
 
 	return {
-		create(context) {
+		create(context): Rule.RuleListener {
 			const { filename, sourceCode } = context;
 
 			// Optimization: Skip non-JS/TS files entirely
 			if (getExtension(filename) === undefined) return {};
 
 			return {
-				Program() {
+				Program(): void {
 					const source = sourceCode.text;
 					const outcome = formatWithCaching(cache, filename, source, services);
 

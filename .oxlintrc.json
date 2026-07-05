@@ -145,9 +145,7 @@
 		},
 		{
 			"files": ["tests/fixtures/strict-boundaries/basic-app/app/components/**/*.ts"],
-			"rules": {
-				"unicorn/filename-case": "off"
-			}
+			"rules": { "unicorn/filename-case": "off" }
 		}
 	],
 	"plugins": ["eslint", "import", "jsdoc", "node", "oxc", "promise", "typescript", "unicorn"],
@@ -815,7 +813,7 @@
 			"asc",
 			{
 				"allowLineSeparatedGroups": true,
-				"caseSensitive": false,
+				"caseSensitive": true,
 				"minKeys": 2,
 				"natural": true
 			}
