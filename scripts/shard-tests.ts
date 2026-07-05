@@ -8,13 +8,13 @@ import { Command, ValidationError } from "@cliffy/command";
 async function collectUnitTestsAsync(rootDirectory: string): Promise<ReadonlyArray<string>> {
 	const unitTests = new Array<string>();
 
-	async function walk(directory: string): Promise<void> {
+	async function walkAsync(directory: string): Promise<void> {
 		const entries = await readdir(directory, { withFileTypes: true });
 		await Promise.all(
 			entries.map(async (entry): Promise<void> => {
 				const path = resolve(directory, entry.name);
 				if (entry.isDirectory()) {
-					await walk(path);
+					await walkAsync(path);
 					return;
 				}
 				if (entry.isFile() && path.endsWith(".test.ts")) unitTests.push(path);
@@ -22,17 +22,31 @@ async function collectUnitTestsAsync(rootDirectory: string): Promise<ReadonlyArr
 		);
 	}
 
-	await walk(rootDirectory);
+	await walkAsync(rootDirectory);
 	return unitTests.toSorted();
 }
 
 function validateShardArgumentsOrThrow(shardIndex: number, totalShards: number, testFileCount: number): void {
-	if (shardIndex < 1) throw new ValidationError(`shard-index must be >= 1, got ${shardIndex}`);
-	if (shardIndex > totalShards) {
-		throw new ValidationError(`shard-index (${shardIndex}) cannot exceed total-shards (${totalShards})`);
+	if (shardIndex < 1) {
+		const error = new ValidationError(`shard-index must be >= 1, got ${shardIndex}`);
+		Error.captureStackTrace(error, validateShardArgumentsOrThrow);
+		throw error;
 	}
-	if (totalShards < 1) throw new ValidationError(`total-shards must be >= 1, got ${totalShards}`);
-	if (testFileCount === 0) throw new ValidationError("No test files found in tests/ directory");
+	if (shardIndex > totalShards) {
+		const error = new ValidationError(`shard-index (${shardIndex}) cannot exceed total-shards (${totalShards})`);
+		Error.captureStackTrace(error, validateShardArgumentsOrThrow);
+		throw error;
+	}
+	if (totalShards < 1) {
+		const error = new ValidationError(`total-shards must be >= 1, got ${totalShards}`);
+		Error.captureStackTrace(error, validateShardArgumentsOrThrow);
+		throw error;
+	}
+	if (testFileCount === 0) {
+		const error = new ValidationError("No test files found in tests/ directory");
+		Error.captureStackTrace(error, validateShardArgumentsOrThrow);
+		throw error;
+	}
 }
 
 function selectShardFiles(

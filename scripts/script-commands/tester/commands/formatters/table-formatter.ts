@@ -1,10 +1,11 @@
-// oxlint-disable no-array-callback-reference
 import { stripVTControlCharacters as stripANSI } from "node:util";
 import { blue, bold, dim, green, magenta, yellow } from "picocolors";
 
 import { formatSeverity, isRecord } from "./reused";
 
 import type { RuleEntry, RuleFormatter } from "./types";
+
+const NA = yellow("n/a");
 
 function colorizeValue(value: unknown): string {
 	if (typeof value === "string") return green(`"${value}"`);
@@ -70,9 +71,7 @@ export function formatRulesAsTable(entries: ReadonlyArray<RuleEntry>): ReturnTyp
 
 	for (const { name, rule } of entries) {
 		if (rule === undefined) {
-			lines.push(
-				`${padEnd(name, maxRuleWidth)}${padEnd(bold(yellow("n/a")), maxSeverityWidth)}${dim("does not exist")}`,
-			);
+			lines.push(`${padEnd(name, maxRuleWidth)}${padEnd(bold(NA), maxSeverityWidth)}${dim("does not exist")}`);
 			continue;
 		}
 

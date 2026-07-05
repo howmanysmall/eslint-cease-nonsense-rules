@@ -37,15 +37,14 @@ export default function createDailyFileRotateReporter({
 	});
 
 	return {
-		// oxlint-disable-next-line small-rules/prevent-abbreviations
+		// oxlint-disable-next-line small-rules/prevent-abbreviations -- out of my control!
 		log: ({ date, level, tag, args }: LogObject): void => {
 			if (!levelFilter(level)) return;
 
-			// oxlint-disable-next-line unicorn/no-array-callback-reference
 			const message = args.map(stringify).join(" ");
 
 			const logEntry = JSON.stringify({
-				level: level <= 1 ? "error" : level === 2 ? "warn" : "info",
+				level: getLevel(level),
 				message,
 				tag,
 				timestamp: date.toISOString(),
@@ -54,4 +53,9 @@ export default function createDailyFileRotateReporter({
 			stream.write(`${logEntry}\n`);
 		},
 	};
+}
+
+function getLevel(level: number): string {
+	if (level <= 1) return "error";
+	return level === 2 ? "warn" : "info";
 }

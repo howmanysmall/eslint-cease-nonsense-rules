@@ -4,7 +4,7 @@ import { name } from "./package-constants";
 
 import type { Paths } from "env-paths";
 
-// oxlint-disable-next-line no-control-regex
+// oxlint-disable-next-line no-control-regex -- idc
 const NULL_REGEXP = /[/\\\0]/gu;
 const WHITESPACE_REGEXP = /\s+/gu;
 

@@ -30,7 +30,7 @@
 		"biome": "biome",
 		"biome:ci": "biome ci",
 		"biome:lint": "biome lint",
-		"build": "bun run --bun ./scripts/build.ts",
+		"build": "tsdown",
 		"commitlint": "commitlint",
 		"dev": "tsgo -w",
 		"docs:build": "nr -F docs build",

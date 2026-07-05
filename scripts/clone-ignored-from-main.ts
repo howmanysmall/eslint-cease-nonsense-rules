@@ -33,33 +33,35 @@ function shouldSkip(relativePath: string): boolean {
 }
 
 async function getCommandTextAsync(command: string, parameters: ReadonlyArray<string>): Promise<string> {
-	return new Promise((resolve, reject) => {
-		const stdoutChunks: Array<Uint8Array> = [];
-		const stderrChunks: Array<Uint8Array> = [];
-		const childProcess = spawn(command, [...parameters], { stdio: ["ignore", "pipe", "pipe"] });
+	const { resolve, reject, promise } = Promise.withResolvers<string>();
 
-		childProcess.stdout.on("data", (chunk: Uint8Array) => {
-			stdoutChunks.push(chunk);
-		});
+	const stdoutChunks = new Array<Uint8Array>();
+	const stderrChunks = new Array<Uint8Array>();
+	const childProcess = spawn(command, [...parameters], { stdio: ["ignore", "pipe", "pipe"] });
 
-		childProcess.stderr.on("data", (chunk: Uint8Array) => {
-			stderrChunks.push(chunk);
-		});
-
-		childProcess.on("error", reject);
-		childProcess.on("close", (exitCode) => {
-			const stdout = Buffer.concat(stdoutChunks).toString("utf8");
-			const stderr = Buffer.concat(stderrChunks).toString("utf8");
-			if (exitCode === 0) {
-				resolve(stdout);
-				return;
-			}
-
-			const renderedCommand = [command, ...parameters].join(" ");
-			const output = [stderr.trim(), stdout.trim()].filter(Boolean).join("\n");
-			reject(new Error(output ? `${renderedCommand} failed.\n${output}` : `${renderedCommand} failed.`));
-		});
+	childProcess.stdout.on("data", (chunk: Uint8Array) => {
+		stdoutChunks.push(chunk);
 	});
+
+	childProcess.stderr.on("data", (chunk: Uint8Array) => {
+		stderrChunks.push(chunk);
+	});
+
+	childProcess.on("error", reject);
+	childProcess.on("close", (exitCode) => {
+		const stdout = Buffer.concat(stdoutChunks).toString("utf8");
+		const stderr = Buffer.concat(stderrChunks).toString("utf8");
+		if (exitCode === 0) {
+			resolve(stdout);
+			return;
+		}
+
+		const renderedCommand = [command, ...parameters].join(" ");
+		const output = [stderr.trim(), stdout.trim()].filter(Boolean).join("\n");
+		reject(new Error(output ? `${renderedCommand} failed.\n${output}` : `${renderedCommand} failed.`));
+	});
+
+	return promise;
 }
 
 async function findMainWorktreeAsync(): Promise<string | undefined> {
@@ -121,7 +123,7 @@ const command = new Command()
 		const destinationRoot = destinationRootRaw.trim();
 
 		const mainRoot = await findMainWorktreeAsync();
-		if (!mainRoot) {
+		if (mainRoot === undefined || mainRoot.length === 0) {
 			console.error("Could not determine main worktree path.");
 			exit(1);
 		}

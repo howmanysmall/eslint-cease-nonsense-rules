@@ -55,10 +55,12 @@ async function findCoverageFilesAsync(baseDirectory: string): Promise<Array<stri
 
 		return coverageFiles;
 	} catch (error) {
-		throw new Error(
+		const error2 = new Error(
 			`Failed to read directory ${baseDirectory}: ${error instanceof Error ? error.message : String(error)}`,
 			{ cause: error },
 		);
+		Error.captureStackTrace(error2, findCoverageFilesAsync);
+		throw error2;
 	}
 }
 
@@ -67,14 +69,18 @@ async function readCoverageFileAsync(filePath: string): Promise<V8Coverage> {
 		const contents = await readFile(filePath, "utf8");
 		const result = isV8Coverage(JSON.parse(contents));
 		if (result instanceof type.errors) {
-			throw new TypeError(`Invalid V8 coverage format in ${filePath}: ${result.summary}`);
+			const error = new TypeError(`Invalid V8 coverage format in ${filePath}: ${result.summary}`);
+			Error.captureStackTrace(error, readCoverageFileAsync);
+			throw error;
 		}
 		return result;
 	} catch (error) {
-		throw new Error(
+		const error2 = new Error(
 			`Failed to read coverage file ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
 			{ cause: error },
 		);
+		Error.captureStackTrace(error2, readCoverageFileAsync);
+		throw error2;
 	}
 }
 
@@ -101,10 +107,12 @@ async function writeMergedCoverageAsync(outputPath: string, coverage: V8Coverage
 		await mkdir(dirname(outputPath), { recursive: true });
 		await writeFile(outputPath, JSON.stringify(coverage, undefined, 2));
 	} catch (error) {
-		throw new Error(
+		const error2 = new Error(
 			`Failed to write merged coverage to ${outputPath}: ${error instanceof Error ? error.message : String(error)}`,
 			{ cause: error },
 		);
+		Error.captureStackTrace(error2, writeMergedCoverageAsync);
+		throw error2;
 	}
 }
 
@@ -124,7 +132,6 @@ const command = new Command()
 
 		console.log(`Found ${coverageFiles.length} coverage files`);
 
-		// oxlint-disable-next-line unicorn/no-array-callback-reference
 		const coverageData = await Promise.all(coverageFiles.map(readCoverageFileAsync));
 
 		console.log("Merging coverage data...");

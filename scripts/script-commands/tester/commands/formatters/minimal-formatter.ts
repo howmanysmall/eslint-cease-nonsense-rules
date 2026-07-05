@@ -1,4 +1,3 @@
-// oxlint-disable no-array-callback-reference
 import { blue, bold, cyan, dim, green, magenta, yellow } from "picocolors";
 
 import { formatSeverity, isRecord } from "./reused";

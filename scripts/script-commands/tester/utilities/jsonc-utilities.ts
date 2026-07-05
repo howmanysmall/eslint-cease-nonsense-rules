@@ -2,16 +2,16 @@ import { regex } from "arktype";
 import { applyEdits, modify, parse } from "jsonc-parser";
 import { diff } from "just-diff";
 
-// oxlint-disable-next-line unicorn/prefer-string-raw
+// oxlint-disable-next-line unicorn/prefer-string-raw -- arktype
 const INDENTATION_REGEXP = regex("^(?<whitespace>\\s+)", "u");
-// oxlint-disable-next-line unicorn/prefer-string-raw
+// oxlint-disable-next-line unicorn/prefer-string-raw -- arktype
 const MISSING_SPACE_AFTER_COLON_REGEXP = regex('":(?!\\s)', "gu");
 
 function getIndentation(line: string): string | undefined {
 	return INDENTATION_REGEXP.exec(line)?.groups.whitespace ?? undefined;
 }
 function detectIndentation(content: string): string {
-	// oxlint-disable-next-line unicorn/no-array-callback-reference
+	// oxlint-disable-next-line typescript/strict-boolean-expressions -- ??
 	return content.split("\n").find(getIndentation) ?? "\t";
 }
 
