@@ -1,4 +1,4 @@
-import { dirname } from "node:path";
+import nodePath from "node:path";
 import { ResolverFactory } from "oxc-resolver";
 
 type ResolveResult =
@@ -22,7 +22,7 @@ const resolver = new ResolverFactory({
 export function resolveRelativeImport(importSource: string, sourceFile: string): ResolveResult {
 	if (!importSource.startsWith(".")) return { found: false };
 
-	const { path } = resolver.sync(dirname(sourceFile), importSource);
+	const { path } = resolver.sync(nodePath.dirname(sourceFile), importSource);
 	if (path === undefined || path === "") return { found: false };
 	return { found: true, path };
 }

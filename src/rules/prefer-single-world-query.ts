@@ -1,5 +1,5 @@
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { createRule } from "$utilities/create-rule";
+import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { regex } from "arktype";
 
 import type { Reference } from "@typescript-eslint/scope-manager";
@@ -166,7 +166,6 @@ function processGetCalls(calls: ReadonlyArray<WorldQueryCall>, context: TSESLint
 	const worldText = getNodeText(firstCall.worldNode, context);
 	const entityText = getNodeText(firstCall.entityNode, context);
 
-	// oxlint-disable-next-line unicorn/no-array-callback-reference
 	const variableNames = calls.map(getVariableName);
 	const componentTexts = calls.map((call) => getNodeText(call.componentNode, context));
 

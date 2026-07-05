@@ -1,8 +1,8 @@
 // oxlint-disable small-rules/prevent-abbreviations
 import path from "node:path";
+import { createRule } from "$utilities/create-rule";
 import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "$utilities/create-rule";
 import { regex } from "arktype";
 import { isIdentifierPart, isIdentifierStart, ScriptTarget } from "typescript";
 
@@ -641,7 +641,7 @@ function prepareOptions(options: PreventAbbreviationsOptions | undefined): Prepa
 const IS_ALPHABETIC = regex("^[A-Za-z]+$", "u");
 
 function getWordReplacements(word: string, options: PreparedOptions): ReadonlyArray<string> {
-	if (isUpperCase(word) || options.allowList.get(word)) return [];
+	if (isUpperCase(word) || options.allowList.get(word) === true) return [];
 
 	const replacement =
 		options.replacements.get(lowerFirst(word)) ??
@@ -651,8 +651,7 @@ function getWordReplacements(word: string, options: PreparedOptions): ReadonlyAr
 	if (!replacement) return [];
 
 	const transform = isUpperFirst(word) ? upperFirst : lowerFirst;
-	// oxlint-disable-next-line unicorn/no-array-callback-reference
-	const wordReplacement = [...replacement.keys()].filter((name) => replacement.get(name)).map(transform);
+	const wordReplacement = [...replacement.keys()].filter((name) => replacement.get(name) === true).map(transform);
 
 	return wordReplacement.length > 0 ? [...wordReplacement].toSorted() : [];
 }
@@ -690,7 +689,9 @@ function cartesianProductSamples(
 
 function getNameReplacements(name: string, options: PreparedOptions, limit = 3): NameReplacements {
 	const { allowList, ignore } = options;
-	if (isUpperCase(name) || allowList.get(name) || ignore.some((regexp) => regexp.test(name))) return { total: 0 };
+	if (isUpperCase(name) || allowList.get(name) === true || ignore.some((regexp) => regexp.test(name))) {
+		return { total: 0 };
+	}
 
 	const exactReplacements = getWordReplacements(name, options);
 	if (exactReplacements.length > 0) {
@@ -717,7 +718,7 @@ function getNameReplacements(name: string, options: PreparedOptions, limit = 3):
 	for (const parts of samples) {
 		for (let index = parts.length - 1; index > 0; index -= 1) {
 			const word = parts[index] ?? "";
-			if (IS_ALPHABETIC.test(word) && parts[index - 1]?.endsWith(word)) parts.splice(index, 1);
+			if (IS_ALPHABETIC.test(word) && parts[index - 1]?.endsWith(word) === true) parts.splice(index, 1);
 		}
 	}
 
@@ -765,15 +766,12 @@ function isExportedIdentifier(identifier: IdentifierLike): boolean {
 	if (!isIdentifier(identifier)) return false;
 
 	const { parent } = identifier;
-	if (!parent) return false;
 
 	if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.id === identifier) {
 		const declaration = parent.parent;
 		const declarationParent = declaration?.parent;
 		return (
-			declaration &&
 			declaration.type === AST_NODE_TYPES.VariableDeclaration &&
-			declarationParent &&
 			declarationParent.type === AST_NODE_TYPES.ExportNamedDeclaration
 		);
 	}
@@ -813,9 +811,13 @@ function isStaticRequire(node: TSESTree.Node | undefined): node is TSESTree.Call
 
 function isDefaultOrNamespaceImportName(identifier: TSESTree.Identifier): boolean {
 	const { parent } = identifier;
-	if (!parent) return false;
-	if (parent.type === AST_NODE_TYPES.ImportDefaultSpecifier && parent.local === identifier) return true;
-	if (parent.type === AST_NODE_TYPES.ImportNamespaceSpecifier && parent.local === identifier) return true;
+	if (
+		(parent.type === AST_NODE_TYPES.ImportDefaultSpecifier ||
+			parent.type === AST_NODE_TYPES.ImportNamespaceSpecifier) &&
+		parent.local === identifier
+	) {
+		return true;
+	}
 
 	if (
 		parent.type === AST_NODE_TYPES.ImportSpecifier &&
@@ -848,7 +850,6 @@ function isClassVariable(variable: TSESLint.Scope.Variable): boolean {
 
 function shouldReportIdentifierAsProperty(identifier: TSESTree.Identifier): boolean {
 	const { parent } = identifier;
-	if (!parent) return false;
 
 	if (
 		parent.type === AST_NODE_TYPES.MemberExpression &&
@@ -892,7 +893,6 @@ function shouldReportIdentifierAsProperty(identifier: TSESTree.Identifier): bool
 function isObjectPropertyKey(identifier: TSESTree.Identifier): boolean {
 	const { parent } = identifier;
 	return (
-		parent &&
 		parent.type === AST_NODE_TYPES.Property &&
 		parent.key === identifier &&
 		!parent.computed &&
@@ -903,8 +903,8 @@ function isObjectPropertyKey(identifier: TSESTree.Identifier): boolean {
 
 function getImportSource(definition: TSESLint.Scope.Definition): string | undefined {
 	if (definition.type === DefinitionType.ImportBinding) {
-		const parent = definition.parent ?? undefined;
-		if (parent && isImportDeclaration(parent)) {
+		const { parent } = definition;
+		if (isImportDeclaration(parent)) {
 			const { source } = parent;
 			if (isStringLiteral(source)) return source.value;
 		}
@@ -926,16 +926,13 @@ function getImportSource(definition: TSESLint.Scope.Definition): string | undefi
 
 function isInternalImport(definition: TSESLint.Scope.Definition): boolean {
 	const source = getImportSource(definition);
-	if (!source) return false;
-
+	if (source === undefined || source.length === 0) return false;
 	return !source.includes("node_modules") && (source.startsWith(".") || source.startsWith("/"));
 }
 
 function shouldCheckImport(option: ImportCheckOption, definition: TSESLint.Scope.Definition): boolean {
 	if (option === false) return false;
-
 	if (option === "internal") return isInternalImport(definition);
-
 	return true;
 }
 
@@ -954,7 +951,7 @@ const preventAbbreviations = createRule<Options, MessageIds>({
 		const isSafeGeneratedName: IsSafe = (name, scopes) =>
 			scopes.every((scope) => {
 				const generatedNames = scopeToNamesGeneratedByFixer.get(scope);
-				return !generatedNames?.has(name);
+				return generatedNames?.has(name) !== true;
 			});
 
 		function checkVariable(variable: VariableLike): void {
@@ -984,7 +981,6 @@ const preventAbbreviations = createRule<Options, MessageIds>({
 
 			const avoidArgumentsReplacement =
 				definition.type === DefinitionType.Variable &&
-				definition.node &&
 				definition.node.type === AST_NODE_TYPES.VariableDeclarator &&
 				!definition.node.init;
 			const avoidArgumentsInArrowParam =
@@ -993,11 +989,8 @@ const preventAbbreviations = createRule<Options, MessageIds>({
 				variable.scope.block.type === AST_NODE_TYPES.ArrowFunctionExpression;
 			const shouldAvoidArguments = avoidArgumentsReplacement || avoidArgumentsInArrowParam;
 
-			const isSafeNameForVariable: IsSafe = (name, scopes) => {
-				if (!isSafeGeneratedName(name, scopes)) return false;
-				if (shouldAvoidArguments && name === "arguments") return false;
-				return true;
-			};
+			const isSafeNameForVariable: IsSafe = (name, scopes) =>
+				!(!isSafeGeneratedName(name, scopes) || (shouldAvoidArguments && name === "arguments"));
 
 			const variableReplacements = getNameReplacements(variable.name, options);
 			if (variableReplacements.total === 0 || !variableReplacements.samples) return;
@@ -1008,7 +1001,7 @@ const preventAbbreviations = createRule<Options, MessageIds>({
 			const safeSamples = variableReplacements.samples
 				.map((name) => {
 					const safeName = getAvailableVariableName(name, scopes, isSafeNameForVariable);
-					if (!safeName) return undefined;
+					if (safeName === undefined || safeName.length === 0) return undefined;
 
 					if (safeName !== name && isDiscouragedReplacementName(name, options)) {
 						droppedDiscouraged += 1;

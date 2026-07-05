@@ -887,9 +887,7 @@
 		"unicorn/import-style": [
 			"error",
 			{
-				"styles": {
-					"node:path": { "named": true }
-				}
+				"styles": {}
 			}
 		],
 		"unicorn/max-nested-calls": [
