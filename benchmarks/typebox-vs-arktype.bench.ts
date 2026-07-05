@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+// oxlint-disable sonar/pseudo-random -- coal
 
 import { type } from "arktype";
 import { barplot, bench, do_not_optimize, run } from "mitata";
@@ -33,11 +34,11 @@ const VALID_OBJECTS: ReadonlyArray<OptionsObject> = [
 	{ bannedInstances: ["Part", "Frame", "Script"] },
 ];
 
-const values = new Array<NonNullable<unknown>>(SIZE);
+const values = Array.from<NonNullable<unknown>>({ length: SIZE });
 for (let index = 0; index < SIZE; index += 1) {
 	const nextValue = Math.random();
 
-	// oxlint-disable-next-line unicorn/prefer-ternary
+	// oxlint-disable-next-line unicorn/prefer-ternary -- coal
 	if (nextValue < 0.5) values[index] = VALID_OBJECTS[Math.floor(Math.random() * VALID_OBJECTS.length)];
 	else values[index] = `str_${index}_${(Math.random() * 1e6) | 0}`;
 }

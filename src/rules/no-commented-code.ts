@@ -1,4 +1,4 @@
-import { extname } from "node:path";
+import nodePath from "node:path";
 import { hasCodeLines } from "$recognizers/code-recognizer";
 import { createJavaScriptDetectors } from "$recognizers/javascript-footprint";
 import { isNumber, isRecord, isString } from "$utilities/type-utilities";
@@ -204,7 +204,7 @@ function isValidParseResult(result: ParseResult): boolean {
 }
 
 function tryParse(value: string, filename: string): ParseResult | undefined {
-	const extension = extname(filename);
+	const extension = nodePath.extname(filename);
 	const parseFilename = `file${extension || ".js"}`;
 	const result = parseSync(parseFilename, value);
 

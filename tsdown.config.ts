@@ -1,5 +1,5 @@
 import { readdir, stat } from "node:fs/promises";
-import { resolve } from "node:path";
+import nodePath from "node:path";
 import picocolors from "picocolors";
 import prettyBytes from "pretty-bytes";
 import prettyMilliseconds from "pretty-ms";
@@ -37,13 +37,13 @@ const expectedBuildCount = 2;
 let completedBuildCount = 0;
 
 async function getOutputFilesAsync(directory: string): Promise<ReadonlyArray<OutputFile>> {
-	const resolvedDirectory = resolve(directory);
+	const resolvedDirectory = nodePath.resolve(directory);
 
 	async function walkAsync(walkDirectory: string): Promise<ReadonlyArray<OutputFile>> {
 		const entries = await readdir(walkDirectory, { withFileTypes: true });
 		const nestedFiles = await Promise.all(
 			entries.map(async (entry): Promise<ReadonlyArray<OutputFile>> => {
-				const fullPath = resolve(walkDirectory, entry.name);
+				const fullPath = nodePath.resolve(walkDirectory, entry.name);
 				if (entry.isDirectory()) return walkAsync(fullPath);
 				if (!entry.isFile()) return [];
 

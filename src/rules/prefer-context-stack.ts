@@ -1,4 +1,4 @@
-import { extname } from "node:path";
+import nodePath from "node:path";
 import { createRule } from "$utilities/create-rule";
 import { discoverLocalComponent, inspectLocalComponentFile } from "$utilities/local-component-discovery";
 import { resolveRelativeImport } from "$utilities/resolve-import";
@@ -165,7 +165,7 @@ const preferContextStack = createRule<Options, MessageIds>({
 				if (contextStackIdentifiers.size === 0 && !discoveredContextStack.found) return;
 
 				const canFix =
-					JSX_EXTENSIONS.has(extname(filename)) &&
+					JSX_EXTENSIONS.has(nodePath.extname(filename)) &&
 					contextStackIdentifiers.size === 1 &&
 					isSafelyFixableProviderChain(providerChain);
 				const [contextStackIdentifier] = [...contextStackIdentifiers];

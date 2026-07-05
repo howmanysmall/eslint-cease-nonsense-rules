@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+// oxlint-disable sonar/pseudo-random small-rules/no-array-constructor-elements -- shut
 
 import { barplot, bench, run } from "mitata";
 
@@ -41,8 +42,11 @@ function nextValue(): unknown {
 			return object;
 		}
 
-		default:
-			throw new Error("Unreachable");
+		default: {
+			const error = new Error("Unreachable");
+			Error.captureStackTrace(error, nextValue);
+			throw error;
+		}
 	}
 }
 

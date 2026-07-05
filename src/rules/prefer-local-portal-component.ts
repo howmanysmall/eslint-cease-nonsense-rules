@@ -1,4 +1,4 @@
-import { extname } from "node:path";
+import nodePath from "node:path";
 import { createRule } from "$utilities/create-rule";
 import { discoverLocalComponent, inspectLocalComponentFile } from "$utilities/local-component-discovery";
 import { resolveRelativeImport } from "$utilities/resolve-import";
@@ -125,7 +125,7 @@ const preferLocalPortalComponent = createRule<Options, MessageIds>({
 				const hasAvailablePortal = availablePortalIdentifiers.size > 0 || discoveredPortal.found;
 				if (!hasAvailablePortal) return;
 
-				const canFix = JSX_EXTENSIONS.has(extname(filename)) && availablePortalIdentifiers.size === 1;
+				const canFix = JSX_EXTENSIONS.has(nodePath.extname(filename)) && availablePortalIdentifiers.size === 1;
 				const [portalIdentifier] = [...availablePortalIdentifiers];
 				const replacement =
 					canFix && portalIdentifier !== undefined

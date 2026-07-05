@@ -1,4 +1,4 @@
-import { extname } from "node:path";
+import nodePath from "node:path";
 import { createRule } from "$utilities/create-rule";
 import { discoverLocalComponent, inspectLocalComponentFile } from "$utilities/local-component-discovery";
 import { resolveRelativeImport } from "$utilities/resolve-import";
@@ -262,7 +262,7 @@ const preferPaddingComponents = createRule<Options, MessageIds>({
 
 				if (componentIdentifiers.size === 0 && !discoveredComponent.found) return;
 
-				const canFix = JSX_EXTENSIONS.has(extname(filename)) && componentIdentifiers.size === 1;
+				const canFix = JSX_EXTENSIONS.has(nodePath.extname(filename)) && componentIdentifiers.size === 1;
 				const [componentIdentifier] = [...componentIdentifiers];
 				const replacement =
 					canFix && componentIdentifier !== undefined

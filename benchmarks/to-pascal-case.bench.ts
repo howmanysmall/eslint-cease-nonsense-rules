@@ -1,3 +1,6 @@
+// oxlint-disable unicorn/prefer-code-point sonar/cognitive-complexity unicorn/prefer-string-raw -- hate
+// biome-ignore-all lint/nursery/useNamedCaptureGroup: hate
+
 import { regex } from "arktype";
 import { barplot, bench, do_not_optimize, run } from "mitata";
 import { toPascal } from "ts-case-convert";
@@ -5,6 +8,7 @@ import { toPascal } from "ts-case-convert";
 import { toPascalCase } from "../src/utilities/casing-utilities";
 
 const RUNS = 1000;
+
 const values = [
 	"MostRecent",
 	"LeastRecent",
@@ -18,8 +22,7 @@ const values = [
 	"least_recent",
 ];
 
-const SPLIT_MARKER = "\0";
-const SPLIT_REPLACE_VALUE = `$1${SPLIT_MARKER}$2`;
+const SPLIT_REPLACE_VALUE = `$1\0$2`;
 
 const SPLIT_LOWER_TO_UPPER_ASCII = /([a-z\d])([A-Z])/gu;
 const SPLIT_UPPER_TO_UPPER_ASCII = /([A-Z])([A-Z][a-z])/gu;
@@ -33,7 +36,7 @@ function toPascalCaseTurbo(value: string): string {
 
 	// Check for non-ASCII (rare for identifiers)
 	let ascii = true;
-	for (let index = 0; index < trimmed.length; index++) {
+	for (let index = 0; index < trimmed.length; index += 1) {
 		if (trimmed.charCodeAt(index) > 127) {
 			ascii = false;
 			break;
@@ -51,7 +54,7 @@ function toPascalCaseTurbo(value: string): string {
 	let result = "";
 	let wordStart = 0;
 
-	for (let index = 0; index <= marked.length; index++) {
+	for (let index = 0; index <= marked.length; index += 1) {
 		if (index === marked.length || marked.charCodeAt(index) === 0) {
 			if (index > wordStart) {
 				const firstCode = marked.charCodeAt(wordStart);

@@ -1,5 +1,5 @@
 import { access } from "node:fs/promises";
-import { resolve } from "node:path";
+import nodePath from "node:path";
 
 async function fileExistsAsync(path: string): Promise<boolean> {
 	try {
@@ -11,10 +11,10 @@ async function fileExistsAsync(path: string): Promise<boolean> {
 }
 
 export async function getConfigurationPathAsync(directory: string): Promise<string | undefined> {
-	const typescriptPath = resolve(directory, "eslint.config.ts");
+	const typescriptPath = nodePath.resolve(directory, "eslint.config.ts");
 	if (await fileExistsAsync(typescriptPath)) return typescriptPath;
 
-	const javascriptPath = resolve(directory, "eslint.config.js");
+	const javascriptPath = nodePath.resolve(directory, "eslint.config.js");
 	if (await fileExistsAsync(javascriptPath)) return javascriptPath;
 
 	return undefined;

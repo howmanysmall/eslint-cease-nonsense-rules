@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import nodePath from "node:path";
 import { describe, vi } from "vitest";
 import rule from "$rules/no-manual-children-property";
 import parser from "@typescript-eslint/parser";
@@ -21,7 +21,7 @@ const ruleTester = new RuleTester({
 	},
 });
 
-const fixturesDir = join(__dirname, "../fixtures/no-manual-children-property");
+const fixturesDir = nodePath.join(__dirname, "../fixtures/no-manual-children-property");
 
 const typeAwareRuleTester = new RuleTester({
 	languageOptions: {
@@ -33,7 +33,7 @@ const typeAwareRuleTester = new RuleTester({
 			},
 			projectService: {
 				allowDefaultProject: ["*.ts", "*.tsx"],
-				defaultProject: join(fixturesDir, "tsconfig.json"),
+				defaultProject: nodePath.join(fixturesDir, "tsconfig.json"),
 				maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 64,
 			},
 			tsconfigRootDir: fixturesDir,

@@ -1,4 +1,4 @@
-import { resolve } from "node:path";
+import nodePath from "node:path";
 import { exit } from "node:process";
 import { Command, EnumType } from "@cliffy/command";
 import { type } from "arktype";
@@ -48,7 +48,7 @@ const getRulesCommand = new Command()
 	})
 	.arguments("<directory:string> <...rule-names:string>")
 	.action(async ({ format }, directoryUnresolved, ruleName, ...ruleNames) => {
-		const directory = resolve(directoryUnresolved);
+		const directory = nodePath.resolve(directoryUnresolved);
 		const isDirectoryReal = await isDirectorySimpleAsync(directory);
 		if (!isDirectoryReal) {
 			log.fail("The specified directory does not exist.");

@@ -1,11 +1,10 @@
-import { join } from "node:path";
+import nodePath from "node:path";
 import { describe, vi } from "vitest";
 import rule from "$rules/prefer-enum-item";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
-const __dirname = import.meta.dirname;
-const fixturesDir = join(__dirname, "../fixtures/prefer-enum-item");
+const fixturesDir = nodePath.join(import.meta.dirname, "../fixtures/prefer-enum-item");
 
 // Type-aware tests have cold-start overhead from TypeScript project service initialization
 vi.setConfig({ testTimeout: 30_000 });
@@ -18,7 +17,7 @@ const ruleTester = new RuleTester({
 			ecmaFeatures: { jsx: true },
 			projectService: {
 				allowDefaultProject: ["*.ts", "*.tsx"],
-				defaultProject: join(fixturesDir, "tsconfig.json"),
+				defaultProject: nodePath.join(fixturesDir, "tsconfig.json"),
 				maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 64,
 			},
 			tsconfigRootDir: fixturesDir,

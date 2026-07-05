@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import nodePath from "node:path";
 import { describe, vi } from "vitest";
 import rule from "$rules/misleading-lua-tuple-checks";
 import tsParser from "@typescript-eslint/parser";
@@ -8,8 +8,8 @@ const testDirectory = import.meta.dirname;
 
 vi.setConfig({ testTimeout: 30_000 });
 
-const fixturesDir = join(testDirectory, "../fixtures/misleading-lua-tuple-checks");
-const filename = join(fixturesDir, "input.ts");
+const fixturesDir = nodePath.join(testDirectory, "../fixtures/misleading-lua-tuple-checks");
+const filename = nodePath.join(fixturesDir, "input.ts");
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -19,7 +19,7 @@ const ruleTester = new RuleTester({
 			ecmaFeatures: { jsx: true },
 			projectService: {
 				allowDefaultProject: ["*.ts", "*.tsx"],
-				defaultProject: join(fixturesDir, "tsconfig.json"),
+				defaultProject: nodePath.join(fixturesDir, "tsconfig.json"),
 				maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 64,
 			},
 			tsconfigRootDir: fixturesDir,

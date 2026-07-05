@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { readdir } from "node:fs/promises";
-import { resolve } from "node:path";
+import nodePath from "node:path";
 import { argv, cwd } from "node:process";
 import { Command, ValidationError } from "@cliffy/command";
 
@@ -12,7 +12,7 @@ async function collectUnitTestsAsync(rootDirectory: string): Promise<ReadonlyArr
 		const entries = await readdir(directory, { withFileTypes: true });
 		await Promise.all(
 			entries.map(async (entry): Promise<void> => {
-				const path = resolve(directory, entry.name);
+				const path = nodePath.resolve(directory, entry.name);
 				if (entry.isDirectory()) {
 					await walkAsync(path);
 					return;
@@ -63,7 +63,7 @@ const command = new Command()
 	.description("Shard unit tests for parallel execution.")
 	.arguments("<shard-index:integer> <total-shards:integer>")
 	.action(async (_, shardIndex, totalShards) => {
-		const rootDirectory = resolve(cwd(), "tests");
+		const rootDirectory = nodePath.resolve(cwd(), "tests");
 		const unitTests = await collectUnitTestsAsync(rootDirectory);
 
 		validateShardArgumentsOrThrow(shardIndex, totalShards, unitTests.length);

@@ -26,6 +26,7 @@ const SAMPLE_VALUES: ReadonlyArray<unknown> = [
 	[],
 ];
 
+// oxlint-disable-next-line small-rules/no-array-constructor-elements -- lol
 const values = new Array<unknown>(SIZE);
 for (let index = 0; index < SIZE; index += 1) values[index] = SAMPLE_VALUES[index % SAMPLE_VALUES.length];
 

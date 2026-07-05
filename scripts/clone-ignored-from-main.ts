@@ -2,7 +2,7 @@
 
 import { spawn } from "node:child_process";
 import { cp, mkdir, stat } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import nodePath from "node:path";
 import { argv, exit } from "node:process";
 import { Command } from "@cliffy/command";
 import { CompletionsCommand } from "@cliffy/command/completions";
@@ -72,7 +72,7 @@ async function findMainWorktreeAsync(): Promise<string | undefined> {
 		if (!line.startsWith("worktree ")) continue;
 
 		const worktreePath = line.slice(9).trim();
-		const gitPath = join(worktreePath, ".git");
+		const gitPath = nodePath.join(worktreePath, ".git");
 
 		try {
 			// oxlint-disable-next-line no-await-in-loop -- Sequential check needed to return early on first match
@@ -167,8 +167,8 @@ const command = new Command()
 		let skipped = 0;
 
 		for (const relativePath of filesToCopy) {
-			const source = join(mainRoot, relativePath);
-			const destination = join(destinationRoot, relativePath);
+			const source = nodePath.join(mainRoot, relativePath);
+			const destination = nodePath.join(destinationRoot, relativePath);
 
 			// oxlint-disable-next-line no-await-in-loop -- Sequential file operations are safer
 			if (!overwrite && (await fileExistsAsync(destination))) {
@@ -183,7 +183,7 @@ const command = new Command()
 			}
 
 			// oxlint-disable-next-line no-await-in-loop -- Sequential file operations are safer
-			await mkdir(dirname(destination), { recursive: true });
+			await mkdir(nodePath.dirname(destination), { recursive: true });
 			// oxlint-disable-next-line no-await-in-loop -- Sequential file operations are safer
 			await cp(source, destination);
 			copied += 1;

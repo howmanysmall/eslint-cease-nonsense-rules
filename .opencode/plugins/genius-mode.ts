@@ -1,3 +1,5 @@
+// oxlint-disable typescript/require-await small-rules/prevent-abbreviations regexp-js/no-unused-capturing-group -- coal!
+// biome-ignore-all lint/nursery/useNamedCaptureGroup: coal
 import { isBashOutput, isReadOutput } from "./types/outputs";
 import { sendNotificationAsync } from "./utilities/send-notification-async";
 
@@ -15,15 +17,15 @@ const BUN_TEST_REGEXP = /^bun test(\s|$)/iv;
 const AUBE_RUN_TEST_REGEXP = /^aube run test(\s|$)/iv;
 const AUBR_TEST_REGEXP = /^aubr test(\s|$)/iv;
 
-const ENV_PREFIX_REGEXP = /^(?:[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|[^\s]+)\s+)+/v;
+const ENV_PREFIX_REGEXP = /^(?:[A-Za-z_]\w*=(?:"[^"]*"|'[^']*'|\S+)\s+)+/v;
 const REPORTER_FLAG_REGEXP = /--reporter(?:\s|=)/v;
 
 function extractEnvironmentPrefix(normalized: string): { envPrefix: string; command: string } {
 	const match = ENV_PREFIX_REGEXP.exec(normalized);
 	if (!match) return { command: normalized, envPrefix: "" };
 
-	const [envPrefix] = match;
-	return { command: normalized.slice(envPrefix.length), envPrefix };
+	const [environmentPrefix] = match;
+	return { command: normalized.slice(environmentPrefix.length), envPrefix: environmentPrefix };
 }
 
 function insertReporterForAubeRun(parameters: string): string {
@@ -50,38 +52,38 @@ function transformTestCommand(command: string): string | undefined {
 	// Skip if --reporter is already present anywhere in the command.
 	if (!normalized || REPORTER_FLAG_REGEXP.test(normalized)) return undefined;
 
-	const { envPrefix, command: withoutEnv } = extractEnvironmentPrefix(normalized);
-	if (!withoutEnv) return undefined;
+	const { envPrefix: environmentPrefix, command: withoutEnvironment } = extractEnvironmentPrefix(normalized);
+	if (!withoutEnvironment) return undefined;
 
 	// aube run test <args> — already the right runner, just add --reporter.
-	const aubeRunMatch = AUBE_RUN_TEST_REGEXP.exec(withoutEnv);
+	const aubeRunMatch = AUBE_RUN_TEST_REGEXP.exec(withoutEnvironment);
 	if (aubeRunMatch) {
-		const parameters = withoutEnv.slice(aubeRunMatch[0].length).trim();
-		return buildAubeRunCommand(envPrefix, parameters);
+		const parameters = withoutEnvironment.slice(aubeRunMatch[0].length).trim();
+		return buildAubeRunCommand(environmentPrefix, parameters);
 	}
 
 	// aubr test <args> — already the right runner, just add --reporter.
-	const aubrMatch = AUBR_TEST_REGEXP.exec(withoutEnv);
+	const aubrMatch = AUBR_TEST_REGEXP.exec(withoutEnvironment);
 	if (aubrMatch) {
-		const parameters = withoutEnv.slice(aubrMatch[0].length).trim();
-		return buildAubrCommand(envPrefix, parameters);
+		const parameters = withoutEnvironment.slice(aubrMatch[0].length).trim();
+		return buildAubrCommand(environmentPrefix, parameters);
 	}
 
 	// Only check bun-prefixed commands below.
-	if (!withoutEnv.toLowerCase().startsWith("bun ")) return undefined;
+	if (!withoutEnvironment.toLowerCase().startsWith("bun ")) return undefined;
 
 	// bun run test <args> → aube run test.
-	const bunRunMatch = BUN_RUN_TEST_REGEXP.exec(withoutEnv);
+	const bunRunMatch = BUN_RUN_TEST_REGEXP.exec(withoutEnvironment);
 	if (bunRunMatch) {
-		const parameters = withoutEnv.slice(bunRunMatch[0].length).trim();
-		return buildAubeRunCommand(envPrefix, parameters);
+		const parameters = withoutEnvironment.slice(bunRunMatch[0].length).trim();
+		return buildAubeRunCommand(environmentPrefix, parameters);
 	}
 
 	// bun test <args> → aubr test.
-	const bunTestMatch = BUN_TEST_REGEXP.exec(withoutEnv);
+	const bunTestMatch = BUN_TEST_REGEXP.exec(withoutEnvironment);
 	if (bunTestMatch) {
-		const parameters = withoutEnv.slice(bunTestMatch[0].length).trim();
-		return buildAubrCommand(envPrefix, parameters);
+		const parameters = withoutEnvironment.slice(bunTestMatch[0].length).trim();
+		return buildAubrCommand(environmentPrefix, parameters);
 	}
 
 	return undefined;

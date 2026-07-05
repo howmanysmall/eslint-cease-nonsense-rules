@@ -1,4 +1,4 @@
-import { basename, extname, relative } from "node:path";
+import nodePath from "node:path";
 import { toPascalCase } from "$utilities/casing-utilities";
 import { createRule } from "$utilities/create-rule";
 import { resolveRelativeImport } from "$utilities/resolve-import";
@@ -31,7 +31,7 @@ function hasDirectoryInPath(pathParts: ReadonlyArray<string>, directory: string)
 }
 
 function isIndexFile(filePath: string): boolean {
-	return basename(filePath, extname(filePath)) === "index";
+	return nodePath.basename(filePath, nodePath.extname(filePath)) === "index";
 }
 
 function isValidFixtureImport(pathParts: ReadonlyArray<string>): boolean {
@@ -61,7 +61,7 @@ const strictComponentBoundaries = createRule<[Options], "noReachingIntoComponent
 				const resolved = resolveRelativeImport(importSource, filename);
 				if (!resolved.found) return;
 
-				const pathDifference = relative(filename, resolved.path);
+				const pathDifference = nodePath.relative(filename, resolved.path);
 				const pathParts = pathSegmentsFromSource(pathDifference);
 				const traversals = countParentTraversals(pathDifference);
 

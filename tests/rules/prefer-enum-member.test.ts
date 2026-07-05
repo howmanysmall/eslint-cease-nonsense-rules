@@ -1,4 +1,4 @@
-import { join, resolve } from "node:path";
+import nodePath from "node:path";
 import { describe, vi } from "vitest";
 import rule from "$rules/prefer-enum-member";
 import parser from "@typescript-eslint/parser";
@@ -11,8 +11,8 @@ const currentDirectory = import.meta.dirname;
 // Type-aware tests have cold-start overhead from TypeScript project service initialization
 vi.setConfig({ testTimeout: 30_000 });
 
-const testsDir = resolve(currentDirectory, "..");
-const eslintProjectPath = join(testsDir, "tsconfig.eslint.json");
+const testsDir = nodePath.resolve(currentDirectory, "..");
+const eslintProjectPath = nodePath.join(testsDir, "tsconfig.eslint.json");
 const fixturesRelativeDir = "fixtures/prefer-enum-member";
 
 const ruleTester = new RuleTester({
@@ -64,7 +64,7 @@ function withStableFilenames<TTestCase extends RuleTestCase>(
 ): Array<TTestCase> {
 	return cases.map((testCase) => ({
 		...testCase,
-		filename: join(fixturesRelativeDir, `${prefix}.tsx`),
+		filename: nodePath.join(fixturesRelativeDir, `${prefix}.tsx`),
 	}));
 }
 

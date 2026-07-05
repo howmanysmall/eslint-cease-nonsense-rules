@@ -1,4 +1,4 @@
-import { join, resolve } from "node:path";
+import nodePath from "node:path";
 import { describe, vi } from "vitest";
 import rule from "$rules/dot-notation";
 import parser from "@typescript-eslint/parser";
@@ -8,9 +8,9 @@ import type { DotNotationOptions } from "$rules/dot-notation";
 import type { InvalidTestCase, ValidTestCase } from "@typescript-eslint/rule-tester";
 
 const __dirname = import.meta.dirname;
-const testsDir = resolve(__dirname, "..");
-const fixturesDir = join(testsDir, "fixtures", "dot-notation");
-const fixtureProjectPath = join(fixturesDir, "tsconfig.json");
+const testsDir = nodePath.resolve(__dirname, "..");
+const fixturesDir = nodePath.join(testsDir, "fixtures", "dot-notation");
+const fixtureProjectPath = nodePath.join(fixturesDir, "tsconfig.json");
 
 vi.setConfig({ testTimeout: 30_000 });
 

@@ -1,12 +1,12 @@
-import { join, resolve } from "node:path";
+import nodePath from "node:path";
 import { describe } from "vitest";
 import rule from "$rules/naming-convention";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 
 const __dirname = import.meta.dirname;
-const fromFixturesDir = resolve(__dirname, "..", "fixtures", "naming-convention", "from-match");
-const fromFixturesProject = join(fromFixturesDir, "tsconfig.json");
+const fromFixturesDir = nodePath.resolve(__dirname, "..", "fixtures", "naming-convention", "from-match");
+const fromFixturesProject = nodePath.join(fromFixturesDir, "tsconfig.json");
 const fromFixturesCase = "case.ts";
 
 const ruleTester = new RuleTester({

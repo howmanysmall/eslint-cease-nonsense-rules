@@ -1,14 +1,14 @@
-import { join } from "node:path";
+import nodePath from "node:path";
 import { describe } from "vitest";
 import rule from "$rules/prefer-local-portal-component";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
-const FIXTURES = join(import.meta.dirname, "..", "fixtures", "prefer-local-portal-component");
-const WITH_PORTAL = join(FIXTURES, "with-portal");
-const WITHOUT_PORTAL = join(FIXTURES, "without-portal");
-const AMBIGUOUS_PORTAL = join(FIXTURES, "ambiguous-portal");
-const FIXTURE_ONLY_PORTAL = join(FIXTURES, "fixture-only");
+const FIXTURES = nodePath.join(import.meta.dirname, "..", "fixtures", "prefer-local-portal-component");
+const WITH_PORTAL = nodePath.join(FIXTURES, "with-portal");
+const WITHOUT_PORTAL = nodePath.join(FIXTURES, "without-portal");
+const AMBIGUOUS_PORTAL = nodePath.join(FIXTURES, "ambiguous-portal");
+const FIXTURE_ONLY_PORTAL = nodePath.join(FIXTURES, "fixture-only");
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -33,7 +33,7 @@ export function Example(target: Instance) {
     return createPortal(<frame />, target);
 }`,
 				errors: [{ messageId: "preferPortalComponent" }],
-				filename: join(WITH_PORTAL, "src", "screens", "example.tsx"),
+				filename: nodePath.join(WITH_PORTAL, "src", "screens", "example.tsx"),
 				output: `import Portal from "../components/portal";
 import { createPortal } from "@rbxts/react-roblox";
 
@@ -49,7 +49,7 @@ export function Example(content: React.ReactNode, target: Instance) {
     return mountPortal(content, target);
 }`,
 				errors: [{ messageId: "preferPortalComponent" }],
-				filename: join(WITH_PORTAL, "src", "screens", "aliased.tsx"),
+				filename: nodePath.join(WITH_PORTAL, "src", "screens", "aliased.tsx"),
 				output: `import PortalComponent from "../components/portal";
 import { createPortal as mountPortal } from "@rbxts/react-roblox";
 
@@ -65,7 +65,7 @@ export function Example(container: HTMLElement) {
     return ReactDOM.createPortal(<div />, container);
 }`,
 				errors: [{ messageId: "preferPortalComponent" }],
-				filename: join(WITH_PORTAL, "src", "screens", "standard.tsx"),
+				filename: nodePath.join(WITH_PORTAL, "src", "screens", "standard.tsx"),
 				output: `import Portal from "../components/portal";
 import * as ReactDOM from "react-dom";
 
@@ -80,7 +80,7 @@ export function Example(target: Instance) {
     return createPortal(<frame />, target);
 }`,
 				errors: [{ messageId: "preferPortalComponent" }],
-				filename: join(WITH_PORTAL, "src", "screens", "report-only.tsx"),
+				filename: nodePath.join(WITH_PORTAL, "src", "screens", "report-only.tsx"),
 			},
 		],
 		valid: [
@@ -90,7 +90,7 @@ export function Example(target: Instance) {
 export function Example(target: Instance) {
     return createPortal(<frame />, target);
 }`,
-				filename: join(WITHOUT_PORTAL, "src", "screens", "example.tsx"),
+				filename: nodePath.join(WITHOUT_PORTAL, "src", "screens", "example.tsx"),
 			},
 			{
 				code: `import { createPortal } from "@rbxts/react-roblox";
@@ -98,7 +98,7 @@ export function Example(target: Instance) {
 export function Example(target: Instance) {
     return createPortal(<frame />, target);
 }`,
-				filename: join(AMBIGUOUS_PORTAL, "src", "screens", "example.tsx"),
+				filename: nodePath.join(AMBIGUOUS_PORTAL, "src", "screens", "example.tsx"),
 			},
 			{
 				code: `import { createPortal } from "@rbxts/react-roblox";
@@ -110,7 +110,7 @@ export function Example(target: Instance) {
 
                     return createPortal();
     }`,
-				filename: join(WITH_PORTAL, "src", "screens", "shadowed.tsx"),
+				filename: nodePath.join(WITH_PORTAL, "src", "screens", "shadowed.tsx"),
 			},
 			{
 				code: `import { createPortal } from "@rbxts/react-roblox";
@@ -118,7 +118,7 @@ export function Example(target: Instance) {
 export function Example(target: Instance) {
     return createPortal(<frame />, target);
 }`,
-				filename: join(FIXTURE_ONLY_PORTAL, "src", "screens", "example.tsx"),
+				filename: nodePath.join(FIXTURE_ONLY_PORTAL, "src", "screens", "example.tsx"),
 			},
 		],
 	});

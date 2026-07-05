@@ -1,6 +1,6 @@
 import { access, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { resolve } from "node:path";
+import nodePath from "node:path";
 import { env, exit } from "node:process";
 import { Command } from "@cliffy/command";
 import { type } from "arktype";
@@ -149,14 +149,14 @@ const testLiveCommand = new Command()
 	.arguments("<directory:string>")
 	.action(async ({ ci, useLink, cache }, directoryUnresolved) => {
 		log.info("Starting live test...");
-		const directory = resolve(expandDirectory(directoryUnresolved));
+		const directory = nodePath.resolve(expandDirectory(directoryUnresolved));
 		const isDirectoryReal = await isDirectorySimpleAsync(directory);
 		if (!isDirectoryReal) {
 			log.fail(picocolors.red(`The directory "${picocolors.bold(directory)}" does not exist.`));
 			exit(1);
 		}
 
-		const livePackagePath = resolve(directory, "package.json");
+		const livePackagePath = nodePath.resolve(directory, "package.json");
 		const isLivePackageReal = await fileExistsAsync(livePackagePath);
 
 		if (!isLivePackageReal) {
@@ -164,7 +164,7 @@ const testLiveCommand = new Command()
 			exit(1);
 		}
 
-		const [thisPackageJson] = await readPackageJsonAsync(resolve(".", "package.json"));
+		const [thisPackageJson] = await readPackageJsonAsync(nodePath.resolve(".", "package.json"));
 		const [livePackageJson, packageContents] = await readPackageJsonAsync(livePackagePath);
 
 		const packageFileName = createPackageFileName(thisPackageJson.name, thisPackageJson.version);
@@ -180,10 +180,10 @@ const testLiveCommand = new Command()
 
 		await runCommandAsync("nr", ["build"]);
 
-		const nodePackages = resolve(directory, "patches", "node");
+		const nodePackages = nodePath.resolve(directory, "patches", "node");
 		await mkdir(nodePackages, { recursive: true });
 
-		if (useLink) await runCommandAsync("pnpm", ["link", resolve(".")], { cwd: directory });
+		if (useLink) await runCommandAsync("pnpm", ["link", nodePath.resolve(".")], { cwd: directory });
 
 		if (!useLink) {
 			const output = await getCommandTextAsync("npm", [
@@ -200,7 +200,7 @@ const testLiveCommand = new Command()
 				log.fail("Failed to produce plugin package for live test.");
 				exit(1);
 			}
-			await rename(resolve(nodePackages, packedFile), resolve(nodePackages, packageFileName));
+			await rename(nodePath.resolve(nodePackages, packedFile), nodePath.resolve(nodePackages, packageFileName));
 		}
 
 		try {
@@ -236,7 +236,7 @@ const testLiveCommand = new Command()
 			await cleanupAsync();
 		}
 
-		const patchPath = resolve(nodePackages, packageFileName);
+		const patchPath = nodePath.resolve(nodePackages, packageFileName);
 		if (await fileExistsAsync(patchPath)) await rm(patchPath);
 	});
 
