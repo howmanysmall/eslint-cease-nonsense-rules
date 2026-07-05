@@ -4,19 +4,29 @@ set -euo pipefail
 
 function run-check() {
 	local name="$1"
-	local cmd="$2"
-	echo "🔍 Running ${name}..."
-	if ! ${cmd}; then
+	shift
+	echo "🔍 Running ${name} on ${rel_path}..."
+	if ! "$@"; then
 		echo "❌ ${name} failed - blocking Claude"
 		exit 2
 	fi
 	echo "✅ ${name} passed"
 }
 
-run-check "Format (auto-fix)" "nr format"
-run-check "Lint" "nr lint:agent"
-run-check "Type check" "nr type-check"
-# run-check "Tests" "AGENT=1 nr test"
+input="$(cat)"
+file_path="$(jq -r '.tool_input.file_path // empty' <<< "${input}")"
 
-echo "🎉 All quality checks passed - codebase is clean!"
+[[ -z "${file_path}" || ! -f "${file_path}" ]] && exit 0
+
+case "${file_path}" in
+	*.ts | *.tsx | *.js | *.jsx | *.mjs | *.cjs) ;;
+	*) exit 0 ;;
+esac
+
+rel_path="${file_path#"${PWD}"/}"
+
+run-check "Format (auto-fix)" node --run format -- "${rel_path}"
+run-check "Lint" node --run lint:agent -- "${rel_path}"
+
+echo "🎉 Quality checks passed for ${rel_path}"
 exit 0

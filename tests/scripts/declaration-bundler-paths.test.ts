@@ -35,7 +35,7 @@ describe("declaration-bundler-paths", () => {
 		},
 	},
 }`,
-			async (configFilePath) => {
+			(configFilePath) => {
 				const paths = readDeclarationBundlerPaths(configFilePath, "src");
 
 				expect(paths).toStrictEqual({

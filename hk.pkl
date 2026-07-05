@@ -30,7 +30,7 @@ hooks {
       ["js-ts-fix"] {
         glob = sourceGlobs
         fix =
-          "node --run oxc -- --fix {{ files }} && node --run biome -- check --write --no-errors-on-unmatched {{ files }} && node --run format -- {{ files }}"
+          "node --run oxlint -- --fix {{ files }} && node --run biome -- check --write --no-errors-on-unmatched {{ files }} && node --run format -- {{ files }}"
       }
       ["format-json5-mdx"] {
         glob = List("*.json5", "*.mdx")
@@ -51,8 +51,8 @@ hooks {
       ["biome-ci"] {
         check = "node --run biome -- ci"
       }
-      ["oxc"] {
-        check = "node --run oxc"
+      ["oxlint"] {
+        check = "node --run oxlint"
       }
       ["type-check"] {
         check = "node --run type-check"

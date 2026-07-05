@@ -1,11 +1,6 @@
 import { availableParallelism } from "node:os";
 import { argv } from "node:process";
-import tsconfigPaths from "vite-tsconfig-paths";
 import { defineConfig } from "vitest/config";
-
-const tsconfig = tsconfigPaths({
-	projects: ["tsconfig.json", "tests/tsconfig.json"],
-});
 
 const isFocusedRun = argv.slice(2).some((argument) => argument.endsWith(".test.ts") || argument.startsWith("tests/"));
 
@@ -32,7 +27,7 @@ const typeAwareTestGlobs = [
 ];
 
 const configuration = defineConfig({
-	plugins: [tsconfig],
+	resolve: { tsconfigPaths: true },
 	server: { watch: null },
 	test: {
 		bail: 1,
@@ -82,7 +77,7 @@ const configuration = defineConfig({
 				},
 			},
 		],
-		reporters: ["dot"],
+		reporters: ["github-actions", "tree"],
 		testTimeout: 30_000,
 		typecheck: {
 			checker: "tsgo",

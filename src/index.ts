@@ -60,42 +60,6 @@ import requireSerializedNumericDataType from "./rules/require-serialized-numeric
 import strictComponentBoundaries from "./rules/strict-component-boundaries";
 import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
 import useHookAtTopLevel from "./rules/use-hook-at-top-level";
-import {
-	createBanInstancesOptions,
-	createComplexityConfiguration,
-	createDotNotationOptions,
-	createEffectFunctionOptions,
-	createHookConfiguration,
-	createNamingConventionOptions,
-	createNoArrayConstructorElementsOptions,
-	createNoConstantConditionWithBreakOptions,
-	createNoEmptyArrayLiteralOptions,
-	createNoEventsInEventsCallbackOptions,
-	createNoGodComponentsOptions,
-	createNoInstanceMethodsOptions,
-	createNoManualChildrenPropertyOptions,
-	createNoMemoChildrenOptions,
-	createNoNewInstanceInUseMemoOptions,
-	createNoShorthandOptions,
-	createNoUnusedImportsOptions,
-	createNoUnusedUseMemoOptions,
-	createNoUselessUseEffectOptions,
-	createNoUselessUseMemoOptions,
-	createNoUselessUseSpringOptions,
-	createPairConfiguration,
-	createPreferEnumItemOptions,
-	createPreferPatternReplacementsOptions,
-	createPreventAbbreviationsOptions,
-	createReactKeysOptions,
-	createRequireModuleLevelInstantiationOptions,
-	createRequirePairedCallsOptions,
-	createRequireReactDisplayNamesOptions,
-	createRequireSerializedNumericDataTypeOptions,
-	createUseExhaustiveDependenciesOptions,
-	createUseHookAtTopLevelOptions,
-	defaultRobloxProfilePair,
-} from "./utilities/configure-utilities";
-import { pattern } from "./utilities/pattern-replacement";
 
 import type { LooseRuleDefinition } from "@typescript-eslint/utils/ts-eslint";
 
@@ -134,43 +98,7 @@ export type { RequireReactDisplayNamesOptions } from "./rules/require-react-disp
 export type { RequireSerializedNumericDataTypeOptions } from "./rules/require-serialized-numeric-data-type";
 export type { HookEntry, UseExhaustiveDependenciesOptions } from "./rules/use-exhaustive-dependencies";
 export type { EnvironmentMode } from "./types/environment-mode";
-export {
-	createBanInstancesOptions,
-	createComplexityConfiguration,
-	createDotNotationOptions,
-	createEffectFunctionOptions,
-	createHookConfiguration,
-	createNamingConventionOptions,
-	createNoArrayConstructorElementsOptions,
-	createNoConstantConditionWithBreakOptions,
-	createNoEmptyArrayLiteralOptions,
-	createNoEventsInEventsCallbackOptions,
-	createNoGodComponentsOptions,
-	createNoInstanceMethodsOptions,
-	createNoManualChildrenPropertyOptions,
-	createNoMemoChildrenOptions,
-	createNoNewInstanceInUseMemoOptions,
-	createNoShorthandOptions,
-	createNoUnusedImportsOptions,
-	createNoUnusedUseMemoOptions,
-	createNoUselessUseEffectOptions,
-	createNoUselessUseMemoOptions,
-	createNoUselessUseSpringOptions,
-	createPairConfiguration,
-	createPreferEnumItemOptions,
-	createPreferPatternReplacementsOptions,
-	createPreventAbbreviationsOptions,
-	createReactKeysOptions,
-	createRequireModuleLevelInstantiationOptions,
-	createRequirePairedCallsOptions,
-	createRequireReactDisplayNamesOptions,
-	createRequireSerializedNumericDataTypeOptions,
-	createUseExhaustiveDependenciesOptions,
-	createUseHookAtTopLevelOptions,
-	defaultRobloxProfilePair,
-};
 export type { Pattern, PreferPatternReplacementsOptions } from "./utilities/pattern-replacement";
-export { pattern };
 
 /**
  * ESLint plugin entry for eslint-cease-nonsense-rules.
@@ -317,3 +245,41 @@ const plugin: Plugin = {
 } as const;
 
 export default plugin;
+
+// biome-ignore lint/performance/noBarrelFile: NOT A FUCKING BARREL FILE!
+export {
+	createBanInstancesOptions,
+	createComplexityConfiguration,
+	createDotNotationOptions,
+	createEffectFunctionOptions,
+	createHookConfiguration,
+	createNamingConventionOptions,
+	createNoArrayConstructorElementsOptions,
+	createNoConstantConditionWithBreakOptions,
+	createNoEmptyArrayLiteralOptions,
+	createNoEventsInEventsCallbackOptions,
+	createNoGodComponentsOptions,
+	createNoInstanceMethodsOptions,
+	createNoManualChildrenPropertyOptions,
+	createNoMemoChildrenOptions,
+	createNoNewInstanceInUseMemoOptions,
+	createNoShorthandOptions,
+	createNoUnusedImportsOptions,
+	createNoUnusedUseMemoOptions,
+	createNoUselessUseEffectOptions,
+	createNoUselessUseMemoOptions,
+	createNoUselessUseSpringOptions,
+	createPairConfiguration,
+	createPreferEnumItemOptions,
+	createPreferPatternReplacementsOptions,
+	createPreventAbbreviationsOptions,
+	createReactKeysOptions,
+	createRequireModuleLevelInstantiationOptions,
+	createRequirePairedCallsOptions,
+	createRequireReactDisplayNamesOptions,
+	createRequireSerializedNumericDataTypeOptions,
+	createUseExhaustiveDependenciesOptions,
+	createUseHookAtTopLevelOptions,
+	defaultRobloxProfilePair,
+} from "./utilities/configure-utilities";
+export { pattern } from "./utilities/pattern-replacement";

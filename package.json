@@ -50,6 +50,7 @@
 		"release": "bumpp",
 		"test": "vitest run --sequence.shuffle",
 		"test:agent": "node --run test -- --reporter agent",
+		"test:dot": "node --run test -- --reporter dot",
 		"test:watch": "vitest --watch",
 		"type-check": "node --run typescript -- --noEmit",
 		"typescript": "tsgo"
