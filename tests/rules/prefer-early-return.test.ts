@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/prefer-early-return";
+import rule from "$rules/prefer-early-return";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({

@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-constant-condition-with-break";
+import rule from "$rules/no-constant-condition-with-break";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({

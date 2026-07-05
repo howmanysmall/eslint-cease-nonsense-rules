@@ -1,6 +1,6 @@
 import { TSESTree } from "@typescript-eslint/utils";
 
-import type { ReadonlyRecord } from "@lint-types/utility-types";
+import type { ReadonlyRecord } from "$types/utility-types";
 import type { Rule } from "eslint";
 
 export interface NoGodComponentsOptions {
@@ -373,7 +373,7 @@ const noGodComponents: Rule.RuleModule = {
 		}
 
 		function checkHigherOrderComponentCall(node: unknown): void {
-			if (!isCallExpression(node) || !isReactComponentHOC(node)) return;
+			if (!(isCallExpression(node) && isReactComponentHOC(node))) return;
 			const [firstArgument] = node.arguments;
 			if (
 				!firstArgument ||

@@ -1,14 +1,14 @@
 {
 	"compilerOptions": {
 		"paths": {
-			"@constants/*": ["./src/constants/*"],
-			"@lint-types/*": ["./src/types/*"],
-			"@oxfmt-sync": ["./src/oxfmt-sync.ts"],
-			"@oxfmt-worker": ["./src/oxfmt-worker.ts"],
-			"@recognizers/*": ["./src/recognizers/*"],
-			"@rules/*": ["./src/rules/*"],
-			"@small-rules": ["./src/index.ts"],
-			"@utilities/*": ["./src/utilities/*"],
-		},
-	},
+			"$constants/*": ["./src/constants/*"],
+			"$oxfmt-sync": ["./src/oxfmt-sync.ts"],
+			"$oxfmt-worker": ["./src/oxfmt-worker.ts"],
+			"$recognizers/*": ["./src/recognizers/*"],
+			"$rules/*": ["./src/rules/*"],
+			"$small-rules": ["./src/index.ts"],
+			"$types/*": ["./src/types/*"],
+			"$utilities/*": ["./src/utilities/*"]
+		}
+	}
 }

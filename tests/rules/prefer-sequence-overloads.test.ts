@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/prefer-sequence-overloads";
+import rule from "$rules/prefer-sequence-overloads";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({

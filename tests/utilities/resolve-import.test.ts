@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { resolveRelativeImport } from "@utilities/resolve-import";
+import { resolveRelativeImport } from "$utilities/resolve-import";
 
 const FIXTURES_DIR = join(import.meta.dirname, "..", "fixtures");
 

@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/prefer-udim2-shorthand";
+import rule from "$rules/prefer-udim2-shorthand";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({

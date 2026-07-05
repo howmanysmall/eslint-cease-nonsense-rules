@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { PredefinedFormatToCheckFunction } from "@utilities/naming-convention-utilities/format";
+import { PredefinedFormatToCheckFunction } from "$utilities/naming-convention-utilities/format";
 
 vi.setConfig({ testTimeout: 500 });
 

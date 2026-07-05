@@ -1,4 +1,4 @@
-import { selectorTypeToMessageString } from "@utilities/naming-convention-utilities/shared";
+import { selectorTypeToMessageString } from "$utilities/naming-convention-utilities/shared";
 
 import type { InvalidTestCase, ValidTestCase } from "@typescript-eslint/rule-tester";
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { parseParameters, parsePattern, parseReplacement } from "@utilities/pattern-replacement/pattern-parser";
+import { parseParameters, parsePattern, parseReplacement } from "$utilities/pattern-replacement/pattern-parser";
 
 vi.setConfig({ testTimeout: 500 });
 

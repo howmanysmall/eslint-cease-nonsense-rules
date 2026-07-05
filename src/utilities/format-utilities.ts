@@ -1,11 +1,11 @@
 import fs from "node:fs";
 import { resolve } from "node:path";
-import { formatSync } from "@oxfmt-sync";
+import { formatSync } from "$oxfmt-sync";
 import { regex } from "arktype";
 import { parseJSONC } from "confbox";
 import fastDiff from "fast-diff";
 
-import type { FormatConfiguration } from "@oxfmt-worker";
+import type { FormatConfiguration } from "$oxfmt-worker";
 
 export interface Difference {
 	readonly deleteText?: string;
@@ -83,7 +83,11 @@ export function getExtension(filePath: string): string | undefined {
 
 export function formatWithOxfmtSync(source: string, filePath: string): string {
 	const extension = getExtension(filePath);
-	if (extension === undefined) throw new Error(`Unsupported file extension for ${filePath}`);
+	if (extension === undefined) {
+		const error = new Error(`Unsupported file extension for ${filePath}`);
+		Error.captureStackTrace(error, formatWithOxfmtSync);
+		throw error;
+	}
 
 	const config = loadOxfmtConfig();
 	return formatSync(filePath, source, config);
@@ -150,10 +154,10 @@ export function generateDifferences(original: string, formatted: string): Readon
 
 const MAX_LENGTH = 60;
 const SYMBOLS: Record<string, string> = {
-	" ": "\u{00B7}",
+	"\t": "\u{2192}",
 	"\n": "\u{240A}",
 	"\r": "\u{240D}",
-	"\t": "\u{2192}",
+	" ": "\u{00B7}",
 };
 
 const WHITESPACE_REGEXP = regex("[\r\n\t ]", "gu");

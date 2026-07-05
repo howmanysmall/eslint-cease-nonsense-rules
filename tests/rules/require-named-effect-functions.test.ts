@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/require-named-effect-functions";
+import rule from "$rules/require-named-effect-functions";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

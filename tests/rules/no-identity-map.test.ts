@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-identity-map";
+import rule from "$rules/no-identity-map";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

@@ -1,7 +1,7 @@
 import { describe } from "vitest";
-import rule from "@rules/prefer-pattern-replacements";
+import rule from "$rules/prefer-pattern-replacements";
 import parser from "@typescript-eslint/parser";
-import { pattern } from "@utilities/pattern-replacement";
+import { pattern } from "$utilities/pattern-replacement";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({

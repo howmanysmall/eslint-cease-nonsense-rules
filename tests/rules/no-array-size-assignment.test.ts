@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-array-size-assignment";
+import rule from "$rules/no-array-size-assignment";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({

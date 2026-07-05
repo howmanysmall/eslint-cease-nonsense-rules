@@ -749,19 +749,19 @@ starlight-aside .title {
 
 .sl-markdown-content th {
 	padding: 0.75rem 1rem;
-	font-weight: 600;
 	font-size: 0.85rem;
+	font-weight: 600;
+	color: var(--sl-color-accent-high);
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
-	color: var(--sl-color-accent-high);
 	border-bottom: 1px solid var(--glass-border);
 }
 
 .sl-markdown-content td {
 	padding: 0.75rem 1rem;
-	border-bottom: 1px solid var(--glass-border);
-	vertical-align: top;
 	line-height: 1.6;
+	vertical-align: top;
+	border-bottom: 1px solid var(--glass-border);
 }
 
 .sl-markdown-content tr:last-child td {
@@ -812,8 +812,8 @@ starlight-toc a:focus-visible,
 starlight-link-card:focus-visible,
 .card:focus-visible {
 	outline: none;
-	box-shadow: 0 0 0 2px var(--sl-color-accent);
 	border-radius: 6px;
+	box-shadow: 0 0 0 2px var(--sl-color-accent);
 }
 
 /* Mobile: more breathing room for category grid and rule examples */

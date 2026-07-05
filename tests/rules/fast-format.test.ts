@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import rule, { createFastFormatRule, createFormatCache, getLocFromIndex } from "@rules/fast-format";
-import { generateDifferences, showInvisibles } from "@utilities/format-utilities";
+import rule, { createFastFormatRule, createFormatCache, getLocFromIndex } from "$rules/fast-format";
+import { generateDifferences, showInvisibles } from "$utilities/format-utilities";
 import { RuleTester } from "eslint";
 
 const languageOptions = {

@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe } from "vitest";
-import rule from "@rules/strict-component-boundaries";
+import rule from "$rules/strict-component-boundaries";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({

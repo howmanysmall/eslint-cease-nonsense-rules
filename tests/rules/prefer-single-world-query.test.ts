@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/prefer-single-world-query";
+import rule from "$rules/prefer-single-world-query";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

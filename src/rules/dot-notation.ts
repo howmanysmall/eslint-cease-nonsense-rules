@@ -1,9 +1,9 @@
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
-import { createRule } from "@utilities/create-rule";
+import { createRule } from "$utilities/create-rule";
 import { isCompilerOptionEnabled, isTypeFlagSet } from "ts-api-utils";
 import { getCombinedModifierFlags, ModifierFlags, TypeFlags } from "typescript";
 
-import type { EnvironmentMode } from "@lint-types/environment-mode";
+import type { EnvironmentMode } from "$types/environment-mode";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import type { Type, TypeChecker, Node as TypeScriptNode, Symbol as TypeScriptSymbol } from "typescript";
 

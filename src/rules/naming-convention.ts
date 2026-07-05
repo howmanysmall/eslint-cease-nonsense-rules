@@ -1,13 +1,13 @@
 import { PatternVisitor, ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
-import { createRule } from "@utilities/create-rule";
-import { Modifiers } from "@utilities/naming-convention-utilities/enums";
-import { parseOptions } from "@utilities/naming-convention-utilities/parse-options";
-import { SCHEMA } from "@utilities/naming-convention-utilities/schema";
+import { createRule } from "$utilities/create-rule";
+import { Modifiers } from "$utilities/naming-convention-utilities/enums";
+import { parseOptions } from "$utilities/naming-convention-utilities/parse-options";
+import { SCHEMA } from "$utilities/naming-convention-utilities/schema";
 import { isIdentifierPart, isIdentifierStart, ScriptTarget } from "typescript";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
-import type { Selector, ValidatorFunction } from "@utilities/naming-convention-utilities/types";
+import type { Selector, ValidatorFunction } from "$utilities/naming-convention-utilities/types";
 
 export type MessageIds =
 	| "doesNotMatchFormat"
@@ -57,10 +57,10 @@ function isUnused(name: string, initialScope?: TSESLint.Scope.Scope): boolean {
 function isAsyncVariableIdentifier(identifier: TSESTree.Identifier): boolean {
 	return Boolean(
 		("async" in identifier.parent && identifier.parent.async) ||
-		("init" in identifier.parent &&
-			identifier.parent.init &&
-			"async" in identifier.parent.init &&
-			identifier.parent.init.async),
+			("init" in identifier.parent &&
+				identifier.parent.init &&
+				"async" in identifier.parent.init &&
+				identifier.parent.init.async),
 	);
 }
 function isDestructured(identifier: TSESTree.Identifier): boolean {

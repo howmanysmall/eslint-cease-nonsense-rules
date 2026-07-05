@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { describe, expect, it, vi } from "vitest";
-import { __testing, generateDifferences, getExtension } from "@utilities/format-utilities";
+import { __testing, generateDifferences, getExtension } from "$utilities/format-utilities";
 
 vi.setConfig({ testTimeout: 10000 });
 

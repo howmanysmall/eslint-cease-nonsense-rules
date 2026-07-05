@@ -1,6 +1,6 @@
 import { join, resolve } from "node:path";
 import { describe, vi } from "vitest";
-import rule from "@rules/prefer-enum-member";
+import rule from "$rules/prefer-enum-member";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 

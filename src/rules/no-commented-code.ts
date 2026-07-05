@@ -1,6 +1,6 @@
 import { extname } from "node:path";
-import { hasCodeLines } from "@recognizers/code-recognizer";
-import { createJavaScriptDetectors } from "@recognizers/javascript-footprint";
+import { hasCodeLines } from "$recognizers/code-recognizer";
+import { createJavaScriptDetectors } from "$recognizers/javascript-footprint";
 import { parseSync } from "oxc-parser";
 
 import type { Rule } from "eslint";

@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-events-in-events-callback";
+import rule from "$rules/no-events-in-events-callback";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

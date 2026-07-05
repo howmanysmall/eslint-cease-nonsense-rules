@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-empty-array-literal";
+import rule from "$rules/no-empty-array-literal";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 

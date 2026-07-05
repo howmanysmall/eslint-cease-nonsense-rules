@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { parse } from "@typescript-eslint/parser";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import { generateReplacement, getReplacementIdentifier } from "@utilities/pattern-replacement/replacement-generator";
+import { generateReplacement, getReplacementIdentifier } from "$utilities/pattern-replacement/replacement-generator";
 
 import type { TSESTree } from "@typescript-eslint/types";
 
@@ -11,18 +11,18 @@ function parseExpression(code: string): TSESTree.Expression {
 	const program = parse(`const value = ${code};`, { loc: false, range: false });
 	const [statement] = program.body;
 	if (statement?.type !== AST_NODE_TYPES.VariableDeclaration) {
-const error = new Error(`Could not parse expression: ${code}`);
-Error.captureStackTrace(error, parseExpression);
-throw error;
-}
+		const error = new Error(`Could not parse expression: ${code}`);
+		Error.captureStackTrace(error, parseExpression);
+		throw error;
+	}
 
 	const [declaration] = statement.declarations;
 	const expression = declaration?.init;
 	if (expression === null || expression === undefined) {
-const error = new Error(`Could not parse expression: ${code}`);
-Error.captureStackTrace(error, parseExpression);
-throw error;
-}
+		const error = new Error(`Could not parse expression: ${code}`);
+		Error.captureStackTrace(error, parseExpression);
+		throw error;
+	}
 
 	return expression;
 }

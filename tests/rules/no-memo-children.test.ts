@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe, vi } from "vitest";
-import rule from "@rules/no-memo-children";
+import rule from "$rules/no-memo-children";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

@@ -1,5 +1,5 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "@utilities/create-rule";
+import { createRule } from "$utilities/create-rule";
 
 import type { TSESTree } from "@typescript-eslint/utils";
 
@@ -327,7 +327,7 @@ const noEventsInEventsCallback = createRule<Options, MessageIds>({
 				}
 
 				const currentCallbackState = getCurrentTopLevelCallbackState();
-				if (!currentCallbackState || !isEventsMethodCall(node, trackedEventsIdentifiers)) return;
+				if (!(currentCallbackState && isEventsMethodCall(node, trackedEventsIdentifiers))) return;
 
 				const [firstArgument] = node.arguments;
 				if (!firstArgument || firstArgument.type === AST_NODE_TYPES.SpreadElement) return;

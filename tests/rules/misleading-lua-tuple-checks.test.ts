@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe, vi } from "vitest";
-import rule from "@rules/misleading-lua-tuple-checks";
+import rule from "$rules/misleading-lua-tuple-checks";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

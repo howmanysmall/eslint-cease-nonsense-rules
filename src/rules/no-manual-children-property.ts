@@ -1,6 +1,6 @@
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
-import { createRule } from "@utilities/create-rule";
-import { isLikelyReactComponentName } from "@utilities/react-component-utilities";
+import { createRule } from "$utilities/create-rule";
+import { isLikelyReactComponentName } from "$utilities/react-component-utilities";
 import {
 	isExpressionWithTypeArguments,
 	isInterfaceDeclaration,

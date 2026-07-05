@@ -3,13 +3,13 @@
 		"jsx": "react-jsx",
 		"jsxImportSource": "react",
 		"paths": {
-			"@/*": ["./src/*"],
+			"@/*": ["./src/*"]
 		},
 		"plugins": [
 			{
-				"name": "@astrojs/ts-plugin",
-			},
-		],
+				"name": "@astrojs/ts-plugin"
+			}
+		]
 	},
-	"extends": "astro/tsconfigs/strictest",
+	"extends": "astro/tsconfigs/strictest"
 }

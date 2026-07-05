@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { __testingResolveWorkerPath, formatSync, terminateWorker } from "@oxfmt-sync";
+import { __testingResolveWorkerPath, formatSync, terminateWorker } from "$oxfmt-sync";
 
 function withTerminatedWorker<Result>(run: () => Result): Result {
 	try {

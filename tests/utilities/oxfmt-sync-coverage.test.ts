@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { __testingResolveWorkerPath } from "@oxfmt-sync";
+import { __testingResolveWorkerPath } from "$oxfmt-sync";
 
 describe("oxfmt-sync coverage", () => {
 	it("resolves the TypeScript worker when JavaScript output is missing", () => {

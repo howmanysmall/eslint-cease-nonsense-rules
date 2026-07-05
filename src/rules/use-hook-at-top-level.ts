@@ -1,5 +1,5 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
+import { createRule } from "$utilities/create-rule";
 
 import type { TSESTree } from "@typescript-eslint/types";
 
@@ -124,11 +124,11 @@ function isInFinallyBlock(node: TSESTree.Node): boolean {
 	return inFinallyBlock;
 }
 
-function isRecursiveCall(node: TSESTree.CallExpression, functionName: string | undefined): boolean {
-	if (!functionName) return false;
+function isRecursiveCall(node: TSESTree.CallExpression, functionName?: string): boolean {
+	if (functionName === undefined || functionName.length === 0) return false;
 
 	const { callee } = node;
-	return callee.type === "Identifier" && callee.name === functionName;
+	return callee.type === AST_NODE_TYPES.Identifier && callee.name === functionName;
 }
 
 type MessageIds =
@@ -165,21 +165,33 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 		function shouldIgnoreHook(hookName: string, node: TSESTree.CallExpression): boolean {
 			const { onlyHooks, ignoreHooks, importSources } = configuration;
 			if (onlyHooks && onlyHooks.length > 0) return !onlyHooks.includes(hookName);
-			if (ignoreHooks?.includes(hookName)) return true;
+			if (ignoreHooks?.includes(hookName) === true) return true;
 
 			if (importSources && Object.keys(importSources).length > 0) {
 				if (node.callee.type === AST_NODE_TYPES.MemberExpression) {
 					const objectName =
 						node.callee.object.type === AST_NODE_TYPES.Identifier ? node.callee.object.name : undefined;
 
-					if (objectName && importSources[objectName] === false) return true;
-					if (objectName && importSources[objectName] === true) return false;
+					if (objectName !== undefined && objectName.length > 0 && importSources[objectName] === false) {
+						return true;
+					}
+					if (objectName !== undefined && objectName.length > 0 && importSources[objectName] === true) {
+						return false;
+					}
 				}
 
 				if (node.callee.type === AST_NODE_TYPES.Identifier) {
 					const importSource = importSourceMap.get(hookName);
-					if (importSource && importSources[importSource] === false) return true;
-					if (importSource && importSources[importSource] === true) return false;
+					if (
+						importSource !== undefined &&
+						importSource.length > 0 &&
+						importSources[importSource] === false
+					) {
+						return true;
+					}
+					if (importSource !== undefined && importSource.length > 0 && importSources[importSource] === true) {
+						return false;
+					}
 				}
 			}
 
@@ -199,7 +211,7 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 				currentFunctionName = functionNode.id.name;
 			}
 
-			if (current?.isComponentOrHook) {
+			if (current?.isComponentOrHook === true) {
 				pushContext({
 					afterEarlyReturn: false,
 					functionDepth: depth,
@@ -232,7 +244,7 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 			"ArrowFunctionExpression:exit": handleFunctionExit,
 
 			CallExpression(node): void {
-				const callNode = node as unknown as TSESTree.CallExpression;
+				const callNode = node;
 
 				if (!isHookCall(callNode)) return;
 
@@ -245,7 +257,7 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 							? callee.property.name
 							: undefined;
 
-				if (!hookName || shouldIgnoreHook(hookName, callNode)) return;
+				if (hookName === undefined || hookName.length === 0 || shouldIgnoreHook(hookName, callNode)) return;
 
 				const current = getCurrentContext();
 				if (!current) return;
@@ -348,7 +360,7 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 			},
 
 			ImportDeclaration(node): void {
-				const importNode = node as unknown as TSESTree.ImportDeclaration;
+				const importNode = node;
 				const source = importNode.source.value;
 
 				if (!configuration.importSources || Object.keys(configuration.importSources).length === 0) return;

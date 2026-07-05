@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-table-create-map";
+import rule from "$rules/no-table-create-map";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

@@ -1,4 +1,4 @@
-import { createRule } from "@utilities/create-rule";
+import { createRule } from "$utilities/create-rule";
 import { regex } from "arktype";
 
 // oxlint-disable prefer-string-raw

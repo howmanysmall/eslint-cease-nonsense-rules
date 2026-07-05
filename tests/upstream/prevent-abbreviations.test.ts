@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import vueParser from "vue-eslint-parser";
 import babelParser from "@babel/eslint-parser";
-import rule from "@rules/prevent-abbreviations";
+import rule from "$rules/prevent-abbreviations";
 import tsParser from "@typescript-eslint/parser";
 import { Linter, RuleTester } from "eslint";
 

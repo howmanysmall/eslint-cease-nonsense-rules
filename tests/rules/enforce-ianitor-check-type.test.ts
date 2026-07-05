@@ -1,6 +1,6 @@
 // oxlint-disable vitest/no-conditional-in-test -- some bullshit
 import { describe, expect, it } from "vitest";
-import rule from "@rules/enforce-ianitor-check-type";
+import rule from "$rules/enforce-ianitor-check-type";
 import parser from "@typescript-eslint/parser";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import { RuleTester } from "eslint";

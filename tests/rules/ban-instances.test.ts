@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/ban-instances";
+import rule from "$rules/ban-instances";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

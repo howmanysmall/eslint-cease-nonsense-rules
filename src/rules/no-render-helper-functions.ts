@@ -1,9 +1,9 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import { isPascalCase } from "@utilities/casing-utilities";
-import { createRule } from "@utilities/create-rule";
+import { isPascalCase } from "$utilities/casing-utilities";
+import { createRule } from "$utilities/create-rule";
 import { regex } from "arktype";
 
-import type { ReadonlyRecord } from "@lint-types/utility-types";
+import type { ReadonlyRecord } from "$types/utility-types";
 import type { TSESTree } from "@typescript-eslint/types";
 
 type MessageIds = "noRenderHelper";

@@ -1,4 +1,4 @@
-import { createRule } from "@utilities/create-rule";
+import { createRule } from "$utilities/create-rule";
 
 const noWarn = createRule({
 	create(context) {

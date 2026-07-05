@@ -41,7 +41,7 @@ async function findCoverageFilesAsync(baseDirectory: string): Promise<Array<stri
 		const coverageFiles: Array<string> = [];
 
 		for (const entry of entries) {
-			if (!entry.isDirectory() || !entry.name.startsWith("coverage-shard-")) continue;
+			if (!(entry.isDirectory() && entry.name.startsWith("coverage-shard-"))) continue;
 
 			const filePath = join(baseDirectory, entry.name, "coverage-final.json");
 			try {

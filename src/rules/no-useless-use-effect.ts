@@ -1,8 +1,8 @@
-import { getReactSources, isReactImport } from "@constants/react-sources";
+import { getReactSources, isReactImport } from "$constants/react-sources";
 import { TSESTree } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
+import { createRule } from "$utilities/create-rule";
 
-import type { EnvironmentMode } from "@lint-types/environment-mode";
+import type { EnvironmentMode } from "$types/environment-mode";
 
 type MessageIds =
 	| "adjustState"
@@ -612,8 +612,7 @@ function expressionContainsIdentifier(node: TSESTree.Expression): boolean {
 			current.type === TSESTree.AST_NODE_TYPES.BinaryExpression ||
 			current.type === TSESTree.AST_NODE_TYPES.LogicalExpression
 		) {
-			stack.push(current.left);
-			stack.push(current.right);
+			stack.push(current.left, current.right);
 			continue;
 		}
 
@@ -623,8 +622,7 @@ function expressionContainsIdentifier(node: TSESTree.Expression): boolean {
 		}
 
 		if (current.type === TSESTree.AST_NODE_TYPES.ConditionalExpression) {
-			stack.push(current.test);
-			stack.push(current.consequent);
+			stack.push(current.test, current.consequent);
 			stack.push(current.alternate);
 			continue;
 		}
@@ -1136,8 +1134,7 @@ function collectIdentifiers(node: TSESTree.Node): Set<string> {
 			current.type === TSESTree.AST_NODE_TYPES.BinaryExpression ||
 			current.type === TSESTree.AST_NODE_TYPES.LogicalExpression
 		) {
-			stack.push(current.left);
-			stack.push(current.right);
+			stack.push(current.left, current.right);
 			continue;
 		}
 
@@ -1147,8 +1144,7 @@ function collectIdentifiers(node: TSESTree.Node): Set<string> {
 		}
 
 		if (current.type === TSESTree.AST_NODE_TYPES.ConditionalExpression) {
-			stack.push(current.test);
-			stack.push(current.consequent);
+			stack.push(current.test, current.consequent);
 			stack.push(current.alternate);
 			continue;
 		}

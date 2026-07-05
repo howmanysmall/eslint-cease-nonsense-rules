@@ -1,4 +1,4 @@
-import rule from "@rules/naming-convention";
+import rule from "$rules/naming-convention";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 

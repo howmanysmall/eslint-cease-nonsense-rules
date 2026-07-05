@@ -7,11 +7,11 @@
 		"perf": "error",
 		"restriction": "error",
 		"style": "error",
-		"suspicious": "error",
+		"suspicious": "error"
 	},
 	"env": {
 		"builtin": true,
-		"node": true,
+		"node": true
 	},
 	"ignorePatterns": ["**/{dist,do-not-sync-ever,node_modules}/**", "**/*.js"],
 	"jsPlugins": [
@@ -19,7 +19,7 @@
 		{ "name": "small-rules", "specifier": "@pobammer-ts/small-rules" },
 		{ "name": "unused-imports", "specifier": "eslint-plugin-unused-imports" },
 		{ "name": "sonar", "specifier": "eslint-plugin-sonarjs" },
-		{ "name": "regexp-js", "specifier": "eslint-plugin-regexp" },
+		{ "name": "regexp-js", "specifier": "eslint-plugin-regexp" }
 	],
 	"options": {
 		"denyWarnings": true,
@@ -27,16 +27,16 @@
 		"reportUnusedDisableDirectives": "error",
 		"respectEslintDisableDirectives": true,
 		"typeAware": true,
-		"typeCheck": true,
+		"typeCheck": true
 	},
 	"overrides": [
 		{
 			"env": {
 				"astro": true,
 				"browser": true,
-				"node": true,
+				"node": true
 			},
-			"files": ["documentation/**/*"],
+			"files": ["documentation/**/*"]
 		},
 		{
 			"files": ["documentation/**/*.astro"],
@@ -44,23 +44,23 @@
 			"rules": {
 				"small-rules/no-unused-imports": "off",
 				"sonar/unused-import": "off",
-				"unused-imports/no-unused-imports": "off",
-			},
+				"unused-imports/no-unused-imports": "off"
+			}
 		},
 		{
 			"files": ["documentation/src/types/satteri-optional-peers.d.ts"],
 			"rules": {
 				"small-rules/no-unused-imports": "off",
-				"typescript/no-redundant-type-constituents": "off",
-			},
+				"typescript/no-redundant-type-constituents": "off"
+			}
 		},
 		{
 			"files": ["scripts/**/*.{ts,tsx}", "*.config.{ts,mjs,tsx}"],
-			"rules": { "no-console": "off" },
+			"rules": { "no-console": "off" }
 		},
 		{
 			"files": ["tests/**/*.test.{tsx,ts}", "tests/fixtures/**/*.{ts,tsx}", "documentation/**/*.astro"],
-			"rules": { "small-rules/prevent-abbreviations": "off" },
+			"rules": { "small-rules/prevent-abbreviations": "off" }
 		},
 		{
 			"files": ["tests/**/*.test.{tsx,ts}"],
@@ -74,8 +74,8 @@
 					"error",
 					{
 						"additionalAssertionFunctions": ["expectRecord", "expectArray", "expectPresent"],
-						"additionalExpectCallNames": ["expectRecord", "expectArray", "expectPresent"],
-					},
+						"additionalExpectCallNames": ["expectRecord", "expectArray", "expectPresent"]
+					}
 				],
 				"sonar/publicly-writable-directories": "off",
 				"unicorn/no-null": "off",
@@ -124,31 +124,31 @@
 				"vitest/require-top-level-describe": "off",
 				"vitest/valid-expect": "error",
 				"vitest/valid-title": "error",
-				"vitest/warn-todo": "error",
-			},
+				"vitest/warn-todo": "error"
+			}
 		},
 		{
 			"files": ["tests/fixtures/**/*.{ts,tsx}", "*.config.{cjs,mjs,js,cts,mts,ts}", "knip.ts"],
-			"rules": { "import/no-default-export": "off" },
+			"rules": { "import/no-default-export": "off" }
 		},
 		{
 			"files": ["vitest*.config.ts"],
-			"rules": { "unicorn/no-null": "off" },
+			"rules": { "unicorn/no-null": "off" }
 		},
 		{
 			"files": ["tests/fixtures/**/*.{ts,tsx}"],
-			"rules": { "typescript/ban-ts-comment": "off" },
+			"rules": { "typescript/ban-ts-comment": "off" }
 		},
 		{
 			"files": ["**/*.d.ts", "documentation/**/*.astro"],
-			"rules": { "import/unambiguous": "off" },
+			"rules": { "import/unambiguous": "off" }
 		},
 		{
 			"files": ["tests/fixtures/strict-boundaries/basic-app/app/components/**/*.ts"],
 			"rules": {
-				"unicorn/filename-case": "off",
-			},
-		},
+				"unicorn/filename-case": "off"
+			}
+		}
 	],
 	"plugins": ["eslint", "import", "jsdoc", "node", "oxc", "promise", "typescript", "unicorn"],
 	"rules": {
@@ -165,8 +165,8 @@
 				"IIFEs": false,
 				"max": 120,
 				"skipBlankLines": false,
-				"skipComments": false,
-			},
+				"skipComments": false
+			}
 		],
 		"for-direction": "error",
 		"func-names": ["error", "as-needed", { "generators": "as-needed" }],
@@ -177,9 +177,9 @@
 				"allowArrowFunctions": false,
 				"allowTypeAnnotation": true,
 				"overrides": {
-					"namedExports": "ignore",
-				},
-			},
+					"namedExports": "ignore"
+				}
+			}
 		],
 		"id-length": [
 			"error",
@@ -193,10 +193,10 @@
 					"a",
 					"b",
 					"$",
-					"maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING",
+					"maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING"
 				],
-				"max": 45,
-			},
+				"max": 45
+			}
 		],
 		"import/exports-last": "off",
 		"import/group-exports": "off",
@@ -207,8 +207,8 @@
 				"allowUnsafeDynamicCyclicDependency": true,
 				"ignoreExternal": false,
 				"ignoreTypes": true,
-				"maxDepth": 4294967295,
-			},
+				"maxDepth": 4294967295
+			}
 		],
 		"import/no-default-export": "off",
 		"import/no-named-as-default": "error",
@@ -218,8 +218,8 @@
 		"import/no-unassigned-import": [
 			"error",
 			{
-				"allow": ["**/*.css", "**/*.scss", "**/*.less", "**/*.sass", "@total-typescript/ts-reset"],
-			},
+				"allow": ["**/*.css", "**/*.scss", "**/*.less", "**/*.sass", "@total-typescript/ts-reset"]
+			}
 		],
 		"import/prefer-default-export": "off",
 		"init-declarations": "off",
@@ -232,8 +232,8 @@
 			"error",
 			{
 				"countVoidThis": false,
-				"max": 7,
-			},
+				"max": 7
+			}
 		],
 		"max-statements": "off",
 		"new-cap": "off",
@@ -295,8 +295,8 @@
 		"no-underscore-dangle": [
 			"off",
 			{
-				"allow": ["______IGNORE_ME______", "_options", "_tag", "_url"],
-			},
+				"allow": ["______IGNORE_ME______", "_options", "_tag", "_url"]
+			}
 		],
 		"no-unexpected-multiline": "error",
 		"no-unneeded-ternary": "error",
@@ -312,8 +312,8 @@
 				"argsIgnorePattern": "^_",
 				"caughtErrorsIgnorePattern": "^_",
 				"vars": "all",
-				"varsIgnorePattern": "^logger$|^_",
-			},
+				"varsIgnorePattern": "^logger$|^_"
+			}
 		],
 		"no-use-before-define": "off",
 		// Doesn't work award
@@ -419,9 +419,9 @@
 			"error",
 			{
 				"bannedTypes": {
-					"Omit": "Except",
-				},
-			},
+					"Omit": "Except"
+				}
+			}
 		],
 		"small-rules/directive-disable-enable-pair": "error",
 		"small-rules/directive-no-aggregating-enable": "error",
@@ -437,8 +437,8 @@
 			"error",
 			{
 				"environment": "standard",
-				"requireExplicitGenericOnNewArray": true,
-			},
+				"requireExplicitGenericOnNewArray": true
+			}
 		],
 		"small-rules/no-array-size-assignment": ["error", { "allowAutofix": false }],
 		"small-rules/no-async-constructor": "error",
@@ -448,8 +448,8 @@
 		"small-rules/no-constant-condition-with-break": [
 			"error",
 			{
-				"loopExitCalls": ["break", "return", "throw"],
-			},
+				"loopExitCalls": ["break", "return", "throw"]
+			}
 		],
 		"small-rules/no-error": "off",
 		"small-rules/no-events-in-events-callback": "off",
@@ -513,7 +513,7 @@
 					"screenProps",
 					"getScreenProps",
 					"PropsWithChildren",
-					"args",
+					"args"
 				],
 				"ignoreShorthands": ["InferProps", "InstanceProps", "PropsWithoutRef", "ComponentProps"],
 				"shorthands": {
@@ -524,9 +524,9 @@
 					"char": "character",
 					"dt": "deltaTime",
 					"plr": "player",
-					"str": "string",
-				},
-			},
+					"str": "string"
+				}
+			}
 		],
 		"small-rules/react-hooks-strict-return": "off",
 		"small-rules/require-async-suffix": "error",
@@ -807,8 +807,8 @@
 				"allowSeparatedGroups": true,
 				"ignoreCase": true,
 				"ignoreDeclarationSort": true,
-				"ignoreMemberSort": false,
-			},
+				"ignoreMemberSort": false
+			}
 		],
 		"sort-keys": [
 			"error",
@@ -817,15 +817,15 @@
 				"allowLineSeparatedGroups": true,
 				"caseSensitive": false,
 				"minKeys": 2,
-				"natural": true,
-			},
+				"natural": true
+			}
 		],
 		"typescript/array-type": [
 			"error",
 			{
 				"default": "generic",
-				"readonly": "generic",
-			},
+				"readonly": "generic"
+			}
 		],
 		"typescript/await-thenable": "error",
 		"typescript/no-array-delete": "error",
@@ -855,8 +855,8 @@
 		"typescript/prefer-literal-enum-member": [
 			"error",
 			{
-				"allowBitwiseExpressions": true,
-			},
+				"allowBitwiseExpressions": true
+			}
 		],
 		"typescript/prefer-namespace-keyword": "error",
 		"typescript/prefer-optional-chain": "error",
@@ -869,8 +869,8 @@
 			{
 				"allowDefaultCaseForExhaustiveSwitch": true,
 				"considerDefaultExhaustiveForUnions": true,
-				"requireDefaultForNonUnion": false,
-			},
+				"requireDefaultForNonUnion": false
+			}
 		],
 		"typescript/triple-slash-reference": "error",
 		"typescript/unbound-method": "error",
@@ -890,9 +890,9 @@
 			"error",
 			{
 				"styles": {
-					"node:path": { "named": true },
-				},
-			},
+					"node:path": { "named": true }
+				}
+			}
 		],
 		"unicorn/new-for-builtins": "error",
 		"unicorn/no-abusive-eslint-disable": "error",
@@ -978,7 +978,7 @@
 		"use-isnan": "error",
 		"valid-typeof": "error",
 		"vars-on-top": "error",
-		"yoda": "error",
+		"yoda": "error"
 	},
 	"settings": {
 		"jsdoc": {
@@ -989,7 +989,7 @@
 			"ignoreReplacesDocs": true,
 			"implementsReplacesDocs": false,
 			"overrideReplacesDocs": true,
-			"tagNamePreference": {},
-		},
-	},
+			"tagNamePreference": {}
+		}
+	}
 }

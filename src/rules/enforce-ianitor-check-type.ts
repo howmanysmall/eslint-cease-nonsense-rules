@@ -1,5 +1,5 @@
 import { TSESTree } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
+import { createRule } from "$utilities/create-rule";
 
 export interface ComplexityConfiguration {
 	readonly baseThreshold: number;

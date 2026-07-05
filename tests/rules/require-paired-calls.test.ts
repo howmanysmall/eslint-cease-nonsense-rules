@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/require-paired-calls";
+import rule from "$rules/require-paired-calls";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({

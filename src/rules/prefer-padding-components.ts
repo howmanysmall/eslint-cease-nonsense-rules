@@ -1,10 +1,10 @@
 import { extname } from "node:path";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "@utilities/create-rule";
-import { discoverLocalComponent, inspectLocalComponentFile } from "@utilities/local-component-discovery";
-import { resolveRelativeImport } from "@utilities/resolve-import";
+import { createRule } from "$utilities/create-rule";
+import { discoverLocalComponent, inspectLocalComponentFile } from "$utilities/local-component-discovery";
+import { resolveRelativeImport } from "$utilities/resolve-import";
 
-import type { ReadonlyRecord } from "@lint-types/utility-types";
+import type { ReadonlyRecord } from "$types/utility-types";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds = "preferDirectionalPadding" | "preferEqualPadding";

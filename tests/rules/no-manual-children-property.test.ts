@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe, vi } from "vitest";
-import rule from "@rules/no-manual-children-property";
+import rule from "$rules/no-manual-children-property";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

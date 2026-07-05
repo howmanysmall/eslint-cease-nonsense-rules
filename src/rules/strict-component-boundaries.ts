@@ -1,7 +1,7 @@
 import { basename, extname, relative } from "node:path";
-import { toPascalCase } from "@utilities/casing-utilities";
-import { createRule } from "@utilities/create-rule";
-import { resolveRelativeImport } from "@utilities/resolve-import";
+import { toPascalCase } from "$utilities/casing-utilities";
+import { createRule } from "$utilities/create-rule";
+import { resolveRelativeImport } from "$utilities/resolve-import";
 
 import type { TSESTree } from "@typescript-eslint/utils";
 

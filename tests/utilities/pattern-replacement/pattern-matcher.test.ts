@@ -8,11 +8,11 @@ import {
 	evaluateConditions,
 	matchParameters,
 	resolveCallee,
-} from "@utilities/pattern-replacement/pattern-matcher";
-import { parsePattern } from "@utilities/pattern-replacement/pattern-parser";
+} from "$utilities/pattern-replacement/pattern-matcher";
+import { parsePattern } from "$utilities/pattern-replacement/pattern-parser";
 
 import type { TSESTree } from "@typescript-eslint/types";
-import type { CapturedValue, WhenCondition } from "@utilities/pattern-replacement/pattern-types";
+import type { CapturedValue, WhenCondition } from "$utilities/pattern-replacement/pattern-types";
 
 vi.setConfig({ testTimeout: 10000 });
 

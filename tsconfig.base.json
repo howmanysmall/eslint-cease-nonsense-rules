@@ -29,8 +29,8 @@
 		"target": "es2023",
 		"types": ["node"],
 		"useUnknownInCatchVariables": true,
-		"verbatimModuleSyntax": true,
+		"verbatimModuleSyntax": true
 	},
 	"exclude": ["dist", "node_modules"],
-	"extends": "./tsconfig.paths.json",
+	"extends": "./tsconfig.paths.json"
 }

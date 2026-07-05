@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SCHEMA } from "@utilities/naming-convention-utilities/schema";
+import { SCHEMA } from "$utilities/naming-convention-utilities/schema";
 
 describe("naming-convention schema", () => {
 	it("exposes the selector schema definitions", () => {

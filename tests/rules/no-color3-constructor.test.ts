@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-color3-constructor";
+import rule from "$rules/no-color3-constructor";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({

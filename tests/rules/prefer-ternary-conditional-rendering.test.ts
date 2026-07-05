@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/prefer-ternary-conditional-rendering";
+import rule from "$rules/prefer-ternary-conditional-rendering";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

@@ -1,10 +1,10 @@
 import { ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "@utilities/create-rule";
+import { createRule } from "$utilities/create-rule";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
 
-import type { ReadonlyRecord } from "@lint-types/utility-types";
+import type { ReadonlyRecord } from "$types/utility-types";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 /**

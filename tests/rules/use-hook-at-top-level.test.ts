@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/use-hook-at-top-level";
+import rule from "$rules/use-hook-at-top-level";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({

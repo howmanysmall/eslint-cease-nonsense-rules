@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import parser from "@typescript-eslint/parser";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { getMemberPropertyName, unwrapExpression } from "@utilities/ast-utilities";
+import { getMemberPropertyName, unwrapExpression } from "$utilities/ast-utilities";
 
 import type { TSESTree } from "@typescript-eslint/utils";
 

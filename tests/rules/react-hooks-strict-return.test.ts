@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/react-hooks-strict-return";
+import rule from "$rules/react-hooks-strict-return";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({

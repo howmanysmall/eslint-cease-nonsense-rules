@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe } from "vitest";
-import rule from "@rules/prefer-padding-components";
+import rule from "$rules/prefer-padding-components";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

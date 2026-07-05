@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-useless-use-spring";
+import rule from "$rules/no-useless-use-spring";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/memoized-effect-dependencies";
+import rule from "$rules/memoized-effect-dependencies";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 

@@ -1,5 +1,5 @@
+import { createRule } from "$utilities/create-rule";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "@utilities/create-rule";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 

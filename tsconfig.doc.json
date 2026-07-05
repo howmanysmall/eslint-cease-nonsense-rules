@@ -2,9 +2,9 @@
 	"compilerOptions": {
 		"paths": {
 			"@/*": ["src/*"],
-			"*": ["./documentation/*"],
+			"*": ["./documentation/*"]
 		},
-		"plugins": [{ "name": "@astrojs/ts-plugin" }],
+		"plugins": [{ "name": "@astrojs/ts-plugin" }]
 	},
-	"extends": "astro/tsconfigs/strictest",
+	"extends": "astro/tsconfigs/strictest"
 }

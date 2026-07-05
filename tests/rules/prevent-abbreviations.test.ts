@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/prevent-abbreviations";
+import rule from "$rules/prevent-abbreviations";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

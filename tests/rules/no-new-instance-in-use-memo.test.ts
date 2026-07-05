@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-new-instance-in-use-memo";
+import rule from "$rules/no-new-instance-in-use-memo";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 

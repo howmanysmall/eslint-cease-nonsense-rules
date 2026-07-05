@@ -1,5 +1,5 @@
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
-import { createRule } from "@utilities/create-rule";
+import { createRule } from "$utilities/create-rule";
 import { isArrayBindingOrAssignmentPattern, isTypeReference } from "ts-api-utils";
 import {
 	isCallExpression,
@@ -376,7 +376,7 @@ function nodeHasTupleIterableParameter(node: Node, name: string, targetNode: Nod
 	if (isFunctionLike(node) && nodeContainsNode(node, targetNode)) {
 		for (const parameter of node.parameters) {
 			if (!isIdentifier(parameter.name) || parameter.name.text !== name) continue;
-			if (!parameter.type || !isTypeReferenceNode(parameter.type) || !isIdentifier(parameter.type.typeName)) {
+			if (!(parameter.type && isTypeReferenceNode(parameter.type) && isIdentifier(parameter.type.typeName))) {
 				continue;
 			}
 			if (typeParametersReferenceTupleIterable(parameter.type.typeName.text, node.typeParameters)) return true;
@@ -415,7 +415,7 @@ function hasLuaTupleArrayDeclaration(
 	if (!symbol) return false;
 
 	for (const declaration of symbol.declarations ?? []) {
-		if (!isVariableDeclaration(declaration) || !declaration.type || !isTypeReferenceNode(declaration.type)) {
+		if (!(isVariableDeclaration(declaration) && declaration.type && isTypeReferenceNode(declaration.type))) {
 			continue;
 		}
 		if (!typeNodeReferencesIdentifier(declaration.type, "LuaTuple")) continue;
@@ -444,7 +444,7 @@ function hasTupleIterableParameterConstraint(
 	if (!symbol) return false;
 
 	for (const declaration of symbol.declarations ?? []) {
-		if (!isParameter(declaration) || !declaration.type || !isTypeReferenceNode(declaration.type)) continue;
+		if (!(isParameter(declaration) && declaration.type && isTypeReferenceNode(declaration.type))) continue;
 		if (!isIdentifier(declaration.type.typeName)) continue;
 
 		const { parent } = declaration;
@@ -485,7 +485,7 @@ function hasTupleIterableCallConstraint(
 	if (!symbol) return false;
 
 	for (const declaration of symbol.declarations ?? []) {
-		if (!isFunctionLike(declaration) || !declaration.type || !isTypeReferenceNode(declaration.type)) continue;
+		if (!(isFunctionLike(declaration) && declaration.type && isTypeReferenceNode(declaration.type))) continue;
 		if (!isIdentifier(declaration.type.typeName)) continue;
 		if (typeParametersReferenceTupleIterable(declaration.type.typeName.text, declaration.typeParameters)) {
 			return true;
@@ -516,7 +516,7 @@ function getCallExpressionReturnConstraintCandidate(
 
 	const declaration = signature.getDeclaration();
 	const returnTypeNode = declaration.type;
-	if (!returnTypeNode || !isTypeReferenceNode(returnTypeNode) || !isIdentifier(returnTypeNode.typeName)) {
+	if (!(returnTypeNode && isTypeReferenceNode(returnTypeNode) && isIdentifier(returnTypeNode.typeName))) {
 		return undefined;
 	}
 

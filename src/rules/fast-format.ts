@@ -3,9 +3,9 @@ import {
 	generateDifferences,
 	getExtension,
 	showInvisibles,
-} from "@utilities/format-utilities";
+} from "$utilities/format-utilities";
 
-import type { Difference } from "@utilities/format-utilities";
+import type { Difference } from "$utilities/format-utilities";
 import type { Rule, SourceCode } from "eslint";
 
 const DEFAULT_CACHE_CAPACITY = 32;

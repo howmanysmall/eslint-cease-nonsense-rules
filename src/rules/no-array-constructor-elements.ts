@@ -1,8 +1,8 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { getMemberPropertyName, hasShadowedBinding, unwrapExpression } from "@utilities/ast-utilities";
-import { createRule } from "@utilities/create-rule";
+import { getMemberPropertyName, hasShadowedBinding, unwrapExpression } from "$utilities/ast-utilities";
+import { createRule } from "$utilities/create-rule";
 
-import type { EnvironmentMode } from "@lint-types/environment-mode";
+import type { EnvironmentMode } from "$types/environment-mode";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds =

@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe, vi } from "vitest";
-import rule from "@rules/prefer-read-only-properties";
+import rule from "$rules/prefer-read-only-properties";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

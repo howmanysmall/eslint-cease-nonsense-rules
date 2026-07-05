@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/use-exhaustive-dependencies";
+import rule from "$rules/use-exhaustive-dependencies";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

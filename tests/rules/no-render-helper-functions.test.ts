@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-render-helper-functions";
+import rule from "$rules/no-render-helper-functions";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 

@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/prefer-singular-enums";
+import rule from "$rules/prefer-singular-enums";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
