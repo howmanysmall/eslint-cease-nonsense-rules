@@ -1,0 +1,11 @@
+[features]
+hooks = true
+
+[[hooks.PreToolUse]]
+matcher = "^Bash$|^apply_patch$|^Edit$|^Write$"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = 'bun run --bun "$(git rev-parse --show-toplevel)/.codex/hooks/pre-tool-use.ts"'
+timeout = 10
+statusMessage = "Checking protected config files"
