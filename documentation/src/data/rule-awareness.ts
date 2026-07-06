@@ -1,6 +1,6 @@
 import { ruleCategoryDefinitions, ruleCategoryOrder } from "./rule-sidebar";
 
-export const typeAwareRulePaths = [
+const typeAwareRulePaths = [
 	"rules/dot-notation",
 	"rules/misleading-lua-tuple-checks",
 	"rules/no-empty-array-literal",
