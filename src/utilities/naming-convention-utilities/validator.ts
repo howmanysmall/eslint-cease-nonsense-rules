@@ -8,7 +8,7 @@ import { selectorTypeToMessageString } from "./shared";
 import type { TSESTree } from "@typescript-eslint/utils";
 import type { Symbol as TsSymbol, Type, TypeChecker } from "typescript";
 
-import type { ModifiersString, SelectorsString } from "./enums";
+import type { ModifiersString, SelectorsString, UnderscoreOptionsString } from "./enums";
 import type { Context, NormalizedSelector, TypeReference, ValidatorFunction } from "./types";
 
 type IdentifierNode = TSESTree.Identifier | TSESTree.Literal | TSESTree.PrivateIdentifier;
@@ -42,11 +42,9 @@ export function createValidator(
 		return 0;
 	});
 
-	const hasTypeOptions = configs.some((config) => (config.types?.length ?? 0) > 0);
 	let typeInfo: TypeInfo | undefined;
 
 	function getTypeInfo(): TypeInfo | undefined {
-		if (!hasTypeOptions) return undefined;
 		if (typeInfo) return typeInfo;
 
 		const services = ESLintUtils.getParserServices(context, true);
@@ -122,7 +120,6 @@ function getRegexMatch(options: ReportDataOptions): string | undefined {
 	return options.custom?.match === false ? "not match" : undefined;
 }
 
-// oxlint-disable-next-line sonar/cognitive-complexity -- lol.
 function validateUnderscore(
 	position: "leading" | "trailing",
 	config: NormalizedSelector,
@@ -141,19 +138,19 @@ function validateUnderscore(
 	const hasDoubleUnderscore = position === "leading" ? name.startsWith("__") : name.endsWith("__");
 	const trimmedDoubleUnderscore = position === "leading" ? name.slice(2) : name.slice(0, -2);
 
-	switch (option) {
-		case "allow":
+	const validators = {
+		allow(): string {
 			return hasSingleUnderscore ? trimmedSingleUnderscore : name;
-
-		case "allowDouble":
+		},
+		allowDouble(): string {
 			return hasDoubleUnderscore ? trimmedDoubleUnderscore : name;
-
-		case "allowSingleOrDouble": {
+		},
+		allowSingleOrDouble(): string {
 			if (hasDoubleUnderscore) return trimmedDoubleUnderscore;
 			if (hasSingleUnderscore) return trimmedSingleUnderscore;
 			return name;
-		}
-		case "forbid": {
+		},
+		forbid(): string | undefined {
 			if (hasSingleUnderscore) {
 				context.report({
 					data: formatReportData(selectorType, { count: "one", originalName, position }),
@@ -163,8 +160,8 @@ function validateUnderscore(
 				return undefined;
 			}
 			return name;
-		}
-		case "require": {
+		},
+		require(): string | undefined {
 			if (!hasSingleUnderscore) {
 				context.report({
 					data: formatReportData(selectorType, { count: "one", originalName, position }),
@@ -174,8 +171,8 @@ function validateUnderscore(
 				return undefined;
 			}
 			return trimmedSingleUnderscore;
-		}
-		case "requireDouble": {
+		},
+		requireDouble(): string | undefined {
 			if (!hasDoubleUnderscore) {
 				context.report({
 					data: formatReportData(selectorType, { count: "two", originalName, position }),
@@ -185,10 +182,10 @@ function validateUnderscore(
 				return undefined;
 			}
 			return trimmedDoubleUnderscore;
-		}
-		default:
-			return undefined;
-	}
+		},
+	} satisfies Record<UnderscoreOptionsString, () => string | undefined>;
+
+	return validators[option]();
 }
 
 function validateAffix(
@@ -345,15 +342,13 @@ function symbolMatchesTypeReference(symbol: TsSymbol | undefined, reference: Typ
 	if (!symbol || symbol.name !== reference.name) return false;
 	if (reference.from === undefined) return true;
 
-	const { declarations } = symbol;
-	if (!declarations || declarations.length === 0) return false;
-
-	for (const declaration of declarations) {
-		const { fileName } = declaration.getSourceFile();
-		if (moduleSpecifierMatches(fileName, reference.from)) return true;
-	}
-
-	return false;
+	const source = reference.from;
+	return (
+		symbol.declarations?.some((declaration) => {
+			const { fileName } = declaration.getSourceFile();
+			return moduleSpecifierMatches(fileName, source);
+		}) === true
+	);
 }
 
 /**
@@ -385,8 +380,8 @@ function moduleSpecifierMatches(declarationFile: string, specifier: string): boo
 		if (WINDOWS_DRIVE_PATTERN.test(normalizedSpecifier)) return stripped === normalizedSpecifier;
 
 		const tail = normalizedSpecifier.replace(LEADING_DOT_SLASH_OR_SLASH_PATTERN, "");
-		if (stripped === tail) return true;
-		return stripped.endsWith(`/${tail}`);
+		const matchesExactPath = stripped === tail;
+		return matchesExactPath || stripped.endsWith(`/${tail}`);
 	}
 
 	return normalizedFile.includes(`/node_modules/${normalizedSpecifier}/`);

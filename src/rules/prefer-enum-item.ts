@@ -1,10 +1,11 @@
 import { createRule } from "$utilities/create-rule";
+import { getContextualTypeForExpressionNode } from "$utilities/typescript-node-utilities";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { isUnionType, unionConstituents } from "ts-api-utils";
-import { isExpression, SymbolFlags } from "typescript";
 
+import type { EnumValueLookup } from "$utilities/enum-utilities";
 import type { TSESTree } from "@typescript-eslint/utils";
-import type { Type, TypeChecker, Node as TypeScriptNode, Symbol as TypeScriptSymbol } from "typescript";
+import type { Type, TypeChecker } from "typescript";
 
 type MessageIds = "preferEnumItem";
 
@@ -15,7 +16,6 @@ function isJSXAttributeValue(node: TSESTree.Literal): boolean {
 
 function canHaveContextualEnumType(node: TSESTree.Literal): boolean {
 	const { parent } = node;
-	if (parent === undefined) return false;
 
 	switch (parent.type) {
 		case AST_NODE_TYPES.CallExpression:
@@ -29,9 +29,8 @@ function canHaveContextualEnumType(node: TSESTree.Literal): boolean {
 			return parent.value === node;
 
 		case AST_NODE_TYPES.VariableDeclarator: {
-			if (parent.init !== node) return false;
 			const { id } = parent;
-			return id.type === AST_NODE_TYPES.Identifier && id.typeAnnotation !== undefined;
+			return parent.init === node && id.type === AST_NODE_TYPES.Identifier && id.typeAnnotation !== undefined;
 		}
 
 		default:
@@ -49,16 +48,6 @@ interface EnumItemInfo {
 	readonly valueLiteral?: number;
 }
 
-interface EnumLookup {
-	readonly numberMap: Map<number, string>;
-	readonly stringMap: Map<string, string>;
-}
-
-interface EnumLiteralIndex {
-	readonly numberSet: Set<number>;
-	readonly stringSet: Set<string>;
-}
-
 export interface PreferEnumItemOptions {
 	readonly fixNumericToValue?: boolean;
 	readonly performanceMode?: boolean;
@@ -67,28 +56,16 @@ export interface PreferEnumItemOptions {
 type Options = [PreferEnumItemOptions?];
 
 const ENUM_PREFIX = "Enum.";
-const enumLiteralIndexCache = new WeakMap<TypeChecker, EnumLiteralIndex | false>();
+const NESTED_ENUM_PREFIX = `.${ENUM_PREFIX}`;
 
 interface EnumItemCaches {
-	readonly enumItemInfoCache: WeakMap<Type, EnumItemInfo | false>;
-	readonly enumLookupCache: WeakMap<Type, EnumLookup | false>;
-	readonly enumPathCache: WeakMap<Type, string | false>;
-	readonly unionTypesCache: WeakMap<Type, ReadonlyArray<Type>>;
+	readonly enumLookupCache: WeakMap<Type, EnumValueLookup | false>;
 }
 
-const enumItemCachesByChecker = new WeakMap<TypeChecker, EnumItemCaches>();
-
-function getEnumItemCaches(checker: TypeChecker): EnumItemCaches {
-	const cached = enumItemCachesByChecker.get(checker);
-	if (cached) return cached;
-	const created: EnumItemCaches = {
-		enumItemInfoCache: new WeakMap<Type, EnumItemInfo | false>(),
-		enumLookupCache: new WeakMap<Type, EnumLookup | false>(),
-		enumPathCache: new WeakMap<Type, string | false>(),
-		unionTypesCache: new WeakMap<Type, ReadonlyArray<Type>>(),
+function createEnumItemCaches(): EnumItemCaches {
+	return {
+		enumLookupCache: new WeakMap<Type, EnumValueLookup | false>(),
 	};
-	enumItemCachesByChecker.set(checker, created);
-	return created;
 }
 
 function getFullEnumPath(checker: TypeChecker, type: Type): string | undefined {
@@ -96,9 +73,12 @@ function getFullEnumPath(checker: TypeChecker, type: Type): string | undefined {
 	if (symbol === undefined) return undefined;
 
 	const fullName = checker.getFullyQualifiedName(symbol);
-	if (!fullName.startsWith(ENUM_PREFIX)) return undefined;
+	if (fullName.startsWith(ENUM_PREFIX)) return fullName;
 
-	return fullName;
+	const enumStart = fullName.indexOf(NESTED_ENUM_PREFIX);
+	if (enumStart === -1) return undefined;
+
+	return fullName.slice(enumStart + 1);
 }
 
 function getPropertyLiteralType(
@@ -116,6 +96,11 @@ function getPropertyLiteralType(
 	return undefined;
 }
 
+function getUnionTypesCached(type: Type): ReadonlyArray<Type> {
+	const constituents = isUnionType(type) ? unionConstituents(type) : undefined;
+	return constituents && constituents.length > 0 ? constituents : [type];
+}
+
 function createEnumMatch(enumPath: string): EnumMatch {
 	return { enumPath };
 }
@@ -125,35 +110,11 @@ const preferEnumItem = createRule<Options, MessageIds>({
 		const [{ fixNumericToValue = false, performanceMode = true } = {}] = context.options;
 		const services = ESLintUtils.getParserServices(context);
 		const checker = services.program.getTypeChecker();
-		const { enumItemInfoCache, enumLookupCache, enumPathCache, unionTypesCache } = getEnumItemCaches(checker);
-		const contextualTypeCache = new WeakMap<TSESTree.Node, Type | false>();
-
-		function getUnionTypesCached(type: Type): ReadonlyArray<Type> {
-			const cached = unionTypesCache.get(type);
-			if (cached !== undefined) return cached;
-			const constituents = isUnionType(type) ? unionConstituents(type) : undefined;
-			const resolved = constituents && constituents.length > 0 ? constituents : [type];
-			unionTypesCache.set(type, resolved);
-			return resolved;
-		}
-
-		function getFullEnumPathCached(type: Type): string | undefined {
-			const cached = enumPathCache.get(type);
-			if (cached !== undefined) return cached === false ? undefined : cached;
-			const resolved = getFullEnumPath(checker, type);
-			enumPathCache.set(type, resolved ?? false);
-			return resolved;
-		}
+		const { enumLookupCache } = createEnumItemCaches();
 
 		function getEnumItemInfo(type: Type): EnumItemInfo | undefined {
-			const cached = enumItemInfoCache.get(type);
-			if (cached !== undefined) return cached === false ? undefined : cached;
-
-			const enumPath = getFullEnumPathCached(type);
-			if (enumPath === undefined) {
-				enumItemInfoCache.set(type, false);
-				return undefined;
-			}
+			const enumPath = getFullEnumPath(checker, type);
+			if (enumPath === undefined) return undefined;
 
 			const nameLiteral = getPropertyLiteralType(checker, type, "Name");
 			const valueLiteral = getPropertyLiteralType(checker, type, "Value");
@@ -162,11 +123,10 @@ const preferEnumItem = createRule<Options, MessageIds>({
 				...(typeof nameLiteral === "string" ? { nameLiteral } : {}),
 				...(typeof valueLiteral === "number" ? { valueLiteral } : {}),
 			};
-			enumItemInfoCache.set(type, info);
 			return info;
 		}
 
-		function getEnumLookup(type: Type): EnumLookup | undefined {
+		function getEnumLookup(type: Type): EnumValueLookup | undefined {
 			const cached = enumLookupCache.get(type);
 			if (cached !== undefined) return cached === false ? undefined : cached;
 
@@ -194,121 +154,48 @@ const preferEnumItem = createRule<Options, MessageIds>({
 				return undefined;
 			}
 
-			const lookup: EnumLookup = { numberMap, stringMap };
+			const lookup: EnumValueLookup = { numberMap, stringMap };
 			enumLookupCache.set(type, lookup);
 			return lookup;
 		}
 
-		function resolveAliasSymbol(symbol: TypeScriptSymbol): TypeScriptSymbol {
-			if ((symbol.flags & SymbolFlags.Alias) !== 0) return checker.getAliasedSymbol(symbol);
-			return symbol;
-		}
-
-		function buildEnumLiteralIndex(anchorNode: TypeScriptNode): EnumLiteralIndex | undefined {
-			const resolved = checker.resolveName("Enum", anchorNode, SymbolFlags.Namespace, false);
-			if (resolved === undefined) return undefined;
-
-			const enumSymbol = resolveAliasSymbol(resolved);
-			if ((enumSymbol.flags & SymbolFlags.Namespace) === 0) return undefined;
-
-			const stringSet = new Set<string>();
-			const numberSet = new Set<number>();
-			const stack: Array<TypeScriptSymbol> = [enumSymbol];
-			const visited = new Set<TypeScriptSymbol>();
-
-			while (stack.length > 0) {
-				const current = stack.pop();
-				if (current === undefined) continue;
-				if (visited.has(current)) continue;
-				visited.add(current);
-
-				const exports = checker.getExportsOfModule(current);
-				for (const exportSymbol of exports) {
-					const unaliased = resolveAliasSymbol(exportSymbol);
-					if ((unaliased.flags & SymbolFlags.Namespace) !== 0) {
-						stack.push(unaliased);
-						continue;
-					}
-
-					const type = checker.getTypeOfSymbol(unaliased);
-					const info = getEnumItemInfo(type);
-					if (info === undefined) continue;
-					if (info.nameLiteral !== undefined) stringSet.add(info.nameLiteral);
-					if (info.valueLiteral !== undefined) numberSet.add(info.valueLiteral);
-				}
-			}
-
-			if (stringSet.size === 0 && numberSet.size === 0) return undefined;
-			return { numberSet, stringSet };
-		}
-
-		function getEnumLiteralIndex(anchorNode: TypeScriptNode): EnumLiteralIndex | undefined {
-			const cached = enumLiteralIndexCache.get(checker);
-			if (cached !== undefined) return cached === false ? undefined : cached;
-			const built = buildEnumLiteralIndex(anchorNode);
-			enumLiteralIndexCache.set(checker, built ?? false);
-			return built;
-		}
-
 		function getContextualType(node: TSESTree.Node): Type | undefined {
-			const cached = contextualTypeCache.get(node);
-			if (cached !== undefined) return cached === false ? undefined : cached;
-
 			const tsNode = services.esTreeNodeToTSNodeMap.get(node);
-			if (tsNode === undefined) {
-				contextualTypeCache.set(node, false);
-				return undefined;
-			}
-
-			if (!isExpression(tsNode)) {
-				contextualTypeCache.set(node, false);
-				return undefined;
-			}
-
-			const type = checker.getContextualType(tsNode);
-			contextualTypeCache.set(node, type ?? false);
-			return type;
+			return getContextualTypeForExpressionNode(checker, tsNode);
 		}
 
-		function shouldSkipLiteral(node: TSESTree.Literal, value: string | number): boolean {
-			if (!performanceMode) return false;
-			const tsNode = services.esTreeNodeToTSNodeMap.get(node);
-			if (tsNode === undefined) return false;
+		function findPerformanceEnumMatch(contextualType: Type, literalValue: string | number): EnumMatch | undefined {
+			const lookup = getEnumLookup(contextualType);
+			if (lookup === undefined) return undefined;
 
-			const index = getEnumLiteralIndex(tsNode);
-			if (index === undefined) return false;
-
-			if (typeof value === "string") return !index.stringSet.has(value);
-			return !index.numberSet.has(value);
+			const enumPath =
+				typeof literalValue === "string"
+					? lookup.stringMap.get(literalValue)
+					: lookup.numberMap.get(literalValue);
+			return enumPath === undefined ? undefined : createEnumMatch(enumPath);
 		}
 
-		function findEnumMatch(contextualType: Type, literalValue: string | number): EnumMatch | undefined {
-			if (performanceMode) {
-				const lookup = getEnumLookup(contextualType);
-				if (lookup === undefined) return undefined;
-				const enumPath =
-					typeof literalValue === "string"
-						? lookup.stringMap.get(literalValue)
-						: lookup.numberMap.get(literalValue);
-				return enumPath === undefined ? undefined : createEnumMatch(enumPath);
+		function literalMatchesEnumMember(memberType: Type, literalValue: string | number): boolean {
+			if (typeof literalValue === "string") {
+				return getPropertyLiteralType(checker, memberType, "Name") === literalValue;
 			}
 
-			const unionTypes = getUnionTypesCached(contextualType);
+			return getPropertyLiteralType(checker, memberType, "Value") === literalValue;
+		}
 
-			for (const memberType of unionTypes) {
+		function findExhaustiveEnumMatch(contextualType: Type, literalValue: string | number): EnumMatch | undefined {
+			for (const memberType of getUnionTypesCached(contextualType)) {
 				const enumPath = getFullEnumPath(checker, memberType);
 				if (enumPath === undefined) continue;
-
-				if (typeof literalValue === "string") {
-					const nameProperty = getPropertyLiteralType(checker, memberType, "Name");
-					if (nameProperty === literalValue) return createEnumMatch(enumPath);
-				} else {
-					const valueProperty = getPropertyLiteralType(checker, memberType, "Value");
-					if (valueProperty === literalValue) return createEnumMatch(enumPath);
-				}
+				if (literalMatchesEnumMember(memberType, literalValue)) return createEnumMatch(enumPath);
 			}
 
 			return undefined;
+		}
+
+		function findEnumMatch(contextualType: Type, literalValue: string | number): EnumMatch | undefined {
+			if (performanceMode) return findPerformanceEnumMatch(contextualType, literalValue);
+			return findExhaustiveEnumMatch(contextualType, literalValue);
 		}
 
 		return {
@@ -317,7 +204,6 @@ const preferEnumItem = createRule<Options, MessageIds>({
 				if (typeof value !== "string" && typeof value !== "number") return;
 
 				if (!canHaveContextualEnumType(node)) return;
-				if (shouldSkipLiteral(node, value)) return;
 
 				const contextualType = getContextualType(node);
 				if (contextualType === undefined) return;
@@ -347,8 +233,8 @@ const preferEnumItem = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [{ fixNumericToValue: false, performanceMode: true }],
 	meta: {
+		defaultOptions: [{ fixNumericToValue: false, performanceMode: true }],
 		docs: {
 			description: "Enforce using EnumItem values instead of string or number literals.",
 		},

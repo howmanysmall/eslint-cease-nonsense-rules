@@ -53,9 +53,7 @@ function validateUnderscores(name: string): boolean {
 	if (name.length === 0 || name.startsWith("_")) return false;
 
 	let boolean = false;
-	for (let index = 1; index < name.length; index += 1) {
-		const character = name[index];
-		if (character === undefined) return false;
+	for (const character of name.slice(1)) {
 		if (character === "_") {
 			if (boolean) return false;
 			boolean = true;

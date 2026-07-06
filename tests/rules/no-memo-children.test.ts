@@ -240,6 +240,24 @@ interface PropsWithKids {
 const MemoizedComponent = memoize<PropsWithKids>((props) => null);`,
 				errors: [{ messageId: "memoWithChildren" }],
 			},
+			{
+				code: `
+import { memo, ReactNode } from "@rbxts/react";
+
+memo((props: { readonly children?: ReactNode }) => null);`,
+				errors: [{ messageId: "memoWithChildren" }],
+			},
+			{
+				code: `
+import { "memo" as memoize, ReactNode } from "@rbxts/react";
+
+interface PropsWithKids {
+    readonly children?: ReactNode;
+}
+
+const MemoizedComponent = memoize<PropsWithKids>((props) => null);`,
+				errors: [{ messageId: "memoWithChildren" }],
+			},
 		],
 		valid: [
 			// No children - should be allowed
@@ -351,6 +369,85 @@ interface NestedSlot {
 }
 
 const MemoizedComponent = memo<NestedSlot>((props) => null);`,
+			},
+			{
+				code: `
+import { memo } from "@rbxts/react";
+
+interface IdentityProps {
+    readonly id: string;
+}
+
+interface ValueProps {
+    readonly value: number;
+}
+
+type CombinedProps = IdentityProps & ValueProps;
+
+const MemoizedComponent = memo<CombinedProps>((props) => null);`,
+			},
+			{
+				code: `
+import { memo } from "@rbxts/react";
+
+memo();`,
+			},
+			{
+				code: `
+import { memo } from "@rbxts/react";
+
+const MemoizedComponent = memo(() => null);
+void MemoizedComponent;`,
+			},
+			{
+				code: `
+import { memo } from "@rbxts/react";
+
+function ComponentWithoutProps() { return null; }
+const MemoizedComponent = memo(ComponentWithoutProps);
+void MemoizedComponent;`,
+			},
+			{
+				code: `
+import { memo } from "@rbxts/react";
+
+declare const value: number;
+const MemoizedComponent = memo(value);
+void MemoizedComponent;`,
+			},
+			{
+				code: `
+import React from "@rbxts/react";
+
+React.notMemo(() => null);`,
+			},
+			{
+				code: `
+import { memo, ReactNode } from "@rbxts/react";
+
+interface PropsWithKids {
+    readonly children?: ReactNode;
+}
+
+const getMemo = () => memo;
+const MemoizedComponent = getMemo()<PropsWithKids>((props) => null);`,
+			},
+			{
+				code: `
+import { memo } from "other-react";
+
+interface PropsWithKids {
+    readonly children?: unknown;
+}
+
+const MemoizedComponent = memo<PropsWithKids>((props) => null);`,
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const value = useMemo(() => 1, []);
+void value;`,
 			},
 		],
 	});

@@ -1,4 +1,5 @@
 import nodePath from "node:path";
+import { getImportSpecifierName } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
 import { discoverLocalComponent, inspectLocalComponentFile } from "$utilities/local-component-discovery";
 import { resolveRelativeImport } from "$utilities/resolve-import";
@@ -9,6 +10,9 @@ import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds = "preferPortalComponent";
 type Options = [];
+type PortalFactoryCall = TSESTree.CallExpression & {
+	readonly arguments: readonly [TSESTree.CallExpressionArgument, TSESTree.CallExpressionArgument];
+};
 
 const PORTAL_COMPONENT = {
 	componentName: "Portal",
@@ -33,22 +37,16 @@ function findVariable(
 	return undefined;
 }
 
-function getImportedName(specifier: TSESTree.ImportSpecifier): string | undefined {
-	if (specifier.imported.type === AST_NODE_TYPES.Identifier) return specifier.imported.name;
-	if (typeof specifier.imported.value === "string") return specifier.imported.value;
-	return undefined;
-}
-
 function isCreatePortalImport(variable: TSESLint.Scope.Variable | undefined): boolean {
 	if (variable === undefined) return false;
 
 	for (const definition of variable.defs) {
 		if (definition.type !== DefinitionType.ImportBinding) continue;
+		if (definition.parent.type !== AST_NODE_TYPES.ImportDeclaration) continue;
 		if (definition.node.type !== AST_NODE_TYPES.ImportSpecifier) continue;
-		if (definition.parent?.type !== AST_NODE_TYPES.ImportDeclaration) continue;
 		if (!PORTAL_SOURCES.has(definition.parent.source.value)) continue;
 
-		if (getImportedName(definition.node) === "createPortal") return true;
+		if (getImportSpecifierName(definition.node) === "createPortal") return true;
 	}
 
 	return false;
@@ -59,12 +57,16 @@ function isPortalNamespaceImport(variable: TSESLint.Scope.Variable | undefined):
 
 	for (const definition of variable.defs) {
 		if (definition.type !== DefinitionType.ImportBinding) continue;
+		if (definition.parent.type !== AST_NODE_TYPES.ImportDeclaration) continue;
 		if (definition.node.type !== AST_NODE_TYPES.ImportNamespaceSpecifier) continue;
-		if (definition.parent?.type !== AST_NODE_TYPES.ImportDeclaration) continue;
 		if (PORTAL_SOURCES.has(definition.parent.source.value)) return true;
 	}
 
 	return false;
+}
+
+function hasPortalFactoryArguments(node: TSESTree.CallExpression): node is PortalFactoryCall {
+	return node.arguments.length === 2;
 }
 
 function isPortalFactoryCall(
@@ -96,14 +98,10 @@ function renderPortalChild(argument: TSESTree.CallExpressionArgument, sourceCode
 
 function getPortalReplacement(
 	componentName: string,
-	node: TSESTree.CallExpression,
+	node: PortalFactoryCall,
 	sourceCode: TSESLint.SourceCode,
 ): string | undefined {
-	if (node.arguments.length !== 2) return undefined;
-
 	const [childrenArgument, targetArgument] = node.arguments;
-	if (childrenArgument === undefined || targetArgument === undefined) return undefined;
-
 	const children = renderPortalChild(childrenArgument, sourceCode);
 	const target = sourceCode.getText(targetArgument);
 
@@ -112,15 +110,14 @@ function getPortalReplacement(
 
 const preferLocalPortalComponent = createRule<Options, MessageIds>({
 	create(context) {
-		const filename = context.filename ?? "";
-		const discoveredPortal =
-			filename === "" ? { found: false as const } : discoverLocalComponent(filename, PORTAL_COMPONENT);
+		const { filename } = context;
+		const discoveredPortal = discoverLocalComponent(filename, PORTAL_COMPONENT);
 		const availablePortalIdentifiers = new Set<string>();
 
 		return {
 			CallExpression(node): void {
 				if (!isPortalFactoryCall(context, node)) return;
-				if (node.arguments.length !== 2) return;
+				if (!hasPortalFactoryArguments(node)) return;
 
 				const hasAvailablePortal = availablePortalIdentifiers.size > 0 || discoveredPortal.found;
 				if (!hasAvailablePortal) return;
@@ -164,15 +161,15 @@ const preferLocalPortalComponent = createRule<Options, MessageIds>({
 					}
 
 					if (specifier.type !== AST_NODE_TYPES.ImportSpecifier) continue;
-					if (getImportedName(specifier) !== "Portal") continue;
+					if (getImportSpecifierName(specifier) !== "Portal") continue;
 
 					availablePortalIdentifiers.add(specifier.local.name);
 				}
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description:
 				"Prefer a local Portal component over direct createPortal calls when the project already defines one.",

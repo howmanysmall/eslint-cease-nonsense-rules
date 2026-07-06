@@ -323,6 +323,10 @@ describe("prefer-pattern-replacements", () => {
 				options: [{ patterns: [pattern({ match: "new Vector2(0, 0)", replacement: "Vector2.zero" })] }],
 			},
 			{
+				code: "const x = UDim2.fromScale(1, 1);",
+				options: [{ patterns: [pattern({ match: "new Vector2(0, 0)", replacement: "Vector2.zero" })] }],
+			},
+			{
 				code: "const x = UDim2.fromScale(0.5, 0.6);",
 				options: [{ patterns: [pattern({ match: "UDim2.fromScale($x, $x)", replacement: "scale($x)" })] }],
 			},

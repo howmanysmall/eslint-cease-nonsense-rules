@@ -69,6 +69,11 @@ describe("prefer-class-properties", () => {
 				options: ["always"],
 			},
 			{
+				code: "class Foo { constructor() { this.foo = [123, , 789]; } }",
+				errors: assignErrors,
+				options: ["always"],
+			},
+			{
 				code: "class Foo { constructor() { this.foo = {foo: 123, bar: {baz: '456'}}; } }",
 				errors: assignErrors,
 				options: ["always"],
@@ -99,6 +104,9 @@ describe("prefer-class-properties", () => {
 
 			// 'always' mode - non-literal assignments are fine
 			{ code: "class Foo { constructor() { this.foo = foo(); } }", options: ["always"] },
+			{ code: "class Foo { constructor() { foo(); } }", options: ["always"] },
+			{ code: "class Foo { constructor() { foo = 123; } }", options: ["always"] },
+			{ code: "class Foo { #foo; constructor() { this.#foo = 123; } }", options: ["always"] },
 
 			// 'always' mode - conditional assignments are fine (not top-level in constructor)
 			{ code: "class Foo { constructor() { if (something) { this.foo = 123; } } }", options: ["always"] },
@@ -108,8 +116,14 @@ describe("prefer-class-properties", () => {
 
 			// 'always' mode - arrays/objects with non-literals are fine
 			{ code: "class Foo { constructor() { this.foo = [123, bar, 456]; } }", options: ["always"] },
+			{ code: "class Foo { constructor() { this.foo = [123, ...bar]; } }", options: ["always"] },
 			{ code: "class Foo { constructor() { this.foo = {foo: 123, bar: baz}; } }", options: ["always"] },
 			{ code: "class Foo { constructor() { this.foo = {[foo]: 123}; } }", options: ["always"] },
+			{ code: "class Foo { constructor() { this.foo = {...bar}; } }", options: ["always"] },
+			{ code: "class Foo { constructor() { this.foo = {method() { return 1; }}; } }", options: ["always"] },
+			{ code: "class Foo { static { this.foo = 123; } }", options: ["always"] },
+			{ code: "class Foo { constructor() { super.foo = 123; } }", options: ["always"] },
+			{ code: "class Foo { constructor() { this.foo = bar.baz(); } }", options: ["always"] },
 		],
 	});
 });

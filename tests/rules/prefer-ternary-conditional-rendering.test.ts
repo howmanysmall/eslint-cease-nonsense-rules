@@ -54,6 +54,11 @@ function Component({ gradient, gradientToUse, rarityStyle }) {
 				output: null,
 			},
 			{
+				code: "function Component() { return <>{!isReady() && <A />}{isReady() && <B />}</>; }",
+				errors: [{ messageId: "preferTernaryConditionalRendering" }],
+				output: null,
+			},
+			{
 				code: "function Component({ mode }) { return <>{mode === getMode() && <A />}{mode !== getMode() && <B />}</>; }",
 				errors: [{ messageId: "preferTernaryConditionalRendering" }],
 				output: null,
@@ -154,6 +159,14 @@ function Component({ flag }) {
 			'function Component({ mode }) { return <>{mode === "x" && <A />}text{mode !== "x" && <B />}</>; }',
 			"function Component({ flag }) { return <>{flag && <A />}<Spacer />{!flag && <B />}</>; }",
 			"function Component() { return <>{fn(1) && <A />}{!fn(1, 2) && <B />}</>; }",
+			"function Component({ arg, args }) { return <>{fn(...args) && <A />}{!fn(arg) && <B />}</>; }",
+			"function Component({ first, second }) { return <>{fn(first) && <A />}{!fn(second) && <B />}</>; }",
+			"function Component({ count }) { return <>{count > 0 && <A />}{count <= 0 && <B />}</>; }",
+			'function Component({ mode }) { return <>{mode === "x" && <A />}{mode === "y" && <B />}</>; }',
+			'function Component({ mode, other }) { return <>{mode === "x" && <A />}{other !== "x" && <B />}</>; }',
+			"function Component() { return <>{}</>; }",
+			"function Component({ flag }) { return <>{flag || <A />}{!flag && <B />}</>; }",
+			"class Component extends React.Component { #ready = true; render() { const item = {}; return <>{#ready in item && <A />}{!(#ready in item) && <B />}</>; } }",
 		],
 	});
 });

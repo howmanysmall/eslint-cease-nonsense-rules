@@ -11,8 +11,8 @@ const noPrint = createRule({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description: "Ban print() function calls. Use Log instead.",
 		},

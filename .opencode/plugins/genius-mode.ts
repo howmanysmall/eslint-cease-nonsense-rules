@@ -1,6 +1,6 @@
 // oxlint-disable typescript/require-await small-rules/prevent-abbreviations regexp-js/no-unused-capturing-group -- coal!
 // biome-ignore-all lint/nursery/useNamedCaptureGroup: coal
-import { isBashOutput, isReadOutput } from "./types/outputs";
+import { TOOL_OUTPUT_ARGUMENTS_PROPERTY, isBashOutput, isReadOutput } from "./types/outputs";
 import { sendNotificationAsync } from "./utilities/send-notification-async";
 
 import type { Hooks, Plugin } from "@opencode-ai/plugin";
@@ -102,8 +102,8 @@ export const BunTestInjection = definePlugin(async function injectTesting(_conte
 	return {
 		"tool.execute.before": async ({ tool }, output) => {
 			if (!isBashOutput(tool, output)) return;
-			const newCommand = transformTestCommand(output.args.command);
-			if (newCommand !== undefined) output.args.command = newCommand;
+			const newCommand = transformTestCommand(output[TOOL_OUTPUT_ARGUMENTS_PROPERTY].command);
+			if (newCommand !== undefined) output[TOOL_OUTPUT_ARGUMENTS_PROPERTY].command = newCommand;
 		},
 	};
 });
@@ -111,7 +111,7 @@ export const BunTestInjection = definePlugin(async function injectTesting(_conte
 export const ProtectEnv = definePlugin(async function protectEnvironment(_context): Promise<Hooks> {
 	return {
 		"tool.execute.before": async (input, output) => {
-			if (isReadOutput(input.tool, output) && output.args.filePath.includes(".env")) {
+			if (isReadOutput(input.tool, output) && output[TOOL_OUTPUT_ARGUMENTS_PROPERTY].filePath.includes(".env")) {
 				throw new Error("Do not read .env files");
 			}
 		},

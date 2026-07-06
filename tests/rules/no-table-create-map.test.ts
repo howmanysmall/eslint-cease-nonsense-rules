@@ -43,6 +43,10 @@ describe("no-table-create-map", () => {
 				code: 'const mapped = new Array<number>(size, 0)["map"]((value) => value + 1);',
 				errors: [{ messageId: "avoidConstructThenMap" }],
 			},
+			{
+				code: "const mapped = (table.create(total) as Array<number>).map((value) => value);",
+				errors: [{ messageId: "avoidConstructThenMap" }],
+			},
 		],
 		valid: [
 			`
@@ -76,6 +80,18 @@ const mapped = new Array<number>(5, 0).map((value) => value);
 			"table.create(entries);",
 			"new Array<number>(entries);",
 			"new Array<number>(a, b, c).map((value) => value);",
+			"const mapped = table.create?.(entries).map((value) => value);",
+			"const mapped = table.create(entries)?.map((value) => value);",
+			"const mapped = table.create(entries).filter((value) => value);",
+			"const mapped = table?.create(entries).map((value) => value);",
+			"const mapped = factory.create(entries).map((value) => value);",
+			"const mapped = Array(size).map((value) => value);",
+			"const mapped = new Set<number>(entries).map((value) => value);",
+			"const mapped = new Array().map((value) => value);",
+			"class Base { method() { return super.create(1).map((value) => value); } }",
+			"class Base { method() { return super.map((value) => value); } }",
+			"class Base { method() { return super(entries).map((value) => value); } }",
+			"const mapped = new super(entries).map((value) => value);",
 		],
 	});
 });

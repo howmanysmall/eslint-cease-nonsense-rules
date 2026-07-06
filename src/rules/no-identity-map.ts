@@ -31,30 +31,39 @@ function isBlockReturningIdentity(body: TSESTree.BlockStatement, parameterName: 
 	return statement.argument.name === parameterName;
 }
 
+function getSingleParameterName(parameters: ReadonlyArray<TSESTree.Parameter>): string | undefined {
+	let parameterCount = 0;
+	let parameterName: string | undefined;
+
+	for (const parameter of parameters) {
+		parameterCount += 1;
+		if (parameterCount > 1) return undefined;
+		parameterName = getParameterName(parameter);
+	}
+
+	return parameterName;
+}
+
+function isArrowIdentityCallback(callback: TSESTree.ArrowFunctionExpression): boolean {
+	const name = getSingleParameterName(callback.params);
+	if (name === undefined) return false;
+
+	const { body } = callback;
+	if (body.type === AST_NODE_TYPES.Identifier) return body.name === name;
+	if (body.type === AST_NODE_TYPES.BlockStatement) return isBlockReturningIdentity(body, name);
+	return false;
+}
+
+function isFunctionIdentityCallback(callback: TSESTree.FunctionExpression): boolean {
+	const name = getSingleParameterName(callback.params);
+	return name !== undefined && isBlockReturningIdentity(callback.body, name);
+}
+
 function isIdentityCallback(callback: TSESTree.Expression): boolean {
-	let isIdentity = false;
+	if (callback.type === AST_NODE_TYPES.ArrowFunctionExpression) return isArrowIdentityCallback(callback);
+	if (callback.type === AST_NODE_TYPES.FunctionExpression) return isFunctionIdentityCallback(callback);
 
-	if (callback.type === AST_NODE_TYPES.ArrowFunctionExpression && callback.params.length === 1) {
-		const [parameter] = callback.params;
-		if (parameter !== undefined) {
-			const name = getParameterName(parameter);
-			if (name !== undefined) {
-				const { body } = callback;
-				if (body.type === AST_NODE_TYPES.Identifier) isIdentity = body.name === name;
-				if (body.type === AST_NODE_TYPES.BlockStatement) isIdentity = isBlockReturningIdentity(body, name);
-			}
-		}
-	}
-
-	if (callback.type === AST_NODE_TYPES.FunctionExpression && callback.params.length === 1) {
-		const [parameter] = callback.params;
-		if (parameter !== undefined) {
-			const name = getParameterName(parameter);
-			if (name !== undefined) isIdentity = isBlockReturningIdentity(callback.body, name);
-		}
-	}
-
-	return isIdentity;
+	return false;
 }
 
 function findVariable(
@@ -168,8 +177,8 @@ const noIdentityMap = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [{}],
 	meta: {
+		defaultOptions: [{}],
 		docs: {
 			description: "Disallow pointless identity `.map()` calls that return the parameter unchanged",
 		},

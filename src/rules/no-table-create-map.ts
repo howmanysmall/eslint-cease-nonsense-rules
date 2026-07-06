@@ -62,8 +62,8 @@ const noTableCreateMap = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description:
 				"Disallow map(...) directly on table.create(...) and new Array(...) constructor patterns in roblox-ts.",

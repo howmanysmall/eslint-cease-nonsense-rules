@@ -10,6 +10,10 @@ interface SequenceDescriptor {
 	readonly sequenceName: "ColorSequence" | "NumberSequence";
 }
 
+interface SequenceIdentifierMatch {
+	readonly descriptor: SequenceDescriptor;
+}
+
 interface KeypointData {
 	readonly time: number;
 	readonly value: TSESTree.Expression;
@@ -20,17 +24,12 @@ const sequenceDescriptors: ReadonlyArray<SequenceDescriptor> = [
 	{ keypointName: "NumberSequenceKeypoint", sequenceName: "NumberSequence" },
 ];
 
-function isSequenceIdentifier(
-	node: TSESTree.Expression | TSESTree.Super,
-): node is TSESTree.Identifier & { readonly name: SequenceDescriptor["sequenceName"] } {
-	if (node.type !== AST_NODE_TYPES.Identifier) return false;
+function getSequenceIdentifierMatch(node: TSESTree.Expression | TSESTree.Super): SequenceIdentifierMatch | undefined {
+	if (node.type !== AST_NODE_TYPES.Identifier) return undefined;
 
-	for (const { sequenceName } of sequenceDescriptors) if (sequenceName === node.name) return true;
-	return false;
-}
-
-function findDescriptor(sequenceName: SequenceDescriptor["sequenceName"]): SequenceDescriptor | undefined {
-	for (const descriptor of sequenceDescriptors) if (descriptor.sequenceName === sequenceName) return descriptor;
+	for (const descriptor of sequenceDescriptors) {
+		if (descriptor.sequenceName === node.name) return { descriptor };
+	}
 	return undefined;
 }
 
@@ -66,6 +65,13 @@ function extractKeypoint(
 	};
 }
 
+function getSequenceElement(
+	element: TSESTree.ArrayExpression["elements"][number] | undefined,
+): TSESTree.Expression | TSESTree.SpreadElement | undefined {
+	if (element === null) return undefined;
+	return element;
+}
+
 const preferSequenceOverloads = createRule<[], "preferSingleOverload" | "preferTwoPointOverload">({
 	create(context) {
 		const { sourceCode } = context;
@@ -73,10 +79,9 @@ const preferSequenceOverloads = createRule<[], "preferSingleOverload" | "preferT
 		return {
 			NewExpression(node): void {
 				const { callee } = node;
-				if (!isSequenceIdentifier(callee)) return;
-
-				const descriptor = findDescriptor(callee.name);
-				if (descriptor === undefined || node.arguments.length !== 1) return;
+				const sequenceMatch = getSequenceIdentifierMatch(callee);
+				if (sequenceMatch === undefined || node.arguments.length !== 1) return;
+				const { descriptor } = sequenceMatch;
 
 				const [argument] = node.arguments;
 				if (
@@ -87,8 +92,8 @@ const preferSequenceOverloads = createRule<[], "preferSingleOverload" | "preferT
 					return;
 				}
 
-				const firstElement = argument.elements[0] ?? undefined;
-				const secondElement = argument.elements[1] ?? undefined;
+				const firstElement = getSequenceElement(argument.elements[0]);
+				const secondElement = getSequenceElement(argument.elements[1]);
 
 				const firstKeypoint = extractKeypoint(firstElement, descriptor);
 				const secondKeypoint = extractKeypoint(secondElement, descriptor);
@@ -124,8 +129,8 @@ const preferSequenceOverloads = createRule<[], "preferSingleOverload" | "preferT
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description:
 				"Prefer using single or two-point overloads for Roblox Sequence methods instead of all three overloads.",

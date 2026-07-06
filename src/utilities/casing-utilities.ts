@@ -53,6 +53,15 @@ const enum TransformMode {
 	Upper = 7,
 }
 
+type MatchingTransformMode =
+	| TransformMode.Camel
+	| TransformMode.DelimitedLower
+	| TransformMode.DelimitedUpper
+	| TransformMode.Lower
+	| TransformMode.Pascal
+	| TransformMode.Title
+	| TransformMode.Upper;
+
 const ASCII_CASE_OFFSET = 32;
 const CARRIAGE_RETURN = 13;
 const DOT = 46;
@@ -139,22 +148,20 @@ function matchesStringAt(value: string, index: number, expected: string): number
 
 function matchLowerCharacter(value: string, sourceIndex: number, code: number, outputIndex: number): number {
 	if (isAsciiUpperCode(code)) {
-		return value.charCodeAt(outputIndex) === code + ASCII_CASE_OFFSET ? outputIndex + 1 : -1;
+		return -1;
 	}
 
-	const sourceCharacter = value[sourceIndex];
-	if (sourceCharacter === undefined) return -1;
+	const sourceCharacter = value.charAt(sourceIndex);
 	if (code > 127 || localeModeEnabled) return matchesStringAt(value, outputIndex, toLowerCaseLocale(sourceCharacter));
 	return value.charCodeAt(outputIndex) === code ? outputIndex + 1 : -1;
 }
 
 function matchUpperCharacter(value: string, sourceIndex: number, code: number, outputIndex: number): number {
 	if (isAsciiLowerCode(code)) {
-		return value.charCodeAt(outputIndex) === code - ASCII_CASE_OFFSET ? outputIndex + 1 : -1;
+		return -1;
 	}
 
-	const sourceCharacter = value[sourceIndex];
-	if (sourceCharacter === undefined) return -1;
+	const sourceCharacter = value.charAt(sourceIndex);
 	if (code > 127 || localeModeEnabled) return matchesStringAt(value, outputIndex, toUpperCaseLocale(sourceCharacter));
 	return value.charCodeAt(outputIndex) === code ? outputIndex + 1 : -1;
 }
@@ -163,37 +170,29 @@ function matchTransformedCharacter(
 	value: string,
 	sourceIndex: number,
 	code: number,
-	mode: TransformMode,
+	mode: MatchingTransformMode,
 	capitalizeNext: boolean,
 	outputIndex: number,
 ): number {
-	switch (mode) {
-		case TransformMode.Camel:
-		case TransformMode.Pascal: {
-			if (capitalizeNext && isAsciiLetterCode(code)) {
-				return matchUpperCharacter(value, sourceIndex, code, outputIndex);
-			}
-			return matchLowerCharacter(value, sourceIndex, code, outputIndex);
-		}
-
-		case TransformMode.DelimitedLower:
-		case TransformMode.Lower:
-			return matchLowerCharacter(value, sourceIndex, code, outputIndex);
-
-		case TransformMode.DelimitedUpper:
-		case TransformMode.Upper:
+	if (mode === TransformMode.Camel || mode === TransformMode.Pascal) {
+		if (capitalizeNext && isAsciiLetterCode(code)) {
 			return matchUpperCharacter(value, sourceIndex, code, outputIndex);
-
-		case TransformMode.Title: {
-			if (capitalizeNext && isAsciiLowerCode(code)) {
-				return matchUpperCharacter(value, sourceIndex, code, outputIndex);
-			}
-			return value.charCodeAt(outputIndex) === code ? outputIndex + 1 : -1;
 		}
-
-		default:
-			return value.charCodeAt(outputIndex) === code ? outputIndex + 1 : -1;
+		return matchLowerCharacter(value, sourceIndex, code, outputIndex);
 	}
+
+	if (mode === TransformMode.DelimitedLower || mode === TransformMode.Lower) {
+		return matchLowerCharacter(value, sourceIndex, code, outputIndex);
+	}
+
+	if (mode === TransformMode.DelimitedUpper || mode === TransformMode.Upper) {
+		return matchUpperCharacter(value, sourceIndex, code, outputIndex);
+	}
+
+	if (capitalizeNext && isAsciiLowerCode(code)) {
+		return matchUpperCharacter(value, sourceIndex, code, outputIndex);
+	}
+	return value.charCodeAt(outputIndex) === code ? outputIndex + 1 : -1;
 }
 
 function modeEmitsDelimiter(mode: TransformMode): boolean {
@@ -238,8 +237,7 @@ function transformCasing(value: string, mode: TransformMode, delimiter: string):
 			continue;
 		}
 
-		const valueAtIndex = value[index];
-		if (valueAtIndex === undefined) continue;
+		const valueAtIndex = value.charAt(index);
 
 		const isUpper = isAsciiUpperCode(code);
 		const nextCode = value.charCodeAt(index + 1);
@@ -265,7 +263,7 @@ function transformCasing(value: string, mode: TransformMode, delimiter: string):
 }
 
 // oxlint-disable-next-line sonar/cognitive-complexity -- Mirrors transformCasing without allocating transformed strings.
-function matchesCasing(value: string, mode: TransformMode, delimiter: string): boolean {
+function matchesCasing(value: string, mode: MatchingTransformMode, delimiter: string): boolean {
 	let outputIndex = 0;
 	let hasLineOutput = false;
 	let pendingDelimiter = false;
@@ -486,8 +484,7 @@ export function copy(previousString: string, nextString: string): string {
 		const nextCode = nextString.charCodeAt(index);
 		if (previousCode > 127 || nextCode > 127) return copyGraphemes(previousString, nextString);
 
-		const nextCharacter = nextString[index];
-		if (nextCharacter === undefined) continue;
+		const nextCharacter = nextString.charAt(index);
 
 		result += isAsciiUpperCode(previousCode)
 			? upperAsciiCharacter(nextCharacter, nextCode)

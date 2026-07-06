@@ -11,8 +11,8 @@ const noWarn = createRule({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description: "Ban warn() function calls. Use Log instead.",
 		},

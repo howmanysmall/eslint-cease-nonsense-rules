@@ -1,11 +1,12 @@
 import nodePath from "node:path";
 import { hasCodeLines } from "$recognizers/code-recognizer";
 import { createJavaScriptDetectors } from "$recognizers/javascript-footprint";
-import { isNumber, isRecord, isString } from "$utilities/type-utilities";
+import { isNumber, isString } from "$utilities/type-utilities";
 import { parseSync } from "oxc-parser";
 
 import type { Rule } from "eslint";
 import type { Comment } from "estree";
+import type { Directive, Expression, Statement } from "oxc-parser";
 
 const EXCLUDED_STATEMENTS = new Set(["BreakStatement", "LabeledStatement", "ContinueStatement"]);
 
@@ -15,8 +16,15 @@ interface CommentWithLocation extends Comment {
 }
 
 interface CommentGroup {
-	readonly comments: ReadonlyArray<CommentWithLocation>;
+	readonly firstComment: CommentWithLocation;
+	readonly lastComment: CommentWithLocation;
 	readonly value: string;
+}
+
+interface PendingLineCommentGroup {
+	readonly comments: Array<CommentWithLocation>;
+	readonly firstComment: CommentWithLocation;
+	readonly lastComment: CommentWithLocation;
 }
 
 const detectors = createJavaScriptDetectors();
@@ -48,56 +56,59 @@ function areAdjacentLineComments(
 	return tokenAfterPrevious.loc.start.line > nextLine;
 }
 
-// oxlint-disable-next-line sonar/cognitive-complexity -- the price we pay for speed.
 function groupComments(
-	comments: ReadonlyArray<Comment>,
+	comments: ReadonlyArray<CommentWithLocation>,
 	sourceCode: Rule.RuleContext["sourceCode"],
 ): Array<CommentGroup> {
 	const groups = new Array<CommentGroup>();
 	let groupsSize = 0;
-	let currentLineComments = new Array<CommentWithLocation>();
-	let size = 0;
+	let pendingLineGroup: PendingLineCommentGroup | undefined;
 
 	for (const comment of comments) {
-		if (!isCommentWithLocation(comment)) continue;
-
 		if (comment.type === "Block") {
-			// Flush current line comments
-			if (size > 0) {
+			if (pendingLineGroup) {
 				groups[groupsSize++] = {
-					comments: currentLineComments,
-					value: currentLineComments.map(({ value }) => value).join("\n"),
+					firstComment: pendingLineGroup.firstComment,
+					lastComment: pendingLineGroup.lastComment,
+					value: pendingLineGroup.comments.map(({ value }) => value).join("\n"),
 				};
-				currentLineComments = [];
-				size = 0;
+				pendingLineGroup = undefined;
 			}
-			// Block comment is its own group
 			groups[groupsSize++] = {
-				comments: [comment],
+				firstComment: comment,
+				lastComment: comment,
 				value: comment.value,
 			};
-		} else if (size === 0) currentLineComments[size++] = comment;
-		else {
-			const lastComment = currentLineComments.at(-1);
-			if (lastComment && areAdjacentLineComments(lastComment, comment, sourceCode)) {
-				currentLineComments[size++] = comment;
+		} else if (pendingLineGroup) {
+			if (areAdjacentLineComments(pendingLineGroup.lastComment, comment, sourceCode)) {
+				pendingLineGroup.comments.push(comment);
+				pendingLineGroup = { ...pendingLineGroup, lastComment: comment };
 			} else {
-				// Not adjacent, flush and start new group
 				groups[groupsSize++] = {
-					comments: currentLineComments,
-					value: currentLineComments.map(({ value }) => value).join("\n"),
+					firstComment: pendingLineGroup.firstComment,
+					lastComment: pendingLineGroup.lastComment,
+					value: pendingLineGroup.comments.map(({ value }) => value).join("\n"),
 				};
-				currentLineComments = [comment];
-				size = 1;
+				pendingLineGroup = {
+					comments: [comment],
+					firstComment: comment,
+					lastComment: comment,
+				};
 			}
+		} else {
+			pendingLineGroup = {
+				comments: [comment],
+				firstComment: comment,
+				lastComment: comment,
+			};
 		}
 	}
 
-	// Flush remaining line comments
-	if (size > 0) {
+	if (pendingLineGroup) {
 		groups[groupsSize] = {
-			comments: currentLineComments,
-			value: currentLineComments.map(({ value }) => value).join("\n"),
+			firstComment: pendingLineGroup.firstComment,
+			lastComment: pendingLineGroup.lastComment,
+			value: pendingLineGroup.comments.map(({ value }) => value).join("\n"),
 		};
 	}
 
@@ -118,48 +129,26 @@ function couldBeJsCode(input: string): boolean {
 	return hasCodeLines(detectors, input.split("\n"));
 }
 
-function isReturnOrThrowExclusion(statement: { type: string; argument?: { type: string } | undefined }): boolean {
+type ParsedStatement = Directive | Statement;
+
+function isReturnOrThrowExclusion(statement: ParsedStatement): boolean {
 	if (statement.type !== "ReturnStatement" && statement.type !== "ThrowStatement") return false;
 	return statement.argument?.type === "Identifier";
 }
 
-function isUnaryPlusMinus(expression: { type: string; operator?: string }): boolean {
+function isUnaryPlusMinus(expression: Expression): boolean {
 	return expression.type === "UnaryExpression" && (expression.operator === "-" || expression.operator === "+");
 }
 
-function isExcludedLiteral(expression: { type: string; value?: unknown }): boolean {
+function isExcludedLiteral(expression: Expression): boolean {
 	if (expression.type !== "Literal") return false;
 	return isString(expression.value) || isNumber(expression.value);
-}
-
-interface ParsedExpression {
-	operator?: string;
-	type: string;
-	value?: unknown;
-}
-
-interface ParsedStatement {
-	argument?: { type: string } | undefined;
-	expression?: ParsedExpression;
-	type: string;
-}
-
-function isParsedStatement(value: unknown): value is ParsedStatement {
-	return isRecord(value) && isString(value.type);
-}
-
-function toParsedStatements(body: ReadonlyArray<unknown>): ReadonlyArray<ParsedStatement> {
-	const result = new Array<ParsedStatement>();
-	let size = 0;
-	for (const item of body) if (isParsedStatement(item)) result[size++] = item;
-	return result;
 }
 
 function isExpressionExclusion(statement: ParsedStatement, codeText: string): boolean {
 	if (statement.type !== "ExpressionStatement") return false;
 
 	const { expression } = statement;
-	if (!expression) return false;
 
 	return (
 		expression.type === "Identifier" ||
@@ -170,16 +159,19 @@ function isExpressionExclusion(statement: ParsedStatement, codeText: string): bo
 	);
 }
 
-function isExclusion(statements: ReadonlyArray<ParsedStatement>, codeText: string): boolean {
-	if (statements.length !== 1) return false;
+function getSingleStatement(statements: ReadonlyArray<ParsedStatement>): ParsedStatement | undefined {
+	if (statements.length !== 1) return undefined;
+	return statements[0];
+}
 
-	const statement = statements.at(0);
-	if (!statement) return false;
+function isExclusion(statements: ReadonlyArray<ParsedStatement>, codeText: string): boolean {
+	const statement = getSingleStatement(statements);
 
 	return (
-		EXCLUDED_STATEMENTS.has(statement.type) ||
-		isReturnOrThrowExclusion(statement) ||
-		isExpressionExclusion(statement, codeText)
+		statement !== undefined &&
+		(EXCLUDED_STATEMENTS.has(statement.type) ||
+			isReturnOrThrowExclusion(statement) ||
+			isExpressionExclusion(statement, codeText))
 	);
 }
 
@@ -190,7 +182,7 @@ function hasOnlyAllowedErrors(errors: Errors): boolean {
 }
 
 interface Body {
-	readonly body: ReadonlyArray<unknown>;
+	readonly body: ReadonlyArray<ParsedStatement>;
 }
 
 interface ParseResult {
@@ -210,11 +202,8 @@ function tryParse(value: string, filename: string): ParseResult | undefined {
 
 	if (isValidParseResult(result)) return result;
 
-	// Retry with .tsx for JSX support if original ext wasn't jsx/tsx
-	if (extension !== ".tsx" && extension !== ".jsx") {
-		const jsxResult = parseSync("file.tsx", value);
-		if (isValidParseResult(jsxResult)) return jsxResult;
-	}
+	const jsxResult = parseSync("file.tsx", value);
+	if (isValidParseResult(jsxResult)) return jsxResult;
 
 	return undefined;
 }
@@ -225,14 +214,14 @@ function containsCode(value: string, filename: string): boolean {
 	const result = tryParse(value, filename);
 	if (!result) return false;
 
-	return !isExclusion(toParsedStatements(result.program.body), value);
+	return !isExclusion(result.program.body, value);
 }
 
 const noCommentedCode: Rule.RuleModule = {
 	create(context): Rule.RuleListener {
 		return {
 			"Program:exit"(): void {
-				const allComments = context.sourceCode.getAllComments();
+				const allComments = context.sourceCode.getAllComments().filter(isCommentWithLocation);
 				const groups = groupComments(allComments, context.sourceCode);
 
 				for (const group of groups) {
@@ -244,10 +233,7 @@ const noCommentedCode: Rule.RuleModule = {
 					const balanced = injectMissingBraces(trimmedValue);
 					if (!containsCode(balanced, context.filename)) continue;
 
-					const firstComment = group.comments.at(0);
-					const lastComment = group.comments.at(-1);
-
-					if (!(firstComment && lastComment)) continue;
+					const { firstComment, lastComment } = group;
 
 					context.report({
 						loc: {

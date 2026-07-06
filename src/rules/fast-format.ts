@@ -1,3 +1,4 @@
+import { getDefinedValue } from "$utilities/defined-utilities";
 import {
 	formatWithOxfmtSync as formatWithOxfmt,
 	generateDifferences,
@@ -72,8 +73,8 @@ function createLruCache(limit: number): FormatCache {
 		entries.set(key, value);
 
 		if (entries.size > capacity) {
-			const oldestKey = entries.keys().next().value;
-			if (oldestKey !== undefined) entries.delete(oldestKey);
+			const oldestKey = getDefinedValue(entries.keys().next().value, "Expected LRU cache to include a key.");
+			entries.delete(oldestKey);
 		}
 
 		return value;

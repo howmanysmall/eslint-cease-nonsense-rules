@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { getMemberPropertyName, unwrapExpression } from "$utilities/ast-utilities";
+import { getImportSpecifierName, getMemberPropertyName, unwrapExpression, unwrapNode } from "$utilities/ast-utilities";
 import parser from "@typescript-eslint/parser";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 
@@ -26,6 +26,23 @@ function parseMemberExpression(code: string): TSESTree.MemberExpression {
 		throw error;
 	}
 	return expression;
+}
+
+function parseImportSpecifier(code: string): TSESTree.ImportSpecifier {
+	const { ast } = parser.parseForESLint(code, { ecmaVersion: 2022, sourceType: "module" });
+	const [statement] = ast.body;
+	if (statement?.type !== AST_NODE_TYPES.ImportDeclaration) {
+		const error = new Error("Expected import declaration");
+		Error.captureStackTrace(error, parseImportSpecifier);
+		throw error;
+	}
+	const [specifier] = statement.specifiers;
+	if (specifier?.type !== AST_NODE_TYPES.ImportSpecifier) {
+		const error = new Error("Expected import specifier");
+		Error.captureStackTrace(error, parseImportSpecifier);
+		throw error;
+	}
+	return specifier;
 }
 
 function parsePrivateMemberExpression(): TSESTree.MemberExpression {
@@ -71,6 +88,23 @@ describe("ast-utilities", () => {
 		expect(unwrapExpression(expression).type).toBe(AST_NODE_TYPES.Identifier);
 	}, 1000);
 
+	it.each([
+		["TSAsExpression", "value as string"],
+		["TSInstantiationExpression", "factory<string>"],
+		["TSNonNullExpression", "value!"],
+		["TSSatisfiesExpression", "value satisfies string"],
+		["TSTypeAssertion", "<string>value"],
+		["ChainExpression", "obj?.value"],
+	])(
+		"unwraps node-level %s wrappers",
+		(_name, code) => {
+			expect.assertions(1);
+			const expression = parseExpression(code);
+			expect(unwrapNode(expression).type).not.toBe(expression.type);
+		},
+		1000,
+	);
+
 	it("gets member property names for static, computed, and unsupported access", () => {
 		expect.assertions(3);
 		const staticMember = parseMemberExpression("obj.name");
@@ -80,6 +114,15 @@ describe("ast-utilities", () => {
 		expect(getMemberPropertyName(staticMember)).toBe("name");
 		expect(getMemberPropertyName(computedMember)).toBe("value");
 		expect(getMemberPropertyName(dynamicMember)).toBeUndefined();
+	}, 1000);
+
+	it("gets imported names from import specifiers", () => {
+		expect.assertions(2);
+		const identifierSpecifier = parseImportSpecifier('import { createPortal as mountPortal } from "react-dom";');
+		const stringSpecifier = parseImportSpecifier('import { "createPortal" as mountPortal } from "react-dom";');
+
+		expect(getImportSpecifierName(identifierSpecifier)).toBe("createPortal");
+		expect(getImportSpecifierName(stringSpecifier)).toBe("createPortal");
 	}, 1000);
 
 	it("returns undefined for private member access", () => {

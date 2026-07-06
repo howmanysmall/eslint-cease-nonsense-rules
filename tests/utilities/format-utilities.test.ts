@@ -1,6 +1,12 @@
 import fs from "node:fs";
 import { describe, expect, it, vi } from "vitest";
-import { __testing, generateDifferences, getExtension } from "$utilities/format-utilities";
+import {
+	__testing,
+	formatWithOxfmtSync,
+	generateDifferences,
+	getExtension,
+	showInvisibles,
+} from "$utilities/format-utilities";
 
 vi.setConfig({ testTimeout: 10000 });
 
@@ -95,6 +101,11 @@ describe("format-utilities", () => {
 			expect(getExtension("file.jsx")).toBe(".jsx");
 		});
 
+		it("returns .jsx for nested paths", () => {
+			expect.assertions(1);
+			expect(getExtension("src/components/file.jsx")).toBe(".jsx");
+		});
+
 		it("returns .js for .js files", () => {
 			expect.assertions(1);
 			expect(getExtension("file.js")).toBe(".js");
@@ -115,9 +126,19 @@ describe("format-utilities", () => {
 			expect(getExtension("file.cts")).toBe(".cts");
 		});
 
+		it("returns .cts for declaration-like names", () => {
+			expect.assertions(1);
+			expect(getExtension("file.test.cts")).toBe(".cts");
+		});
+
 		it("returns .cjs for .cjs files", () => {
 			expect.assertions(1);
 			expect(getExtension("file.cjs")).toBe(".cjs");
+		});
+
+		it("returns .cjs for config files", () => {
+			expect.assertions(1);
+			expect(getExtension("eslint.config.cjs")).toBe(".cjs");
 		});
 
 		it("returns undefined for unsupported extensions", () => {
@@ -126,6 +147,27 @@ describe("format-utilities", () => {
 			expect(getExtension("file.pas")).toBeUndefined();
 			expect(getExtension("file.json")).toBeUndefined();
 			expect(getExtension("file")).toBeUndefined();
+		});
+
+		it("returns undefined for near-miss JavaScript and TypeScript extensions", () => {
+			expect.assertions(8);
+			expect(getExtension("file.tjsx")).toBeUndefined();
+			expect(getExtension("file.tx")).toBeUndefined();
+			expect(getExtension("file.ntx")).toBeUndefined();
+			expect(getExtension("file.njx")).toBeUndefined();
+			expect(getExtension("file.nts")).toBeUndefined();
+			expect(getExtension("file.njs")).toBeUndefined();
+			expect(getExtension("file.mts.map")).toBeUndefined();
+			expect(getExtension("file.d.ts")).toBe(".ts");
+		});
+	});
+
+	describe("formatWithOxfmtSync", () => {
+		it("throws for unsupported extensions before loading config", () => {
+			expect.assertions(1);
+			expect(() => formatWithOxfmtSync("const value = 1;", "file.txt")).toThrow(
+				"Unsupported file extension for file.txt",
+			);
 		});
 	});
 
@@ -172,6 +214,29 @@ describe("format-utilities", () => {
 			expect.assertions(1);
 			const result = generateDifferences("hello", "hello\n");
 			expect(result).toStrictEqual([{ insertText: "\n", offset: 5, operation: "INSERT" }]);
+		});
+
+		it("adjusts replacement offsets for shared suffix text", () => {
+			expect.assertions(1);
+			const result = generateDifferences("abc", "ac");
+			expect(result).toStrictEqual([{ deleteText: "b", offset: 1, operation: "DELETE" }]);
+		});
+	});
+
+	describe("showInvisibles", () => {
+		it("replaces whitespace with visible symbols", () => {
+			expect.assertions(1);
+			expect(showInvisibles("a b\tc\r\n")).toBe("a·b→c␍␊");
+		});
+
+		it("leaves visible characters unchanged", () => {
+			expect.assertions(1);
+			expect(showInvisibles("abc")).toBe("abc");
+		});
+
+		it("truncates long text before replacing whitespace", () => {
+			expect.assertions(1);
+			expect(showInvisibles(`${"x".repeat(60)} more`)).toBe(`${"x".repeat(60)}…`);
 		});
 	});
 });

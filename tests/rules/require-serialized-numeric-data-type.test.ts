@@ -1,12 +1,31 @@
+import nodePath from "node:path";
 import { describe } from "vitest";
 import rule from "$rules/require-serialized-numeric-data-type";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
+const fixturesDir = nodePath.join(import.meta.dirname, "../fixtures/require-serialized-numeric-data-type");
+
 const ruleTester = new RuleTester({
 	languageOptions: {
 		ecmaVersion: 2022,
 		parser,
+		sourceType: "module",
+	},
+});
+
+const typeAwareRuleTester = new RuleTester({
+	languageOptions: {
+		ecmaVersion: 2022,
+		parser,
+		parserOptions: {
+			projectService: {
+				allowDefaultProject: ["*.ts"],
+				defaultProject: nodePath.join(fixturesDir, "tsconfig.json"),
+				maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 16,
+			},
+			tsconfigRootDir: fixturesDir,
+		},
 		sourceType: "module",
 	},
 });
@@ -121,6 +140,11 @@ describe("require-serialized-numeric-data-type", () => {
 				errors: [{ messageId: "requireSerializedNumericDataType" }],
 				options: [{ mode: "all" }],
 			},
+			{
+				code: "class Foo { method({ value }: { value: number }) {} }",
+				errors: [{ messageId: "requireSerializedNumericDataType" }],
+				options: [{ mode: "all" }],
+			},
 			// Mode: all - function type
 			{
 				code: "type Callback = (x: number) => number;",
@@ -128,6 +152,11 @@ describe("require-serialized-numeric-data-type", () => {
 					{ messageId: "requireSerializedNumericDataType" },
 					{ messageId: "requireSerializedNumericDataType" },
 				],
+				options: [{ mode: "all" }],
+			},
+			{
+				code: "type Callback = ({ value }: { value: number }) => void;",
+				errors: [{ messageId: "requireSerializedNumericDataType" }],
 				options: [{ mode: "all" }],
 			},
 			// Mode: all - type argument in function call
@@ -156,11 +185,36 @@ describe("require-serialized-numeric-data-type", () => {
 				code: "export const Timer = registerComponent<Wrapper<number>>({ replicated: true });",
 				errors: [{ messageId: "requireSerializedNumericDataType" }],
 			},
+			// Indexed access over an object containing number
+			{
+				code: "export const Timer = registerComponent<{ value: number }['value']>({ replicated: true });",
+				errors: [{ messageId: "requireSerializedNumericDataType" }],
+			},
+			// Type operator over an object containing number
+			{
+				code: "export const Timer = registerComponent<keyof { value: number }>({ replicated: true });",
+				errors: [{ messageId: "requireSerializedNumericDataType" }],
+			},
+			{
+				code: "export const Timer = registerComponent<readonly number>({ replicated: true });",
+				errors: [{ messageId: "requireSerializedNumericDataType" }],
+			},
+			{
+				code: "export const Timer = registerComponent<readonly [number, string]>({ replicated: true });",
+				errors: [{ messageId: "requireSerializedNumericDataType" }],
+			},
+			{
+				code: "export const Timer = registerComponent<readonly number[]>({ replicated: true });",
+				errors: [{ messageId: "requireSerializedNumericDataType" }],
+			},
 		],
 		valid: [
 			// DataType.u8 - allowed
 			{
 				code: "export const CurrentDay = registerComponent<DataType.u8>({ replicated: true });",
+			},
+			{
+				code: "export const Timer = registerComponent<NotDataType.u8>({ replicated: true });",
 			},
 			// DataType.f32 - allowed
 			{
@@ -221,6 +275,22 @@ describe("require-serialized-numeric-data-type", () => {
 				code: "const x: DataType.u8 = 5;",
 				options: [{ mode: "all" }],
 			},
+			{
+				code: "function foo(x) { return x; }",
+				options: [{ mode: "all" }],
+			},
+			{
+				code: "declare const token: unique symbol;",
+				options: [{ mode: "all" }],
+			},
+			{
+				code: "function foo({ value }: { value: DataType.u8 }) { return value; }",
+				options: [{ mode: "all" }],
+			},
+			{
+				code: "const foo = ({ value }: { value: DataType.u8 }) => value;",
+				options: [{ mode: "all" }],
+			},
 			// Mode: all - string variable - allowed
 			{
 				code: `const x: string = "hello";`,
@@ -246,9 +316,33 @@ describe("require-serialized-numeric-data-type", () => {
 				code: "type MyNumber = DataType.f32;",
 				options: [{ mode: "all" }],
 			},
+			// Mode: all - non-identifier callee with DataType type argument - allowed
+			{
+				code: "registry.registerComponent<DataType.u8>({ replicated: true });",
+				options: [{ mode: "all" }],
+			},
+			// Mode: all - call without type arguments - allowed
+			{
+				code: "registry.registerComponent({ replicated: true });",
+				options: [{ mode: "all" }],
+			},
+			// Mode: all - accessor method definition without a function value - allowed
+			{
+				code: "class Foo { accessor value: DataType.u8 = 1; }",
+				options: [{ mode: "all" }],
+			},
+			// Mode: all - declared method without a body - allowed
+			{
+				code: "declare class Foo { method(value: DataType.u8): DataType.u8; }",
+				options: [{ mode: "all" }],
+			},
 			// No type argument - allowed
 			{
 				code: "registerComponent({ replicated: true });",
+			},
+			// Non-identifier callee in default mode - allowed
+			{
+				code: "registry.registerComponent<number>({ replicated: true });",
 			},
 			// Generic type parameter not number - allowed
 			{
@@ -283,6 +377,45 @@ describe("require-serialized-numeric-data-type", () => {
 			// Nested generic with DataType
 			{
 				code: "export const Timer = registerComponent<Wrapper<DataType.u32>>({ replicated: true });",
+			},
+		],
+	});
+
+	// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
+	typeAwareRuleTester.run("require-serialized-numeric-data-type strict", rule, {
+		invalid: [
+			{
+				code: `
+type SerializedNumber = number;
+registerComponent<SerializedNumber>({ replicated: true });
+`,
+				errors: [{ messageId: "requireSerializedNumericDataType" }],
+				options: [{ strict: true }],
+			},
+			{
+				code: `
+type SerializedNumber = number | string;
+registerComponent<SerializedNumber>({ replicated: true });
+`,
+				errors: [{ messageId: "requireSerializedNumericDataType" }],
+				options: [{ strict: true }],
+			},
+			{
+				code: `
+type SerializedNumber = number & { readonly __brand: unique symbol };
+registerComponent<SerializedNumber>({ replicated: true });
+`,
+				errors: [{ messageId: "requireSerializedNumericDataType" }],
+				options: [{ strict: true }],
+			},
+		],
+		valid: [
+			{
+				code: `
+type SerializedText = string;
+registerComponent<SerializedText>({ replicated: true });
+`,
+				options: [{ strict: true }],
 			},
 		],
 	});

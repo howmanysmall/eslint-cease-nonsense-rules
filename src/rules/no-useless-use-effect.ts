@@ -1,6 +1,6 @@
 import { getReactSources, isReactImport } from "$constants/react-sources";
+import { getImportSpecifierName, unwrapExpression } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
-import { isString } from "$utilities/type-utilities";
 import { TSESTree } from "@typescript-eslint/types";
 
 import type { EnvironmentMode } from "$types/environment-mode";
@@ -158,27 +158,35 @@ export interface NoUselessUseEffectOptions {
 
 type Options = [NoUselessUseEffectOptions?];
 
-interface NormalizedOptions {
-	readonly environment: EnvironmentMode;
+type ReportOptionName =
+	| "reportAdjustState"
+	| "reportDerivedState"
+	| "reportDuplicateDeps"
+	| "reportEffectChain"
+	| "reportEmptyEffect"
+	| "reportEventFlag"
+	| "reportEventSpecificLogic"
+	| "reportExternalStore"
+	| "reportInitializeState"
+	| "reportLogOnly"
+	| "reportMixedDerivedState"
+	| "reportNotifyParent"
+	| "reportPassRefToParent"
+	| "reportResetState";
+
+type NormalizedReportOptions = Required<Pick<NoUselessUseEffectOptions, ReportOptionName>>;
+
+interface NormalizedHookOptions {
 	readonly hooks: ReadonlySet<string>;
 	readonly propertyCallbackPrefixes: ReadonlySet<string>;
 	readonly refHooks: ReadonlySet<string>;
-	readonly reportAdjustState: boolean;
-	readonly reportDerivedState: boolean;
-	readonly reportDuplicateDeps: boolean;
-	readonly reportEffectChain: boolean;
-	readonly reportEmptyEffect: boolean;
-	readonly reportEventFlag: boolean;
-	readonly reportEventSpecificLogic: boolean;
-	readonly reportExternalStore: boolean;
-	readonly reportInitializeState: boolean;
-	readonly reportLogOnly: boolean;
-	readonly reportMixedDerivedState: boolean;
-	readonly reportNotifyParent: boolean;
-	readonly reportPassRefToParent: boolean;
-	readonly reportResetState: boolean;
 	readonly stateHooks: ReadonlySet<string>;
 }
+
+type NormalizedOptions = NormalizedHookOptions &
+	NormalizedReportOptions & {
+		readonly environment: EnvironmentMode;
+	};
 
 const DEFAULT_OPTIONS: Required<NoUselessUseEffectOptions> = {
 	environment: "roblox-ts",
@@ -203,6 +211,7 @@ const DEFAULT_OPTIONS: Required<NoUselessUseEffectOptions> = {
 };
 
 type FunctionNode = TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression;
+type CallbackFunctionNode = TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression;
 
 interface FunctionContext {
 	readonly functionId: number;
@@ -222,32 +231,29 @@ interface EffectInfo {
 }
 
 function normalizeOptions(raw: NoUselessUseEffectOptions | undefined): NormalizedOptions {
-	return {
-		environment: raw?.environment ?? DEFAULT_OPTIONS.environment,
-		hooks: new Set(raw?.hooks ?? DEFAULT_OPTIONS.hooks),
-		propertyCallbackPrefixes: new Set(raw?.propertyCallbackPrefixes ?? DEFAULT_OPTIONS.propertyCallbackPrefixes),
-		refHooks: new Set(raw?.refHooks ?? DEFAULT_OPTIONS.refHooks),
-		reportAdjustState: raw?.reportAdjustState ?? DEFAULT_OPTIONS.reportAdjustState,
-		reportDerivedState: raw?.reportDerivedState ?? DEFAULT_OPTIONS.reportDerivedState,
-		reportDuplicateDeps: raw?.reportDuplicateDeps ?? DEFAULT_OPTIONS.reportDuplicateDeps,
-		reportEffectChain: raw?.reportEffectChain ?? DEFAULT_OPTIONS.reportEffectChain,
-		reportEmptyEffect: raw?.reportEmptyEffect ?? DEFAULT_OPTIONS.reportEmptyEffect,
-		reportEventFlag: raw?.reportEventFlag ?? DEFAULT_OPTIONS.reportEventFlag,
-		reportEventSpecificLogic: raw?.reportEventSpecificLogic ?? DEFAULT_OPTIONS.reportEventSpecificLogic,
-		reportExternalStore: raw?.reportExternalStore ?? DEFAULT_OPTIONS.reportExternalStore,
-		reportInitializeState: raw?.reportInitializeState ?? DEFAULT_OPTIONS.reportInitializeState,
-		reportLogOnly: raw?.reportLogOnly ?? DEFAULT_OPTIONS.reportLogOnly,
-		reportMixedDerivedState: raw?.reportMixedDerivedState ?? DEFAULT_OPTIONS.reportMixedDerivedState,
-		reportNotifyParent: raw?.reportNotifyParent ?? DEFAULT_OPTIONS.reportNotifyParent,
-		reportPassRefToParent: raw?.reportPassRefToParent ?? DEFAULT_OPTIONS.reportPassRefToParent,
-		reportResetState: raw?.reportResetState ?? DEFAULT_OPTIONS.reportResetState,
-		stateHooks: new Set(raw?.stateHooks ?? DEFAULT_OPTIONS.stateHooks),
-	};
-}
+	const options: Required<NoUselessUseEffectOptions> = { ...DEFAULT_OPTIONS, ...raw };
 
-function getImportedName({ imported }: TSESTree.ImportSpecifier): string | undefined {
-	if (imported.type === TSESTree.AST_NODE_TYPES.Identifier) return imported.name;
-	return imported.type === TSESTree.AST_NODE_TYPES.Literal && isString(imported.value) ? imported.value : undefined;
+	return {
+		environment: options.environment,
+		hooks: new Set(options.hooks),
+		propertyCallbackPrefixes: new Set(options.propertyCallbackPrefixes),
+		refHooks: new Set(options.refHooks),
+		reportAdjustState: options.reportAdjustState,
+		reportDerivedState: options.reportDerivedState,
+		reportDuplicateDeps: options.reportDuplicateDeps,
+		reportEffectChain: options.reportEffectChain,
+		reportEmptyEffect: options.reportEmptyEffect,
+		reportEventFlag: options.reportEventFlag,
+		reportEventSpecificLogic: options.reportEventSpecificLogic,
+		reportExternalStore: options.reportExternalStore,
+		reportInitializeState: options.reportInitializeState,
+		reportLogOnly: options.reportLogOnly,
+		reportMixedDerivedState: options.reportMixedDerivedState,
+		reportNotifyParent: options.reportNotifyParent,
+		reportPassRefToParent: options.reportPassRefToParent,
+		reportResetState: options.reportResetState,
+		stateHooks: new Set(options.stateHooks),
+	};
 }
 
 function isHookCall(
@@ -269,11 +275,10 @@ function isHookCall(
 	return false;
 }
 
-function isFunctionLike(node: TSESTree.Node | null | undefined): node is FunctionNode {
+function isFunctionLike(node: TSESTree.Node | null | undefined): node is CallbackFunctionNode {
 	return (
 		node?.type === TSESTree.AST_NODE_TYPES.FunctionExpression ||
-		node?.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression ||
-		node?.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration
+		node?.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression
 	);
 }
 
@@ -317,9 +322,7 @@ function isCustomHookName(name?: string): boolean {
 	return name?.startsWith("use") === true;
 }
 
-function isBlockBody(
-	node: TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
-): node is (TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression) & { body: TSESTree.BlockStatement } {
+function isBlockBody(node: CallbackFunctionNode): node is CallbackFunctionNode & { body: TSESTree.BlockStatement } {
 	return node.body.type === TSESTree.AST_NODE_TYPES.BlockStatement;
 }
 
@@ -334,10 +337,7 @@ function isReturnWithoutArgument(statement: TSESTree.Statement): boolean {
 function hasReturnWithArgument(body: TSESTree.BlockStatement): boolean {
 	const stack: Array<TSESTree.Node> = [...body.body];
 
-	while (stack.length > 0) {
-		const current = stack.pop();
-		if (!current) continue;
-
+	for (const current of stack) {
 		switch (current.type) {
 			case TSESTree.AST_NODE_TYPES.FunctionDeclaration:
 			case TSESTree.AST_NODE_TYPES.FunctionExpression:
@@ -400,14 +400,9 @@ function stripLeadingGuard(statements: ReadonlyArray<TSESTree.Statement>): Reado
 	return statements.slice(1);
 }
 
-function unwrapChainExpression(expression: TSESTree.Expression): TSESTree.Expression {
-	if (expression.type === TSESTree.AST_NODE_TYPES.ChainExpression) return expression.expression;
-	return expression;
-}
-
 function getCallExpressionFromStatement(statement: TSESTree.Statement): TSESTree.CallExpression | undefined {
 	if (statement.type !== TSESTree.AST_NODE_TYPES.ExpressionStatement) return undefined;
-	const expression = unwrapChainExpression(statement.expression);
+	const expression = unwrapExpression(statement.expression);
 	return expression.type === TSESTree.AST_NODE_TYPES.CallExpression ? expression : undefined;
 }
 
@@ -502,17 +497,35 @@ function isTrueString(value?: string): value is string {
 	return value !== undefined && value.length > 0;
 }
 
+type ThreeStatements = readonly [TSESTree.Statement, TSESTree.Statement, TSESTree.Statement];
+type TwoStatements = readonly [TSESTree.Statement, TSESTree.Statement];
+
+function hasThreeStatements(statements: ReadonlyArray<TSESTree.Statement>): statements is ThreeStatements {
+	return statements.length === 3;
+}
+
+function hasTwoStatements(statements: ReadonlyArray<TSESTree.Statement>): statements is TwoStatements {
+	return statements.length === 2;
+}
+
+type OneArgumentCallExpression = TSESTree.CallExpression & {
+	readonly arguments: readonly [TSESTree.CallExpressionArgument];
+};
+
+function hasOneArgument(callExpression: TSESTree.CallExpression): callExpression is OneArgumentCallExpression {
+	return callExpression.arguments.length === 1;
+}
+
 // oxlint-disable-next-line sonar/cognitive-complexity -- eat my shorts
 function matchEventFlagPattern(
 	statements: ReadonlyArray<TSESTree.Statement>,
 	stateSetterToValue: ReadonlyMap<string, string>,
 	stateSetterIdentifiers: ReadonlySet<string>,
 ): string | undefined {
-	if (statements.length === 3) {
+	if (hasThreeStatements(statements)) {
 		const [guard, first, second] = statements;
-		if (!guard || guard.type !== TSESTree.AST_NODE_TYPES.IfStatement) return undefined;
+		if (guard.type !== TSESTree.AST_NODE_TYPES.IfStatement) return undefined;
 		if (guard.alternate) return undefined;
-		if (!(first && second)) return undefined;
 
 		const firstFlag = getResetFlagNameFromStatement(first, stateSetterToValue);
 		const secondFlag = getResetFlagNameFromStatement(second, stateSetterToValue);
@@ -538,15 +551,13 @@ function matchEventFlagPattern(
 
 	if (statements.length === 1) {
 		const [onlyStatement] = statements;
-		if (!onlyStatement || onlyStatement.type !== TSESTree.AST_NODE_TYPES.IfStatement) return undefined;
+		if (onlyStatement?.type !== TSESTree.AST_NODE_TYPES.IfStatement) return undefined;
 		if (onlyStatement.alternate) return undefined;
 
 		const { test } = onlyStatement;
 		const consequentStatements = getStatementsFromConsequent(onlyStatement.consequent);
-		if (consequentStatements.length !== 2) return undefined;
-
+		if (!hasTwoStatements(consequentStatements)) return undefined;
 		const [first, second] = consequentStatements;
-		if (!(first && second)) return undefined;
 
 		const firstFlag = getResetFlagNameFromStatement(first, stateSetterToValue);
 		const secondFlag = getResetFlagNameFromStatement(second, stateSetterToValue);
@@ -573,13 +584,8 @@ function matchEventFlagPattern(
 // oxlint-disable-next-line sonar/cognitive-complexity -- SHUT UP!
 function expressionContainsIdentifier(node: TSESTree.Expression): boolean {
 	const stack: Array<TSESTree.Node> = [node];
-	const visited = new Set<TSESTree.Node>();
 
-	while (stack.length > 0) {
-		const current = stack.pop();
-		if (!current || visited.has(current)) continue;
-		visited.add(current);
-
+	for (const current of stack) {
 		if (current.type === TSESTree.AST_NODE_TYPES.Identifier) return true;
 
 		if (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
@@ -939,9 +945,8 @@ function hasOnlyConstantSetterCalls(
 		const callExpression = getCallExpressionFromStatement(statement);
 		if (!callExpression) return false;
 		if (!isStateSetterCall(callExpression, stateSetterIdentifiers)) return false;
-		if (callExpression.arguments.length !== 1) return false;
+		if (!hasOneArgument(callExpression)) return false;
 		const [argument] = callExpression.arguments;
-		if (!argument) return false;
 
 		if (
 			argument.type === TSESTree.AST_NODE_TYPES.Literal &&
@@ -1095,14 +1100,9 @@ function hasConditionalSetterBasedOnProperty(
 // oxlint-disable-next-line sonar/cognitive-complexity -- sybau
 function collectIdentifiers(node: TSESTree.Node): Set<string> {
 	const identifiers = new Set<string>();
-	const visited = new Set<TSESTree.Node>();
 	const stack: Array<TSESTree.Node> = [node];
 
-	while (stack.length > 0) {
-		const current = stack.pop();
-		if (!current || visited.has(current)) continue;
-		visited.add(current);
-
+	for (const current of stack) {
 		if (current.type === TSESTree.AST_NODE_TYPES.Identifier) {
 			identifiers.add(current.name);
 			continue;
@@ -1626,9 +1626,7 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 
 			// Build mapping: state value -> effects that set it
 			const stateSetByEffect = new Map<string, Set<number>>();
-			for (let index = 0; index < componentEffects.length; index += 1) {
-				const effect = componentEffects[index];
-				if (!effect) continue;
+			for (const [index, effect] of componentEffects.entries()) {
 				for (const setter of effect.setterCalls) {
 					const stateValue = stateSetterToValue.get(setter);
 					if (stateValue !== undefined && stateValue.length > 0) {
@@ -1684,20 +1682,26 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 				const effect1 = componentEffects[index];
 				if (!effect1 || effect1.depIdentifiers.size === 0) continue;
 
-				const duplicates = [index];
+				const duplicateIndexes = [index];
+				const duplicateEffects = [effect1];
 
 				for (let jndex = index + 1; jndex < componentEffects.length; jndex += 1) {
 					if (reported.has(jndex)) continue;
 					const effect2 = componentEffects[jndex];
 					if (!effect2 || effect2.ownerFunctionId !== effect1.ownerFunctionId) continue;
-					if (depArraysAreIdentical(effect1.depIdentifiers, effect2.depIdentifiers)) duplicates.push(jndex);
+					if (depArraysAreIdentical(effect1.depIdentifiers, effect2.depIdentifiers)) {
+						duplicateIndexes.push(jndex);
+						duplicateEffects.push(effect2);
+					}
 				}
 
-				if (duplicates.length > 1) {
-					for (const jndex of duplicates) {
+				if (duplicateEffects.length > 1) {
+					for (const jndex of duplicateIndexes) {
 						reported.add(jndex);
-						const effect = componentEffects[jndex];
-						if (effect) context.report({ messageId: "duplicateDeps", node: effect.node });
+					}
+
+					for (const effect of duplicateEffects) {
+						context.report({ messageId: "duplicateDeps", node: effect.node });
 					}
 				}
 			}
@@ -1754,9 +1758,8 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 						continue;
 					}
 
-					if (specifier.type !== TSESTree.AST_NODE_TYPES.ImportSpecifier) continue;
-					const importedName = getImportedName(specifier);
-					if (importedName === undefined || importedName.length === 0) continue;
+					const importedName = getImportSpecifierName(specifier);
+					if (importedName.length === 0) continue;
 
 					if (options.hooks.has(importedName)) effectIdentifiers.add(specifier.local.name);
 					if (options.stateHooks.has(importedName)) stateHookIdentifiers.add(specifier.local.name);
@@ -1775,8 +1778,8 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [{}],
 	meta: {
+		defaultOptions: [{}],
 		docs: {
 			description:
 				"Disallow effects that only derive state, notify parent callbacks, reset state on prop changes, or route event side effects through state.",

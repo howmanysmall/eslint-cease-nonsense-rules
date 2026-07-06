@@ -1,4 +1,5 @@
 import { createRule } from "$utilities/create-rule";
+import { getDefinedValue } from "$utilities/defined-utilities";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { isCompilerOptionEnabled, isTypeFlagSet } from "ts-api-utils";
 import { getCombinedModifierFlags, ModifierFlags, TypeFlags } from "typescript";
@@ -21,14 +22,11 @@ export interface DotNotationOptions {
 
 type Options = [DotNotationOptions?];
 
-interface TypeCheckerWithPropertyAccessibility extends TypeChecker {
-	isPropertyAccessible: (
-		node: TypeScriptNode,
-		isSuper: boolean,
-		isWrite: boolean,
-		containingType: Type,
-		property: TypeScriptSymbol,
-	) => boolean;
+interface ParserServices {
+	readonly esTreeNodeToTSNodeMap: {
+		readonly get: (node: TSESTree.Node) => TypeScriptNode;
+	};
+	readonly getTypeAtLocation: (node: TSESTree.Node) => Type;
 }
 
 const DEFAULT_OPTIONS: Required<DotNotationOptions> = {
@@ -43,7 +41,7 @@ const DEFAULT_OPTIONS: Required<DotNotationOptions> = {
 
 const VALID_IDENTIFIER = /^[a-zA-Z_$][\w$]*$/u;
 const DECIMAL_INTEGER_PATTERN = /^(?:0|0[0-7]*[89]\d*|[1-9](?:_?\d)*)$/u;
-const IDENTIFIER_OR_DIGIT_PATTERN = /[\d$\p{ID_Continue}_]/u;
+const IDENTIFIER_CONTINUATION = /^[$\p{ID_Continue}]$/u;
 const KEYWORDS = new Set([
 	"abstract",
 	"boolean",
@@ -106,18 +104,9 @@ const KEYWORDS = new Set([
 	"with",
 ]);
 const LITERAL_TYPES_TO_CHECK = new Set(["boolean", "string"]);
-const MESSAGES = {
-	useBrackets: ".{{key}} is a syntax error.",
-	useDot: "[{{key}}] is better written in dot notation.",
-} as const;
-
 interface ReportableComputedProperty {
 	readonly formattedValue: string;
 	readonly propertyName: string;
-}
-
-function hasPropertyAccessibility(checker: TypeChecker): checker is TypeCheckerWithPropertyAccessibility {
-	return typeof Reflect.get(checker, "isPropertyAccessible") === "function";
 }
 
 function isNullLiteral(node: TSESTree.Expression): node is TSESTree.Literal {
@@ -126,10 +115,6 @@ function isNullLiteral(node: TSESTree.Expression): node is TSESTree.Literal {
 
 function isStaticTemplateLiteral(node: TSESTree.Expression): node is TSESTree.TemplateLiteral {
 	return node.type === AST_NODE_TYPES.TemplateLiteral && node.expressions.length === 0;
-}
-
-function isOpeningBracketToken(token: TSESTree.Token | null): boolean {
-	return token?.value === "[";
 }
 
 function isDecimalInteger(node: TSESTree.Expression | TSESTree.Super): boolean {
@@ -141,21 +126,20 @@ function isDecimalInteger(node: TSESTree.Expression | TSESTree.Super): boolean {
 	);
 }
 
-function canTokensBeAdjacent(leftValue: string, rightToken: TSESTree.Token): boolean {
-	const rightValue = rightToken.value;
-	const leftCharacter = leftValue.at(-1);
-	const [rightCharacter] = rightValue;
+function canPropertyTouchNextToken(propertyName: string, rightToken: TSESTree.Token): boolean {
+	const lastPropertyCharacter = propertyName.at(-1);
+	const [firstTokenCharacter] = rightToken.value;
 
-	if (!(leftCharacter && rightCharacter)) return true;
+	return (
+		lastPropertyCharacter === undefined ||
+		firstTokenCharacter === undefined ||
+		!(IDENTIFIER_CONTINUATION.test(lastPropertyCharacter) && IDENTIFIER_CONTINUATION.test(firstTokenCharacter))
+	);
+}
 
-	if (IDENTIFIER_OR_DIGIT_PATTERN.test(leftCharacter) && IDENTIFIER_OR_DIGIT_PATTERN.test(rightCharacter)) {
-		return false;
-	}
-	if (leftCharacter === "+" && rightCharacter === "+") return false;
-	if (leftCharacter === "-" && rightCharacter === "-") return false;
-	if (leftCharacter === "/" && (rightCharacter === "/" || rightCharacter === "*")) return false;
-
-	return true;
+function getDotReplacementPrefix(node: TSESTree.MemberExpression): "." | " ." | "?." {
+	if (node.optional) return "?.";
+	return isDecimalInteger(node.object) ? " ." : ".";
 }
 
 function getReportableLiteralValue(node: TSESTree.Literal): ReportableComputedProperty | undefined {
@@ -184,7 +168,6 @@ function getReportableLiteralValue(node: TSESTree.Literal): ReportableComputedPr
 }
 
 function getComputedStringPropertyName(node: TSESTree.MemberExpression): string | undefined {
-	if (!node.computed) return undefined;
 	if (node.property.type !== AST_NODE_TYPES.Literal) return undefined;
 	return typeof node.property.value === "string" ? node.property.value : undefined;
 }
@@ -192,21 +175,24 @@ function getComputedStringPropertyName(node: TSESTree.MemberExpression): string 
 function resolvePropertySymbol(
 	node: TSESTree.MemberExpression,
 	checker: TypeChecker,
-	services: ReturnType<typeof ESLintUtils.getParserServices>,
+	services: ParserServices,
 	objectType: Type,
 ): TypeScriptSymbol | undefined {
 	const propertyTsNode = services.esTreeNodeToTSNodeMap.get(node.property);
-	const directSymbol = propertyTsNode ? checker.getSymbolAtLocation(propertyTsNode) : undefined;
-	if (directSymbol) return directSymbol;
+	const directSymbol = checker.getSymbolAtLocation(propertyTsNode);
+	if (directSymbol !== undefined) return directSymbol;
 
 	const propertyName = getComputedStringPropertyName(node);
-	if (!propertyName) return undefined;
+	if (propertyName === undefined) return undefined;
 
 	return objectType.getProperties().find((propertySymbol) => propertySymbol.getName() === propertyName);
 }
 
 function getPropertyAccessibility(propertySymbol: TypeScriptSymbol): "private" | "protected" | undefined {
-	const declarations = propertySymbol.getDeclarations() ?? [];
+	const declarations = getDefinedValue(
+		propertySymbol.getDeclarations(),
+		"Expected TypeScript property symbols to expose declarations.",
+	);
 
 	for (const declaration of declarations) {
 		const modifierFlags = getCombinedModifierFlags(declaration);
@@ -217,28 +203,27 @@ function getPropertyAccessibility(propertySymbol: TypeScriptSymbol): "private" |
 	return undefined;
 }
 
-function isWriteAccess(node: TSESTree.MemberExpression): boolean {
-	const { parent } = node;
-	if (!parent) return false;
-
-	return (
-		(parent.type === AST_NODE_TYPES.AssignmentExpression && parent.left === node) ||
-		(parent.type === AST_NODE_TYPES.UpdateExpression && parent.argument === node)
-	);
-}
-
 function hasStringIndexSignature(checker: TypeChecker, objectType: Type): boolean {
 	return checker
 		.getIndexInfosOfType(objectType)
 		.some((indexInfo) => isTypeFlagSet(indexInfo.keyType, TypeFlags.StringLike));
 }
 
+function hasCommentInComputedProperty(
+	context: Readonly<TSESLint.RuleContext<MessageIds, Options>>,
+	node: TSESTree.MemberExpression,
+): boolean {
+	const [, propertyAccessStart] = node.object.range;
+
+	return context.sourceCode.getCommentsInside(node).some((comment) => {
+		const [commentStart] = comment.range;
+		return commentStart >= propertyAccessStart;
+	});
+}
+
 function shouldSkipForRobloxInaccessibleAccess(
 	node: TSESTree.MemberExpression,
-	checker: TypeChecker,
-	objectType: Type,
 	propertySymbol: TypeScriptSymbol | undefined,
-	services: ReturnType<typeof ESLintUtils.getParserServices>,
 	options: Required<DotNotationOptions>,
 ): boolean {
 	if (!(options.allowInaccessibleClassPropertyAccess && options.environment === "roblox-ts")) return false;
@@ -246,18 +231,8 @@ function shouldSkipForRobloxInaccessibleAccess(
 
 	const accessibility = getPropertyAccessibility(propertySymbol);
 	if (!(accessibility === "private" || accessibility === "protected")) return false;
-	if (!hasPropertyAccessibility(checker)) return false;
 
-	const tsNode = services.esTreeNodeToTSNodeMap.get(node);
-	if (!tsNode) return false;
-
-	return !checker.isPropertyAccessible(
-		tsNode,
-		node.object.type === AST_NODE_TYPES.Super,
-		isWriteAccess(node),
-		objectType,
-		propertySymbol,
-	);
+	return node.object.type !== AST_NODE_TYPES.ThisExpression && node.object.type !== AST_NODE_TYPES.Super;
 }
 
 function reportComputedProperty(
@@ -280,21 +255,16 @@ function reportComputedProperty(
 			key: formattedValue,
 		},
 		*fix(fixer) {
-			const leftBracket = sourceCode.getTokenAfter(node.object, isOpeningBracketToken);
-			const rightBracket = sourceCode.getLastToken(node);
 			const nextToken = sourceCode.getTokenAfter(node);
 
-			if (!(leftBracket && rightBracket)) return;
-			if (sourceCode.commentsExistBetween(leftBracket, rightBracket)) return;
+			if (hasCommentInComputedProperty(context, node)) return;
 
-			if (!node.optional) yield fixer.insertTextBefore(leftBracket, isDecimalInteger(node.object) ? " ." : ".");
-			yield fixer.replaceTextRange([leftBracket.range[0], rightBracket.range[1]], propertyName);
+			yield fixer.replaceTextRange(
+				[node.object.range[1], node.range[1]],
+				`${getDotReplacementPrefix(node)}${propertyName}`,
+			);
 
-			if (
-				nextToken &&
-				rightBracket.range[1] === nextToken.range[0] &&
-				!canTokensBeAdjacent(propertyName, nextToken)
-			) {
+			if (nextToken?.range[0] === node.range[1] && !canPropertyTouchNextToken(propertyName, nextToken)) {
 				yield fixer.insertTextAfter(node, " ");
 			}
 		},
@@ -316,17 +286,99 @@ function reportKeywordProperty(
 		},
 		*fix(fixer) {
 			const dotToken = sourceCode.getTokenBefore(property);
-			if (!dotToken) return;
 
 			if (node.object.type === AST_NODE_TYPES.Identifier && node.object.name === "let" && !node.optional) return;
-			if (sourceCode.commentsExistBetween(dotToken, property)) return;
+			if (dotToken !== null && sourceCode.commentsExistBetween(dotToken, property)) return;
 
-			if (!node.optional) yield fixer.remove(dotToken);
+			if (!node.optional && dotToken !== null) yield fixer.remove(dotToken);
 			yield fixer.replaceText(property, `["${property.name}"]`);
 		},
 		messageId: "useBrackets",
 		node: property,
 	});
+}
+
+function reportStaticTemplateProperty(
+	context: Readonly<TSESLint.RuleContext<MessageIds, Options>>,
+	node: TSESTree.MemberExpression,
+	options: Required<DotNotationOptions>,
+): void {
+	if (node.property.type !== AST_NODE_TYPES.TemplateLiteral) return;
+	if (!isStaticTemplateLiteral(node.property)) return;
+
+	for (const quasi of node.property.quasis) {
+		const cookedValue = getDefinedValue(
+			quasi.value.cooked?.toString(),
+			"Expected static template property to be cooked.",
+		);
+		reportComputedProperty(
+			context,
+			node,
+			{
+				formattedValue: `\`${cookedValue}\``,
+				propertyName: cookedValue,
+			},
+			options,
+		);
+		return;
+	}
+}
+
+function shouldSkipComputedProperty(
+	node: TSESTree.MemberExpression,
+	checker: TypeChecker,
+	objectType: Type,
+	propertySymbol: TypeScriptSymbol | undefined,
+	allowIndexSignaturePropertyAccess: boolean,
+	options: Required<DotNotationOptions>,
+): boolean {
+	const propertyAccessibility = propertySymbol === undefined ? undefined : getPropertyAccessibility(propertySymbol);
+
+	if (propertyAccessibility === "private" && options.allowPrivateClassPropertyAccess) return true;
+	if (propertyAccessibility === "protected" && options.allowProtectedClassPropertyAccess) return true;
+
+	if (
+		propertySymbol === undefined &&
+		allowIndexSignaturePropertyAccess &&
+		hasStringIndexSignature(checker, objectType)
+	) {
+		return true;
+	}
+
+	return shouldSkipForRobloxInaccessibleAccess(node, propertySymbol, options);
+}
+
+function reportComputedMemberExpression(
+	context: Readonly<TSESLint.RuleContext<MessageIds, Options>>,
+	node: TSESTree.MemberExpression,
+	checker: TypeChecker,
+	services: ParserServices,
+	allowIndexSignaturePropertyAccess: boolean,
+	options: Required<DotNotationOptions>,
+): void {
+	const objectType = services.getTypeAtLocation(node.object).getNonNullableType();
+	const propertySymbol = resolvePropertySymbol(node, checker, services, objectType);
+
+	if (
+		shouldSkipComputedProperty(
+			node,
+			checker,
+			objectType,
+			propertySymbol,
+			allowIndexSignaturePropertyAccess,
+			options,
+		)
+	) {
+		return;
+	}
+
+	if (node.property.type === AST_NODE_TYPES.Literal) {
+		const literalValue = getReportableLiteralValue(node.property);
+		if (literalValue !== undefined) reportComputedProperty(context, node, literalValue, options);
+		return;
+	}
+
+	reportStaticTemplateProperty(context, node, options);
 }
 
 const dotNotation = createRule<Options, MessageIds>({
@@ -341,62 +393,15 @@ const dotNotation = createRule<Options, MessageIds>({
 		return {
 			MemberExpression(node): void {
 				if (node.computed) {
-					const objectType = services.getTypeAtLocation(node.object).getNonNullableType();
-					const propertySymbol = resolvePropertySymbol(node, checker, services, objectType);
-					const propertyAccessibility = propertySymbol ? getPropertyAccessibility(propertySymbol) : undefined;
-
-					if (
-						(propertyAccessibility === "private" && options.allowPrivateClassPropertyAccess) ||
-						(propertyAccessibility === "protected" && options.allowProtectedClassPropertyAccess)
-					) {
-						return;
-					}
-
-					if (
-						!propertySymbol &&
-						allowIndexSignaturePropertyAccess &&
-						hasStringIndexSignature(checker, objectType)
-					) {
-						return;
-					}
-
-					if (
-						shouldSkipForRobloxInaccessibleAccess(
-							node,
-							checker,
-							objectType,
-							propertySymbol,
-							services,
-							options,
-						)
-					) {
-						return;
-					}
-
-					if (node.property.type === AST_NODE_TYPES.Literal) {
-						const literalValue = getReportableLiteralValue(node.property);
-						if (literalValue !== undefined) {
-							reportComputedProperty(context, node, literalValue, options);
-							return;
-						}
-					}
-
-					if (isStaticTemplateLiteral(node.property)) {
-						const [firstQuasi] = node.property.quasis;
-						const cookedValue = firstQuasi?.value.cooked;
-						if (typeof cookedValue === "string") {
-							reportComputedProperty(
-								context,
-								node,
-								{
-									formattedValue: `\`${cookedValue}\``,
-									propertyName: cookedValue,
-								},
-								options,
-							);
-						}
-						return;
-					}
+					reportComputedMemberExpression(
+						context,
+						node,
+						checker,
+						services,
+						allowIndexSignaturePropertyAccess,
+						options,
+					);
+					return;
 				}
 
 				if (
@@ -409,13 +414,16 @@ const dotNotation = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [DEFAULT_OPTIONS],
 	meta: {
+		defaultOptions: [DEFAULT_OPTIONS],
 		docs: {
 			description: "Enforce dot notation while preserving opt-in roblox-ts visibility-safe bracket access.",
 		},
 		fixable: "code",
-		messages: MESSAGES,
+		messages: {
+			useBrackets: ".{{key}} is a syntax error.",
+			useDot: "[{{key}}] is better written in dot notation.",
+		} as const,
 		schema: [
 			{
 				additionalProperties: false,

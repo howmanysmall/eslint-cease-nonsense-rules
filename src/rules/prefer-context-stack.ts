@@ -1,4 +1,5 @@
 import nodePath from "node:path";
+import { getImportSpecifierName } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
 import { discoverLocalComponent, inspectLocalComponentFile } from "$utilities/local-component-discovery";
 import { resolveRelativeImport } from "$utilities/resolve-import";
@@ -15,12 +16,6 @@ const CONTEXT_STACK_COMPONENT = {
 	markers: ["providers"],
 } as const;
 const JSX_EXTENSIONS = new Set([".jsx", ".tsx"]);
-
-function getImportedName(specifier: TSESTree.ImportSpecifier): string | undefined {
-	if (specifier.imported.type === AST_NODE_TYPES.Identifier) return specifier.imported.name;
-	if (typeof specifier.imported.value === "string") return specifier.imported.value;
-	return undefined;
-}
 
 function isProviderElement(node: TSESTree.JSXElement): boolean {
 	return (
@@ -96,10 +91,9 @@ function isSafelyFixableProviderChain(chain: ReadonlyArray<TSESTree.JSXElement>)
 	return true;
 }
 
-function getSelfClosingProviderText(element: TSESTree.JSXElement, sourceCode: TSESLint.SourceCode): string | undefined {
+function getSelfClosingProviderText(element: TSESTree.JSXElement, sourceCode: TSESLint.SourceCode): string {
 	const openingText = sourceCode.getText(element.openingElement);
 	if (element.openingElement.selfClosing) return openingText;
-	if (!openingText.endsWith(">")) return undefined;
 	return `${openingText.slice(0, -1)} />`;
 }
 
@@ -112,12 +106,11 @@ function getContextStackReplacement(
 	let size = 0;
 	for (const provider of chain) {
 		const providerText = getSelfClosingProviderText(provider, sourceCode);
-		if (providerText === undefined) return undefined;
 		providers[size++] = providerText;
 	}
 
 	const innermostProvider = chain.at(-1);
-	if (innermostProvider === undefined || innermostProvider.closingElement === null) return undefined;
+	if (innermostProvider?.closingElement === undefined || innermostProvider.closingElement === null) return undefined;
 
 	const children = sourceCode.text.slice(
 		innermostProvider.openingElement.range[1],
@@ -128,32 +121,33 @@ function getContextStackReplacement(
 
 const preferContextStack = createRule<Options, MessageIds>({
 	create(context) {
-		const filename = context.filename ?? "";
-		const discoveredContextStack =
-			filename === "" ? { found: false as const } : discoverLocalComponent(filename, CONTEXT_STACK_COMPONENT);
+		const { filename } = context;
+		const discoveredContextStack = discoverLocalComponent(filename, CONTEXT_STACK_COMPONENT);
 		const contextStackIdentifiers = new Set<string>();
 
 		return {
 			ImportDeclaration(node): void {
 				const importSource = node.source.value;
-				if (typeof importSource !== "string" || !importSource.startsWith(".") || filename === "") return;
+				if (typeof importSource !== "string" || !importSource.startsWith(".")) return;
 
 				const resolved = resolveRelativeImport(importSource, filename);
 				if (!resolved.found) return;
 
 				const inspection = inspectLocalComponentFile(resolved.path, CONTEXT_STACK_COMPONENT);
-				if (!inspection.matches) return;
+				if (inspection.matches) {
+					for (const specifier of node.specifiers) {
+						if (specifier.type === AST_NODE_TYPES.ImportDefaultSpecifier) {
+							contextStackIdentifiers.add(specifier.local.name);
+							continue;
+						}
 
-				for (const specifier of node.specifiers) {
-					if (specifier.type === AST_NODE_TYPES.ImportDefaultSpecifier) {
-						contextStackIdentifiers.add(specifier.local.name);
-						continue;
+						if (
+							specifier.type === AST_NODE_TYPES.ImportSpecifier &&
+							getImportSpecifierName(specifier) === "ContextStack"
+						) {
+							contextStackIdentifiers.add(specifier.local.name);
+						}
 					}
-
-					if (specifier.type !== AST_NODE_TYPES.ImportSpecifier) continue;
-					if (getImportedName(specifier) !== "ContextStack") continue;
-
-					contextStackIdentifiers.add(specifier.local.name);
 				}
 			},
 
@@ -190,8 +184,8 @@ const preferContextStack = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description: "Prefer a local ContextStack component over directly nesting multiple context providers.",
 		},

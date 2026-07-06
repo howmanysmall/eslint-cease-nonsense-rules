@@ -18,7 +18,13 @@ export function normalizeZero(number: number): number {
  * @param node - The expression node to unwrap
  * @returns The unwrapped expression
  */
-export function unwrap(node: TSESTree.Expression): TSESTree.Expression {
+export function unwrap(node: TSESTree.Expression): TSESTree.Expression;
+export function unwrap(
+	node: TSESTree.Expression | TSESTree.PrivateIdentifier,
+): TSESTree.Expression | TSESTree.PrivateIdentifier;
+export function unwrap(
+	node: TSESTree.Expression | TSESTree.PrivateIdentifier,
+): TSESTree.Expression | TSESTree.PrivateIdentifier {
 	switch (node.type) {
 		case AST_NODE_TYPES.TSAsExpression:
 		case AST_NODE_TYPES.TSNonNullExpression:
@@ -30,8 +36,6 @@ export function unwrap(node: TSESTree.Expression): TSESTree.Expression {
 }
 
 function onBinaryExpression(expression: TSESTree.BinaryExpression): number | undefined {
-	if (expression.left.type === AST_NODE_TYPES.PrivateIdentifier) return undefined;
-
 	const left = evaluateConstant(expression.left);
 	const right = evaluateConstant(expression.right);
 	if (left === undefined || right === undefined) return undefined;
@@ -71,7 +75,7 @@ function onBinaryExpression(expression: TSESTree.BinaryExpression): number | und
  * @param node - The expression node to evaluate
  * @returns The evaluated constant number, or undefined if not a constant
  */
-export function evaluateConstant(node: TSESTree.Expression): number | undefined {
+export function evaluateConstant(node: TSESTree.Expression | TSESTree.PrivateIdentifier): number | undefined {
 	const expression = unwrap(node);
 
 	if (expression.type === AST_NODE_TYPES.Literal && typeof expression.value === "number") {

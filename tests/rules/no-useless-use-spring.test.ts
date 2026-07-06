@@ -139,6 +139,7 @@ const STATIC_OBJ = { value: 1 } as const;
 
 const spring = useSpring(
   {
+    assigned: (value = 1),
     unary: -1,
     binary: 1 + 2,
     logical: true && false,
@@ -160,6 +161,23 @@ const spring = useSpring(
 import * as Numbers from "./numbers";
 
 const spring = useSpring({ value: Numbers["ONE"] }, []);
+`,
+				errors: [{ messageId: "uselessSpring" }],
+			},
+			{
+				code: `
+import * as Factories from "./factories";
+
+const spring = useSpring({ value: Factories["make"](1) }, []);
+`,
+				errors: [{ messageId: "uselessSpring" }],
+			},
+			{
+				code: `
+const STATIC_OBJ = { opacity: 1 } as const;
+const KEY = "opacity";
+
+const spring = useSpring({ value: STATIC_OBJ[KEY] }, []);
 `,
 				errors: [{ messageId: "uselessSpring" }],
 			},
@@ -203,6 +221,49 @@ const spring = useSpring(
 						staticGlobalFactories: ["CustomFactory"],
 					},
 				],
+			},
+			{
+				code: `
+const spring = useSpring(
+  {
+    values: [1, , 3],
+  },
+  [],
+);
+`,
+				errors: [{ messageId: "uselessSpring" }],
+			},
+			{
+				code: `
+const CONFIG = { value: CONFIG };
+
+const spring = useSpring(CONFIG, []);
+`,
+				errors: [{ messageId: "uselessSpring" }],
+			},
+			{
+				code: `
+const spring = useSpring(
+  {
+    ["from"]: { opacity: 0 },
+    to: { opacity: 1 },
+  },
+  [],
+);
+`,
+				errors: [{ messageId: "uselessSpring" }],
+			},
+			{
+				code: `
+const spring = useSpring(
+  {
+    "from": { opacity: 0 },
+    to: { opacity: 1 },
+  },
+  [],
+);
+`,
+				errors: [{ messageId: "uselessSpring" }],
 			},
 		],
 		valid: [
@@ -356,6 +417,97 @@ const spring = useSpring({ created: new Date() }, []);
 			},
 			{
 				code: `
+function getSpringOptions() {
+  return { opacity: 1 };
+}
+
+const spring = useSpring({ fn: getSpringOptions }, []);
+`,
+			},
+			{
+				code: `
+const CONFIG = getSpringOptions();
+
+const spring = useSpring(CONFIG, []);
+`,
+			},
+			{
+				code: `
+const CONFIG = { opacity: getOpacity() };
+
+const spring = useSpring(CONFIG, []);
+`,
+			},
+			{
+				code: `
+let CONFIG = { opacity: 1 };
+
+const spring = useSpring(CONFIG, []);
+`,
+			},
+			{
+				code: `
+declare const CONFIG: { opacity: number };
+
+const spring = useSpring({ opacity: CONFIG.opacity }, []);
+`,
+			},
+			{
+				code: `
+const spring = useSpring({
+  opacity: 1,
+  ...dynamicConfig,
+}, []);
+`,
+			},
+			{
+				code: `
+const spring = useSpring({
+  get opacity() {
+    return 1;
+  },
+}, []);
+`,
+			},
+			{
+				code: `
+const key = getKey();
+
+const spring = useSpring({ [key]: 1 }, []);
+`,
+			},
+			{
+				code: `
+const spring = useSpring(makeConfig(), []);
+`,
+			},
+			{
+				code: `
+const spring = useSpring(MISSING_CONFIG, []);
+`,
+			},
+			{
+				code: `
+const spring = useSpring({ [StaticCtor.create(1)]: 1 }, []);
+`,
+			},
+			{
+				code: `
+const spring = useSpring({ opacity: 1 }, ...deps);
+`,
+			},
+			{
+				code: `
+const spring = useSpring();
+`,
+			},
+			{
+				code: `
+const spring = useSpring(...configs);
+`,
+			},
+			{
+				code: `
 function Component({ x }) {
   const spring = animated.useSpring(
     { position: UDim2.fromScale(0.3, 0.1) },
@@ -363,6 +515,31 @@ function Component({ x }) {
   );
   return spring;
 }
+`,
+			},
+			{
+				code: `
+const spring = animated["useSpring"](
+  { opacity: 1 },
+  [],
+);
+`,
+			},
+			{
+				code: `
+class Component {
+  #useSpring() {}
+
+  render() {
+    const spring = this.#useSpring({ opacity: 1 }, []);
+    return spring;
+  }
+}
+`,
+			},
+			{
+				code: `
+const spring = useSpring({ value: (0, makeValue)(1) }, []);
 `,
 			},
 			{

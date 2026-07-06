@@ -1,10 +1,10 @@
-import { isString } from "$utilities/type-utilities";
+import { getDefinedValue } from "$utilities/defined-utilities";
 import { TSESTree } from "@typescript-eslint/utils";
 
-import type { ReadonlyRecord } from "$types/utility-types";
 import type { Rule } from "eslint";
 
 type FunctionNode = TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression;
+type TraversableNode = TSESTree.Node | TSESTree.BlockStatement | TSESTree.Expression;
 
 export interface NoGodComponentsOptions {
 	readonly enforceTargetLines?: boolean;
@@ -58,10 +58,9 @@ function getComponentNameFromFunction(node: FunctionNode): string | undefined {
 		node.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression
 	) {
 		const { parent } = node;
-		if (parent === null || parent === undefined) return undefined;
 
 		if (
-			parent.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
+			parent?.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
 			parent.id.type === TSESTree.AST_NODE_TYPES.Identifier &&
 			isComponentName(parent.id.name)
 		) {
@@ -69,7 +68,7 @@ function getComponentNameFromFunction(node: FunctionNode): string | undefined {
 		}
 
 		if (
-			parent.type === TSESTree.AST_NODE_TYPES.Property &&
+			parent?.type === TSESTree.AST_NODE_TYPES.Property &&
 			parent.key.type === TSESTree.AST_NODE_TYPES.Identifier &&
 			isComponentName(parent.key.name)
 		) {
@@ -77,7 +76,7 @@ function getComponentNameFromFunction(node: FunctionNode): string | undefined {
 		}
 
 		if (
-			parent.type === TSESTree.AST_NODE_TYPES.MethodDefinition &&
+			parent?.type === TSESTree.AST_NODE_TYPES.MethodDefinition &&
 			parent.key.type === TSESTree.AST_NODE_TYPES.Identifier &&
 			isComponentName(parent.key.name)
 		) {
@@ -90,10 +89,9 @@ function getComponentNameFromFunction(node: FunctionNode): string | undefined {
 
 function getComponentNameFromCallParent(callExpr: TSESTree.CallExpression): string | undefined {
 	const { parent } = callExpr;
-	if (parent === null || parent === undefined) return undefined;
 
 	if (
-		parent.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
+		parent?.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
 		parent.id.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		isComponentName(parent.id.name)
 	) {
@@ -101,7 +99,7 @@ function getComponentNameFromCallParent(callExpr: TSESTree.CallExpression): stri
 	}
 
 	if (
-		parent.type === TSESTree.AST_NODE_TYPES.AssignmentExpression &&
+		parent?.type === TSESTree.AST_NODE_TYPES.AssignmentExpression &&
 		parent.left.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		isComponentName(parent.left.name)
 	) {
@@ -109,7 +107,7 @@ function getComponentNameFromCallParent(callExpr: TSESTree.CallExpression): stri
 	}
 
 	let nameFromExportDefault: string | undefined;
-	if (parent.type === TSESTree.AST_NODE_TYPES.ExportDefaultDeclaration && callExpr.arguments.length > 0) {
+	if (parent?.type === TSESTree.AST_NODE_TYPES.ExportDefaultDeclaration && callExpr.arguments.length > 0) {
 		const [firstArgument] = callExpr.arguments;
 		if (
 			firstArgument &&
@@ -154,38 +152,32 @@ function countDestructuredProperties(node: FunctionNode): number | undefined {
 
 	if (!pattern) return undefined;
 
-	let count = 0;
-	for (const { type } of pattern.properties) if (type === TSESTree.AST_NODE_TYPES.Property) count += 1;
-
-	return count;
+	return pattern.properties.filter(({ type }) => type === TSESTree.AST_NODE_TYPES.Property).length;
 }
 
 function isTypeOnlyNullLiteral(node: TSESTree.Literal): boolean {
-	const { parent } = node;
-	if (parent === null || parent === undefined) return false;
-
-	return parent.type === TSESTree.AST_NODE_TYPES.TSLiteralType;
+	return node.parent?.type === TSESTree.AST_NODE_TYPES.TSLiteralType;
 }
 
-function isNode(value: unknown): value is TSESTree.Node {
+function isNode(value: unknown): value is TraversableNode {
 	return typeof value === "object" && value !== null && "type" in value;
 }
 
+function getPropertyValue(target: object, key: string): unknown {
+	return Reflect.get(target, key);
+}
+
 function isFunctionNode(value: unknown): value is FunctionNode {
-	if (!isNode(value)) return false;
 	return (
-		value.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration ||
-		value.type === TSESTree.AST_NODE_TYPES.FunctionExpression ||
-		value.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression
+		isNode(value) &&
+		(value.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration ||
+			value.type === TSESTree.AST_NODE_TYPES.FunctionExpression ||
+			value.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression)
 	);
 }
 
 function isCallExpression(value: unknown): value is TSESTree.CallExpression {
 	return isNode(value) && value.type === TSESTree.AST_NODE_TYPES.CallExpression;
-}
-
-function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & ReadonlyRecord<string, unknown> {
-	return true;
 }
 
 interface BodyAnalysis {
@@ -204,7 +196,7 @@ function analyzeComponentBody(
 	const nullLiterals = new Array<TSESTree.Literal>();
 
 	// oxlint-disable-next-line sonar/cognitive-complexity -- lol.
-	function visit(current: TSESTree.Node, jsxDepth: number): void {
+	function visit(current: TraversableNode, jsxDepth: number): void {
 		if (FUNCTION_BOUNDARIES.has(current.type) && current !== functionNode) return;
 
 		let nextDepth = jsxDepth;
@@ -213,7 +205,7 @@ function analyzeComponentBody(
 			current.type === TSESTree.AST_NODE_TYPES.JSXFragment
 		) {
 			nextDepth = jsxDepth + 1;
-			if (nextDepth > maxJsxDepth) maxJsxDepth = nextDepth;
+			maxJsxDepth = Math.max(maxJsxDepth, nextDepth);
 		}
 
 		if (current.type === TSESTree.AST_NODE_TYPES.CallExpression) {
@@ -229,21 +221,10 @@ function analyzeComponentBody(
 			nullLiterals.push(current);
 		}
 
-		function getVisitorKeysForNodeType(nodeType: string): ReadonlyArray<string> {
-			const keysUnknown = sourceCode.visitorKeys[nodeType];
-			if (!Array.isArray(keysUnknown)) return [];
-
-			const keys = new Array<string>();
-			let size = 0;
-			for (const key of keysUnknown) if (isString(key)) keys[size++] = key;
-			return keys;
-		}
-
-		const keys = getVisitorKeysForNodeType(current.type);
-		if (!hasDynamicProperties(current)) return;
+		const keys = getDefinedValue(sourceCode.visitorKeys[current.type], "Expected visitor keys for AST node.");
 
 		for (const key of keys) {
-			const value = current[key];
+			const value = getPropertyValue(current, key);
 			if (Array.isArray(value)) {
 				for (const item of value) if (isNode(item)) visit(item, nextDepth);
 				continue;
@@ -272,21 +253,7 @@ function parseOptions(options: unknown): Required<NoGodComponentsOptions> {
 
 	if (typeof options !== "object" || options === null) return defaults;
 
-	const cast = options as NoGodComponentsOptions;
-	return {
-		enforceTargetLines:
-			typeof cast.enforceTargetLines === "boolean" ? cast.enforceTargetLines : defaults.enforceTargetLines,
-		ignoreComponents: Array.isArray(cast.ignoreComponents) ? cast.ignoreComponents : defaults.ignoreComponents,
-		maxDestructuredProperties:
-			typeof cast.maxDestructuredProperties === "number"
-				? cast.maxDestructuredProperties
-				: defaults.maxDestructuredProperties,
-		maxLines: typeof cast.maxLines === "number" ? cast.maxLines : defaults.maxLines,
-		maxStateHooks: typeof cast.maxStateHooks === "number" ? cast.maxStateHooks : defaults.maxStateHooks,
-		maxTsxNesting: typeof cast.maxTsxNesting === "number" ? cast.maxTsxNesting : defaults.maxTsxNesting,
-		stateHooks: Array.isArray(cast.stateHooks) ? cast.stateHooks : defaults.stateHooks,
-		targetLines: typeof cast.targetLines === "number" ? cast.targetLines : defaults.targetLines,
-	};
+	return { ...defaults, ...options };
 }
 
 const noGodComponents: Rule.RuleModule = {
@@ -301,22 +268,19 @@ const noGodComponents: Rule.RuleModule = {
 			if (ignoreSet.has(name) || checked.has(node)) return;
 			checked.add(node);
 
-			const location = node.loc;
-			if (location !== null && location !== undefined) {
-				const lines = location.end.line - location.start.line + 1;
-				if (lines > configuration.maxLines) {
-					context.report({
-						data: { lines, max: configuration.maxLines, name, target: configuration.targetLines },
-						messageId: "exceedsMaxLines",
-						node,
-					});
-				} else if (configuration.enforceTargetLines && lines > configuration.targetLines) {
-					context.report({
-						data: { lines, max: configuration.maxLines, name, target: configuration.targetLines },
-						messageId: "exceedsTargetLines",
-						node,
-					});
-				}
+			const lines = node.loc.end.line - node.loc.start.line + 1;
+			if (lines > configuration.maxLines) {
+				context.report({
+					data: { lines, max: configuration.maxLines, name, target: configuration.targetLines },
+					messageId: "exceedsMaxLines",
+					node,
+				});
+			} else if (configuration.enforceTargetLines && lines > configuration.targetLines) {
+				context.report({
+					data: { lines, max: configuration.maxLines, name, target: configuration.targetLines },
+					messageId: "exceedsTargetLines",
+					node,
+				});
 			}
 
 			const propertiesCount = countDestructuredProperties(node);
@@ -389,6 +353,7 @@ const noGodComponents: Rule.RuleModule = {
 			CallExpression: checkHigherOrderComponentCall,
 			FunctionDeclaration: maybeCheckFunction,
 			FunctionExpression: maybeCheckFunction,
+			Program: maybeCheckFunction,
 		};
 	},
 	meta: {

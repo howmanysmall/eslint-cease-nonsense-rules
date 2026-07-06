@@ -136,6 +136,37 @@ function test(matrix) {
 				errors: [{ messageId: "unpairedOpener" }],
 			},
 
+			// Labeled break to a non-loop label does not close the current loop opener
+			{
+				code: `
+function test(items) {
+    for (const item of items) {
+        debug.profilebegin("item");
+        exit: {
+            if (item.done) break exit;
+        }
+    }
+}
+`,
+				errors: [{ messageId: "unpairedOpener" }],
+			},
+
+			// Labeled break skips through an inner label before finding the outer loop
+			{
+				code: `
+function test(matrix) {
+    outer: for (const row of matrix) {
+        inner: for (const cell of row) {
+            debug.profilebegin("cell");
+            if (cell.stop) break outer;
+            debug.profileend();
+        }
+    }
+}
+`,
+				errors: [{ messageId: "unpairedOpener" }],
+			},
+
 			// Alternative opener without closer
 			{
 				code: `
@@ -171,6 +202,33 @@ function test() {
 }
 `,
 				errors: [{ messageId: "unpairedOpener" }],
+			},
+			{
+				code: `
+function test() {
+    db.transaction();
+    debug.profilebegin("inner");
+    db.commit();
+}
+`,
+				errors: [{ messageId: "unpairedOpener" }, { messageId: "wrongOrder" }],
+				options: [
+					{
+						pairs: [
+							{
+								closer: "db.commit",
+								opener: "db.transaction",
+								requireSync: false,
+							},
+							{
+								closer: "debug.profileend",
+								opener: "debug.profilebegin",
+								platform: "roblox",
+								requireSync: true,
+							},
+						],
+					},
+				],
 			},
 
 			// Multiple consecutive openers (when disallowed)
@@ -267,6 +325,40 @@ function test() {
 				],
 			},
 
+			// Repeated wrong closer reports the same expected closer from cache
+			{
+				code: `
+function test() {
+    Iris.CollapsingHeader(["Units"]);
+    debug.profileend();
+    debug.profileend();
+}
+`,
+				errors: [
+					{ messageId: "unpairedOpener" },
+					{ data: { closer: "debug.profileend", expected: "Iris.End" }, messageId: "unexpectedCloser" },
+					{ data: { closer: "debug.profileend", expected: "Iris.End" }, messageId: "unexpectedCloser" },
+				],
+				options: [
+					{
+						pairs: [
+							{
+								closer: "Iris.End",
+								opener: "Iris.CollapsingHeader",
+								platform: "roblox",
+								requireSync: true,
+							},
+							{
+								closer: "debug.profileend",
+								opener: "debug.profilebegin",
+								platform: "roblox",
+								requireSync: true,
+							},
+						],
+					},
+				],
+			},
+
 			// Contextual error: multiple expected closers
 			{
 				code: `
@@ -296,6 +388,41 @@ function test() {
 								opener: "Iris.CollapsingHeader",
 								platform: "roblox",
 								requireSync: true,
+							},
+						],
+					},
+				],
+			},
+
+			// Duplicate closer configurations are reported once in the expected closer list
+			{
+				code: `
+function test() {
+    db.transaction();
+    audit.end();
+}
+`,
+				errors: [
+					{ messageId: "unpairedOpener" },
+					{ data: { closer: "audit.end", expected: "db.commit" }, messageId: "unexpectedCloser" },
+				],
+				options: [
+					{
+						pairs: [
+							{
+								closer: "db.commit",
+								opener: "db.transaction",
+								requireSync: false,
+							},
+							{
+								closer: "db.commit",
+								opener: "db.transaction",
+								requireSync: false,
+							},
+							{
+								closer: "audit.end",
+								opener: "audit.start",
+								requireSync: false,
 							},
 						],
 					},
@@ -376,6 +503,35 @@ function test() {
 				errors: [{ messageId: "robloxYieldViolation" }],
 			},
 
+			// Default Roblox yielding functions still apply to custom pairs
+			{
+				code: `
+function test() {
+    profile.start();
+    task.wait(1);
+	    profile.stop();
+	}
+	`,
+				errors: [
+					{
+						data: { closer: "profile.stop", yieldingFunction: "task.wait" },
+						messageId: "robloxYieldViolation",
+					},
+				],
+				options: [
+					{
+						pairs: [
+							{
+								closer: "profile.stop",
+								opener: "profile.start",
+								platform: "roblox",
+								requireSync: true,
+							},
+						],
+					},
+				],
+			},
+
 			// Nested profiles both auto-closed by yielding
 			{
 				code: `
@@ -388,6 +544,36 @@ function test() {
 }
 `,
 				errors: [{ messageId: "robloxYieldViolation" }, { messageId: "unpairedCloser" }],
+			},
+
+			// Custom Roblox yielding function
+			{
+				code: `
+function test() {
+    debug.profilebegin("task");
+    customYield();
+    debug.profileend();
+}
+`,
+				errors: [
+					{
+						data: { closer: "debug.profileend", yieldingFunction: "customYield" },
+						messageId: "robloxYieldViolation",
+					},
+				],
+				options: [
+					{
+						pairs: [
+							{
+								closer: "debug.profileend",
+								opener: "debug.profilebegin",
+								platform: "roblox",
+								requireSync: true,
+								yieldingFunctions: ["customYield"],
+							},
+						],
+					},
+				],
 			},
 
 			// Conditional opener without guaranteed closer
@@ -488,6 +674,16 @@ function test() {
     }
     debug.profileend();
 }
+`,
+				errors: [{ messageId: "unpairedOpener" }],
+			},
+
+			// Top-level throw skips the closer
+			{
+				code: `
+debug.profilebegin("task");
+throw new Error("fail");
+debug.profileend();
 `,
 				errors: [{ messageId: "unpairedOpener" }],
 			},
@@ -683,6 +879,51 @@ function test() {
 }
 `,
 			},
+			{
+				code: `
+function test() {
+    db.transaction();
+    try {
+        doWork();
+        db.commit();
+    } catch (error) {
+        recover(error);
+    }
+}
+`,
+				options: [
+					{
+						allowConditionalClosers: true,
+						pairs: [
+							{
+								closer: "db.commit",
+								opener: "db.transaction",
+								requireSync: false,
+							},
+						],
+					},
+				],
+			},
+			{
+				code: `
+async function test() {
+    db.transaction();
+    await save();
+    db.commit();
+}
+`,
+				options: [
+					{
+						pairs: [
+							{
+								closer: "db.commit",
+								opener: "db.transaction",
+								requireSync: false,
+							},
+						],
+					},
+				],
+			},
 
 			// Conditional closer in both branches
 			{
@@ -694,6 +935,34 @@ function test() {
     } else {
         debug.profileend();
     }
+}
+`,
+			},
+
+			// Full conditional branches keep the opener live when neither branch closes it
+			{
+				code: `
+function test(condition) {
+    debug.profilebegin("task");
+    if (condition) {
+        doWork();
+    } else {
+        doOtherWork();
+    }
+    debug.profileend();
+}
+`,
+			},
+
+			// A conditional closer without else does not mutate the outer stack
+			{
+				code: `
+function test(condition) {
+    debug.profilebegin("task");
+    if (condition) {
+        debug.profileend();
+    }
+    debug.profileend();
 }
 `,
 			},
@@ -753,6 +1022,30 @@ function test(value) {
         }
         value--;
     }
+    debug.profileend();
+}
+`,
+			},
+
+			// Empty if bodies still exercise conditional branch tracking without changing the stack
+			{
+				code: `
+function test(condition) {
+    debug.profilebegin("task");
+    if (condition) {
+        doWork();
+    }
+    debug.profileend();
+}
+`,
+			},
+
+			// Switch without cases still leaves balanced calls untouched
+			{
+				code: `
+function test(value) {
+    debug.profilebegin("task");
+    switch (value) {}
     debug.profileend();
 }
 `,
@@ -905,6 +1198,16 @@ function test() {
 `,
 			},
 
+			// Dynamic callees are ignored
+			{
+				code: `
+function test() {
+    debug["profilebegin"]("task");
+    createProfiler()("task");
+}
+`,
+			},
+
 			// Custom pair configuration
 			{
 				code: `
@@ -924,6 +1227,32 @@ function test() {
 						pairs: [
 							{
 								alternatives: ["db.rollback"],
+								closer: "db.commit",
+								opener: "db.transaction",
+								requireSync: false,
+							},
+						],
+					},
+				],
+			},
+
+			// Try/catch branches keep the opener live when neither branch closes it
+			{
+				code: `
+function test() {
+    db.transaction();
+    try {
+        doWork();
+    } catch (error) {
+        recover(error);
+    }
+    db.commit();
+}
+`,
+				options: [
+					{
+						pairs: [
+							{
 								closer: "db.commit",
 								opener: "db.transaction",
 								requireSync: false,

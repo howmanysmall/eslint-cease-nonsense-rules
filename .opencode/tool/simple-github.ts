@@ -2,6 +2,8 @@ import { tool } from "@opencode-ai/plugin";
 
 import { FormatType, getContentsAsync, searchCodeAsync, searchRepositoriesAsync } from "../utilities/github-utilities";
 
+const TOOL_ARGUMENTS_PROPERTY = "args";
+
 const isFormat = tool.schema
 	.literal([
 		FormatType.Ini,
@@ -38,7 +40,11 @@ const isPerPage = tool.schema
 	.describe("Results per page for pagination (min 1, max 100)");
 
 export const getContents = tool({
-	args: {
+	description: "Get the contents of a file from a GitHub repository.",
+	async execute({ format, owner, path, ref, repo, sha }): Promise<string> {
+		return getContentsAsync({ owner, path, ref, repo, sha }, format);
+	},
+	[TOOL_ARGUMENTS_PROPERTY]: {
 		format: isFormat,
 		owner: tool.schema.string().describe("Repository owner (username or organization)"),
 		path: tool.schema
@@ -57,14 +63,15 @@ export const getContents = tool({
 			.optional()
 			.describe("Accepts optional commit SHA. If specified, it will be used instead of ref"),
 	},
-	description: "Get the contents of a file from a GitHub repository.",
-	async execute({ format, owner, path, ref, repo, sha }): Promise<string> {
-		return getContentsAsync({ owner, path, ref, repo, sha }, format);
-	},
 });
 
 export const searchCode = tool({
-	args: {
+	description:
+		"Fast and precise code search across ALL GitHub repositories using GitHub's native search engine. Best for finding exact symbols, functions, classes, or specific code patterns.",
+	async execute({ format, order, page, perPage, query, sort }): Promise<string> {
+		return searchCodeAsync({ order, page, perPage, query, sort }, format);
+	},
+	[TOOL_ARGUMENTS_PROPERTY]: {
 		format: isFormat,
 		order: isOrder,
 		page: isPage,
@@ -76,15 +83,15 @@ export const searchCode = tool({
 			),
 		sort: tool.schema.literal("indexed").optional().describe("Sort field ('indexed' only)"),
 	},
-	description:
-		"Fast and precise code search across ALL GitHub repositories using GitHub's native search engine. Best for finding exact symbols, functions, classes, or specific code patterns.",
-	async execute({ format, order, page, perPage, query, sort }): Promise<string> {
-		return searchCodeAsync({ order, page, perPage, query, sort }, format);
-	},
 });
 
 export const searchRepositories = tool({
-	args: {
+	description:
+		"Find GitHub repositories by name, description, readme, topics, or other metadata. Perfect for discovering projects, finding examples, or locating specific repositories across GitHub.",
+	async execute({ format, order, page, perPage, query, sort, minimalOutput }): Promise<string> {
+		return searchRepositoriesAsync({ order, page, perPage, query, sort }, format, minimalOutput);
+	},
+	[TOOL_ARGUMENTS_PROPERTY]: {
 		format: isFormat,
 		minimalOutput: tool.schema
 			.boolean()
@@ -104,10 +111,5 @@ export const searchRepositories = tool({
 			.literal(["stars", "forks", "help-wanted-issues", "updated"] as const)
 			.optional()
 			.describe("Sort repositories by field, defaults to best match"),
-	},
-	description:
-		"Find GitHub repositories by name, description, readme, topics, or other metadata. Perfect for discovering projects, finding examples, or locating specific repositories across GitHub.",
-	async execute({ format, order, page, perPage, query, sort, minimalOutput }): Promise<string> {
-		return searchRepositoriesAsync({ order, page, perPage, query, sort }, format, minimalOutput);
 	},
 });

@@ -35,9 +35,9 @@ function canSimplifyConditionalBody(body: TSESTree.BlockStatement, maxStatements
 	return isOffendingConsequent(statement.consequent, maxStatements);
 }
 
-const preferEarlyReturn = createRule<[Options?], MessageIds>({
+const preferEarlyReturn = createRule<[Options], MessageIds>({
 	create(context) {
-		const options = context.options[0] ?? {};
+		const [options] = context.options;
 		const maxStatements = options.maximumStatements ?? DEFAULT_MAXIMUM_STATEMENTS;
 
 		function checkFunctionBody(node: FunctionNode): void {
@@ -55,8 +55,8 @@ const preferEarlyReturn = createRule<[Options?], MessageIds>({
 			FunctionExpression: checkFunctionBody,
 		};
 	},
-	defaultOptions: [{}],
 	meta: {
+		defaultOptions: [{}],
 		docs: {
 			description: "Prefer early returns over full-body conditional wrapping in function declarations.",
 		},

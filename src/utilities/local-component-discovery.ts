@@ -169,6 +169,10 @@ function isIgnoredComponentPath(filePath: string): boolean {
 	return false;
 }
 
+function hasSingleValue<Value>(values: ReadonlyArray<Value>): values is readonly [Value] {
+	return values.length === 1;
+}
+
 export function inspectLocalComponentFile(
 	filePath: string,
 	definition: LocalComponentDefinition,
@@ -218,11 +222,9 @@ export function discoverLocalComponent(
 	const matches = [...candidatePaths].filter(
 		(candidatePath) => inspectLocalComponentFile(candidatePath, definition).matches,
 	);
-	if (matches.length !== 1) return { found: false };
+	if (!hasSingleValue(matches)) return { found: false };
 
 	const [path] = matches;
-	if (path === undefined) return { found: false };
-
 	const inspection = inspectLocalComponentFile(path, definition);
 	return {
 		found: true,

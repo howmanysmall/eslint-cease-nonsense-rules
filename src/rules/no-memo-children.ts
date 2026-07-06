@@ -1,5 +1,7 @@
 import { getReactSources, isReactImport } from "$constants/react-sources";
 import { createRule } from "$utilities/create-rule";
+import { getDefinedValue } from "$utilities/defined-utilities";
+import { isNamedReactHookCall } from "$utilities/react-hook-utilities";
 import { TSESTree } from "@typescript-eslint/types";
 import { ESLintUtils } from "@typescript-eslint/utils";
 
@@ -31,47 +33,40 @@ const DEFAULT_OPTIONS: Required<NoMemoChildrenOptions> = {
 	environment: "roblox-ts",
 };
 
-function isMemoCall(
-	node: TSESTree.CallExpression,
-	memoIdentifiers: Set<string>,
-	reactNamespaces: Set<string>,
-): boolean {
-	const { callee } = node;
+function typeHasChildrenProperty(checker: TypeChecker, type: Type): boolean {
+	if (checker.getPropertiesOfType(type).some((property) => property.getName() === "children")) return true;
 
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return memoIdentifiers.has(callee.name);
-
-	if (
-		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-		callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
-		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-	) {
-		return reactNamespaces.has(callee.object.name) && callee.property.name === "memo";
-	}
-
-	return false;
+	return type.isUnion() && type.types.some((innerType) => typeHasChildrenProperty(checker, innerType));
 }
 
-function typeHasChildrenProperty(checker: TypeChecker, type: Type, visited = new WeakSet<Type>()): boolean {
-	if (visited.has(type)) return false;
-	visited.add(type);
+function getPropertiesTypeFromTypeArgument(
+	services: ReturnType<typeof ESLintUtils.getParserServices>,
+	checker: TypeChecker,
+	node: TSESTree.CallExpression,
+): Type | undefined {
+	const typeArgumentNode = node.typeArguments?.params.at(0);
+	if (typeArgumentNode === undefined) return undefined;
 
-	const allProperties = checker.getPropertiesOfType(type);
-	for (const property of allProperties) if (property.getName() === "children") return true;
+	const tsTypeArgumentNode = getDefinedValue(
+		services.esTreeNodeToTSNodeMap.get(typeArgumentNode),
+		"Expected memo type argument to have a TypeScript node.",
+	);
+	return checker.getTypeAtLocation(tsTypeArgumentNode);
+}
 
-	if (type.isUnion()) {
-		for (const constituent of type.types) if (typeHasChildrenProperty(checker, constituent, visited)) return true;
-	}
+function getPropertiesTypeFromFirstArgument(
+	services: ReturnType<typeof ESLintUtils.getParserServices>,
+	checker: TypeChecker,
+	node: TSESTree.CallExpression,
+): Type | undefined {
+	const firstArgument = node.arguments.at(0);
+	if (firstArgument === undefined) return undefined;
 
-	if (type.isIntersection()) {
-		for (const constituent of type.types) if (typeHasChildrenProperty(checker, constituent, visited)) return true;
-	}
-
-	const baseTypes = type.getBaseTypes?.();
-	if (baseTypes) {
-		for (const baseType of baseTypes) if (typeHasChildrenProperty(checker, baseType, visited)) return true;
-	}
-
-	return false;
+	const tsNode = services.esTreeNodeToTSNodeMap.get(firstArgument);
+	const componentType = checker.getTypeAtLocation(tsNode);
+	const [firstSignature] = componentType.getCallSignatures();
+	const [propertiesParameter] = firstSignature?.getParameters() ?? [];
+	return propertiesParameter === undefined ? undefined : checker.getTypeOfSymbol(propertiesParameter);
 }
 
 function getPropertiesTypeFromMemoCall(
@@ -79,60 +74,18 @@ function getPropertiesTypeFromMemoCall(
 	checker: TypeChecker,
 	node: TSESTree.CallExpression,
 ): Type | undefined {
-	const tsCallNode = services.esTreeNodeToTSNodeMap.get(node);
-	if (!tsCallNode) return undefined;
-
-	const memoResultType = checker.getTypeAtLocation(tsCallNode);
-	if (!memoResultType) return undefined;
-
-	const memoResultSignatures = memoResultType.getCallSignatures();
-	if (memoResultSignatures.length > 0) {
-		const [firstSignature] = memoResultSignatures;
-		if (firstSignature) {
-			const [propertyParameter] = firstSignature.getParameters();
-			if (propertyParameter) return checker.getTypeOfSymbol(propertyParameter);
-		}
-	}
-
-	if (node.typeArguments && node.typeArguments.params.length > 0) {
-		const [typeArgumentNode] = node.typeArguments.params;
-		if (typeArgumentNode) {
-			const tsTypeArgumentNode = services.esTreeNodeToTSNodeMap.get(typeArgumentNode);
-			if (tsTypeArgumentNode) {
-				const typeFromArgument = checker.getTypeAtLocation(tsTypeArgumentNode);
-				if (typeFromArgument) return typeFromArgument;
-			}
-		}
-	}
-
-	const [firstArgument] = node.arguments;
-	if (!firstArgument) return undefined;
-
-	const tsNode = services.esTreeNodeToTSNodeMap.get(firstArgument);
-	if (!tsNode) return undefined;
-
-	const componentType = checker.getTypeAtLocation(tsNode);
-	if (!componentType) return undefined;
-
-	const callSignatures = componentType.getCallSignatures();
-	if (callSignatures.length === 0) return undefined;
-
-	const [firstSignature] = callSignatures;
-	if (!firstSignature) return undefined;
-
-	const parameters = firstSignature.getParameters();
-	if (parameters.length === 0) return undefined;
-
-	const [propertiesParameter] = parameters;
-	return propertiesParameter ? checker.getTypeOfSymbol(propertiesParameter) : undefined;
+	return (
+		getPropertiesTypeFromTypeArgument(services, checker, node) ??
+		getPropertiesTypeFromFirstArgument(services, checker, node)
+	);
 }
 
 function getComponentName(node: TSESTree.CallExpression): string | undefined {
 	const [firstArgument] = node.arguments;
-	if (!firstArgument) return undefined;
+	if (firstArgument === undefined) return undefined;
 
 	if (firstArgument.type === TSESTree.AST_NODE_TYPES.Identifier) return firstArgument.name;
-	if (firstArgument.type === TSESTree.AST_NODE_TYPES.FunctionExpression && firstArgument.id) {
+	if (firstArgument.type === TSESTree.AST_NODE_TYPES.FunctionExpression && firstArgument.id !== null) {
 		return firstArgument.id.name;
 	}
 
@@ -164,13 +117,19 @@ const noMemoChildren = createRule<Options, MessageIds>({
 
 		return {
 			CallExpression(node): void {
-				if (!isMemoCall(node, memoIdentifiers, reactNamespaces)) return;
+				if (
+					!isNamedReactHookCall(node, "memo", memoIdentifiers, reactNamespaces, {
+						allowComputedIdentifierProperty: true,
+					})
+				) {
+					return;
+				}
 
 				const componentName = getComponentName(node);
-				if (componentName && allowedSet.has(componentName)) return;
+				if (componentName !== undefined && allowedSet.has(componentName)) return;
 
 				const propertiesType = getPropertiesTypeFromMemoCall(services, checker, node);
-				if (!propertiesType) return;
+				if (propertiesType === undefined) return;
 
 				if (typeHasChildrenProperty(checker, propertiesType)) {
 					context.report({
@@ -190,20 +149,21 @@ const noMemoChildren = createRule<Options, MessageIds>({
 						specifier.type === TSESTree.AST_NODE_TYPES.ImportNamespaceSpecifier
 					) {
 						reactNamespaces.add(specifier.local.name);
-					} else if (specifier.type === TSESTree.AST_NODE_TYPES.ImportSpecifier) {
-						const importedName =
-							specifier.imported.type === TSESTree.AST_NODE_TYPES.Identifier
-								? specifier.imported.name
-								: specifier.imported.value;
-
-						if (importedName === "memo") memoIdentifiers.add(specifier.local.name);
+						continue;
 					}
+
+					const importedName =
+						specifier.imported.type === TSESTree.AST_NODE_TYPES.Identifier
+							? specifier.imported.name
+							: specifier.imported.value;
+
+					if (importedName === "memo") memoIdentifiers.add(specifier.local.name);
 				}
 			},
 		};
 	},
-	defaultOptions: [DEFAULT_OPTIONS],
 	meta: {
+		defaultOptions: [DEFAULT_OPTIONS],
 		docs: {
 			description:
 				"Disallow React.memo on components with children props, which defeats memoization since children change on every render.",

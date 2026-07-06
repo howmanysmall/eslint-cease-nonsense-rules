@@ -206,9 +206,9 @@
 /* Gradient text must unset the clip on selection */
 h1::selection {
 	-webkit-text-fill-color: #ffffff;
+	background-color: rgba(180, 83, 9, 0.5);
 	-webkit-background-clip: initial;
 	background-clip: initial;
-	background: rgba(180, 83, 9, 0.5);
 }
 
 :root[data-theme="dark"] h1::selection {
@@ -253,14 +253,6 @@ header.header {
 	margin-top: 1.25em !important;
 }
 
-.sl-markdown-content h2 {
-	margin-top: 2em !important;
-}
-
-.sl-markdown-content h3 {
-	margin-top: 1.5em !important;
-}
-
 h1,
 h2,
 h3,
@@ -300,6 +292,14 @@ h3 {
 	font-size: 1.25rem !important;
 }
 
+.sl-markdown-content h2 {
+	margin-top: 2em !important;
+}
+
+.sl-markdown-content h3 {
+	margin-top: 1.5em !important;
+}
+
 .sidebar-pane {
 	background-color: transparent !important;
 	border-inline-end: 1px solid var(--glass-border) !important;
@@ -307,6 +307,22 @@ h3 {
 
 .sidebar-content {
 	background-color: transparent !important;
+}
+
+starlight-toc {
+	font-size: 0.85rem;
+}
+
+starlight-toc a {
+	padding-block: 0.25rem !important;
+	line-height: 1.6;
+	transition: color 120ms ease;
+}
+
+@media (hover: hover) {
+	starlight-toc a:hover {
+		color: var(--sl-color-accent) !important;
+	}
 }
 
 nav.sidebar a {
@@ -340,22 +356,6 @@ nav.sidebar a[aria-current="page"] {
 	:root[data-theme="dark"] nav.sidebar a:hover {
 		color: var(--sl-color-white);
 		background-color: rgba(255, 255, 255, 0.06);
-	}
-}
-
-starlight-toc {
-	font-size: 0.85rem;
-}
-
-starlight-toc a {
-	padding-block: 0.25rem !important;
-	line-height: 1.6;
-	transition: color 120ms ease;
-}
-
-@media (hover: hover) {
-	starlight-toc a:hover {
-		color: var(--sl-color-accent) !important;
 	}
 }
 
@@ -670,6 +670,24 @@ starlight-aside .title {
 	transition: opacity 250ms ease;
 }
 
+.category-count {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 3.5rem;
+	height: 3.5rem;
+	padding: 0.5rem 1rem;
+	font-family: "Bricolage Grotesque", var(--sl-font-system);
+	font-size: 1.75rem;
+	font-weight: 500;
+	color: var(--sl-color-accent-high);
+	background: rgba(245, 158, 11, 0.06);
+	border-radius: 10px;
+	transition:
+		transform 250ms var(--spring),
+		background-color 250ms ease;
+}
+
 @media (hover: hover) {
 	.category-card:hover {
 		border-color: var(--amber-glow-border);
@@ -687,24 +705,6 @@ starlight-aside .title {
 		background: var(--amber-glow-bg);
 		transform: scale(1.05);
 	}
-}
-
-.category-count {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	min-width: 3.5rem;
-	height: 3.5rem;
-	padding: 0.5rem 1rem;
-	font-family: "Bricolage Grotesque", var(--sl-font-system);
-	font-size: 1.75rem;
-	font-weight: 500;
-	color: var(--sl-color-accent-high);
-	background: rgba(245, 158, 11, 0.06);
-	border-radius: 10px;
-	transition:
-		transform 250ms var(--spring),
-		background-color 250ms ease;
 }
 
 .category-label {
@@ -807,9 +807,9 @@ starlight-aside .title {
 }
 
 /* Ensure links/buttons in Starlight components get proper focus */
-nav.sidebar a:focus-visible,
 starlight-toc a:focus-visible,
 starlight-link-card:focus-visible,
+nav.sidebar a:focus-visible,
 .card:focus-visible {
 	outline: none;
 	border-radius: 6px;

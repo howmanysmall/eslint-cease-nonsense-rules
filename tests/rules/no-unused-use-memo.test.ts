@@ -43,6 +43,15 @@ void useMemo(() => 1, []);
 			},
 			{
 				code: `
+import { "useMemo" as memo } from "react";
+
+memo(() => 1, []);
+`,
+				errors: [{ messageId: "unusedUseMemo" }],
+				options: [{ environment: "standard" }],
+			},
+			{
+				code: `
 import * as React from "react";
 
 void React.useMemo(() => 1, []);
@@ -91,6 +100,94 @@ function useMemo(factory) {
 
 useMemo(() => 1);
 `,
+			},
+			{
+				code: `
+import("react");
+`,
+				options: [{ environment: "standard" }],
+			},
+			{
+				code: `
+class Component extends BaseComponent {
+    constructor() {
+        super();
+    }
+}
+`,
+				options: [{ environment: "standard" }],
+			},
+			{
+				code: `
+import * as React from "react";
+
+React["useMemo"](() => 1, []);
+`,
+				options: [{ environment: "standard" }],
+			},
+			{
+				code: `
+import * as React from "react";
+
+getReact().useMemo(() => 1, []);
+`,
+				options: [{ environment: "standard" }],
+			},
+			{
+				code: `
+import * as React from "react";
+
+class Component {
+    #useMemo() {
+        return 1;
+    }
+
+    render() {
+        return React.#useMemo();
+    }
+}
+`,
+				options: [{ environment: "standard" }],
+			},
+			{
+				code: `
+import * as React from "react";
+
+React.useEffect(() => 1, []);
+`,
+				options: [{ environment: "standard" }],
+			},
+			{
+				code: `
+import { useEffect } from "react";
+
+useEffect(() => undefined, []);
+`,
+				options: [{ environment: "standard" }],
+			},
+			{
+				code: `
+import { useMemo } from "other-react";
+
+useMemo(() => 1, []);
+`,
+				options: [{ environment: "standard" }],
+			},
+			{
+				code: `
+import React from "react";
+
+const value = void React.useMemo(() => 1, []);
+`,
+				options: [{ environment: "standard" }],
+			},
+			{
+				code: `
+import React from "react";
+
+React.memo(() => null);
+`,
+				options: [{ environment: "standard" }],
 			},
 		],
 	});

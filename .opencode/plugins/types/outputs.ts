@@ -1,5 +1,7 @@
+export const TOOL_OUTPUT_ARGUMENTS_PROPERTY = "args";
+
 interface BaseOutput<TArguments> {
-	readonly args: TArguments;
+	readonly [TOOL_OUTPUT_ARGUMENTS_PROPERTY]: TArguments;
 }
 
 export type BashOutput = BaseOutput<{

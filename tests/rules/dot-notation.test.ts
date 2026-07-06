@@ -51,6 +51,19 @@ describe("dot-notation", () => {
 			[
 				{
 					code: `
+declare const object: { name: number } | { name: number };
+
+object["name"];
+	                `,
+					errors: [{ messageId: "useDot" }],
+					output: `
+declare const object: { name: number } | { name: number };
+
+object.name;
+	                `,
+				},
+				{
+					code: `
 interface PublicBox {
     name: number;
 }
@@ -150,6 +163,46 @@ class ExampleClass {
 				},
 				{
 					code: `
+class ExampleClass {
+    public value = 0;
+
+    public incrementBy(): void {
+        this["value"] += 1;
+    }
+}
+                `,
+					errors: [{ messageId: "useDot" }],
+					options: [{ allowInaccessibleClassPropertyAccess: true, environment: "roblox-ts" }],
+					output: `
+class ExampleClass {
+    public value = 0;
+
+    public incrementBy(): void {
+        this.value += 1;
+    }
+}
+                `,
+				},
+				{
+					code: `
+interface EmptyBox {}
+
+declare const object: EmptyBox;
+
+object["name"];
+                `,
+					errors: [{ messageId: "useDot" }],
+					options: [{ allowInaccessibleClassPropertyAccess: true, environment: "roblox-ts" }],
+					output: `
+interface EmptyBox {}
+
+declare const object: EmptyBox;
+
+object.name;
+                `,
+				},
+				{
+					code: `
 type Entry<TValue> = {
     value: TValue;
 };
@@ -203,6 +256,63 @@ class Derived extends ExampleClass {
     }
 }
                 `,
+				},
+				{
+					code: `
+interface PublicBox {
+    name: number;
+}
+
+declare const object: PublicBox;
+declare const other: object;
+
+const result = object["name"] in other;
+                    `,
+					errors: [{ messageId: "useDot" }],
+					output: `
+interface PublicBox {
+    name: number;
+}
+
+declare const object: PublicBox;
+declare const other: object;
+
+const result = object.name in other;
+                    `,
+				},
+				{
+					code: `
+interface PublicBox {
+    name: number;
+}
+
+declare const object: PublicBox;
+
+object[\`na\\u006de\`];
+                    `,
+					errors: [{ messageId: "useDot" }],
+					output: `
+interface PublicBox {
+    name: number;
+}
+
+declare const object: PublicBox;
+
+object.name;
+                    `,
+				},
+				{
+					code: `
+declare const object: object;
+
+object["toString"];
+                    `,
+					errors: [{ messageId: "useDot" }],
+					output: `
+declare const object: object;
+
+object.toString;
+                    `,
 				},
 				{
 					code: `
@@ -283,6 +393,144 @@ declare const object: PublicBox | undefined;
 object?.name;
                     `,
 				},
+				{
+					code: `
+interface PublicBox {
+    name: number;
+}
+
+declare const object: PublicBox;
+
+object[
+    /* keep */
+    "name"
+];
+                    `,
+					errors: [{ messageId: "useDot" }],
+					output: null,
+				},
+				{
+					code: `
+interface PublicBox {
+    name: number;
+}
+
+declare const object: PublicBox;
+declare const nextValue: number;
+
+const result = object["name"]+ ++nextValue;
+                    `,
+					errors: [{ messageId: "useDot" }],
+					output: `
+interface PublicBox {
+    name: number;
+}
+
+declare const object: PublicBox;
+declare const nextValue: number;
+
+const result = object.name+ ++nextValue;
+                    `,
+				},
+				{
+					code: `
+interface PublicBox {
+    name: number;
+}
+
+declare const object: PublicBox;
+declare const nextValue: number;
+
+const result = object["name"]- --nextValue;
+                    `,
+					errors: [{ messageId: "useDot" }],
+					output: `
+interface PublicBox {
+    name: number;
+}
+
+declare const object: PublicBox;
+declare const nextValue: number;
+
+const result = object.name- --nextValue;
+                    `,
+				},
+				{
+					code: `
+interface PublicBox {
+    name: number;
+}
+
+declare const object: PublicBox;
+
+const result = object["name"]/* comment */;
+                    `,
+					errors: [{ messageId: "useDot" }],
+					output: `
+interface PublicBox {
+    name: number;
+}
+
+declare const object: PublicBox;
+
+const result = object.name/* comment */;
+                    `,
+				},
+				{
+					code: `
+interface PublicBox {
+    name: number;
+}
+
+declare const object: PublicBox;
+
+object["name"]
+                    `,
+					errors: [{ messageId: "useDot" }],
+					output: `
+interface PublicBox {
+    name: number;
+}
+
+declare const object: PublicBox;
+
+object.name
+                    `,
+				},
+				{
+					code: `
+declare const keywords: Record<string, number> | undefined;
+
+keywords?.default;
+                `,
+					errors: [{ messageId: "useBrackets" }],
+					options: [{ allowKeywords: false }],
+					output: `
+declare const keywords: Record<string, number> | undefined;
+
+keywords?.["default"];
+                `,
+				},
+				{
+					code: `
+declare const let: Record<string, number>;
+
+let.default;
+                `,
+					errors: [{ messageId: "useBrackets" }],
+					options: [{ allowKeywords: false }],
+					output: null,
+				},
+				{
+					code: `
+declare const keywords: Record<string, number>;
+
+keywords./* keep */default;
+                `,
+					errors: [{ messageId: "useBrackets" }],
+					options: [{ allowKeywords: false }],
+					output: null,
+				},
 			],
 			"invalid",
 		),
@@ -292,6 +540,18 @@ object?.name;
 					code: `
 function incrementValue(object: ExampleClass): void {
     object["value"] += 1;
+}
+
+class ExampleClass {
+    private value = 0;
+}
+                `,
+					options: [{ allowInaccessibleClassPropertyAccess: true, environment: "roblox-ts" }],
+				},
+				{
+					code: `
+function incrementValue(object: ExampleClass): void {
+    object["value"]++;
 }
 
 class ExampleClass {
@@ -370,6 +630,30 @@ declare const ignored: Record<string, number>;
 ignored["__value"] += 1;
                 `,
 					options: [{ allowPattern: "^__" }],
+				},
+				{
+					code: `
+interface PublicBox {
+    name: number;
+}
+
+declare const object: PublicBox;
+declare const key: keyof PublicBox;
+
+object[key];
+                `,
+				},
+				{
+					code: `
+interface PublicBox {
+    name: number;
+}
+
+declare const object: PublicBox;
+declare const suffix: string;
+
+object[\`name\${suffix}\`];
+                `,
 				},
 			],
 			"valid",

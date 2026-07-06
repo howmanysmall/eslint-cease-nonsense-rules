@@ -1,4 +1,5 @@
 import { createRule } from "$utilities/create-rule";
+import { getDefinedValue } from "$utilities/defined-utilities";
 import { isLikelyReactComponentName } from "$utilities/react-component-utilities";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import {
@@ -8,16 +9,14 @@ import {
 	isTypeAliasDeclaration,
 	isTypeLiteralNode,
 	isTypeReferenceNode,
-	isFunctionLike as isTypeScriptFunctionLike,
 	isIdentifier as isTypeScriptIdentifier,
 	isPropertySignature as isTypeScriptPropertySignature,
 	isStringLiteral as isTypeScriptStringLiteral,
-	isTypeNode as isTypeScriptTypeNode,
 	SymbolFlags,
 } from "typescript";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
-import type { Declaration, Symbol as TSSymbol, TypeNode as TsTypeNode, TypeChecker } from "typescript";
+import type { Declaration, Node as TsNode, Symbol as TSSymbol, TypeElement, TypeChecker } from "typescript";
 
 type MessageIds = "manualChildrenProperty";
 type RuleMode = "accurate" | "auto" | "fast";
@@ -35,6 +34,14 @@ interface InspectionResult {
 	readonly usesApprovedWrapper: boolean;
 }
 
+function createEmptyInspectionResult(): InspectionResult {
+	return {
+		hasChildren: false,
+		hasManualChildren: false,
+		usesApprovedWrapper: false,
+	};
+}
+
 interface ComponentCandidate {
 	readonly functionNode:
 		| TSESTree.ArrowFunctionExpression
@@ -43,6 +50,11 @@ interface ComponentCandidate {
 	readonly name: string;
 	readonly propertiesTypeNode: TSESTree.TypeNode;
 	readonly reportNode: TSESTree.Node;
+}
+
+interface TypeDeclarations {
+	readonly interfaces: ReadonlyMap<string, TSESTree.TSInterfaceDeclaration>;
+	readonly typeAliases: ReadonlyMap<string, TSESTree.TSTypeAliasDeclaration>;
 }
 
 const DEFAULT_OPTIONS: Required<NoManualChildrenPropertyOptions> = {
@@ -59,12 +71,10 @@ function isIdentifierNamed(node: TSESTree.PropertyName, expectedName: string): b
 	return false;
 }
 
-function getParameterTypeAnnotation(parameter: TSESTree.Node | undefined): TSESTree.TypeNode | undefined {
-	if (!parameter) return undefined;
+function getParameterTypeAnnotation(parameter: TSESTree.Node): TSESTree.TypeNode | undefined {
 	if (parameter.type === AST_NODE_TYPES.Identifier) return parameter.typeAnnotation?.typeAnnotation;
 	if (parameter.type === AST_NODE_TYPES.AssignmentPattern) return getParameterTypeAnnotation(parameter.left);
 	if (parameter.type === AST_NODE_TYPES.RestElement) return getParameterTypeAnnotation(parameter.argument);
-	if (parameter.type === AST_NODE_TYPES.TSParameterProperty) return getParameterTypeAnnotation(parameter.parameter);
 	return undefined;
 }
 
@@ -88,6 +98,69 @@ function getFunctionCandidate(
 	};
 }
 
+function collectTypeDeclarations(sourceCode: TSESLint.SourceCode): TypeDeclarations {
+	const interfaces = new Map<string, TSESTree.TSInterfaceDeclaration>();
+	const typeAliases = new Map<string, TSESTree.TSTypeAliasDeclaration>();
+
+	for (const statement of sourceCode.ast.body) {
+		if (statement.type === AST_NODE_TYPES.TSInterfaceDeclaration) {
+			interfaces.set(statement.id.name, statement);
+			continue;
+		}
+
+		if (statement.type === AST_NODE_TYPES.TSTypeAliasDeclaration) {
+			typeAliases.set(statement.id.name, statement);
+		}
+	}
+
+	return { interfaces, typeAliases };
+}
+
+function shouldReportInspectionResult(inspectionResult: InspectionResult): boolean {
+	return (
+		inspectionResult.hasManualChildren || (inspectionResult.hasChildren && !inspectionResult.usesApprovedWrapper)
+	);
+}
+
+function reportCandidate(
+	context: Readonly<TSESLint.RuleContext<MessageIds, Options>>,
+	options: Required<NoManualChildrenPropertyOptions>,
+	candidate: ComponentCandidate,
+): void {
+	context.report({
+		data: {
+			componentName: candidate.name,
+			wrapperNames: options.wrapperNames.join(", "),
+		},
+		messageId: "manualChildrenProperty",
+		node: candidate.reportNode,
+	});
+}
+
+function createComponentCandidateListeners(
+	maybeReportCandidate: (candidate: ComponentCandidate) => void,
+): TSESLint.RuleListener {
+	return {
+		FunctionDeclaration(node): void {
+			if (!node.id) return;
+			const candidate = getFunctionCandidate(node.id.name, node);
+			if (candidate) maybeReportCandidate(candidate);
+		},
+		VariableDeclarator(node): void {
+			if (node.id.type !== AST_NODE_TYPES.Identifier || !node.init) return;
+			if (
+				node.init.type !== AST_NODE_TYPES.ArrowFunctionExpression &&
+				node.init.type !== AST_NODE_TYPES.FunctionExpression
+			) {
+				return;
+			}
+
+			const candidate = getFunctionCandidate(node.id.name, node.init);
+			if (candidate) maybeReportCandidate(candidate);
+		},
+	};
+}
+
 function mergeInspectionResults(results: ReadonlyArray<InspectionResult>): InspectionResult {
 	let hasChildren = false;
 	let hasManualChildren = false;
@@ -105,19 +178,9 @@ function mergeInspectionResults(results: ReadonlyArray<InspectionResult>): Inspe
 	};
 }
 
-function getTypeReferenceName(typeName: TSESTree.EntityName): string | undefined {
-	if (typeName.type === AST_NODE_TYPES.Identifier) return typeName.name;
-	if (typeName.type !== AST_NODE_TYPES.TSQualifiedName) return undefined;
-	return typeName.right.name;
-}
-
-function getExpressionReferenceName(expression: TSESTree.Expression): string | undefined {
-	if (expression.type === AST_NODE_TYPES.Identifier) return expression.name;
-	if (expression.type === AST_NODE_TYPES.MemberExpression && expression.property.type === AST_NODE_TYPES.Identifier) {
-		return expression.property.name;
-	}
-
-	return undefined;
+function getRightmostReferenceName(referenceText: string): string {
+	const separatorIndex = referenceText.lastIndexOf(".");
+	return separatorIndex === -1 ? referenceText : referenceText.slice(separatorIndex + 1);
 }
 
 function inspectTypeLiteral(typeLiteral: TSESTree.TSTypeLiteral): InspectionResult {
@@ -145,6 +208,7 @@ function inspectTypeMembers(members: ReadonlyArray<TSESTree.TypeElement>): Inspe
 
 function inspectTypeNodeFast(
 	typeNode: TSESTree.Node,
+	sourceCode: TSESLint.SourceCode,
 	wrapperNames: ReadonlySet<string>,
 	interfaceDeclarations: ReadonlyMap<string, TSESTree.TSInterfaceDeclaration>,
 	typeAliasDeclarations: ReadonlyMap<string, TSESTree.TSTypeAliasDeclaration>,
@@ -157,6 +221,7 @@ function inspectTypeNodeFast(
 			typeNode.types.map((memberType: TSESTree.TypeNode) =>
 				inspectTypeNodeFast(
 					memberType,
+					sourceCode,
 					wrapperNames,
 					interfaceDeclarations,
 					typeAliasDeclarations,
@@ -167,15 +232,7 @@ function inspectTypeNodeFast(
 	}
 
 	if (typeNode.type === AST_NODE_TYPES.TSTypeReference) {
-		const referenceName = getTypeReferenceName(typeNode.typeName);
-		if (!referenceName) {
-			return {
-				hasChildren: false,
-				hasManualChildren: false,
-				usesApprovedWrapper: false,
-			};
-		}
-
+		const referenceName = getRightmostReferenceName(sourceCode.getText(typeNode.typeName));
 		if (wrapperNames.has(referenceName)) {
 			return {
 				hasChildren: true,
@@ -206,6 +263,7 @@ function inspectTypeNodeFast(
 		if (interfaceDeclaration) {
 			return inspectInterfaceDeclarationFast(
 				interfaceDeclaration,
+				sourceCode,
 				wrapperNames,
 				interfaceDeclarations,
 				typeAliasDeclarations,
@@ -217,6 +275,7 @@ function inspectTypeNodeFast(
 		if (typeAliasDeclaration) {
 			return inspectTypeNodeFast(
 				typeAliasDeclaration.typeAnnotation,
+				sourceCode,
 				wrapperNames,
 				interfaceDeclarations,
 				typeAliasDeclarations,
@@ -240,20 +299,13 @@ function inspectTypeNodeFast(
 
 function inspectHeritageClauseFast(
 	heritageClause: TSESTree.TSInterfaceHeritage,
+	sourceCode: TSESLint.SourceCode,
 	wrapperNames: ReadonlySet<string>,
 	interfaceDeclarations: ReadonlyMap<string, TSESTree.TSInterfaceDeclaration>,
 	typeAliasDeclarations: ReadonlyMap<string, TSESTree.TSTypeAliasDeclaration>,
 	visitedNames = new Set<string>(),
 ): InspectionResult {
-	const referenceName = getExpressionReferenceName(heritageClause.expression);
-	if (!referenceName) {
-		return {
-			hasChildren: false,
-			hasManualChildren: false,
-			usesApprovedWrapper: false,
-		};
-	}
-
+	const referenceName = getRightmostReferenceName(sourceCode.getText(heritageClause.expression));
 	if (wrapperNames.has(referenceName)) {
 		return {
 			hasChildren: true,
@@ -284,6 +336,7 @@ function inspectHeritageClauseFast(
 	if (interfaceDeclaration) {
 		return inspectInterfaceDeclarationFast(
 			interfaceDeclaration,
+			sourceCode,
 			wrapperNames,
 			interfaceDeclarations,
 			typeAliasDeclarations,
@@ -295,6 +348,7 @@ function inspectHeritageClauseFast(
 	if (typeAliasDeclaration) {
 		return inspectTypeNodeFast(
 			typeAliasDeclaration.typeAnnotation,
+			sourceCode,
 			wrapperNames,
 			interfaceDeclarations,
 			typeAliasDeclarations,
@@ -311,6 +365,7 @@ function inspectHeritageClauseFast(
 
 function inspectInterfaceDeclarationFast(
 	interfaceDeclaration: TSESTree.TSInterfaceDeclaration,
+	sourceCode: TSESLint.SourceCode,
 	wrapperNames: ReadonlySet<string>,
 	interfaceDeclarations: ReadonlyMap<string, TSESTree.TSInterfaceDeclaration>,
 	typeAliasDeclarations: ReadonlyMap<string, TSESTree.TSTypeAliasDeclaration>,
@@ -321,6 +376,7 @@ function inspectInterfaceDeclarationFast(
 	const heritageResults = interfaceDeclaration.extends.map((heritageClause) =>
 		inspectHeritageClauseFast(
 			heritageClause,
+			sourceCode,
 			wrapperNames,
 			interfaceDeclarations,
 			typeAliasDeclarations,
@@ -331,8 +387,12 @@ function inspectInterfaceDeclarationFast(
 	return mergeInspectionResults([ownMembersResult, ...heritageResults]);
 }
 
+function hasSymbolFlag(flags: SymbolFlags, flag: SymbolFlags): boolean {
+	return Math.trunc(flags / flag) % 2 === 1;
+}
+
 function resolveAliasedSymbol(symbol: TSSymbol, checker: TypeChecker): TSSymbol {
-	if ((symbol.flags & SymbolFlags.Alias) === 0) return symbol;
+	if (!hasSymbolFlag(symbol.flags, SymbolFlags.Alias)) return symbol;
 	return checker.getAliasedSymbol(symbol);
 }
 
@@ -426,36 +486,55 @@ function inspectTsDeclarationAccurate(
 	};
 }
 
+function hasManualChildrenMember(members: ReadonlyArray<TypeElement>): boolean {
+	for (const member of members) {
+		if (!isTypeScriptPropertySignature(member) || member.name === undefined) continue;
+		if (isTypeScriptIdentifier(member.name) && CHILDREN_PROPERTY_NAMES.has(member.name.text)) return true;
+		if (isTypeScriptStringLiteral(member.name) && CHILDREN_PROPERTY_NAMES.has(member.name.text)) return true;
+	}
+
+	return false;
+}
+
+function inspectTypeSymbolFromLocation(
+	node: TsNode,
+	checker: TypeChecker,
+	wrapperNames: ReadonlySet<string>,
+	visitedSymbols: ReadonlySet<TSSymbol>,
+): InspectionResult {
+	if (isExpressionWithTypeArguments(node)) {
+		const symbol = checker.getSymbolAtLocation(node.expression);
+		if (symbol === undefined) return createEmptyInspectionResult();
+		return inspectTypeSymbolAccurate(symbol, checker, wrapperNames, new Set(visitedSymbols));
+	}
+
+	if (isTypeReferenceNode(node)) {
+		const symbol = getDefinedValue(
+			checker.getSymbolAtLocation(node.typeName),
+			"Expected TypeScript to bind type reference nodes.",
+		);
+		return inspectTypeSymbolAccurate(symbol, checker, wrapperNames, new Set(visitedSymbols));
+	}
+
+	return createEmptyInspectionResult();
+}
+
 function inspectTsTypeNodeAccurate(
-	typeNode: TsTypeNode,
+	typeNode: TsNode,
 	checker: TypeChecker,
 	wrapperNames: ReadonlySet<string>,
 	visitedSymbols: ReadonlySet<TSSymbol>,
 ): InspectionResult {
 	if (isTypeLiteralNode(typeNode)) {
-		for (const member of typeNode.members) {
-			if (!isTypeScriptPropertySignature(member) || member.name === undefined) continue;
-			if (isTypeScriptIdentifier(member.name) && CHILDREN_PROPERTY_NAMES.has(member.name.text)) {
-				return {
-					hasChildren: true,
-					hasManualChildren: true,
-					usesApprovedWrapper: false,
-				};
-			}
-			if (isTypeScriptStringLiteral(member.name) && CHILDREN_PROPERTY_NAMES.has(member.name.text)) {
-				return {
-					hasChildren: true,
-					hasManualChildren: true,
-					usesApprovedWrapper: false,
-				};
-			}
+		if (hasManualChildrenMember(typeNode.members)) {
+			return {
+				hasChildren: true,
+				hasManualChildren: true,
+				usesApprovedWrapper: false,
+			};
 		}
 
-		return {
-			hasChildren: false,
-			hasManualChildren: false,
-			usesApprovedWrapper: false,
-		};
+		return createEmptyInspectionResult();
 	}
 
 	if (isIntersectionTypeNode(typeNode)) {
@@ -466,104 +545,48 @@ function inspectTsTypeNodeAccurate(
 		);
 	}
 
-	if (isExpressionWithTypeArguments(typeNode)) {
-		const symbol = checker.getSymbolAtLocation(typeNode.expression);
-		if (!symbol) {
-			return {
-				hasChildren: false,
-				hasManualChildren: false,
-				usesApprovedWrapper: false,
-			};
-		}
-
-		return inspectTypeSymbolAccurate(symbol, checker, wrapperNames, new Set(visitedSymbols));
-	}
-
-	if (isTypeReferenceNode(typeNode)) {
-		const symbol = checker.getSymbolAtLocation(typeNode.typeName);
-		if (!symbol) {
-			return {
-				hasChildren: false,
-				hasManualChildren: false,
-				usesApprovedWrapper: false,
-			};
-		}
-
-		return inspectTypeSymbolAccurate(symbol, checker, wrapperNames, new Set(visitedSymbols));
-	}
-
-	return {
-		hasChildren: false,
-		hasManualChildren: false,
-		usesApprovedWrapper: false,
-	};
+	return inspectTypeSymbolFromLocation(typeNode, checker, wrapperNames, visitedSymbols);
 }
 
 function createFastModeListeners(
 	context: Readonly<TSESLint.RuleContext<MessageIds, Options>>,
 	options: Required<NoManualChildrenPropertyOptions>,
 ): TSESLint.RuleListener {
-	const interfaceDeclarations = new Map<string, TSESTree.TSInterfaceDeclaration>();
-	const typeAliasDeclarations = new Map<string, TSESTree.TSTypeAliasDeclaration>();
+	const declarations = collectTypeDeclarations(context.sourceCode);
 	const wrapperNames = new Set(options.wrapperNames);
-
-	for (const statement of context.sourceCode.ast.body) {
-		if (statement.type === AST_NODE_TYPES.TSInterfaceDeclaration) {
-			interfaceDeclarations.set(statement.id.name, statement);
-			continue;
-		}
-
-		if (statement.type === AST_NODE_TYPES.TSTypeAliasDeclaration) {
-			typeAliasDeclarations.set(statement.id.name, statement);
-		}
-	}
 
 	function maybeReportCandidate(candidate: ComponentCandidate): void {
 		const inspectionResult = inspectTypeNodeFast(
 			candidate.propertiesTypeNode,
+			context.sourceCode,
 			wrapperNames,
-			interfaceDeclarations,
-			typeAliasDeclarations,
+			declarations.interfaces,
+			declarations.typeAliases,
 		);
 
-		if (
-			!(
-				inspectionResult.hasManualChildren ||
-				(inspectionResult.hasChildren && !inspectionResult.usesApprovedWrapper)
-			)
-		) {
-			return;
-		}
-
-		context.report({
-			data: {
-				componentName: candidate.name,
-				wrapperNames: options.wrapperNames.join(", "),
-			},
-			messageId: "manualChildrenProperty",
-			node: candidate.reportNode,
-		});
+		if (shouldReportInspectionResult(inspectionResult)) reportCandidate(context, options, candidate);
 	}
 
-	return {
-		FunctionDeclaration(node): void {
-			if (!node.id) return;
-			const candidate = getFunctionCandidate(node.id.name, node);
-			if (candidate) maybeReportCandidate(candidate);
-		},
-		VariableDeclarator(node): void {
-			if (node.id.type !== AST_NODE_TYPES.Identifier || !node.init) return;
-			if (
-				node.init.type !== AST_NODE_TYPES.ArrowFunctionExpression &&
-				node.init.type !== AST_NODE_TYPES.FunctionExpression
-			) {
-				return;
-			}
+	return createComponentCandidateListeners(maybeReportCandidate);
+}
 
-			const candidate = getFunctionCandidate(node.id.name, node.init);
-			if (candidate) maybeReportCandidate(candidate);
-		},
-	};
+function inspectCandidateAccurately(
+	candidate: ComponentCandidate,
+	tsTypeNode: TsNode,
+	sourceCode: TSESLint.SourceCode,
+	checker: TypeChecker,
+	wrapperNames: ReadonlySet<string>,
+	declarations: TypeDeclarations,
+): InspectionResult {
+	const accurateInspectionResult = inspectTsTypeNodeAccurate(tsTypeNode, checker, wrapperNames, new Set());
+	const fastInspectionResult = inspectTypeNodeFast(
+		candidate.propertiesTypeNode,
+		sourceCode,
+		wrapperNames,
+		declarations.interfaces,
+		declarations.typeAliases,
+	);
+	return mergeInspectionResults([accurateInspectionResult, fastInspectionResult]);
 }
 
 function createAccurateModeListeners(
@@ -575,74 +598,23 @@ function createAccurateModeListeners(
 	if (!program) return {};
 
 	const checker = program.getTypeChecker();
-	const interfaceDeclarations = new Map<string, TSESTree.TSInterfaceDeclaration>();
-	const typeAliasDeclarations = new Map<string, TSESTree.TSTypeAliasDeclaration>();
+	const declarations = collectTypeDeclarations(context.sourceCode);
 	const wrapperNames = new Set(options.wrapperNames);
 
-	for (const statement of context.sourceCode.ast.body) {
-		if (statement.type === AST_NODE_TYPES.TSInterfaceDeclaration) {
-			interfaceDeclarations.set(statement.id.name, statement);
-			continue;
-		}
-
-		if (statement.type === AST_NODE_TYPES.TSTypeAliasDeclaration) {
-			typeAliasDeclarations.set(statement.id.name, statement);
-		}
-	}
-
 	function maybeReportCandidate(candidate: ComponentCandidate): void {
-		const tsFunctionNode = services.esTreeNodeToTSNodeMap.get(candidate.functionNode);
-		if (!isTypeScriptFunctionLike(tsFunctionNode)) return;
-
 		const tsTypeNode = services.esTreeNodeToTSNodeMap.get(candidate.propertiesTypeNode);
-		if (!isTypeScriptTypeNode(tsTypeNode)) return;
-
-		const accurateInspectionResult = inspectTsTypeNodeAccurate(tsTypeNode, checker, wrapperNames, new Set());
-		const fastInspectionResult = inspectTypeNodeFast(
-			candidate.propertiesTypeNode,
+		const inspectionResult = inspectCandidateAccurately(
+			candidate,
+			tsTypeNode,
+			context.sourceCode,
+			checker,
 			wrapperNames,
-			interfaceDeclarations,
-			typeAliasDeclarations,
+			declarations,
 		);
-		const inspectionResult = mergeInspectionResults([accurateInspectionResult, fastInspectionResult]);
-		if (
-			!(
-				inspectionResult.hasManualChildren ||
-				(inspectionResult.hasChildren && !inspectionResult.usesApprovedWrapper)
-			)
-		) {
-			return;
-		}
-
-		context.report({
-			data: {
-				componentName: candidate.name,
-				wrapperNames: options.wrapperNames.join(", "),
-			},
-			messageId: "manualChildrenProperty",
-			node: candidate.reportNode,
-		});
+		if (shouldReportInspectionResult(inspectionResult)) reportCandidate(context, options, candidate);
 	}
 
-	return {
-		FunctionDeclaration(node): void {
-			if (!node.id) return;
-			const candidate = getFunctionCandidate(node.id.name, node);
-			if (candidate) maybeReportCandidate(candidate);
-		},
-		VariableDeclarator(node): void {
-			if (node.id.type !== AST_NODE_TYPES.Identifier || !node.init) return;
-			if (
-				node.init.type !== AST_NODE_TYPES.ArrowFunctionExpression &&
-				node.init.type !== AST_NODE_TYPES.FunctionExpression
-			) {
-				return;
-			}
-
-			const candidate = getFunctionCandidate(node.id.name, node.init);
-			if (candidate) maybeReportCandidate(candidate);
-		},
-	};
+	return createComponentCandidateListeners(maybeReportCandidate);
 }
 
 const noManualChildrenProperty = createRule<Options, MessageIds>({
@@ -659,8 +631,8 @@ const noManualChildrenProperty = createRule<Options, MessageIds>({
 		if (services.program) return createAccurateModeListeners(context, options);
 		return createFastModeListeners(context, options);
 	},
-	defaultOptions: [DEFAULT_OPTIONS],
 	meta: {
+		defaultOptions: [DEFAULT_OPTIONS],
 		docs: {
 			description:
 				"Disallow manually declaring a children prop on React component props when a configured wrapper type should be used instead.",

@@ -73,8 +73,8 @@ const noColor3Constructor = createRule<[], "useFromRGB" | "onlyZeroArgs">({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description:
 				"Ban new Color3(...) except new Color3() or new Color3(0, 0, 0). Use Color3.fromRGB() instead.",

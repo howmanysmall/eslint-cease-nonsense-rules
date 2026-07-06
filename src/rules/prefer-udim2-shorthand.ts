@@ -1,164 +1,149 @@
 import { createRule } from "$utilities/create-rule";
+import { isNumber } from "$utilities/type-utilities";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 
+import type { TSESTree } from "@typescript-eslint/types";
+
 interface ArgumentsCollection {
+	readonly offsetX: CollectedArgument;
 	readonly offsetXText: string;
+	readonly offsetY: CollectedArgument;
 	readonly offsetYText: string;
+	readonly scaleX: CollectedArgument;
 	readonly scaleXText: string;
+	readonly scaleY: CollectedArgument;
 	readonly scaleYText: string;
 }
 
-function isNumber(value: unknown): value is number {
-	return typeof value === "number" && !Number.isNaN(value);
+interface CollectedArgument {
+	readonly numericValue: number | undefined;
+	readonly text: string;
 }
 
-function isRecord(node: unknown): node is Record<PropertyKey, unknown> {
-	return typeof node === "object" && node !== null;
-}
-function hasTypeProperty(
-	object: Record<PropertyKey, unknown>,
-): object is Record<PropertyKey, unknown> & { type: unknown } {
-	return "type" in object;
-}
+type NumericBinaryOperator = "+" | "-" | "*" | "/" | "%";
+type NumericUnaryOperator = "+" | "-";
 
-const OPERATORS = new Set(["+", "-", "*", "/", "%"]);
+const BINARY_OPERATORS: ReadonlySet<string> = new Set(["+", "-", "*", "/", "%"]);
+const UNARY_OPERATORS: ReadonlySet<string> = new Set(["+", "-"]);
+const BINARY_EVALUATORS: Record<NumericBinaryOperator, (left: number, right: number) => number | undefined> = {
+	"%": (left, right) => (right === 0 ? undefined : left % right),
+	"*": (left, right) => left * right,
+	"+": (left, right) => left + right,
+	"-": (left, right) => left - right,
+	"/": (left, right) => (right === 0 ? undefined : left / right),
+};
 
-function reconstructText(node: Record<PropertyKey, unknown>): string | undefined {
-	const nodeType = node.type;
-	let text: string | undefined;
-
-	if (nodeType === AST_NODE_TYPES.Literal) {
-		const { value } = node;
-		text = isNumber(value) ? String(value) : undefined;
-	}
-
-	if (nodeType === AST_NODE_TYPES.Identifier) {
-		const { name } = node;
-		text = typeof name === "string" ? name : undefined;
-	}
-
-	if (nodeType === AST_NODE_TYPES.UnaryExpression) {
-		const { operator } = node;
-		if (typeof operator === "string") {
-			const { argument } = node;
-			if (isRecord(argument)) {
-				const argumentText = reconstructText(argument);
-				if (argumentText !== undefined) text = `${operator}${argumentText}`;
-			}
-		}
-	}
-
-	if (nodeType === AST_NODE_TYPES.BinaryExpression) {
-		const { operator } = node;
-		if (typeof operator === "string" && OPERATORS.has(operator)) {
-			const { left, right } = node;
-			if (isRecord(left) && isRecord(right)) {
-				const leftText = reconstructText(left);
-				const rightText = reconstructText(right);
-				if (leftText !== undefined && rightText !== undefined) text = `${leftText} ${operator} ${rightText}`;
-			}
-		}
-	}
-
-	return text;
+function isNumericBinaryOperator(operator: string): operator is NumericBinaryOperator {
+	return BINARY_OPERATORS.has(operator);
 }
 
-function evaluateLiteral(node: Record<PropertyKey, unknown>): number | undefined {
-	const { value } = node;
-	return isNumber(value) ? value : undefined;
+function isNumericUnaryOperator(operator: string): operator is NumericUnaryOperator {
+	return UNARY_OPERATORS.has(operator);
 }
 
-function evaluateUnary(node: Record<PropertyKey, unknown>): number | undefined {
-	const { argument, operator } = node;
-	if (!isRecord(argument)) return undefined;
+function isNumericBinaryExpression(
+	node: TSESTree.BinaryExpression,
+): node is TSESTree.SymmetricBinaryExpression & { readonly operator: NumericBinaryOperator } {
+	return isNumericBinaryOperator(node.operator);
+}
 
-	const argumentValue = evaluateExpression(argument);
+function isNumericUnaryExpression(
+	node: TSESTree.UnaryExpression,
+): node is TSESTree.UnaryExpression & { readonly operator: NumericUnaryOperator } {
+	return isNumericUnaryOperator(node.operator);
+}
+
+function reconstructIdentifierText(node: TSESTree.Identifier): string {
+	return node.name;
+}
+
+function evaluateUnary(operator: NumericUnaryOperator, argumentValue: number | undefined): number | undefined {
 	if (argumentValue === undefined) return undefined;
 	if (operator === "-") return -argumentValue;
-	if (operator === "+") return argumentValue;
-	return undefined;
+	return argumentValue;
 }
 
-function evaluateBinaryOperation(operator: string, left: number, right: number): number | undefined {
-	switch (operator) {
-		case "+":
-			return left + right;
-
-		case "-":
-			return left - right;
-
-		case "*":
-			return left * right;
-
-		case "/":
-			return right === 0 ? undefined : left / right;
-
-		case "%":
-			return right === 0 ? undefined : left % right;
-
-		default:
-			return undefined;
-	}
+function evaluateBinaryOperation(operator: NumericBinaryOperator, left: number, right: number): number | undefined {
+	return BINARY_EVALUATORS[operator](left, right);
 }
 
-function evaluateBinary(node: Record<PropertyKey, unknown>): number | undefined {
-	const { right, left, operator } = node;
-	if (!(isRecord(left) && isRecord(right))) return undefined;
-	if (typeof operator !== "string" || !OPERATORS.has(operator)) return undefined;
-
-	const leftValue = evaluateExpression(left);
-	const rightValue = evaluateExpression(right);
+function evaluateNumericBinary(
+	operator: NumericBinaryOperator,
+	leftValue: number | undefined,
+	rightValue: number | undefined,
+): number | undefined {
 	if (leftValue === undefined || rightValue === undefined) return undefined;
 
 	return evaluateBinaryOperation(operator, leftValue, rightValue);
 }
 
-function evaluateExpression(node: unknown): number | undefined {
-	if (!isRecord(node)) return undefined;
-
+function collectExpression(node: TSESTree.Expression): CollectedArgument | undefined {
 	switch (node.type) {
-		case AST_NODE_TYPES.Literal:
-			return evaluateLiteral(node);
+		case AST_NODE_TYPES.Literal: {
+			if (!isNumber(node.value)) return undefined;
+			return { numericValue: node.value, text: String(node.value) };
+		}
 
-		case AST_NODE_TYPES.UnaryExpression:
-			return evaluateUnary(node);
+		case AST_NODE_TYPES.Identifier:
+			return { numericValue: undefined, text: reconstructIdentifierText(node) };
 
-		case AST_NODE_TYPES.BinaryExpression:
-			return evaluateBinary(node);
+		case AST_NODE_TYPES.UnaryExpression: {
+			if (!isNumericUnaryExpression(node)) return undefined;
+			const argument = collectExpression(node.argument);
+			if (argument === undefined) return undefined;
+			return {
+				numericValue: evaluateUnary(node.operator, argument.numericValue),
+				text: `${node.operator}${argument.text}`,
+			};
+		}
+
+		case AST_NODE_TYPES.BinaryExpression: {
+			if (!isNumericBinaryExpression(node)) return undefined;
+			const left = collectExpression(node.left);
+			const right = collectExpression(node.right);
+			if (left === undefined || right === undefined) return undefined;
+			return {
+				numericValue: evaluateNumericBinary(node.operator, left.numericValue, right.numericValue),
+				text: `${left.text} ${node.operator} ${right.text}`,
+			};
+		}
 
 		default:
 			return undefined;
 	}
 }
 
-function collectArguments(parameters: ReadonlyArray<unknown>): ArgumentsCollection | undefined {
-	if (parameters.length !== 4) return undefined;
+function collectArgument(parameter: TSESTree.CallExpressionArgument): CollectedArgument | undefined {
+	if (parameter.type === AST_NODE_TYPES.SpreadElement) return undefined;
+	return collectExpression(parameter);
+}
 
-	const texts = new Array<string | undefined>(4);
+function isCollectedArgument(argument: CollectedArgument | undefined): argument is CollectedArgument {
+	return argument !== undefined;
+}
 
-	for (let index = 0; index < 4; index += 1) {
-		const parameter = parameters[index];
-		if (!(isRecord(parameter) && hasTypeProperty(parameter))) return undefined;
+function hasFourCollectedArguments(
+	parameters: ReadonlyArray<CollectedArgument | undefined>,
+): parameters is readonly [CollectedArgument, CollectedArgument, CollectedArgument, CollectedArgument] {
+	return parameters.length === 4 && parameters.every(isCollectedArgument);
+}
 
-		if (parameter.type === AST_NODE_TYPES.SpreadElement) return undefined;
+function collectArguments(parameters: ReadonlyArray<TSESTree.CallExpressionArgument>): ArgumentsCollection | undefined {
+	const collectedParameters = parameters.map(collectArgument);
+	if (!hasFourCollectedArguments(collectedParameters)) return undefined;
 
-		const text = reconstructText(parameter);
-		if (text === undefined) return undefined;
-		texts[index] = text;
-	}
+	const [scaleX, offsetX, scaleY, offsetY] = collectedParameters;
 
-	const [scaleXText, offsetXText, scaleYText, offsetYText] = texts;
-
-	if (
-		scaleXText === undefined ||
-		offsetXText === undefined ||
-		scaleYText === undefined ||
-		offsetYText === undefined
-	) {
-		return undefined;
-	}
-
-	return { offsetXText, offsetYText, scaleXText, scaleYText };
+	return {
+		offsetX,
+		offsetXText: offsetX.text,
+		offsetY,
+		offsetYText: offsetY.text,
+		scaleX,
+		scaleXText: scaleX.text,
+		scaleY,
+		scaleYText: scaleY.text,
+	};
 }
 
 type MessageIds = "preferFromOffset" | "preferFromScale";
@@ -174,10 +159,10 @@ const preferUDim2Shorthand = createRule<[], MessageIds>({
 
 				const { offsetXText, offsetYText, scaleXText, scaleYText } = collected;
 
-				const scaleX = evaluateExpression(node.arguments[0]);
-				const offsetX = evaluateExpression(node.arguments[1]);
-				const scaleY = evaluateExpression(node.arguments[2]);
-				const offsetY = evaluateExpression(node.arguments[3]);
+				const scaleX = collected.scaleX.numericValue;
+				const offsetX = collected.offsetX.numericValue;
+				const scaleY = collected.scaleY.numericValue;
+				const offsetY = collected.offsetY.numericValue;
 
 				if (scaleX === 0 && offsetX === 0 && scaleY === 0 && offsetY === 0) return;
 
@@ -200,8 +185,8 @@ const preferUDim2Shorthand = createRule<[], MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description:
 				"Prefer UDim2.fromScale() or UDim2.fromOffset() over new UDim2() when all offsets or all scales are zero.",

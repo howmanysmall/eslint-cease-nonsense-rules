@@ -1,3 +1,5 @@
+import { getDefinedValue } from "$utilities/defined-utilities";
+
 import {
 	MetaSelectors,
 	ModifierWeights,
@@ -88,7 +90,7 @@ function normalizeOption(option: Selector): Array<NormalizedSelector> {
 
 	for (const selector of selectors) {
 		const resolvedSelectors = isMetaSelector(selector)
-			? (META_SELECTOR_MAP[selector] ?? [])
+			? getDefinedValue(META_SELECTOR_MAP[selector])
 			: [Selectors[selector]];
 
 		normalizedSelectors.push({
@@ -120,7 +122,11 @@ export function parseOptions(context: Context, options: ReadonlyArray<Selector> 
 
 	const parsedOptions: ParsedOptions = {};
 	for (const selectorName of selectorNames) {
-		parsedOptions[selectorName] = createValidator(selectorName, context, selectorMap.get(selectorName) ?? []);
+		parsedOptions[selectorName] = createValidator(
+			selectorName,
+			context,
+			getDefinedValue(selectorMap.get(selectorName)),
+		);
 	}
 	return parsedOptions;
 }

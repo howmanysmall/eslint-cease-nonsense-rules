@@ -73,6 +73,8 @@ describe("prefer-singular-enums", () => {
 			{ code: "enum Class {}" },
 			{ code: "enum Series {}" },
 			{ code: "enum Species {}" },
+			{ code: "enum E2 {}" },
+			{ code: "enum _ {}" },
 		],
 	});
 });

@@ -26,6 +26,19 @@ function getReceiverText(sourceCode: Readonly<TSESLint.SourceCode>, node: TSESTr
 	return canUseDirectReceiver(node) ? text : `(${text})`;
 }
 
+function getOnlyCallArgument(node: TSESTree.CallExpression): TSESTree.Expression | undefined {
+	const [firstArgument] = node.arguments;
+	if (
+		node.arguments.length !== 1 ||
+		firstArgument === undefined ||
+		firstArgument.type === AST_NODE_TYPES.SpreadElement
+	) {
+		return undefined;
+	}
+
+	return firstArgument;
+}
+
 const preferIdiv = createRule<Options, MessageIds>({
 	create(context) {
 		return {
@@ -44,9 +57,8 @@ const preferIdiv = createRule<Options, MessageIds>({
 				if (target.type !== AST_NODE_TYPES.Identifier || target.name !== "math") return;
 				if (hasShadowedBinding(context.sourceCode, target, "math")) return;
 
-				if (node.arguments.length !== 1) return;
-				const [firstArgument] = node.arguments;
-				if (firstArgument === undefined || firstArgument.type === AST_NODE_TYPES.SpreadElement) return;
+				const firstArgument = getOnlyCallArgument(node);
+				if (firstArgument === undefined) return;
 
 				const argument = unwrapExpression(firstArgument);
 				if (argument.type !== AST_NODE_TYPES.BinaryExpression || argument.operator !== "/") return;
@@ -63,8 +75,8 @@ const preferIdiv = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description: "Prefer using `.idiv()` for integer division instead of `math.floor(x / y)` in roblox-ts.",
 		},

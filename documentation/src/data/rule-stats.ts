@@ -1,5 +1,5 @@
-import { getRuleAwarenessBreakdown, ruleAwareness } from "./rule-awareness";
-import { ruleCategoryDefinitions, ruleCategoryOrder, ruleSidebarGroups } from "./rule-sidebar";
+import { getRuleAwarenessBreakdown } from "./rule-awareness";
+import { ruleCategoryDefinitions, ruleCategoryOrder } from "./rule-sidebar";
 
 import type { RuleCategoryDefinition, RuleCategoryKey } from "./rule-sidebar";
 
@@ -14,7 +14,9 @@ interface RuleCategoryStats {
 function createRuleCategoryStats(definition: RuleCategoryDefinition): RuleCategoryStats {
 	const [firstRulePath] = definition.rules;
 	if (firstRulePath === undefined) {
-		throw new Error(`Rule category "${definition.label}" must contain at least one rule.`);
+		const error = new Error(`Rule category "${definition.label}" must contain at least one rule.`);
+		Error.captureStackTrace(error, createRuleCategoryStats);
+		throw error;
 	}
 
 	const awareness = getRuleAwarenessBreakdown(definition.rules);
@@ -35,8 +37,8 @@ export const ruleCategories = {
 	roblox: createRuleCategoryStats(ruleCategoryDefinitions.roblox),
 } satisfies Record<RuleCategoryKey, RuleCategoryStats>;
 
-export { ruleSidebarGroups };
-export { ruleAwareness };
+export { ruleAwareness } from "./rule-awareness";
+export { ruleSidebarGroups } from "./rule-sidebar";
 
 export const __testing = { createRuleCategoryStats };
 

@@ -1,4 +1,5 @@
 import nodePath from "node:path";
+import { getImportSpecifierName, unwrapExpression } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
 import { discoverLocalComponent, inspectLocalComponentFile } from "$utilities/local-component-discovery";
 import { resolveRelativeImport } from "$utilities/resolve-import";
@@ -24,11 +25,29 @@ const IGNORED_COMPARISON_KEYS = new Set(["end", "loc", "parent", "range", "start
 const JSX_EXTENSIONS = new Set([".jsx", ".tsx"]);
 const PADDING_ATTRIBUTE_NAMES = new Set(["PaddingBottom", "PaddingLeft", "PaddingRight", "PaddingTop"]);
 
+type PaddingAttribute = TSESTree.JSXAttribute & {
+	readonly value: Exclude<TSESTree.JSXAttribute["value"], null>;
+};
+
 interface PaddingAttributes {
-	readonly paddingBottom: TSESTree.JSXAttribute;
-	readonly paddingLeft: TSESTree.JSXAttribute;
-	readonly paddingRight: TSESTree.JSXAttribute;
-	readonly paddingTop: TSESTree.JSXAttribute;
+	readonly paddingBottom: PaddingAttribute;
+	readonly paddingLeft: PaddingAttribute;
+	readonly paddingRight: PaddingAttribute;
+	readonly paddingTop: PaddingAttribute;
+}
+
+interface ComponentInspection {
+	readonly matches: boolean;
+}
+
+interface ComponentDiscoveryResult {
+	readonly found: boolean;
+}
+
+interface PaddingChoice {
+	readonly componentIdentifiers: ReadonlySet<string>;
+	readonly discoveredComponent: ComponentDiscoveryResult;
+	readonly messageId: MessageIds;
 }
 
 function isRecord(value: unknown): value is ReadonlyRecord<string, unknown> {
@@ -36,55 +55,43 @@ function isRecord(value: unknown): value is ReadonlyRecord<string, unknown> {
 }
 
 function unwrapComparableNode(node: TSESTree.Expression | TSESTree.Literal): TSESTree.Expression | TSESTree.Literal {
-	let current: TSESTree.Expression | TSESTree.Literal = node;
+	if (node.type === AST_NODE_TYPES.Literal) return node;
+	return unwrapExpression(node);
+}
 
-	while (true) {
-		if (current.type === AST_NODE_TYPES.TSAsExpression || current.type === AST_NODE_TYPES.TSSatisfiesExpression) {
-			current = current.expression;
-			continue;
-		}
-
-		if (current.type === AST_NODE_TYPES.TSNonNullExpression) {
-			current = current.expression;
-			continue;
-		}
-
-		if (current.type === AST_NODE_TYPES.TSTypeAssertion) {
-			current = current.expression;
-			continue;
-		}
-
-		if (current.type === AST_NODE_TYPES.ChainExpression) {
-			current = current.expression;
-			continue;
-		}
-
-		return current;
-	}
+function hasAttributeValue(attribute: TSESTree.JSXAttribute): attribute is PaddingAttribute {
+	return attribute.value !== null;
 }
 
 function areStructurallyEqual(left: unknown, right: unknown): boolean {
 	if (Object.is(left, right)) return true;
-	if (left === null || right === null) return false;
 
 	if (Array.isArray(left)) {
-		if (!Array.isArray(right)) return false;
-		if (left.length !== right.length) return false;
-
-		let index = 0;
-		for (const value of left) if (!areStructurallyEqual(value, right[index++])) return false;
-		return true;
+		return Array.isArray(right) && areArraysStructurallyEqual(left, right);
 	}
 
 	if (Array.isArray(right) || !isRecord(left) || !isRecord(right)) return false;
+	return areRecordsStructurallyEqual(left, right);
+}
 
+function areArraysStructurallyEqual(left: ReadonlyArray<unknown>, right: ReadonlyArray<unknown>): boolean {
+	if (left.length !== right.length) return false;
+
+	let index = 0;
+	for (const value of left) if (!areStructurallyEqual(value, right[index++])) return false;
+	return true;
+}
+
+function areRecordsStructurallyEqual(
+	left: ReadonlyRecord<string, unknown>,
+	right: ReadonlyRecord<string, unknown>,
+): boolean {
 	const leftEntries = Object.entries(left).filter(([key]) => !IGNORED_COMPARISON_KEYS.has(key));
 	const rightEntries = Object.entries(right).filter(([key]) => !IGNORED_COMPARISON_KEYS.has(key));
 	if (leftEntries.length !== rightEntries.length) return false;
 
 	for (const [key, value] of leftEntries) {
-		if (!(key in right)) return false;
-		if (!areStructurallyEqual(value, right[key])) return false;
+		if (!(Object.hasOwn(right, key) && areStructurallyEqual(value, right[key]))) return false;
 	}
 
 	return true;
@@ -106,11 +113,8 @@ function hasMeaningfulChildren(node: TSESTree.JSXElement): boolean {
 	return false;
 }
 
-function getComparableAttributeNode(
-	attribute: TSESTree.JSXAttribute,
-): TSESTree.Expression | TSESTree.Literal | undefined {
+function getComparableAttributeNode(attribute: PaddingAttribute): TSESTree.Expression | TSESTree.Literal | undefined {
 	const { value } = attribute;
-	if (value === null) return undefined;
 
 	if (value.type === AST_NODE_TYPES.Literal) return value;
 	if (value.type !== AST_NODE_TYPES.JSXExpressionContainer) return undefined;
@@ -120,7 +124,7 @@ function getComparableAttributeNode(
 }
 
 function collectPaddingAttributes(node: TSESTree.JSXOpeningElement): PaddingAttributes | undefined {
-	const attributes = new Map<string, TSESTree.JSXAttribute>();
+	const attributes = new Map<string, PaddingAttribute>();
 
 	for (const attribute of node.attributes) {
 		if (attribute.type === AST_NODE_TYPES.JSXSpreadAttribute) return undefined;
@@ -129,7 +133,7 @@ function collectPaddingAttributes(node: TSESTree.JSXOpeningElement): PaddingAttr
 		const attributeName = attribute.name.name;
 		if (!PADDING_ATTRIBUTE_NAMES.has(attributeName)) return undefined;
 		if (attributes.has(attributeName)) return undefined;
-		if (attribute.value === null) return undefined;
+		if (!hasAttributeValue(attribute)) return undefined;
 
 		attributes.set(attributeName, attribute);
 	}
@@ -150,16 +154,8 @@ function collectPaddingAttributes(node: TSESTree.JSXOpeningElement): PaddingAttr
 	return { paddingBottom, paddingLeft, paddingRight, paddingTop };
 }
 
-function getImportedName(specifier: TSESTree.ImportSpecifier): string | undefined {
-	if (specifier.imported.type === AST_NODE_TYPES.Identifier) return specifier.imported.name;
-	if (typeof specifier.imported.value === "string") return specifier.imported.value;
-	return undefined;
-}
-
-function getAttributeValueText(attribute: TSESTree.JSXAttribute, sourceCode: TSESLint.SourceCode): string | undefined {
+function getAttributeValueText(attribute: PaddingAttribute, sourceCode: TSESLint.SourceCode): string {
 	const { value } = attribute;
-	if (value === null) return undefined;
-	if (value.type !== AST_NODE_TYPES.JSXExpressionContainer && value.type !== AST_NODE_TYPES.Literal) return undefined;
 	return sourceCode.getText(value);
 }
 
@@ -168,34 +164,118 @@ function getPaddingReplacement(
 	kind: MessageIds,
 	attributes: PaddingAttributes,
 	sourceCode: TSESLint.SourceCode,
-): string | undefined {
+): string {
 	const topValue = getAttributeValueText(attributes.paddingTop, sourceCode);
-	if (topValue === undefined) return undefined;
 
 	if (kind === "preferEqualPadding") return `<${componentName} padding=${topValue} />`;
 
 	const leftValue = getAttributeValueText(attributes.paddingLeft, sourceCode);
-	if (leftValue === undefined) return undefined;
 
 	return `<${componentName} horizontal=${topValue} vertical=${leftValue} />`;
 }
 
+function addMatchingImportSpecifiers(
+	specifiers: ReadonlyArray<TSESTree.ImportClause>,
+	directionalInspection: ComponentInspection,
+	equalInspection: ComponentInspection,
+	directionalPaddingIdentifiers: Set<string>,
+	equalPaddingIdentifiers: Set<string>,
+): void {
+	for (const specifier of specifiers) {
+		if (specifier.type === AST_NODE_TYPES.ImportDefaultSpecifier) {
+			addDefaultPaddingImport(
+				specifier,
+				directionalInspection,
+				equalInspection,
+				directionalPaddingIdentifiers,
+				equalPaddingIdentifiers,
+			);
+			continue;
+		}
+
+		if (specifier.type !== AST_NODE_TYPES.ImportSpecifier) continue;
+		addNamedPaddingImport(
+			specifier,
+			directionalInspection,
+			equalInspection,
+			directionalPaddingIdentifiers,
+			equalPaddingIdentifiers,
+		);
+	}
+}
+
+function addDefaultPaddingImport(
+	specifier: TSESTree.ImportDefaultSpecifier,
+	directionalInspection: ComponentInspection,
+	equalInspection: ComponentInspection,
+	directionalPaddingIdentifiers: Set<string>,
+	equalPaddingIdentifiers: Set<string>,
+): void {
+	if (directionalInspection.matches) directionalPaddingIdentifiers.add(specifier.local.name);
+	if (equalInspection.matches) equalPaddingIdentifiers.add(specifier.local.name);
+}
+
+function addNamedPaddingImport(
+	specifier: TSESTree.ImportSpecifier,
+	directionalInspection: ComponentInspection,
+	equalInspection: ComponentInspection,
+	directionalPaddingIdentifiers: Set<string>,
+	equalPaddingIdentifiers: Set<string>,
+): void {
+	const importedName = getImportSpecifierName(specifier);
+	if (directionalInspection.matches && importedName === "DirectionalPadding") {
+		directionalPaddingIdentifiers.add(specifier.local.name);
+	}
+
+	if (equalInspection.matches && importedName === "EqualPadding") {
+		equalPaddingIdentifiers.add(specifier.local.name);
+	}
+}
+
+function choosePaddingComponent(
+	attributes: PaddingAttributes,
+	equalPaddingIdentifiers: ReadonlySet<string>,
+	directionalPaddingIdentifiers: ReadonlySet<string>,
+	discoveredEqualPadding: ComponentDiscoveryResult,
+	discoveredDirectionalPadding: ComponentDiscoveryResult,
+): PaddingChoice | undefined {
+	const bottom = getComparableAttributeNode(attributes.paddingBottom);
+	const left = getComparableAttributeNode(attributes.paddingLeft);
+	const right = getComparableAttributeNode(attributes.paddingRight);
+	const top = getComparableAttributeNode(attributes.paddingTop);
+	if (bottom === undefined || left === undefined || right === undefined || top === undefined) return undefined;
+
+	const horizontalEqual = areStructurallyEqual(top, bottom);
+	const verticalEqual = areStructurallyEqual(left, right);
+	if (!(horizontalEqual && verticalEqual)) return undefined;
+
+	if (areStructurallyEqual(top, left) && areStructurallyEqual(top, right)) {
+		return {
+			componentIdentifiers: equalPaddingIdentifiers,
+			discoveredComponent: discoveredEqualPadding,
+			messageId: "preferEqualPadding",
+		};
+	}
+
+	return {
+		componentIdentifiers: directionalPaddingIdentifiers,
+		discoveredComponent: discoveredDirectionalPadding,
+		messageId: "preferDirectionalPadding",
+	};
+}
+
 const preferPaddingComponents = createRule<Options, MessageIds>({
 	create(context) {
-		const filename = context.filename ?? "";
-		const discoveredDirectionalPadding =
-			filename === ""
-				? { found: false as const }
-				: discoverLocalComponent(filename, DIRECTIONAL_PADDING_COMPONENT);
-		const discoveredEqualPadding =
-			filename === "" ? { found: false as const } : discoverLocalComponent(filename, EQUAL_PADDING_COMPONENT);
+		const { filename } = context;
+		const discoveredDirectionalPadding = discoverLocalComponent(filename, DIRECTIONAL_PADDING_COMPONENT);
+		const discoveredEqualPadding = discoverLocalComponent(filename, EQUAL_PADDING_COMPONENT);
 		const directionalPaddingIdentifiers = new Set<string>();
 		const equalPaddingIdentifiers = new Set<string>();
 
 		return {
 			ImportDeclaration(node): void {
 				const importSource = node.source.value;
-				if (typeof importSource !== "string" || !importSource.startsWith(".") || filename === "") return;
+				if (typeof importSource !== "string" || !importSource.startsWith(".")) return;
 
 				const resolved = resolveRelativeImport(importSource, filename);
 				if (!resolved.found) return;
@@ -203,24 +283,13 @@ const preferPaddingComponents = createRule<Options, MessageIds>({
 				const directionalInspection = inspectLocalComponentFile(resolved.path, DIRECTIONAL_PADDING_COMPONENT);
 				const equalInspection = inspectLocalComponentFile(resolved.path, EQUAL_PADDING_COMPONENT);
 
-				for (const specifier of node.specifiers) {
-					if (specifier.type === AST_NODE_TYPES.ImportDefaultSpecifier) {
-						if (directionalInspection.matches) directionalPaddingIdentifiers.add(specifier.local.name);
-						if (equalInspection.matches) equalPaddingIdentifiers.add(specifier.local.name);
-						continue;
-					}
-
-					if (specifier.type !== AST_NODE_TYPES.ImportSpecifier) continue;
-
-					const importedName = getImportedName(specifier);
-					if (directionalInspection.matches && importedName === "DirectionalPadding") {
-						directionalPaddingIdentifiers.add(specifier.local.name);
-					}
-
-					if (equalInspection.matches && importedName === "EqualPadding") {
-						equalPaddingIdentifiers.add(specifier.local.name);
-					}
-				}
+				addMatchingImportSpecifiers(
+					node.specifiers,
+					directionalInspection,
+					equalInspection,
+					directionalPaddingIdentifiers,
+					equalPaddingIdentifiers,
+				);
 			},
 
 			JSXElement(node): void {
@@ -233,60 +302,41 @@ const preferPaddingComponents = createRule<Options, MessageIds>({
 				const attributes = collectPaddingAttributes(openingElement);
 				if (attributes === undefined) return;
 
-				const bottom = getComparableAttributeNode(attributes.paddingBottom);
-				const left = getComparableAttributeNode(attributes.paddingLeft);
-				const right = getComparableAttributeNode(attributes.paddingRight);
-				const top = getComparableAttributeNode(attributes.paddingTop);
-				if (bottom === undefined || left === undefined || right === undefined || top === undefined) return;
+				const choice = choosePaddingComponent(
+					attributes,
+					equalPaddingIdentifiers,
+					directionalPaddingIdentifiers,
+					discoveredEqualPadding,
+					discoveredDirectionalPadding,
+				);
+				if (choice === undefined) return;
+				if (choice.componentIdentifiers.size === 0 && !choice.discoveredComponent.found) return;
 
-				const allEqual =
-					areStructurallyEqual(top, bottom) &&
-					areStructurallyEqual(top, left) &&
-					areStructurallyEqual(top, right);
-				const horizontalEqual = areStructurallyEqual(top, bottom);
-				const verticalEqual = areStructurallyEqual(left, right);
-
-				let componentIdentifiers: ReadonlySet<string>;
-				let discoveredComponent: { readonly found: boolean };
-				let messageId: MessageIds;
-
-				if (allEqual) {
-					componentIdentifiers = equalPaddingIdentifiers;
-					discoveredComponent = discoveredEqualPadding;
-					messageId = "preferEqualPadding";
-				} else if (horizontalEqual && verticalEqual) {
-					componentIdentifiers = directionalPaddingIdentifiers;
-					discoveredComponent = discoveredDirectionalPadding;
-					messageId = "preferDirectionalPadding";
-				} else return;
-
-				if (componentIdentifiers.size === 0 && !discoveredComponent.found) return;
-
-				const canFix = JSX_EXTENSIONS.has(nodePath.extname(filename)) && componentIdentifiers.size === 1;
-				const [componentIdentifier] = [...componentIdentifiers];
+				const canFix = JSX_EXTENSIONS.has(nodePath.extname(filename)) && choice.componentIdentifiers.size === 1;
+				const [componentIdentifier] = [...choice.componentIdentifiers];
 				const replacement =
 					canFix && componentIdentifier !== undefined
-						? getPaddingReplacement(componentIdentifier, messageId, attributes, context.sourceCode)
+						? getPaddingReplacement(componentIdentifier, choice.messageId, attributes, context.sourceCode)
 						: undefined;
 
 				if (replacement !== undefined) {
 					context.report({
 						fix: (fixer) => fixer.replaceText(node, replacement),
-						messageId,
+						messageId: choice.messageId,
 						node,
 					});
 					return;
 				}
 
 				context.report({
-					messageId,
+					messageId: choice.messageId,
 					node,
 				});
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description:
 				"Prefer local EqualPadding and DirectionalPadding components over matching <uipadding /> declarations.",

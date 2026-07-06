@@ -191,8 +191,75 @@ let x = 0;`,
 					},
 				],
 			},
+			{
+				code: `// first();
+const keep = true;
+// second();`,
+				errors: [
+					{
+						messageId: "commentedCode",
+						suggestions: [
+							{
+								desc: "Remove this commented out code",
+								output: `
+const keep = true;
+// second();`,
+							},
+						],
+					},
+					{
+						messageId: "commentedCode",
+						suggestions: [
+							{
+								desc: "Remove this commented out code",
+								output: `// first();
+const keep = true;
+`,
+							},
+						],
+					},
+				],
+			},
+			{
+				code: "// const element = <View />;",
+				errors: [
+					{
+						messageId: "commentedCode",
+						suggestions: [{ desc: "Remove this commented out code", output: "" }],
+					},
+				],
+				filename: "component.ts",
+			},
+			{
+				code: "// const element = <View />;",
+				errors: [
+					{
+						messageId: "commentedCode",
+						suggestions: [{ desc: "Remove this commented out code", output: "" }],
+					},
+				],
+				filename: "component",
+			},
+			{
+				code: "// const element = <View />;",
+				errors: [
+					{
+						messageId: "commentedCode",
+						suggestions: [{ desc: "Remove this commented out code", output: "" }],
+					},
+				],
+				filename: "component.tsx",
+			},
 		],
 		valid: [
+			{
+				code: "// const =",
+				filename: "component.tsx",
+			},
+			"// labelName:",
+			"// +count",
+			"// message",
+			"// methodCall()",
 			// Empty and whitespace comments
 			{
 				code: `

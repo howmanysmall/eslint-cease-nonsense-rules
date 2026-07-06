@@ -9,31 +9,25 @@ import {
 import { parsePattern } from "$utilities/pattern-replacement/pattern-parser";
 import { getReplacementIdentifier, generateReplacement } from "$utilities/pattern-replacement/replacement-generator";
 import { DefinitionType } from "@typescript-eslint/scope-manager";
-import Typebox from "typebox";
-import { Compile } from "typebox/compile";
 
 import type { PatternIndex } from "$utilities/pattern-replacement/pattern-matcher";
 import type { ParsedPattern, Pattern } from "$utilities/pattern-replacement/pattern-types";
 import type { TSESTree } from "@typescript-eslint/types";
 import type { TSESLint } from "@typescript-eslint/utils";
 
-const isObject = Typebox.Object({}, { additionalProperties: true });
-const isRuleOptions = Compile(
-	Typebox.Object({
-		patterns: Typebox.Array(isObject),
-	}),
-);
+type MessageIds = "preferReplacement" | "skippedDueToConflict";
+type Options = [{ readonly patterns: ReadonlyArray<Pattern> }];
 
 function parsePatterns(patterns: ReadonlyArray<Pattern>): ReadonlyArray<ParsedPattern> {
 	return patterns.map((pattern) => parsePattern(pattern.match, pattern.replacement, pattern.when));
 }
 
-const preferPatternReplacements = createRule({
+const preferPatternReplacements = createRule<Options, MessageIds>({
 	create(context) {
-		const validatedOptions = isRuleOptions.Check(context.options[0]) ? context.options[0] : undefined;
-		if (!validatedOptions || validatedOptions.patterns.length === 0) return {};
+		const [options] = context.options;
+		if (options.patterns.length === 0) return {};
 
-		const parsedPatterns = parsePatterns(validatedOptions.patterns as ReadonlyArray<Pattern>);
+		const parsedPatterns = parsePatterns(options.patterns);
 		const patternIndex: PatternIndex = buildPatternIndex(parsedPatterns);
 		const { sourceCode } = context;
 
@@ -113,8 +107,8 @@ const preferPatternReplacements = createRule({
 			NewExpression: checkNode,
 		};
 	},
-	defaultOptions: [{ patterns: [] }],
 	meta: {
+		defaultOptions: [{ patterns: [] }],
 		docs: {
 			description: "Enforce using configured replacements for common constructor/method patterns",
 		},

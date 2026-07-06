@@ -73,6 +73,22 @@ describe("no-render-helper-functions", () => {
 				errors: [{ messageId: "noRenderHelper" }],
 			},
 			{
+				code: "function createButton(): Promise<JSX.Element> { return <button />; }",
+				errors: [{ messageId: "noRenderHelper" }],
+			},
+			{
+				code: "const renderPanel = function namedPanel() { return <div />; };",
+				errors: [{ messageId: "noRenderHelper" }],
+			},
+			{
+				code: "const renderPanel: ReactNode = function() { return 'text'; };",
+				errors: [{ messageId: "noRenderHelper" }],
+			},
+			{
+				code: "const renderPanel: ReactNode = () => 'text';",
+				errors: [{ messageId: "noRenderHelper" }],
+			},
+			{
 				code: "export function createLayout() { return <div />; }",
 				errors: [{ messageId: "noRenderHelper" }],
 			},
@@ -91,6 +107,25 @@ describe("no-render-helper-functions", () => {
 				code: "const renderPanel = function() { return <div />; };",
 				errors: [{ messageId: "noRenderHelper" }],
 			},
+			{
+				code: `function createDecoratedLabel(condition: boolean) {
+    let value;
+    if (condition) return;
+    value = new Date().getTime() || 1;
+    return <div>{value}</div>;
+}`,
+				errors: [{ messageId: "noRenderHelper" }],
+			},
+			{
+				code: `function createConditionalLabel(condition: boolean) {
+    if (condition) {
+        return "fallback";
+    } else {
+        return <div />;
+    }
+}`,
+				errors: [{ messageId: "noRenderHelper" }],
+			},
 		],
 		valid: [
 			"function Component() { return <div />; }",
@@ -98,6 +133,7 @@ describe("no-render-helper-functions", () => {
 			"function MyComponent(props: Props) { return <div>{props.children}</div>; }",
 			"const Component = () => <div />;",
 			"const Component = (): JSX.Element => <div />;",
+			"const Component = function() { return <div />; };",
 			"export function HeaderComponent() { return <header />; }",
 			"function useCustomHook() { return <div />; }",
 			"function useFetchData(): React.ReactNode { return <div />; }",
@@ -106,9 +142,17 @@ describe("no-render-helper-functions", () => {
 			"const createId = () => Math.random();",
 			"function buildConfig() { return { setting: true }; }",
 			"const renderString = () => 'text';",
+			"function createFactory(): React.FC { return createComponent; }",
+			"function createSelf(): this { return this; }",
+			"function createTitle(): string { return 'Title'; }",
 			"function getNumber() { return 42; }",
+			"export default () => <div />;",
+			"export default function() { return <div />; }",
 			{
 				code: "items.map(item => <div key={item.id}>{item.name}</div>)",
+			},
+			{
+				code: "items.map(function(item) { return <div key={item.id}>{item.name}</div>; })",
 			},
 			{
 				code: "const Component = () => { const inline = () => <span />; return <div />; };",
@@ -126,6 +170,63 @@ describe("no-render-helper-functions", () => {
 			},
 			{
 				code: "const List = () => { const renderItem = (item: string) => item.toUpperCase(); return <div />; };",
+			},
+			{
+				code: "const callbacks = [() => <span />];",
+			},
+			{
+				code: "const { renderPanel = () => <div /> } = props;",
+			},
+			{
+				code: "const { renderPanel } = () => <div />;",
+			},
+			{
+				code: "const Component = function() { const renderItem = function() { return <span />; }; return <div />; };",
+			},
+			{
+				code: "const { renderPanel = function() { return <div />; } } = props;",
+			},
+			{
+				code: "const { renderPanel } = function() { return <div />; };",
+			},
+			{
+				code: "const useRenderPanel = function() { return <div />; };",
+			},
+			{
+				code: "function createSparseItems(value: string) { return [value, , 'fallback']; }",
+			},
+			{
+				code: "function createItems() { return [<div />]; }",
+			},
+			{
+				code: "function createOptions() { return { child: <div /> }; }",
+			},
+			{
+				code: "function createFallback(condition: boolean) { return condition ? <div /> : <span />; }",
+			},
+			{
+				code: "function createValue(value: number) { return -value; }",
+			},
+			{
+				code: "async function createResult(result: Promise<string>) { return await result; }",
+			},
+			{
+				code: "function createNestedValue(data: { current?: { value: string } }) { return data.current?.value; }",
+			},
+			{
+				code: "function createTypedValue(value: unknown) { return value as string; }",
+			},
+			{
+				code: `function createSwitchValue(value: string) {
+    switch (value) {
+        case "first": {
+            const normalized = value.toUpperCase();
+            return normalized;
+        }
+        default:
+            return value;
+    }
+}`,
 			},
 		],
 	});

@@ -1,4 +1,4 @@
-// oxlint-disable small-rules/prevent-abbreviations
+// oxlint-disable small-rules/prevent-abbreviations -- This rule intentionally contains abbreviation examples and replacements.
 import path from "node:path";
 import { createRule } from "$utilities/create-rule";
 import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
@@ -6,6 +6,7 @@ import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { regex } from "arktype";
 import { isIdentifierPart, isIdentifierStart, ScriptTarget } from "typescript";
 
+import type { ClassNameDefinition } from "@typescript-eslint/scope-manager";
 import type { JSONSchema, TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds = "replace" | "suggestion";
@@ -41,6 +42,10 @@ const schema: ReadonlyArray<JSONSchema.JSONSchema4> = [
 		type: "object",
 	},
 ];
+
+const errorOrEventAbbreviation = "e";
+const indexAbbreviation = "i";
+const loopIndexAbbreviation = "j";
 
 const DEFAULT_REPLACEMENTS: Record<string, Record<string, boolean>> = {
 	acc: {
@@ -116,7 +121,7 @@ const DEFAULT_REPLACEMENTS: Record<string, Record<string, boolean>> = {
 		destination: true,
 		distribution: true,
 	},
-	e: {
+	[errorOrEventAbbreviation]: {
 		error: true,
 		event: true,
 	},
@@ -157,13 +162,13 @@ const DEFAULT_REPLACEMENTS: Record<string, Record<string, boolean>> = {
 	func: {
 		function: true,
 	},
-	i: {
+	[indexAbbreviation]: {
 		index: true,
 	},
 	idx: {
 		index: true,
 	},
-	j: {
+	[loopIndexAbbreviation]: {
 		index: true,
 	},
 	len: {
@@ -375,6 +380,20 @@ interface NameReplacements {
 	total: number;
 }
 
+interface CompleteNameReplacements extends NameReplacements {
+	samples: ReadonlyArray<string>;
+}
+
+interface SafeReplacementSamples {
+	droppedDiscouraged: number;
+	safeSamples: ReadonlyArray<string>;
+}
+
+interface ReportableVariableDefinition {
+	definition: TSESLint.Scope.Definition;
+	definitionName: TSESTree.Identifier;
+}
+
 type IdentifierLike = TSESTree.Identifier | TSESTree.JSXIdentifier;
 type StringLiteral = TSESTree.Literal & { value: string };
 interface VariableLike {
@@ -413,14 +432,6 @@ function isJsxIdentifier(node: TSESTree.Node | undefined): node is TSESTree.JSXI
 	return Boolean(node && node.type === AST_NODE_TYPES.JSXIdentifier);
 }
 
-function isImportDeclaration(node: TSESTree.Node | undefined): node is TSESTree.ImportDeclaration {
-	return Boolean(node && node.type === AST_NODE_TYPES.ImportDeclaration);
-}
-
-function isVariableDeclarator(node: TSESTree.Node | undefined): node is TSESTree.VariableDeclarator {
-	return Boolean(node && node.type === AST_NODE_TYPES.VariableDeclarator);
-}
-
 function isValidIdentifier(name: string): boolean {
 	if (name.length === 0 || typescriptReservedWords.has(name)) return false;
 
@@ -454,9 +465,9 @@ function resolveVariableName(
 	scope: TSESLint.Scope.Scope | undefined,
 ): TSESLint.Scope.Variable | undefined {
 	let currentScope = scope;
-	while (currentScope) {
+	while (currentScope !== undefined) {
 		const variable = currentScope.set.get(name);
-		if (variable) return variable;
+		if (variable !== undefined) return variable;
 		currentScope = currentScope.upper ?? undefined;
 	}
 	return undefined;
@@ -465,17 +476,12 @@ function resolveVariableName(
 function isUnresolvedName(name: string, scope: TSESLint.Scope.Scope): boolean {
 	return getReferences(scope).some((reference) => {
 		const { identifier } = reference;
-		return (
-			identifier &&
-			identifier.type === AST_NODE_TYPES.Identifier &&
-			identifier.name === name &&
-			!reference.resolved
-		);
+		return identifier.type === AST_NODE_TYPES.Identifier && identifier.name === name && reference.resolved === null;
 	});
 }
 
 function isSafeName(name: string, scopes: ReadonlyArray<TSESLint.Scope.Scope>): boolean {
-	return !scopes.some((scope) => resolveVariableName(name, scope) ?? isUnresolvedName(name, scope));
+	return !scopes.some((scope) => resolveVariableName(name, scope) !== undefined || isUnresolvedName(name, scope));
 }
 
 type IsSafe = (name: string, scopes: ReadonlyArray<TSESLint.Scope.Scope>) => boolean;
@@ -483,7 +489,7 @@ type IsSafe = (name: string, scopes: ReadonlyArray<TSESLint.Scope.Scope>) => boo
 function getAvailableVariableName(
 	name: string,
 	scopes: ReadonlyArray<TSESLint.Scope.Scope>,
-	isSafe: IsSafe = () => true,
+	isSafe: IsSafe,
 ): string | undefined {
 	let candidate = name;
 	if (!isValidIdentifier(candidate)) {
@@ -507,9 +513,7 @@ function getVariableIdentifiers(variable: VariableLike): ReadonlyArray<Identifie
 	}
 	for (const reference of variable.references) {
 		const { identifier } = reference;
-		if (identifier) {
-			identifiers.add(identifier);
-		}
+		identifiers.add(identifier);
 	}
 	return [...identifiers];
 }
@@ -522,35 +526,34 @@ function hasSameRange(node1: TSESTree.Node, node2: TSESTree.Node): boolean {
 
 function isShorthandImportLocal(node: TSESTree.Identifier): boolean {
 	const { parent } = node;
-	if (!parent || parent.type !== AST_NODE_TYPES.ImportSpecifier || parent.local !== node) return false;
+	if (parent.type !== AST_NODE_TYPES.ImportSpecifier || parent.local !== node) return false;
 	return hasSameRange(parent.local, parent.imported);
 }
 
 function isShorthandExportLocal(node: TSESTree.Identifier): boolean {
 	const { parent } = node;
-	if (!parent || parent.type !== AST_NODE_TYPES.ExportSpecifier || parent.local !== node) return false;
+	if (parent.type !== AST_NODE_TYPES.ExportSpecifier || parent.local !== node) return false;
 	return hasSameRange(parent.local, parent.exported);
 }
 
 function isShorthandPropertyValue(identifier: TSESTree.Identifier): boolean {
 	const { parent } = identifier;
-	return parent && parent.type === AST_NODE_TYPES.Property && parent.shorthand && parent.value === identifier;
+	return parent.type === AST_NODE_TYPES.Property && parent.shorthand && parent.value === identifier;
 }
 
 function isShorthandPropertyAssignmentPatternLeft(identifier: TSESTree.Identifier): boolean {
 	const { parent } = identifier;
-	if (!parent || parent.type !== AST_NODE_TYPES.AssignmentPattern || parent.left !== identifier) return false;
+	if (parent.type !== AST_NODE_TYPES.AssignmentPattern || parent.left !== identifier) return false;
 
 	const property = parent.parent;
-	return property && property.type === AST_NODE_TYPES.Property && property.shorthand && property.value === parent;
+	return property.type === AST_NODE_TYPES.Property && property.shorthand && property.value === parent;
 }
 
 function replaceReferenceIdentifier(
-	identifier: IdentifierLike,
+	identifier: TSESTree.Identifier,
 	replacement: string,
 	fixer: TSESLint.RuleFixer,
 ): TSESLint.RuleFix | undefined {
-	if (!isIdentifier(identifier)) return undefined;
 	if (isShorthandPropertyValue(identifier) || isShorthandPropertyAssignmentPatternLeft(identifier)) {
 		return fixer.replaceText(identifier, `${identifier.name}: ${replacement}`);
 	}
@@ -581,11 +584,12 @@ function renameVariable(
 	fixer: TSESLint.RuleFixer,
 ): ReadonlyArray<TSESLint.RuleFix> {
 	return getVariableIdentifiers(variable)
+		.filter(isIdentifier)
 		.map((identifier) => replaceReferenceIdentifier(identifier, name, fixer))
 		.filter((fix): fix is TSESLint.RuleFix => fix !== undefined);
 }
 
-function prepareOptions(options: PreventAbbreviationsOptions | undefined): PreparedOptions {
+function prepareOptions(options: PreventAbbreviationsOptions = {}): PreparedOptions {
 	const {
 		checkProperties = false,
 		checkVariables = true,
@@ -598,7 +602,7 @@ function prepareOptions(options: PreventAbbreviationsOptions | undefined): Prepa
 		extendDefaultAllowList = true,
 		allowList = {},
 		ignore = [],
-	} = options ?? {};
+	} = options;
 
 	const replacementKeys = new Set([...Object.keys(DEFAULT_REPLACEMENTS), ...Object.keys(replacements)]);
 	const mergedReplacements = extendDefaultReplacements
@@ -632,7 +636,7 @@ function prepareOptions(options: PreventAbbreviationsOptions | undefined): Prepa
 		replacements: new Map(
 			Object.entries(mergedReplacements).map(([discouragedName, replacementsForName]) => [
 				discouragedName,
-				new Map(Object.entries(replacementsForName ?? {})),
+				new Map(Object.entries(replacementsForName)),
 			]),
 		),
 	};
@@ -673,13 +677,11 @@ function cartesianProductSamples(
 	const samples = Array.from({ length: sampleCount }, (_, sampleIndex) => {
 		let indexRemaining = sampleIndex;
 		const combination = new Array<string>();
-		for (let combinationIndex = combinations.length - 1; combinationIndex >= 0; combinationIndex -= 1) {
-			const items = combinations[combinationIndex] ?? [];
+		for (const items of combinations.toReversed()) {
 			const itemLength = items.length;
 			const index = indexRemaining % itemLength;
 			indexRemaining = (indexRemaining - index) / itemLength;
-			const item = items[index];
-			if (item !== undefined) combination.unshift(item);
+			combination.unshift(...items.slice(index, index + 1));
 		}
 		return combination;
 	});
@@ -717,8 +719,11 @@ function getNameReplacements(name: string, options: PreparedOptions, limit = 3):
 	const { total, samples } = cartesianProductSamples(combinations, limit);
 	for (const parts of samples) {
 		for (let index = parts.length - 1; index > 0; index -= 1) {
-			const word = parts[index] ?? "";
-			if (IS_ALPHABETIC.test(word) && parts[index - 1]?.endsWith(word) === true) parts.splice(index, 1);
+			const word = parts.slice(index, index + 1).join("");
+			const previousWords = parts.slice(index - 1, index);
+			if (IS_ALPHABETIC.test(word) && previousWords.some((previousWord) => previousWord.endsWith(word))) {
+				parts.splice(index, 1);
+			}
 		}
 	}
 
@@ -740,7 +745,7 @@ function getMessage(
 			data: {
 				discouragedName,
 				nameTypeText,
-				replacement: samples[0] ?? "",
+				replacement: samples.join(""),
 			},
 			messageId: MESSAGE_ID_REPLACE,
 		};
@@ -760,6 +765,10 @@ function getMessage(
 		},
 		messageId: MESSAGE_ID_SUGGESTION,
 	};
+}
+
+function hasReplacementSamples(replacements: NameReplacements): replacements is CompleteNameReplacements {
+	return replacements.samples !== undefined;
 }
 
 function isExportedIdentifier(identifier: IdentifierLike): boolean {
@@ -797,16 +806,18 @@ function shouldFix(variable: VariableLike): boolean {
 	);
 }
 
-function isStaticRequire(node: TSESTree.Node | undefined): node is TSESTree.CallExpression {
-	if (!node || node.type !== AST_NODE_TYPES.CallExpression || node.optional) return false;
+function getStaticRequireSource(node: TSESTree.Node | null | undefined): string | undefined {
+	if (!node || node.type !== AST_NODE_TYPES.CallExpression || node.optional) return undefined;
 
 	const { callee, arguments: callArguments } = node;
-	if (callee.type !== AST_NODE_TYPES.Identifier || callee.name !== "require") return false;
+	if (callee.type !== AST_NODE_TYPES.Identifier || callee.name !== "require") return undefined;
 
-	if (callArguments.length !== 1) return false;
+	if (callArguments.length !== 1) return undefined;
 
 	const [argument] = callArguments;
-	return Boolean(argument && isStringLiteral(argument));
+	if (argument === undefined || !isStringLiteral(argument)) return undefined;
+
+	return argument.value;
 }
 
 function isDefaultOrNamespaceImportName(identifier: TSESTree.Identifier): boolean {
@@ -831,7 +842,7 @@ function isDefaultOrNamespaceImportName(identifier: TSESTree.Identifier): boolea
 	if (
 		parent.type === AST_NODE_TYPES.VariableDeclarator &&
 		parent.id === identifier &&
-		isStaticRequire(parent.init ?? undefined)
+		getStaticRequireSource(parent.init) !== undefined
 	) {
 		return true;
 	}
@@ -839,13 +850,16 @@ function isDefaultOrNamespaceImportName(identifier: TSESTree.Identifier): boolea
 	return false;
 }
 
-function isClassVariable(variable: TSESLint.Scope.Variable): boolean {
-	if (variable.defs.length !== 1) return false;
+type ClassVariable = TSESLint.Scope.Variable & {
+	readonly defs: ReadonlyArray<ClassNameDefinition>;
+};
 
-	const [definition] = variable.defs;
-	if (!definition) return false;
-
+function isClassNameDefinition(definition: TSESLint.Scope.Definition): definition is ClassNameDefinition {
 	return definition.type === DefinitionType.ClassName;
+}
+
+function isClassVariable(variable: TSESLint.Scope.Variable): variable is ClassVariable {
+	return variable.defs.length === 1 && variable.defs.every(isClassNameDefinition);
 }
 
 function shouldReportIdentifierAsProperty(identifier: TSESTree.Identifier): boolean {
@@ -901,43 +915,129 @@ function isObjectPropertyKey(identifier: TSESTree.Identifier): boolean {
 	);
 }
 
-function getImportSource(definition: TSESLint.Scope.Definition): string | undefined {
-	if (definition.type === DefinitionType.ImportBinding) {
-		const { parent } = definition;
-		if (isImportDeclaration(parent)) {
-			const { source } = parent;
-			if (isStringLiteral(source)) return source.value;
-		}
-	}
-
-	if (definition.type === DefinitionType.Variable) {
-		const node = definition.node ?? undefined;
-		if (isVariableDeclarator(node)) {
-			const initializer = node.init ?? undefined;
-			if (isStaticRequire(initializer)) {
-				const [argument] = initializer.arguments;
-				if (argument && isStringLiteral(argument)) return argument.value;
-			}
-		}
-	}
-
-	return undefined;
+function getImportDeclarationSource(
+	definition: TSESLint.Scope.Definition & { type: DefinitionType.ImportBinding },
+): string | undefined {
+	const { parent } = definition;
+	return parent.type === AST_NODE_TYPES.ImportDeclaration ? parent.source.value : undefined;
 }
 
-function isInternalImport(definition: TSESLint.Scope.Definition): boolean {
-	const source = getImportSource(definition);
+function isInternalImportSource(source: string | undefined): boolean {
 	if (source === undefined || source.length === 0) return false;
 	return !source.includes("node_modules") && (source.startsWith(".") || source.startsWith("/"));
 }
 
-function shouldCheckImport(option: ImportCheckOption, definition: TSESLint.Scope.Definition): boolean {
+function shouldCheckImportSource(option: ImportCheckOption, source: string | undefined): boolean {
 	if (option === false) return false;
-	if (option === "internal") return isInternalImport(definition);
+	if (option === "internal") return isInternalImportSource(source);
 	return true;
 }
 
 function isVueTemplateReference(reference: TSESLint.Scope.Reference): boolean {
 	return Reflect.get(reference, "vueUsedInTemplate") === true;
+}
+
+function getReportableVariableDefinition(variable: VariableLike): ReportableVariableDefinition | undefined {
+	for (const definition of variable.defs) {
+		const definitionName = definition.name;
+		return isIdentifier(definitionName) ? { definition, definitionName } : undefined;
+	}
+
+	return undefined;
+}
+
+function shouldSkipImportVariable(
+	definitionName: TSESTree.Identifier,
+	definition: TSESLint.Scope.Definition,
+	options: PreparedOptions,
+): boolean {
+	if (definition.type === DefinitionType.ImportBinding) {
+		if (isDefaultOrNamespaceImportName(definitionName)) {
+			return !shouldCheckImportSource(
+				options.checkDefaultAndNamespaceImports,
+				getImportDeclarationSource(definition),
+			);
+		}
+
+		const source = getImportDeclarationSource(definition);
+		return (
+			isShorthandImportLocal(definitionName) && !shouldCheckImportSource(options.checkShorthandImports, source)
+		);
+	}
+
+	if (definition.type !== DefinitionType.Variable || !isDefaultOrNamespaceImportName(definitionName)) return false;
+
+	return !shouldCheckImportSource(
+		options.checkDefaultAndNamespaceImports,
+		getStaticRequireSource(definition.node.init),
+	);
+}
+
+function shouldAvoidArgumentsName(definition: TSESLint.Scope.Definition, variable: VariableLike): boolean {
+	const avoidArgumentsReplacement =
+		definition.type === DefinitionType.Variable &&
+		definition.node.type === AST_NODE_TYPES.VariableDeclarator &&
+		definition.node.init === null;
+	const avoidArgumentsInArrowParameter =
+		definition.type === DefinitionType.Parameter &&
+		variable.scope.type === ScopeType.function &&
+		variable.scope.block.type === AST_NODE_TYPES.ArrowFunctionExpression;
+
+	return avoidArgumentsReplacement || avoidArgumentsInArrowParameter;
+}
+
+function getSafeReplacementSamples(
+	replacements: CompleteNameReplacements,
+	scopes: ReadonlyArray<TSESLint.Scope.Scope>,
+	isSafeNameForVariable: IsSafe,
+	options: PreparedOptions,
+): SafeReplacementSamples {
+	let droppedDiscouraged = 0;
+	const safeSamples = replacements.samples
+		.map((name) => {
+			const safeName = getAvailableVariableName(name, scopes, isSafeNameForVariable);
+			if (safeName === undefined || safeName.length === 0) return undefined;
+
+			if (safeName !== name && isDiscouragedReplacementName(name, options)) {
+				droppedDiscouraged += 1;
+				return undefined;
+			}
+			return safeName;
+		})
+		.filter((name): name is string => typeof name === "string" && name.length > 0);
+
+	return { droppedDiscouraged, safeSamples };
+}
+
+function getEffectiveReplacementTotal(replacements: CompleteNameReplacements, droppedDiscouraged: number): number {
+	if (replacements.samples.length !== replacements.total) return replacements.total;
+	return Math.max(0, replacements.total - droppedDiscouraged);
+}
+
+function getVariableMessageSamples(
+	variableName: string,
+	effectiveTotal: number,
+	baseSamples: ReadonlyArray<string>,
+): ReadonlyArray<string> {
+	if (variableName !== "fn" || effectiveTotal <= 1) return baseSamples;
+	return baseSamples.map((name) => (name === "function_" ? "function" : name));
+}
+
+function canFixVariable(
+	variable: VariableLike,
+	references: ReadonlyArray<TSESLint.Scope.Reference>,
+	effectiveTotal: number,
+	safeSamples: ReadonlyArray<string>,
+): safeSamples is readonly [string] {
+	const [replacement] = safeSamples;
+	return (
+		effectiveTotal === 1 &&
+		safeSamples.length === 1 &&
+		replacement !== undefined &&
+		replacement.length > 0 &&
+		shouldFix(variable) &&
+		!references.some((reference) => isVueTemplateReference(reference))
+	);
 }
 
 const preventAbbreviations = createRule<Options, MessageIds>({
@@ -955,73 +1055,33 @@ const preventAbbreviations = createRule<Options, MessageIds>({
 			});
 
 		function checkVariable(variable: VariableLike): void {
-			if (variable.defs.length === 0) return;
+			const reportableDefinition = getReportableVariableDefinition(variable);
+			if (reportableDefinition === undefined) return;
 
-			const [definition] = variable.defs;
-			if (!definition) return;
-
-			const definitionName = definition.name;
-			if (!isIdentifier(definitionName)) return;
-
-			if (
-				isDefaultOrNamespaceImportName(definitionName) &&
-				!shouldCheckImport(options.checkDefaultAndNamespaceImports, definition)
-			) {
-				return;
-			}
-
-			if (
-				isShorthandImportLocal(definitionName) &&
-				!shouldCheckImport(options.checkShorthandImports, definition)
-			) {
-				return;
-			}
+			const { definition, definitionName } = reportableDefinition;
+			if (shouldSkipImportVariable(definitionName, definition, options)) return;
 
 			if (!options.checkShorthandProperties && isShorthandPropertyValue(definitionName)) return;
 
-			const avoidArgumentsReplacement =
-				definition.type === DefinitionType.Variable &&
-				definition.node.type === AST_NODE_TYPES.VariableDeclarator &&
-				!definition.node.init;
-			const avoidArgumentsInArrowParam =
-				definition.type === DefinitionType.Parameter &&
-				variable.scope.type === ScopeType.function &&
-				variable.scope.block.type === AST_NODE_TYPES.ArrowFunctionExpression;
-			const shouldAvoidArguments = avoidArgumentsReplacement || avoidArgumentsInArrowParam;
-
+			const shouldAvoidArguments = shouldAvoidArgumentsName(definition, variable);
 			const isSafeNameForVariable: IsSafe = (name, scopes) =>
 				!(!isSafeGeneratedName(name, scopes) || (shouldAvoidArguments && name === "arguments"));
 
 			const variableReplacements = getNameReplacements(variable.name, options);
-			if (variableReplacements.total === 0 || !variableReplacements.samples) return;
+			if (variableReplacements.total === 0 || !hasReplacementSamples(variableReplacements)) return;
 
 			const { references } = variable;
 			const scopes = [...references.map((reference) => reference.from), variable.scope];
-			let droppedDiscouraged = 0;
-			const safeSamples = variableReplacements.samples
-				.map((name) => {
-					const safeName = getAvailableVariableName(name, scopes, isSafeNameForVariable);
-					if (safeName === undefined || safeName.length === 0) return undefined;
-
-					if (safeName !== name && isDiscouragedReplacementName(name, options)) {
-						droppedDiscouraged += 1;
-						return undefined;
-					}
-					return safeName;
-				})
-				.filter((name): name is string => typeof name === "string" && name.length > 0);
+			const { droppedDiscouraged, safeSamples } = getSafeReplacementSamples(
+				variableReplacements,
+				scopes,
+				isSafeNameForVariable,
+				options,
+			);
 
 			const baseSamples = safeSamples.length > 0 ? safeSamples : variableReplacements.samples;
-			const hasCompleteSamples =
-				typeof variableReplacements.samples?.length === "number" &&
-				variableReplacements.samples.length === variableReplacements.total;
-			const effectiveTotal = hasCompleteSamples
-				? Math.max(0, variableReplacements.total - droppedDiscouraged)
-				: variableReplacements.total;
-			const messageSamples =
-				variable.name === "fn" && effectiveTotal > 1
-					? baseSamples.map((name) => (name === "function_" ? "function" : name))
-					: baseSamples;
+			const effectiveTotal = getEffectiveReplacementTotal(variableReplacements, droppedDiscouraged);
+			const messageSamples = getVariableMessageSamples(variable.name, effectiveTotal, baseSamples);
 
 			const message = getMessage(
 				definitionName.name,
@@ -1031,13 +1091,7 @@ const preventAbbreviations = createRule<Options, MessageIds>({
 
 			let fix: TSESLint.ReportFixFunction | undefined;
 
-			if (
-				effectiveTotal === 1 &&
-				safeSamples.length === 1 &&
-				shouldFix(variable) &&
-				safeSamples[0] &&
-				!references.some((ref) => isVueTemplateReference(ref))
-			) {
+			if (canFixVariable(variable, references, effectiveTotal, safeSamples)) {
 				const [replacement] = safeSamples;
 
 				for (const scope of scopes) {
@@ -1050,7 +1104,7 @@ const preventAbbreviations = createRule<Options, MessageIds>({
 					renameVariable(variable, replacement, fixer);
 			}
 
-			if (fix) {
+			if (fix !== undefined) {
 				context.report({
 					...message,
 					fix,
@@ -1072,41 +1126,28 @@ const preventAbbreviations = createRule<Options, MessageIds>({
 			}
 
 			if (variable.scope.type === ScopeType.class) {
-				const [definition] = variable.defs;
-				if (!definition) {
-					checkVariable(variable);
-					return;
-				}
-				const definitionName = definition.name;
-				if (!isIdentifier(definitionName)) {
-					checkVariable(variable);
-					return;
-				}
+				for (const definition of variable.defs) {
+					const outerClassVariable = identifierToOuterClassVariable.get(definition.name);
+					if (!outerClassVariable) {
+						checkVariable(variable);
+						return;
+					}
 
-				const outerClassVariable = identifierToOuterClassVariable.get(definitionName);
-				if (!outerClassVariable) {
-					checkVariable(variable);
-					return;
+					const combinedVariable: VariableLike = {
+						defs: variable.defs,
+						identifiers: variable.identifiers,
+						name: variable.name,
+						references: [...variable.references, ...outerClassVariable.references],
+						scope: variable.scope,
+					};
+					checkVariable(combinedVariable);
 				}
-
-				const combinedVariable: VariableLike = {
-					defs: variable.defs,
-					identifiers: variable.identifiers,
-					name: variable.name,
-					references: [...variable.references, ...outerClassVariable.references],
-					scope: variable.scope,
-				};
-				checkVariable(combinedVariable);
 				return;
 			}
 
-			const [definition] = variable.defs;
-			if (!definition) return;
-
-			const definitionName = definition.name;
-			if (!isIdentifier(definitionName)) return;
-
-			identifierToOuterClassVariable.set(definitionName, variable);
+			for (const definition of variable.defs) {
+				identifierToOuterClassVariable.set(definition.name, variable);
+			}
 		}
 
 		function checkScope(scope: TSESLint.Scope.Scope): void {
@@ -1127,12 +1168,12 @@ const preventAbbreviations = createRule<Options, MessageIds>({
 				const message = getMessage(node.name, replacements, "property");
 				let fix: TSESLint.ReportFixFunction | undefined;
 
-				if (replacements.total === 1 && replacements.samples && isObjectPropertyKey(node)) {
+				if (replacements.total === 1 && hasReplacementSamples(replacements) && isObjectPropertyKey(node)) {
 					const [replacement] = replacements.samples;
 					const property = node.parent;
 					if (
-						replacement &&
-						property &&
+						replacement !== undefined &&
+						replacement.length > 0 &&
 						property.type === AST_NODE_TYPES.Property &&
 						isStringLiteral(property.value) &&
 						isValidIdentifier(replacement)
@@ -1205,7 +1246,6 @@ const preventAbbreviations = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [{}],
 	meta: {
 		defaultOptions: [{}],
 		docs: {

@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import nodePath from "node:path";
 import { formatSync } from "$oxfmt-sync";
-import { regex } from "arktype";
 import { parseJSONC } from "confbox";
 import fastDiff from "fast-diff";
 
@@ -105,17 +104,14 @@ export function generateDifferences(original: string, formatted: string): Readon
 	const differences = new Array<Difference>();
 	let size = 0;
 	let offset = 0;
-	let index = 0;
+	let skipIndex = -1;
 
-	while (index < diffs.length) {
-		const diff = diffs[index];
-		if (diff === undefined) break;
-
+	for (const [index, diff] of diffs.entries()) {
+		if (index === skipIndex) continue;
 		const [type, text] = diff;
 
 		if (type === 0) {
 			offset += text.length;
-			index += 1;
 		} else if (type === -1) {
 			let adjustedOffset = offset;
 
@@ -142,15 +138,13 @@ export function generateDifferences(original: string, formatted: string): Readon
 					offset: adjustedOffset,
 					operation: "REPLACE",
 				};
-				index += 2;
+				skipIndex = index + 1;
 			} else {
 				differences[size++] = { deleteText: text, offset: adjustedOffset, operation: "DELETE" };
-				index += 1;
 			}
 			offset += text.length;
 		} else {
 			differences[size++] = { insertText: text, offset, operation: "INSERT" };
-			index += 1;
 		}
 	}
 
@@ -158,23 +152,14 @@ export function generateDifferences(original: string, formatted: string): Readon
 }
 
 const MAX_LENGTH = 60;
-// oxlint-disable-next-line sort-keys -- conflict.
-const SYMBOLS: Record<string, string> = {
-	" ": "\u{00B7}",
-	"\n": "\u{240A}",
-	"\r": "\u{240D}",
-	"\t": "\u{2192}",
-};
-
-const WHITESPACE_REGEXP = regex("[\r\n\t ]", "gu");
-function toSymbol(character: string): string {
-	return SYMBOLS[character] ?? character;
-}
 
 export function showInvisibles(text: string): string {
 	let result = text;
 	if (result.length > MAX_LENGTH) result = `${result.slice(0, MAX_LENGTH)}…`;
-	return result.replaceAll(WHITESPACE_REGEXP, toSymbol);
+	result = result.split(" ").join("\u{00B7}");
+	result = result.split("\t").join("\u{2192}");
+	result = result.split("\r").join("\u{240D}");
+	return result.split("\n").join("\u{240A}");
 }
 
 function resetConfigCache(): void {

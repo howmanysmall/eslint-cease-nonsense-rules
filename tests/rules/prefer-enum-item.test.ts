@@ -83,6 +83,10 @@ interface ImageProps {
 
 declare function setScaleType(value: CastsToEnum<Enum.ScaleType>): void;
 
+declare class ScaleTypeConsumer {
+    constructor(value: CastsToEnum<Enum.ScaleType>);
+}
+
 // Enum with non-literal Name/Value types (for edge case coverage)
 declare namespace Enum {
     namespace NonLiteralEnum {
@@ -97,6 +101,41 @@ declare namespace Enum {
 }
 
 declare function setNonLiteral(value: Enum.NonLiteralEnum | string | number): void;
+
+declare namespace CustomEnum {
+    namespace ScaleType {
+        interface Slice extends EnumItem {
+            Name: "Slice";
+            Value: 1;
+            EnumType: typeof CustomEnum.ScaleType;
+        }
+        const Slice: Slice;
+    }
+    type ScaleType = ScaleType.Slice;
+}
+
+declare function setCustomScaleType(value: CustomEnum.ScaleType | string | number): void;
+
+declare namespace Enum {
+    namespace MissingName {
+        interface Item {
+            Value: 1;
+        }
+        const Item: Item;
+    }
+    type MissingName = MissingName.Item;
+
+    namespace MissingValue {
+        interface Item {
+            Name: "Item";
+        }
+        const Item: Item;
+    }
+    type MissingValue = MissingValue.Item;
+}
+
+declare function setMissingName(value: Enum.MissingName | string | number): void;
+declare function setMissingValue(value: Enum.MissingValue | string | number): void;
 `;
 
 describe("prefer-enum-item", () => {
@@ -146,6 +185,36 @@ setScaleType("Fit");`,
 setScaleType(Enum.ScaleType.Fit);`,
 			},
 			{
+				code: `
+import type { EnumItem } from "./types";
+
+const props: ImageProps = { ScaleType: "Slice" };
+`,
+				errors: [{ messageId: "preferEnumItem" }],
+				filename: nodePath.join(fixturesDir, "performance-index.ts"),
+				options: [{ performanceMode: true }],
+				output: `
+import type { EnumItem } from "./types";
+
+const props: ImageProps = { ScaleType: Enum.ScaleType.Slice };
+`,
+			},
+			{
+				code: `
+import type { EnumItem } from "./types";
+
+setScaleType(3);
+`,
+				errors: [{ messageId: "preferEnumItem" }],
+				filename: nodePath.join(fixturesDir, "performance-index-call.ts"),
+				options: [{ fixNumericToValue: true, performanceMode: true }],
+				output: `
+import type { EnumItem } from "./types";
+
+setScaleType(Enum.ScaleType.Fit.Value);
+`,
+			},
+			{
 				code: `${typeDeclarations}
 setScaleType("Fit");
 setScaleType("Fit");`,
@@ -155,6 +224,48 @@ setScaleType("Fit");`,
 setScaleType(Enum.ScaleType.Fit);
 setScaleType(Enum.ScaleType.Fit);`,
 			},
+			{
+				code: `${typeDeclarations}
+const first: Enum.ScaleType = "Slice";
+const second: Enum.ScaleType = "Slice";`,
+				errors: [{ messageId: "preferEnumItem" }, { messageId: "preferEnumItem" }],
+				options: [{ performanceMode: true }],
+				output: `${typeDeclarations}
+const first: Enum.ScaleType = Enum.ScaleType.Slice;
+const second: Enum.ScaleType = Enum.ScaleType.Slice;`,
+			},
+			{
+				code: `${typeDeclarations}
+setScaleType("Slice");
+setScaleType("Tile");
+setScaleType("Crop");`,
+				errors: [
+					{ messageId: "preferEnumItem" },
+					{ messageId: "preferEnumItem" },
+					{ messageId: "preferEnumItem" },
+				],
+				options: [{ performanceMode: true }],
+				output: `${typeDeclarations}
+setScaleType(Enum.ScaleType.Slice);
+setScaleType(Enum.ScaleType.Tile);
+setScaleType(Enum.ScaleType.Crop);`,
+			},
+			{
+				code: `${typeDeclarations}
+interface PairProps {
+    First?: CastsToEnum<Enum.ScaleType>;
+    Second?: CastsToEnum<Enum.ScaleType>;
+}
+const props: PairProps = { First: "Slice", Second: "Tile" };`,
+				errors: [{ messageId: "preferEnumItem" }, { messageId: "preferEnumItem" }],
+				options: [{ performanceMode: true }],
+				output: `${typeDeclarations}
+interface PairProps {
+    First?: CastsToEnum<Enum.ScaleType>;
+    Second?: CastsToEnum<Enum.ScaleType>;
+}
+const props: PairProps = { First: Enum.ScaleType.Slice, Second: Enum.ScaleType.Tile };`,
+			},
 			// Number literal in function call
 			{
 				code: `${typeDeclarations}
@@ -162,6 +273,14 @@ setScaleType(0);`,
 				errors: [{ messageId: "preferEnumItem" }],
 				output: `${typeDeclarations}
 setScaleType(Enum.ScaleType.Stretch);`,
+			},
+			// Constructor argument
+			{
+				code: `${typeDeclarations}
+new ScaleTypeConsumer("Tile");`,
+				errors: [{ messageId: "preferEnumItem" }],
+				output: `${typeDeclarations}
+new ScaleTypeConsumer(Enum.ScaleType.Tile);`,
 			},
 			// Variable assignment with string
 			{
@@ -188,6 +307,22 @@ const props: ImageProps = { ScaleType: 1 };`,
 				output: `${typeDeclarations}
 const props: ImageProps = { ScaleType: Enum.ScaleType.Slice.Value };`,
 			},
+			{
+				code: `${typeDeclarations}
+setScaleType("Crop");`,
+				errors: [{ messageId: "preferEnumItem" }],
+				options: [{ performanceMode: false }],
+				output: `${typeDeclarations}
+setScaleType(Enum.ScaleType.Crop);`,
+			},
+			{
+				code: `${typeDeclarations}
+setScaleType(2);`,
+				errors: [{ messageId: "preferEnumItem" }],
+				options: [{ fixNumericToValue: true, performanceMode: false }],
+				output: `${typeDeclarations}
+setScaleType(Enum.ScaleType.Tile.Value);`,
+			},
 		],
 		valid: [
 			// Correct enum usage
@@ -211,6 +346,24 @@ const props: ImageProps = { ScaleType: 999 };`,
 				options: [{ performanceMode: true }],
 			},
 			{
+				code: `
+import type { EnumItem } from "./types";
+
+const props: ImageProps = { ScaleType: "Nope" };
+`,
+				filename: nodePath.join(fixturesDir, "performance-index-skip-string.ts"),
+				options: [{ performanceMode: true }],
+			},
+			{
+				code: `
+import type { EnumItem } from "./types";
+
+const props: ImageProps = { ScaleType: 999 };
+`,
+				filename: nodePath.join(fixturesDir, "performance-index-skip-number.ts"),
+				options: [{ performanceMode: true }],
+			},
+			{
 				code: "const x: number = 999;",
 				options: [{ performanceMode: true }],
 			},
@@ -218,12 +371,25 @@ const props: ImageProps = { ScaleType: 999 };`,
 			{ code: `const name: string = "Slice";` },
 			// Non-enum number
 			{ code: "const count: number = 1;" },
+			{
+				code: `${typeDeclarations}
+const props = { ScaleType: "Slice" };`,
+			},
 			// Boolean literal (not string or number)
 			{ code: "const flag: boolean = true;" },
 			// Non-literal enum type (Name/Value are string/number, not specific literals)
 			{
 				code: `${typeDeclarations}
 setNonLiteral("anything");`,
+			},
+			{
+				code: `${typeDeclarations}
+setCustomScaleType("Slice");`,
+			},
+			{
+				code: `${typeDeclarations}
+setMissingName("Item");
+setMissingValue(1);`,
 			},
 			// Regression: union contextual type should still resolve enum lookup safely
 			{
@@ -238,10 +404,31 @@ const props: ImageProps = { ScaleType: Enum.ScaleType.Slice.Value };`,
 			},
 			// Variable without type annotation (exercises VariableDeclarator skip path)
 			{ code: `const x = "Slice";` },
+			{ code: `type Label = "Slice";` },
+			{ code: `let x: string;` },
+			{ code: `const { x }: { x: string } = { x: "Slice" };` },
 			// Variable with non-Enum type annotation
 			{ code: `const x: string = "Slice";` },
 			{
 				code: `const x: string = "Slice";`,
+				options: [{ performanceMode: true }],
+			},
+			{
+				code: `${typeDeclarations}
+declare function someFunction(value: Enum.ScaleType | string): void;
+someFunction("InvalidName");`,
+				options: [{ performanceMode: false }],
+			},
+			{
+				code: `${typeDeclarations}
+declare function someFunction(value: Enum.ScaleType | string): void;
+someFunction("InvalidName");
+someFunction("InvalidName");`,
+				options: [{ performanceMode: true }],
+			},
+			{
+				code: `const first: string = "Slice";
+const second: string = "Slice";`,
 				options: [{ performanceMode: true }],
 			},
 		],

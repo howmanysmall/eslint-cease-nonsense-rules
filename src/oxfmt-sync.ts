@@ -65,30 +65,7 @@ function getWorker(): OxfmtWorkerState {
 	return workerState;
 }
 
-export function formatSync(fileName: string, sourceText: string, options: FormatConfiguration = {}): string {
-	const { controlBuffer, responsePort } = getWorker();
-	const control = new Int32Array(controlBuffer);
-
-	Atomics.store(control, 0, 0);
-
-	const request: FormatRequest = {
-		controlBuffer,
-		fileName,
-		options,
-		sourceText,
-	};
-
-	// oxlint-disable-next-line unicorn/require-post-message-target-origin -- ???
-	responsePort.postMessage(request);
-
-	const waitResult = Atomics.wait(control, 0, 0, FORMAT_TIMEOUT);
-	if (waitResult === "timed-out") {
-		const error = new Error(`Oxfmt timed out after ${FORMAT_TIMEOUT}ms`);
-		Error.captureStackTrace(error, formatSync);
-		throw error;
-	}
-
-	const received = receiveMessageOnPort(responsePort);
+export function __testingReadFormatResponse(received: { readonly message: unknown } | undefined): string {
 	if (received === undefined) {
 		const error = new Error("No response received from oxfmt worker");
 		Error.captureStackTrace(error, formatSync);
@@ -113,6 +90,36 @@ export function formatSync(fileName: string, sourceText: string, options: Format
 	}
 
 	return response.code;
+}
+
+export function __testingAssertFormatWaitCompleted(waitResult: "ok" | "not-equal" | "timed-out"): void {
+	if (waitResult !== "timed-out") return;
+
+	const error = new Error(`Oxfmt timed out after ${FORMAT_TIMEOUT}ms`);
+	Error.captureStackTrace(error, formatSync);
+	throw error;
+}
+
+export function formatSync(fileName: string, sourceText: string, options: FormatConfiguration = {}): string {
+	const { controlBuffer, responsePort } = getWorker();
+	const control = new Int32Array(controlBuffer);
+
+	Atomics.store(control, 0, 0);
+
+	const request: FormatRequest = {
+		controlBuffer,
+		fileName,
+		options,
+		sourceText,
+	};
+
+	// oxlint-disable-next-line unicorn/require-post-message-target-origin -- ???
+	responsePort.postMessage(request);
+
+	const waitResult = Atomics.wait(control, 0, 0, FORMAT_TIMEOUT);
+	__testingAssertFormatWaitCompleted(waitResult);
+
+	return __testingReadFormatResponse(receiveMessageOnPort(responsePort));
 }
 
 export function terminateWorker(): void {

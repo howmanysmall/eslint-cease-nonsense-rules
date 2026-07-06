@@ -18,8 +18,8 @@ const noUnderscoreReactProperties = createRule<[], MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description: "Ban React property names that begin with an underscore in JSX.",
 		},

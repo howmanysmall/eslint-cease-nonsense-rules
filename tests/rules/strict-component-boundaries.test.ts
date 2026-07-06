@@ -78,6 +78,10 @@ describe("strict-component-boundaries", () => {
 				code: "import {getDisplayName} from '@shopify/react-utilities/components';",
 				filename: nodePath.join(BASIC_APP, "sections", "MySection", "MySection.ts"),
 			},
+			// Relative import without a physical filename cannot be resolved safely
+			{
+				code: "import someThing from './components/Foo';",
+			},
 			// No PascalCase in path
 			{
 				code: "import someUtility from './utilities/someUtility';",

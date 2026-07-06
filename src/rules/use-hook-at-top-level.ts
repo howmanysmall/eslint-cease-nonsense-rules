@@ -59,19 +59,17 @@ function isComponentOrHook(
 
 	if (node.type === AST_NODE_TYPES.FunctionExpression || node.type === AST_NODE_TYPES.ArrowFunctionExpression) {
 		const { parent } = node;
-		if (parent === undefined) return false;
-
-		if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.id.type === AST_NODE_TYPES.Identifier) {
+		if (parent?.type === AST_NODE_TYPES.VariableDeclarator && parent.id.type === AST_NODE_TYPES.Identifier) {
 			const { name } = parent.id;
 			return isComponent(name) || isReactHook(name);
 		}
 
-		if (parent.type === AST_NODE_TYPES.Property && parent.key.type === AST_NODE_TYPES.Identifier) {
+		if (parent?.type === AST_NODE_TYPES.Property && parent.key.type === AST_NODE_TYPES.Identifier) {
 			const { name } = parent.key;
 			return isComponent(name) || isReactHook(name);
 		}
 
-		if (parent.type === AST_NODE_TYPES.MethodDefinition && parent.key.type === AST_NODE_TYPES.Identifier) {
+		if (parent?.type === AST_NODE_TYPES.MethodDefinition && parent.key.type === AST_NODE_TYPES.Identifier) {
 			const { name } = parent.key;
 			return isComponent(name) || isReactHook(name);
 		}
@@ -80,16 +78,19 @@ function isComponentOrHook(
 	return false;
 }
 
-function isHookCall(node: TSESTree.CallExpression): boolean {
+function getHookName(node: TSESTree.CallExpression): string | undefined {
 	const { callee } = node;
 
-	if (callee.type === AST_NODE_TYPES.Identifier) return isReactHook(callee.name);
-
-	if (callee.type === AST_NODE_TYPES.MemberExpression && callee.property.type === AST_NODE_TYPES.Identifier) {
-		return isReactHook(callee.property.name);
+	if (callee.type === AST_NODE_TYPES.Identifier) {
+		return isReactHook(callee.name) ? callee.name : undefined;
 	}
 
-	return false;
+	if (callee.type === AST_NODE_TYPES.MemberExpression && callee.property.type === AST_NODE_TYPES.Identifier) {
+		const { name } = callee.property;
+		return isReactHook(name) ? name : undefined;
+	}
+
+	return undefined;
 }
 
 const FUNCTION_BOUNDARIES = new Set<AST_NODE_TYPES>([
@@ -138,18 +139,10 @@ type MessageIds =
 	| "nestedFunction"
 	| "recursiveHookCall"
 	| "tryBlockHook";
-type Options = [UseHookAtTopLevelOptions?];
-
-function getHookName(callee: TSESTree.Expression): string | undefined {
-	if (callee.type === AST_NODE_TYPES.Identifier) return callee.name;
-	return callee.type === AST_NODE_TYPES.MemberExpression && callee.property.type === AST_NODE_TYPES.Identifier
-		? callee.property.name
-		: undefined;
-}
+type Options = [UseHookAtTopLevelOptions];
 
 const useHookAtTopLevel = createRule<Options, MessageIds>({
-	create(context, [rawOptions]) {
-		const configuration = rawOptions ?? {};
+	create(context, [configuration]) {
 		const contextStack = new Array<ControlFlowContext>();
 		let currentFunctionName: string | undefined;
 
@@ -249,11 +242,8 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 			"ArrowFunctionExpression:exit": handleFunctionExit,
 
 			CallExpression(node): void {
-				if (!isHookCall(node)) return;
-
-				const { callee } = node;
-				const hookName = getHookName(callee);
-				if (hookName === undefined || hookName.length === 0 || shouldIgnoreHook(hookName, node)) return;
+				const hookName = getHookName(node);
+				if (hookName === undefined || shouldIgnoreHook(hookName, node)) return;
 
 				const current = getCurrentContext();
 				if (!current) return;
@@ -402,8 +392,8 @@ const useHookAtTopLevel = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [{}],
 	meta: {
+		defaultOptions: [{}],
 		docs: {
 			description:
 				"Enforce that React hooks are only called at the top level of components or custom hooks, never conditionally or in nested functions",

@@ -23,6 +23,27 @@ export function unwrapExpression(expression: TSESTree.Expression): TSESTree.Expr
 	}
 }
 
+export function unwrapNode(node: TSESTree.Node): TSESTree.Node {
+	let current = node;
+
+	while (true) {
+		switch (current.type) {
+			case AST_NODE_TYPES.TSAsExpression:
+			case AST_NODE_TYPES.TSInstantiationExpression:
+			case AST_NODE_TYPES.TSNonNullExpression:
+			case AST_NODE_TYPES.TSSatisfiesExpression:
+			case AST_NODE_TYPES.TSTypeAssertion:
+			case AST_NODE_TYPES.ChainExpression: {
+				current = current.expression;
+				continue;
+			}
+
+			default:
+				return current;
+		}
+	}
+}
+
 export function getMemberPropertyName(memberExpression: TSESTree.MemberExpression): string | undefined {
 	if (!memberExpression.computed) {
 		if (memberExpression.property.type === AST_NODE_TYPES.Identifier) return memberExpression.property.name;
@@ -31,6 +52,11 @@ export function getMemberPropertyName(memberExpression: TSESTree.MemberExpressio
 
 	if (memberExpression.property.type !== AST_NODE_TYPES.Literal) return undefined;
 	return typeof memberExpression.property.value === "string" ? memberExpression.property.value : undefined;
+}
+
+export function getImportSpecifierName(specifier: TSESTree.ImportSpecifier): string {
+	if (specifier.imported.type === AST_NODE_TYPES.Identifier) return specifier.imported.name;
+	return specifier.imported.value;
 }
 
 export function hasShadowedBinding(

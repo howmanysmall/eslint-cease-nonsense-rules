@@ -52,16 +52,16 @@ const arrayTypeGeneric = createRule<Options, MessageIds>({
 				report(node);
 			},
 			TSTypeOperator(node): void {
-				if (node.operator !== "readonly") return;
-				if (node.typeAnnotation === undefined) return;
-				if (node.typeAnnotation.type !== AST_NODE_TYPES.TSArrayType) return;
+				if (node.operator !== "readonly" || node.typeAnnotation?.type !== AST_NODE_TYPES.TSArrayType) {
+					return;
+				}
 				if (!isTopLevelArrayType(node)) return;
 				report(node);
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description: "Disallow bracket array type syntax and require Array<T> / ReadonlyArray<T>.",
 		},

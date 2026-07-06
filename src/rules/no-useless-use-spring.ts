@@ -1,5 +1,13 @@
+import { unwrapExpression } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
-import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
+import { classifyDependencyArray, DependencyArrayKind } from "$utilities/dependency-array-utilities";
+import {
+	findVariableInScope,
+	getConstInitializer,
+	isImportVariable,
+	isModuleLevelScope,
+	isStaticIdentifierReference,
+} from "$utilities/static-expression-utilities";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
@@ -55,106 +63,26 @@ const DEFAULT_OPTION_VALUES: Required<NoUselessUseSpringOptions> = {
 
 const STATIC_UNARY_OPERATORS = new Set(["-", "+", "!", "~", "typeof", "void", "delete"]);
 
-enum DepsKind {
-	MissingOrOmitted = 0,
-	EmptyArray = 1,
-	StaticArray = 2,
-	DynamicOrUnknown = 3,
-}
-
-function unwrapExpression(expression: TSESTree.Expression): TSESTree.Expression {
-	let current = expression;
-	while (true) {
-		if (current.type === AST_NODE_TYPES.TSAsExpression) {
-			current = current.expression;
-			continue;
-		}
-		if (current.type === AST_NODE_TYPES.TSTypeAssertion) {
-			current = current.expression;
-			continue;
-		}
-		if (current.type === AST_NODE_TYPES.TSNonNullExpression) {
-			current = current.expression;
-			continue;
-		}
-		if (current.type === AST_NODE_TYPES.TSSatisfiesExpression) {
-			current = current.expression;
-			continue;
-		}
-		if (current.type === AST_NODE_TYPES.TSInstantiationExpression) {
-			current = current.expression;
-			continue;
-		}
-		if (current.type === AST_NODE_TYPES.ChainExpression) {
-			current = current.expression;
-			continue;
-		}
-
-		return current;
-	}
-}
-
-function findVariable(
-	context: TSESLint.RuleContext<MessageIds, Options>,
-	identifier: TSESTree.Identifier,
-): TSESLint.Scope.Variable | undefined {
-	let scope = context.sourceCode.getScope(identifier) as TSESLint.Scope.Scope | undefined;
-	while (scope) {
-		const variable = scope.set.get(identifier.name);
-		if (variable) return variable;
-		scope = scope.upper ?? undefined;
-	}
-
-	return undefined;
-}
-
-function isModuleLevelScope(scope: TSESLint.Scope.Scope): boolean {
-	return scope.type === ScopeType.module || scope.type === ScopeType.global;
-}
-
-function isImport(variable: TSESLint.Scope.Variable): boolean {
-	for (const definition of variable.defs) if (definition.type === DefinitionType.ImportBinding) return true;
-	return false;
-}
-
-function getConstInitializer(definition: TSESLint.Scope.Definition | undefined): TSESTree.Expression | undefined {
-	if (definition === undefined || definition.type !== DefinitionType.Variable) return undefined;
-	const declarator = definition.node;
-
-	if (declarator.type !== AST_NODE_TYPES.VariableDeclarator) return undefined;
-	const declaration = definition.parent;
-
-	if (declaration?.type !== AST_NODE_TYPES.VariableDeclaration) return undefined;
-	if (declaration.kind !== "const") return undefined;
-	return declarator.init ?? undefined;
-}
-
 function isStaticIdentifier(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	identifier: TSESTree.Identifier,
 	seen: Set<TSESTree.Node>,
 	options: NormalizedOptions,
 ): boolean {
-	const variable = findVariable(context, identifier);
-	if (variable === undefined) return options.staticGlobalFactories.has(identifier.name);
-	if (!isModuleLevelScope(variable.scope)) return false;
-	if (isImport(variable)) return true;
-
-	for (const definition of variable.defs) {
-		const initializer = getConstInitializer(definition);
-		if (initializer === undefined) continue;
-		if (isStaticExpression(context, initializer, seen, options)) return true;
-	}
-
-	return false;
+	return isStaticIdentifierReference({
+		identifier,
+		isStaticExpression: (expression) => isStaticExpression(context, expression, seen, options),
+		seen,
+		sourceCode: context.sourceCode,
+		staticGlobalFactories: options.staticGlobalFactories,
+	});
 }
 
 function isStaticMemberProperty(
-	property: TSESTree.Expression | TSESTree.PrivateIdentifier,
+	property: TSESTree.Expression,
 	seen: Set<TSESTree.Node>,
 	options: NormalizedOptions,
 ): boolean {
-	if (property.type === AST_NODE_TYPES.PrivateIdentifier) return false;
 	if (property.type === AST_NODE_TYPES.Identifier) return true;
 	return isStaticExpressionInner(property, seen, options);
 }
@@ -187,8 +115,7 @@ function isStaticObjectExpression(
 		if (property.kind !== "init") return false;
 		if (property.computed && !isStaticExpressionInner(property.key, seen, options)) return false;
 		const { value } = property;
-		if (!isNonPatternExpression(value)) return false;
-		if (!isStaticExpression(context, value, seen, options)) return false;
+		if (!(isNonPatternExpression(value) && isStaticExpression(context, value, seen, options))) return false;
 	}
 
 	return true;
@@ -218,12 +145,15 @@ function isNonPrivateExpression(value: TSESTree.Expression | TSESTree.PrivateIde
 	return value.type !== AST_NODE_TYPES.PrivateIdentifier;
 }
 
+function isObjectProperty(property: TSESTree.ObjectExpression["properties"][number]): property is TSESTree.Property {
+	return property.type === AST_NODE_TYPES.Property;
+}
+
 function objectHasFromAndTo(objectExpr: TSESTree.ObjectExpression): boolean {
 	let hasFrom = false;
 	let hasTo = false;
 
-	for (const property of objectExpr.properties) {
-		if (property.type !== AST_NODE_TYPES.Property) continue;
+	for (const property of objectExpr.properties.filter(isObjectProperty)) {
 		if (property.computed) continue;
 		if (property.key.type !== AST_NODE_TYPES.Identifier) continue;
 
@@ -235,58 +165,47 @@ function objectHasFromAndTo(objectExpr: TSESTree.ObjectExpression): boolean {
 	return false;
 }
 
-function hasFromAndToProperties(
+function getModuleLevelConstObjectInitializer(
 	context: TSESLint.RuleContext<MessageIds, Options>,
-	expression: TSESTree.Expression,
-): boolean {
-	const unwrapped = unwrapExpression(expression);
+	identifier: TSESTree.Identifier,
+): ReadonlyArray<TSESTree.ObjectExpression> {
+	const variable = findVariableInScope(context.sourceCode, identifier);
+	if (variable === undefined) return [];
+	if (!isModuleLevelScope(variable.scope) || isImportVariable(variable)) return [];
 
-	if (unwrapped.type === AST_NODE_TYPES.ObjectExpression) return objectHasFromAndTo(unwrapped);
+	const initializers = new Array<TSESTree.ObjectExpression>();
+	for (const definition of variable.defs) {
+		const initializer = getConstInitializer(definition);
+		if (initializer === undefined) continue;
 
-	if (unwrapped.type === AST_NODE_TYPES.Identifier) {
-		const variable = findVariable(context, unwrapped);
-		if (variable === undefined) return false;
-		if (!isModuleLevelScope(variable.scope) || isImport(variable)) return false;
-
-		for (const definition of variable.defs) {
-			const initializer = getConstInitializer(definition);
-			if (initializer === undefined) continue;
-			const normalizedInitializer = unwrapExpression(initializer);
-			if (normalizedInitializer.type !== AST_NODE_TYPES.ObjectExpression) continue;
-			if (objectHasFromAndTo(normalizedInitializer)) return true;
-		}
+		const normalizedInitializer = unwrapExpression(initializer);
+		if (normalizedInitializer.type === AST_NODE_TYPES.ObjectExpression) initializers.push(normalizedInitializer);
 	}
 
-	return false;
+	return initializers;
 }
 
-function isStaticObjectLikeConfig(
+function getStaticObjectLikeConfigInitializers(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	expression: TSESTree.Expression,
 	seen: Set<TSESTree.Node>,
 	options: NormalizedOptions,
-): boolean {
+): ReadonlyArray<TSESTree.ObjectExpression> {
 	const unwrapped = unwrapExpression(expression);
 	if (unwrapped.type === AST_NODE_TYPES.ObjectExpression) {
-		return isStaticObjectExpression(context, unwrapped, seen, options);
+		return isStaticObjectExpression(context, unwrapped, seen, options) ? [unwrapped] : [];
 	}
 
-	if (unwrapped.type === AST_NODE_TYPES.Identifier) {
-		const variable = findVariable(context, unwrapped);
-		if (variable === undefined) return false;
-		if (!isModuleLevelScope(variable.scope)) return false;
-		if (isImport(variable)) return false;
+	if (unwrapped.type !== AST_NODE_TYPES.Identifier) return [];
 
-		for (const definition of variable.defs) {
-			const initializer = getConstInitializer(definition);
-			if (initializer === undefined) continue;
-			const normalizedInitializer = unwrapExpression(initializer);
-			if (normalizedInitializer.type !== AST_NODE_TYPES.ObjectExpression) continue;
-			if (isStaticObjectExpression(context, normalizedInitializer, seen, options)) return true;
+	const staticInitializers = new Array<TSESTree.ObjectExpression>();
+	for (const normalizedInitializer of getModuleLevelConstObjectInitializer(context, unwrapped)) {
+		if (isStaticObjectExpression(context, normalizedInitializer, seen, options)) {
+			staticInitializers.push(normalizedInitializer);
 		}
 	}
 
-	return false;
+	return staticInitializers;
 }
 
 function isStaticArrayExpression(
@@ -318,8 +237,9 @@ function checkStaticBinaryOrLogical(
 	seen: Set<TSESTree.Node>,
 	options: NormalizedOptions,
 ): boolean {
-	if (!(isNonPrivateExpression(expression.left) && isNonPrivateExpression(expression.right))) return false;
 	return (
+		isNonPrivateExpression(expression.left) &&
+		isNonPrivateExpression(expression.right) &&
 		isStaticExpression(context, expression.left, seen, options) &&
 		isStaticExpression(context, expression.right, seen, options)
 	);
@@ -327,14 +247,14 @@ function checkStaticBinaryOrLogical(
 
 function checkStaticCallOrNewExpression(
 	context: TSESLint.RuleContext<MessageIds, Options> | undefined,
-	parameters: ReadonlyArray<TSESTree.CallExpressionArgument> | undefined,
 	callee: TSESTree.Expression,
 	seen: Set<TSESTree.Node>,
 	options: NormalizedOptions,
+	parameters: ReadonlyArray<TSESTree.CallExpressionArgument> = [],
 ): boolean {
 	if (context === undefined) return false;
 	if (!isStaticCallCallee(context, callee, seen, options)) return false;
-	return (parameters ?? []).every(
+	return parameters.every(
 		(argument) =>
 			argument.type !== AST_NODE_TYPES.SpreadElement && isStaticExpression(context, argument, seen, options),
 	);
@@ -392,12 +312,9 @@ function isStaticExpression(
 			);
 		}
 
-		case AST_NODE_TYPES.ChainExpression:
-			return isStaticExpression(context, unwrapped.expression, seen, options);
-
 		case AST_NODE_TYPES.CallExpression:
 		case AST_NODE_TYPES.NewExpression:
-			return checkStaticCallOrNewExpression(context, unwrapped.arguments, unwrapped.callee, seen, options);
+			return checkStaticCallOrNewExpression(context, unwrapped.callee, seen, options, unwrapped.arguments);
 
 		case AST_NODE_TYPES.SequenceExpression: {
 			return (
@@ -414,27 +331,9 @@ function isStaticExpression(
 	}
 }
 
-function classifyDependencies(
-	context: TSESLint.RuleContext<MessageIds, Options>,
-	argument: TSESTree.CallExpressionArgument | undefined,
-	seen: Set<TSESTree.Node>,
-	options: NormalizedOptions,
-): DepsKind {
-	if (argument === undefined) return DepsKind.MissingOrOmitted;
-	if (argument.type === AST_NODE_TYPES.SpreadElement) return DepsKind.DynamicOrUnknown;
-
-	const expr = unwrapExpression(argument);
-	if (expr.type !== AST_NODE_TYPES.ArrayExpression) return DepsKind.DynamicOrUnknown;
-
-	if (expr.elements.length === 0) return DepsKind.EmptyArray;
-	if (isStaticArrayExpression(context, expr, seen, options)) return DepsKind.StaticArray;
-
-	return DepsKind.DynamicOrUnknown;
-}
-
-function depsAreNonUpdating(kind: DepsKind, options: NormalizedOptions): boolean {
-	if (kind === DepsKind.MissingOrOmitted || kind === DepsKind.StaticArray) return true;
-	if (kind === DepsKind.EmptyArray) return options.treatEmptyDepsAsViolation;
+function depsAreNonUpdating(kind: DependencyArrayKind, options: NormalizedOptions): boolean {
+	if (kind === DependencyArrayKind.MissingOrOmitted || kind === DependencyArrayKind.StaticArray) return true;
+	if (kind === DependencyArrayKind.EmptyArray) return options.treatEmptyDepsAsViolation;
 	return false;
 }
 
@@ -451,34 +350,39 @@ function isSpringHookCall(node: TSESTree.CallExpression, options: NormalizedOpti
 	return false;
 }
 
-const noUselessUseSpring = createRule({
+const noUselessUseSpring = createRule<Options, MessageIds>({
 	create(context) {
 		const [rawOptions] = context.options;
+		const options = { ...DEFAULT_OPTION_VALUES, ...rawOptions };
 		const normalized: NormalizedOptions = {
-			...DEFAULT_OPTION_VALUES,
-			...rawOptions,
-			springHooks: new Set(rawOptions?.springHooks ?? DEFAULT_OPTION_VALUES.springHooks),
-			staticGlobalFactories: new Set(
-				rawOptions?.staticGlobalFactories ?? DEFAULT_OPTION_VALUES.staticGlobalFactories,
-			),
+			...options,
+			springHooks: new Set(options.springHooks),
+			staticGlobalFactories: new Set(options.staticGlobalFactories),
 		};
 
 		return {
 			CallExpression(node): void {
 				if (!isSpringHookCall(node, normalized)) return;
-				if (node.arguments.length === 0) return;
 
 				const [configArgument] = node.arguments;
-				if (!configArgument) return;
+				if (configArgument === undefined) return;
 				if (configArgument.type === AST_NODE_TYPES.SpreadElement) return;
 
 				const seen = new Set<TSESTree.Node>();
-				if (!isStaticObjectLikeConfig(context, configArgument, seen, normalized)) return;
+				const staticConfigObjects = getStaticObjectLikeConfigInitializers(
+					context,
+					configArgument,
+					seen,
+					normalized,
+				);
+				if (staticConfigObjects.length === 0) return;
 
 				// Mount animations with both `from` and `to` are valid - they animate once on mount
-				if (hasFromAndToProperties(context, configArgument)) return;
+				if (staticConfigObjects.some(objectHasFromAndTo)) return;
 
-				const depsKind = classifyDependencies(context, node.arguments[1], seen, normalized);
+				const depsKind = classifyDependencyArray(node.arguments[1], (arrayExpression) =>
+					isStaticArrayExpression(context, arrayExpression, seen, normalized),
+				);
 				if (!depsAreNonUpdating(depsKind, normalized)) return;
 
 				context.report({
@@ -488,8 +392,8 @@ const noUselessUseSpring = createRule({
 			},
 		};
 	},
-	defaultOptions: [DEFAULT_OPTION_VALUES],
 	meta: {
+		defaultOptions: [DEFAULT_OPTION_VALUES],
 		docs: {
 			description: "Disallow useSpring hooks whose config and dependencies are entirely static",
 		},

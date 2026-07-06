@@ -1,6 +1,6 @@
 import { createRule } from "$utilities/create-rule";
 import { ScopeType } from "@typescript-eslint/scope-manager";
-import { AST_NODE_TYPES, AST_TOKEN_TYPES } from "@typescript-eslint/utils";
+import { AST_TOKEN_TYPES } from "@typescript-eslint/utils";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
@@ -12,28 +12,21 @@ export interface NoUnusedImportsOptions {
 
 type Options = [NoUnusedImportsOptions?];
 
-const JSDOC_PATTERN =
-	/@(?:link|linkcode|linkplain|see)\s+\{?\w+\b\}?|\{@(?:link|linkcode|linkplain|see)\s+\w+\b\}|[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\s[^}]*\b\w+\b/u;
+const JSDOC_IDENTIFIER_PATTERNS = [
+	/@(?:link|linkcode|linkplain|see)\s+\{?(?<identifier>\w*)\}?/gu,
+	/\{@(?:link|linkcode|linkplain|see)\s+(?<identifier>\w+)\}/gu,
+	/[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\s[^}]*\b(?<identifier>\w+)\b/gu,
+];
 
-const JSDOC_IDENTIFIER_PATTERN =
-	/@(?:link|linkcode|linkplain|see)\s+\{?(\w+)\b\}?|\{@(?:link|linkcode|linkplain|see)\s+(\w+)\b\}|[@{](?:type|typedef|param|returns?|template|augments|extends|implements)\s[^}]*\b(\w+)\b/gu;
+type AnyImportSpecifier = TSESTree.ImportDeclaration["specifiers"][number];
 
-type AnyImportSpecifier =
-	| TSESTree.ImportDefaultSpecifier
-	| TSESTree.ImportNamespaceSpecifier
-	| TSESTree.ImportSpecifier;
-
-function isImportSpecifier(node: TSESTree.Node): node is AnyImportSpecifier {
-	return (
-		node.type === AST_NODE_TYPES.ImportDefaultSpecifier ||
-		node.type === AST_NODE_TYPES.ImportNamespaceSpecifier ||
-		node.type === AST_NODE_TYPES.ImportSpecifier
-	);
-}
-
-function getImportIdentifierName(specifier: AnyImportSpecifier): string | undefined {
-	if (specifier.type === AST_NODE_TYPES.ImportSpecifier) return specifier.local.name;
-	return specifier.local.name;
+function createFallbackToken(node: AnyImportSpecifier): TSESTree.Token {
+	return {
+		loc: node.loc,
+		range: node.range,
+		type: AST_TOKEN_TYPES.Punctuator,
+		value: ",",
+	};
 }
 
 function collectJSDocumentIdentifiers(sourceCode: TSESLint.SourceCode): Set<string> {
@@ -44,12 +37,13 @@ function collectJSDocumentIdentifiers(sourceCode: TSESLint.SourceCode): Set<stri
 		if (comment.type !== AST_TOKEN_TYPES.Block) continue;
 
 		const { value } = comment;
-		if (!JSDOC_PATTERN.test(value)) continue;
 
-		JSDOC_IDENTIFIER_PATTERN.lastIndex = 0;
-		for (const match of value.matchAll(JSDOC_IDENTIFIER_PATTERN)) {
-			const identifier = match[1] ?? match[2] ?? match[3];
-			if (identifier !== undefined && identifier.length > 0) identifiers.add(identifier);
+		for (const pattern of JSDOC_IDENTIFIER_PATTERNS) {
+			pattern.lastIndex = 0;
+			for (const match of value.matchAll(pattern)) {
+				const identifier = match.groups?.identifier;
+				if (identifier !== undefined && identifier.length > 0) identifiers.add(identifier);
+			}
 		}
 	}
 
@@ -88,40 +82,43 @@ const noUnusedImports = createRule<Options, MessageIds>({
 					] as ReadonlyArray<TSESLint.RuleFix>;
 				}
 
-				if (specifierNode !== parent.specifiers.at(-1)) {
-					const comma = sourceCode.getTokenAfter(specifierNode, {
-						filter: (token) => token.value === ",",
+				const specifierIndex = parent.specifiers.indexOf(specifierNode);
+				const nextSpecifier = parent.specifiers[specifierIndex + 1];
+				if (nextSpecifier !== undefined) {
+					const fallbackToken = createFallbackToken(specifierNode);
+					const [tokenBeforeNextSpecifier = fallbackToken] = sourceCode.getTokensBefore(nextSpecifier, {
+						count: 1,
 					});
-					const previousNode = sourceCode.getTokenBefore(specifierNode);
+					const endOfRemoveRange =
+						tokenBeforeNextSpecifier.value === ","
+							? nextSpecifier.range[0]
+							: tokenBeforeNextSpecifier.range[0];
 
-					if (comma && previousNode) {
-						return [
-							fixer.removeRange([previousNode.range[1], specifierNode.range[0]]),
-							fixer.remove(specifierNode),
-							fixer.remove(comma),
-						];
-					}
+					return fixer.removeRange([specifierNode.range[0], endOfRemoveRange]);
 				}
 
-				const previousToken = sourceCode.getTokenBefore(specifierNode, {
-					filter: (token) => token.value === ",",
-				});
+				const fallbackToken = createFallbackToken(specifierNode);
+				const [groupStartToken = fallbackToken, tokenBeforeSpecifier = fallbackToken] =
+					sourceCode.getTokensBefore(specifierNode, { count: 2 });
+				const [tokenAfterSpecifier = fallbackToken] = sourceCode.getTokensAfter(specifierNode, { count: 1 });
+				const startsNamedImportGroup = tokenBeforeSpecifier.value === "{";
+				const endsNamedImportGroup = tokenAfterSpecifier.value === "}";
+				const removalStartToken = startsNamedImportGroup ? groupStartToken : tokenBeforeSpecifier;
+				const [startOfRemoveRange] = removalStartToken.range;
+				const endOfRemoveRange =
+					startsNamedImportGroup && endsNamedImportGroup
+						? tokenAfterSpecifier.range[1]
+						: specifierNode.range[1];
 
-				if (previousToken) return fixer.removeRange([previousToken.range[0], specifierNode.range[1]]);
-				return fixer.remove(specifierNode);
+				return fixer.removeRange([startOfRemoveRange, endOfRemoveRange]);
 			};
 		}
 
 		return {
 			ImportDeclaration(node): void {
 				for (const specifier of node.specifiers) {
-					if (!isImportSpecifier(specifier)) continue;
-
-					const identifierName = getImportIdentifierName(specifier);
-					if (identifierName === undefined) continue;
-
 					imports.push({
-						identifierName,
+						identifierName: specifier.local.name,
 						parent: node,
 						specifier,
 					});
@@ -130,10 +127,14 @@ const noUnusedImports = createRule<Options, MessageIds>({
 
 			"Program:exit"(): void {
 				const programScope = sourceCode.getScope(sourceCode.ast);
-				const moduleScope =
-					programScope.type === ScopeType.module
-						? programScope
-						: (programScope.childScopes.find((scope) => scope.type === ScopeType.module) ?? programScope);
+				let moduleScope = programScope;
+
+				for (const scope of [programScope, ...programScope.childScopes]) {
+					if (scope.type !== ScopeType.module) continue;
+
+					moduleScope = scope;
+					break;
+				}
 
 				for (const { identifierName, parent, specifier: specifierNode } of imports) {
 					const variable = moduleScope.set.get(identifierName);
@@ -151,8 +152,8 @@ const noUnusedImports = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [{ checkJSDoc: true }],
 	meta: {
+		defaultOptions: [{ checkJSDoc: true }],
 		docs: {
 			description: "Disallow unused imports",
 		},

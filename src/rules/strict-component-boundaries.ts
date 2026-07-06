@@ -52,11 +52,9 @@ const strictComponentBoundaries = createRule<[Options], "noReachingIntoComponent
 		return {
 			ImportDeclaration(node: TSESTree.ImportDeclaration): void {
 				const importSource = node.source.value;
-				if (typeof importSource !== "string" || !importSource.startsWith(".")) return;
+				const { filename } = context;
+				if (typeof importSource !== "string" || !importSource.startsWith(".") || filename === "") return;
 				if (allowPatterns.some((regexp) => regexp.test(importSource))) return;
-
-				const filename = context.filename ?? "";
-				if (filename === "") return;
 
 				const resolved = resolveRelativeImport(importSource, filename);
 				if (!resolved.found) return;
@@ -95,8 +93,8 @@ const strictComponentBoundaries = createRule<[Options], "noReachingIntoComponent
 			},
 		};
 	},
-	defaultOptions: [{}],
 	meta: {
+		defaultOptions: [{}],
 		docs: {
 			description: "Prevent module imports between components.",
 		},

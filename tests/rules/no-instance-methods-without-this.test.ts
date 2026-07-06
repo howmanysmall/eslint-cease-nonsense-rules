@@ -111,6 +111,25 @@ class MyClass {
 `,
 				errors: [{ messageId: "noInstanceMethodWithoutThis" }, { messageId: "noInstanceMethodWithoutThis" }],
 			},
+			// Declared method without a body
+			{
+				code: `
+declare class MyClass {
+    helper(): void;
+}
+`,
+				errors: [{ messageId: "noInstanceMethodWithoutThis" }],
+			},
+			{
+				code: `
+class MyClass {
+    ["helper"](): void {
+        console.log("helper");
+    }
+}
+`,
+				errors: [{ data: { methodName: "unknown" }, messageId: "noInstanceMethodWithoutThis" }],
+			},
 		],
 		valid: [
 			// Static methods are skipped
@@ -150,17 +169,47 @@ class MyClass {
 			// Methods using super
 			{
 				code: `
-class MyClass extends BaseClass {
+	class MyClass extends BaseClass {
     protected override process(): void {
         super.process();
     }
-}
-`,
+	}
+	`,
+			},
+			{
+				code: `
+	class MyClass {
+	    private helper(): void {
+	        console.log("helper");
+	    }
+	}
+	`,
+				options: [{ checkPrivate: false }],
+			},
+			{
+				code: `
+	class MyClass {
+	    protected helper(): void {
+	        console.log("helper");
+	    }
+	}
+	`,
+				options: [{ checkProtected: false }],
+			},
+			{
+				code: `
+	class MyClass {
+	    public helper(): void {
+	        console.log("helper");
+	    }
+	}
+	`,
+				options: [{ checkPublic: false }],
 			},
 			// Method with this in nested function
 			{
 				code: `
-class MyClass {
+	class MyClass {
     private value = 0;
 
     private process(items: any[]): void {

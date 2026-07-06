@@ -48,6 +48,40 @@ describe("no-manual-children-property", () => {
 		invalid: [
 			{
 				code: `
+import type { PropsWithChildren } from "react";
+
+type FrameProperties = PropsWithChildren<{ readonly position: UDim2 }>;
+
+function Frame(props: FrameProperties) {
+	return <div>{props.children}</div>;
+}
+`,
+				errors: [{ messageId: "manualChildrenProperty" }],
+			},
+			{
+				code: `
+type FrameProperties = React.PropsWithChildren<{ readonly position: UDim2 }>;
+
+function Frame(props: FrameProperties) {
+	return <div>{props.children}</div>;
+}
+`,
+				errors: [{ messageId: "manualChildrenProperty" }],
+			},
+			{
+				code: `
+import type { PropsWithChildren } from "react";
+
+interface FrameProperties extends React.PropsWithChildren<{ readonly position: UDim2 }> {}
+
+function Frame(props: FrameProperties) {
+	return <div>{props.children}</div>;
+}
+`,
+				errors: [{ messageId: "manualChildrenProperty" }],
+			},
+			{
+				code: `
 import type { ReactNode } from "react";
 
 interface FrameProperties {
@@ -125,8 +159,108 @@ function Frame(props: FrameProperties) {
 `,
 				errors: [{ messageId: "manualChildrenProperty" }],
 			},
+			{
+				code: `
+import type { ReactNode } from "react";
+
+interface FrameProperties {
+	readonly position: UDim2;
+	readonly children?: ReactNode;
+}
+
+function Frame(props: FrameProperties = { position: new UDim2() }) {
+	return <div>{props.children}</div>;
+}
+`,
+				errors: [{ messageId: "manualChildrenProperty" }],
+			},
+			{
+				code: `
+import type { ReactNode } from "react";
+
+type FrameProperties = {
+	readonly position: UDim2;
+	readonly children?: ReactNode;
+};
+
+const Frame = function(props: FrameProperties) {
+	return <div>{props.children}</div>;
+};
+`,
+				errors: [{ messageId: "manualChildrenProperty" }],
+				options: [{ mode: "fast" }],
+			},
 		],
 		valid: [
+			{
+				code: `
+import type { ReactNode } from "react";
+
+interface FrameProperties {
+	readonly position: UDim2;
+	readonly [children]?: ReactNode;
+}
+
+function Frame(props: FrameProperties) {
+	return <div>{props.position}</div>;
+}
+`,
+			},
+			{
+				code: `
+import type { ReactNode } from "react";
+
+interface FrameProperties {
+	readonly position: UDim2;
+	readonly children?: ReactNode;
+}
+
+export default function(props: FrameProperties) {
+	return <div>{props.children}</div>;
+}
+`,
+			},
+			{
+				code: `
+function Frame() {
+	return <div />;
+}
+`,
+			},
+			{
+				code: `
+function Frame(props) {
+	return <div>{props.children}</div>;
+}
+`,
+			},
+			{
+				code: `
+type LoopA = LoopB;
+type LoopB = LoopA;
+
+function Frame(props: LoopA) {
+	return <div>{props}</div>;
+}
+`,
+			},
+			{
+				code: `
+import type { ReactNode } from "react";
+
+interface FrameProperties {
+	readonly children?: ReactNode;
+}
+
+const [Frame] = [(props: FrameProperties) => <div>{props.children}</div>];
+`,
+			},
+			{
+				code: `
+const Frame = 1;
+void Frame;
+`,
+			},
 			{
 				code: `
 import type { PropertiesWithChildren } from "react";
@@ -200,6 +334,102 @@ function Frame(props: FrameProperties) {
 `,
 				options: [{ mode: "accurate" }],
 			},
+			{
+				code: `
+import type { ReactNode } from "react";
+
+interface FrameProperties {
+	readonly children?: ReactNode;
+}
+
+function Frame(...props: Array<FrameProperties>) {
+	return <div>{props.length}</div>;
+}
+`,
+			},
+			{
+				code: `
+import type { ReactNode } from "react";
+
+interface FrameProperties {
+	readonly children?: ReactNode;
+}
+
+function Frame({ children }: FrameProperties) {
+	return <div>{children}</div>;
+}
+`,
+			},
+			{
+				code: `
+interface FrameProperties {
+	getChildren(): JSX.Element;
+}
+
+function Frame(props: FrameProperties) {
+	return <div>{props.getChildren()}</div>;
+}
+`,
+			},
+			{
+				code: `
+import type { ReactNode } from "react";
+
+interface FrameProperties {
+	readonly [children]?: ReactNode;
+}
+
+function Frame(props: FrameProperties) {
+	return <div>{props}</div>;
+}
+`,
+			},
+			{
+				code: `
+import type { ReactNode } from "react";
+
+interface FrameProperties {
+	readonly 0?: ReactNode;
+}
+
+function Frame(props: FrameProperties) {
+	return <div>{props}</div>;
+}
+`,
+			},
+			{
+				code: `
+import type { ReactNode } from "react";
+
+interface FrameProperties {
+	readonly #children?: ReactNode;
+}
+
+function Frame(props: FrameProperties) {
+	return <div>{props}</div>;
+}
+`,
+			},
+			{
+				code: `
+function Frame(props: this) {
+	return <div>{props}</div>;
+}
+`,
+			},
+			{
+				code: `
+interface BaseProperties extends FrameProperties {}
+
+interface FrameProperties extends BaseProperties {
+	readonly position: UDim2;
+}
+
+function Frame(props: FrameProperties) {
+	return <div>{props.position}</div>;
+}
+`,
+			},
 		],
 	});
 
@@ -216,6 +446,21 @@ type BaseChildren = {
 
 interface FrameProperties extends BaseChildren {
 	readonly position: UDim2;
+}
+
+function Frame(props: FrameProperties): JSX.Element {
+	return <div>{props.children}</div>;
+}
+`,
+				errors: [{ messageId: "manualChildrenProperty" }],
+			},
+			{
+				code: `
+import type { ReactNode } from "react";
+
+interface FrameProperties {
+	(): void;
+	readonly children?: ReactNode;
 }
 
 function Frame(props: FrameProperties): JSX.Element {
@@ -261,6 +506,57 @@ type FrameProperties = {
 	readonly position: UDim2;
 	readonly "children"?: ReactNode;
 };
+
+function Frame(props: FrameProperties): JSX.Element {
+	return <div>{props.children}</div>;
+}
+`,
+				errors: [{ messageId: "manualChildrenProperty" }],
+			},
+			{
+				code: `
+import type { ReactNode } from "react";
+
+interface FrameProperties {
+	readonly position: UDim2;
+	readonly children?: ReactNode;
+}
+
+function Frame(props: FrameProperties): JSX.Element {
+	return <div>{props.children}</div>;
+}
+`,
+				errors: [{ messageId: "manualChildrenProperty" }],
+			},
+			{
+				code: `
+import type { PropsWithChildren } from "react";
+
+function Frame(props: PropsWithChildren<{ readonly position: UDim2 }>): JSX.Element {
+	return <div>{props.children}</div>;
+}
+`,
+				errors: [{ messageId: "manualChildrenProperty" }],
+			},
+			{
+				code: `
+import type { PropsWithChildren } from "react";
+
+interface FrameProperties extends PropsWithChildren<{ readonly position: UDim2 }> {}
+
+function Frame(props: FrameProperties): JSX.Element {
+	return <div>{props.children}</div>;
+}
+`,
+				errors: [{ messageId: "manualChildrenProperty" }],
+			},
+			{
+				code: `
+type PropsWithChildren<TProperties> = TProperties & {
+	readonly children?: JSX.Element;
+};
+
+type FrameProperties = PropsWithChildren<{ readonly position: UDim2 }>;
 
 function Frame(props: FrameProperties): JSX.Element {
 	return <div>{props.children}</div>;
@@ -363,6 +659,79 @@ type FrameProperties = MissingProperties;
 function Frame(props: FrameProperties): JSX.Element {
 	return <div>{props}</div>;
 }
+`,
+				options: [{ mode: "accurate" }],
+			},
+			{
+				code: `
+import type { ReactNode } from "react";
+
+interface FrameProperties {
+	readonly position: UDim2;
+	readonly children?: ReactNode;
+}
+
+export default function(props: FrameProperties): JSX.Element {
+	return <div>{props.children}</div>;
+}
+`,
+				options: [{ mode: "accurate" }],
+			},
+			{
+				code: `
+type FrameProperties = {
+	getChildren(): JSX.Element;
+};
+
+function Frame(props: FrameProperties): JSX.Element {
+	return <div>{props.getChildren()}</div>;
+}
+`,
+				options: [{ mode: "accurate" }],
+			},
+			{
+				code: `
+function Frame(): JSX.Element {
+	return <div />;
+}
+`,
+				options: [{ mode: "accurate" }],
+			},
+			{
+				code: `
+type FrameProperties = {
+	readonly position: UDim2;
+};
+
+function Frame(props: FrameProperties): JSX.Element {
+	return <div>{props.position}</div>;
+}
+`,
+				options: [{ mode: "accurate" }],
+			},
+			{
+				code: `
+class FrameProperties {
+	readonly position = new UDim2();
+}
+
+function Frame(props: FrameProperties): JSX.Element {
+	return <div>{props.position}</div>;
+}
+`,
+				options: [{ mode: "accurate" }],
+			},
+			{
+				code: `
+const Frame = 1;
+const Button = () => <div />;
+`,
+				options: [{ mode: "accurate" }],
+			},
+			{
+				code: `
+let Frame;
+const { Button } = components;
 `,
 				options: [{ mode: "accurate" }],
 			},

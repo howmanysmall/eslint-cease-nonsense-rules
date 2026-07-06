@@ -35,19 +35,14 @@ function getArrayElementsFromVariable(
 	name: string,
 ): ReadonlyArray<TSESTree.Expression | TSESTree.SpreadElement | null> {
 	const variable = getVariableByName(scope, name);
-	if (!variable) return [];
+	if (variable === null || variable === undefined) return [];
 
 	const elements = new Array<TSESTree.Expression | TSESTree.SpreadElement | null>();
 
-	for (const ref of variable.references) {
-		const { identifier } = ref;
-		if (!identifier.parent) continue;
-
-		const { parent } = identifier;
-		if (parent.type !== AST_NODE_TYPES.VariableDeclarator) continue;
-		if (!parent.init || parent.init.type !== AST_NODE_TYPES.ArrayExpression) continue;
-
-		elements.push(...parent.init.elements);
+	for (const definition of variable.defs) {
+		const { node } = definition;
+		if (node.type !== AST_NODE_TYPES.VariableDeclarator) continue;
+		if (node.init?.type === AST_NODE_TYPES.ArrayExpression) elements.push(...node.init.elements);
 	}
 
 	return elements;
@@ -148,8 +143,8 @@ const reactHooksStrictReturn = createRule({
 			"VariableDeclarator:exit": exitHook,
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description: "Restrict the number of returned items from React hooks.",
 		},

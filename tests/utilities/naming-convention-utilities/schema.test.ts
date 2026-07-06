@@ -8,4 +8,12 @@ describe("naming-convention schema", () => {
 		expect(SCHEMA.$defs).toHaveProperty("typeMatcher");
 		expect(SCHEMA.$defs).toHaveProperty("underscoreOptions");
 	}, 1000);
+
+	it("allows modifiers only for selectors that support them", () => {
+		expect.assertions(2);
+		const serializedSchema = JSON.stringify(SCHEMA);
+
+		expect(serializedSchema).toContain('"description":"Selector \'default\'"');
+		expect(serializedSchema).toContain('"description":"Selector \'autoAccessor\'"');
+	}, 1000);
 });

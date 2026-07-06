@@ -35,6 +35,11 @@ describe("no-array-constructor-elements", () => {
 				output: 'const value = ["a"];',
 			},
 			{
+				code: "const value = new Array([first, second]);",
+				errors: [{ messageId: "avoidSingleArgumentConstructor" }],
+				output: "const value = [[first, second]];",
+			},
+			{
 				code: "const value = new Array(size);",
 				errors: [
 					{
@@ -92,6 +97,11 @@ describe("no-array-constructor-elements", () => {
 				output: undefined,
 			},
 			{
+				code: "const values: string[] = new Array();",
+				errors: [{ messageId: "requireExplicitGenericOnNewArray" }],
+				output: undefined,
+			},
+			{
 				code: "const values: Collections.Array<string> = new Array();",
 				errors: [{ messageId: "requireExplicitGenericOnNewArray" }],
 				output: undefined,
@@ -132,6 +142,11 @@ describe("no-array-constructor-elements", () => {
 				code: 'const values = new Array(void value, "b");',
 				errors: [{ messageId: "avoidConstructorEnumeration" }],
 				output: 'const values = [void value, "b"];',
+			},
+			{
+				code: 'const values = new Array(typeof value, "b");',
+				errors: [{ messageId: "avoidConstructorEnumeration" }],
+				output: 'const values = [typeof value, "b"];',
 			},
 			{
 				code: 'const values = new Array("a", ...items);',
@@ -207,6 +222,11 @@ const array = [getValue(), "b"];
 				output: undefined,
 			},
 			{
+				code: 'const array = new Array<string>(); array.push("a");',
+				errors: [{ messageId: "collapseArrayPushInitialization" }],
+				output: 'const array = ["a"];',
+			},
+			{
 				code: `
 const array = new Array<string>();
 array.push(void value, object[key], condition ? left : right, \`\${label}\`, [first, second], { [key]: value });
@@ -214,6 +234,46 @@ array.push(void value, object[key], condition ? left : right, \`\${label}\`, [fi
 				errors: [{ messageId: "collapseArrayPushInitialization" }],
 				output: `
 const array = [void value, object[key], condition ? left : right, \`\${label}\`, [first, second], { [key]: value }];
+`,
+			},
+			{
+				code: `
+const array = new Array<string>();
+array.push(object.value);
+`,
+				errors: [{ messageId: "collapseArrayPushInitialization" }],
+				output: `
+const array = [object.value];
+`,
+			},
+			{
+				code: `
+const array = new Array<string>();
+array.push({ value: getValue() });
+`,
+				errors: [
+					{
+						messageId: "collapseArrayPushInitialization",
+						suggestions: [
+							{
+								messageId: "suggestCollapseArrayPushInitialization",
+								output: `
+const array = [{ value: getValue() }];
+`,
+							},
+						],
+					},
+				],
+				output: undefined,
+			},
+			{
+				code: `
+const array: string = new Array<string>();
+array.push("a");
+`,
+				errors: [{ messageId: "collapseArrayPushInitialization" }],
+				output: `
+const array: string = ["a"];
 `,
 			},
 			{
@@ -309,6 +369,74 @@ array.push(new Value(), tag\`value\`);
 								messageId: "suggestCollapseArrayPushInitialization",
 								output: `
 const array = [new Value(), tag\`value\`];
+`,
+							},
+						],
+					},
+				],
+				output: undefined,
+			},
+			{
+				code: `
+async function build() {
+	const array = new Array<string>();
+	array.push(await getValue());
+}
+`,
+				errors: [
+					{
+						messageId: "collapseArrayPushInitialization",
+						suggestions: [
+							{
+								messageId: "suggestCollapseArrayPushInitialization",
+								output: `
+async function build() {
+	const array = [await getValue()];
+}
+`,
+							},
+						],
+					},
+				],
+				output: undefined,
+			},
+			{
+				code: `
+function* build() {
+	const array = new Array<string>();
+	array.push(yield value);
+}
+`,
+				errors: [
+					{
+						messageId: "collapseArrayPushInitialization",
+						suggestions: [
+							{
+								messageId: "suggestCollapseArrayPushInitialization",
+								output: `
+function* build() {
+	const array = [yield value];
+}
+`,
+							},
+						],
+					},
+				],
+				output: undefined,
+			},
+			{
+				code: `
+const array = new Array<number>();
+array.push(value = getValue(), index++);
+`,
+				errors: [
+					{
+						messageId: "collapseArrayPushInitialization",
+						suggestions: [
+							{
+								messageId: "suggestCollapseArrayPushInitialization",
+								output: `
+const array = [value = getValue(), index++];
 `,
 							},
 						],
@@ -418,8 +546,28 @@ const array = [() => {}];
 			},
 			{
 				code: `
+const array = new Array<object>();
+array.push(class Value {});
+`,
+				errors: [
+					{
+						messageId: "collapseArrayPushInitialization",
+						suggestions: [
+							{
+								messageId: "suggestCollapseArrayPushInitialization",
+								output: `
+const array = [class Value {}];
+`,
+							},
+						],
+					},
+				],
+				output: undefined,
+			},
+			{
+				code: `
 function build(items: Array<string>) {
-	const array = new Array<string>();
+		const array = new Array<string>();
 		array.push(...items);
 }
 `,
@@ -431,7 +579,7 @@ function build(items: Array<string>) {
 								messageId: "suggestCollapseArrayPushInitialization",
 								output: `
 function build(items: Array<string>) {
-	const array = [...items];
+		const array = [...items];
 }
 `,
 							},
@@ -617,6 +765,14 @@ const value = new Array("a");
 const array = new Array<string>();
 array.push("a");
 doSomething(array);
+array.push("b");
+`,
+			`
+const array = new Array<string>();
+array.push("a");
+if (condition) {
+	doSomething(array);
+}
 array.push("b");
 `,
 			`

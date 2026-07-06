@@ -15,6 +15,7 @@ import {
 	isTitleCase,
 	isUnknown,
 	isUpperCase,
+	setLocaleMode,
 	toCamelCase,
 	toConstantCase,
 	toDotCase,
@@ -23,6 +24,7 @@ import {
 	toPascalCase,
 	toPathCase,
 	toSnakeCase,
+	toSpaceCase,
 	toTitleCase,
 	toUpperCase,
 } from "$utilities/casing-utilities";
@@ -117,6 +119,11 @@ describe("casing-utilities", () => {
 			expect(isLowerCase("SyLlYcAsE")).toBe(false);
 			expect(isLowerCase(" _TEST_FOOBar-baz baz")).toBe(false);
 			expect(isLowerCase("  multi UPPER word  ")).toBe(false);
+		});
+
+		it("rejects non-ASCII uppercase characters that lowercase to multiple code points", () => {
+			expect.assertions(1);
+			expect(isLowerCase("İ")).toBe(false);
 		});
 	});
 
@@ -266,12 +273,16 @@ describe("casing-utilities", () => {
 		});
 
 		it("should preserve newlines while casing each line", () => {
-			expect.assertions(3);
+			expect.assertions(7);
 			const value = "Fort Worth\nPittsburgh\nSan José";
 
 			expect(toCamelCase(value)).toBe("fortWorth\npittsburgh\nsanJosé");
 			expect(toKebabCase(value)).toBe("fort-worth\npittsburgh\nsan-josé");
 			expect(toLowerCase(value)).toBe("fort worth\npittsburgh\nsan josé");
+			expect(toSpaceCase("Fort\r\nWorth")).toBe("Fort\r\nWorth");
+			expect(isCamelCase("fort\nworth")).toBe(true);
+			expect(isCamelCase("fort \nworth")).toBe(false);
+			expect(isTitleCase("Fort\r\nWorth")).toBe(true);
 		});
 
 		it("should preserve existing non-ASCII word-initial casing behavior", () => {
@@ -279,6 +290,20 @@ describe("casing-utilities", () => {
 			expect(toCamelCase("ÉCLAIR CAFÉ")).toBe("éclairCafé");
 			expect(toPascalCase("ÉCLAIR CAFÉ")).toBe("éclairCafé");
 			expect(toTitleCase("éclair café")).toBe("éclair Café");
+		});
+
+		it("supports locale mode casing", () => {
+			expect.assertions(8);
+			setLocaleMode(true);
+			expect(toUpperCase("istanbul")).toBe("ISTANBUL");
+			expect(toLowerCase("İSTANBUL")).toBe("i̇stanbul");
+			expect(isUpperCase("İSTANBUL")).toBe(true);
+			expect(isLowerCase("i̇stanbul")).toBe(true);
+			expect(isUpperCase("ẞ")).toBe(true);
+			setLocaleMode(false);
+			expect(toUpperCase("mixed")).toBe("MIXED");
+			expect(toUpperCase("éclair")).toBe("ÉCLAIR");
+			expect(toLowerCase("MIXED")).toBe("mixed");
 		});
 	});
 
@@ -508,10 +533,19 @@ describe("casing-utilities", () => {
 
 	describe("copy", () => {
 		it("should work", () => {
-			expect.assertions(3);
+			expect.assertions(7);
 			expect(copy("sIlLy", "lions")).toBe("lIoNs");
 			expect(copy("SiLlY", "lions")).toBe("LiOnS");
+			expect(copy("silly", "LIONS")).toBe("lions");
+			expect(copy("éa", "ÉB")).toBe("éb");
 			expect(copy("😄a", "😄a")).toBe("😄a");
+			expect(copy("", "value")).toBe("value");
+			expect(copy("abc", "abcd")).toBe("abcd");
+		});
+
+		it("copies uppercase grapheme casing to the next string", () => {
+			expect.assertions(1);
+			expect(copy("Éa", "éb")).toBe("Éb");
 		});
 
 		it("should throw when grapheme counts do not align", () => {
@@ -545,10 +579,14 @@ describe("casing-utilities", () => {
 
 	describe("detect", () => {
 		it("should work", () => {
-			expect.assertions(17);
+			expect.assertions(21);
+			expect(detect("")).toBe(Casing.Unknown);
 			expect(detect("camelCase")).toBe(Casing.CamelCase);
 			expect(detect("CONSTANT_CASE")).toBe(Casing.ConstantCase);
+			expect(detect("MIXED_CASE")).toBe(Casing.ConstantCase);
+			expect(detect("mixed_CASE")).toBe(Casing.Unknown);
 			expect(detect("dot.case")).toBe(Casing.DotCase);
+			expect(detect("mixed.Case")).toBe(Casing.Unknown);
 			expect(detect("SCREAMING-KEBAB")).toBe(Casing.Unknown);
 			expect(detect("kebab-case")).toBe(Casing.KebabCase);
 			expect(detect("lowercase")).toBe(Casing.LowerCase);

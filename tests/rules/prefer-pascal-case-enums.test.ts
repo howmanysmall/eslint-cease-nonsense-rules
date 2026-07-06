@@ -64,6 +64,8 @@ describe("prefer-pascal-case-enums", () => {
 
 			// Single letter enum name
 			{ code: "enum X {Foo, Bar}" },
+			// Numeric string enum members are skipped
+			{ code: "enum AssetSize {'1024' = '1024'}" },
 		],
 	});
 });
