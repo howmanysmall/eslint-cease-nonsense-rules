@@ -189,10 +189,8 @@ function resolvePropertySymbol(
 }
 
 function getPropertyAccessibility(propertySymbol: TypeScriptSymbol): "private" | "protected" | undefined {
-	const declarations = getDefinedValue(
-		propertySymbol.getDeclarations(),
-		"Expected TypeScript property symbols to expose declarations.",
-	);
+	const declarations = propertySymbol.getDeclarations();
+	if (declarations === undefined) return undefined;
 
 	for (const declaration of declarations) {
 		const modifierFlags = getCombinedModifierFlags(declaration);
@@ -214,11 +212,7 @@ function hasCommentInComputedProperty(
 	node: TSESTree.MemberExpression,
 ): boolean {
 	const [, propertyAccessStart] = node.object.range;
-
-	return context.sourceCode.getCommentsInside(node).some((comment) => {
-		const [commentStart] = comment.range;
-		return commentStart >= propertyAccessStart;
-	});
+	return context.sourceCode.getCommentsInside(node).some((comment) => comment.range[0] >= propertyAccessStart);
 }
 
 function shouldSkipForRobloxInaccessibleAccess(
@@ -303,8 +297,7 @@ function reportStaticTemplateProperty(
 	node: TSESTree.MemberExpression,
 	options: Required<DotNotationOptions>,
 ): void {
-	if (node.property.type !== AST_NODE_TYPES.TemplateLiteral) return;
-	if (!isStaticTemplateLiteral(node.property)) return;
+	if (node.property.type !== AST_NODE_TYPES.TemplateLiteral || !isStaticTemplateLiteral(node.property)) return;
 
 	for (const quasi of node.property.quasis) {
 		const cookedValue = getDefinedValue(

@@ -51,6 +51,27 @@ describe("dot-notation", () => {
 			[
 				{
 					code: `
+type EntityReference<TKey extends string> = {
+    readonly [key in TKey]: number;
+};
+
+declare const reference: EntityReference<"entityId">;
+
+reference["entityId"];
+	                `,
+					errors: [{ messageId: "useDot" }],
+					output: `
+type EntityReference<TKey extends string> = {
+    readonly [key in TKey]: number;
+};
+
+declare const reference: EntityReference<"entityId">;
+
+reference.entityId;
+	                `,
+				},
+				{
+					code: `
 declare const object: { name: number } | { name: number };
 
 object["name"];
