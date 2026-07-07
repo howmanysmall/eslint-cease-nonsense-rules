@@ -35,7 +35,9 @@ export function __testingResolveWorkerPath(baseUrl: string | URL, exists: (path:
 	const tsFilePath = fileURLToPath(tsPath);
 	if (exists(tsFilePath)) return tsPath;
 
-	throw new Error(`Oxfmt worker not found at ${jsFilePath} or ${tsFilePath}. Did you run 'aube run build'?`);
+	const error = new Error(`Oxfmt worker not found at ${jsFilePath} or ${tsFilePath}. Did you run 'nr build'?`);
+	Error.captureStackTrace(error, __testingResolveWorkerPath);
+	throw error;
 }
 
 function resolveWorkerPath(): URL {
@@ -63,6 +65,41 @@ function getWorker(): OxfmtWorkerState {
 	return workerState;
 }
 
+export function __testingReadFormatResponse(received: { readonly message: unknown } | undefined): string {
+	if (received === undefined) {
+		const error = new Error("No response received from oxfmt worker");
+		Error.captureStackTrace(error, formatSync);
+		throw error;
+	}
+
+	const response: unknown = received.message;
+	if (!isFormatResponse(response)) {
+		const error = new Error("Invalid response received from oxfmt worker");
+		Error.captureStackTrace(error, formatSync);
+		throw error;
+	}
+	if (response.error !== undefined) {
+		const error = new Error(response.error);
+		Error.captureStackTrace(error, formatSync);
+		throw error;
+	}
+	if (response.code === undefined) {
+		const error = new Error("Oxfmt returned undefined code");
+		Error.captureStackTrace(error, formatSync);
+		throw error;
+	}
+
+	return response.code;
+}
+
+export function __testingAssertFormatWaitCompleted(waitResult: "ok" | "not-equal" | "timed-out"): void {
+	if (waitResult !== "timed-out") return;
+
+	const error = new Error(`Oxfmt timed out after ${FORMAT_TIMEOUT}ms`);
+	Error.captureStackTrace(error, formatSync);
+	throw error;
+}
+
 export function formatSync(fileName: string, sourceText: string, options: FormatConfiguration = {}): string {
 	const { controlBuffer, responsePort } = getWorker();
 	const control = new Int32Array(controlBuffer);
@@ -76,24 +113,18 @@ export function formatSync(fileName: string, sourceText: string, options: Format
 		sourceText,
 	};
 
+	// oxlint-disable-next-line unicorn/require-post-message-target-origin -- ???
 	responsePort.postMessage(request);
 
 	const waitResult = Atomics.wait(control, 0, 0, FORMAT_TIMEOUT);
-	if (waitResult === "timed-out") throw new Error(`Oxfmt timed out after ${FORMAT_TIMEOUT}ms`);
+	__testingAssertFormatWaitCompleted(waitResult);
 
-	const received = receiveMessageOnPort(responsePort);
-	if (received === undefined) throw new Error("No response received from oxfmt worker");
-
-	const response: unknown = received.message;
-	if (!isFormatResponse(response)) throw new Error("Invalid response received from oxfmt worker");
-	if (response.error !== undefined) throw new Error(response.error);
-	if (response.code === undefined) throw new Error("Oxfmt returned undefined code");
-
-	return response.code;
+	return __testingReadFormatResponse(receiveMessageOnPort(responsePort));
 }
 
 export function terminateWorker(): void {
 	if (workerState === undefined) return;
+	// oxlint-disable-next-line sonar/void-use -- allowed.
 	void workerState.worker.terminate();
 	workerState = undefined;
 }

@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/prefer-sequence-overloads";
+import rule from "$rules/prefer-sequence-overloads";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({
@@ -84,6 +84,16 @@ new NumberSequence([
 
 			// Additional arguments or different constructors
 			"new SomethingElse([new ColorSequenceKeypoint(0, Color3.fromRGB(0, 0, 0)), new ColorSequenceKeypoint(1, Color3.fromRGB(255, 255, 255))]);",
+			"new namespace.ColorSequence([new ColorSequenceKeypoint(0, value), new ColorSequenceKeypoint(1, other)]);",
+			"new ColorSequence();",
+			"new ColorSequenceExtra([new ColorSequenceKeypoint(0, value), new ColorSequenceKeypoint(1, other)]);",
+			"new ColorSequence([new ColorSequenceKeypoint(0, value)]);",
+			"new ColorSequence([new ColorSequenceKeypoint(start, value), new ColorSequenceKeypoint(1, other)]);",
+			"new ColorSequence([new ColorSequenceKeypoint(0, value), ...keypoints]);",
+			"new ColorSequence([, new ColorSequenceKeypoint(1, other)]);",
+			"new ColorSequence([new NumberSequenceKeypoint(0, 0), new NumberSequenceKeypoint(1, 1)]);",
+			"new NumberSequence([new NumberSequenceKeypoint(0, value), new NumberSequenceKeypoint(1)]);",
+			"new NumberSequence([new NumberSequenceKeypoint(0, ...values), new NumberSequenceKeypoint(1, 1)]);",
 		],
 	});
 });

@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-identity-map";
+import rule from "$rules/no-identity-map";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -86,6 +86,32 @@ mapped;
 				code: "items.map(v => v)",
 				errors: [{ messageId: "identityArrayMap" }],
 				output: "items",
+			},
+			{
+				code: `
+function values() {
+	return [];
+}
+values.map(v => v);
+`,
+				errors: [{ messageId: "identityArrayMap" }],
+				output: `
+function values() {
+	return [];
+}
+values;
+`,
+			},
+			{
+				code: `
+const values = other;
+values.map(v => v);
+`,
+				errors: [{ messageId: "identityArrayMap" }],
+				output: `
+const values = other;
+values;
+`,
 			},
 			{
 				code: `
@@ -226,6 +252,9 @@ joined;
 			"binding.map(v => String(v))",
 			"items.map(v => transform(v))",
 
+			"items.map(() => value)",
+			"items.map(function() { return value; })",
+
 			"binding.map((v, i) => v)",
 			"array.map((item, index) => item)",
 			"array.map(function(v, i) { return v; })",
@@ -240,10 +269,13 @@ joined;
 			"items.map(v => { doSomething(); return v; })",
 
 			"binding.map(v => { const x = v; return x; })",
+			"items.map(v => { return v.value; })",
 
 			"items.map(v => { v; })",
 
 			"array.map(v => {})",
+			"array.map(v => { return; })",
+			"array.map(function(v) { return; })",
 
 			"binding.filter(v => v)",
 			"binding.forEach(v => v)",
@@ -251,14 +283,31 @@ joined;
 			"binding.reduce(v => v)",
 
 			"map(v => v)",
+			"binding.map(identity)",
+			"binding.map(null)",
 
 			`binding["map"](v => v)`,
+			`
+class Mapper {
+	#map(callback: (value: number) => number) {
+		return callback(1);
+	}
+
+	run() {
+		return this.#map(value => value);
+	}
+}
+`,
 
 			"array.map()",
 
 			"array.map(v => v, thisArg)",
 
 			"array.map(...callbacks)",
+			`
+const mapped = other;
+mapped.map(v => v + 1);
+`,
 		],
 	});
 });

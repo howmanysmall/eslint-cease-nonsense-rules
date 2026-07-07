@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-empty-array-literal";
+import rule from "$rules/no-empty-array-literal";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 
@@ -83,6 +83,36 @@ describe("no-empty-array-literal", () => {
 							{
 								messageId: "suggestUseNewArray",
 								output: "const x = new Array();",
+							},
+						],
+					},
+				],
+				output: undefined,
+			},
+			{
+				code: "const x: Array = [];",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "const x: Array = new Array();",
+							},
+						],
+					},
+				],
+				output: undefined,
+			},
+			{
+				code: "[]();",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "new Array()();",
 							},
 						],
 					},
@@ -240,6 +270,124 @@ describe("no-empty-array-literal", () => {
 				output: "const values = new Array<number>() as Array<number>;",
 			},
 			{
+				code: "const values = <Array<number>>[];",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				filename: "case.ts",
+				options: [{ allowedEmptyArrayContexts: { typeAssertions: false }, inferTypeForEmptyArrayFix: true }],
+				output: "const values = <Array<number>>new Array<number>();",
+			},
+			{
+				code: "const values = ([] as Array<number>)!;",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [{ allowedEmptyArrayContexts: { typeAssertions: false }, inferTypeForEmptyArrayFix: true }],
+				output: "const values = (new Array<number>() as Array<number>)!;",
+			},
+			{
+				code: "type Values = Values; const values = [] as Values;",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "type Values = Values; const values = new Array() as Values;",
+							},
+						],
+					},
+				],
+				output: undefined,
+			},
+			{
+				code: "const values = [] as Missing;",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "const values = new Array() as Missing;",
+							},
+						],
+					},
+				],
+				output: undefined,
+			},
+			{
+				code: "declare namespace React { type ReactNode = string; } const values = [] as React.ReactNode;",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "declare namespace React { type ReactNode = string; } const values = new Array() as React.ReactNode;",
+							},
+						],
+					},
+				],
+				output: undefined,
+			},
+			{
+				code: "type Values = number[]; const values: Values = [];",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "type Values = number[]; const values: Values = new Array();",
+							},
+						],
+					},
+				],
+				output: undefined,
+			},
+			{
+				code: "type MyReadonly = MyReadonly; const values: MyReadonly = [];",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "type MyReadonly = MyReadonly; const values: MyReadonly = new Array();",
+							},
+						],
+					},
+				],
+				output: undefined,
+			},
+			{
+				code: "declare namespace Foo { export type Values = ReadonlyArray<number>; } const values: Foo.Values = [];",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "declare namespace Foo { export type Values = ReadonlyArray<number>; } const values: Foo.Values = new Array();",
+							},
+						],
+					},
+				],
+				output: undefined,
+			},
+			{
+				code: "let values: readonly number[] = [];",
+				errors: [
+					{
+						messageId: "noEmptyArrayLiteral",
+						suggestions: [
+							{
+								messageId: "suggestUseNewArray",
+								output: "let values: readonly number[] = new Array();",
+							},
+						],
+					},
+				],
+				output: undefined,
+			},
+			{
 				code: "class Box { values: Array<number> = []; }",
 				errors: [{ messageId: "noEmptyArrayLiteral" }],
 				options: [{ inferTypeForEmptyArrayFix: true }],
@@ -347,7 +495,8 @@ const values: { items?: Array<number> } = {};
 for (const item of values.items ?? []) {
     void item;
 }
-            `,
+	            `,
+			"for (const item of []) { void item; }",
 			`
 const base: { synergies?: Array<string> } = {};
 for (const synergyId of base.synergies ?? []) {
@@ -432,12 +581,30 @@ const container = new Container([]);
 				}
 				            `,
 			"type MyReadonly = ReadonlyArray<number>; const values: MyReadonly = [];",
+			"type MyReadonly = readonly number[]; const values: MyReadonly = [];",
+			"export type ExportedReadonly = ReadonlyArray<number>; const exportedValues: ExportedReadonly = [];",
+			"namespace LocalTypes { export type Values = ReadonlyArray<number>; const values = [] as Values; }",
+			"{ type LocalValues = ReadonlyArray<number>; const localValues: LocalValues = []; }",
+			"type MutableValues = Array<number>; const mutableValues = [] as MutableValues;",
+			"function build([value]: ReadonlyArray<number> = []) { void value; }",
+			"function build({ length }: ReadonlyArray<number> = []) { void length; }",
+			{
+				code: "const assertedValues = (<ReadonlyArray<number>>[]);",
+				filename: "case.ts",
+			},
+			"const nonNullValues = ([] as ReadonlyArray<number>)!;",
 			"const values: readonly number[] = [];",
 			"const cache = [1, 2, 3]; const values = cache ?? [];",
+			"const cache = [1, 2, 3]; const values = cache || [];",
 			"const createValues = () => [];",
 			"function createValues() { return []; }",
+			{
+				code: "function createValues() { return []; }",
+				options: [{ allowedEmptyArrayContexts: { callArguments: false } }],
+			},
 			"const payload = { items: [] };",
 			"const view = <Widget items={[]} />;",
+			"export type Other = ReadonlyArray<string>; type Values = ReadonlyArray<number>; const values: Values = [];",
 		],
 	});
 });
@@ -445,6 +612,12 @@ const container = new Container([]);
 describe("no-empty-array-literal (type-aware inference)", () => {
 	typeAwareRuleTester.run("no-empty-array-literal-type-aware", rule, {
 		invalid: [
+			{
+				code: "const values = [];",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [{ inferTypeForEmptyArrayFix: true }],
+				output: "const values = new Array<never>();",
+			},
 			{
 				code: "const values: Array<number> = [];",
 				errors: [{ messageId: "noEmptyArrayLiteral" }],
@@ -489,6 +662,12 @@ describe("no-empty-array-literal (type-aware inference)", () => {
 				],
 				output: "function build({ length }: Array<number> = new Array<number>()) { void length; }",
 			},
+			{
+				code: "function build({ values = [] }: { values?: ReadonlyArray<number> }) { return values; }",
+				errors: [{ messageId: "noEmptyArrayLiteral" }],
+				options: [{ inferTypeForEmptyArrayFix: true }],
+				output: "function build({ values = new Array<never>() }: { values?: ReadonlyArray<number> }) { return values; }",
+			},
 		],
 		valid: [
 			{
@@ -501,6 +680,26 @@ describe("no-empty-array-literal (type-aware inference)", () => {
 			},
 			{
 				code: "let values: Array<number>;\nvalues = [];",
+				options: [{ inferTypeForEmptyArrayFix: true }],
+			},
+			{
+				code: "type Values = number[];\nconst values: Values = [];",
+				options: [{ inferTypeForEmptyArrayFix: true }],
+			},
+			{
+				code: "type Values = number[];\nfunction build(values: Values = []) { return values; }",
+				options: [{ inferTypeForEmptyArrayFix: true }],
+			},
+			{
+				code: "interface Values extends ReadonlyArray<number> {}\nconst values = [] as Values;",
+				options: [{ inferTypeForEmptyArrayFix: true }],
+			},
+			{
+				code: "interface Values extends ReadonlyArray<number> {}\nconst values: Values = [];",
+				options: [{ inferTypeForEmptyArrayFix: true }],
+			},
+			{
+				code: "interface Values extends ReadonlyArray<number> {}\nfunction build(values: Values = []) { return values; }",
 				options: [{ inferTypeForEmptyArrayFix: true }],
 			},
 			{

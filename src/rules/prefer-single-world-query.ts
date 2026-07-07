@@ -1,5 +1,6 @@
+import { createRule } from "$utilities/create-rule";
+import { getDefinedValue } from "$utilities/defined-utilities";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "@utilities/create-rule";
 import { regex } from "arktype";
 
 import type { Reference } from "@typescript-eslint/scope-manager";
@@ -7,6 +8,10 @@ import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds = "preferSingleGet" | "preferSingleHas";
 type QueryType = "get" | "has";
+type WorldQueryExpression = TSESTree.CallExpression & {
+	readonly arguments: [TSESTree.Expression, TSESTree.Expression];
+	readonly callee: TSESTree.MemberExpression;
+};
 
 interface WorldQueryCall {
 	readonly componentNode: TSESTree.Expression;
@@ -19,11 +24,24 @@ interface WorldQueryCall {
 	readonly worldNode: TSESTree.Expression;
 }
 
+type QueryCallGroup = readonly [WorldQueryCall, WorldQueryCall, ...Array<WorldQueryCall>];
+
 function isLengthOfTwo<TValue>(array: ReadonlyArray<TValue>): array is readonly [TValue, TValue] {
 	return array.length === 2;
 }
 
-function isWorldQueryCall(node: TSESTree.Node, queryType: QueryType): node is TSESTree.CallExpression {
+function isQueryCallGroup(calls: ReadonlyArray<WorldQueryCall>): calls is QueryCallGroup {
+	return calls.length >= 2;
+}
+
+function getLastCall(calls: QueryCallGroup): WorldQueryCall {
+	const [, secondCall, ...remainingCalls] = calls;
+	let lastCall = secondCall;
+	for (const call of remainingCalls) lastCall = call;
+	return lastCall;
+}
+
+function isWorldQueryCall(node: TSESTree.Node, queryType: QueryType): node is WorldQueryExpression {
 	if (node.type !== AST_NODE_TYPES.CallExpression) return false;
 
 	const { callee } = node;
@@ -38,25 +56,17 @@ function isWorldQueryCall(node: TSESTree.Node, queryType: QueryType): node is TS
 	return !(entity.type === AST_NODE_TYPES.SpreadElement || component.type === AST_NODE_TYPES.SpreadElement);
 }
 
-function isMemberExpression(expression: TSESTree.Expression): expression is TSESTree.MemberExpression {
-	return expression.type === AST_NODE_TYPES.MemberExpression;
-}
-
 function extractWorldQueryCall(node: TSESTree.VariableDeclaration, queryType: QueryType): WorldQueryCall | undefined {
 	if (node.declarations.length !== 1) return undefined;
 
 	const [declarator] = node.declarations;
-	if (!declarator) return undefined;
 
 	const { id, init } = declarator;
-	if (id.type !== AST_NODE_TYPES.Identifier || !init || !isWorldQueryCall(init, queryType)) return undefined;
+	if (id.type !== AST_NODE_TYPES.Identifier || init === null || !isWorldQueryCall(init, queryType)) return undefined;
 
 	const { callee } = init;
-	if (!isMemberExpression(callee)) return undefined;
 
 	const [entityNode, componentNode] = init.arguments;
-	if (!entityNode || entityNode.type === AST_NODE_TYPES.SpreadElement) return undefined;
-	if (!componentNode || componentNode.type === AST_NODE_TYPES.SpreadElement) return undefined;
 
 	return {
 		componentNode,
@@ -74,31 +84,10 @@ function getNodeText(node: TSESTree.Node, { sourceCode }: { readonly sourceCode:
 	return sourceCode.getText(node);
 }
 
-const VALID_TYPES = new Set([
-	AST_NODE_TYPES.IfStatement,
-	AST_NODE_TYPES.WhileStatement,
-	AST_NODE_TYPES.DoWhileStatement,
-	AST_NODE_TYPES.ForStatement,
-	AST_NODE_TYPES.ConditionalExpression,
-]);
-
 function isIdentifierDirectlyInAndExpression(node: TSESTree.Identifier): boolean {
 	const { parent } = node;
-	if (!parent) return false;
 
-	if (parent.type === AST_NODE_TYPES.LogicalExpression && parent.operator === "&&") return true;
-
-	if (VALID_TYPES.has(parent.type)) {
-		let current: TSESTree.Node | undefined = node;
-		while (current && current !== parent) {
-			if (current.parent?.type === AST_NODE_TYPES.LogicalExpression && current.parent.operator === "&&") {
-				return true;
-			}
-			current = current.parent;
-		}
-	}
-
-	return false;
+	return parent?.type === AST_NODE_TYPES.LogicalExpression && parent.operator === "&&";
 }
 
 function isDirectlyInAndExpression(reference: Reference): boolean {
@@ -111,12 +100,12 @@ function checkVariableUsedInAndExpression(
 	variableDeclaration: TSESTree.VariableDeclaration,
 	sourceCode: TSESLint.SourceCode,
 ): boolean {
-	return (
-		sourceCode
-			.getScope(variableDeclaration)
-			?.variables.find(({ name }) => name === variableName)
-			?.references.some(isDirectlyInAndExpression) ?? false
+	const variable = getDefinedValue(
+		sourceCode.getScope(variableDeclaration).variables.find(({ name }) => name === variableName),
+		"Expected world query variable to exist in its declaration scope.",
 	);
+
+	return variable.references.some(isDirectlyInAndExpression);
 }
 
 function areAllVariablesUsedInAndExpressions(
@@ -132,16 +121,14 @@ function getVariableName(call: WorldQueryCall): string {
 	return call.variableName;
 }
 
-// oxlint-disable-next-line unicorn/prefer-string-raw
+// oxlint-disable-next-line unicorn/prefer-string-raw -- Escaped path separators are clearer than raw strings here.
 const ONLY_WHITESPACE_SEMICOLON = regex("^[\\s;]*$", "u");
 
 function callsAreConsecutive(
-	previousCall: WorldQueryCall | undefined,
+	previousCall: WorldQueryCall,
 	currentCall: WorldQueryCall,
 	context: TSESLint.RuleContext<MessageIds, []>,
 ): boolean {
-	if (!previousCall) return true;
-
 	const previousWorld = getNodeText(previousCall.worldNode, context);
 	const currentWorld = getNodeText(currentCall.worldNode, context);
 	if (previousWorld !== currentWorld) return false;
@@ -150,38 +137,33 @@ function callsAreConsecutive(
 	const currentEntity = getNodeText(currentCall.entityNode, context);
 	if (previousEntity !== currentEntity || previousCall.queryType !== currentCall.queryType) return false;
 
-	const previousEnd = previousCall.variableDeclaration.range?.[1] ?? 0;
-	const currentStart = currentCall.variableDeclaration.range?.[0] ?? 0;
+	const [, previousEnd] = previousCall.variableDeclaration.range;
+	const [currentStart] = currentCall.variableDeclaration.range;
 	const textBetween = context.sourceCode.getText().slice(previousEnd, currentStart);
 
 	return ONLY_WHITESPACE_SEMICOLON.test(textBetween);
 }
 
-function processGetCalls(calls: ReadonlyArray<WorldQueryCall>, context: TSESLint.RuleContext<MessageIds, []>): void {
-	if (calls.length < 2) return;
-
+function processGetCalls(calls: QueryCallGroup, context: TSESLint.RuleContext<MessageIds, []>): void {
 	const [firstCall] = calls;
-	if (!firstCall) return;
 
 	const worldText = getNodeText(firstCall.worldNode, context);
 	const entityText = getNodeText(firstCall.entityNode, context);
 
-	// oxlint-disable-next-line unicorn/no-array-callback-reference
 	const variableNames = calls.map(getVariableName);
 	const componentTexts = calls.map((call) => getNodeText(call.componentNode, context));
 
-	const destructuring = variableNames.length === 1 ? variableNames[0] : `[${variableNames.join(", ")}]`;
+	const destructuring = `[${variableNames.join(", ")}]`;
 	const componentArguments = componentTexts.join(", ");
 	const fixedCode = `const ${destructuring} = ${worldText}.get(${entityText}, ${componentArguments});`;
 
-	const firstDeclaration = calls.at(0)?.variableDeclaration;
-	const lastDeclaration = calls.at(-1)?.variableDeclaration;
-	if (!(firstDeclaration && lastDeclaration)) return;
+	const firstDeclaration = firstCall.variableDeclaration;
+	const lastDeclaration = getLastCall(calls).variableDeclaration;
 
 	context.report({
 		fix(fixer) {
-			const rangeStart = firstDeclaration.range?.[0] ?? 0;
-			const rangeEnd = lastDeclaration.range?.[1] ?? 0;
+			const [rangeStart] = firstDeclaration.range;
+			const [, rangeEnd] = lastDeclaration.range;
 			return fixer.replaceTextRange([rangeStart, rangeEnd], fixedCode);
 		},
 		messageId: "preferSingleGet",
@@ -189,14 +171,11 @@ function processGetCalls(calls: ReadonlyArray<WorldQueryCall>, context: TSESLint
 	});
 }
 
-function processHasCalls(calls: ReadonlyArray<WorldQueryCall>, context: TSESLint.RuleContext<MessageIds, []>): void {
-	if (calls.length < 2) return;
-
+function processHasCalls(calls: QueryCallGroup, context: TSESLint.RuleContext<MessageIds, []>): void {
 	// Only combine has() calls if they're used in && expressions
 	if (!areAllVariablesUsedInAndExpressions(calls, context)) return;
 
 	const [firstCall] = calls;
-	if (!firstCall) return;
 
 	const worldText = getNodeText(firstCall.worldNode, context);
 	const entityText = getNodeText(firstCall.entityNode, context);
@@ -204,14 +183,13 @@ function processHasCalls(calls: ReadonlyArray<WorldQueryCall>, context: TSESLint
 	const componentArguments = componentTexts.join(", ");
 	const fixedCode = `const hasAll = ${worldText}.has(${entityText}, ${componentArguments});`;
 
-	const firstDeclaration = calls.at(0)?.variableDeclaration;
-	const lastDeclaration = calls.at(-1)?.variableDeclaration;
-	if (!(firstDeclaration && lastDeclaration)) return;
+	const firstDeclaration = firstCall.variableDeclaration;
+	const lastDeclaration = getLastCall(calls).variableDeclaration;
 
 	context.report({
 		fix(fixer) {
-			const rangeStart = firstDeclaration.range?.[0] ?? 0;
-			const rangeEnd = lastDeclaration.range?.[1] ?? 0;
+			const [rangeStart] = firstDeclaration.range;
+			const [, rangeEnd] = lastDeclaration.range;
 			return fixer.replaceTextRange([rangeStart, rangeEnd], fixedCode);
 		},
 		messageId: "preferSingleHas",
@@ -226,13 +204,13 @@ const preferSingleWorldQuery = createRule<[], MessageIds>({
 		let currentHasBuffer = new Array<WorldQueryCall>();
 
 		function flushGetBuffer(): void {
-			if (currentGetBuffer.length >= 2) processGetCalls(currentGetBuffer, context);
+			if (isQueryCallGroup(currentGetBuffer)) processGetCalls(currentGetBuffer, context);
 
 			currentGetBuffer = [];
 		}
 
 		function flushHasBuffer(): void {
-			if (currentHasBuffer.length >= 2) processHasCalls(currentHasBuffer, context);
+			if (isQueryCallGroup(currentHasBuffer)) processHasCalls(currentHasBuffer, context);
 			currentHasBuffer = [];
 		}
 
@@ -272,8 +250,8 @@ const preferSingleWorldQuery = createRule<[], MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description:
 				"Enforce combining multiple world.get() or world.has() calls into a single call for better Jecs performance.",

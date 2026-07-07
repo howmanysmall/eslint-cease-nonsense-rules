@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import rule, { createFastFormatRule, createFormatCache, getLocFromIndex } from "@rules/fast-format";
-import { generateDifferences, showInvisibles } from "@utilities/format-utilities";
+import rule, { createFastFormatRule, createFormatCache, getLocFromIndex } from "$rules/fast-format";
+import { generateDifferences, showInvisibles } from "$utilities/format-utilities";
 import { RuleTester } from "eslint";
 
 const languageOptions = {
@@ -11,6 +11,17 @@ const languageOptions = {
 const ruleTester = new RuleTester({
 	languageOptions,
 });
+
+function* formatterFailures(): Generator<string, string, unknown> {
+	yield "";
+	return "";
+}
+
+function throwFormatterStringFailure(): string {
+	const failure = formatterFailures();
+	failure.next();
+	return failure.throw("formatter string failure").value;
+}
 
 describe("fast-format", () => {
 	ruleTester.run("fast-format", rule, {
@@ -78,6 +89,11 @@ describe("fast-format", () => {
 				code: "const obj = {\n\tfoo: 1,\n\tbar: 2,\n};\n",
 				filename: "test.ts",
 				name: "object with trailing comma",
+			},
+			{
+				code: "const x=1",
+				filename: "styles.css",
+				name: "ignores non-js-ts files",
 			},
 		],
 	});
@@ -148,6 +164,55 @@ describe("fast-format", () => {
 				errors: [{ message: "Oxfmt error: formatter broke" }],
 				filename: "test.ts",
 				name: "uses cached error instead of reformatting",
+			},
+		],
+		valid: [],
+	});
+
+	const nonErrorThrowRule = createFastFormatRule({
+		cache: createFormatCache(1),
+		services: {
+			format() {
+				return throwFormatterStringFailure();
+			},
+		},
+	});
+
+	const nonErrorThrowTester = new RuleTester({ languageOptions });
+	nonErrorThrowTester.run("format (non-error throw)", nonErrorThrowRule, {
+		invalid: [
+			{
+				code: "const stringFailure=1",
+				errors: [{ message: "Oxfmt error: formatter string failure" }],
+				filename: "test.ts",
+				name: "surfaces non-error formatter failures",
+			},
+		],
+		valid: [],
+	});
+
+	const deleteOnlyRule = createFastFormatRule({
+		cache: createFormatCache(1),
+		services: {
+			format() {
+				return "ab";
+			},
+			generate() {
+				return [{ deleteText: "c", offset: 2, operation: "DELETE" }];
+			},
+			show: showInvisibles,
+		},
+	});
+
+	const deleteOnlyTester = new RuleTester({ languageOptions });
+	deleteOnlyTester.run("format (delete only)", deleteOnlyRule, {
+		invalid: [
+			{
+				code: "abc",
+				errors: [{ messageId: "DELETE" }],
+				filename: "test.ts",
+				name: "handles delete-only differences",
+				output: "ab",
 			},
 		],
 		valid: [],

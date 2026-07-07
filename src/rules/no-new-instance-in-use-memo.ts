@@ -1,9 +1,11 @@
-import { getReactSources, isReactImport } from "@constants/react-sources";
+import { getReactSources, isReactImport } from "$constants/react-sources";
+import { getImportSpecifierName, unwrapExpression } from "$utilities/ast-utilities";
+import { createRule } from "$utilities/create-rule";
+import { isNamedReactHookCall } from "$utilities/react-hook-utilities";
 import { DefinitionType } from "@typescript-eslint/scope-manager";
 import { TSESTree } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
 
-import type { EnvironmentMode } from "@lint-types/environment-mode";
+import type { EnvironmentMode } from "$types/environment-mode";
 import type { TSESLint } from "@typescript-eslint/utils";
 
 type MessageIds = "noNewInUseMemo";
@@ -26,21 +28,20 @@ interface NormalizedOptions {
 }
 
 interface FunctionInfo {
-	readonly callees: Set<number>;
+	readonly callees: Set<FunctionInfo>;
 	readonly callIdentifiers: Array<TSESTree.Identifier>;
-	readonly id: number;
 }
 
 interface TrackedNewExpression {
 	readonly constructorName: string;
-	readonly containingFunctionId: number | undefined;
+	readonly containingFunctionInfo: FunctionInfo | undefined;
 	readonly isLexicallyInsideUseMemo: boolean;
 	readonly node: TSESTree.NewExpression;
 }
 
 interface TraversalState {
 	readonly depth: number;
-	readonly functionId: number;
+	readonly functionInfo: FunctionInfo;
 }
 
 const DEFAULT_OPTIONS: Required<NoNewInstanceInUseMemoOptions> = {
@@ -49,41 +50,16 @@ const DEFAULT_OPTIONS: Required<NoNewInstanceInUseMemoOptions> = {
 	maxHelperTraceDepth: 4,
 };
 
-function normalizeOptions(raw?: NoNewInstanceInUseMemoOptions): NormalizedOptions {
-	const candidateDepth = raw?.maxHelperTraceDepth;
-	const maxHelperTraceDepth =
-		typeof candidateDepth === "number" && Number.isInteger(candidateDepth) && candidateDepth >= 0
-			? candidateDepth
-			: DEFAULT_OPTIONS.maxHelperTraceDepth;
-
+function normalizeOptions({
+	constructors = DEFAULT_OPTIONS.constructors,
+	environment = DEFAULT_OPTIONS.environment,
+	maxHelperTraceDepth = DEFAULT_OPTIONS.maxHelperTraceDepth,
+}: NoNewInstanceInUseMemoOptions = DEFAULT_OPTIONS): NormalizedOptions {
 	return {
-		constructors: new Set(raw?.constructors ?? DEFAULT_OPTIONS.constructors),
-		environment: raw?.environment ?? DEFAULT_OPTIONS.environment,
+		constructors: new Set(constructors),
+		environment,
 		maxHelperTraceDepth,
 	};
-}
-
-function getImportedName(specifier: TSESTree.ImportSpecifier): string | undefined {
-	const { imported } = specifier;
-	if (imported.type === TSESTree.AST_NODE_TYPES.Identifier) return imported.name;
-	if (imported.type === TSESTree.AST_NODE_TYPES.Literal && typeof imported.value === "string") return imported.value;
-	return undefined;
-}
-
-function isUseMemoCall(
-	node: TSESTree.CallExpression,
-	memoIdentifiers: ReadonlySet<string>,
-	reactNamespaces: ReadonlySet<string>,
-): boolean {
-	const { callee } = node;
-
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return memoIdentifiers.has(callee.name);
-	if (callee.type !== TSESTree.AST_NODE_TYPES.MemberExpression) return false;
-	if (callee.computed) return false;
-	if (callee.object.type !== TSESTree.AST_NODE_TYPES.Identifier) return false;
-	if (callee.property.type !== TSESTree.AST_NODE_TYPES.Identifier) return false;
-
-	return reactNamespaces.has(callee.object.name) && callee.property.name === "useMemo";
 }
 
 function isFunctionLikeExpression(node: TSESTree.Node): node is FunctionLikeExpression {
@@ -95,34 +71,6 @@ function isFunctionLikeExpression(node: TSESTree.Node): node is FunctionLikeExpr
 
 function isCallExpression(node: TSESTree.Node | undefined): node is TSESTree.CallExpression {
 	return node?.type === TSESTree.AST_NODE_TYPES.CallExpression;
-}
-
-function unwrapExpression(expression: TSESTree.Expression): TSESTree.Expression {
-	let current = expression;
-
-	while (true) {
-		if (current.type === TSESTree.AST_NODE_TYPES.TSAsExpression) {
-			current = current.expression;
-			continue;
-		}
-
-		if (current.type === TSESTree.AST_NODE_TYPES.TSNonNullExpression) {
-			current = current.expression;
-			continue;
-		}
-
-		if (current.type === TSESTree.AST_NODE_TYPES.TSSatisfiesExpression) {
-			current = current.expression;
-			continue;
-		}
-
-		if (current.type === TSESTree.AST_NODE_TYPES.TSTypeAssertion) {
-			current = current.expression;
-			continue;
-		}
-
-		return current;
-	}
 }
 
 function findVariable(
@@ -140,101 +88,88 @@ function findVariable(
 	return undefined;
 }
 
-function resolveVariableToFunctionIds(
+function resolveVariableToFunctionInfos(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	variable: TSESLint.Scope.Variable,
-	functionInfosByNode: ReadonlyMap<FunctionNode, FunctionInfo>,
-	cache: Map<TSESLint.Scope.Variable, ReadonlySet<number>>,
+	directFunctionInfosByDefinition: ReadonlyMap<TSESTree.Node, FunctionInfo>,
+	cache: Map<TSESLint.Scope.Variable, ReadonlySet<FunctionInfo>>,
 	visited: Set<TSESLint.Scope.Variable>,
-): ReadonlySet<number> {
+): ReadonlySet<FunctionInfo> {
 	const cached = cache.get(variable);
 	if (cached !== undefined) return cached;
 
-	if (visited.has(variable)) return new Set<number>();
+	if (visited.has(variable)) return new Set<FunctionInfo>();
 	visited.add(variable);
 
-	const functionIds = new Set<number>();
+	const functionInfos = new Set<FunctionInfo>();
 
 	for (const definition of variable.defs) {
-		if (definition.type === DefinitionType.FunctionName) {
-			if (definition.node.type !== TSESTree.AST_NODE_TYPES.FunctionDeclaration) continue;
+		const directFunctionInfo = directFunctionInfosByDefinition.get(definition.name);
+		if (directFunctionInfo !== undefined) functionInfos.add(directFunctionInfo);
 
-			const functionId = functionInfosByNode.get(definition.node)?.id;
-			if (functionId !== undefined) functionIds.add(functionId);
-			continue;
-		}
-
-		if (definition.type !== DefinitionType.Variable) continue;
-		if (definition.node.init === null) continue;
+		if (definition.type !== DefinitionType.Variable || definition.node.init === null) continue;
 
 		const initializer = unwrapExpression(definition.node.init);
-		if (isFunctionLikeExpression(initializer)) {
-			const functionId = functionInfosByNode.get(initializer)?.id;
-			if (functionId !== undefined) functionIds.add(functionId);
-			continue;
-		}
-
 		if (initializer.type !== TSESTree.AST_NODE_TYPES.Identifier) continue;
 		const aliasVariable = findVariable(context, initializer);
 		if (aliasVariable === undefined) continue;
 
-		const resolved = resolveVariableToFunctionIds(context, aliasVariable, functionInfosByNode, cache, visited);
-		for (const functionId of resolved) functionIds.add(functionId);
+		const resolved = resolveVariableToFunctionInfos(
+			context,
+			aliasVariable,
+			directFunctionInfosByDefinition,
+			cache,
+			visited,
+		);
+		for (const functionInfo of resolved) functionInfos.add(functionInfo);
 	}
 
 	visited.delete(variable);
-	cache.set(variable, functionIds);
-	return functionIds;
+	cache.set(variable, functionInfos);
+	return functionInfos;
 }
 
-function resolveIdentifierToFunctionIds(
+function resolveIdentifierToFunctionInfos(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	identifier: TSESTree.Identifier,
-	functionInfosByNode: ReadonlyMap<FunctionNode, FunctionInfo>,
-	cache: Map<TSESLint.Scope.Variable, ReadonlySet<number>>,
-): ReadonlySet<number> {
+	directFunctionInfosByDefinition: ReadonlyMap<TSESTree.Node, FunctionInfo>,
+	cache: Map<TSESLint.Scope.Variable, ReadonlySet<FunctionInfo>>,
+): ReadonlySet<FunctionInfo> {
 	const variable = findVariable(context, identifier);
-	if (variable === undefined) return new Set<number>();
+	if (variable === undefined) return new Set<FunctionInfo>();
 
-	return resolveVariableToFunctionIds(
+	return resolveVariableToFunctionInfos(
 		context,
 		variable,
-		functionInfosByNode,
+		directFunctionInfosByDefinition,
 		cache,
 		new Set<TSESLint.Scope.Variable>(),
 	);
 }
 
 function collectReachableFunctions(
-	rootFunctionIds: ReadonlySet<number>,
-	functionInfosById: ReadonlyMap<number, FunctionInfo>,
+	rootFunctionInfos: ReadonlySet<FunctionInfo>,
 	maxHelperTraceDepth: number,
-): ReadonlySet<number> {
-	const visited = new Set<number>(rootFunctionIds);
-	const queue: Array<TraversalState> = [...rootFunctionIds].map((functionId) => ({
-		depth: 0,
-		functionId,
-	}));
-	let queueIndex = 0;
+): ReadonlySet<FunctionInfo> {
+	const visited = new Set<FunctionInfo>(rootFunctionInfos);
+	const queue = new Array<TraversalState>();
+	for (const functionInfo of rootFunctionInfos) queue.push({ depth: 0, functionInfo });
+	let current = queue.shift();
+	while (current !== undefined) {
+		if (current.depth >= maxHelperTraceDepth) {
+			current = queue.shift();
+			continue;
+		}
 
-	while (queueIndex < queue.length) {
-		const current = queue[queueIndex];
-		queueIndex += 1;
-		if (current === undefined) continue;
-
-		if (current.depth >= maxHelperTraceDepth) continue;
-
-		const functionInfo = functionInfosById.get(current.functionId);
-		if (functionInfo === undefined) continue;
-
-		for (const calleeId of functionInfo.callees) {
-			if (visited.has(calleeId)) continue;
-			visited.add(calleeId);
+		for (const functionInfo of current.functionInfo.callees) {
+			if (visited.has(functionInfo)) continue;
+			visited.add(functionInfo);
 			queue.push({
 				depth: current.depth + 1,
-				functionId: calleeId,
+				functionInfo,
 			});
 		}
+		current = queue.shift();
 	}
 
 	return visited;
@@ -251,7 +186,7 @@ function isInsideUseMemoCallback(
 		if (isFunctionLikeExpression(current)) {
 			const callExpression: TSESTree.Node | undefined = current.parent;
 			if (isCallExpression(callExpression) && callExpression.arguments[0] === current) {
-				if (!isUseMemoCall(callExpression, memoIdentifiers, reactNamespaces)) {
+				if (!isNamedReactHookCall(callExpression, "useMemo", memoIdentifiers, reactNamespaces)) {
 					current = callExpression;
 					continue;
 				}
@@ -268,51 +203,46 @@ function isInsideUseMemoCallback(
 
 function populateCallGraph(
 	context: TSESLint.RuleContext<MessageIds, Options>,
-	functionInfosById: ReadonlyMap<number, FunctionInfo>,
-	functionInfosByNode: ReadonlyMap<FunctionNode, FunctionInfo>,
-	variableResolutionCache: Map<TSESLint.Scope.Variable, ReadonlySet<number>>,
+	functionInfos: ReadonlyArray<FunctionInfo>,
+	directFunctionInfosByDefinition: ReadonlyMap<TSESTree.Node, FunctionInfo>,
+	variableResolutionCache: Map<TSESLint.Scope.Variable, ReadonlySet<FunctionInfo>>,
 ): void {
-	for (const functionInfo of functionInfosById.values()) {
+	for (const functionInfo of functionInfos) {
 		for (const identifier of functionInfo.callIdentifiers) {
-			const resolvedFunctionIds = resolveIdentifierToFunctionIds(
+			const resolvedFunctionInfos = resolveIdentifierToFunctionInfos(
 				context,
 				identifier,
-				functionInfosByNode,
+				directFunctionInfosByDefinition,
 				variableResolutionCache,
 			);
 
-			for (const resolvedFunctionId of resolvedFunctionIds) {
-				functionInfo.callees.add(resolvedFunctionId);
+			for (const resolvedFunctionInfo of resolvedFunctionInfos) {
+				functionInfo.callees.add(resolvedFunctionInfo);
 			}
 		}
 	}
 }
 
-function collectRootFunctionIds(
+function collectRootFunctionInfos(
 	context: TSESLint.RuleContext<MessageIds, Options>,
-	useMemoInlineCallbacks: ReadonlyArray<FunctionLikeExpression>,
+	useMemoInlineCallbackInfos: ReadonlyArray<FunctionInfo>,
 	useMemoCallbackIdentifiers: ReadonlyArray<TSESTree.Identifier>,
-	functionInfosByNode: ReadonlyMap<FunctionNode, FunctionInfo>,
-	variableResolutionCache: Map<TSESLint.Scope.Variable, ReadonlySet<number>>,
-): ReadonlySet<number> {
-	const rootFunctionIds = new Set<number>();
-
-	for (const callback of useMemoInlineCallbacks) {
-		const functionId = functionInfosByNode.get(callback)?.id;
-		if (functionId !== undefined) rootFunctionIds.add(functionId);
-	}
+	directFunctionInfosByDefinition: ReadonlyMap<TSESTree.Node, FunctionInfo>,
+	variableResolutionCache: Map<TSESLint.Scope.Variable, ReadonlySet<FunctionInfo>>,
+): ReadonlySet<FunctionInfo> {
+	const rootFunctionInfos = new Set<FunctionInfo>(useMemoInlineCallbackInfos);
 
 	for (const callbackIdentifier of useMemoCallbackIdentifiers) {
-		const resolvedFunctionIds = resolveIdentifierToFunctionIds(
+		const resolvedFunctionInfos = resolveIdentifierToFunctionInfos(
 			context,
 			callbackIdentifier,
-			functionInfosByNode,
+			directFunctionInfosByDefinition,
 			variableResolutionCache,
 		);
-		for (const resolvedFunctionId of resolvedFunctionIds) rootFunctionIds.add(resolvedFunctionId);
+		for (const resolvedFunctionInfo of resolvedFunctionInfos) rootFunctionInfos.add(resolvedFunctionInfo);
 	}
 
-	return rootFunctionIds;
+	return rootFunctionInfos;
 }
 
 const noNewInstanceInUseMemo = createRule<Options, MessageIds>({
@@ -323,44 +253,67 @@ const noNewInstanceInUseMemo = createRule<Options, MessageIds>({
 		const reactSources = getReactSources(options.environment);
 		const memoIdentifiers = new Set<string>();
 		const reactNamespaces = new Set<string>();
-		const functionInfosByNode = new Map<FunctionNode, FunctionInfo>();
-		const functionInfosById = new Map<number, FunctionInfo>();
-		const functionStack: Array<number> = [];
+		const directFunctionInfosByDefinition = new Map<TSESTree.Node, FunctionInfo>();
+		const functionStack: Array<FunctionInfo> = [];
+		const functionInfos: Array<FunctionInfo> = [];
 		const trackedNewExpressions: Array<TrackedNewExpression> = [];
 		const useMemoCallbackIdentifiers: Array<TSESTree.Identifier> = [];
-		const useMemoInlineCallbacks: Array<FunctionLikeExpression> = [];
-		const variableResolutionCache = new Map<TSESLint.Scope.Variable, ReadonlySet<number>>();
-		let functionCounter = 0;
+		const useMemoInlineCallbackInfos: Array<FunctionInfo> = [];
+		const variableResolutionCache = new Map<TSESLint.Scope.Variable, ReadonlySet<FunctionInfo>>();
 
-		function getOrCreateFunctionInfo(node: FunctionNode): FunctionInfo {
-			const existing = functionInfosByNode.get(node);
-			if (existing !== undefined) return existing;
-
+		function createFunctionInfo(): FunctionInfo {
 			const created: FunctionInfo = {
-				callees: new Set<number>(),
 				callIdentifiers: [],
-				id: functionCounter,
+				callees: new Set<FunctionInfo>(),
 			};
 
-			functionCounter += 1;
-			functionInfosByNode.set(node, created);
-			functionInfosById.set(created.id, created);
+			functionInfos.push(created);
 			return created;
 		}
 
-		function recordFunctionCall(identifier: TSESTree.Identifier): void {
-			const currentFunctionId = functionStack.at(-1);
-			if (currentFunctionId === undefined) return;
+		function registerDirectFunctionInfo(node: FunctionNode, functionInfo: FunctionInfo): void {
+			if (node.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration) {
+				if (node.id === null) return;
 
-			const functionInfo = functionInfosById.get(currentFunctionId);
+				directFunctionInfosByDefinition.set(node.id, functionInfo);
+				return;
+			}
+
+			const { parent } = node;
+			if (
+				parent?.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator ||
+				parent.init !== node ||
+				parent.id.type !== TSESTree.AST_NODE_TYPES.Identifier
+			) {
+				return;
+			}
+
+			directFunctionInfosByDefinition.set(parent.id, functionInfo);
+		}
+
+		function isDirectUseMemoCallback(node: FunctionNode): node is FunctionLikeExpression {
+			if (!isFunctionLikeExpression(node)) return false;
+
+			const callExpression = node.parent;
+			return (
+				isCallExpression(callExpression) &&
+				callExpression.arguments[0] === node &&
+				isNamedReactHookCall(callExpression, "useMemo", memoIdentifiers, reactNamespaces)
+			);
+		}
+
+		function recordFunctionCall(identifier: TSESTree.Identifier): void {
+			const functionInfo = functionStack.at(-1);
 			if (functionInfo === undefined) return;
 
 			functionInfo.callIdentifiers.push(identifier);
 		}
 
 		function enterFunction(node: FunctionNode): void {
-			const functionInfo = getOrCreateFunctionInfo(node);
-			functionStack.push(functionInfo.id);
+			const functionInfo = createFunctionInfo();
+			functionStack.push(functionInfo);
+			registerDirectFunctionInfo(node, functionInfo);
+			if (isDirectUseMemoCallback(node)) useMemoInlineCallbackInfos.push(functionInfo);
 		}
 
 		function exitFunction(): void {
@@ -368,45 +321,24 @@ const noNewInstanceInUseMemo = createRule<Options, MessageIds>({
 		}
 
 		return {
-			ArrowFunctionExpression(node): void {
-				enterFunction(node);
-			},
-
-			"ArrowFunctionExpression:exit"(): void {
-				exitFunction();
-			},
+			ArrowFunctionExpression: enterFunction,
+			"ArrowFunctionExpression:exit": exitFunction,
 
 			CallExpression(node): void {
 				if (node.callee.type === TSESTree.AST_NODE_TYPES.Identifier) recordFunctionCall(node.callee);
 
-				if (!isUseMemoCall(node, memoIdentifiers, reactNamespaces)) return;
+				if (!isNamedReactHookCall(node, "useMemo", memoIdentifiers, reactNamespaces)) return;
 				const [callback] = node.arguments;
 				if (callback === undefined) return;
 
 				if (callback.type === TSESTree.AST_NODE_TYPES.Identifier) {
 					useMemoCallbackIdentifiers.push(callback);
-					return;
 				}
-
-				if (isFunctionLikeExpression(callback)) useMemoInlineCallbacks.push(callback);
 			},
-
-			FunctionDeclaration(node): void {
-				enterFunction(node);
-			},
-
-			"FunctionDeclaration:exit"(): void {
-				exitFunction();
-			},
-
-			FunctionExpression(node): void {
-				enterFunction(node);
-			},
-
-			"FunctionExpression:exit"(): void {
-				exitFunction();
-			},
-
+			FunctionDeclaration: enterFunction,
+			"FunctionDeclaration:exit": exitFunction,
+			FunctionExpression: enterFunction,
+			"FunctionExpression:exit": exitFunction,
 			ImportDeclaration(node): void {
 				if (!isReactImport(node, reactSources)) return;
 
@@ -419,8 +351,7 @@ const noNewInstanceInUseMemo = createRule<Options, MessageIds>({
 						continue;
 					}
 
-					if (specifier.type !== TSESTree.AST_NODE_TYPES.ImportSpecifier) continue;
-					if (getImportedName(specifier) === "useMemo") memoIdentifiers.add(specifier.local.name);
+					if (getImportSpecifierName(specifier) === "useMemo") memoIdentifiers.add(specifier.local.name);
 				}
 			},
 
@@ -432,31 +363,30 @@ const noNewInstanceInUseMemo = createRule<Options, MessageIds>({
 
 				trackedNewExpressions.push({
 					constructorName,
-					containingFunctionId: functionStack.at(-1),
+					containingFunctionInfo: functionStack.at(-1),
 					isLexicallyInsideUseMemo: isInsideUseMemoCallback(node, memoIdentifiers, reactNamespaces),
 					node,
 				});
 			},
 
 			"Program:exit"(): void {
-				populateCallGraph(context, functionInfosById, functionInfosByNode, variableResolutionCache);
-				const rootFunctionIds = collectRootFunctionIds(
+				populateCallGraph(context, functionInfos, directFunctionInfosByDefinition, variableResolutionCache);
+				const rootFunctionInfos = collectRootFunctionInfos(
 					context,
-					useMemoInlineCallbacks,
+					useMemoInlineCallbackInfos,
 					useMemoCallbackIdentifiers,
-					functionInfosByNode,
+					directFunctionInfosByDefinition,
 					variableResolutionCache,
 				);
-				const reachableFunctionIds = collectReachableFunctions(
-					rootFunctionIds,
-					functionInfosById,
+				const reachableFunctionInfos = collectReachableFunctions(
+					rootFunctionInfos,
 					options.maxHelperTraceDepth,
 				);
 
 				for (const trackedNewExpression of trackedNewExpressions) {
 					const matchesHelperTrace =
-						trackedNewExpression.containingFunctionId !== undefined &&
-						reachableFunctionIds.has(trackedNewExpression.containingFunctionId);
+						trackedNewExpression.containingFunctionInfo !== undefined &&
+						reachableFunctionInfos.has(trackedNewExpression.containingFunctionInfo);
 
 					if (!(trackedNewExpression.isLexicallyInsideUseMemo || matchesHelperTrace)) continue;
 
@@ -469,8 +399,8 @@ const noNewInstanceInUseMemo = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [{}],
 	meta: {
+		defaultOptions: [{}],
 		docs: {
 			description:
 				"Disallow configured constructor calls (default: new Instance) inside React useMemo callbacks.",

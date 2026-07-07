@@ -1,8 +1,8 @@
+import { getMemberPropertyName, hasShadowedBinding, unwrapExpression } from "$utilities/ast-utilities";
+import { createRule } from "$utilities/create-rule";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { getMemberPropertyName, hasShadowedBinding, unwrapExpression } from "@utilities/ast-utilities";
-import { createRule } from "@utilities/create-rule";
 
-import type { EnvironmentMode } from "@lint-types/environment-mode";
+import type { EnvironmentMode } from "$types/environment-mode";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds =
@@ -43,13 +43,13 @@ function extractElementTypeFromArrayAnnotation(
 	if (typeNode.type !== AST_NODE_TYPES.TSTypeReference) return undefined;
 	if (typeNode.typeName.type !== AST_NODE_TYPES.Identifier) return undefined;
 	if (typeNode.typeName.name !== "Array" && typeNode.typeName.name !== "ReadonlyArray") return undefined;
-	if (!typeNode.typeArguments || typeNode.typeArguments.params.length !== 1) return undefined;
+	if (typeNode.typeArguments?.params.length !== 1) return undefined;
 
 	const [elementType] = typeNode.typeArguments.params;
-	return elementType ? sourceCode.getText(elementType) : undefined;
+	return sourceCode.getText(elementType);
 }
 
-const IS_ANNOTATION = /:\s*(Array<.+>|ReadonlyArray<.+>)\s*=/u;
+const IS_ANNOTATION = /:\s*(?:Array<.+>|ReadonlyArray<.+>)\s*=/u;
 
 function hasArrayAnnotationInAssignmentPatternText(assignmentText: string): boolean {
 	const annotationMatch = IS_ANNOTATION.exec(assignmentText);
@@ -59,8 +59,7 @@ function hasArrayAnnotationInAssignmentPatternText(assignmentText: string): bool
 function getBindingTypeAnnotation(bindingName: TSESTree.BindingName): TSESTree.TSTypeAnnotation | undefined {
 	if (bindingName.type === AST_NODE_TYPES.Identifier) return bindingName.typeAnnotation;
 	if (bindingName.type === AST_NODE_TYPES.ArrayPattern) return bindingName.typeAnnotation;
-	if (bindingName.type === AST_NODE_TYPES.ObjectPattern) return bindingName.typeAnnotation;
-	return undefined;
+	return bindingName.typeAnnotation;
 }
 
 function hasContextualArrayAnnotation(
@@ -68,8 +67,6 @@ function hasContextualArrayAnnotation(
 	sourceCode: Readonly<TSESLint.SourceCode>,
 ): boolean {
 	const { parent } = node;
-	if (!parent) return false;
-
 	if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.init === node) {
 		const typeAnnotation = getBindingTypeAnnotation(parent.id);
 		if (!typeAnnotation) return false;
@@ -121,7 +118,7 @@ function isDefinitelyNonNumericExpression(expression: TSESTree.Expression): bool
 			return unwrapped.expressions.length === 0;
 
 		case AST_NODE_TYPES.UnaryExpression:
-			return unwrapped.operator === "void" || (unwrapped.operator === "typeof" && !unwrapped.prefix);
+			return unwrapped.operator === "void" || unwrapped.operator === "typeof";
 
 		default:
 			return false;
@@ -136,6 +133,36 @@ function isObjectPropertyValueExpression(value: TSESTree.Node): value is TSESTre
 	);
 }
 
+function onMemberExpression(unwrapped: TSESTree.MemberExpression): boolean {
+	if (
+		unwrapped.optional ||
+		unwrapped.object.type === AST_NODE_TYPES.Super ||
+		!isExpressionSideEffectSafe(unwrapped.object)
+	) {
+		return false;
+	}
+	if (!unwrapped.computed) return true;
+	return isExpressionSideEffectSafe(unwrapped.property);
+}
+function onObjectExpression(unwrapped: TSESTree.ObjectExpression): boolean {
+	for (const property of unwrapped.properties) {
+		if (property.type === AST_NODE_TYPES.SpreadElement) return false;
+		if (property.kind !== "init" || property.method) return false;
+		if (property.computed && !isExpressionSideEffectSafe(property.key)) return false;
+		if (isObjectPropertyValueExpression(property.value) && !isExpressionSideEffectSafe(property.value)) {
+			return false;
+		}
+	}
+	return true;
+}
+function onArrayExpression(unwrapped: TSESTree.ArrayExpression): boolean {
+	for (const element of unwrapped.elements) {
+		if (element === null) continue;
+		if (element.type === AST_NODE_TYPES.SpreadElement || !isExpressionSideEffectSafe(element)) return false;
+	}
+	return true;
+}
+
 function isExpressionSideEffectSafe(expression: TSESTree.Expression): boolean {
 	const unwrapped = unwrapExpression(expression);
 
@@ -145,12 +172,8 @@ function isExpressionSideEffectSafe(expression: TSESTree.Expression): boolean {
 		case AST_NODE_TYPES.ThisExpression:
 			return true;
 
-		case AST_NODE_TYPES.MemberExpression: {
-			if (unwrapped.optional || unwrapped.object.type === AST_NODE_TYPES.Super) return false;
-			if (!isExpressionSideEffectSafe(unwrapped.object)) return false;
-			if (!unwrapped.computed) return true;
-			return isExpressionSideEffectSafe(unwrapped.property);
-		}
+		case AST_NODE_TYPES.MemberExpression:
+			return onMemberExpression(unwrapped);
 
 		case AST_NODE_TYPES.UnaryExpression: {
 			if (unwrapped.operator === "delete") return false;
@@ -176,26 +199,11 @@ function isExpressionSideEffectSafe(expression: TSESTree.Expression): boolean {
 			return true;
 		}
 
-		case AST_NODE_TYPES.ArrayExpression: {
-			for (const element of unwrapped.elements) {
-				if (!element) continue;
-				if (element.type === AST_NODE_TYPES.SpreadElement) return false;
-				if (!isExpressionSideEffectSafe(element)) return false;
-			}
-			return true;
-		}
+		case AST_NODE_TYPES.ArrayExpression:
+			return onArrayExpression(unwrapped);
 
-		case AST_NODE_TYPES.ObjectExpression: {
-			for (const property of unwrapped.properties) {
-				if (property.type === AST_NODE_TYPES.SpreadElement) return false;
-				if (property.type !== AST_NODE_TYPES.Property) return false;
-				if (property.kind !== "init" || property.method) return false;
-				if (property.computed && !isExpressionSideEffectSafe(property.key)) return false;
-				if (!isObjectPropertyValueExpression(property.value)) return false;
-				if (!isExpressionSideEffectSafe(property.value)) return false;
-			}
-			return true;
-		}
+		case AST_NODE_TYPES.ObjectExpression:
+			return onObjectExpression(unwrapped);
 
 		case AST_NODE_TYPES.SequenceExpression:
 			return unwrapped.expressions.every(isExpressionSideEffectSafe);
@@ -264,18 +272,18 @@ function buildArrayLiteralFromArguments(
 	return `[${parts.join(", ")}]`;
 }
 
+type NonEmptyReadonlyArray<TValue> = readonly [TValue, ...Array<TValue>];
+
 function createCollapseFixes(
 	fixer: TSESLint.RuleFixer,
 	sourceCode: Readonly<TSESLint.SourceCode>,
-	declarator: TSESTree.VariableDeclarator,
-	pushStatements: ReadonlyArray<TSESTree.ExpressionStatement>,
+	arrayInitializer: TSESTree.NewExpression,
+	pushStatements: NonEmptyReadonlyArray<TSESTree.ExpressionStatement>,
 	arrayLiteralText: string,
 ): ReadonlyArray<TSESLint.RuleFix> {
-	if (!declarator.init || pushStatements.length === 0) return [];
-
 	const [firstPush] = pushStatements;
-	const lastPush = pushStatements.at(-1);
-	if (!(firstPush && lastPush)) return [];
+	let lastPush = firstPush;
+	for (const pushStatement of pushStatements) lastPush = pushStatement;
 
 	const [initialCollapseStart] = firstPush.range;
 	let collapseStart = initialCollapseStart;
@@ -291,9 +299,93 @@ function createCollapseFixes(
 	}
 
 	return [
-		fixer.replaceText(declarator.init, arrayLiteralText),
+		fixer.replaceText(arrayInitializer, arrayLiteralText),
 		fixer.removeRange([collapseStart, lastPush.range[1]]),
 	];
+}
+
+interface PushCollapseCandidate {
+	readonly arrayIdentifierName: string;
+	readonly arrayInitializer: TSESTree.NewExpression;
+	readonly statement: TSESTree.VariableDeclaration;
+}
+
+interface PushCollapseScan {
+	readonly collapsedArgumentParts: ReadonlyArray<string>;
+	readonly hasUnsafeArgument: boolean;
+	readonly pushStatements: ReadonlyArray<TSESTree.ExpressionStatement>;
+	readonly scanIndex: number;
+}
+
+interface NonEmptyPushCollapseScan extends PushCollapseScan {
+	readonly pushStatements: NonEmptyReadonlyArray<TSESTree.ExpressionStatement>;
+}
+
+function hasPushStatements(scan: PushCollapseScan): scan is NonEmptyPushCollapseScan {
+	return scan.pushStatements.length > 0;
+}
+
+function getPushCollapseCandidate(
+	context: Readonly<TSESLint.RuleContext<MessageIds, Options>>,
+	statement: TSESTree.ProgramStatement,
+): PushCollapseCandidate | undefined {
+	if (statement.type !== AST_NODE_TYPES.VariableDeclaration) return undefined;
+	if (statement.kind !== "const" && statement.kind !== "let") return undefined;
+
+	const declarator = statement.declarations.length === 1 ? statement.declarations[0] : undefined;
+	if (!declarator) return undefined;
+	if (declarator.id.type !== AST_NODE_TYPES.Identifier) return undefined;
+	if (!declarator.init || declarator.init.type !== AST_NODE_TYPES.NewExpression) return undefined;
+	if (!isGlobalArrayConstructor(context, declarator.init)) return undefined;
+	if (declarator.init.arguments.length > 0) return undefined;
+	if (isReadonlyArrayAnnotation(getBindingTypeAnnotation(declarator.id))) return undefined;
+
+	return {
+		arrayIdentifierName: declarator.id.name,
+		arrayInitializer: declarator.init,
+		statement,
+	};
+}
+
+function scanPushCalls(
+	statements: ReadonlyArray<TSESTree.ProgramStatement>,
+	startIndex: number,
+	arrayIdentifierName: string,
+	sourceCode: Readonly<TSESLint.SourceCode>,
+): PushCollapseScan {
+	const pushStatements = new Array<TSESTree.ExpressionStatement>();
+	const collapsedArgumentParts = new Array<string>();
+	let hasUnsafeArgument = false;
+	let scanIndex = startIndex;
+
+	while (scanIndex < statements.length) {
+		const nextStatement = statements[scanIndex];
+		if (nextStatement?.type !== AST_NODE_TYPES.ExpressionStatement) break;
+
+		const pushCall = getPushCallForIdentifier(nextStatement.expression, arrayIdentifierName);
+		if (!pushCall || pushCall.arguments.length === 0) break;
+
+		pushStatements.push(nextStatement);
+		for (const argument of pushCall.arguments) {
+			if (argument.type === AST_NODE_TYPES.SpreadElement) {
+				hasUnsafeArgument = true;
+				collapsedArgumentParts.push(`...${sourceCode.getText(argument.argument)}`);
+				continue;
+			}
+
+			if (!isExpressionSideEffectSafe(argument)) hasUnsafeArgument = true;
+			collapsedArgumentParts.push(sourceCode.getText(argument));
+		}
+
+		scanIndex += 1;
+	}
+
+	return {
+		collapsedArgumentParts,
+		hasUnsafeArgument,
+		pushStatements,
+		scanIndex,
+	};
 }
 
 const noArrayConstructorElements = createRule<Options, MessageIds>({
@@ -304,88 +396,166 @@ const noArrayConstructorElements = createRule<Options, MessageIds>({
 		};
 		const { sourceCode } = context;
 
-		function inspectPushCollapse(statements: ReadonlyArray<TSESTree.ProgramStatement>): void {
-			for (let index = 0; index < statements.length; index += 1) {
-				const statement = statements[index];
-				if (!statement || statement.type !== AST_NODE_TYPES.VariableDeclaration) continue;
-				if (statement.kind !== "const" && statement.kind !== "let") continue;
-				if (statement.declarations.length !== 1) continue;
+		function reportPushCollapse(candidate: PushCollapseCandidate, scan: NonEmptyPushCollapseScan): void {
+			const literalText = `[${scan.collapsedArgumentParts.join(", ")}]`;
 
-				const [declarator] = statement.declarations;
-				if (!declarator) continue;
-				if (declarator.id.type !== AST_NODE_TYPES.Identifier) continue;
-				if (!declarator.init || declarator.init.type !== AST_NODE_TYPES.NewExpression) continue;
-				if (!isGlobalArrayConstructor(context, declarator.init)) continue;
-				if (declarator.init.arguments.length > 0) continue;
-				if (isReadonlyArrayAnnotation(getBindingTypeAnnotation(declarator.id))) continue;
-				const arrayIdentifierName = declarator.id.name;
-
-				const pushStatements = new Array<TSESTree.ExpressionStatement>();
-				const collapsedArgumentParts = new Array<string>();
-				let hasSpreadArgument = false;
-				let scanIndex = index + 1;
-
-				while (scanIndex < statements.length) {
-					const nextStatement = statements[scanIndex];
-					if (!nextStatement || nextStatement.type !== AST_NODE_TYPES.ExpressionStatement) break;
-
-					const pushCall = getPushCallForIdentifier(nextStatement.expression, arrayIdentifierName);
-					if (!pushCall || pushCall.arguments.length === 0) break;
-
-					pushStatements.push(nextStatement);
-					for (const argument of pushCall.arguments) {
-						if (argument.type === AST_NODE_TYPES.SpreadElement) {
-							hasSpreadArgument = true;
-							collapsedArgumentParts.push(`...${sourceCode.getText(argument.argument)}`);
-							continue;
-						}
-
-						collapsedArgumentParts.push(sourceCode.getText(argument));
-					}
-
-					scanIndex += 1;
-				}
-
-				if (pushStatements.length === 0) continue;
-				if (containsLaterPushCall(statements, scanIndex, arrayIdentifierName)) continue;
-
-				const literalText = `[${collapsedArgumentParts.join(", ")}]`;
-
-				const hasUnsafeArgument =
-					hasSpreadArgument ||
-					pushStatements.some((pushStatement) => {
-						const callExpression = getPushCallForIdentifier(pushStatement.expression, arrayIdentifierName);
-						if (!callExpression) return true;
-
-						for (const argument of callExpression.arguments) {
-							if (argument.type === AST_NODE_TYPES.SpreadElement) return true;
-							if (!isExpressionSideEffectSafe(argument)) return true;
-						}
-
-						return false;
-					});
-
-				if (!hasUnsafeArgument) {
-					context.report({
-						fix: (fixer) => createCollapseFixes(fixer, sourceCode, declarator, pushStatements, literalText),
-						messageId: "collapseArrayPushInitialization",
-						node: statement,
-					});
-					continue;
-				}
-
+			if (!scan.hasUnsafeArgument) {
 				context.report({
+					fix: (fixer) =>
+						createCollapseFixes(
+							fixer,
+							sourceCode,
+							candidate.arrayInitializer,
+							scan.pushStatements,
+							literalText,
+						),
 					messageId: "collapseArrayPushInitialization",
-					node: statement,
+					node: candidate.statement,
+				});
+				return;
+			}
+
+			context.report({
+				messageId: "collapseArrayPushInitialization",
+				node: candidate.statement,
+				suggest: [
+					{
+						fix: (fixer): ReadonlyArray<TSESLint.RuleFix> =>
+							createCollapseFixes(
+								fixer,
+								sourceCode,
+								candidate.arrayInitializer,
+								scan.pushStatements,
+								literalText,
+							),
+						messageId: "suggestCollapseArrayPushInitialization",
+					},
+				],
+			});
+		}
+
+		function inspectPushCollapse(statements: ReadonlyArray<TSESTree.ProgramStatement>): void {
+			for (const [index, statement] of statements.entries()) {
+				const candidate = getPushCollapseCandidate(context, statement);
+				if (!candidate) continue;
+
+				const scan = scanPushCalls(statements, index + 1, candidate.arrayIdentifierName, sourceCode);
+				if (!hasPushStatements(scan)) continue;
+				if (containsLaterPushCall(statements, scan.scanIndex, candidate.arrayIdentifierName)) continue;
+
+				reportPushCollapse(candidate, scan);
+			}
+		}
+
+		function reportZeroArgumentConstructor(node: TSESTree.NewExpression): void {
+			if (!options.requireExplicitGenericOnNewArray) return;
+
+			const hasTypeArguments = Boolean(node.typeArguments && node.typeArguments.params.length > 0);
+			if (hasTypeArguments || hasContextualArrayAnnotation(node, sourceCode)) return;
+
+			context.report({
+				messageId: "requireExplicitGenericOnNewArray",
+				node,
+			});
+		}
+
+		function reportMultipleArgumentConstructor(
+			node: TSESTree.NewExpression,
+			firstArgument: TSESTree.CallExpressionArgument,
+		): void {
+			if (
+				firstArgument.type !== AST_NODE_TYPES.SpreadElement &&
+				options.environment === "roblox-ts" &&
+				!isDefinitelyNonNumericExpression(firstArgument)
+			) {
+				return;
+			}
+
+			const literalText = buildArrayLiteralFromArguments(node.arguments, sourceCode);
+			const hasSpread = node.arguments.some((argument) => argument.type === AST_NODE_TYPES.SpreadElement);
+
+			if (!hasSpread) {
+				context.report({
+					fix: (fixer) => fixer.replaceText(node, literalText),
+					messageId: "avoidConstructorEnumeration",
+					node,
+				});
+				return;
+			}
+
+			context.report({
+				messageId: "avoidConstructorEnumeration",
+				node,
+				suggest: [
+					{
+						fix: (fixer): TSESLint.RuleFix => fixer.replaceText(node, literalText),
+						messageId: "suggestArrayLiteral",
+					},
+				],
+			});
+		}
+
+		function reportSingleArgumentConstructor(
+			node: TSESTree.NewExpression,
+			firstArgument: TSESTree.CallExpressionArgument,
+		): void {
+			if (firstArgument.type === AST_NODE_TYPES.SpreadElement) {
+				context.report({
+					messageId: "avoidSingleArgumentConstructor",
+					node,
 					suggest: [
 						{
-							fix: (fixer): ReadonlyArray<TSESLint.RuleFix> =>
-								createCollapseFixes(fixer, sourceCode, declarator, pushStatements, literalText),
-							messageId: "suggestCollapseArrayPushInitialization",
+							fix: (fixer): TSESLint.RuleFix =>
+								fixer.replaceText(node, `[...${sourceCode.getText(firstArgument.argument)}]`),
+							messageId: "suggestArrayLiteral",
 						},
 					],
 				});
+				return;
 			}
+
+			if (!isDefinitelyNonNumericExpression(firstArgument)) {
+				if (options.environment === "roblox-ts") return;
+
+				const lengthExpressionText = sourceCode.getText(firstArgument);
+				context.report({
+					messageId: "avoidLengthConstructorInStandard",
+					node,
+					suggest: [
+						{
+							fix: (fixer): TSESLint.RuleFix =>
+								fixer.replaceText(node, `Array.from({ length: ${lengthExpressionText} })`),
+							messageId: "suggestArrayFromLength",
+						},
+					],
+				});
+				return;
+			}
+
+			const singleElementLiteral = `[${sourceCode.getText(firstArgument)}]`;
+			context.report({
+				fix: (fixer) => fixer.replaceText(node, singleElementLiteral),
+				messageId: "avoidSingleArgumentConstructor",
+				node,
+			});
+		}
+
+		function inspectArrayConstructor(node: TSESTree.NewExpression): void {
+			if (!isGlobalArrayConstructor(context, node)) return;
+
+			if (node.arguments.length === 0) {
+				reportZeroArgumentConstructor(node);
+				return;
+			}
+
+			if (node.arguments.length > 1) {
+				for (const firstArgument of node.arguments) {
+					reportMultipleArgumentConstructor(node, firstArgument);
+					return;
+				}
+			}
+
+			for (const firstArgument of node.arguments) reportSingleArgumentConstructor(node, firstArgument);
 		}
 
 		return {
@@ -394,109 +564,15 @@ const noArrayConstructorElements = createRule<Options, MessageIds>({
 			},
 
 			NewExpression(node): void {
-				if (!isGlobalArrayConstructor(context, node)) return;
-
-				if (node.arguments.length === 0) {
-					if (!options.requireExplicitGenericOnNewArray) return;
-
-					const hasTypeArguments = Boolean(node.typeArguments && node.typeArguments.params.length > 0);
-					if (hasTypeArguments || hasContextualArrayAnnotation(node, sourceCode)) return;
-
-					context.report({
-						messageId: "requireExplicitGenericOnNewArray",
-						node,
-					});
-					return;
-				}
-
-				if (node.arguments.length > 1) {
-					const [firstArgument] = node.arguments;
-					if (
-						firstArgument &&
-						firstArgument.type !== AST_NODE_TYPES.SpreadElement &&
-						options.environment === "roblox-ts" &&
-						!isDefinitelyNonNumericExpression(firstArgument)
-					) {
-						return;
-					}
-
-					if (firstArgument === undefined) return;
-
-					const literalText = buildArrayLiteralFromArguments(node.arguments, sourceCode);
-					const hasSpread = node.arguments.some((argument) => argument.type === AST_NODE_TYPES.SpreadElement);
-
-					if (!hasSpread) {
-						context.report({
-							fix: (fixer) => fixer.replaceText(node, literalText),
-							messageId: "avoidConstructorEnumeration",
-							node,
-						});
-						return;
-					}
-
-					context.report({
-						messageId: "avoidConstructorEnumeration",
-						node,
-						suggest: [
-							{
-								fix: (fixer): TSESLint.RuleFix => fixer.replaceText(node, literalText),
-								messageId: "suggestArrayLiteral",
-							},
-						],
-					});
-					return;
-				}
-
-				const [firstArgument] = node.arguments;
-				if (!firstArgument) return;
-
-				if (firstArgument.type === AST_NODE_TYPES.SpreadElement) {
-					context.report({
-						messageId: "avoidSingleArgumentConstructor",
-						node,
-						suggest: [
-							{
-								fix: (fixer): TSESLint.RuleFix =>
-									fixer.replaceText(node, `[...${sourceCode.getText(firstArgument.argument)}]`),
-								messageId: "suggestArrayLiteral",
-							},
-						],
-					});
-					return;
-				}
-
-				if (!isDefinitelyNonNumericExpression(firstArgument)) {
-					if (options.environment === "roblox-ts") return;
-
-					const lengthExpressionText = sourceCode.getText(firstArgument);
-					context.report({
-						messageId: "avoidLengthConstructorInStandard",
-						node,
-						suggest: [
-							{
-								fix: (fixer): TSESLint.RuleFix =>
-									fixer.replaceText(node, `Array.from({ length: ${lengthExpressionText} })`),
-								messageId: "suggestArrayFromLength",
-							},
-						],
-					});
-					return;
-				}
-
-				const singleElementLiteral = `[${sourceCode.getText(firstArgument)}]`;
-				context.report({
-					fix: (fixer) => fixer.replaceText(node, singleElementLiteral),
-					messageId: "avoidSingleArgumentConstructor",
-					node,
-				});
+				inspectArrayConstructor(node);
 			},
 			Program(node): void {
 				inspectPushCollapse(node.body);
 			},
 		};
 	},
-	defaultOptions: [DEFAULT_OPTIONS],
 	meta: {
+		defaultOptions: [DEFAULT_OPTIONS],
 		docs: {
 			description: "Disallow array constructor element forms and enforce roblox-ts-aware constructor patterns.",
 		},

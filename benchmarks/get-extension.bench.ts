@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
+// oxlint-disable sonar/cognitive-complexity unicorn/prefer-code-point no-console -- coal!
 
 import { readdir, stat } from "node:fs/promises";
-import { extname, resolve } from "node:path";
+import nodePath from "node:path";
 import { argv, exit } from "node:process";
 import { barplot, bench, run } from "mitata";
 
@@ -13,7 +14,7 @@ if (!directory) {
 
 async function getDirectoryPathAsync(path: string): Promise<string | undefined> {
 	try {
-		const resolved = resolve(path);
+		const resolved = nodePath.resolve(path);
 		const stats = await stat(resolved);
 		return stats.isDirectory() ? resolved : undefined;
 	} catch {
@@ -27,7 +28,7 @@ if (directoryPath === undefined) {
 	exit(1);
 }
 
-const sourceDirectoryPath = await getDirectoryPathAsync(resolve(directoryPath, "src"));
+const sourceDirectoryPath = await getDirectoryPathAsync(nodePath.resolve(directoryPath, "src"));
 if (sourceDirectoryPath === undefined) {
 	console.error("The 'src' directory does not exist.");
 	exit(1);
@@ -36,12 +37,12 @@ if (sourceDirectoryPath === undefined) {
 const descendants = await readdir(sourceDirectoryPath, { recursive: true, withFileTypes: true });
 const files = descendants
 	.filter((entry) => entry.isFile() && entry.name !== ".DS_Store")
-	.map((entry) => resolve(sourceDirectoryPath, entry.name));
+	.map((entry) => nodePath.resolve(sourceDirectoryPath, entry.name));
 
 const VALID_EXTS = new Set([".tsx", ".ts", ".jsx", ".js", ".mts", ".mjs", ".cts", ".cjs"]);
 
 function getExtensionExtensionName(filePath: string): string | undefined {
-	const extension = extname(filePath);
+	const extension = nodePath.extname(filePath);
 	return VALID_EXTS.has(extension) ? extension : undefined;
 }
 

@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/require-react-component-keys";
+import rule from "$rules/require-react-component-keys";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -209,6 +209,60 @@ function EnemyList(enemies) {
 					},
 				},
 			},
+			// Named callback first used as a normal call, then passed to map
+			{
+				code: `
+const renderEnemy = (enemy) => <billboardgui />;
+
+function EnemyList(enemies) {
+    renderEnemy(enemies[0]);
+    return enemies.map(renderEnemy);
+}
+`,
+				errors: 1,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Named callback first used as a component wrapper, then passed to map
+			{
+				code: `
+const renderEnemy = (enemy) => <billboardgui />;
+const MemoEnemy = React.memo(renderEnemy);
+
+function EnemyList(enemies) {
+    return enemies.map(renderEnemy);
+}
+`,
+				errors: 1,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Named callback used by memoization and iteration
+			{
+				code: `
+const renderEnemy = (enemy) => <billboardgui />;
+
+function EnemyList(enemies) {
+    const memoizedEnemy = useMemo(renderEnemy, []);
+    return enemies.map(renderEnemy);
+}
+`,
+				errors: 1,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
 			// Array.from without key in mapping callback
 			{
 				code: `
@@ -309,6 +363,19 @@ const elements = [<div />];
 const elements = [<div />, <span />];
 `,
 				errors: 2,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Ternary element in an array still needs a key
+			{
+				code: `
+const elements = [condition ? <span /> : null];
+`,
+				errors: 1,
 				languageOptions: {
 					parser,
 					parserOptions: {
@@ -723,6 +790,64 @@ function EnemyList(enemies) {
 					},
 				},
 			},
+			// Anonymous default export function root return
+			{
+				code: `
+export default function() {
+    return <billboardgui />;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Function expression assigned to a member has no local callback variable
+			{
+				code: `
+exports.Component = function() {
+    return <billboardgui />;
+};
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Named callback passed to an unknown computed callee is not treated as iteration
+			{
+				code: `
+const renderEnemy = (enemy) => <billboardgui />;
+
+getRenderer()(...renderers, renderEnemy);
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Function expression in an array is still an ordinary root component return
+			{
+				code: `
+const components = [
+    function() {
+        return <billboardgui />;
+    },
+];
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
 			// Array.from callback with keyed element
 			{
 				code: `
@@ -861,6 +986,34 @@ function Good7({ condition }) {
 					},
 				},
 			},
+			// Ternary JSX child is conditionally present, not a list sibling
+			{
+				code: `
+function GoodTernaryChild({ condition }) {
+    return <div>{condition ? <span /> : undefined}</div>;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Ternary JSX child inside a fragment is conditionally present
+			{
+				code: `
+function GoodTernaryFragmentChild({ condition }) {
+    return <>{condition ? <span /> : undefined}</>;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
 			// Logical expression return
 			{
 				code: `
@@ -889,6 +1042,34 @@ function GoodLogicalFragment({ show }) {
             )}
         </div>
     );
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Minimal logical expression fragment child
+			{
+				code: `
+function GoodLogicalFragmentChild({ show }) {
+    return <>{show && <></>}</>;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Wrapped logical expression fragment child
+			{
+				code: `
+function GoodWrappedLogicalFragmentChild({ show }) {
+    return <>{show && (<></> as React.ReactNode)}</>;
 }
 `,
 				languageOptions: {
@@ -931,6 +1112,20 @@ function Good10() {
 				code: `
 function GoodHolderChildren() {
     return <Frame holderChildren={<Child key="child" />} />;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			// Namespaced JSX prop values are ordinary prop values
+			{
+				code: `
+function GoodNamespacedProp() {
+    return <Frame slot:content={<Child />} />;
 }
 `,
 				languageOptions: {

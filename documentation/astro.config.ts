@@ -95,7 +95,7 @@ const configuration = defineConfig({
 	site: "https://howmanysmall.github.io",
 	vite: {
 		build: {
-			rollupOptions: {
+			rolldownOptions: {
 				output: {
 					// Consistent hashing for long-term caching
 					assetFileNames: "_astro/[name].[hash][extname]",

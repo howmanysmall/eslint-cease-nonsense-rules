@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/use-exhaustive-dependencies";
+import rule from "$rules/use-exhaustive-dependencies";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -627,6 +627,320 @@ function Component() {
     useEffect(() => {
         console.log(a);
     }, [a]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Custom stable tuple result should not make other tuple entries stable
+			{
+				code: `
+function Component() {
+    const [state, setter] = useCustomState();
+    useEffect(() => {
+        console.log(state);
+        setter(1);
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'state' to dependencies array",
+								output: `
+function Component() {
+    const [state, setter] = useCustomState();
+    useEffect(() => {
+        console.log(state);
+        setter(1);
+    }, [state]);
+}
+`,
+							},
+						],
+					},
+				],
+				options: [
+					{
+						hooks: [{ name: "useCustomState", stableResult: [1] }],
+					},
+				],
+			},
+
+			// Custom stable object result should not make rest bindings stable
+			{
+				code: `
+function Component() {
+    const { setter, ...rest } = useCustomState();
+    useEffect(() => {
+        rest.reset();
+        setter(1);
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'rest' to dependencies array",
+								output: `
+function Component() {
+    const { setter, ...rest } = useCustomState();
+    useEffect(() => {
+        rest.reset();
+        setter(1);
+    }, [rest]);
+}
+`,
+							},
+						],
+					},
+				],
+				options: [
+					{
+						hooks: [{ name: "useCustomState", stableResult: ["setter"] }],
+					},
+				],
+			},
+
+			// Computed custom stable object result keys are not trusted
+			{
+				code: `
+function Component() {
+    const key = "setter";
+    const { [key]: setter } = useCustomState();
+    useEffect(() => {
+        setter(1);
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'setter' to dependencies array",
+								output: `
+function Component() {
+    const key = "setter";
+    const { [key]: setter } = useCustomState();
+    useEffect(() => {
+        setter(1);
+    }, [setter]);
+}
+`,
+							},
+						],
+					},
+				],
+				options: [
+					{
+						hooks: [{ name: "useCustomState", stableResult: ["setter"] }],
+					},
+				],
+			},
+
+			// Dynamic hook-like calls are not inferred as stable values
+			{
+				code: `
+function Component() {
+    const value = hooks["useStable"]();
+    useEffect(() => {
+        console.log(value);
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'value' to dependencies array",
+								output: `
+function Component() {
+    const value = hooks["useStable"]();
+    useEffect(() => {
+        console.log(value);
+    }, [value]);
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Custom stable tuple indexes do not imply nested tuple properties are stable
+			{
+				code: `
+function Component() {
+    const [{ setter }] = useCustomState();
+    useEffect(() => {
+        setter(1);
+    }, []);
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'setter' to dependencies array",
+								output: `
+function Component() {
+    const [{ setter }] = useCustomState();
+    useEffect(() => {
+        setter(1);
+    }, [setter]);
+}
+`,
+							},
+						],
+					},
+				],
+				options: [
+					{
+						hooks: [{ name: "useCustomState", stableResult: [0] }],
+					},
+				],
+			},
+
+			// For-of variables are not treated as stable declarations
+			{
+				code: `
+function Component({ values }) {
+    for (const value of values) {
+        useEffect(() => {
+            console.log(value);
+        }, []);
+    }
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'value' to dependencies array",
+								output: `
+function Component({ values }) {
+    for (const value of values) {
+        useEffect(() => {
+            console.log(value);
+        }, [value]);
+    }
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Private member expressions preserve the private field name
+			{
+				code: `
+class Component {
+    #value = 1;
+    read(instance) {
+        useMemo(() => instance.#value, []);
+    }
+}
+`,
+				errors: [
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'instance.#value' to dependencies array",
+								output: `
+class Component {
+    #value = 1;
+    read(instance) {
+        useMemo(() => instance.#value, [instance.#value]);
+    }
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Rootless private member dependencies are unnecessary when there are no captures
+			{
+				code: `
+class Component {
+    #value = 1;
+    render() {
+        useEffect(() => {}, [this.#value]);
+    }
+}
+`,
+				errors: [
+					{
+						messageId: "unnecessaryDependency",
+						suggestions: [
+							{
+								desc: "Remove 'this.#value' from dependencies array",
+								output: `
+class Component {
+    #value = 1;
+    render() {
+        useEffect(() => {}, []);
+    }
+}
+`,
+							},
+						],
+					},
+				],
+			},
+
+			// Non-reference dependency expressions do not satisfy captured variables
+			{
+				code: `
+function Component() {
+    let value = 1;
+    useEffect(() => {
+        console.log(value);
+    }, [1 + 2]);
+}
+`,
+				errors: [
+					{
+						messageId: "unnecessaryDependency",
+						suggestions: [
+							{
+								desc: "Remove '1 + 2' from dependencies array",
+								output: `
+function Component() {
+    let value = 1;
+    useEffect(() => {
+        console.log(value);
+    }, []);
+}
+`,
+							},
+						],
+					},
+					{
+						messageId: "missingDependency",
+						suggestions: [
+							{
+								desc: "Add 'value' to dependencies array",
+								output: `
+function Component() {
+    let value = 1;
+    useEffect(() => {
+        console.log(value);
+    }, [1 + 2, value]);
 }
 `,
 							},
@@ -1431,6 +1745,50 @@ function Component() {
 				],
 			},
 
+			// Custom hook with stable object property
+			{
+				code: `
+function Component() {
+    const { setter } = useCustomState();
+    useEffect(() => {
+        setter(1);
+    }, []);
+}
+`,
+				options: [
+					{
+						hooks: [
+							{
+								name: "useCustomState",
+								stableResult: ["setter"],
+							},
+						],
+					},
+				],
+			},
+
+			// Custom hook with stable object property through a literal key
+			{
+				code: `
+function Component() {
+    const { "setter": setter } = useCustomState();
+    useEffect(() => {
+        setter(1);
+    }, []);
+}
+`,
+				options: [
+					{
+						hooks: [
+							{
+								name: "useCustomState",
+								stableResult: ["setter"],
+							},
+						],
+					},
+				],
+			},
+
 			// Coverage: React.useEffect
 			`
 function Component() {
@@ -1456,12 +1814,123 @@ function Component() {
     }, []);
 }
 `,
+			// Stable template literal expression
+			`
+function Component() {
+    const label = \`ready\`;
+    useEffect(() => {
+        console.log(label);
+    }, []);
+}
+`,
 			// Coverage: Function reference as hook argument
 			`
 function Component() {
     const handler = useCallback(() => {}, []);
     useEffect(handler, []);
 }
+`,
+			// Function declaration reference as hook argument
+			`
+function Component() {
+    function handler() {}
+    useEffect(handler, []);
+}
+`,
+			// Function expression reference as hook argument
+			`
+function Component() {
+    const handler = function() {};
+    useEffect(handler, []);
+}
+`,
+			// Function reference can be resolved through an inner block scope
+			`
+function Component() {
+    const handler = () => {};
+    {
+        useEffect(handler, []);
+    }
+}
+`,
+			// Missing referenced closure declarations are ignored
+			`
+function Component() {
+    useEffect(handler, []);
+}
+`,
+			// Non-function hook callback arguments are ignored
+			`
+function Component() {
+    const callback = condition ? () => {} : () => {};
+    useEffect(callback(), []);
+}
+`,
+			// Missing hook callback arguments are ignored
+			`
+function Component() {
+    useEffect();
+}
+`,
+			// Non-array dependency arguments are ignored
+			`
+function Component() {
+    const value = 1;
+    useEffect(() => {
+        console.log(value);
+    }, deps);
+}
+`,
+			// Computed hook callee names are ignored
+			`
+function Component() {
+    hooks["useEffect"](() => {}, []);
+}
+`,
+			// Sparse dependency arrays skip holes
+			`
+function Component() {
+    const value = 1;
+    useEffect(() => {
+        console.log(value);
+    }, [value, ,]);
+}
+`,
+			// Sparse arrays inside hook callbacks skip holes
+			`
+function Component() {
+    const value = 1;
+    useMemo(() => [value, ,], [value]);
+}
+`,
+			// Function declarations in component scope are stable values
+			`
+function Component() {
+    function helper() {}
+    useEffect(() => {
+        helper();
+    }, []);
+}
+`,
+			// Type-only identifiers inside hook callbacks are ignored
+			{
+				code: `
+function Component() {
+    const value = 1;
+    useEffect(() => {
+        type Local = typeof value;
+        console.log(value);
+    }, [value]);
+}
+`,
+				languageOptions: { parser: tsParser },
+			},
+			// Top-level hook callbacks do not infer component-body captures
+			`
+const value = 1;
+useEffect(() => {
+    console.log(value);
+}, []);
 `,
 		],
 	});

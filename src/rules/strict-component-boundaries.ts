@@ -1,7 +1,7 @@
-import { basename, extname, relative } from "node:path";
-import { toPascalCase } from "@utilities/casing-utilities";
-import { createRule } from "@utilities/create-rule";
-import { resolveRelativeImport } from "@utilities/resolve-import";
+import nodePath from "node:path";
+import { toPascalCase } from "$utilities/casing-utilities";
+import { createRule } from "$utilities/create-rule";
+import { resolveRelativeImport } from "$utilities/resolve-import";
 
 import type { TSESTree } from "@typescript-eslint/utils";
 
@@ -31,7 +31,7 @@ function hasDirectoryInPath(pathParts: ReadonlyArray<string>, directory: string)
 }
 
 function isIndexFile(filePath: string): boolean {
-	return basename(filePath, extname(filePath)) === "index";
+	return nodePath.basename(filePath, nodePath.extname(filePath)) === "index";
 }
 
 function isValidFixtureImport(pathParts: ReadonlyArray<string>): boolean {
@@ -45,24 +45,21 @@ function isValidFixtureImport(pathParts: ReadonlyArray<string>): boolean {
 
 const strictComponentBoundaries = createRule<[Options], "noReachingIntoComponent">({
 	create(context) {
-		// oxlint-disable-next-line typescript/no-useless-default-assignment
+		// oxlint-disable-next-line typescript/no-useless-default-assignment -- RuleTester requires default values for options
 		const [{ allow = [], maxDepth = 1 } = {}] = context.options;
-		// oxlint-disable-next-line no-array-callback-reference
 		const allowPatterns = allow.map(toRegExp);
 
 		return {
 			ImportDeclaration(node: TSESTree.ImportDeclaration): void {
 				const importSource = node.source.value;
-				if (typeof importSource !== "string" || !importSource.startsWith(".")) return;
+				const { filename } = context;
+				if (typeof importSource !== "string" || !importSource.startsWith(".") || filename === "") return;
 				if (allowPatterns.some((regexp) => regexp.test(importSource))) return;
-
-				const filename = context.filename ?? "";
-				if (filename === "") return;
 
 				const resolved = resolveRelativeImport(importSource, filename);
 				if (!resolved.found) return;
 
-				const pathDifference = relative(filename, resolved.path);
+				const pathDifference = nodePath.relative(filename, resolved.path);
 				const pathParts = pathSegmentsFromSource(pathDifference);
 				const traversals = countParentTraversals(pathDifference);
 
@@ -96,8 +93,8 @@ const strictComponentBoundaries = createRule<[Options], "noReachingIntoComponent
 			},
 		};
 	},
-	defaultOptions: [{}],
 	meta: {
+		defaultOptions: [{}],
 		docs: {
 			description: "Prevent module imports between components.",
 		},

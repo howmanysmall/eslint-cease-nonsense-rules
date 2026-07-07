@@ -1,7 +1,6 @@
+import { createRule } from "$utilities/create-rule";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
 
-import type { ReadonlyRecord } from "@lint-types/utility-types";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds =
@@ -15,10 +14,6 @@ const PROMISE_CHAIN_METHODS = new Set(["then", "catch", "finally"]);
 
 function isNode(value: unknown): value is TSESTree.Node {
 	return typeof value === "object" && value !== null && "type" in value;
-}
-
-function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & ReadonlyRecord<string, unknown> {
-	return true;
 }
 
 function getAsyncMethodNames(classBody: TSESTree.ClassBody): Set<string> {
@@ -62,19 +57,15 @@ function isThisAsyncMethodCall(node: TSESTree.CallExpression, asyncMethods: Set<
 	return asyncMethods.has(methodName) ? methodName : undefined;
 }
 
-function isAssignedToThisProperty(node: TSESTree.Node, parent: TSESTree.Node | undefined): boolean {
-	if (!parent) return false;
+function isAssignedToThisProperty(parent: TSESTree.Node): boolean {
 	if (parent.type !== AST_NODE_TYPES.AssignmentExpression) return false;
-	if (parent.right !== node) return false;
 
 	const { left } = parent;
 	return left.type === AST_NODE_TYPES.MemberExpression && left.object.type === AST_NODE_TYPES.ThisExpression;
 }
 
-function getLocalVariableAssignment(node: TSESTree.Node, parent: TSESTree.Node | undefined): string | undefined {
-	if (!parent) return undefined;
+function getLocalVariableAssignment(parent: TSESTree.Node): string | undefined {
 	if (parent.type !== AST_NODE_TYPES.VariableDeclarator) return undefined;
-	if (parent.init !== node) return undefined;
 	if (parent.id.type !== AST_NODE_TYPES.Identifier) return undefined;
 
 	return parent.id.name;
@@ -92,13 +83,13 @@ interface ConstructorViolation {
 
 function checkAsyncMethodCall(
 	current: TSESTree.CallExpression,
-	parent: TSESTree.Node | undefined,
+	parent: TSESTree.Node,
 	asyncMethods: Set<string>,
 ): ConstructorViolation | undefined {
 	const asyncMethodName = isThisAsyncMethodCall(current, asyncMethods);
 	if (asyncMethodName === undefined) return undefined;
 
-	if (isAssignedToThisProperty(current, parent)) return undefined;
+	if (isAssignedToThisProperty(parent)) return undefined;
 
 	if (isExpressionStatement(parent)) {
 		return {
@@ -108,7 +99,7 @@ function checkAsyncMethodCall(
 		};
 	}
 
-	const variableName = getLocalVariableAssignment(current, parent);
+	const variableName = getLocalVariableAssignment(parent);
 	if (variableName !== undefined) {
 		return {
 			data: { variableName },
@@ -120,14 +111,37 @@ function checkAsyncMethodCall(
 	return undefined;
 }
 
-function isNonIIFEFunction(node: TSESTree.Node, parent: TSESTree.Node | undefined): boolean {
+function isNonIIFEFunction(node: TSESTree.Node, parent: TSESTree.Node): boolean {
 	if (node.type !== AST_NODE_TYPES.ArrowFunctionExpression && node.type !== AST_NODE_TYPES.FunctionExpression) {
 		return false;
 	}
 
-	if (parent?.type === AST_NODE_TYPES.CallExpression && parent.callee === node) return false;
+	return !(parent.type === AST_NODE_TYPES.CallExpression && parent.callee === node);
+}
 
-	return true;
+function collectNodeChildren(value: unknown): ReadonlyArray<TSESTree.Node> {
+	const children = new Array<TSESTree.Node>();
+	if (!Array.isArray(value)) {
+		if (isNode(value)) children.push(value);
+		return children;
+	}
+
+	for (const item of value) {
+		if (!isNode(item)) continue;
+		children.push(item);
+	}
+
+	return children;
+}
+
+function getTraversableChildren(current: TSESTree.Node): ReadonlyArray<TSESTree.Node> {
+	const children = new Array<TSESTree.Node>();
+
+	for (const value of Object.values(current)) {
+		children.push(...collectNodeChildren(value));
+	}
+
+	return children;
 }
 
 function findConstructorViolations(
@@ -137,13 +151,10 @@ function findConstructorViolations(
 	const violations = new Array<ConstructorViolation>();
 	let size = 0;
 	const visited = new WeakSet<TSESTree.Node>();
-	const parentMap = new WeakMap<TSESTree.Node, TSESTree.Node>();
 
-	function traverse(current: TSESTree.Node): void {
+	function traverse(current: TSESTree.Node, parent: TSESTree.Node): void {
 		if (visited.has(current)) return;
 		visited.add(current);
-
-		const parent = parentMap.get(current);
 
 		if (isNonIIFEFunction(current, parent)) return;
 
@@ -162,31 +173,15 @@ function findConstructorViolations(
 			if (asyncViolation) violations[size++] = asyncViolation;
 		}
 
-		if (!hasDynamicProperties(current)) return;
-
-		for (const key in current) {
-			if (Object.hasOwn(current, key)) {
-				const childValue = current[key];
-				if (childValue === undefined) continue;
-
-				if (Array.isArray(childValue)) {
-					for (const item of childValue) {
-						// oxlint-disable-next-line max-depth
-						if (!isNode(item)) continue;
-						parentMap.set(item, current);
-						traverse(item);
-					}
-					continue;
-				}
-
-				if (!isNode(childValue)) continue;
-				parentMap.set(childValue, current);
-				traverse(childValue);
-			}
+		for (const child of getTraversableChildren(current)) {
+			traverse(child, current);
 		}
 	}
 
-	traverse(constructorBody);
+	for (const child of getTraversableChildren(constructorBody)) {
+		traverse(child, constructorBody);
+	}
+
 	return violations;
 }
 
@@ -211,13 +206,10 @@ const noAsyncConstructor = createRule<[], MessageIds>({
 		return {
 			"MethodDefinition[kind='constructor']"(node: TSESTree.MethodDefinition): void {
 				const constructorValue = node.value;
-				if (constructorValue.type !== AST_NODE_TYPES.FunctionExpression) return;
-
 				const { body } = constructorValue;
-				if (body.type !== AST_NODE_TYPES.BlockStatement) return;
+				if (body === null) return;
 
 				const classNode = node.parent;
-				if (classNode.type !== AST_NODE_TYPES.ClassBody) return;
 
 				const asyncMethods = getAsyncMethodNames(classNode);
 				const violations = findConstructorViolations(body, asyncMethods);
@@ -226,8 +218,8 @@ const noAsyncConstructor = createRule<[], MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description:
 				"Disallow asynchronous operations inside class constructors. Constructors return immediately, " +

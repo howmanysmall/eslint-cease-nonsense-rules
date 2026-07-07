@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/require-react-display-names";
+import rule from "$rules/require-react-display-names";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -199,6 +199,45 @@ function Comp() {
 export default React.memo(Comp);
 `,
 				errors: [{ messageId: "directMemoExport" }],
+			},
+			{
+				code: `
+import { memo } from "@rbxts/react";
+
+function Comp() {
+    return <div />;
+}
+
+export const MemoComp = memo(Comp);
+export { MemoComp as "default" };
+`,
+				errors: [{ messageId: "missingMemoDisplayName" }],
+			},
+			{
+				code: `
+import { memo } from "@rbxts/react";
+
+function Comp() {
+    return <div />;
+}
+
+const MemoComp = memo(Comp);
+export default MemoComp;
+`,
+				errors: [{ messageId: "missingMemoDisplayName" }],
+			},
+			{
+				code: `
+import { "memo" as memoize } from "@rbxts/react";
+
+function Comp() {
+    return <div />;
+}
+
+const MemoComp = memoize(Comp);
+export default MemoComp;
+`,
+				errors: [{ messageId: "missingMemoDisplayName" }],
 			},
 		],
 		valid: [
@@ -496,6 +535,54 @@ import React from "@rbxts/react";
 const key = "createContext";
 const Ctx = React[key](undefined);
 export default Ctx;
+`,
+			},
+			{
+				code: `
+import { memo } from "@rbxts/react";
+
+const Comp = memo(() => <div />);
+Comp["displayName"] = "Comp";
+`,
+			},
+			{
+				code: `
+import { memo } from "@rbxts/react";
+
+function getComp() {
+    return memo(() => <div />);
+}
+
+getComp().displayName = "Comp";
+`,
+			},
+			{
+				code: `
+import { createContext } from "@rbxts/react";
+
+function makeContext() {
+    return createContext(undefined);
+}
+
+export default makeContext();
+`,
+			},
+			{
+				code: `
+export default function Component() {
+    return <div />;
+}
+`,
+			},
+			{
+				code: `
+const Component = () => <div />;
+export { Component as default };
+`,
+			},
+			{
+				code: `
+export { "default" as Component } from "./component";
 `,
 			},
 		],

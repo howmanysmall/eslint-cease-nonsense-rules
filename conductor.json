@@ -1,6 +1,6 @@
 {
 	"scripts": {
 		"archive": "rm -rf node_modules",
-		"setup": "aube install; ./scripts/clone-ignored-from-main.ts"
+		"setup": "ni; ./scripts/clone-ignored-from-main.ts"
 	}
 }

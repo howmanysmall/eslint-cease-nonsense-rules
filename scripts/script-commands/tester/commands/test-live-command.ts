@@ -1,6 +1,6 @@
 import { access, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { resolve } from "node:path";
+import nodePath from "node:path";
 import { env, exit } from "node:process";
 import { Command } from "@cliffy/command";
 import { type } from "arktype";
@@ -57,7 +57,8 @@ function expandDirectory(directory: string): string {
 }
 
 function createPackageFileName(name: string, version: string): string {
-	return `${sanitizeForPath(`${name}-${version}`)}-${Date.now()}.tgz`;
+	const correctedPath = sanitizeForPath(`${name}-${version}`);
+	return `${correctedPath}-${Date.now()}.tgz`;
 }
 
 const isValidJson = type({
@@ -148,14 +149,14 @@ const testLiveCommand = new Command()
 	.arguments("<directory:string>")
 	.action(async ({ ci, useLink, cache }, directoryUnresolved) => {
 		log.info("Starting live test...");
-		const directory = resolve(expandDirectory(directoryUnresolved));
+		const directory = nodePath.resolve(expandDirectory(directoryUnresolved));
 		const isDirectoryReal = await isDirectorySimpleAsync(directory);
 		if (!isDirectoryReal) {
 			log.fail(picocolors.red(`The directory "${picocolors.bold(directory)}" does not exist.`));
 			exit(1);
 		}
 
-		const livePackagePath = resolve(directory, "package.json");
+		const livePackagePath = nodePath.resolve(directory, "package.json");
 		const isLivePackageReal = await fileExistsAsync(livePackagePath);
 
 		if (!isLivePackageReal) {
@@ -163,7 +164,7 @@ const testLiveCommand = new Command()
 			exit(1);
 		}
 
-		const [thisPackageJson] = await readPackageJsonAsync(resolve(".", "package.json"));
+		const [thisPackageJson] = await readPackageJsonAsync(nodePath.resolve(".", "package.json"));
 		const [livePackageJson, packageContents] = await readPackageJsonAsync(livePackagePath);
 
 		const packageFileName = createPackageFileName(thisPackageJson.name, thisPackageJson.version);
@@ -177,12 +178,12 @@ const testLiveCommand = new Command()
 			useLink,
 		});
 
-		await runCommandAsync("aube", ["run", "build"]);
+		await runCommandAsync("nr", ["build"]);
 
-		const nodePackages = resolve(directory, "patches", "node");
+		const nodePackages = nodePath.resolve(directory, "patches", "node");
 		await mkdir(nodePackages, { recursive: true });
 
-		if (useLink) await runCommandAsync("aube", ["link"]);
+		if (useLink) await runCommandAsync("pnpm", ["link", nodePath.resolve(".")], { cwd: directory });
 
 		if (!useLink) {
 			const output = await getCommandTextAsync("npm", [
@@ -195,46 +196,47 @@ const testLiveCommand = new Command()
 			const packMetadata = parsePackOutput(output);
 			const [packData] = packMetadata;
 			const packedFile = packData?.filename;
-			if (!packedFile) {
+			if (packedFile === undefined || packedFile.length === 0) {
 				log.fail("Failed to produce plugin package for live test.");
 				exit(1);
 			}
-			await rename(resolve(nodePackages, packedFile), resolve(nodePackages, packageFileName));
+			await rename(nodePath.resolve(nodePackages, packedFile), nodePath.resolve(nodePackages, packageFileName));
 		}
 
 		try {
 			const customEnvironment: NodeJS.ProcessEnv = { ...env, TIMING: "2000" };
 			if (ci) customEnvironment.CI = "true";
 
-			await runCommandAsync("aube", ["install", "--no-frozen-lockfile"], {
+			await runCommandAsync("ni", ["--no-frozen-lockfile"], {
 				cwd: directory,
 				env: customEnvironment,
 			});
 			log.success(picocolors.green("Dependencies installed successfully."));
 
 			const duration = await profileAsync(async () => {
-				// oxlint-disable-next-line unicorn/prefer-ternary
+				// oxlint-disable-next-line unicorn/prefer-ternary -- yurr
 				if (cache) {
-					await runCommandAsync("aube", ["run", "eslint", "--cache", "./src"], {
+					await runCommandAsync("nr", ["eslint", "--cache", "./src"], {
 						cwd: directory,
 						env: customEnvironment,
 					});
 				} else {
-					await runCommandAsync("aube", ["run", "eslint", "./src"], {
+					await runCommandAsync("nr", ["eslint", "./src"], {
 						cwd: directory,
 						env: customEnvironment,
 					});
 				}
 			});
 
-			log.success(picocolors.green(`ESLint took ${picocolors.bold(prettyMilliseconds(duration))}.`));
+			const length = picocolors.bold(prettyMilliseconds(duration));
+			log.success(picocolors.green(`ESLint took ${length}.`));
 		} catch (error) {
 			log.error(picocolors.red(`Error running lint: ${error instanceof Error ? error.message : String(error)}`));
 		} finally {
 			await cleanupAsync();
 		}
 
-		const patchPath = resolve(nodePackages, packageFileName);
+		const patchPath = nodePath.resolve(nodePackages, packageFileName);
 		if (await fileExistsAsync(patchPath)) await rm(patchPath);
 	});
 

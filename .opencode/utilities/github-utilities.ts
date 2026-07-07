@@ -39,8 +39,8 @@ type DeepReadonly<TObject> =
 				}
 			: TObject;
 
-type GetGitHubData<TFn extends (...args: Array<never>) => Promise<{ data: unknown }>> =
-	Awaited<ReturnType<TFn>> extends { data: infer TData }
+type GetGitHubData<TFunction extends (...parameters: Array<never>) => Promise<{ data: unknown }>> =
+	Awaited<ReturnType<TFunction>> extends { data: infer TData }
 		? TData extends object | null | undefined
 			? DeepReadonly<ObjectToCamel<TData>>
 			: never
@@ -167,8 +167,11 @@ function stringify(data: object, formatType: NonRawFormatType): string {
 		case FormatType.Json5:
 			return stringifyJSON5(data);
 
-		default:
-			throw new Error(`Unsupported format type: ${String(formatType)}`);
+		default: {
+			const error = new Error(`Unsupported format type: ${String(formatType)}`);
+			Error.captureStackTrace(error, stringify);
+			throw error;
+		}
 	}
 }
 
@@ -266,7 +269,7 @@ export async function searchCodeAsync(
 		order: searchCodeQuery.order,
 		page: searchCodeQuery.page,
 		per_page: searchCodeQuery.perPage,
-		// oxlint-disable-next-line id-length
+		// oxlint-disable-next-line id-length -- GitHub search API requires the q parameter name.
 		q: searchCodeQuery.query,
 		sort: searchCodeQuery.sort,
 	});
@@ -328,7 +331,7 @@ export async function searchRepositoriesAsync(
 		order: searchRepositoriesQuery.order,
 		page: searchRepositoriesQuery.page,
 		per_page: searchRepositoriesQuery.perPage,
-		// oxlint-disable-next-line id-length
+		// oxlint-disable-next-line id-length -- GitHub search API requires the q parameter name.
 		q: searchRepositoriesQuery.query,
 		sort: searchRepositoriesQuery.sort,
 	});

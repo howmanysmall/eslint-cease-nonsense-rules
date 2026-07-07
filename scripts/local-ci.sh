@@ -8,27 +8,27 @@
 
 function install() {
 	echo "Running 'Install' Step"
-	aube ci
+	nci
 }
 function setup-oxlint-tsgolint() {
 	echo "Running 'Setup oxlint-tsgolint' Step"
-	aube add -D oxlint-tsgolint@latest
+	ni -D oxlint-tsgolint@latest
 }
 function lint() {
 	echo "Running 'Lint' Step"
-	aube run lint
+	nr lint
 }
 function biome-ci() {
 	echo "Running 'Biome CI' Step"
-	aube run biome:ci
+	nr biome ci
 }
 function knip() {
 	echo "Running 'Knip' Step"
-	aube run knip
+	nr knip
 }
 function type-checking() {
 	echo "Running 'Type Checking' Step"
-	aube run type-check
+	nr type-check
 }
 function test() {
 	echo "Running 'Test' Step"
@@ -36,7 +36,7 @@ function test() {
 
 	if [[ "${TEST_SHARDS}" -eq 1 ]]; then
 		# Run all tests at once (default behavior)
-		AGENT=1 aube run test -- --bail
+		AGENT=1 nr test -- --bail
 	else
 		# Run tests in shards locally
 		echo "Running tests across ${TEST_SHARDS} shards..."
@@ -48,7 +48,7 @@ function test() {
 
 			if [[ -n "${SHARD_FILES}" ]]; then
 				# Don't quote SHARD_FILES so bash splits it into separate arguments
-				if ! AGENT=1 aube run test -- --bail ${SHARD_FILES}; then
+				if ! AGENT=1 nr test -- --bail ${SHARD_FILES}; then
 					echo "Shard ${shard} failed"
 					failed=1
 				fi
@@ -67,7 +67,7 @@ function test() {
 }
 function build() {
 	echo "Running 'Build' Step"
-	aube run build
+	nr build
 }
 
 install

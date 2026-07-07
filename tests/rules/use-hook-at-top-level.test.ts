@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/use-hook-at-top-level";
+import rule from "$rules/use-hook-at-top-level";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({
@@ -319,6 +319,60 @@ function Component() {
 				errors: [{ messageId: "conditionalHook" }],
 				options: [{ importSources: { "my-ecs": false, react: true } }],
 			},
+
+			// Configuration: importSources with mixed default and named imports
+			{
+				code: `
+import React, { useState } from 'react';
+function Component() {
+    if (condition) {
+        useState(0);
+    }
+}
+`,
+				errors: [{ messageId: "conditionalHook" }],
+				options: [{ importSources: { react: true } }],
+			},
+
+			// Configuration: string-literal imports fall back to hook-name checking
+			{
+				code: `
+import { "useState" as useState } from 'my-hooks';
+function Component() {
+    if (condition) {
+        useState(0);
+    }
+}
+`,
+				errors: [{ messageId: "conditionalHook" }],
+				options: [{ importSources: { "my-hooks": false } }],
+			},
+
+			// Configuration: checked member expression sources still report conditional hooks
+			{
+				code: `
+function Component() {
+    if (condition) {
+        React.useState(0);
+    }
+}
+`,
+				errors: [{ messageId: "conditionalHook" }],
+				options: [{ importSources: { React: true } }],
+			},
+
+			// Configuration: non-identifier member sources fall back to hook-name checking
+			{
+				code: `
+function Component() {
+    if (condition) {
+        getReact().useState(0);
+    }
+}
+`,
+				errors: [{ messageId: "conditionalHook" }],
+				options: [{ importSources: { React: false } }],
+			},
 		],
 		valid: [
 			// Basic top-level call
@@ -391,6 +445,46 @@ function Component() {
 }
 `,
 
+			// Imports without import source options do not affect hook-name checking
+			`
+import { useState } from 'react';
+function Component() {
+    useState(0);
+}
+`,
+
+			// Empty import source options do not affect hook-name checking
+			{
+				code: `
+import { useState } from 'react';
+function Component() {
+    useState(0);
+}
+`,
+				options: [{ importSources: {} }],
+			},
+
+			// Non-hook named imports are ignored by import source tracking
+			{
+				code: `
+import { createSignal } from 'signals';
+function Component() {
+    createSignal(0);
+    useState(0);
+}
+`,
+				options: [{ importSources: { signals: false } }],
+			},
+
+			// Call expressions used as callees are not hook calls
+			`
+function Component() {
+    if (condition) {
+        createHookRunner()();
+    }
+}
+`,
+
 			// Hook before early return
 			`
 function Component() {
@@ -421,12 +515,21 @@ function usePixel() {
 
 			// Non-component function (hooks don't apply)
 			`
-function helper() {
-    if (condition) {
-        useEffect(() => {});
-    }
-}
-`,
+	function helper() {
+	    if (condition) {
+	        useEffect(() => {});
+	    }
+	}
+	`,
+
+			// Anonymous default functions cannot be classified as components or hooks by name
+			`
+	export default function() {
+	    if (condition) {
+	        useState(0);
+	    }
+	}
+	`,
 
 			// React Lua - useBinding at top level
 			`
@@ -494,20 +597,36 @@ const Component = () => {
 
 			// Hooks in object method that looks like component
 			`
-    const obj = {
-        Component() {
-            useState(0);
-        }
-    };
-    `,
+	    const obj = {
+	        Component() {
+	            useState(0);
+	        }
+	    };
+	    `,
+			// Hooks in object method that looks like a custom hook
+			`
+	    const obj = {
+	        useCustom() {
+	            useState(0);
+	        }
+	    };
+	    `,
 			// Hooks in class method that looks like component
 			`
-    class Foo {
-        Component() {
-            useState(0);
-        }
-    }
-    `,
+	    class Foo {
+	        Component() {
+	            useState(0);
+	        }
+	    }
+	    `,
+			// Hooks in class method that looks like a custom hook
+			`
+	    class Foo {
+	        useCustom() {
+	            useState(0);
+	        }
+	    }
+	    `,
 
 			// All React Lua hooks
 			`

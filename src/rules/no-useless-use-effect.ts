@@ -1,8 +1,9 @@
-import { getReactSources, isReactImport } from "@constants/react-sources";
+import { getReactSources, isReactImport } from "$constants/react-sources";
+import { getImportSpecifierName, unwrapExpression } from "$utilities/ast-utilities";
+import { createRule } from "$utilities/create-rule";
 import { TSESTree } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
 
-import type { EnvironmentMode } from "@lint-types/environment-mode";
+import type { EnvironmentMode } from "$types/environment-mode";
 
 type MessageIds =
 	| "adjustState"
@@ -157,27 +158,35 @@ export interface NoUselessUseEffectOptions {
 
 type Options = [NoUselessUseEffectOptions?];
 
-interface NormalizedOptions {
-	readonly environment: EnvironmentMode;
+type ReportOptionName =
+	| "reportAdjustState"
+	| "reportDerivedState"
+	| "reportDuplicateDeps"
+	| "reportEffectChain"
+	| "reportEmptyEffect"
+	| "reportEventFlag"
+	| "reportEventSpecificLogic"
+	| "reportExternalStore"
+	| "reportInitializeState"
+	| "reportLogOnly"
+	| "reportMixedDerivedState"
+	| "reportNotifyParent"
+	| "reportPassRefToParent"
+	| "reportResetState";
+
+type NormalizedReportOptions = Required<Pick<NoUselessUseEffectOptions, ReportOptionName>>;
+
+interface NormalizedHookOptions {
 	readonly hooks: ReadonlySet<string>;
 	readonly propertyCallbackPrefixes: ReadonlySet<string>;
 	readonly refHooks: ReadonlySet<string>;
-	readonly reportAdjustState: boolean;
-	readonly reportDerivedState: boolean;
-	readonly reportDuplicateDeps: boolean;
-	readonly reportEffectChain: boolean;
-	readonly reportEmptyEffect: boolean;
-	readonly reportEventFlag: boolean;
-	readonly reportEventSpecificLogic: boolean;
-	readonly reportExternalStore: boolean;
-	readonly reportInitializeState: boolean;
-	readonly reportLogOnly: boolean;
-	readonly reportMixedDerivedState: boolean;
-	readonly reportNotifyParent: boolean;
-	readonly reportPassRefToParent: boolean;
-	readonly reportResetState: boolean;
 	readonly stateHooks: ReadonlySet<string>;
 }
+
+type NormalizedOptions = NormalizedHookOptions &
+	NormalizedReportOptions & {
+		readonly environment: EnvironmentMode;
+	};
 
 const DEFAULT_OPTIONS: Required<NoUselessUseEffectOptions> = {
 	environment: "roblox-ts",
@@ -202,6 +211,7 @@ const DEFAULT_OPTIONS: Required<NoUselessUseEffectOptions> = {
 };
 
 type FunctionNode = TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression;
+type CallbackFunctionNode = TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression;
 
 interface FunctionContext {
 	readonly functionId: number;
@@ -221,36 +231,29 @@ interface EffectInfo {
 }
 
 function normalizeOptions(raw: NoUselessUseEffectOptions | undefined): NormalizedOptions {
-	return {
-		environment: raw?.environment ?? DEFAULT_OPTIONS.environment,
-		hooks: new Set(raw?.hooks ?? DEFAULT_OPTIONS.hooks),
-		propertyCallbackPrefixes: new Set(raw?.propertyCallbackPrefixes ?? DEFAULT_OPTIONS.propertyCallbackPrefixes),
-		refHooks: new Set(raw?.refHooks ?? DEFAULT_OPTIONS.refHooks),
-		reportAdjustState: raw?.reportAdjustState ?? DEFAULT_OPTIONS.reportAdjustState,
-		reportDerivedState: raw?.reportDerivedState ?? DEFAULT_OPTIONS.reportDerivedState,
-		reportDuplicateDeps: raw?.reportDuplicateDeps ?? DEFAULT_OPTIONS.reportDuplicateDeps,
-		reportEffectChain: raw?.reportEffectChain ?? DEFAULT_OPTIONS.reportEffectChain,
-		reportEmptyEffect: raw?.reportEmptyEffect ?? DEFAULT_OPTIONS.reportEmptyEffect,
-		reportEventFlag: raw?.reportEventFlag ?? DEFAULT_OPTIONS.reportEventFlag,
-		reportEventSpecificLogic: raw?.reportEventSpecificLogic ?? DEFAULT_OPTIONS.reportEventSpecificLogic,
-		reportExternalStore: raw?.reportExternalStore ?? DEFAULT_OPTIONS.reportExternalStore,
-		reportInitializeState: raw?.reportInitializeState ?? DEFAULT_OPTIONS.reportInitializeState,
-		reportLogOnly: raw?.reportLogOnly ?? DEFAULT_OPTIONS.reportLogOnly,
-		reportMixedDerivedState: raw?.reportMixedDerivedState ?? DEFAULT_OPTIONS.reportMixedDerivedState,
-		reportNotifyParent: raw?.reportNotifyParent ?? DEFAULT_OPTIONS.reportNotifyParent,
-		reportPassRefToParent: raw?.reportPassRefToParent ?? DEFAULT_OPTIONS.reportPassRefToParent,
-		reportResetState: raw?.reportResetState ?? DEFAULT_OPTIONS.reportResetState,
-		stateHooks: new Set(raw?.stateHooks ?? DEFAULT_OPTIONS.stateHooks),
-	};
-}
+	const options: Required<NoUselessUseEffectOptions> = { ...DEFAULT_OPTIONS, ...raw };
 
-function getImportedName(specifier: TSESTree.ImportSpecifier): string | undefined {
-	const { imported } = specifier;
-	return imported.type === TSESTree.AST_NODE_TYPES.Identifier
-		? imported.name
-		: imported.type === TSESTree.AST_NODE_TYPES.Literal && typeof imported.value === "string"
-			? imported.value
-			: undefined;
+	return {
+		environment: options.environment,
+		hooks: new Set(options.hooks),
+		propertyCallbackPrefixes: new Set(options.propertyCallbackPrefixes),
+		refHooks: new Set(options.refHooks),
+		reportAdjustState: options.reportAdjustState,
+		reportDerivedState: options.reportDerivedState,
+		reportDuplicateDeps: options.reportDuplicateDeps,
+		reportEffectChain: options.reportEffectChain,
+		reportEmptyEffect: options.reportEmptyEffect,
+		reportEventFlag: options.reportEventFlag,
+		reportEventSpecificLogic: options.reportEventSpecificLogic,
+		reportExternalStore: options.reportExternalStore,
+		reportInitializeState: options.reportInitializeState,
+		reportLogOnly: options.reportLogOnly,
+		reportMixedDerivedState: options.reportMixedDerivedState,
+		reportNotifyParent: options.reportNotifyParent,
+		reportPassRefToParent: options.reportPassRefToParent,
+		reportResetState: options.reportResetState,
+		stateHooks: new Set(options.stateHooks),
+	};
 }
 
 function isHookCall(
@@ -272,11 +275,10 @@ function isHookCall(
 	return false;
 }
 
-function isFunctionLike(node: TSESTree.Node | null | undefined): node is FunctionNode {
+function isFunctionLike(node: TSESTree.Node | null | undefined): node is CallbackFunctionNode {
 	return (
 		node?.type === TSESTree.AST_NODE_TYPES.FunctionExpression ||
-		node?.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression ||
-		node?.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration
+		node?.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression
 	);
 }
 
@@ -290,7 +292,6 @@ function getFunctionName(node: FunctionNode): string | undefined {
 	}
 
 	const { parent } = node;
-	if (!parent) return undefined;
 
 	if (
 		parent.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
@@ -317,31 +318,26 @@ function getFunctionName(node: FunctionNode): string | undefined {
 	return undefined;
 }
 
-function isCustomHookName(name: string | undefined): boolean {
-	return typeof name === "string" && name.startsWith("use");
+function isCustomHookName(name?: string): boolean {
+	return name?.startsWith("use") === true;
 }
 
-function isBlockBody(
-	node: TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression,
-): node is (TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression) & { body: TSESTree.BlockStatement } {
+function isBlockBody(node: CallbackFunctionNode): node is CallbackFunctionNode & { body: TSESTree.BlockStatement } {
 	return node.body.type === TSESTree.AST_NODE_TYPES.BlockStatement;
 }
 
 function isReturnWithoutArgument(statement: TSESTree.Statement): boolean {
 	if (statement.type === TSESTree.AST_NODE_TYPES.ReturnStatement) return statement.argument === null;
-	if (statement.type !== TSESTree.AST_NODE_TYPES.BlockStatement) return false;
-	if (statement.body.length !== 1) return false;
+	if (statement.type !== TSESTree.AST_NODE_TYPES.BlockStatement || statement.body.length !== 1) return false;
 	const [inner] = statement.body;
 	return inner?.type === TSESTree.AST_NODE_TYPES.ReturnStatement && inner.argument === null;
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- eat my shorts
 function hasReturnWithArgument(body: TSESTree.BlockStatement): boolean {
 	const stack: Array<TSESTree.Node> = [...body.body];
 
-	while (stack.length > 0) {
-		const current = stack.pop();
-		if (!current) continue;
-
+	for (const current of stack) {
 		switch (current.type) {
 			case TSESTree.AST_NODE_TYPES.FunctionDeclaration:
 			case TSESTree.AST_NODE_TYPES.FunctionExpression:
@@ -368,7 +364,9 @@ function hasReturnWithArgument(body: TSESTree.BlockStatement): boolean {
 			case TSESTree.AST_NODE_TYPES.ForInStatement:
 			case TSESTree.AST_NODE_TYPES.ForOfStatement:
 			case TSESTree.AST_NODE_TYPES.WhileStatement:
-			case TSESTree.AST_NODE_TYPES.DoWhileStatement: {
+			case TSESTree.AST_NODE_TYPES.DoWhileStatement:
+			case TSESTree.AST_NODE_TYPES.WithStatement:
+			case TSESTree.AST_NODE_TYPES.LabeledStatement: {
 				stack.push(current.body);
 				continue;
 			}
@@ -382,16 +380,6 @@ function hasReturnWithArgument(body: TSESTree.BlockStatement): boolean {
 				stack.push(current.block);
 				if (current.handler?.body) stack.push(current.handler.body);
 				if (current.finalizer) stack.push(current.finalizer);
-				continue;
-			}
-
-			case TSESTree.AST_NODE_TYPES.LabeledStatement: {
-				stack.push(current.body);
-				continue;
-			}
-
-			case TSESTree.AST_NODE_TYPES.WithStatement: {
-				stack.push(current.body);
 				continue;
 			}
 
@@ -412,14 +400,9 @@ function stripLeadingGuard(statements: ReadonlyArray<TSESTree.Statement>): Reado
 	return statements.slice(1);
 }
 
-function unwrapChainExpression(expression: TSESTree.Expression): TSESTree.Expression {
-	if (expression.type === TSESTree.AST_NODE_TYPES.ChainExpression) return expression.expression;
-	return expression;
-}
-
 function getCallExpressionFromStatement(statement: TSESTree.Statement): TSESTree.CallExpression | undefined {
 	if (statement.type !== TSESTree.AST_NODE_TYPES.ExpressionStatement) return undefined;
-	const expression = unwrapChainExpression(statement.expression);
+	const expression = unwrapExpression(statement.expression);
 	return expression.type === TSESTree.AST_NODE_TYPES.CallExpression ? expression : undefined;
 }
 
@@ -440,16 +423,12 @@ function isFalseLiteral(node: TSESTree.Node): boolean {
 function isConstantLiteral(node: TSESTree.Node): boolean {
 	if (node.type === TSESTree.AST_NODE_TYPES.Literal) return node.value === null || node.value === undefined;
 
-	if (
+	return (
 		node.type === TSESTree.AST_NODE_TYPES.UnaryExpression &&
 		node.operator === "void" &&
 		node.argument.type === TSESTree.AST_NODE_TYPES.Literal &&
 		node.argument.value === 0
-	) {
-		return true;
-	}
-
-	return false;
+	);
 }
 
 function isEmptyArrayExpression(node: TSESTree.Node): boolean {
@@ -480,7 +459,7 @@ function getResetFlagNameFromStatement(
 	if (!callExpression || callExpression.callee.type !== TSESTree.AST_NODE_TYPES.Identifier) return undefined;
 
 	const flagName = stateSetterToValue.get(callExpression.callee.name);
-	if (!flagName || callExpression.arguments.length !== 1) return undefined;
+	if (flagName === undefined || flagName.length === 0 || callExpression.arguments.length !== 1) return undefined;
 
 	const [argument] = callExpression.arguments;
 	if (!(argument && isFalseLiteral(argument))) return undefined;
@@ -514,21 +493,44 @@ function getStatementsFromConsequent(consequent: TSESTree.Statement): ReadonlyAr
 	return [consequent];
 }
 
+function isTrueString(value?: string): value is string {
+	return value !== undefined && value.length > 0;
+}
+
+type ThreeStatements = readonly [TSESTree.Statement, TSESTree.Statement, TSESTree.Statement];
+type TwoStatements = readonly [TSESTree.Statement, TSESTree.Statement];
+
+function hasThreeStatements(statements: ReadonlyArray<TSESTree.Statement>): statements is ThreeStatements {
+	return statements.length === 3;
+}
+
+function hasTwoStatements(statements: ReadonlyArray<TSESTree.Statement>): statements is TwoStatements {
+	return statements.length === 2;
+}
+
+type OneArgumentCallExpression = TSESTree.CallExpression & {
+	readonly arguments: readonly [TSESTree.CallExpressionArgument];
+};
+
+function hasOneArgument(callExpression: TSESTree.CallExpression): callExpression is OneArgumentCallExpression {
+	return callExpression.arguments.length === 1;
+}
+
+// oxlint-disable-next-line sonar/cognitive-complexity -- eat my shorts
 function matchEventFlagPattern(
 	statements: ReadonlyArray<TSESTree.Statement>,
 	stateSetterToValue: ReadonlyMap<string, string>,
 	stateSetterIdentifiers: ReadonlySet<string>,
 ): string | undefined {
-	if (statements.length === 3) {
+	if (hasThreeStatements(statements)) {
 		const [guard, first, second] = statements;
-		if (!guard || guard.type !== TSESTree.AST_NODE_TYPES.IfStatement) return undefined;
+		if (guard.type !== TSESTree.AST_NODE_TYPES.IfStatement) return undefined;
 		if (guard.alternate) return undefined;
-		if (!(first && second)) return undefined;
 
 		const firstFlag = getResetFlagNameFromStatement(first, stateSetterToValue);
 		const secondFlag = getResetFlagNameFromStatement(second, stateSetterToValue);
 
-		if (firstFlag && !secondFlag) {
+		if (isTrueString(firstFlag) && !isTrueString(secondFlag)) {
 			if (!(isNegativeFlagTest(guard.test, firstFlag) && isReturnWithoutArgument(guard.consequent))) {
 				return undefined;
 			}
@@ -537,7 +539,7 @@ function matchEventFlagPattern(
 			return firstFlag;
 		}
 
-		if (secondFlag && !firstFlag) {
+		if (isTrueString(secondFlag) && !isTrueString(firstFlag)) {
 			if (!(isNegativeFlagTest(guard.test, secondFlag) && isReturnWithoutArgument(guard.consequent))) {
 				return undefined;
 			}
@@ -549,28 +551,26 @@ function matchEventFlagPattern(
 
 	if (statements.length === 1) {
 		const [onlyStatement] = statements;
-		if (!onlyStatement || onlyStatement.type !== TSESTree.AST_NODE_TYPES.IfStatement) return undefined;
+		if (onlyStatement?.type !== TSESTree.AST_NODE_TYPES.IfStatement) return undefined;
 		if (onlyStatement.alternate) return undefined;
 
 		const { test } = onlyStatement;
 		const consequentStatements = getStatementsFromConsequent(onlyStatement.consequent);
-		if (consequentStatements.length !== 2) return undefined;
-
+		if (!hasTwoStatements(consequentStatements)) return undefined;
 		const [first, second] = consequentStatements;
-		if (!(first && second)) return undefined;
 
 		const firstFlag = getResetFlagNameFromStatement(first, stateSetterToValue);
 		const secondFlag = getResetFlagNameFromStatement(second, stateSetterToValue);
 
-		if (firstFlag && !secondFlag) {
+		if (isTrueString(firstFlag) && !isTrueString(secondFlag)) {
 			if (!isPositiveFlagTest(test, firstFlag)) return undefined;
 			if (!getSideEffectCall(second, stateSetterIdentifiers)) return undefined;
 			return firstFlag;
 		}
 
 		if (
-			secondFlag &&
-			!firstFlag &&
+			isTrueString(secondFlag) &&
+			!isTrueString(firstFlag) &&
 			isPositiveFlagTest(test, secondFlag) &&
 			getSideEffectCall(first, stateSetterIdentifiers)
 		) {
@@ -581,15 +581,11 @@ function matchEventFlagPattern(
 	return undefined;
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- SHUT UP!
 function expressionContainsIdentifier(node: TSESTree.Expression): boolean {
 	const stack: Array<TSESTree.Node> = [node];
-	const visited = new Set<TSESTree.Node>();
 
-	while (stack.length > 0) {
-		const current = stack.pop();
-		if (!current || visited.has(current)) continue;
-		visited.add(current);
-
+	for (const current of stack) {
 		if (current.type === TSESTree.AST_NODE_TYPES.Identifier) return true;
 
 		if (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
@@ -612,8 +608,7 @@ function expressionContainsIdentifier(node: TSESTree.Expression): boolean {
 			current.type === TSESTree.AST_NODE_TYPES.BinaryExpression ||
 			current.type === TSESTree.AST_NODE_TYPES.LogicalExpression
 		) {
-			stack.push(current.left);
-			stack.push(current.right);
+			stack.push(current.left, current.right);
 			continue;
 		}
 
@@ -623,9 +618,7 @@ function expressionContainsIdentifier(node: TSESTree.Expression): boolean {
 		}
 
 		if (current.type === TSESTree.AST_NODE_TYPES.ConditionalExpression) {
-			stack.push(current.test);
-			stack.push(current.consequent);
-			stack.push(current.alternate);
+			stack.push(current.test, current.consequent, current.alternate);
 			continue;
 		}
 
@@ -776,7 +769,7 @@ function buildFunctionContext(
 		if (property.type !== TSESTree.AST_NODE_TYPES.Property) continue;
 
 		const propertyName = getPropertyName(property);
-		if (!(propertyName && hasPrefix(propertyName, propertyCallbackPrefixes))) continue;
+		if (!(isTrueString(propertyName) && hasPrefix(propertyName, propertyCallbackPrefixes))) continue;
 
 		const valueIdentifier = getPropertyValueIdentifier(property);
 		if (valueIdentifier) context.propertyCallbackIdentifiers.add(valueIdentifier.name);
@@ -828,9 +821,7 @@ function getDependencyIdentifiers(callExpression: TSESTree.CallExpression): Set<
 	if (!dependencyArgument || dependencyArgument.type !== TSESTree.AST_NODE_TYPES.ArrayExpression) return identifiers;
 
 	for (const element of dependencyArgument.elements) {
-		if (element?.type === TSESTree.AST_NODE_TYPES.Identifier) {
-			identifiers.add(element.name);
-		}
+		if (element?.type === TSESTree.AST_NODE_TYPES.Identifier) identifiers.add(element.name);
 	}
 
 	return identifiers;
@@ -869,6 +860,7 @@ function collectSetterCalls(
 	return setters;
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- sybau
 function hasNonSetterSideEffect(
 	statements: ReadonlyArray<TSESTree.Statement>,
 	stateSetterIdentifiers: ReadonlySet<string>,
@@ -909,6 +901,7 @@ function hasNonSetterSideEffect(
 	return false;
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- sybau
 function hasOnlyResetValueSetterCalls(
 	statements: ReadonlyArray<TSESTree.Statement>,
 	stateSetterIdentifiers: ReadonlySet<string>,
@@ -934,6 +927,7 @@ function hasOnlyResetValueSetterCalls(
 	return true;
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- sybau
 function hasOnlyConstantSetterCalls(
 	statements: ReadonlyArray<TSESTree.Statement>,
 	stateSetterIdentifiers: ReadonlySet<string>,
@@ -951,9 +945,8 @@ function hasOnlyConstantSetterCalls(
 		const callExpression = getCallExpressionFromStatement(statement);
 		if (!callExpression) return false;
 		if (!isStateSetterCall(callExpression, stateSetterIdentifiers)) return false;
-		if (callExpression.arguments.length !== 1) return false;
+		if (!hasOneArgument(callExpression)) return false;
 		const [argument] = callExpression.arguments;
-		if (!argument) return false;
 
 		if (
 			argument.type === TSESTree.AST_NODE_TYPES.Literal &&
@@ -962,8 +955,7 @@ function hasOnlyConstantSetterCalls(
 		) {
 			continue;
 		}
-		if (isEmptyArrayExpression(argument)) continue;
-		if (isEmptyObjectExpression(argument)) continue;
+		if (isEmptyArrayExpression(argument) || isEmptyObjectExpression(argument)) continue;
 
 		return false;
 	}
@@ -1001,8 +993,8 @@ function hasOnlyLogCalls(statements: ReadonlyArray<TSESTree.Statement>): boolean
 	return true;
 }
 
+const SUBSCRIBE_METHODS = new Set(["addEventListener", "subscribe", "on", "addListener"]);
 function hasExternalStorePattern(statements: ReadonlyArray<TSESTree.Statement>): boolean {
-	const subscribeMethods = new Set(["addEventListener", "subscribe", "on", "addListener"]);
 	const hasSubscription = statements.some((statement) => {
 		const callExpression = getCallExpressionFromStatement(statement);
 		if (!callExpression) return false;
@@ -1012,7 +1004,7 @@ function hasExternalStorePattern(statements: ReadonlyArray<TSESTree.Statement>):
 			!callExpression.callee.computed &&
 			callExpression.callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
 		) {
-			return subscribeMethods.has(callExpression.callee.property.name);
+			return SUBSCRIBE_METHODS.has(callExpression.callee.property.name);
 		}
 
 		return false;
@@ -1021,6 +1013,7 @@ function hasExternalStorePattern(statements: ReadonlyArray<TSESTree.Statement>):
 	return hasSubscription;
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- sybau
 function hasRefPassedToParent(
 	statements: ReadonlyArray<TSESTree.Statement>,
 	refIdentifiers: ReadonlySet<string>,
@@ -1058,6 +1051,7 @@ function hasRefPassedToParent(
 	return false;
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- sybau
 function hasConditionalSetterBasedOnProperty(
 	statements: ReadonlyArray<TSESTree.Statement>,
 	stateSetterIdentifiers: ReadonlySet<string>,
@@ -1103,16 +1097,12 @@ function hasConditionalSetterBasedOnProperty(
 	return false;
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- sybau
 function collectIdentifiers(node: TSESTree.Node): Set<string> {
 	const identifiers = new Set<string>();
-	const visited = new Set<TSESTree.Node>();
 	const stack: Array<TSESTree.Node> = [node];
 
-	while (stack.length > 0) {
-		const current = stack.pop();
-		if (!current || visited.has(current)) continue;
-		visited.add(current);
-
+	for (const current of stack) {
 		if (current.type === TSESTree.AST_NODE_TYPES.Identifier) {
 			identifiers.add(current.name);
 			continue;
@@ -1136,8 +1126,7 @@ function collectIdentifiers(node: TSESTree.Node): Set<string> {
 			current.type === TSESTree.AST_NODE_TYPES.BinaryExpression ||
 			current.type === TSESTree.AST_NODE_TYPES.LogicalExpression
 		) {
-			stack.push(current.left);
-			stack.push(current.right);
+			stack.push(current.left, current.right);
 			continue;
 		}
 
@@ -1147,15 +1136,11 @@ function collectIdentifiers(node: TSESTree.Node): Set<string> {
 		}
 
 		if (current.type === TSESTree.AST_NODE_TYPES.ConditionalExpression) {
-			stack.push(current.test);
-			stack.push(current.consequent);
-			stack.push(current.alternate);
+			stack.push(current.test, current.consequent, current.alternate);
 			continue;
 		}
 
-		if (current.type === TSESTree.AST_NODE_TYPES.ChainExpression) {
-			stack.push(current.expression);
-		}
+		if (current.type === TSESTree.AST_NODE_TYPES.ChainExpression) stack.push(current.expression);
 	}
 
 	return identifiers;
@@ -1179,6 +1164,7 @@ const EVENT_SIDE_EFFECT_PREFIXES = new Set([
 	"report",
 ]);
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- sybau
 function hasEventSpecificLogic(
 	statements: ReadonlyArray<TSESTree.Statement>,
 	stateSetterIdentifiers: ReadonlySet<string>,
@@ -1383,6 +1369,7 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 			"removeListener",
 		]);
 
+		// oxlint-disable-next-line sonar/cognitive-complexity -- sybau
 		function hasRealExternalSideEffect(
 			statements: ReadonlyArray<TSESTree.Statement>,
 			setterIds: ReadonlySet<string>,
@@ -1479,10 +1466,11 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 			return false;
 		}
 
+		// oxlint-disable-next-line sonar/cognitive-complexity -- sybau
 		function analyzeEffect(
 			node: TSESTree.CallExpression,
 			statements: ReadonlyArray<TSESTree.Statement>,
-			body: TSESTree.BlockStatement | undefined,
+			body?: TSESTree.BlockStatement,
 		): void {
 			const functionContext = functionContextStack.at(-1);
 			const coreStatements = stripLeadingGuard(statements);
@@ -1544,7 +1532,7 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 			// 4. eventFlag - existing pattern
 			if (options.reportEventFlag) {
 				const flagName = matchEventFlagPattern(statements, stateSetterToValue, stateSetterIdentifiers);
-				if (flagName && hasDependencyIdentifier(node, flagName)) {
+				if (flagName !== undefined && flagName.length > 0 && hasDependencyIdentifier(node, flagName)) {
 					context.report({ messageId: "eventFlag", node });
 					return;
 				}
@@ -1632,17 +1620,16 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 			}
 		}
 
+		// oxlint-disable-next-line sonar/cognitive-complexity -- sybau
 		function analyzeEffectChains(): void {
 			if (!options.reportEffectChain) return;
 
 			// Build mapping: state value -> effects that set it
 			const stateSetByEffect = new Map<string, Set<number>>();
-			for (let index = 0; index < componentEffects.length; index += 1) {
-				const effect = componentEffects[index];
-				if (!effect) continue;
+			for (const [index, effect] of componentEffects.entries()) {
 				for (const setter of effect.setterCalls) {
 					const stateValue = stateSetterToValue.get(setter);
-					if (stateValue) {
+					if (stateValue !== undefined && stateValue.length > 0) {
 						const ownerStateKey = getOwnerStateKey(effect.ownerFunctionId, stateValue);
 						let setters = stateSetByEffect.get(ownerStateKey);
 						if (!setters) {
@@ -1656,8 +1643,6 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 
 			// Check if any effect depends on state set only by other effects
 			for (const effect of componentEffects) {
-				if (!effect) continue;
-
 				// Skip effects with actual side effects (not just state setting)
 				if (effect.hasNonSetterSideEffect || effect.hasReturnWithCleanup) continue;
 
@@ -1670,7 +1655,7 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 						const allSettersArePure = [...setterEffectIndices].every((index) => {
 							const setterEffect = componentEffects[index];
 							return (
-								setterEffect &&
+								setterEffect !== undefined &&
 								!setterEffect.hasNonSetterSideEffect &&
 								!setterEffect.hasReturnWithCleanup
 							);
@@ -1686,9 +1671,9 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 			}
 		}
 
+		// oxlint-disable-next-line sonar/cognitive-complexity -- sybau
 		function analyzeDuplicateDeps(): void {
-			if (!options.reportDuplicateDeps) return;
-			if (componentEffects.length < 2) return;
+			if (!options.reportDuplicateDeps || componentEffects.length < 2) return;
 
 			const reported = new Set<number>();
 
@@ -1697,22 +1682,26 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 				const effect1 = componentEffects[index];
 				if (!effect1 || effect1.depIdentifiers.size === 0) continue;
 
-				const duplicates = [index];
+				const duplicateIndexes = [index];
+				const duplicateEffects = [effect1];
 
 				for (let jndex = index + 1; jndex < componentEffects.length; jndex += 1) {
 					if (reported.has(jndex)) continue;
 					const effect2 = componentEffects[jndex];
-					if (!effect2) continue;
-					if (effect2.ownerFunctionId !== effect1.ownerFunctionId) continue;
-
-					if (depArraysAreIdentical(effect1.depIdentifiers, effect2.depIdentifiers)) duplicates.push(jndex);
+					if (!effect2 || effect2.ownerFunctionId !== effect1.ownerFunctionId) continue;
+					if (depArraysAreIdentical(effect1.depIdentifiers, effect2.depIdentifiers)) {
+						duplicateIndexes.push(jndex);
+						duplicateEffects.push(effect2);
+					}
 				}
 
-				if (duplicates.length > 1) {
-					for (const jndex of duplicates) {
+				if (duplicateEffects.length > 1) {
+					for (const jndex of duplicateIndexes) {
 						reported.add(jndex);
-						const effect = componentEffects[jndex];
-						if (effect) context.report({ messageId: "duplicateDeps", node: effect.node });
+					}
+
+					for (const effect of duplicateEffects) {
+						context.report({ messageId: "duplicateDeps", node: effect.node });
 					}
 				}
 			}
@@ -1745,9 +1734,7 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 					return;
 				}
 
-				if (!isFunctionLike(callback)) return;
-				if (callback.async) return;
-				if (!isBlockBody(callback)) return;
+				if (!isFunctionLike(callback) || callback.async || !isBlockBody(callback)) return;
 
 				const statements = callback.body.body.filter(
 					(statement) => statement.type !== TSESTree.AST_NODE_TYPES.EmptyStatement,
@@ -1771,9 +1758,8 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 						continue;
 					}
 
-					if (specifier.type !== TSESTree.AST_NODE_TYPES.ImportSpecifier) continue;
-					const importedName = getImportedName(specifier);
-					if (!importedName) continue;
+					const importedName = getImportSpecifierName(specifier);
+					if (importedName.length === 0) continue;
 
 					if (options.hooks.has(importedName)) effectIdentifiers.add(specifier.local.name);
 					if (options.stateHooks.has(importedName)) stateHookIdentifiers.add(specifier.local.name);
@@ -1792,8 +1778,8 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [{}],
 	meta: {
+		defaultOptions: [{}],
 		docs: {
 			description:
 				"Disallow effects that only derive state, notify parent callbacks, reset state on prop changes, or route event side effects through state.",

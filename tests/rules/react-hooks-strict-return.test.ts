@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/react-hooks-strict-return";
+import rule from "$rules/react-hooks-strict-return";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({
@@ -20,6 +20,7 @@ describe("react-hooks-strict-return", () => {
 
 			// Variable reference to 3+ element array
 			{ code: "function useFoo() { const bar = [1, 2, 3]; return bar; }", errors },
+			{ code: "function useFoo() { let bar = [1, 2, 3]; bar; return bar; }", errors },
 
 			// Variable from outer scope (covers line 29 - scope chain traversal)
 			{ code: "const bar = [1, 2, 3]; function useFoo() { return bar; }", errors },
@@ -44,6 +45,8 @@ describe("react-hooks-strict-return", () => {
 			{ code: "function useFoo() { useEffect(() => {}); return [1, 2, 3, 4]; }", errors },
 			{ code: "function useFoo() { useSomeOtherHook(); return [1, 2, 3, 4]; }", errors },
 			{ code: "function useFoo() { useSomeOtherHook(); useEffect(() => {}); return [1, 2, 3, 4]; }", errors },
+			{ code: "const run = function useFoo() { return [1, 2, 3]; }", errors },
+			{ code: "const useFoo = function() { return [1, 2, 3]; }", errors },
 		],
 		valid: [
 			// 1 or 2 element arrays are fine
@@ -81,6 +84,10 @@ describe("react-hooks-strict-return", () => {
 
 			// Variable that's a single value
 			{ code: "function useFoo() { const bar = 1; return [bar, () => {}]; }" },
+			{ code: "function useFoo() { let bar; return bar; }" },
+			{ code: "function useFoo() { const bar = []; return bar; }" },
+			{ code: "function useFoo() { const bar = []; return [bar]; }" },
+			{ code: "function useFoo() { const { bar } = source; return bar; }" },
 
 			// Hooks with no return or undefined return
 			{ code: "function useHookWithNoReturn() {}" },
@@ -88,6 +95,8 @@ describe("react-hooks-strict-return", () => {
 
 			// Anonymous default export
 			{ code: "export default function() { return; }" },
+			{ code: "const useFoo = 1;" },
+			{ code: "function useFoo() { return [...getValues()]; }" },
 		],
 	});
 });

@@ -105,7 +105,7 @@ const FORMAT_OPTIONS_PROPERTIES: JSONSchemaProperties = {
 function selectorSchema(
 	selectorString: IndividualAndMetaSelectorsString,
 	allowType: boolean,
-	modifiers?: Array<ModifiersString>,
+	modifiers: Array<ModifiersString>,
 ): Array<JSONSchema.JSONSchema4> {
 	const selector: JSONSchemaProperties = {
 		filter: {
@@ -117,22 +117,19 @@ function selectorSchema(
 				MATCH_REGEX_SCHEMA,
 			],
 		},
-		selector: {
-			enum: [selectorString],
-			type: "string",
-		},
-	};
-
-	if (modifiers && modifiers.length > 0) {
-		selector.modifiers = {
+		modifiers: {
 			additionalItems: false,
 			items: {
 				enum: modifiers,
 				type: "string",
 			},
 			type: "array",
-		};
-	}
+		},
+		selector: {
+			enum: [selectorString],
+			type: "string",
+		},
+	};
 
 	if (allowType) {
 		selector.types = {

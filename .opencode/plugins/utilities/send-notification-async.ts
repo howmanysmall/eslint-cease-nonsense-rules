@@ -12,8 +12,10 @@ function buildNotificationMessage({ project, directory, worktree }: PluginInput)
 	const parts = new Array<string>();
 
 	const displayPath = worktree === directory ? directory : worktree;
-	if (displayPath) parts.push(displayPath);
-	if (project.vcs === "git" && project.vcsDir) parts.push(`repo: ${project.vcsDir}`);
+	if (displayPath.length > 0) parts.push(displayPath);
+	if (project.vcs === "git" && project.vcsDir !== undefined && project.vcsDir.length > 0) {
+		parts.push(`repo: ${project.vcsDir}`);
+	}
 
 	return parts.join(" · ") || "Session completed.";
 }
@@ -26,16 +28,14 @@ export async function sendNotificationAsync(pluginInput: PluginInput): Promise<v
 
 	switch (process.platform) {
 		case "darwin": {
-			await failSilentAsync(
-				async () => $`osascript -e ${`display notification "${body}" with title "${TITLE}"`}`,
-			);
+			const script = `display notification "${body}" with title "${TITLE}"`;
+			await failSilentAsync(async () => $`osascript -e ${script}`);
 			break;
 		}
 
 		case "win32": {
-			await failSilentAsync(
-				async () => $`powershell -Command ${`New-BurntToastNotification -Text '${TITLE}', '${body}'`}`,
-			);
+			const command = `New-BurntToastNotification -Text '${TITLE}', '${body}'`;
+			await failSilentAsync(async () => $`powershell -Command ${command}`);
 			break;
 		}
 

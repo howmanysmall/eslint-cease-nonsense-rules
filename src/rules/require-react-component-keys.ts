@@ -1,5 +1,6 @@
+import { createRule } from "$utilities/create-rule";
+import { getDefinedValue } from "$utilities/defined-utilities";
 import { TSESTree } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
 
 import type { TSESLint } from "@typescript-eslint/utils";
 
@@ -61,10 +62,17 @@ const EMPTY_CALLBACK_USAGE: CallbackUsage = {
 	memoization: false,
 };
 
+function ascendPastWrappers(node: TSESTree.Node): TSESTree.Node;
+function ascendPastWrappers(node: TSESTree.Node | undefined): TSESTree.Node | undefined;
 function ascendPastWrappers(node: TSESTree.Node | undefined): TSESTree.Node | undefined {
 	let current = node;
 	while (current && WRAPPER_PARENT_TYPES.has(current.type)) current = current.parent;
 	return current;
+}
+
+function getParentOrSelf(node: TSESTree.Node): TSESTree.Node {
+	const { parent = node } = node;
+	return parent;
 }
 
 function hasKeyAttribute(node: TSESTree.JSXElement): boolean {
@@ -144,9 +152,8 @@ function getCallbackUsageFromCallExpression(
 
 		if (
 			name === "from" &&
-			callee.object.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-			callee.object.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
-			callee.object.object.name === "Array" &&
+			callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
+			callee.object.name === "Array" &&
 			callExpression.arguments.length >= 2
 		) {
 			return {
@@ -158,9 +165,8 @@ function getCallbackUsageFromCallExpression(
 		if (
 			name === "call" &&
 			callee.object.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-			callee.object.object.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-			callee.object.object.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
-			iterationMethods.has(callee.object.object.property.name)
+			callee.object.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
+			iterationMethods.has(callee.object.property.name)
 		) {
 			return {
 				...usage,
@@ -172,17 +178,24 @@ function getCallbackUsageFromCallExpression(
 	return usage;
 }
 
+function isCurrentCallArgument(argument: TSESTree.CallExpressionArgument, current: TSESTree.Node): boolean {
+	if (argument === current) return true;
+
+	return argument.type === TSESTree.AST_NODE_TYPES.SpreadElement && argument.argument === current;
+}
+
+function isMissingNode(node: TSESTree.Node | null | undefined): node is null | undefined {
+	return node === undefined || node === null;
+}
+
 function findEnclosingCallExpression(node: TSESTree.Node): TSESTree.CallExpression | undefined {
 	let current: TSESTree.Node = node;
 	let { parent } = node;
 
-	while (parent) {
+	while (!isMissingNode(parent)) {
 		if (parent.type === TSESTree.AST_NODE_TYPES.CallExpression) {
 			for (const argument of parent.arguments) {
-				if (argument === current) return parent;
-				if (argument.type === TSESTree.AST_NODE_TYPES.SpreadElement && argument.argument === current) {
-					return parent;
-				}
+				if (isCurrentCallArgument(argument, current)) return parent;
 			}
 			return undefined;
 		}
@@ -210,7 +223,6 @@ function getVariableForFunction(
 	}
 
 	const { parent } = functionLike;
-	if (!parent) return undefined;
 
 	if (
 		parent.type === TSESTree.AST_NODE_TYPES.VariableDeclarator ||
@@ -298,26 +310,24 @@ const CONTROL_FLOW_TYPES = new Set<TSESTree.AST_NODE_TYPES>([
 const CHILD_PROP_NAME_SUFFIX = "children";
 
 function isTopLevelFunctionReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
-	let parent = ascendPastWrappers(node.parent);
-	if (!parent) return false;
+	let parent = ascendPastWrappers(getParentOrSelf(node));
 
-	if (parent.type === TSESTree.AST_NODE_TYPES.JSXExpressionContainer) parent = ascendPastWrappers(parent.parent);
-	if (!parent) return false;
+	if (parent.type === TSESTree.AST_NODE_TYPES.JSXExpressionContainer) {
+		parent = ascendPastWrappers(getParentOrSelf(parent));
+	}
 
-	while (parent && SHOULD_ASCEND_TYPES.has(parent.type)) parent = ascendPastWrappers(parent.parent);
-	if (!parent) return false;
+	while (SHOULD_ASCEND_TYPES.has(parent.type)) parent = ascendPastWrappers(getParentOrSelf(parent));
 
-	if (parent.type === TSESTree.AST_NODE_TYPES.JSXExpressionContainer) parent = ascendPastWrappers(parent.parent);
-	if (!parent) return false;
+	if (parent.type === TSESTree.AST_NODE_TYPES.JSXExpressionContainer) {
+		parent = ascendPastWrappers(getParentOrSelf(parent));
+	}
 
 	if (parent.type === TSESTree.AST_NODE_TYPES.ReturnStatement) {
-		let currentNode: TSESTree.Node | undefined = ascendPastWrappers(parent.parent);
+		let currentNode = ascendPastWrappers(getParentOrSelf(parent));
 
-		while (currentNode && CONTROL_FLOW_TYPES.has(currentNode.type)) {
-			currentNode = ascendPastWrappers(currentNode.parent);
+		while (CONTROL_FLOW_TYPES.has(currentNode.type)) {
+			currentNode = ascendPastWrappers(getParentOrSelf(currentNode));
 		}
-
-		if (!currentNode) return false;
 
 		return (
 			IS_FUNCTION_EXPRESSION.has(currentNode.type) ||
@@ -331,10 +341,12 @@ function isTopLevelFunctionReturn(node: TSESTree.JSXElement | TSESTree.JSXFragme
 function isTopLevelReturn(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
 	if (!isTopLevelFunctionReturn(node)) return false;
 
-	const functionLike = getEnclosingFunctionLike(node);
-	if (!functionLike) return false;
+	const functionLike = getDefinedValue(
+		getEnclosingFunctionLike(node),
+		"Expected top-level return to have a function.",
+	);
 
-	const functionParent = ascendPastWrappers(functionLike.parent);
+	const functionParent = ascendPastWrappers(getParentOrSelf(functionLike));
 	if (functionParent?.type === TSESTree.AST_NODE_TYPES.CallExpression) {
 		return isHigherOrderComponent(functionParent);
 	}
@@ -346,17 +358,15 @@ function isIgnoredCallExpression(
 	node: TSESTree.JSXElement | TSESTree.JSXFragment,
 	ignoreList: ReadonlyArray<string>,
 ): boolean {
-	// oxlint-disable-next-line prefer-destructuring
+	// oxlint-disable-next-line prefer-destructuring -- parent is reassigned while walking ancestors.
 	let parent: TSESTree.Node | undefined = node.parent;
-	if (!parent) return false;
 
 	if (parent.type === TSESTree.AST_NODE_TYPES.JSXExpressionContainer) {
 		({ parent } = parent);
-		if (!parent) return false;
 	}
 
 	const maxDepth = 20;
-	for (let depth = 0; depth < maxDepth && parent; depth += 1) {
+	for (let depth = 0; depth < maxDepth && !isMissingNode(parent); depth += 1) {
 		const { type } = parent;
 
 		if (type === TSESTree.AST_NODE_TYPES.CallExpression) {
@@ -380,13 +390,15 @@ function isIgnoredCallExpression(
 	return false;
 }
 
-function getJSXAttributeName(attribute: TSESTree.JSXAttribute): string | undefined {
+function getJSXAttributeName(attribute: TSESTree.JSXAttribute): string {
 	const { name } = attribute;
 
-	if (name.type === TSESTree.AST_NODE_TYPES.JSXIdentifier) return name.name;
-	if (name.type === TSESTree.AST_NODE_TYPES.JSXNamespacedName) return name.name.name;
+	if (name.type === TSESTree.AST_NODE_TYPES.JSXNamespacedName) {
+		const localName = name.name;
+		return localName.name;
+	}
 
-	return undefined;
+	return name.name;
 }
 
 function isChildrenAttributeName(attributeName: string): boolean {
@@ -395,52 +407,44 @@ function isChildrenAttributeName(attributeName: string): boolean {
 
 function isJsxPropertyValue(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
 	let { parent } = node;
-	if (!parent) return false;
 
 	while (
-		parent &&
+		!isMissingNode(parent) &&
 		(parent.type === TSESTree.AST_NODE_TYPES.ConditionalExpression ||
 			parent.type === TSESTree.AST_NODE_TYPES.LogicalExpression)
 	) {
 		({ parent } = parent);
 	}
 
-	if (!parent) return false;
-
 	if (parent.type === TSESTree.AST_NODE_TYPES.JSXExpressionContainer) {
 		({ parent } = parent);
-		if (!parent) return false;
 	}
 
 	if (parent.type !== TSESTree.AST_NODE_TYPES.JSXAttribute) return false;
 
 	const attributeName = getJSXAttributeName(parent);
-	if (!attributeName) return true;
-
 	return !isChildrenAttributeName(attributeName);
 }
 
 function isTernaryJSXChild(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
 	let current: TSESTree.Node | undefined = node.parent;
-	if (!current) return false;
 
 	// Must be inside a ConditionalExpression (ternary), not LogicalExpression
 	let foundTernary = false;
 	while (
-		current &&
+		!isMissingNode(current) &&
 		(current.type === TSESTree.AST_NODE_TYPES.ConditionalExpression || WRAPPER_PARENT_TYPES.has(current.type))
 	) {
 		if (current.type === TSESTree.AST_NODE_TYPES.ConditionalExpression) foundTernary = true;
 		current = current.parent;
 	}
 
-	if (!(foundTernary && current)) return false;
+	if (!foundTernary || isMissingNode(current)) return false;
 
 	// Must be inside JSXExpressionContainer
 	if (current.type !== TSESTree.AST_NODE_TYPES.JSXExpressionContainer) return false;
 
 	const containerParent = current.parent;
-	if (!containerParent) return false;
 
 	// Must be a child of a JSX element or fragment
 	return (
@@ -451,23 +455,21 @@ function isTernaryJSXChild(node: TSESTree.JSXElement | TSESTree.JSXFragment): bo
 
 function isLogicalJSXChild(node: TSESTree.JSXElement | TSESTree.JSXFragment): boolean {
 	let current: TSESTree.Node | undefined = node.parent;
-	if (!current) return false;
 
 	let foundLogical = false;
 	while (
-		current &&
+		!isMissingNode(current) &&
 		(current.type === TSESTree.AST_NODE_TYPES.LogicalExpression || WRAPPER_PARENT_TYPES.has(current.type))
 	) {
 		if (current.type === TSESTree.AST_NODE_TYPES.LogicalExpression) foundLogical = true;
 		current = current.parent;
 	}
 
-	if (!(foundLogical && current)) return false;
+	if (!foundLogical || isMissingNode(current)) return false;
 
 	if (current.type !== TSESTree.AST_NODE_TYPES.JSXExpressionContainer) return false;
 
 	const containerParent = current.parent;
-	if (!containerParent) return false;
 
 	return (
 		containerParent.type === TSESTree.AST_NODE_TYPES.JSXElement ||
@@ -546,8 +548,8 @@ const requireReactComponentKeys = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [DEFAULT_OPTIONS],
 	meta: {
+		defaultOptions: [DEFAULT_OPTIONS],
 		docs: {
 			description: "Require keys on React components when used in lists or iteration.",
 		},

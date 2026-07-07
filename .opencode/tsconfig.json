@@ -30,8 +30,8 @@
 		"target": "ESNext",
 		"tsBuildInfoFile": "out/tsconfig.tsbuildinfo",
 		"types": ["bun", "node"],
-		"useUnknownInCatchVariables": true,
+		"useUnknownInCatchVariables": true
 	},
 	"exclude": ["node_modules"],
-	"include": ["plugins/**/*.ts", "tool/**/*.ts", "tools/**/*.ts", "utilities/**/*.ts", "skills/**/*.ts"],
+	"include": ["plugins/**/*.ts", "tool/**/*.ts", "tools/**/*.ts", "utilities/**/*.ts", "skills/**/*.ts"]
 }

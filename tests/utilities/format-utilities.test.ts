@@ -1,56 +1,88 @@
 import fs from "node:fs";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { __testing, generateDifferences, getExtension } from "@utilities/format-utilities";
+import { describe, expect, it, vi } from "vitest";
+import {
+	__testing,
+	formatWithOxfmtSync,
+	generateDifferences,
+	getExtension,
+	showInvisibles,
+} from "$utilities/format-utilities";
 
 vi.setConfig({ testTimeout: 10000 });
 
-describe("format-utilities", () => {
-	afterEach(() => {
-		__testing.resetConfigCache();
-		vi.restoreAllMocks();
-	});
+function withResetConfigCache<Result>(run: () => Result): Result {
+	__testing.resetConfigCache();
 
+	try {
+		return run();
+	} finally {
+		__testing.resetConfigCache();
+	}
+}
+
+function withMockedConfigFile<Result>(content: Error | string, run: () => Result): Result {
+	return withResetConfigCache(() => {
+		const readFileSync = vi.spyOn(fs, "readFileSync");
+
+		if (typeof content === "string") {
+			readFileSync.mockReturnValue(content);
+		} else {
+			readFileSync.mockImplementation(() => {
+				throw content;
+			});
+		}
+
+		try {
+			return run();
+		} finally {
+			readFileSync.mockRestore();
+		}
+	});
+}
+
+describe("format-utilities", () => {
 	it("should load the same configuration", () => {
 		expect.assertions(1);
-		const configuration0 = __testing.loadOxfmtConfig();
-		const configuration1 = __testing.loadOxfmtConfig();
-		expect(configuration0).toBe(configuration1);
+		withResetConfigCache(() => {
+			const configuration0 = __testing.loadOxfmtConfig();
+			const configuration1 = __testing.loadOxfmtConfig();
+			expect(configuration0).toBe(configuration1);
+		});
 	});
 
 	it("returns empty config when file does not exist", () => {
 		expect.assertions(1);
-		__testing.resetConfigCache();
-		vi.spyOn(fs, "readFileSync").mockImplementation(() => {
-			throw new Error("ENOENT");
+		withMockedConfigFile(new Error("ENOENT"), () => {
+			const config = __testing.loadOxfmtConfig();
+			expect(config).toStrictEqual({});
 		});
-		const config = __testing.loadOxfmtConfig();
-		expect(config).toStrictEqual({});
 	});
 
 	it("returns empty config when JSON is not an object", () => {
 		expect.assertions(1);
-		__testing.resetConfigCache();
-		vi.spyOn(fs, "readFileSync").mockReturnValue('"just a string"');
-		const config = __testing.loadOxfmtConfig();
-		expect(config).toStrictEqual({});
+		withMockedConfigFile('"just a string"', () => {
+			const config = __testing.loadOxfmtConfig();
+			expect(config).toStrictEqual({});
+		});
 	});
 
 	it("returns empty config when JSON is null", () => {
 		expect.assertions(1);
-		__testing.resetConfigCache();
-		vi.spyOn(fs, "readFileSync").mockReturnValue("null");
-		const config = __testing.loadOxfmtConfig();
-		expect(config).toStrictEqual({});
+		withMockedConfigFile("null", () => {
+			const config = __testing.loadOxfmtConfig();
+			expect(config).toStrictEqual({});
+		});
 	});
 
 	it("loads object config and strips non-format keys", () => {
 		expect.assertions(1);
-		__testing.resetConfigCache();
-		vi.spyOn(fs, "readFileSync").mockReturnValue(
+		withMockedConfigFile(
 			'{"$schema":"https://example.test/schema.json","ignorePatterns":["dist/**"],"lineWidth":120}',
+			() => {
+				const config = __testing.loadOxfmtConfig();
+				expect(config).toStrictEqual({ lineWidth: 120 });
+			},
 		);
-		const config = __testing.loadOxfmtConfig();
-		expect(config).toStrictEqual({ lineWidth: 120 });
 	});
 
 	describe("getExtension", () => {
@@ -67,6 +99,11 @@ describe("format-utilities", () => {
 		it("returns .jsx for .jsx files", () => {
 			expect.assertions(1);
 			expect(getExtension("file.jsx")).toBe(".jsx");
+		});
+
+		it("returns .jsx for nested paths", () => {
+			expect.assertions(1);
+			expect(getExtension("src/components/file.jsx")).toBe(".jsx");
 		});
 
 		it("returns .js for .js files", () => {
@@ -89,9 +126,19 @@ describe("format-utilities", () => {
 			expect(getExtension("file.cts")).toBe(".cts");
 		});
 
+		it("returns .cts for declaration-like names", () => {
+			expect.assertions(1);
+			expect(getExtension("file.test.cts")).toBe(".cts");
+		});
+
 		it("returns .cjs for .cjs files", () => {
 			expect.assertions(1);
 			expect(getExtension("file.cjs")).toBe(".cjs");
+		});
+
+		it("returns .cjs for config files", () => {
+			expect.assertions(1);
+			expect(getExtension("eslint.config.cjs")).toBe(".cjs");
 		});
 
 		it("returns undefined for unsupported extensions", () => {
@@ -100,6 +147,27 @@ describe("format-utilities", () => {
 			expect(getExtension("file.pas")).toBeUndefined();
 			expect(getExtension("file.json")).toBeUndefined();
 			expect(getExtension("file")).toBeUndefined();
+		});
+
+		it("returns undefined for near-miss JavaScript and TypeScript extensions", () => {
+			expect.assertions(8);
+			expect(getExtension("file.tjsx")).toBeUndefined();
+			expect(getExtension("file.tx")).toBeUndefined();
+			expect(getExtension("file.ntx")).toBeUndefined();
+			expect(getExtension("file.njx")).toBeUndefined();
+			expect(getExtension("file.nts")).toBeUndefined();
+			expect(getExtension("file.njs")).toBeUndefined();
+			expect(getExtension("file.mts.map")).toBeUndefined();
+			expect(getExtension("file.d.ts")).toBe(".ts");
+		});
+	});
+
+	describe("formatWithOxfmtSync", () => {
+		it("throws for unsupported extensions before loading config", () => {
+			expect.assertions(1);
+			expect(() => formatWithOxfmtSync("const value = 1;", "file.txt")).toThrow(
+				"Unsupported file extension for file.txt",
+			);
 		});
 	});
 
@@ -146,6 +214,29 @@ describe("format-utilities", () => {
 			expect.assertions(1);
 			const result = generateDifferences("hello", "hello\n");
 			expect(result).toStrictEqual([{ insertText: "\n", offset: 5, operation: "INSERT" }]);
+		});
+
+		it("adjusts replacement offsets for shared suffix text", () => {
+			expect.assertions(1);
+			const result = generateDifferences("abc", "ac");
+			expect(result).toStrictEqual([{ deleteText: "b", offset: 1, operation: "DELETE" }]);
+		});
+	});
+
+	describe("showInvisibles", () => {
+		it("replaces whitespace with visible symbols", () => {
+			expect.assertions(1);
+			expect(showInvisibles("a b\tc\r\n")).toBe("a·b→c␍␊");
+		});
+
+		it("leaves visible characters unchanged", () => {
+			expect.assertions(1);
+			expect(showInvisibles("abc")).toBe("abc");
+		});
+
+		it("truncates long text before replacing whitespace", () => {
+			expect.assertions(1);
+			expect(showInvisibles(`${"x".repeat(60)} more`)).toBe(`${"x".repeat(60)}…`);
 		});
 	});
 });

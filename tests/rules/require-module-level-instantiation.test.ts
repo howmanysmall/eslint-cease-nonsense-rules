@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/require-module-level-instantiation";
+import rule from "$rules/require-module-level-instantiation";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -70,6 +70,16 @@ function init() {
 			{
 				code: `
 import { Logger as Log } from "@company/logging";
+
+function init() {
+    const log = new Log();
+}`,
+				errors: [{ messageId: "mustBeModuleLevel" }],
+				options: [{ classes: { Logger: "@company/logging" } }],
+			},
+			{
+				code: `
+import { "Logger" as Log } from "@company/logging";
 
 function init() {
     const log = new Log();
@@ -211,7 +221,26 @@ function init() {
 
 			{
 				code: `
+import Log from "@rbxts/rbxts-sleitnick-log";
+
+function init() {
+    const log = new Log();
+}`,
+				options: [{}],
+			},
+
+			{
+				code: `
 import { Log } from "@different/package";
+
+function init() {
+    const log = new Log();
+}`,
+				options: [{ classes: { Log: "@rbxts/rbxts-sleitnick-log" } }],
+			},
+			{
+				code: `
+import { NotLog as Log } from "@rbxts/rbxts-sleitnick-log";
 
 function init() {
     const log = new Log();
@@ -248,6 +277,13 @@ const log = new Log();
 				languageOptions: {
 					sourceType: "script",
 				},
+				options: [{ classes: { Log: "@rbxts/rbxts-sleitnick-log" } }],
+			},
+			{
+				code: `
+function init() {
+    const log = new (getLogger())();
+}`,
 				options: [{ classes: { Log: "@rbxts/rbxts-sleitnick-log" } }],
 			},
 		],

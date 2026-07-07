@@ -1,12 +1,17 @@
+import { createRule } from "$utilities/create-rule";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
 import Typebox from "typebox";
 import { Compile } from "typebox/compile";
 
 import type { TSESTree } from "@typescript-eslint/types";
+import type { TSESLint } from "@typescript-eslint/utils";
 import type { Writable } from "type-fest";
 
 const isStringArray = Compile(Typebox.Readonly(Typebox.Array(Typebox.String())));
+
+function isReadonlyStringArray(value: string | ReadonlyArray<string>): value is ReadonlyArray<string> {
+	return isStringArray.Check(value);
+}
 
 /** Configuration for a single opener/closer pair */
 export interface PairConfiguration {
@@ -25,20 +30,6 @@ export interface PairConfiguration {
 	/** Custom yielding function patterns (for Roblox) */
 	readonly yieldingFunctions?: ReadonlyArray<string>;
 }
-const isPairConfiguration = Compile(
-	Typebox.Readonly(
-		Typebox.Object({
-			alternatives: Typebox.Optional(isStringArray),
-			closer: Typebox.Union([Typebox.String(), isStringArray]),
-			opener: Typebox.String(),
-			openerAlternatives: Typebox.Optional(isStringArray),
-			platform: Typebox.Optional(Typebox.Literal("roblox")),
-			requireSync: Typebox.Optional(Typebox.Boolean()),
-			yieldingFunctions: Typebox.Optional(isStringArray),
-		}),
-	),
-);
-
 /** Rule options schema */
 export interface RequirePairedCallsOptions {
 	/** Allow conditional closers */
@@ -50,19 +41,6 @@ export interface RequirePairedCallsOptions {
 	/** Array of paired function configurations */
 	readonly pairs: ReadonlyArray<PairConfiguration>;
 }
-
-const isRuleOptions = Compile(
-	Typebox.Partial(
-		Typebox.Readonly(
-			Typebox.Object({
-				allowConditionalClosers: Typebox.Optional(Typebox.Boolean()),
-				allowMultipleOpeners: Typebox.Optional(Typebox.Boolean()),
-				maxNestingDepth: Typebox.Optional(Typebox.Number()),
-				pairs: Typebox.Readonly(Typebox.Array(isPairConfiguration)),
-			}),
-		),
-	),
-);
 
 /** Entry in the opener stack */
 interface OpenerStackEntry {
@@ -87,7 +65,7 @@ type LoopLikeStatement =
 	| TSESTree.ForStatement
 	| TSESTree.WhileStatement;
 
-const LOOP_NODE_TYPES = new Set([
+const LOOP_NODE_TYPES: ReadonlySet<TSESTree.Node["type"] | undefined> = new Set([
 	AST_NODE_TYPES.DoWhileStatement,
 	AST_NODE_TYPES.ForInStatement,
 	AST_NODE_TYPES.ForOfStatement,
@@ -135,8 +113,8 @@ function getCallName(node: TSESTree.CallExpression): string | undefined {
 function getValidClosers(configuration: PairConfiguration): ReadonlyArray<string> {
 	const result = new Array<string>();
 
-	if (isStringArray.Check(configuration.closer)) result.push(...configuration.closer);
-	else if (typeof configuration.closer === "string") result.push(configuration.closer);
+	if (isReadonlyStringArray(configuration.closer)) result.push(...configuration.closer);
+	else result.push(configuration.closer);
 
 	if (configuration.alternatives) result.push(...configuration.alternatives);
 
@@ -150,17 +128,15 @@ function getAllOpeners(configuration: PairConfiguration): ReadonlyArray<string> 
 }
 
 function formatOpenerList(openers: ReadonlyArray<string>): string {
-	if (openers.length === 0) return "configured opener";
-	if (openers.length === 1) return openers[0] ?? "configured opener";
 	return openers.join("' or '");
 }
 
-function isLoopLikeStatement(node?: TSESTree.Node): node is LoopLikeStatement {
-	return node ? LOOP_NODE_TYPES.has(node.type) : false;
+function isLoopLikeStatement(node: TSESTree.Node | undefined): node is LoopLikeStatement {
+	return LOOP_NODE_TYPES.has(node?.type);
 }
 
-function isSwitchStatement(node?: TSESTree.Node): node is TSESTree.SwitchStatement {
-	return node?.type === AST_NODE_TYPES.SwitchStatement;
+function isSwitchStatement(node: TSESTree.Node): node is TSESTree.SwitchStatement {
+	return node.type === AST_NODE_TYPES.SwitchStatement;
 }
 
 function findLabeledStatementBody(
@@ -168,46 +144,47 @@ function findLabeledStatementBody(
 	startingNode?: TSESTree.Node,
 ): TSESTree.Statement | undefined {
 	let current: TSESTree.Node | undefined = startingNode;
+	let body: TSESTree.Statement | undefined;
 
-	while (current) {
-		if (current.type === AST_NODE_TYPES.LabeledStatement && current.label.name === label.name) return current.body;
-		current = current.parent ?? undefined;
+	while (current && body === undefined) {
+		if (current.type === AST_NODE_TYPES.LabeledStatement) {
+			const { body: currentBody, label: currentLabel } = current;
+			if (currentLabel.name === label.name) body = currentBody;
+		}
+		current = current.parent;
 	}
 
-	return undefined;
+	return body;
+}
+
+function findLabeledLoopBody(label: TSESTree.Identifier, startingNode?: TSESTree.Node): LoopLikeStatement | undefined {
+	return [findLabeledStatementBody(label, startingNode)].find(isLoopLikeStatement);
 }
 
 function resolveBreakTargetLoop(statement: TSESTree.BreakStatement): LoopLikeStatement | undefined {
-	const labeledBody = statement.label
-		? findLabeledStatementBody(statement.label, statement.parent ?? undefined)
-		: undefined;
+	if (statement.label) return findLabeledLoopBody(statement.label, statement.parent);
 
-	if (labeledBody) return isLoopLikeStatement(labeledBody) ? labeledBody : undefined;
-
-	let current: TSESTree.Node | undefined = statement.parent ?? undefined;
-	while (current) {
-		if (isLoopLikeStatement(current)) return current;
-		if (isSwitchStatement(current)) return undefined;
-		current = current.parent ?? undefined;
+	let current: TSESTree.Node | undefined = statement.parent;
+	let targetLoop: LoopLikeStatement | undefined;
+	while (current && targetLoop === undefined && !isSwitchStatement(current)) {
+		if (isLoopLikeStatement(current)) targetLoop = current;
+		current = current.parent;
 	}
 
-	return undefined;
+	return targetLoop;
 }
 
 function resolveContinueTargetLoop(statement: TSESTree.ContinueStatement): LoopLikeStatement | undefined {
-	const labeledBody = statement.label
-		? findLabeledStatementBody(statement.label, statement.parent ?? undefined)
-		: undefined;
+	if (statement.label) return findLabeledLoopBody(statement.label, statement.parent);
 
-	if (labeledBody) return isLoopLikeStatement(labeledBody) ? labeledBody : undefined;
-
-	let current: TSESTree.Node | undefined = statement.parent ?? undefined;
-	while (current) {
-		if (isLoopLikeStatement(current)) return current;
-		current = current.parent ?? undefined;
+	let current: TSESTree.Node | undefined = statement.parent;
+	let targetLoop: LoopLikeStatement | undefined;
+	while (current && targetLoop === undefined) {
+		if (isLoopLikeStatement(current)) targetLoop = current;
+		current = current.parent;
 	}
 
-	return undefined;
+	return targetLoop;
 }
 
 function cloneEntry(value: OpenerStackEntry): OpenerStackEntry {
@@ -231,16 +208,109 @@ const messages = {
 
 type MessageIds = keyof typeof messages;
 type Options = [Partial<RequirePairedCallsOptions>?];
+type RuleContext = TSESLint.RuleContext<MessageIds, Options>;
+type NormalizedOptions = Required<RequirePairedCallsOptions>;
+type IfStatementChild = TSESTree.Statement & { readonly parent: TSESTree.IfStatement };
+type SwitchCaseChild = TSESTree.SwitchCase & { readonly parent: TSESTree.SwitchStatement };
+type TryBlockChild = TSESTree.BlockStatement & { readonly parent: TSESTree.TryStatement };
+type TryCatchChild = TSESTree.CatchClause & { readonly parent: TSESTree.TryStatement };
+
+interface BranchState {
+	readonly branches: Array<Array<OpenerStackEntry>>;
+	readonly originalStack: Array<OpenerStackEntry>;
+}
+
+function formatValidClosers(configuration: PairConfiguration): string {
+	const validClosers = getValidClosers(configuration);
+	return validClosers.join("' or '");
+}
+
+function reportUnpairedOpener(context: RuleContext, entry: OpenerStackEntry, paths: string): void {
+	context.report({
+		data: {
+			closer: formatValidClosers(entry.config),
+			opener: entry.opener,
+			paths,
+		},
+		messageId: "unpairedOpener",
+		node: entry.node,
+	});
+}
+
+function hasEntryWithIndex(stack: ReadonlyArray<OpenerStackEntry>, entry: OpenerStackEntry): boolean {
+	return stack.some(({ index }) => index === entry.index);
+}
+
+function getBranchesWithOpener(
+	branches: ReadonlyArray<ReadonlyArray<OpenerStackEntry>>,
+	opener: OpenerStackEntry,
+): ReadonlyArray<ReadonlyArray<OpenerStackEntry>> {
+	return branches.filter((branchStack) => hasEntryWithIndex(branchStack, opener));
+}
+
+function getCommonOpeners(
+	originalStack: ReadonlyArray<OpenerStackEntry>,
+	branches: ReadonlyArray<ReadonlyArray<OpenerStackEntry>>,
+): ReadonlyArray<OpenerStackEntry> {
+	return originalStack.filter((opener) => branches.every((branchStack) => hasEntryWithIndex(branchStack, opener)));
+}
+
+function replaceStack(
+	targetStack: Array<OpenerStackEntry>,
+	entries: ReadonlyArray<OpenerStackEntry>,
+	cloneEntries: boolean,
+): void {
+	targetStack.length = 0;
+	for (const entry of entries) targetStack.push(cloneEntries ? cloneEntry(entry) : entry);
+}
+
+function reportBranchOnlyOpeners(
+	context: RuleContext,
+	originalStack: ReadonlyArray<OpenerStackEntry>,
+	branches: ReadonlyArray<ReadonlyArray<OpenerStackEntry>>,
+): void {
+	for (const branchStack of branches) {
+		for (const entry of branchStack) {
+			if (hasEntryWithIndex(originalStack, entry)) continue;
+			reportUnpairedOpener(context, entry, "conditional branch");
+		}
+	}
+}
+
+function reportOpenersMissingOnSomePaths(
+	context: RuleContext,
+	originalStack: ReadonlyArray<OpenerStackEntry>,
+	branches: ReadonlyArray<ReadonlyArray<OpenerStackEntry>>,
+	options: RequirePairedCallsOptions,
+): void {
+	if (options.allowConditionalClosers !== false) return;
+
+	for (const opener of originalStack) {
+		const branchesWithOpener = getBranchesWithOpener(branches, opener);
+		if (branchesWithOpener.length <= 0 || branchesWithOpener.length >= branches.length) continue;
+		reportUnpairedOpener(context, opener, "not all execution paths");
+	}
+}
+
+function recordBranchSnapshot(
+	branchStates: Array<BranchState>,
+	openerStack: Array<OpenerStackEntry>,
+	resetToSnapshot: boolean,
+): void {
+	for (const state of branchStates.slice(-1)) {
+		state.branches.push(openerStack.map(cloneEntry));
+		if (resetToSnapshot) replaceStack(openerStack, state.originalStack, true);
+	}
+}
 
 const requirePairedCalls = createRule<Options, MessageIds>({
 	create(context, [rawOptions]) {
-		const baseOptions = isRuleOptions.Check(rawOptions) ? rawOptions : {};
-
-		const options: Writable<RequirePairedCallsOptions> = {
-			allowConditionalClosers: baseOptions.allowConditionalClosers ?? false,
-			allowMultipleOpeners: baseOptions.allowMultipleOpeners ?? true,
-			maxNestingDepth: baseOptions.maxNestingDepth ?? 0,
-			pairs: baseOptions.pairs ?? [],
+		const options: Writable<NormalizedOptions> = {
+			allowConditionalClosers: false,
+			allowMultipleOpeners: true,
+			maxNestingDepth: 0,
+			pairs: [],
+			...rawOptions,
 		};
 
 		if (options.pairs.length === 0) {
@@ -264,30 +334,12 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 		let yieldingReportedFirst = false;
 
 		const contextStack = new Array<ControlFlowContext>();
-		const stackSnapshots = new Map<TSESTree.Node, Array<OpenerStackEntry>>();
-		const branchStacks = new Map<TSESTree.Node, Array<Array<OpenerStackEntry>>>();
-		const closerToOpenersCache = new Map<string, ReadonlyArray<string>>();
+		const branchStates = new Array<BranchState>();
 		const openerToClosersCache = new Map<string, ReadonlyArray<string>>();
 
-		function getConfiguredOpenersForCloser(closer: string): ReadonlyArray<string> {
-			if (closerToOpenersCache.has(closer)) return closerToOpenersCache.get(closer) ?? [];
-
-			const names = new Array<string>();
-			let size = 0;
-			for (const pair of options.pairs) {
-				if (!getValidClosers(pair).includes(closer)) continue;
-
-				for (const openerName of getAllOpeners(pair)) {
-					if (!names.includes(openerName)) names[size++] = openerName;
-				}
-			}
-
-			closerToOpenersCache.set(closer, names);
-			return names;
-		}
-
 		function getExpectedClosersForOpener(opener: string): ReadonlyArray<string> {
-			if (openerToClosersCache.has(opener)) return openerToClosersCache.get(opener) ?? [];
+			const cachedClosers = openerToClosersCache.get(opener);
+			if (cachedClosers !== undefined) return cachedClosers;
 
 			const closers = new Array<string>();
 			let size = 0;
@@ -333,13 +385,11 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 			if (last) contextStack[contextStack.length - 1] = { ...last, ...updates };
 		}
 
-		function cloneStack(): Array<OpenerStackEntry> {
-			// oxlint-disable-next-line no-array-callback-reference -- this is fine. leave it alone.
-			return openerStack.map(cloneEntry);
-		}
-
-		function saveSnapshot(node: TSESTree.Node): void {
-			stackSnapshots.set(node, cloneStack());
+		function startBranchTracking(): void {
+			branchStates.push({
+				branches: [],
+				originalStack: openerStack.map(cloneEntry),
+			});
 		}
 
 		function findPairConfiguration(functionName: string, isOpener: boolean): PairConfiguration | undefined {
@@ -367,7 +417,7 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 			yieldingReportedFirst = false;
 
 			pushContext({
-				asyncContext: node.async ?? false,
+				asyncContext: node.async,
 				currentFunction: node,
 				hasEarlyExit: false,
 				inCatch: false,
@@ -380,195 +430,61 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 
 		function onFunctionExit(): void {
 			if (openerStack.length > 0) {
-				for (const entry of openerStack) {
-					const validClosers = getValidClosers(entry.config);
-					const closer =
-						validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
-
-					context.report({
-						data: {
-							closer,
-							opener: entry.opener,
-							paths: "function exit",
-						},
-						messageId: "unpairedOpener",
-						node: entry.node,
-					});
-				}
+				for (const entry of openerStack) reportUnpairedOpener(context, entry, "function exit");
 			}
 
-			const parentStack = functionStacks.pop();
-			if (parentStack) {
-				openerStack.length = 0;
-				openerStack.push(...parentStack);
-			} else openerStack.length = 0;
+			for (const parentStack of functionStacks.splice(-1, 1)) {
+				replaceStack(openerStack, parentStack, false);
+			}
 
 			popContext();
 		}
 
-		function onIfStatementEnter(ifNode: TSESTree.IfStatement): void {
+		function onIfStatementEnter(_ifNode: TSESTree.IfStatement): void {
 			pushContext({ inConditional: true });
-			saveSnapshot(ifNode);
+			startBranchTracking();
 		}
 
 		function onIfStatementExit(ifNode: TSESTree.IfStatement): void {
 			popContext();
 
-			const originalStack = stackSnapshots.get(ifNode);
-			const branches = branchStacks.get(ifNode);
+			for (const { branches, originalStack } of branchStates.splice(-1, 1)) {
+				reportBranchOnlyOpeners(context, originalStack, branches);
 
-			if (originalStack && branches && branches.length > 0) {
-				const hasCompleteElse = ifNode.alternate !== undefined && ifNode.alternate !== null;
-
-				for (const branchStack of branches) {
-					for (const entry of branchStack) {
-						const wasInOriginal = originalStack.some(({ index }) => index === entry.index);
-						if (!wasInOriginal) {
-							const validClosers = getValidClosers(entry.config);
-							const closer =
-								validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
-
-							context.report({
-								data: {
-									closer,
-									opener: entry.opener,
-									paths: "conditional branch",
-								},
-								messageId: "unpairedOpener",
-								node: entry.node,
-							});
-						}
-					}
-				}
-
-				if (hasCompleteElse) {
-					for (const { index, config, opener, node } of originalStack) {
-						const branchesWithOpener = branches.filter((branchStack) =>
-							branchStack.some((branch) => branch.index === index),
-						);
-
-						if (branchesWithOpener.length <= 0 || branchesWithOpener.length >= branches.length) continue;
-						if (options.allowConditionalClosers !== false) continue;
-
-						const validClosers = getValidClosers(config);
-						const closer =
-							validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
-
-						context.report({
-							data: {
-								closer,
-								opener,
-								paths: "not all execution paths",
-							},
-							messageId: "unpairedOpener",
-							node,
-						});
-					}
-
-					const commonOpeners = originalStack.filter((opener) =>
-						branches.every((branchStack) => branchStack.some(({ index }) => index === opener.index)),
-					);
-
-					openerStack.length = 0;
-					openerStack.push(...commonOpeners);
-				} else {
-					openerStack.length = 0;
-					for (const entry of originalStack) openerStack.push({ ...entry });
-				}
-			}
-
-			stackSnapshots.delete(ifNode);
-			branchStacks.delete(ifNode);
-		}
-
-		function onIfConsequentExit({ parent }: TSESTree.Statement): void {
-			if (parent?.type === AST_NODE_TYPES.IfStatement) {
-				const branches = branchStacks.get(parent) ?? [];
-				branches.push(cloneStack());
-				branchStacks.set(parent, branches);
-
-				const originalStack = stackSnapshots.get(parent);
-				if (!originalStack) return;
-
-				openerStack.length = 0;
-				for (const entry of originalStack) openerStack.push({ ...entry });
+				if (ifNode.alternate !== undefined && ifNode.alternate !== null) {
+					reportOpenersMissingOnSomePaths(context, originalStack, branches, options);
+					replaceStack(openerStack, getCommonOpeners(originalStack, branches), false);
+				} else replaceStack(openerStack, originalStack, true);
 			}
 		}
 
-		function onIfAlternateExit({ parent }: TSESTree.Statement): void {
-			if (parent?.type === AST_NODE_TYPES.IfStatement) {
-				const branches = branchStacks.get(parent) ?? [];
-				branches.push(cloneStack());
-				branchStacks.set(parent, branches);
-			}
+		function onIfConsequentExit(_node: IfStatementChild): void {
+			recordBranchSnapshot(branchStates, openerStack, true);
+		}
+
+		function onIfAlternateExit(_node: IfStatementChild): void {
+			recordBranchSnapshot(branchStates, openerStack, false);
 		}
 
 		function onTryStatementExit(node: TSESTree.TryStatement): void {
-			const originalStack = stackSnapshots.get(node);
-			const branches = branchStacks.get(node);
+			const states = branchStates.splice(-1, 1);
 
 			if (node.finalizer) {
-				stackSnapshots.delete(node);
-				branchStacks.delete(node);
 				return;
 			}
 
-			if (originalStack && branches && branches.length > 0) {
-				for (const opener of originalStack) {
-					const branchesWithOpener = branches.filter((branchStack) =>
-						branchStack.some((entry) => entry.index === opener.index),
-					);
-
-					if (
-						branchesWithOpener.length > 0 &&
-						branchesWithOpener.length < branches.length &&
-						options.allowConditionalClosers === false
-					) {
-						const validClosers = getValidClosers(opener.config);
-						const closer =
-							validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
-
-						context.report({
-							data: {
-								closer,
-								opener: opener.opener,
-								paths: "not all execution paths",
-							},
-							messageId: "unpairedOpener",
-							node: opener.node,
-						});
-					}
-				}
-
-				const commonOpeners = originalStack.filter((opener) =>
-					branches.every((branchStack) => branchStack.some((entry) => entry.index === opener.index)),
-				);
-
-				openerStack.length = 0;
-				openerStack.push(...commonOpeners);
+			for (const { branches, originalStack } of states) {
+				reportOpenersMissingOnSomePaths(context, originalStack, branches, options);
+				replaceStack(openerStack, getCommonOpeners(originalStack, branches), false);
 			}
-
-			stackSnapshots.delete(node);
-			branchStacks.delete(node);
 		}
 
 		function onTryBlockEnter(): void {
 			pushContext({ inTry: true });
 		}
 
-		function onTryBlockExit({ parent }: TSESTree.BlockStatement): void {
-			if (parent?.type === AST_NODE_TYPES.TryStatement) {
-				const branches = branchStacks.get(parent) ?? [];
-				branches.push(cloneStack());
-				branchStacks.set(parent, branches);
-
-				const originalStack = stackSnapshots.get(parent);
-				if (originalStack) {
-					openerStack.length = 0;
-					for (const entry of originalStack) openerStack.push({ ...entry });
-				}
-			}
-
+		function onTryBlockExit(_node: TryBlockChild): void {
+			recordBranchSnapshot(branchStates, openerStack, true);
 			popContext();
 		}
 
@@ -576,19 +492,8 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 			pushContext({ inCatch: true });
 		}
 
-		function onCatchClauseExit({ parent }: TSESTree.CatchClause): void {
-			if (parent?.type === AST_NODE_TYPES.TryStatement) {
-				const branches = branchStacks.get(parent) ?? [];
-				branches.push(cloneStack());
-				branchStacks.set(parent, branches);
-
-				const originalStack = stackSnapshots.get(parent);
-				if (originalStack) {
-					openerStack.length = 0;
-					for (const entry of originalStack) openerStack.push({ ...entry });
-				}
-			}
-
+		function onCatchClauseExit(_node: TryCatchChild): void {
+			recordBranchSnapshot(branchStates, openerStack, true);
 			popContext();
 		}
 
@@ -596,75 +501,26 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 			pushContext({ inFinally: true });
 		}
 
-		function onSwitchStatementEnter(node: TSESTree.SwitchStatement): void {
+		function onSwitchStatementEnter(_node: TSESTree.SwitchStatement): void {
 			pushContext({ inConditional: true });
-			saveSnapshot(node);
+			startBranchTracking();
 		}
 
 		function onSwitchStatementExit(node: TSESTree.SwitchStatement): void {
 			popContext();
 
-			const originalStack = stackSnapshots.get(node);
-			const branches = branchStacks.get(node);
-
-			if (originalStack && branches && branches.length > 0) {
+			for (const { branches, originalStack } of branchStates.splice(-1, 1)) {
 				const hasDefault = node.cases.some((caseNode) => caseNode.test === null);
 
 				if (hasDefault && branches.length === node.cases.length) {
-					for (const opener of originalStack) {
-						const branchesWithOpener = branches.filter((branchStack) =>
-							branchStack.some((entry) => entry.index === opener.index),
-						);
-
-						if (
-							branchesWithOpener.length > 0 &&
-							branchesWithOpener.length < branches.length &&
-							options.allowConditionalClosers === false
-						) {
-							const validClosers = getValidClosers(opener.config);
-							const closer =
-								validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
-
-							context.report({
-								data: {
-									closer,
-									opener: opener.opener,
-									paths: "not all execution paths",
-								},
-								messageId: "unpairedOpener",
-								node: opener.node,
-							});
-						}
-					}
-
-					const commonOpeners = originalStack.filter((opener) =>
-						branches.every((branchStack) => branchStack.some((entry) => entry.index === opener.index)),
-					);
-
-					openerStack.length = 0;
-					openerStack.push(...commonOpeners);
-				} else {
-					openerStack.length = 0;
-					for (const entry of originalStack) openerStack.push({ ...entry });
-				}
+					reportOpenersMissingOnSomePaths(context, originalStack, branches, options);
+					replaceStack(openerStack, getCommonOpeners(originalStack, branches), false);
+				} else replaceStack(openerStack, originalStack, true);
 			}
-
-			stackSnapshots.delete(node);
-			branchStacks.delete(node);
 		}
 
-		function onSwitchCaseExit({ parent }: TSESTree.SwitchCase): void {
-			if (parent?.type === AST_NODE_TYPES.SwitchStatement) {
-				const branches = branchStacks.get(parent) ?? [];
-				branches.push(cloneStack());
-				branchStacks.set(parent, branches);
-
-				const originalStack = stackSnapshots.get(parent);
-				if (!originalStack) return;
-
-				openerStack.length = 0;
-				for (const entry of originalStack) openerStack.push({ ...entry });
-			}
+		function onSwitchCaseExit(_node: SwitchCaseChild): void {
+			recordBranchSnapshot(branchStates, openerStack, true);
 		}
 
 		function onLoopEnter(node: LoopLikeStatement): void {
@@ -673,7 +529,7 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 		}
 
 		function onLoopExit(): void {
-			if (loopStack.length > 0) loopStack.pop();
+			loopStack.pop();
 			popContext();
 		}
 
@@ -684,16 +540,13 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 			if (currentContext.inFinally || openerStack.length === 0) return;
 
 			for (const { opener, config, node } of openerStack) {
-				const validClosers = getValidClosers(config);
-				const closer = validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
-
 				const statementType = statementNode.type === AST_NODE_TYPES.ReturnStatement ? "return" : "throw";
 
 				context.report({
 					data: {
-						closer,
+						closer: formatValidClosers(config),
 						opener,
-						paths: `${statementType} at line ${statementNode.loc?.start.line ?? 0}`,
+						paths: `${statementType} at line ${statementNode.loc.start.line}`,
 					},
 					messageId: "unpairedOpener",
 					node,
@@ -714,14 +567,11 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 			for (const { node: openerNode, config, opener, loopAncestors } of openerStack) {
 				if (!loopAncestors.includes(targetLoop)) continue;
 
-				const validClosers = getValidClosers(config);
-				const closer = validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
-
 				const statementType = node.type === AST_NODE_TYPES.BreakStatement ? "break" : "continue";
 
 				context.report({
 					data: {
-						closer,
+						closer: formatValidClosers(config),
 						opener,
 						paths: `${statementType} at line ${node.loc.start.line}`,
 					},
@@ -757,7 +607,7 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 		}
 
 		function handleOpener(node: TSESTree.CallExpression, opener: string, config: PairConfiguration): void {
-			const maxDepth = options.maxNestingDepth ?? 0;
+			const maxDepth = options.maxNestingDepth;
 			if (maxDepth > 0 && openerStack.length >= maxDepth) {
 				context.report({
 					data: { max: String(maxDepth) },
@@ -766,11 +616,7 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 				});
 			}
 
-			if (
-				options.allowMultipleOpeners === false &&
-				openerStack.length > 0 &&
-				openerStack.at(-1)?.opener === opener
-			) {
+			if (!options.allowMultipleOpeners && openerStack.length > 0 && openerStack.at(-1)?.opener === opener) {
 				context.report({
 					data: { opener },
 					messageId: "multipleOpeners",
@@ -808,46 +654,34 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 					return;
 				}
 
-				const topEntry = openerStack.at(-1);
-				if (topEntry) {
-					const expectedClosers = getExpectedClosersForOpener(topEntry.opener);
-					const expected = formatOpenerList(expectedClosers);
+				const expectedClosers = openerStack
+					.slice(-1)
+					.flatMap((topEntry) => getExpectedClosersForOpener(topEntry.opener));
+				const expected = formatOpenerList(expectedClosers);
 
-					context.report({
-						data: { closer, expected },
-						messageId: "unexpectedCloser",
-						node,
-					});
-				} else {
-					const openerCandidates = getConfiguredOpenersForCloser(closer);
-					const opener = formatOpenerList(openerCandidates);
-
-					context.report({
-						data: { closer, opener },
-						messageId: "unpairedCloser",
-						node,
-					});
-				}
+				context.report({
+					data: { closer, expected },
+					messageId: "unexpectedCloser",
+					node,
+				});
 
 				return;
 			}
 
-			const matchingEntry = openerStack[matchingIndex];
-			if (!matchingEntry) return;
+			const matchingEntries = openerStack.filter((_, index) => index === matchingIndex);
 
-			if (matchingIndex !== openerStack.length - 1) {
-				const topEntry = openerStack.at(-1);
-				if (topEntry) {
-					context.report({
-						data: {
-							actual: topEntry.opener,
-							closer,
-							expected: matchingEntry.opener,
-						},
-						messageId: "wrongOrder",
-						node,
-					});
-				}
+			for (const matchingEntry of matchingEntries) {
+				if (matchingIndex === openerStack.length - 1) continue;
+
+				context.report({
+					data: {
+						actual: formatOpenerList(openerStack.slice(-1).map((topEntry) => topEntry.opener)),
+						closer,
+						expected: matchingEntry.opener,
+					},
+					messageId: "wrongOrder",
+					node,
+				});
 			}
 
 			openerStack.splice(matchingIndex, 1);
@@ -858,11 +692,8 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 			yieldingFunction: string,
 			openerEntry: OpenerStackEntry,
 		): void {
-			const validClosers = getValidClosers(openerEntry.config);
-			const closer = validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
-
 			context.report({
-				data: { closer, yieldingFunction },
+				data: { closer: formatValidClosers(openerEntry.config), yieldingFunction },
 				messageId: "robloxYieldViolation",
 				node,
 			});
@@ -874,17 +705,19 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 			for (const { opener, config } of openerStack) {
 				if (config.requireSync !== true) continue;
 
-				const validClosers = getValidClosers(config);
-				const closer = validClosers.length === 1 ? (validClosers[0] ?? "closer") : validClosers.join("' or '");
-
 				const asyncType = asyncNode.type === AST_NODE_TYPES.AwaitExpression ? "await" : "yield";
 
 				context.report({
-					data: { asyncType, closer, opener },
+					data: { asyncType, closer: formatValidClosers(config), opener },
 					messageId: "asyncViolation",
 					node: asyncNode,
 				});
 			}
+		}
+
+		function onForOfStatementEnter(node: TSESTree.ForOfStatement): void {
+			if (node.await) onAsyncYield(node);
+			onLoopEnter(node);
 		}
 
 		return {
@@ -902,10 +735,7 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 			"DoWhileStatement:exit": onLoopExit,
 			ForInStatement: onLoopEnter,
 			"ForInStatement:exit": onLoopExit,
-			ForOfStatement: (node: TSESTree.ForOfStatement): void => {
-				if (node.await) onAsyncYield(node);
-				onLoopEnter(node);
-			},
+			ForOfStatement: onForOfStatementEnter,
 			"ForOfStatement:exit": onLoopExit,
 
 			ForStatement: onLoopEnter,
@@ -927,7 +757,7 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 			"SwitchStatement:exit": onSwitchStatementExit,
 			ThrowStatement: onEarlyExit,
 
-			TryStatement: saveSnapshot,
+			TryStatement: startBranchTracking,
 			"TryStatement > .block": onTryBlockEnter,
 			"TryStatement > .block:exit": onTryBlockExit,
 			"TryStatement > .finalizer": onFinallyBlockEnter,
@@ -938,8 +768,8 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 			YieldExpression: onAsyncYield,
 		};
 	},
-	defaultOptions: [{}],
 	meta: {
+		defaultOptions: [{}],
 		docs: {
 			description: "Enforces balanced opener/closer function calls across all execution paths",
 		},
@@ -963,6 +793,7 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 						type: "number",
 					},
 					pairs: {
+						default: [],
 						items: {
 							additionalProperties: false,
 							properties: {
@@ -1004,11 +835,9 @@ const requirePairedCalls = createRule<Options, MessageIds>({
 							required: ["opener", "closer"],
 							type: "object",
 						},
-						minItems: 1,
 						type: "array",
 					},
 				},
-				required: ["pairs"],
 				type: "object",
 			},
 		],

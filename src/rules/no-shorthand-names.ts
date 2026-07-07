@@ -1,4 +1,6 @@
-// oxlint-disable small-rules/prevent-abbreviations
+import { getDefinedValue } from "$utilities/defined-utilities";
+import { isRecordFast } from "$utilities/type-utilities";
+// oxlint-disable small-rules/prevent-abbreviations -- No!
 import { TSESTree } from "@typescript-eslint/types";
 import { regex } from "arktype";
 import Typebox from "typebox";
@@ -19,10 +21,6 @@ const isRuleOptions = Compile(
 		shorthands: Typebox.Optional(Typebox.Record(Typebox.String(), Typebox.String())),
 	}),
 );
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return value !== null && typeof value === "object";
-}
 
 interface ShorthandMatcher {
 	readonly original: string;
@@ -64,8 +62,13 @@ interface ReplacementResult {
 	readonly replaced: string;
 }
 
-const WORD_BOUNDARY_REGEX = /(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-zA-Z])(?=\d)|(?<=\d)(?=[a-zA-Z])/u;
-// oxlint-disable-next-line no-template-curly-in-string
+const WORD_BOUNDARY_REGEXES = [
+	/(?<=[a-z])(?=[A-Z])/u,
+	/(?<=[A-Z])(?=[A-Z][a-z])/u,
+	/(?<=[a-zA-Z])(?=\d)/u,
+	/(?<=\d)(?=[a-zA-Z])/u,
+];
+// oxlint-disable-next-line no-template-curly-in-string -- no.
 const SPECIAL_CHARACTER_REGEX = regex("[.+^${}()|[\\]\\\\]", "gu");
 
 // Module-level split cache with bounded size
@@ -76,12 +79,14 @@ function splitIdentifierIntoWords(identifier: string): ReadonlyArray<string> {
 	const cached = SPLIT_CACHE.get(identifier);
 	if (cached !== undefined) return cached;
 
-	const words = identifier.split(WORD_BOUNDARY_REGEX);
+	let words: ReadonlyArray<string> = [identifier];
+	for (const wordBoundaryRegex of WORD_BOUNDARY_REGEXES) {
+		words = words.flatMap((word) => word.split(wordBoundaryRegex));
+	}
 
 	// Prevent unbounded growth - simple eviction of oldest entry
 	if (SPLIT_CACHE.size >= MAX_SPLIT_CACHE_SIZE) {
-		const firstKey = SPLIT_CACHE.keys().next().value;
-		if (firstKey !== undefined) SPLIT_CACHE.delete(firstKey);
+		SPLIT_CACHE.delete(getDefinedValue(SPLIT_CACHE.keys().next().value));
 	}
 
 	SPLIT_CACHE.set(identifier, words);
@@ -92,14 +97,14 @@ type MatcherResult =
 	| { type: "exact"; original: string; replacement: string }
 	| { type: "pattern"; matcher: ShorthandMatcher };
 
-const DOLLAR_REGEXPS = /\$(\d+)/gu;
+const DOLLAR_REGEXPS = /\$\d+/gu;
 
 function countCaptureGroups(replacement: string): number {
 	const matches = replacement.match(DOLLAR_REGEXPS);
 	if (matches === null) return 0;
 	let maxGroup = 0;
 	for (const dollarReference of matches) {
-		const groupNumber = Number.parseInt(dollarReference.slice(1), 10);
+		const groupNumber = Math.trunc(Number(dollarReference.slice(1)));
 		if (groupNumber > maxGroup) maxGroup = groupNumber;
 	}
 	return maxGroup;
@@ -119,7 +124,7 @@ function buildReplacementPatterns(replacement: string): ReadonlyArray<RegExp> {
 	const count = countCaptureGroups(replacement);
 	if (count === 0) return [];
 
-	const patterns = new Array<RegExp>(count);
+	const patterns = Array.from<RegExp>({ length: count });
 	for (let index = 1; index <= count; index += 1) patterns[index - 1] = getReplacementPattern(index);
 	return patterns;
 }
@@ -249,7 +254,7 @@ function normalizeOptions(rawOptions: NoShorthandOptions | undefined): Normalize
 const IMPORT_PARENT_TYPES = new Set(["ImportSpecifier", "ImportDefaultSpecifier", "ImportNamespaceSpecifier"]);
 
 const noShorthandNames: Rule.RuleModule = {
-	create(context) {
+	create(context): Rule.RuleListener {
 		const validatedOptions = isRuleOptions.Check(context.options[0]) ? context.options[0] : undefined;
 		const normalized = normalizeOptions(validatedOptions);
 		const { allowPropertyAccess, ignoreMatchers, ignoreExact, selector, matchers, exactMatchers } = normalized;
@@ -290,7 +295,7 @@ const noShorthandNames: Rule.RuleModule = {
 			let matchIndex = 0;
 			for (const word of words) {
 				const currentMatch = matches[matchIndex];
-				if (currentMatch !== undefined && currentMatch.matchedWord === word) {
+				if (currentMatch?.matchedWord === word) {
 					replaced += currentMatch.replacement;
 					matchIndex += 1;
 				} else replaced += word;
@@ -302,22 +307,17 @@ const noShorthandNames: Rule.RuleModule = {
 		}
 
 		return {
-			[selector](node: Rule.Node & { name: string; parent?: unknown }) {
+			// oxlint-disable-next-line sonar/cognitive-complexity -- naur
+			[selector](node: Rule.Node & { name: string; parent?: unknown }): void {
 				const { parent } = node;
 
-				if (parent !== undefined && isRecord(parent)) {
-					const parentType = parent.type as string;
-					if (IMPORT_PARENT_TYPES.has(parentType)) return;
-				}
+				if (parent !== null && isRecordFast(parent) && IMPORT_PARENT_TYPES.has(parent.type)) return;
 
 				const identifierName = node.name;
 				const result = getIdentifierResult(identifierName);
-				if (result === undefined) return;
+				if (result === undefined || cachedIsWordIgnored(identifierName)) return;
 
 				const { replaced, matches } = result;
-
-				if (cachedIsWordIgnored(identifierName)) return;
-
 				let allIgnored = true;
 				for (const match of matches) {
 					if (!cachedIsWordIgnored(match.matchedWord)) {
@@ -327,23 +327,22 @@ const noShorthandNames: Rule.RuleModule = {
 				}
 				if (allIgnored) return;
 
-				if (parent !== undefined && isRecord(parent)) {
-					const parentType = parent.type as string;
-					const isPropertyAccess =
-						(parentType === "MemberExpression" && parent.property === node) ||
-						(parentType === "TSQualifiedName" && parent.right === node);
+				const parentRecord = new Object(parent);
+				const parentType: unknown = Reflect.get(parentRecord, "type");
+				const isPropertyAccess =
+					(parentType === "MemberExpression" && Reflect.get(parentRecord, "property") === node) ||
+					(parentType === "TSQualifiedName" && Reflect.get(parentRecord, "right") === node);
 
-					if (isPropertyAccess) {
-						if (allowPropertyAccess.has(identifierName)) return;
-						let allWordsAllowed = true;
-						for (const match of matches) {
-							if (!allowPropertyAccess.has(match.matchedWord)) {
-								allWordsAllowed = false;
-								break;
-							}
+				if (isPropertyAccess) {
+					if (allowPropertyAccess.has(identifierName)) return;
+					let allWordsAllowed = true;
+					for (const match of matches) {
+						if (!allowPropertyAccess.has(match.matchedWord)) {
+							allWordsAllowed = false;
+							break;
 						}
-						if (allWordsAllowed) return;
 					}
+					if (allWordsAllowed) return;
 				}
 
 				if (
@@ -353,16 +352,10 @@ const noShorthandNames: Rule.RuleModule = {
 				) {
 					const { init } = parent;
 					if (
-						init &&
-						isRecord(init) &&
-						init.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-						init.object !== undefined &&
-						isRecord(init.object) &&
-						init.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
+						init?.type === "MemberExpression" &&
+						init.object?.type === "Identifier" &&
 						init.object.name === "Players" &&
-						init.property !== undefined &&
-						isRecord(init.property) &&
-						init.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
+						init.property?.type === "Identifier" &&
 						init.property.name === "LocalPlayer"
 					) {
 						context.report({

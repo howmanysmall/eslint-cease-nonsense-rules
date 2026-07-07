@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+import { generateReplacement, getReplacementIdentifier } from "$utilities/pattern-replacement/replacement-generator";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import { generateReplacement, getReplacementIdentifier } from "@utilities/pattern-replacement";
 
+import type { CapturedValue, ParsedReplacement } from "$utilities/pattern-replacement/pattern-types";
 import type { TSESTree } from "@typescript-eslint/types";
-import type { CapturedValue, ParsedReplacement } from "@utilities/pattern-replacement/pattern-types";
 
 vi.setConfig({ testTimeout: 10000 });
 

@@ -1,6 +1,7 @@
+import { createRule } from "$utilities/create-rule";
+import { isScriptProgramScope } from "$utilities/typescript-node-utilities";
 import { ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "@utilities/create-rule";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
@@ -12,12 +13,7 @@ function isTopScope(scope: TSESLint.Scope.Scope): boolean {
 	const { type } = scope;
 	if (type === ScopeType.module || type === ScopeType.global) return true;
 
-	if (scope.upper?.type === ScopeType.global) {
-		const { block } = scope.upper;
-		if (block.type === AST_NODE_TYPES.Program && block.sourceType === "script") return true;
-	}
-
-	return false;
+	return isScriptProgramScope(scope);
 }
 
 const preferModuleScopeConstants = createRule<[], MessageIds>({
@@ -53,8 +49,8 @@ const preferModuleScopeConstants = createRule<[], MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description:
 				"Prefer that screaming snake case variables always be defined using `const`, and always appear at module scope.",

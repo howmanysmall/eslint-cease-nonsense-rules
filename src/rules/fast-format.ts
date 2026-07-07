@@ -1,11 +1,12 @@
+import { getDefinedValue } from "$utilities/defined-utilities";
 import {
 	formatWithOxfmtSync as formatWithOxfmt,
 	generateDifferences,
 	getExtension,
 	showInvisibles,
-} from "@utilities/format-utilities";
+} from "$utilities/format-utilities";
 
-import type { Difference } from "@utilities/format-utilities";
+import type { Difference } from "$utilities/format-utilities";
 import type { Rule, SourceCode } from "eslint";
 
 const DEFAULT_CACHE_CAPACITY = 32;
@@ -26,9 +27,9 @@ type FormatCacheEntry =
 	  };
 
 interface FormatCache {
-	clear(): void;
-	get(key: string): FormatCacheEntry | undefined;
-	set(key: string, value: FormatCacheEntry): FormatCacheEntry;
+	readonly clear: () => void;
+	readonly get: (key: string) => FormatCacheEntry | undefined;
+	readonly set: (key: string, value: FormatCacheEntry) => FormatCacheEntry;
 }
 
 interface FastFormatServices {
@@ -72,8 +73,8 @@ function createLruCache(limit: number): FormatCache {
 		entries.set(key, value);
 
 		if (entries.size > capacity) {
-			const oldestKey = entries.keys().next().value;
-			if (oldestKey !== undefined) entries.delete(oldestKey);
+			const oldestKey = getDefinedValue(entries.keys().next().value, "Expected LRU cache to include a key.");
+			entries.delete(oldestKey);
 		}
 
 		return value;
@@ -138,14 +139,14 @@ export function createFastFormatRule(options: FastFormatOptions = {}): Rule.Rule
 	};
 
 	return {
-		create(context) {
+		create(context): Rule.RuleListener {
 			const { filename, sourceCode } = context;
 
 			// Optimization: Skip non-JS/TS files entirely
 			if (getExtension(filename) === undefined) return {};
 
 			return {
-				Program() {
+				Program(): void {
 					const source = sourceCode.text;
 					const outcome = formatWithCaching(cache, filename, source, services);
 

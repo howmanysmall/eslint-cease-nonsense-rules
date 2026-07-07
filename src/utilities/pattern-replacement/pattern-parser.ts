@@ -1,4 +1,4 @@
-// oxlint-disable prefer-string-raw
+// oxlint-disable prefer-string-raw -- Arktype regex strings require escaped pattern source.
 
 import { regex } from "arktype";
 
@@ -27,10 +27,10 @@ export function parseParameters(parametersString: string): ReadonlyArray<ParsedP
 		if (parameter === "_") result[size++] = { kind: "wildcard" };
 		else if (parameter.startsWith("$")) result[size++] = { kind: "capture", name: parameter.slice(1) };
 		else if (parameter.endsWith("?")) {
-			const value = Number.parseFloat(parameter.slice(0, -1));
+			const value = Number(parameter.slice(0, -1));
 			result[size++] = { kind: "optional", value };
 		} else {
-			const value = Number.parseFloat(parameter);
+			const value = Number(parameter);
 			result[size++] = { kind: "literal", value };
 		}
 	}
@@ -106,5 +106,7 @@ export function parsePattern(
 		};
 	}
 
-	throw new Error(`Invalid pattern: ${match}`);
+	const error = new Error(`Invalid pattern: ${match}`);
+	Error.captureStackTrace(error, parsePattern);
+	throw error;
 }

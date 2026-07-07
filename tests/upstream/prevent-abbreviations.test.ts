@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import vueParser from "vue-eslint-parser";
+import rule from "$rules/prevent-abbreviations";
 import babelParser from "@babel/eslint-parser";
-import rule from "@rules/prevent-abbreviations";
 import tsParser from "@typescript-eslint/parser";
 import { Linter, RuleTester } from "eslint";
 
@@ -16,9 +16,10 @@ import { shardCases } from "../utilities/shard-cases";
  */
 type Variant = "default" | "babel" | "typescript" | "vue";
 
-const ESLINT_MAJOR = Number.parseInt(new Linter().version.split(".")[0] ?? "0", 10);
 const SKIP_VARIANTS: ReadonlySet<Variant> =
-	ESLINT_MAJOR >= 10 ? new Set<Variant>(["babel", "vue"]) : new Set<Variant>();
+	Math.trunc(Number(new Linter().version.split(".")[0] ?? "0")) >= 10
+		? new Set<Variant>(["babel", "vue"])
+		: new Set<Variant>();
 
 interface LanguageOptions {
 	readonly globals?: Record<string, "readonly" | "writable" | "off">;
@@ -79,7 +80,7 @@ function getParserForVariant(variant: Variant): unknown {
 	return tsParser;
 }
 
-const PARSER_MARKER_PATTERN = /\/\*\s*(babel|typescript)\s*\*\//gu;
+const PARSER_MARKER_PATTERN = /\/\*\s*(?:babel|typescript)\s*\*\//gu;
 
 function stripParserMarkers(code: string): string {
 	const withoutMarkers = code.replace(PARSER_MARKER_PATTERN, "");
@@ -97,6 +98,7 @@ function normalizeInvalidCase(testCase: UpstreamInvalidCase): UpstreamInvalidCas
 	const output = typeof testCase.output === "string" ? stripParserMarkers(testCase.output) : undefined;
 
 	if (typeof output === "string" && output === code) {
+		// oxlint-disable-next-line sonar/no-unused-vars -- lol.
 		const { output: _output, ...rest } = testCase;
 		return { ...rest, code };
 	}

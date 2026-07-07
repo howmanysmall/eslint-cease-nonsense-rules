@@ -1,6 +1,6 @@
+import { getMemberPropertyName, hasShadowedBinding, unwrapExpression } from "$utilities/ast-utilities";
+import { createRule } from "$utilities/create-rule";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { getMemberPropertyName, hasShadowedBinding, unwrapExpression } from "@utilities/ast-utilities";
-import { createRule } from "@utilities/create-rule";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
@@ -62,8 +62,8 @@ const noTableCreateMap = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description:
 				"Disallow map(...) directly on table.create(...) and new Array(...) constructor patterns in roblox-ts.",

@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-shorthand-names";
+import rule from "$rules/no-shorthand-names";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -63,6 +63,11 @@ describe("no-shorthand-names", () => {
 					},
 				],
 			},
+			{
+				code: Array.from({ length: 1030 }, (_, index) => `const props${index} = ${index};`).join("\n"),
+				errors: Array.from({ length: 1030 }, () => ({ messageId: "useReplacement" })),
+				options: [{ shorthands: { props: "properties" } }],
+			},
 			// Compound identifier tests - shorthand at word boundaries
 			{
 				code: "interface UnitBoxBadgeInfoProps {}",
@@ -112,6 +117,11 @@ describe("no-shorthand-names", () => {
 				code: "const strName = '';",
 				errors: [{ messageId: "useReplacement" }],
 				options: [{ shorthands: { "/^str(.*)$/": "string$1" } }],
+			},
+			{
+				code: "const strname = '';",
+				errors: [{ messageId: "useReplacement" }],
+				options: [{ shorthands: { "/^(str)(name)$/": "$2$1" } }],
 			},
 			// Regex with case-insensitive flag
 			{
@@ -232,6 +242,12 @@ describe("no-shorthand-names", () => {
 			{
 				code: "const x = container.DataProps;",
 				options: [{ allowPropertyAccess: ["DataProps"], shorthands: { "*Props": "*Properties" } }],
+			},
+			{
+				code: "const x = container.DataProps;",
+				options: [
+					{ allowPropertyAccess: ["Data", "Props"], shorthands: { Data: "Datum", Props: "Properties" } },
+				],
 			},
 			// Import specifiers - external packages shouldn't be flagged
 			{

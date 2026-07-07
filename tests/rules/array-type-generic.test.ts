@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/array-type-generic";
+import rule from "$rules/array-type-generic";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 
@@ -44,10 +44,24 @@ describe("array-type-generic", () => {
 				errors: [{ messageId: "useGenericArrayType" }],
 				output: "const values: Array<string> = [];",
 			},
+			{
+				code: "type NestedReadonly = readonly string[][];",
+				errors: [{ messageId: "useGenericArrayType" }],
+				output: "type NestedReadonly = ReadonlyArray<Array<string>>;",
+			},
+			{
+				code: "type ElementKeys = keyof string[];",
+				errors: [{ messageId: "useGenericArrayType" }],
+				output: "type ElementKeys = keyof Array<string>;",
+			},
 		],
 		valid: [
 			"type Point = [x: number, y: number];",
 			"function parseValues(values: [unknown, string, ...unknown[]]): void {}",
+			"type Variadic = [...string[]];",
+			"type TupleArray = [string[]];",
+			"type TupleReadonlyArray = [readonly string[]];",
+			"type ReadonlyName = readonly string;",
 			"type Values = Array<string>;",
 			"type Values = ReadonlyArray<string>;",
 			"const pairs: Array<[number, string]> = [[1, 'one'], [2, 'two']];",

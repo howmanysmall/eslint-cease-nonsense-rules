@@ -1,4 +1,4 @@
-import { createRule } from "@utilities/create-rule";
+import { createRule } from "$utilities/create-rule";
 
 const noPrint = createRule({
 	create(context) {
@@ -11,8 +11,8 @@ const noPrint = createRule({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description: "Ban print() function calls. Use Log instead.",
 		},

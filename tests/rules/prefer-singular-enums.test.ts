@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/prefer-singular-enums";
+import rule from "$rules/prefer-singular-enums";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -73,6 +73,8 @@ describe("prefer-singular-enums", () => {
 			{ code: "enum Class {}" },
 			{ code: "enum Series {}" },
 			{ code: "enum Species {}" },
+			{ code: "enum E2 {}" },
+			{ code: "enum _ {}" },
 		],
 	});
 });

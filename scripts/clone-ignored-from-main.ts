@@ -2,7 +2,7 @@
 
 import { spawn } from "node:child_process";
 import { cp, mkdir, stat } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import nodePath from "node:path";
 import { argv, exit } from "node:process";
 import { Command } from "@cliffy/command";
 import { CompletionsCommand } from "@cliffy/command/completions";
@@ -33,33 +33,35 @@ function shouldSkip(relativePath: string): boolean {
 }
 
 async function getCommandTextAsync(command: string, parameters: ReadonlyArray<string>): Promise<string> {
-	return new Promise((resolve, reject) => {
-		const stdoutChunks: Array<Uint8Array> = [];
-		const stderrChunks: Array<Uint8Array> = [];
-		const childProcess = spawn(command, [...parameters], { stdio: ["ignore", "pipe", "pipe"] });
+	const { resolve, reject, promise } = Promise.withResolvers<string>();
 
-		childProcess.stdout.on("data", (chunk: Uint8Array) => {
-			stdoutChunks.push(chunk);
-		});
+	const stdoutChunks = new Array<Uint8Array>();
+	const stderrChunks = new Array<Uint8Array>();
+	const childProcess = spawn(command, [...parameters], { stdio: ["ignore", "pipe", "pipe"] });
 
-		childProcess.stderr.on("data", (chunk: Uint8Array) => {
-			stderrChunks.push(chunk);
-		});
-
-		childProcess.on("error", reject);
-		childProcess.on("close", (exitCode) => {
-			const stdout = Buffer.concat(stdoutChunks).toString("utf8");
-			const stderr = Buffer.concat(stderrChunks).toString("utf8");
-			if (exitCode === 0) {
-				resolve(stdout);
-				return;
-			}
-
-			const renderedCommand = [command, ...parameters].join(" ");
-			const output = [stderr.trim(), stdout.trim()].filter(Boolean).join("\n");
-			reject(new Error(output ? `${renderedCommand} failed.\n${output}` : `${renderedCommand} failed.`));
-		});
+	childProcess.stdout.on("data", (chunk: Uint8Array) => {
+		stdoutChunks.push(chunk);
 	});
+
+	childProcess.stderr.on("data", (chunk: Uint8Array) => {
+		stderrChunks.push(chunk);
+	});
+
+	childProcess.on("error", reject);
+	childProcess.on("close", (exitCode) => {
+		const stdout = Buffer.concat(stdoutChunks).toString("utf8");
+		const stderr = Buffer.concat(stderrChunks).toString("utf8");
+		if (exitCode === 0) {
+			resolve(stdout);
+			return;
+		}
+
+		const renderedCommand = [command, ...parameters].join(" ");
+		const output = [stderr.trim(), stdout.trim()].filter(Boolean).join("\n");
+		reject(new Error(output ? `${renderedCommand} failed.\n${output}` : `${renderedCommand} failed.`));
+	});
+
+	return promise;
 }
 
 async function findMainWorktreeAsync(): Promise<string | undefined> {
@@ -70,7 +72,7 @@ async function findMainWorktreeAsync(): Promise<string | undefined> {
 		if (!line.startsWith("worktree ")) continue;
 
 		const worktreePath = line.slice(9).trim();
-		const gitPath = join(worktreePath, ".git");
+		const gitPath = nodePath.join(worktreePath, ".git");
 
 		try {
 			// oxlint-disable-next-line no-await-in-loop -- Sequential check needed to return early on first match
@@ -121,7 +123,7 @@ const command = new Command()
 		const destinationRoot = destinationRootRaw.trim();
 
 		const mainRoot = await findMainWorktreeAsync();
-		if (!mainRoot) {
+		if (mainRoot === undefined || mainRoot.length === 0) {
 			console.error("Could not determine main worktree path.");
 			exit(1);
 		}
@@ -165,8 +167,8 @@ const command = new Command()
 		let skipped = 0;
 
 		for (const relativePath of filesToCopy) {
-			const source = join(mainRoot, relativePath);
-			const destination = join(destinationRoot, relativePath);
+			const source = nodePath.join(mainRoot, relativePath);
+			const destination = nodePath.join(destinationRoot, relativePath);
 
 			// oxlint-disable-next-line no-await-in-loop -- Sequential file operations are safer
 			if (!overwrite && (await fileExistsAsync(destination))) {
@@ -181,7 +183,7 @@ const command = new Command()
 			}
 
 			// oxlint-disable-next-line no-await-in-loop -- Sequential file operations are safer
-			await mkdir(dirname(destination), { recursive: true });
+			await mkdir(nodePath.dirname(destination), { recursive: true });
 			// oxlint-disable-next-line no-await-in-loop -- Sequential file operations are safer
 			await cp(source, destination);
 			copied += 1;

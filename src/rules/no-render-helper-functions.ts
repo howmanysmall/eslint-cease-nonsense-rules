@@ -1,9 +1,9 @@
+import { isPascalCase } from "$utilities/casing-utilities";
+import { createRule } from "$utilities/create-rule";
+import { isNonEmptyString } from "$utilities/type-utilities";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import { isPascalCase } from "@utilities/casing-utilities";
-import { createRule } from "@utilities/create-rule";
 import { regex } from "arktype";
 
-import type { ReadonlyRecord } from "@lint-types/utility-types";
 import type { TSESTree } from "@typescript-eslint/types";
 
 type MessageIds = "noRenderHelper";
@@ -20,20 +20,98 @@ function isNode(value: unknown): value is TSESTree.Node {
 	return typeof value === "object" && value !== null && "type" in value;
 }
 
-function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & ReadonlyRecord<string, unknown> {
-	return true;
+function collectNodes(nodes: ReadonlyArray<unknown>): ReadonlyArray<TSESTree.Node> {
+	const children = new Array<TSESTree.Node>();
+	for (const node of nodes) {
+		if (isNode(node)) children.push(node);
+	}
+	return children;
 }
 
 function isReactNodeTypeAnnotation(node: TSESTree.TypeNode | undefined): boolean {
-	if (!node) return false;
+	if (node === undefined) return false;
 
 	if (node.type === AST_NODE_TYPES.TSTypeReference) {
 		const { typeName } = node;
-		if (typeName.type === AST_NODE_TYPES.Identifier) return REACT_NODE_TYPE_NAMES.has(typeName.name);
-		if (typeName.type === AST_NODE_TYPES.TSQualifiedName) return REACT_NODE_TYPE_NAMES.has(typeName.right.name);
+		let typeReferenceName = "";
+		if ("right" in typeName) typeReferenceName = typeName.right.name;
+		if ("name" in typeName) typeReferenceName = typeName.name;
+		return REACT_NODE_TYPE_NAMES.has(typeReferenceName);
 	}
 
 	return false;
+}
+
+function getTraversableChildren(current: TSESTree.Node): ReadonlyArray<TSESTree.Node> {
+	switch (current.type) {
+		case AST_NODE_TYPES.BlockStatement:
+		case AST_NODE_TYPES.Program:
+			return current.body;
+
+		case AST_NODE_TYPES.ReturnStatement:
+			return current.argument === null ? [] : [current.argument];
+
+		case AST_NODE_TYPES.IfStatement: {
+			return current.alternate === null
+				? [current.test, current.consequent]
+				: [current.test, current.consequent, current.alternate];
+		}
+
+		case AST_NODE_TYPES.SwitchStatement:
+			return [current.discriminant, ...current.cases];
+
+		case AST_NODE_TYPES.SwitchCase:
+			return current.test === null ? current.consequent : [current.test, ...current.consequent];
+
+		case AST_NODE_TYPES.ExpressionStatement:
+			return [current.expression];
+
+		case AST_NODE_TYPES.VariableDeclaration:
+			return current.declarations;
+
+		case AST_NODE_TYPES.VariableDeclarator:
+			return current.init === null ? [current.id] : [current.id, current.init];
+
+		case AST_NODE_TYPES.CallExpression:
+		case AST_NODE_TYPES.NewExpression:
+			return [current.callee, ...collectNodes(current.arguments)];
+
+		case AST_NODE_TYPES.ConditionalExpression:
+			return [current.test, current.consequent, current.alternate];
+
+		case AST_NODE_TYPES.LogicalExpression:
+		case AST_NODE_TYPES.BinaryExpression:
+		case AST_NODE_TYPES.AssignmentExpression:
+			return [current.left, current.right];
+
+		case AST_NODE_TYPES.MemberExpression:
+			return [current.object, current.property];
+
+		case AST_NODE_TYPES.ArrayExpression:
+			return collectNodes(current.elements);
+
+		case AST_NODE_TYPES.ObjectExpression:
+			return current.properties;
+
+		case AST_NODE_TYPES.Property:
+			return [current.key, current.value];
+
+		case AST_NODE_TYPES.UnaryExpression:
+		case AST_NODE_TYPES.UpdateExpression:
+		case AST_NODE_TYPES.AwaitExpression:
+			return [current.argument];
+
+		case AST_NODE_TYPES.ChainExpression:
+			return [current.expression];
+
+		case AST_NODE_TYPES.TSAsExpression:
+		case AST_NODE_TYPES.TSNonNullExpression:
+		case AST_NODE_TYPES.TSTypeAssertion:
+			return [current.expression];
+
+		default:
+			return [];
+	}
 }
 
 function hasJSXReturn(
@@ -42,8 +120,6 @@ function hasJSXReturn(
 	let foundJSX = false;
 
 	function checkNode(current: TSESTree.Node): void {
-		if (foundJSX) return;
-
 		if (current.type === AST_NODE_TYPES.ReturnStatement) {
 			const { argument } = current;
 			if (argument?.type === AST_NODE_TYPES.JSXElement || argument?.type === AST_NODE_TYPES.JSXFragment) {
@@ -52,37 +128,9 @@ function hasJSXReturn(
 			}
 		}
 
-		const validKeys = [
-			"body",
-			"consequent",
-			"alternate",
-			"cases",
-			"block",
-			"expression",
-			"argument",
-			"elements",
-			"properties",
-			"value",
-			"init",
-			"test",
-			"update",
-			"declarations",
-			"declaration",
-		];
-
-		for (const key of validKeys) {
-			if (!(key in current)) continue;
-			if (!hasDynamicProperties(current)) continue;
-
-			const child = current[key];
-			if (!child) continue;
-
-			if (Array.isArray(child)) {
-				for (const item of child) {
-					if (isNode(item)) checkNode(item);
-					if (foundJSX) return;
-				}
-			} else if (isNode(child)) checkNode(child);
+		for (const child of getTraversableChildren(current)) {
+			checkNode(child);
+			if (foundJSX) return;
 		}
 	}
 
@@ -97,10 +145,7 @@ function hasJSXReturn(
 	return foundJSX;
 }
 
-function isInlineCallback(node: TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression): boolean {
-	const { parent } = node;
-	if (!parent) return false;
-
+function isInlineCallback(parent: TSESTree.Node): boolean {
 	if (parent.type === AST_NODE_TYPES.CallExpression) return true;
 	if (parent.type === AST_NODE_TYPES.JSXExpressionContainer) return true;
 	if (parent.type === AST_NODE_TYPES.ArrayExpression) return true;
@@ -119,7 +164,7 @@ const noRenderHelperFunctions = createRule<[], MessageIds>({
 				const functionName =
 					isVariableDeclarator && parent.id.type === AST_NODE_TYPES.Identifier ? parent.id.name : undefined;
 
-				if (functionName && isPascalCase(functionName)) componentDepth += 1;
+				if (isNonEmptyString(functionName) && isPascalCase(functionName)) componentDepth += 1;
 			},
 			"ArrowFunctionExpression:exit"(node: TSESTree.ArrowFunctionExpression): void {
 				const { parent } = node;
@@ -127,19 +172,18 @@ const noRenderHelperFunctions = createRule<[], MessageIds>({
 				const functionName =
 					isVariableDeclarator && parent.id.type === AST_NODE_TYPES.Identifier ? parent.id.name : undefined;
 
-				if (functionName && isPascalCase(functionName)) {
+				if (isNonEmptyString(functionName) && isPascalCase(functionName)) {
 					componentDepth -= 1;
 					return;
 				}
 
 				if (componentDepth > 0) return;
-				if (isInlineCallback(node)) return;
+				if (parent !== undefined && isInlineCallback(parent)) return;
 
 				if (parent?.type !== AST_NODE_TYPES.VariableDeclarator) return;
 				if (parent.id.type !== AST_NODE_TYPES.Identifier) return;
 
 				const variableName = parent.id.name;
-				if (isPascalCase(variableName)) return;
 				if (isHookName(variableName)) return;
 
 				const hasReactNodeAnnotation = parent.id.typeAnnotation
@@ -192,7 +236,7 @@ const noRenderHelperFunctions = createRule<[], MessageIds>({
 				const functionName =
 					isVariableDeclarator && parent.id.type === AST_NODE_TYPES.Identifier ? parent.id.name : undefined;
 
-				if (functionName && isPascalCase(functionName)) componentDepth += 1;
+				if (isNonEmptyString(functionName) && isPascalCase(functionName)) componentDepth += 1;
 			},
 			"FunctionExpression:exit"(node: TSESTree.FunctionExpression): void {
 				const { parent } = node;
@@ -200,19 +244,18 @@ const noRenderHelperFunctions = createRule<[], MessageIds>({
 				const functionName =
 					isVariableDeclarator && parent.id.type === AST_NODE_TYPES.Identifier ? parent.id.name : undefined;
 
-				if (functionName && isPascalCase(functionName)) {
+				if (isNonEmptyString(functionName) && isPascalCase(functionName)) {
 					componentDepth -= 1;
 					return;
 				}
 
 				if (componentDepth > 0) return;
-				if (isInlineCallback(node)) return;
+				if (parent !== undefined && isInlineCallback(parent)) return;
 
 				if (parent?.type !== AST_NODE_TYPES.VariableDeclarator) return;
 				if (parent.id.type !== AST_NODE_TYPES.Identifier) return;
 
 				const variableName = parent.id.name;
-				if (isPascalCase(variableName)) return;
 				if (isHookName(variableName)) return;
 
 				const hasReactNodeAnnotation = parent.id.typeAnnotation
@@ -232,8 +275,8 @@ const noRenderHelperFunctions = createRule<[], MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description: "Disallow non-component functions that return JSX or React elements.",
 		},

@@ -6,13 +6,38 @@
 		"source.organizeImports": false
 	},
 	"colorize_brackets": true,
-	"disable_ai": false,
+	"context_servers": {
+		"astro-docs": {
+			"enabled": true,
+			"url": "https://mcp.docs.astro.build/mcp"
+		},
+		"bun-docs": {
+			"enabled": true,
+			"url": "https://bun.com/docs/mcp"
+		},
+		"chrome-devtools": {
+			"args": ["./scripts/get-chrome-path.sh", "--serve"],
+			"command": "bash",
+			"enabled": true
+		},
+		"jsr": {
+			"args": ["x", "--", "jsr-cli", "mcp"],
+			"command": "mise",
+			"enabled": false
+		},
+		"npm": {
+			"args": ["x", "--", "npm-registry-mcp"],
+			"command": "mise",
+			"enabled": false
+		}
+	},
 	"edit_predictions": {
 		"codestral": {},
 		"copilot": { "enable_next_edit_suggestions": true },
 		"mode": "eager"
 	},
 	"ensure_final_newline_on_save": true,
+	"extend_comment_on_newline": false,
 	"file_types": {
 		"JSONC": [
 			"tsconfig.json",
@@ -24,9 +49,7 @@
 			"tsconfig*.json",
 			"*.code-snippets"
 		],
-		"Shell Script": ["zsh", "zshrc", "zprofile", "zshenv", "bashrc", "bash_profile"],
-		"TOML": ["toml"],
-		"YAML": ["*.yml", "*.yaml", ".github/workflows/*.yml", ".github/workflows/*.yaml"]
+		"Shell Script": ["zsh", "zshrc", "zprofile", "zshenv", "bashrc", "bash_profile"]
 	},
 	"format_on_save": "on",
 	"hard_tabs": true,
@@ -47,6 +70,26 @@
 	},
 	"jsx_tag_auto_close": { "enabled": true },
 	"languages": {
+		"Astro": {
+			"code_actions_on_format": {
+				"source.fixAll.biome": true,
+				"source.fixAll.oxc": true,
+				"source.organizeImports.biome": true
+			},
+			"format_on_save": "on",
+			"formatter": [
+				{
+					"language_server": { "name": "biome" }
+				},
+				{
+					"language_server": { "name": "oxfmt" }
+				}
+			],
+			"hard_tabs": true,
+			"language_servers": ["harper-ls", "codebook", "wakatime", "..."],
+			"prettier": { "allowed": false },
+			"tab_size": 4
+		},
 		"CSS": {
 			"code_actions_on_format": {
 				"source.fixAll.biome": true,
@@ -80,19 +123,6 @@
 			"language_servers": ["!eslint", "!biome", "oxfmt", "..."],
 			"prettier": { "allowed": false },
 			"tab_size": 4
-		},
-		"HTML": {
-			"format_on_save": "on",
-			"formatter": [
-				{
-					"language_server": { "name": "biome" }
-				},
-				{
-					"language_server": { "name": "oxfmt" }
-				}
-			],
-			"language_servers": ["biome", "codebook", "dependi", "deputy", "oxfmt", "oxlint", "harper-ls", "wakatime"],
-			"prettier": { "allowed": false }
 		},
 		"JSON": {
 			"code_actions_on_format": {
@@ -134,7 +164,7 @@
 				"language_server": { "name": "oxfmt" }
 			},
 			"hard_tabs": true,
-			"language_servers": ["oxfmt", "codebook", "harper-ls", "wakatime"],
+			"language_servers": ["oxfmt", "codebook", "harper-ls", "wakatime", "json-language-server"],
 			"prettier": { "allowed": false },
 			"tab_size": 4
 		},
@@ -158,7 +188,8 @@
 				"codebook",
 				"dependi",
 				"deputy",
-				"eslint",
+				"oxfmt",
+				"oxlint",
 				"harper-ls",
 				"json-language-server",
 				"package-version-server",
@@ -167,11 +198,39 @@
 			"prettier": { "allowed": false },
 			"tab_size": 4
 		},
+		"JavaScript": {
+			"code_actions_on_format": {
+				"source.fixAll.biome": true,
+				"source.fixAll.oxc": true,
+				"source.organizeImports.biome": false
+			},
+			"format_on_save": "on",
+			"formatter": [
+				{
+					"language_server": { "name": "biome" }
+				},
+				{
+					"language_server": { "name": "oxfmt" }
+				}
+			],
+			"hard_tabs": true,
+			"language_servers": ["biome", "oxfmt", "oxlint", "!tsgo", "vtsls", "harper-ls", "codebook", "wakatime"],
+			"prettier": { "allowed": false },
+			"tab_size": 4
+		},
 		"LESS": {
 			"format_on_save": "on",
 			"formatter": {
 				"language_server": { "name": "oxfmt" }
 			},
+			"prettier": { "allowed": false }
+		},
+		"MDX": {
+			"format_on_save": "on",
+			"formatter": {
+				"language_server": { "name": "oxfmt" }
+			},
+			"language_servers": ["codebook", "harper-ls", "oxfmt", "rumdl", "wakatime"],
 			"prettier": { "allowed": false }
 		},
 		"Markdown": {
@@ -183,17 +242,9 @@
 			"language_servers": ["codebook", "harper-ls", "rumdl", "wakatime"],
 			"prettier": { "allowed": false },
 			"show_whitespaces": "none",
+			"soft_wrap": "editor_width",
 			"tab_size": 4
 		},
-		"MDX": {
-			"format_on_save": "on",
-			"formatter": {
-				"language_server": { "name": "oxfmt" }
-			},
-			"language_servers": ["codebook", "harper-ls", "oxfmt", "rumdl", "wakatime"],
-			"prettier": { "allowed": false }
-		},
-
 		"Pkl": {
 			"format_on_save": "on",
 			"formatter": {
@@ -233,7 +284,15 @@
 			"format_on_save": "on",
 			"formatter": "language_server",
 			"hard_tabs": true,
-			"language_servers": ["dependi", "deputy", "tombi", "wakatime", "harper-ls", "codebook"],
+			"language_servers": [
+				"dependi",
+				"deputy",
+				"tombi",
+				"wakatime",
+				"harper-ls",
+				"codebook",
+				"json-language-server"
+			],
 			"tab_size": 4
 		},
 		"TSX": {
@@ -252,7 +311,7 @@
 				}
 			],
 			"hard_tabs": true,
-			"language_servers": ["biome", "oxfmt", "oxlint", "vtsls", "harper-ls", "codebook", "wakatime"],
+			"language_servers": ["biome", "oxfmt", "oxlint", "!tsgo", "vtsls", "harper-ls", "codebook", "wakatime"],
 			"prettier": { "allowed": false },
 			"tab_size": 4
 		},
@@ -272,7 +331,7 @@
 				}
 			],
 			"hard_tabs": true,
-			"language_servers": ["biome", "oxfmt", "oxlint", "vtsls", "harper-ls", "codebook", "wakatime"],
+			"language_servers": ["biome", "oxfmt", "oxlint", "!tsgo", "vtsls", "harper-ls", "codebook", "wakatime"],
 			"prettier": { "allowed": false },
 			"tab_size": 4
 		},
@@ -283,17 +342,48 @@
 			},
 			"prettier": { "allowed": false }
 		},
+		"XML": {
+			"code_actions_on_format": {
+				"source.fixAll.biome": true,
+				"source.fixAll.oxc": true,
+				"source.organizeImports.biome": true
+			},
+			"format_on_save": "on",
+			"formatter": [
+				{
+					"language_server": { "name": "biome" }
+				},
+				{
+					"language_server": { "name": "oxfmt" }
+				}
+			],
+			"hard_tabs": true,
+			"language_servers": ["harper-ls", "codebook", "wakatime", "..."],
+			"prettier": { "allowed": false },
+			"tab_size": 4
+		},
 		"YAML": {
 			"format_on_save": "on",
 			"formatter": {
 				"language_server": { "name": "oxfmt" }
 			},
 			"hard_tabs": false,
-			"language_servers": ["eslint", "dependi", "yaml-language-server", "wakatime", "harper-ls", "codebook"],
+			"language_servers": [
+				"oxlint",
+				"oxfmt",
+				"dependi",
+				"yaml-language-server",
+				"wakatime",
+				"harper-ls",
+				"codebook",
+				"json-language-server"
+			],
 			"prettier": { "allowed": false },
 			"tab_size": 2
 		}
 	},
+	"linked_edits": true,
+	"load_direnv": "direct",
 	"lsp": {
 		"bash-language-server": {
 			"settings": {
@@ -304,8 +394,8 @@
 		},
 		"biome": {
 			"binary": {
-				"arguments": ["run", "biome", "lsp-proxy"],
-				"path": "aube"
+				"arguments": ["--run", "biome", "--", "lsp-proxy"],
+				"path": "node"
 			},
 			"settings": {
 				"biome": {
@@ -333,6 +423,11 @@
 			}
 		},
 		"oxfmt": {
+			"binary": {
+				"arguments": ["--run", "oxfmt", "--", "--lsp"],
+				"ignore_system_version": true,
+				"path": "node"
+			},
 			"initialization_options": {
 				"settings": {
 					"configPath": "./.oxfmtrc.json",
@@ -342,8 +437,8 @@
 		},
 		"oxlint": {
 			"binary": {
-				"arguments": ["run", "oxc", "--", "--lsp"],
-				"path": "aube"
+				"arguments": ["--run", "oxlint", "--", "--lsp"],
+				"path": "node"
 			},
 			"initialization_options": {
 				"settings": {
@@ -363,7 +458,7 @@
 						"functionLikeReturnTypes": { "enabled": true },
 						"parameterNames": {
 							"enabled": "none",
-							"suppressWhenArgumentMatchesName": false
+							"suppressWhenArgumentMatchesName": true
 						},
 						"parameterTypes": { "enabled": false },
 						"propertyDeclarationTypes": { "enabled": true }
@@ -376,9 +471,9 @@
 						"functionLikeReturnTypes": { "enabled": true },
 						"parameterNames": {
 							"enabled": "none",
-							"suppressWhenArgumentMatchesName": false
+							"suppressWhenArgumentMatchesName": true
 						},
-						"parameterTypes": { "enabled": true },
+						"parameterTypes": { "enabled": false },
 						"propertyDeclarationTypes": { "enabled": false },
 						"variableTypes": { "enabled": false }
 					},
@@ -394,10 +489,17 @@
 					"keyOrdering": false,
 					"schemas": {
 						"./schemas/kubernetes.yaml": "k8s/**/*.yaml",
-						"~/global-schemas/docker-compose.yaml": "docker-compose*.yml",
-						"https://raw.githubusercontent.com/rvben/rumdl/main/rumdl.schema.json": [
-							"**/.rumdl.toml",
-							"**/rumdl.toml"
+						"https://json.schemastore.org/dependabot-v2.json": ".github/dependabot.*",
+						"https://json.schemastore.org/github-workflow.json": ".github/workflows/*",
+						// "~/global-schemas/docker-compose.yaml": "docker-compose*.yml",
+						"https://raw.githubusercontent.com/compose-spec/compose-go/master/schema/compose-spec.json": "docker-compose*.yml",
+						"https://raw.githubusercontent.com/evilmartians/lefthook/master/schema.json": [
+							"lefthook.yml",
+							".lefthook.yml",
+							"lefthook.yaml",
+							".lefthook.yaml",
+							"lefthook.json",
+							".lefthook.json"
 						]
 					}
 				}
@@ -417,5 +519,6 @@
 	},
 	"use_auto_surround": true,
 	"use_autoclose": true,
-	"use_on_type_format": true
+	"use_on_type_format": true,
+	"word_diff_enabled": true
 }

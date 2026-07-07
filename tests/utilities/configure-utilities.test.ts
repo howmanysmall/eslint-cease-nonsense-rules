@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "@rules/no-useless-use-spring";
+import { DEFAULT_STATIC_GLOBAL_FACTORIES } from "$rules/no-useless-use-spring";
 import {
 	createBanInstancesOptions,
 	createComplexityConfiguration,
@@ -34,8 +34,8 @@ import {
 	createUseExhaustiveDependenciesOptions,
 	createUseHookAtTopLevelOptions,
 	defaultRobloxProfilePair,
-} from "@utilities/configure-utilities";
-import { pattern } from "@utilities/pattern-replacement";
+} from "$utilities/configure-utilities";
+import { pattern } from "$utilities/pattern-replacement/pattern-types";
 
 const TEST_IGNORE_REGEX = /^_/u;
 

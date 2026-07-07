@@ -1,5 +1,5 @@
+import { createRule } from "$utilities/create-rule";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "@utilities/create-rule";
 
 import type { TSESTree } from "@typescript-eslint/utils";
 
@@ -16,9 +16,7 @@ function isSimpleLiteralProperty({ computed, value }: TSESTree.Property): boolea
 	return !computed && isExpression(value) && isSimpleLiteral(value);
 }
 
-function isSimpleLiteral(node: TSESTree.Expression | undefined): boolean {
-	if (!node) return false;
-
+function isSimpleLiteral(node: TSESTree.Expression): boolean {
 	switch (node.type) {
 		case AST_NODE_TYPES.Literal:
 			return true;
@@ -59,7 +57,7 @@ function isStaticMemberExpression(node: TSESTree.MemberExpression): boolean {
 	return true;
 }
 
-function isConstructor(node: TSESTree.ClassElement): boolean {
+function isConstructor(node: TSESTree.ClassElement): node is TSESTree.MethodDefinition {
 	return (
 		node.type === AST_NODE_TYPES.MethodDefinition &&
 		node.kind === "constructor" &&
@@ -68,9 +66,38 @@ function isConstructor(node: TSESTree.ClassElement): boolean {
 	);
 }
 
+function isConstructorWithBody(
+	node: TSESTree.ClassElement,
+): node is TSESTree.MethodDefinition & { value: TSESTree.FunctionExpression } {
+	return isConstructor(node) && node.value.type === AST_NODE_TYPES.FunctionExpression;
+}
+
+function getConstructorStatements(member: TSESTree.ClassElement): ReadonlyArray<TSESTree.Statement> {
+	return isConstructorWithBody(member) ? member.value.body.body : [];
+}
+
+function getThisAssignmentExpression(statement: TSESTree.Statement): TSESTree.AssignmentExpression | undefined {
+	if (statement.type !== AST_NODE_TYPES.ExpressionStatement) return undefined;
+
+	const { expression } = statement;
+	if (expression.type !== AST_NODE_TYPES.AssignmentExpression) return undefined;
+	if (expression.left.type !== AST_NODE_TYPES.MemberExpression) return undefined;
+	if (expression.left.object.type !== AST_NODE_TYPES.ThisExpression) return undefined;
+	if (
+		expression.left.property.type !== AST_NODE_TYPES.Identifier &&
+		expression.left.property.type !== AST_NODE_TYPES.Literal
+	) {
+		return undefined;
+	}
+	if (!isSimpleLiteral(expression.right)) return undefined;
+	if (!isStaticMemberExpression(expression.left)) return undefined;
+
+	return expression;
+}
+
 const preferClassProperties = createRule<Options, MessageIds>({
 	create(context) {
-		const option = context.options[0] ?? "always";
+		const [option] = context.options;
 
 		if (option === "never") {
 			return {
@@ -95,35 +122,20 @@ const preferClassProperties = createRule<Options, MessageIds>({
 
 		function checkClass(body: TSESTree.ClassBody): void {
 			for (const member of body.body) {
-				if (!isConstructor(member)) continue;
-				if (member.type !== AST_NODE_TYPES.MethodDefinition) continue;
-				if (!member.value || member.value.type !== AST_NODE_TYPES.FunctionExpression) continue;
+				for (const statement of getConstructorStatements(member)) {
+					const expression = getThisAssignmentExpression(statement);
+					if (expression === undefined) continue;
 
-				for (const statement of member.value.body.body) {
-					if (statement.type !== AST_NODE_TYPES.ExpressionStatement) continue;
-
-					const { expression } = statement;
-					if (expression.type !== AST_NODE_TYPES.AssignmentExpression) continue;
-					if (expression.left.type !== AST_NODE_TYPES.MemberExpression) continue;
-					if (expression.left.object.type !== AST_NODE_TYPES.ThisExpression) continue;
-
-					if (
-						(expression.left.property.type === AST_NODE_TYPES.Identifier ||
-							expression.left.property.type === AST_NODE_TYPES.Literal) &&
-						isSimpleLiteral(expression.right) &&
-						isStaticMemberExpression(expression.left)
-					) {
-						context.report({
-							messageId: "unexpectedAssignment",
-							node: expression,
-						});
-					}
+					context.report({
+						messageId: "unexpectedAssignment",
+						node: expression,
+					});
 				}
 			}
 		}
 	},
-	defaultOptions: ["always"],
 	meta: {
+		defaultOptions: ["always"],
 		docs: {
 			description: "Prefer class properties to assignment of literals in constructors.",
 		},

@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import nodePath from "node:path";
 import { argv, cwd } from "node:process";
 import { Command, ValidationError } from "@cliffy/command";
 import { type } from "arktype";
@@ -41,9 +41,9 @@ async function findCoverageFilesAsync(baseDirectory: string): Promise<Array<stri
 		const coverageFiles: Array<string> = [];
 
 		for (const entry of entries) {
-			if (!entry.isDirectory() || !entry.name.startsWith("coverage-shard-")) continue;
+			if (!(entry.isDirectory() && entry.name.startsWith("coverage-shard-"))) continue;
 
-			const filePath = join(baseDirectory, entry.name, "coverage-final.json");
+			const filePath = nodePath.join(baseDirectory, entry.name, "coverage-final.json");
 			try {
 				// oxlint-disable-next-line no-await-in-loop -- File existence checks are cheap and easier to report sequentially
 				const statistics = await stat(filePath);
@@ -55,10 +55,12 @@ async function findCoverageFilesAsync(baseDirectory: string): Promise<Array<stri
 
 		return coverageFiles;
 	} catch (error) {
-		throw new Error(
+		const error2 = new Error(
 			`Failed to read directory ${baseDirectory}: ${error instanceof Error ? error.message : String(error)}`,
 			{ cause: error },
 		);
+		Error.captureStackTrace(error2, findCoverageFilesAsync);
+		throw error2;
 	}
 }
 
@@ -67,14 +69,18 @@ async function readCoverageFileAsync(filePath: string): Promise<V8Coverage> {
 		const contents = await readFile(filePath, "utf8");
 		const result = isV8Coverage(JSON.parse(contents));
 		if (result instanceof type.errors) {
-			throw new TypeError(`Invalid V8 coverage format in ${filePath}: ${result.summary}`);
+			const error = new TypeError(`Invalid V8 coverage format in ${filePath}: ${result.summary}`);
+			Error.captureStackTrace(error, readCoverageFileAsync);
+			throw error;
 		}
 		return result;
 	} catch (error) {
-		throw new Error(
+		const error2 = new Error(
 			`Failed to read coverage file ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
 			{ cause: error },
 		);
+		Error.captureStackTrace(error2, readCoverageFileAsync);
+		throw error2;
 	}
 }
 
@@ -98,13 +104,15 @@ function mergeCoverageData(coverageFiles: ReadonlyArray<V8Coverage>): V8Coverage
 
 async function writeMergedCoverageAsync(outputPath: string, coverage: V8Coverage): Promise<void> {
 	try {
-		await mkdir(dirname(outputPath), { recursive: true });
+		await mkdir(nodePath.dirname(outputPath), { recursive: true });
 		await writeFile(outputPath, JSON.stringify(coverage, undefined, 2));
 	} catch (error) {
-		throw new Error(
+		const error2 = new Error(
 			`Failed to write merged coverage to ${outputPath}: ${error instanceof Error ? error.message : String(error)}`,
 			{ cause: error },
 		);
+		Error.captureStackTrace(error2, writeMergedCoverageAsync);
+		throw error2;
 	}
 }
 
@@ -114,8 +122,8 @@ const command = new Command()
 	.description("Merge coverage files from multiple test shards.")
 	.arguments("<coverage-directory:string> <output-file:string>")
 	.action(async (_, coverageDirectory, outputFile) => {
-		const baseDirectory = resolve(cwd(), coverageDirectory);
-		const outputPath = resolve(cwd(), outputFile);
+		const baseDirectory = nodePath.resolve(cwd(), coverageDirectory);
+		const outputPath = nodePath.resolve(cwd(), outputFile);
 
 		console.log(`Searching for coverage files in ${baseDirectory}...`);
 		const coverageFiles = await findCoverageFilesAsync(baseDirectory);
@@ -124,7 +132,6 @@ const command = new Command()
 
 		console.log(`Found ${coverageFiles.length} coverage files`);
 
-		// oxlint-disable-next-line unicorn/no-array-callback-reference
 		const coverageData = await Promise.all(coverageFiles.map(readCoverageFileAsync));
 
 		console.log("Merging coverage data...");

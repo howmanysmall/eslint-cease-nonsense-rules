@@ -1,5 +1,5 @@
+import { createRule } from "$utilities/create-rule";
 import { TSESTree } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
 
 type MessageIds = "noUnderscoreReactProperty";
 
@@ -18,8 +18,8 @@ const noUnderscoreReactProperties = createRule<[], MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description: "Ban React property names that begin with an underscore in JSX.",
 		},

@@ -1,4 +1,4 @@
-import { resolve } from "node:path";
+import nodePath from "node:path";
 import { exit } from "node:process";
 import { Command, EnumType } from "@cliffy/command";
 import { type } from "arktype";
@@ -30,8 +30,11 @@ function getFormatter(format: OutputFormat): (entries: ReadonlyArray<RuleEntry>)
 			return formatRulesAsMinimal;
 		case OutputFormat.Table:
 			return formatRulesAsTable;
-		default:
-			throw new Error(`Unsupported output format: ${String(format)}`);
+		default: {
+			const error = new Error(`Unsupported output format: ${String(format)}`);
+			Error.captureStackTrace(error, getFormatter);
+			throw error;
+		}
 	}
 }
 
@@ -45,7 +48,7 @@ const getRulesCommand = new Command()
 	})
 	.arguments("<directory:string> <...rule-names:string>")
 	.action(async ({ format }, directoryUnresolved, ruleName, ...ruleNames) => {
-		const directory = resolve(directoryUnresolved);
+		const directory = nodePath.resolve(directoryUnresolved);
 		const isDirectoryReal = await isDirectorySimpleAsync(directory);
 		if (!isDirectoryReal) {
 			log.fail("The specified directory does not exist.");
@@ -60,7 +63,7 @@ const getRulesCommand = new Command()
 
 		log.verbose("Loading ESLint configuration...");
 
-		const text = await getCommandTextAsync("aube", ["x", "eslint", "--print-config", configurationPath], {
+		const text = await getCommandTextAsync("nlx", ["eslint", "--print-config", configurationPath], {
 			cwd: directory,
 		});
 

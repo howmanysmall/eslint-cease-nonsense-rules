@@ -152,3 +152,6 @@ screenshots/
 .agents/skills/mise-expert/
 .agents/skills/mise-tasks/
 .agents/skills/vitest/
+.agents/skills/pnpm/
+.agents/skills/tsdown/
+.omo/

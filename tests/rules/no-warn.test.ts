@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-warn";
+import rule from "$rules/no-warn";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({

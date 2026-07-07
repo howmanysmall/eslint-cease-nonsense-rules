@@ -107,7 +107,7 @@ const contextualMenuScript = [
 export default function contextualMenuIntegration(): AstroIntegration {
 	return {
 		hooks: {
-			"astro:config:setup": ({ injectScript }) => {
+			"astro:config:setup": ({ injectScript }): void => {
 				injectScript("page", contextualMenuScript);
 			},
 		},

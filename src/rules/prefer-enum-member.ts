@@ -1,27 +1,29 @@
+import { createRule } from "$utilities/create-rule";
+import { getDefinedValue } from "$utilities/defined-utilities";
+import {
+	getContextualTypeForExpressionNode,
+	getRequiredEnumMemberDeclaration,
+	getTypeNodeResult,
+} from "$utilities/typescript-node-utilities";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
-import { createRule } from "@utilities/create-rule";
 import { isUnionType, unionConstituents } from "ts-api-utils";
 import {
-	forEachChild,
-	isEnumDeclaration,
-	isEnumMember,
-	isExpression,
 	isIdentifier,
 	isMappedTypeNode,
 	isParenthesizedTypeNode,
 	isTypeAliasDeclaration,
-	isTypeNode,
 	isTypeReferenceNode,
 	isUnionTypeNode,
 	SymbolFlags,
 } from "typescript";
 
+import type { EnumValueLookup } from "$utilities/enum-utilities";
 import type { TSESTree } from "@typescript-eslint/utils";
 import type {
-	Program,
 	Type,
-	TypeChecker,
+	TypeAliasDeclaration,
 	TypeNode,
+	TypeReferenceNode,
 	Node as TypeScriptNode,
 	Symbol as TypeScriptSymbol,
 } from "typescript";
@@ -35,82 +37,47 @@ interface EnumMemberMatch {
 	readonly memberName: string;
 }
 
-interface EnumMemberLookup {
-	readonly numberMap: Map<number, string>;
-	readonly stringMap: Map<string, string>;
-}
-
 interface EnumCandidate {
 	readonly enumSymbol: TypeScriptSymbol;
-	readonly lookup: EnumMemberLookup;
+	readonly lookup: EnumValueLookup;
 }
 
 const IDENTIFIER_PATH = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/u;
 const SINGLE_ARGUMENT_OBJECT_WRAPPERS = new Set(["Readonly"]);
 const RECORD_ALIAS_NAME = "Record";
 
-interface EnumValueIndex {
-	readonly isComplete: boolean;
-	readonly numberSet: Set<number>;
-	readonly stringSet: Set<string>;
+function getReferenceRoot(name: string): string {
+	const separatorIndex = name.indexOf(".");
+	return separatorIndex === -1 ? name : name.slice(0, separatorIndex);
 }
 
-function resolveAliasSymbol(checker: TypeChecker, symbol: TypeScriptSymbol): TypeScriptSymbol {
-	if ((symbol.flags & SymbolFlags.Alias) !== 0) return checker.getAliasedSymbol(symbol);
-	return symbol;
+function hasSingleTypeArgument(types: ReadonlyArray<Type> | undefined): types is readonly [Type] {
+	return types?.length === 1;
 }
 
-function isPropertyKeyLiteral(node: TSESTree.Literal): boolean {
-	const { parent } = node;
-	if (!parent || parent.type !== AST_NODE_TYPES.Property) return false;
+type LiteralParent = NonNullable<TSESTree.Literal["parent"]>;
+
+function isPropertyKeyLiteral(node: TSESTree.Literal, parent: LiteralParent): boolean {
+	if (parent.type !== AST_NODE_TYPES.Property) return false;
 	return parent.key === node;
 }
 
-function isModuleSpecifierLiteral(node: TSESTree.Literal): boolean {
-	const { parent } = node;
-	if (!parent) return false;
+function isModuleSpecifierLiteral(node: TSESTree.Literal, parent: LiteralParent): boolean {
 	switch (parent.type) {
 		case AST_NODE_TYPES.ImportDeclaration:
 		case AST_NODE_TYPES.ExportNamedDeclaration:
 		case AST_NODE_TYPES.ExportAllDeclaration:
-			return parent.source === node;
 		case AST_NODE_TYPES.ImportExpression:
 			return parent.source === node;
+
 		default:
 			return false;
 	}
 }
 
-function isDirectiveLiteral(node: TSESTree.Literal): boolean {
-	const { parent } = node;
-	if (!parent || parent.type !== AST_NODE_TYPES.ExpressionStatement) return false;
-	if (parent.expression !== node) return false;
+function isDirectiveLiteral(node: TSESTree.Literal, parent: LiteralParent): boolean {
+	if (parent.type !== AST_NODE_TYPES.ExpressionStatement || parent.expression !== node) return false;
 	return typeof parent.directive === "string";
-}
-
-function buildEnumValueIndex(program: Program, checker: TypeChecker): EnumValueIndex {
-	const stringSet = new Set<string>();
-	const numberSet = new Set<number>();
-	let hasEnumDeclaration = false;
-	let isComplete = true;
-
-	function visit(node: TypeScriptNode): void {
-		if (isEnumDeclaration(node)) {
-			hasEnumDeclaration = true;
-			for (const member of node.members) {
-				const constantValue = checker.getConstantValue(member);
-				if (typeof constantValue === "string") stringSet.add(constantValue);
-				else if (typeof constantValue === "number") numberSet.add(constantValue);
-				else isComplete = false;
-			}
-		}
-		forEachChild(node, visit);
-	}
-
-	for (const sourceFile of program.getSourceFiles()) visit(sourceFile);
-
-	if (!hasEnumDeclaration) isComplete = false;
-	return { isComplete, numberSet, stringSet };
 }
 
 function isJSXAttributeValue(node: TSESTree.Literal): boolean {
@@ -121,7 +88,7 @@ function isJSXAttributeValue(node: TSESTree.Literal): boolean {
 function getRecordKeyType(type: Type): Type | undefined {
 	const { aliasSymbol } = type;
 	if (!aliasSymbol || aliasSymbol.getName() !== RECORD_ALIAS_NAME) return undefined;
-	return type.aliasTypeArguments?.[0] ?? undefined;
+	return type.aliasTypeArguments?.[0];
 }
 
 interface PropertyKeyInfo {
@@ -143,99 +110,97 @@ function getPropertyKeyInfo(node: TSESTree.Property): PropertyKeyInfo | undefine
 	return undefined;
 }
 
+function getUnionTypes(type: Type): ReadonlyArray<Type> {
+	const constituents = isUnionType(type) ? unionConstituents(type) : undefined;
+	return constituents !== undefined && constituents.length > 0 ? constituents : [type];
+}
+
+function getTypeParameterMap(aliasSymbol: TypeScriptSymbol): Map<string, number> | undefined {
+	const declaration = getFirstTypeAliasDeclaration(aliasSymbol);
+	const typeParameters = declaration?.typeParameters;
+	if (typeParameters === undefined || typeParameters.length === 0) return undefined;
+
+	const map = new Map<string, number>();
+	let index = 0;
+	for (const { name } of typeParameters) map.set(name.text, index++);
+	return map;
+}
+
+function getFirstTypeAliasDeclaration(symbol: TypeScriptSymbol): TypeAliasDeclaration | undefined {
+	for (const declaration of symbol.declarations ?? []) {
+		if (isTypeAliasDeclaration(declaration)) return declaration;
+	}
+
+	return undefined;
+}
+
 const preferEnumMember = createRule<Options, MessageIds>({
 	create(context) {
 		const services = ESLintUtils.getParserServices(context);
 		const checker = services.program.getTypeChecker();
 		const { sourceCode } = context;
-		const enumMemberCache = new WeakMap<TypeScriptSymbol, EnumMemberLookup | false>();
-		const enumCandidateCache = new WeakMap<Type, ReadonlyArray<EnumCandidate> | false>();
-		const enumSymbolCache = new WeakMap<Type, TypeScriptSymbol | false>();
-		const objectKeyTypeCache = new WeakMap<Type, Type | false>();
-		const aliasDeclarationKeyTypeCache = new WeakMap<Type, Type | false>();
-		const aliasTargetCache = new WeakMap<TypeScriptSymbol, Type | false>();
-		const aliasTypeParameterCache = new WeakMap<TypeScriptSymbol, Map<string, number> | false>();
-		const unionTypesCache = new WeakMap<Type, ReadonlyArray<Type>>();
-		const contextualTypeCache = new WeakMap<TSESTree.Node, Type | false>();
-		const declaredTypeCache = new WeakMap<TSESTree.Node, Type | false>();
-		const enumValueIndex = buildEnumValueIndex(services.program, checker);
-		const lintedSourceFile = services.program.getSourceFile(context.filename);
-		const shouldUseEnumIndex = enumValueIndex.isComplete && lintedSourceFile !== undefined;
-
-		function getUnionTypesCached(type: Type): ReadonlyArray<Type> {
-			const cached = unionTypesCache.get(type);
-			if (cached !== undefined) return cached;
-			const constituents = isUnionType(type) ? unionConstituents(type) : undefined;
-			const resolved = constituents && constituents.length > 0 ? constituents : [type];
-			unionTypesCache.set(type, resolved);
-			return resolved;
-		}
 
 		function isEquivalentType(left: Type, right: Type): boolean {
-			if (left === right) return true;
+			if (left === right) {
+				return true;
+			}
+
 			return checker.isTypeAssignableTo(left, right) && checker.isTypeAssignableTo(right, left);
 		}
+
 		function getEnumSymbolFromType(type: Type): TypeScriptSymbol | undefined {
-			const cached = enumSymbolCache.get(type);
-			if (cached !== undefined) return cached === false ? undefined : cached;
-
 			const symbol = type.aliasSymbol ?? type.getSymbol();
-			if (symbol === undefined) {
-				enumSymbolCache.set(type, false);
-				return undefined;
-			}
+			if (symbol === undefined) return undefined;
 
-			const resolved = resolveAliasSymbol(checker, symbol);
+			if ((symbol.flags & (SymbolFlags.Enum | SymbolFlags.ConstEnum)) !== 0) return symbol;
+			if ((symbol.flags & SymbolFlags.EnumMember) === 0) return undefined;
 
-			if ((resolved.flags & (SymbolFlags.Enum | SymbolFlags.ConstEnum)) !== 0) {
-				enumSymbolCache.set(type, resolved);
-				return resolved;
-			}
-
-			if ((resolved.flags & SymbolFlags.EnumMember) !== 0) {
-				const declarations = resolved.declarations ?? [];
-				for (const declaration of declarations) {
-					if (!isEnumMember(declaration)) continue;
-					const { parent } = declaration;
-					if (!isEnumDeclaration(parent)) continue;
-					const parentSymbol = checker.getSymbolAtLocation(parent.name);
-					if (parentSymbol) {
-						enumSymbolCache.set(type, parentSymbol);
-						return parentSymbol;
-					}
-				}
-			}
-
-			enumSymbolCache.set(type, false);
-			return undefined;
+			const declaration = getRequiredEnumMemberDeclaration(symbol.valueDeclaration);
+			return checker.getSymbolAtLocation(declaration.parent.name);
 		}
 
-		function hasSameEnumSymbol(left: Type, right: Type): boolean {
-			const leftEnumSymbol = getEnumSymbolFromType(left);
-			if (!leftEnumSymbol) return false;
-			const rightEnumSymbol = getEnumSymbolFromType(right);
-			return rightEnumSymbol === leftEnumSymbol;
+		function getSharedEnumSymbol(left: Type, right: Type): TypeScriptSymbol | undefined {
+			const leftEnumSymbol = getSingleEnumSymbolFromType(left);
+			if (leftEnumSymbol === undefined) return undefined;
+			return getSingleEnumSymbolFromType(right) === leftEnumSymbol ? leftEnumSymbol : undefined;
+		}
+
+		function getSingleEnumSymbolFromType(type: Type): TypeScriptSymbol | undefined {
+			const directEnumSymbol = getEnumSymbolFromType(type);
+			if (directEnumSymbol !== undefined) return directEnumSymbol;
+
+			let resolvedSymbol: TypeScriptSymbol | undefined;
+			for (const memberType of getUnionTypes(type)) {
+				const memberEnumSymbol = getEnumSymbolFromType(memberType);
+				if (memberEnumSymbol === undefined) return undefined;
+				if (resolvedSymbol !== undefined && resolvedSymbol !== memberEnumSymbol) return undefined;
+				resolvedSymbol = memberEnumSymbol;
+			}
+
+			return resolvedSymbol;
 		}
 
 		function mergeCompatibleKeyTypes(resolved: Type, candidate: Type): Type | undefined {
 			if (isEquivalentType(resolved, candidate)) return resolved;
 			if (checker.isTypeAssignableTo(resolved, candidate)) return candidate;
 			if (checker.isTypeAssignableTo(candidate, resolved)) return resolved;
-			if (hasSameEnumSymbol(resolved, candidate)) return candidate;
+			const sharedEnumSymbol = getSharedEnumSymbol(resolved, candidate);
+			if (sharedEnumSymbol !== undefined) return checker.getTypeOfSymbol(sharedEnumSymbol);
 			return undefined;
 		}
 
+		function mergeKeyTypeCandidate(current: Type | undefined, candidate: Type | undefined): Type | undefined {
+			if (candidate === undefined) return current;
+			if (current === undefined) return candidate;
+			return mergeCompatibleKeyTypes(current, candidate);
+		}
+
 		function getEnumMemberValue(memberSymbol: TypeScriptSymbol): string | number | undefined {
-			const { valueDeclaration } = memberSymbol;
-			if (!valueDeclaration) return undefined;
-			const memberType = checker.getTypeOfSymbolAtLocation(memberSymbol, valueDeclaration);
+			const memberType = checker.getTypeOfSymbol(memberSymbol);
 			return memberType.isStringLiteral() || memberType.isNumberLiteral() ? memberType.value : undefined;
 		}
 
-		function getEnumMembers(enumSymbol: TypeScriptSymbol): EnumMemberLookup | undefined {
-			const cached = enumMemberCache.get(enumSymbol);
-			if (cached !== undefined) return cached === false ? undefined : cached;
-
+		function getEnumMembers(enumSymbol: TypeScriptSymbol): EnumValueLookup | undefined {
 			const enumType = checker.getTypeOfSymbol(enumSymbol);
 			const stringMap = new Map<string, string>();
 			const numberMap = new Map<number, string>();
@@ -250,21 +215,13 @@ const preferEnumMember = createRule<Options, MessageIds>({
 				}
 			}
 
-			if (stringMap.size === 0 && numberMap.size === 0) {
-				enumMemberCache.set(enumSymbol, false);
-				return undefined;
-			}
+			if (stringMap.size === 0 && numberMap.size === 0) return undefined;
 
-			const lookup: EnumMemberLookup = { numberMap, stringMap };
-			enumMemberCache.set(enumSymbol, lookup);
-			return lookup;
+			return { numberMap, stringMap };
 		}
 
 		function getEnumCandidates(contextualType: Type): ReadonlyArray<EnumCandidate> | undefined {
-			const cached = enumCandidateCache.get(contextualType);
-			if (cached !== undefined) return cached === false ? undefined : cached;
-
-			const unionTypes = getUnionTypesCached(contextualType);
+			const unionTypes = getUnionTypes(contextualType);
 			const candidates = new Array<EnumCandidate>();
 			const seen = new Set<TypeScriptSymbol>();
 
@@ -280,13 +237,7 @@ const preferEnumMember = createRule<Options, MessageIds>({
 				candidates.push({ enumSymbol, lookup });
 			}
 
-			if (candidates.length === 0) {
-				enumCandidateCache.set(contextualType, false);
-				return undefined;
-			}
-
-			enumCandidateCache.set(contextualType, candidates);
-			return candidates;
+			return candidates.length === 0 ? undefined : candidates;
 		}
 
 		function getEnumMemberMatch(contextualType: Type, value: string | number): EnumMemberMatch | undefined {
@@ -301,125 +252,105 @@ const preferEnumMember = createRule<Options, MessageIds>({
 					typeof value === "string"
 						? candidate.lookup.stringMap.get(value)
 						: candidate.lookup.numberMap.get(value);
-				if (!memberName) continue;
-				if (resolvedSymbol && resolvedSymbol !== candidate.enumSymbol) return undefined;
+				if (memberName === undefined) continue;
+				if (resolvedSymbol !== undefined && resolvedSymbol !== candidate.enumSymbol) return undefined;
 				resolvedSymbol = candidate.enumSymbol;
 				resolvedMember = memberName;
 			}
 
-			if (!(resolvedSymbol && resolvedMember)) return undefined;
+			if (resolvedSymbol === undefined || resolvedMember === undefined) return undefined;
 			return { enumSymbol: resolvedSymbol, memberName: resolvedMember };
+		}
+
+		function hasRuntimeBinding(name: string): boolean {
+			const rootName = getReferenceRoot(name);
+			for (const statement of sourceCode.ast.body) {
+				if (statement.type !== AST_NODE_TYPES.ImportDeclaration) continue;
+
+				for (const specifier of statement.specifiers) {
+					if (specifier.local.name !== rootName) continue;
+					if (statement.importKind === "type") return false;
+					const isTypeOnlySpecifier =
+						specifier.type === AST_NODE_TYPES.ImportSpecifier && specifier.importKind === "type";
+					if (isTypeOnlySpecifier) {
+						return false;
+					}
+					return true;
+				}
+			}
+
+			return true;
 		}
 
 		function getEnumReferenceName(enumSymbol: TypeScriptSymbol, location: TypeScriptNode): string | undefined {
 			const name = checker.symbolToString(enumSymbol, location);
-			return IDENTIFIER_PATH.test(name) ? name : undefined;
-		}
-
-		function getTypeParameterMap(aliasSymbol: TypeScriptSymbol): Map<string, number> | undefined {
-			const cached = aliasTypeParameterCache.get(aliasSymbol);
-			if (cached !== undefined) return cached === false ? undefined : cached;
-
-			const declarations = aliasSymbol.declarations ?? [];
-			for (const declaration of declarations) {
-				if (!isTypeAliasDeclaration(declaration)) continue;
-				const { typeParameters } = declaration;
-				if (!typeParameters || typeParameters.length === 0) continue;
-				const map = new Map<string, number>();
-				let index = 0;
-				for (const { name } of typeParameters) map.set(name.text, index++);
-				aliasTypeParameterCache.set(aliasSymbol, map);
-				return map;
-			}
-
-			aliasTypeParameterCache.set(aliasSymbol, false);
-			return undefined;
+			return IDENTIFIER_PATH.test(name) && hasRuntimeBinding(name) ? name : undefined;
 		}
 
 		function resolveMappedTypeConstraint(
 			aliasSymbol: TypeScriptSymbol,
 			aliasTypeArguments: ReadonlyArray<Type> | undefined,
-			constraint: TypeScriptNode,
+			constraint: TypeNode,
 		): Type | undefined {
 			if (isParenthesizedTypeNode(constraint)) {
 				return resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, constraint.type);
 			}
 
 			if (isTypeReferenceNode(constraint)) {
+				let resolvedReferenceKeyType: Type | undefined;
+				let shouldReturnResolvedReference = false;
 				const { typeName } = constraint;
 				if (isIdentifier(typeName)) {
 					const parameterMap = getTypeParameterMap(aliasSymbol);
 					const index = parameterMap?.get(typeName.text);
-					if (index !== undefined && aliasTypeArguments?.[index]) return aliasTypeArguments[index];
+					shouldReturnResolvedReference = index !== undefined;
+					resolvedReferenceKeyType = index === undefined ? undefined : aliasTypeArguments?.[index];
 				}
+
+				if (!shouldReturnResolvedReference) {
+					resolvedReferenceKeyType = getObjectKeyTypeFromTypeReferenceNode(
+						constraint,
+						new WeakSet<Type>(),
+						aliasSymbol,
+						aliasTypeArguments,
+					);
+					shouldReturnResolvedReference = resolvedReferenceKeyType !== undefined;
+				}
+
+				if (shouldReturnResolvedReference) return resolvedReferenceKeyType;
 			}
-			return isTypeNode(constraint) ? checker.getTypeFromTypeNode(constraint) : undefined;
+			return checker.getTypeFromTypeNode(constraint);
 		}
 
 		function getKeyTypeFromAlias(type: Type): Type | undefined {
 			const { aliasSymbol, aliasTypeArguments } = type;
 			if (!aliasSymbol) return undefined;
 
-			const declarations = aliasSymbol.declarations ?? [];
-			for (const declaration of declarations) {
-				if (!(isTypeAliasDeclaration(declaration) && isMappedTypeNode(declaration.type))) continue;
-				const { constraint } = declaration.type.typeParameter;
-				if (!constraint) continue;
+			const declaration = getFirstTypeAliasDeclaration(aliasSymbol);
+			if (declaration === undefined || !isMappedTypeNode(declaration.type)) return undefined;
 
-				const resolved = resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, constraint);
-				if (resolved) return resolved;
-			}
-
-			return undefined;
+			const constraint = getDefinedValue(
+				declaration.type.typeParameter.constraint,
+				"Expected mapped type parameter to have a constraint.",
+			);
+			return resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, constraint);
 		}
 
 		function getRecordKeyTypeFromAlias(type: Type): Type | undefined {
 			const { aliasSymbol, aliasTypeArguments } = type;
 			if (!aliasSymbol) return undefined;
 
-			const declarations = aliasSymbol.declarations ?? [];
-			for (const declaration of declarations) {
-				if (!isTypeAliasDeclaration(declaration)) continue;
-				const aliasTypeNode = declaration.type;
-				if (!isTypeReferenceNode(aliasTypeNode)) continue;
+			const declaration = getFirstTypeAliasDeclaration(aliasSymbol);
+			if (declaration === undefined || !isTypeReferenceNode(declaration.type)) return undefined;
 
-				const targetSymbol = checker.getSymbolAtLocation(aliasTypeNode.typeName);
-				if (!targetSymbol) continue;
-				const resolvedTargetSymbol = resolveAliasSymbol(checker, targetSymbol);
-				if (resolvedTargetSymbol.getName() !== RECORD_ALIAS_NAME) continue;
+			const targetSymbol = checker.getSymbolAtLocation(declaration.type.typeName);
+			if (targetSymbol === undefined || targetSymbol.getName() !== RECORD_ALIAS_NAME) return undefined;
 
-				const [keyNode] = aliasTypeNode.typeArguments ?? [];
-				if (!keyNode) continue;
-
-				const resolvedKeyType = resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, keyNode);
-				if (resolvedKeyType) return resolvedKeyType;
-			}
-
-			return undefined;
-		}
-
-		function getAliasTargetType(type: Type): Type | undefined {
-			const { aliasSymbol } = type;
-			if (!aliasSymbol) return undefined;
-
-			const cached = aliasTargetCache.get(aliasSymbol);
-			if (cached !== undefined) return cached === false ? undefined : cached;
-
-			const declarations = aliasSymbol.declarations ?? [];
-			for (const declaration of declarations) {
-				if (!isTypeAliasDeclaration(declaration)) continue;
-				const { typeParameters } = declaration;
-				if (typeParameters && typeParameters.length > 0) {
-					aliasTargetCache.set(aliasSymbol, false);
-					return undefined;
-				}
-				const resolved = checker.getTypeFromTypeNode(declaration.type);
-				aliasTargetCache.set(aliasSymbol, resolved);
-				return resolved;
-			}
-
-			aliasTargetCache.set(aliasSymbol, false);
-			return undefined;
+			const keyNode = getDefinedValue(
+				declaration.type.typeArguments?.at(0),
+				"Expected Record alias to include a key type.",
+			);
+			return resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, keyNode);
 		}
 
 		function getResolvedAliasTypeParameter(
@@ -430,46 +361,132 @@ const preferEnumMember = createRule<Options, MessageIds>({
 			const parameterMap = getTypeParameterMap(aliasSymbol);
 			const parameterIndex = parameterMap?.get(typeName);
 			if (parameterIndex === undefined) return undefined;
-			if (!aliasTypeArguments) return undefined;
-			return aliasTypeArguments[parameterIndex];
+			return aliasTypeArguments?.[parameterIndex];
+		}
+
+		function getRecordKeyTypeFromTypeReferenceNode(
+			typeNode: TypeReferenceNode,
+			aliasSymbol: TypeScriptSymbol,
+			aliasTypeArguments: ReadonlyArray<Type> | undefined,
+		): Type | undefined {
+			const keyTypeNode = getDefinedValue(
+				typeNode.typeArguments?.at(0),
+				"Expected Record reference to include a key type.",
+			);
+			return resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, keyTypeNode);
+		}
+
+		function getResolvedTypeArgumentsFromTypeReferenceNode(
+			typeNode: TypeReferenceNode,
+			aliasSymbol: TypeScriptSymbol,
+			aliasTypeArguments: ReadonlyArray<Type> | undefined,
+		): Array<Type> | undefined {
+			const { typeArguments } = typeNode;
+			if (typeArguments === undefined || typeArguments.length === 0) return undefined;
+
+			const resolvedTypeArguments = new Array<Type>();
+			for (const typeArgument of typeArguments) {
+				const resolvedTypeArgument = getDefinedValue(
+					resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, typeArgument),
+					"Expected alias type argument to resolve to a type.",
+				);
+				resolvedTypeArguments.push(resolvedTypeArgument);
+			}
+			return resolvedTypeArguments;
+		}
+
+		function getAliasDeclarationFromTypeReferenceNode(
+			typeNode: TypeReferenceNode,
+		): TypeAliasDeclaration | undefined {
+			const targetSymbol = getDefinedValue(
+				checker.getSymbolAtLocation(typeNode.typeName),
+				"Expected type reference to resolve to a symbol.",
+			);
+			return getFirstTypeAliasDeclaration(targetSymbol);
+		}
+
+		function getAliasedObjectKeyTypeFromTypeReferenceNode(
+			typeNode: TypeReferenceNode,
+			visited: WeakSet<Type>,
+			aliasSymbol: TypeScriptSymbol,
+			aliasTypeArguments: ReadonlyArray<Type> | undefined,
+		): Type | undefined {
+			const aliasDeclaration = getAliasDeclarationFromTypeReferenceNode(typeNode);
+			if (aliasDeclaration === undefined) return undefined;
+
+			const aliasTypeArgumentsForReference = getResolvedTypeArgumentsFromTypeReferenceNode(
+				typeNode,
+				aliasSymbol,
+				aliasTypeArguments,
+			);
+			const aliasDeclarationSymbol = checker.getSymbolAtLocation(aliasDeclaration.name);
+
+			return getObjectKeyTypeFromTypeNode(
+				aliasDeclaration.type,
+				visited,
+				aliasDeclarationSymbol,
+				aliasTypeArgumentsForReference,
+			);
 		}
 
 		function getObjectKeyTypeFromTypeReferenceNode(
-			typeNode: TypeScriptNode,
+			typeNode: TypeReferenceNode,
 			visited: WeakSet<Type>,
-			aliasSymbol?: TypeScriptSymbol,
+			aliasSymbol: TypeScriptSymbol,
 			aliasTypeArguments?: ReadonlyArray<Type>,
 		): Type | undefined {
-			if (!isTypeReferenceNode(typeNode)) return undefined;
 			const { typeName } = typeNode;
 			if (!isIdentifier(typeName)) return undefined;
 
-			if (aliasSymbol) {
-				const resolvedAliasTypeParameter = getResolvedAliasTypeParameter(
-					typeName.text,
-					aliasSymbol,
-					aliasTypeArguments,
-				);
-				if (resolvedAliasTypeParameter) return resolvedAliasTypeParameter;
-			}
+			const resolvedAliasTypeParameter = getResolvedAliasTypeParameter(
+				typeName.text,
+				aliasSymbol,
+				aliasTypeArguments,
+			);
+			if (resolvedAliasTypeParameter !== undefined) return resolvedAliasTypeParameter;
 
 			if (typeName.text === RECORD_ALIAS_NAME) {
-				const [keyTypeNode] = typeNode.typeArguments ?? [];
-				if (!keyTypeNode) return undefined;
-				if (aliasSymbol) {
-					const resolvedKeyType = resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, keyTypeNode);
-					if (resolvedKeyType) return resolvedKeyType;
-				}
-				return getObjectKeyTypeFromTypeNode(keyTypeNode, visited, aliasSymbol, aliasTypeArguments);
+				return getRecordKeyTypeFromTypeReferenceNode(typeNode, aliasSymbol, aliasTypeArguments);
 			}
 
 			if (SINGLE_ARGUMENT_OBJECT_WRAPPERS.has(typeName.text)) {
-				const [firstTypeNode] = typeNode.typeArguments ?? [];
-				if (!firstTypeNode) return undefined;
+				const firstTypeNode = getDefinedValue(
+					typeNode.typeArguments?.at(0),
+					"Expected object wrapper reference to include a type argument.",
+				);
 				return getObjectKeyTypeFromTypeNode(firstTypeNode, visited, aliasSymbol, aliasTypeArguments);
 			}
 
+			const aliasedObjectKeyType = getAliasedObjectKeyTypeFromTypeReferenceNode(
+				typeNode,
+				visited,
+				aliasSymbol,
+				aliasTypeArguments,
+			);
+			if (aliasedObjectKeyType !== undefined) return aliasedObjectKeyType;
+
 			return undefined;
+		}
+
+		function getMergedObjectKeyTypeFromTypeNodes(
+			typeNodes: ReadonlyArray<TypeNode>,
+			visited: WeakSet<Type>,
+			aliasSymbol: TypeScriptSymbol | undefined,
+			aliasTypeArguments: ReadonlyArray<Type> | undefined,
+		): Type | undefined {
+			let resolved: Type | undefined;
+			for (const memberTypeNode of typeNodes) {
+				const candidate = getObjectKeyTypeFromTypeNode(
+					memberTypeNode,
+					visited,
+					aliasSymbol,
+					aliasTypeArguments,
+				);
+				const merged = mergeKeyTypeCandidate(resolved, candidate);
+				if (candidate !== undefined && merged === undefined) return undefined;
+				resolved = merged;
+			}
+			return resolved;
 		}
 
 		function getObjectKeyTypeFromTypeNode(
@@ -482,47 +499,27 @@ const preferEnumMember = createRule<Options, MessageIds>({
 				return getObjectKeyTypeFromTypeNode(typeNode.type, visited, aliasSymbol, aliasTypeArguments);
 			}
 
-			if (isUnionTypeNode(typeNode)) {
-				let resolved: Type | undefined;
-				for (const memberTypeNode of typeNode.types) {
-					const candidate = getObjectKeyTypeFromTypeNode(
-						memberTypeNode,
-						visited,
-						aliasSymbol,
-						aliasTypeArguments,
-					);
-					if (!candidate) continue;
-					if (!resolved) {
-						resolved = candidate;
-						continue;
-					}
-					const merged = mergeCompatibleKeyTypes(resolved, candidate);
-					if (!merged) return undefined;
-					resolved = merged;
-				}
-				return resolved;
-			}
-
 			if (isMappedTypeNode(typeNode)) {
-				const { constraint } = typeNode.typeParameter;
-				if (!constraint) return undefined;
-				if (aliasSymbol) {
-					const resolvedConstraint = resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, constraint);
-					if (resolvedConstraint) return resolvedConstraint;
-				}
-				return isTypeNode(constraint)
-					? getObjectKeyTypeFromTypeNode(constraint, visited, aliasSymbol, aliasTypeArguments)
-					: undefined;
+				const constraint = getDefinedValue(
+					typeNode.typeParameter.constraint,
+					"Expected mapped type parameter to have a constraint.",
+				);
+				if (aliasSymbol === undefined) return checker.getTypeFromTypeNode(constraint);
+				return resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, constraint);
 			}
 
-			if (isTypeReferenceNode(typeNode)) {
+			if (isUnionTypeNode(typeNode)) {
+				return getMergedObjectKeyTypeFromTypeNodes(typeNode.types, visited, aliasSymbol, aliasTypeArguments);
+			}
+
+			if (isTypeReferenceNode(typeNode) && aliasSymbol !== undefined) {
 				const resolvedTypeReferenceKeyType = getObjectKeyTypeFromTypeReferenceNode(
 					typeNode,
 					visited,
 					aliasSymbol,
 					aliasTypeArguments,
 				);
-				if (resolvedTypeReferenceKeyType) return resolvedTypeReferenceKeyType;
+				return resolvedTypeReferenceKeyType;
 			}
 
 			const resolvedType = checker.getTypeFromTypeNode(typeNode);
@@ -530,164 +527,131 @@ const preferEnumMember = createRule<Options, MessageIds>({
 		}
 
 		function getObjectKeyTypeFromAliasDeclaration(type: Type, visited: WeakSet<Type>): Type | undefined {
-			const cached = aliasDeclarationKeyTypeCache.get(type);
-			if (cached !== undefined) return cached === false ? undefined : cached;
-
 			const { aliasSymbol, aliasTypeArguments } = type;
-			if (!aliasSymbol) {
-				aliasDeclarationKeyTypeCache.set(type, false);
-				return undefined;
-			}
+			if (aliasSymbol === undefined) return undefined;
 
-			const declarations = aliasSymbol.declarations ?? [];
-			for (const declaration of declarations) {
-				if (!isTypeAliasDeclaration(declaration)) continue;
-				const resolved = getObjectKeyTypeFromTypeNode(
-					declaration.type,
-					visited,
-					aliasSymbol,
-					aliasTypeArguments,
-				);
-				if (resolved) {
-					aliasDeclarationKeyTypeCache.set(type, resolved);
-					return resolved;
-				}
-			}
-
-			aliasDeclarationKeyTypeCache.set(type, false);
-			return undefined;
+			const declaration = getFirstTypeAliasDeclaration(aliasSymbol);
+			return declaration === undefined
+				? undefined
+				: getObjectKeyTypeFromTypeNode(declaration.type, visited, aliasSymbol, aliasTypeArguments);
 		}
 
 		function getObjectKeyType(type: Type): Type | undefined {
-			const cached = objectKeyTypeCache.get(type);
-			if (cached !== undefined) return cached === false ? undefined : cached;
-
 			const visited = new WeakSet<Type>();
-			const resolved = getObjectKeyTypeInternal(type, visited);
-			objectKeyTypeCache.set(type, resolved ?? false);
+			return getObjectKeyTypeInternal(type, visited);
+		}
+
+		function getMergedObjectKeyTypeFromTypes(types: ReadonlyArray<Type>, visited: WeakSet<Type>): Type | undefined {
+			let resolved: Type | undefined;
+			for (const unionType of types) {
+				const candidate = getObjectKeyTypeInternal(unionType, visited);
+				const merged = mergeKeyTypeCandidate(resolved, candidate);
+				if (candidate !== undefined && merged === undefined) return undefined;
+				resolved = merged;
+			}
 			return resolved;
+		}
+
+		function getUnionObjectKeyType(type: Type, visited: WeakSet<Type>): Type | undefined {
+			const unionTypes = getUnionTypes(type);
+			return unionTypes.length > 1 ? getMergedObjectKeyTypeFromTypes(unionTypes, visited) : undefined;
+		}
+
+		function getWrappedAliasObjectKeyType(type: Type, visited: WeakSet<Type>): Type | undefined {
+			const { aliasSymbol, aliasTypeArguments } = type;
+			if (aliasSymbol === undefined || !hasSingleTypeArgument(aliasTypeArguments)) return undefined;
+			const aliasName = aliasSymbol.getName();
+			if (!SINGLE_ARGUMENT_OBJECT_WRAPPERS.has(aliasName)) return undefined;
+
+			const [firstArgument] = aliasTypeArguments;
+			return getObjectKeyTypeInternal(firstArgument, visited);
 		}
 
 		function getObjectKeyTypeInternal(type: Type, visited: WeakSet<Type>): Type | undefined {
 			if (visited.has(type)) return undefined;
 			visited.add(type);
 
-			const aliasTarget = getAliasTargetType(type);
-			if (aliasTarget && aliasTarget !== type) {
-				const resolvedAlias = getObjectKeyTypeInternal(aliasTarget, visited);
-				if (resolvedAlias) return resolvedAlias;
-			}
-
-			const unionTypes = getUnionTypesCached(type);
-			if (unionTypes.length > 1) {
-				let resolved: Type | undefined;
-				for (const unionType of unionTypes) {
-					const candidate = getObjectKeyTypeInternal(unionType, visited);
-					if (!candidate) continue;
-					if (!resolved) {
-						resolved = candidate;
-						continue;
-					}
-					const merged = mergeCompatibleKeyTypes(resolved, candidate);
-					if (!merged) return undefined;
-					resolved = merged;
-				}
-				if (resolved) return resolved;
-			}
+			const unionKeyType = getUnionObjectKeyType(type, visited);
+			if (unionKeyType !== undefined) return unionKeyType;
 
 			const recordKeyType = getRecordKeyType(type);
-			if (recordKeyType) return recordKeyType;
+			if (recordKeyType !== undefined) return recordKeyType;
 
 			const recordKeyTypeFromAlias = getRecordKeyTypeFromAlias(type);
-			if (recordKeyTypeFromAlias) return recordKeyTypeFromAlias;
+			if (recordKeyTypeFromAlias !== undefined) return recordKeyTypeFromAlias;
 
-			const { aliasSymbol, aliasTypeArguments } = type;
-			if (aliasSymbol && aliasTypeArguments?.length === 1) {
-				const aliasName = aliasSymbol.getName();
-				if (SINGLE_ARGUMENT_OBJECT_WRAPPERS.has(aliasName)) {
-					const [firstArgument] = aliasTypeArguments;
-					if (firstArgument) {
-						const unwrapped = getObjectKeyTypeInternal(firstArgument, visited);
-						if (unwrapped) return unwrapped;
-					}
-				}
-			}
+			const wrappedAliasObjectKeyType = getWrappedAliasObjectKeyType(type, visited);
+			if (wrappedAliasObjectKeyType !== undefined) return wrappedAliasObjectKeyType;
 
 			const keyType = getKeyTypeFromAlias(type);
-			if (keyType) return keyType;
+			if (keyType !== undefined) return keyType;
 
 			const keyTypeFromAliasDeclaration = getObjectKeyTypeFromAliasDeclaration(type, visited);
-			if (keyTypeFromAliasDeclaration) return keyTypeFromAliasDeclaration;
+			if (keyTypeFromAliasDeclaration !== undefined) return keyTypeFromAliasDeclaration;
 
 			return undefined;
 		}
 
 		function getContextualType(node: TSESTree.Node): Type | undefined {
-			const cached = contextualTypeCache.get(node);
-			if (cached !== undefined) return cached === false ? undefined : cached;
-
 			const tsNode = services.esTreeNodeToTSNodeMap.get(node);
-			const expressionNode = tsNode && isExpression(tsNode) ? tsNode : undefined;
-			const type = expressionNode ? checker.getContextualType(expressionNode) : undefined;
-			contextualTypeCache.set(node, type ?? false);
-			return type ?? undefined;
+			return getContextualTypeForExpressionNode(checker, tsNode);
+		}
+
+		function getVariableDeclaratorType(parent: TSESTree.VariableDeclarator): Type | undefined {
+			const annotation = parent.id.type === AST_NODE_TYPES.Identifier ? parent.id.typeAnnotation : undefined;
+			if (annotation !== undefined) {
+				const tsNode = services.esTreeNodeToTSNodeMap.get(annotation.typeAnnotation);
+				return checker.getTypeAtLocation(tsNode);
+			}
+
+			const tsIdNode = services.esTreeNodeToTSNodeMap.get(parent.id);
+			return checker.getTypeAtLocation(tsIdNode);
+		}
+
+		function getAssignmentType(parent: TSESTree.AssignmentExpression): Type | undefined {
+			const tsNode = services.esTreeNodeToTSNodeMap.get(parent.left);
+			return checker.getTypeAtLocation(tsNode);
+		}
+
+		function getSatisfiesType(parent: TSESTree.TSSatisfiesExpression): Type | undefined {
+			const tsNode = services.esTreeNodeToTSNodeMap.get(parent.typeAnnotation);
+			return checker.getTypeAtLocation(tsNode);
+		}
+
+		function getVariableDeclaratorObjectKeyType(parent: TSESTree.VariableDeclarator): Type | undefined {
+			if (parent.id.type !== AST_NODE_TYPES.Identifier) return undefined;
+			const annotation = parent.id.typeAnnotation;
+			if (annotation === undefined) return undefined;
+
+			const tsNode = services.esTreeNodeToTSNodeMap.get(annotation.typeAnnotation);
+			return getTypeNodeResult(tsNode, (typeNode) => getObjectKeyTypeFromTypeNode(typeNode, new WeakSet<Type>()));
+		}
+
+		function getDeclaredObjectKeyTypeFromParent(node: TSESTree.Node): Type | undefined {
+			const { parent } = node;
+			if (parent?.type !== AST_NODE_TYPES.VariableDeclarator) return undefined;
+			return getVariableDeclaratorObjectKeyType(parent);
+		}
+
+		function getDeclaredParentType(node: TSESTree.Node): Type | undefined {
+			const { parent } = node;
+			switch (parent?.type) {
+				case AST_NODE_TYPES.VariableDeclarator:
+					return getVariableDeclaratorType(parent);
+				case AST_NODE_TYPES.AssignmentExpression:
+					return getAssignmentType(parent);
+				case AST_NODE_TYPES.TSSatisfiesExpression:
+					return getSatisfiesType(parent);
+				default:
+					return undefined;
+			}
 		}
 
 		function getDeclaredTypeFromParent(node: TSESTree.Node): Type | undefined {
-			const cached = declaredTypeCache.get(node);
-			if (cached !== undefined) return cached === false ? undefined : cached;
-
-			const { parent } = node;
-			if (!parent) {
-				declaredTypeCache.set(node, false);
-				return undefined;
-			}
-
-			if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.init === node) {
-				const annotation = parent.id.type === AST_NODE_TYPES.Identifier ? parent.id.typeAnnotation : undefined;
-				if (annotation) {
-					const tsNode = services.esTreeNodeToTSNodeMap.get(annotation.typeAnnotation);
-					if (tsNode && isTypeNode(tsNode)) {
-						const resolved = checker.getTypeFromTypeNode(tsNode);
-						declaredTypeCache.set(node, resolved);
-						return resolved;
-					}
-				}
-
-				const tsIdNode = services.esTreeNodeToTSNodeMap.get(parent.id);
-				if (tsIdNode) {
-					const resolved = checker.getTypeAtLocation(tsIdNode);
-					declaredTypeCache.set(node, resolved);
-					return resolved;
-				}
-			}
-
-			if (parent.type === AST_NODE_TYPES.AssignmentExpression && parent.right === node) {
-				const tsNode = services.esTreeNodeToTSNodeMap.get(parent.left);
-				if (tsNode) {
-					const resolved = checker.getTypeAtLocation(tsNode);
-					declaredTypeCache.set(node, resolved);
-					return resolved;
-				}
-			}
-
-			if (parent.type === AST_NODE_TYPES.TSSatisfiesExpression && parent.expression === node) {
-				const tsNode = services.esTreeNodeToTSNodeMap.get(parent.typeAnnotation);
-				if (tsNode && isTypeNode(tsNode)) {
-					const resolved = checker.getTypeFromTypeNode(tsNode);
-					declaredTypeCache.set(node, resolved);
-					return resolved;
-				}
-			}
-
-			declaredTypeCache.set(node, false);
-			return undefined;
+			return getDeclaredParentType(node);
 		}
 
 		function getExpectedType(node: TSESTree.Node): Type | undefined {
-			const { parent } = node;
-			if (!parent || parent.type === AST_NODE_TYPES.TSLiteralType) return undefined;
-
 			const declared = getDeclaredTypeFromParent(node);
 			if (declared) return declared;
 
@@ -698,35 +662,26 @@ const preferEnumMember = createRule<Options, MessageIds>({
 		}
 
 		function shouldSkipLiteral(node: TSESTree.Literal): boolean {
-			if (isPropertyKeyLiteral(node)) return true;
-			if (node.parent?.type === AST_NODE_TYPES.TSLiteralType) return true;
-			if (node.parent?.type === AST_NODE_TYPES.TSImportType) return true;
-			if (isModuleSpecifierLiteral(node)) return true;
-			if (isDirectiveLiteral(node)) return true;
+			const { parent } = node;
+			if (isPropertyKeyLiteral(node, parent)) return true;
+			if (parent.type === AST_NODE_TYPES.TSLiteralType) return true;
+			if (parent.type === AST_NODE_TYPES.TSImportType) return true;
+			if (isModuleSpecifierLiteral(node, parent)) return true;
+			if (isDirectiveLiteral(node, parent)) return true;
 			return false;
 		}
 
-		function shouldCheckEnumValue(value: string | number): boolean {
-			if (!shouldUseEnumIndex) return true;
-			return typeof value === "string"
-				? enumValueIndex.stringSet.has(value)
-				: enumValueIndex.numberSet.has(value);
-		}
-
 		function reportEnumLiteral(node: TSESTree.Literal, value: string | number): void {
-			if (isPropertyKeyLiteral(node)) return;
-
 			const expectedType = getExpectedType(node);
-			if (!expectedType) return;
+			if (expectedType === undefined) return;
 
 			const match = getEnumMemberMatch(expectedType, value);
-			if (!match) return;
+			if (match === undefined) return;
 
 			const tsNode = services.esTreeNodeToTSNodeMap.get(node);
-			if (!tsNode) return;
 
 			const enumName = getEnumReferenceName(match.enumSymbol, tsNode);
-			if (!enumName) return;
+			if (enumName === undefined) return;
 
 			const fixPath = `${enumName}.${match.memberName}`;
 			const fixText = isJSXAttributeValue(node) ? `{${fixPath}}` : fixPath;
@@ -744,33 +699,39 @@ const preferEnumMember = createRule<Options, MessageIds>({
 			});
 		}
 
-		function reportEnumKey(node: TSESTree.Property, keyValue: PropertyKeyInfo): void {
-			if (node.parent?.type !== AST_NODE_TYPES.ObjectExpression) return;
-			if (!shouldCheckEnumValue(keyValue.value)) return;
+		function getObjectExpressionKeyType(node: TSESTree.ObjectExpression): Type | undefined {
+			const declaredObjectKeyType = getDeclaredObjectKeyTypeFromParent(node);
+			const declaredType = declaredObjectKeyType === undefined ? getDeclaredTypeFromParent(node) : undefined;
+			const declaredKeyType =
+				declaredObjectKeyType ?? (declaredType === undefined ? undefined : getObjectKeyType(declaredType));
+			const contextualType = declaredKeyType === undefined ? getContextualType(node) : undefined;
+			const contextualKeyType = contextualType === undefined ? undefined : getObjectKeyType(contextualType);
 
-			const declaredType = getDeclaredTypeFromParent(node.parent);
-			const declaredKeyType = declaredType ? getObjectKeyType(declaredType) : undefined;
-			const contextualType = declaredKeyType ? undefined : getContextualType(node.parent);
-			const contextualKeyType = contextualType ? getObjectKeyType(contextualType) : undefined;
-			let locationKeyType: Type | undefined;
-			if (!(declaredKeyType || contextualKeyType)) {
-				const tsObjectExpression = services.esTreeNodeToTSNodeMap.get(node.parent);
-				if (tsObjectExpression) {
-					const locationType = checker.getTypeAtLocation(tsObjectExpression);
-					locationKeyType = getObjectKeyType(locationType);
-				}
+			if (declaredKeyType !== undefined || contextualKeyType !== undefined) {
+				return declaredKeyType ?? contextualKeyType;
 			}
-			const keyType = declaredKeyType ?? contextualKeyType ?? locationKeyType;
-			if (!keyType) return;
+
+			const tsObjectExpression = services.esTreeNodeToTSNodeMap.get(node);
+
+			const locationType = checker.getTypeAtLocation(tsObjectExpression);
+			return getObjectKeyType(locationType);
+		}
+
+		function reportEnumKey(node: TSESTree.Property, keyValue: PropertyKeyInfo): void {
+			if (node.parent?.type !== AST_NODE_TYPES.ObjectExpression) {
+				return;
+			}
+
+			const keyType = getObjectExpressionKeyType(node.parent);
+			if (keyType === undefined) return;
 
 			const match = getEnumMemberMatch(keyType, keyValue.value);
-			if (!match) return;
+			if (match === undefined) return;
 
 			const tsObject = services.esTreeNodeToTSNodeMap.get(node.parent);
-			if (!tsObject) return;
 
 			const enumName = getEnumReferenceName(match.enumSymbol, tsObject);
-			if (!enumName) return;
+			if (enumName === undefined) return;
 
 			const memberPath = `${enumName}.${match.memberName}`;
 			const fixPath = `[${memberPath}]`;
@@ -811,7 +772,6 @@ const preferEnumMember = createRule<Options, MessageIds>({
 				const { value } = node;
 				if (typeof value !== "string" && typeof value !== "number") return;
 				if (shouldSkipLiteral(node)) return;
-				if (!shouldCheckEnumValue(value)) return;
 				reportEnumLiteral(node, value);
 			},
 			Property(node): void {
@@ -821,8 +781,8 @@ const preferEnumMember = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description: "Enforce enum member references instead of raw enum values.",
 		},

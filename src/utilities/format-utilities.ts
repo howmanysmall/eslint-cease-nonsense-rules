@@ -1,11 +1,12 @@
 import fs from "node:fs";
-import { resolve } from "node:path";
-import { formatSync } from "@oxfmt-sync";
-import { regex } from "arktype";
+import nodePath from "node:path";
+import { formatSync } from "$oxfmt-sync";
 import { parseJSONC } from "confbox";
 import fastDiff from "fast-diff";
 
-import type { FormatConfiguration } from "@oxfmt-worker";
+import { isRecordFast } from "./type-utilities";
+
+import type { FormatConfiguration } from "$oxfmt-worker";
 
 export interface Difference {
 	readonly deleteText?: string;
@@ -20,15 +21,16 @@ function loadOxfmtConfig(): FormatConfiguration {
 	if (cachedConfig !== undefined) return cachedConfig;
 
 	try {
-		const configPath = resolve(process.cwd(), ".oxfmtrc.json");
+		const configPath = nodePath.resolve(process.cwd(), ".oxfmtrc.json");
 		const configText = fs.readFileSync(configPath, "utf8");
 		const parsed = parseJSONC<Record<string, unknown>>(configText);
 
-		if (typeof parsed !== "object" || parsed === null) {
+		if (!isRecordFast(parsed)) {
 			cachedConfig = {};
 			return cachedConfig;
 		}
 
+		// oxlint-disable-next-line sonar/no-unused-vars -- garbage!
 		const { $schema: _schema, ignorePatterns: _ignore, ...formatOptions } = parsed;
 
 		cachedConfig = formatOptions;
@@ -49,6 +51,7 @@ const enum CharacterType {
 	LowerX = 0x78,
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- optimization
 export function getExtension(filePath: string): string | undefined {
 	const { length } = filePath;
 
@@ -83,12 +86,17 @@ export function getExtension(filePath: string): string | undefined {
 
 export function formatWithOxfmtSync(source: string, filePath: string): string {
 	const extension = getExtension(filePath);
-	if (extension === undefined) throw new Error(`Unsupported file extension for ${filePath}`);
+	if (extension === undefined) {
+		const error = new Error(`Unsupported file extension for ${filePath}`);
+		Error.captureStackTrace(error, formatWithOxfmtSync);
+		throw error;
+	}
 
 	const config = loadOxfmtConfig();
 	return formatSync(filePath, source, config);
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- diff algo
 export function generateDifferences(original: string, formatted: string): ReadonlyArray<Difference> {
 	if (original === formatted) return [];
 
@@ -96,17 +104,14 @@ export function generateDifferences(original: string, formatted: string): Readon
 	const differences = new Array<Difference>();
 	let size = 0;
 	let offset = 0;
-	let index = 0;
+	let skipIndex = -1;
 
-	while (index < diffs.length) {
-		const diff = diffs[index];
-		if (diff === undefined) break;
-
+	for (const [index, diff] of diffs.entries()) {
+		if (index === skipIndex) continue;
 		const [type, text] = diff;
 
 		if (type === 0) {
 			offset += text.length;
-			index += 1;
 		} else if (type === -1) {
 			let adjustedOffset = offset;
 
@@ -133,15 +138,13 @@ export function generateDifferences(original: string, formatted: string): Readon
 					offset: adjustedOffset,
 					operation: "REPLACE",
 				};
-				index += 2;
+				skipIndex = index + 1;
 			} else {
 				differences[size++] = { deleteText: text, offset: adjustedOffset, operation: "DELETE" };
-				index += 1;
 			}
 			offset += text.length;
 		} else {
 			differences[size++] = { insertText: text, offset, operation: "INSERT" };
-			index += 1;
 		}
 	}
 
@@ -149,22 +152,14 @@ export function generateDifferences(original: string, formatted: string): Readon
 }
 
 const MAX_LENGTH = 60;
-const SYMBOLS: Record<string, string> = {
-	"\t": "\u{2192}",
-	"\n": "\u{240A}",
-	"\r": "\u{240D}",
-	" ": "\u{00B7}",
-};
-
-const WHITESPACE_REGEXP = regex("[\r\n\t ]", "gu");
-function toSymbol(character: string): string {
-	return SYMBOLS[character] ?? character;
-}
 
 export function showInvisibles(text: string): string {
 	let result = text;
 	if (result.length > MAX_LENGTH) result = `${result.slice(0, MAX_LENGTH)}…`;
-	return result.replaceAll(WHITESPACE_REGEXP, toSymbol);
+	result = result.split(" ").join("\u{00B7}");
+	result = result.split("\t").join("\u{2192}");
+	result = result.split("\r").join("\u{240D}");
+	return result.split("\n").join("\u{240A}");
 }
 
 function resetConfigCache(): void {

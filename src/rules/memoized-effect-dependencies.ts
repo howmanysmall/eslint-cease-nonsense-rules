@@ -1,9 +1,10 @@
-import { getReactSources, isReactImport } from "@constants/react-sources";
+import { getReactSources, isReactImport } from "$constants/react-sources";
+import { getImportSpecifierName, unwrapNode } from "$utilities/ast-utilities";
+import { createRule } from "$utilities/create-rule";
 import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
 import { TSESTree } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
 
-import type { EnvironmentMode } from "@lint-types/environment-mode";
+import type { EnvironmentMode } from "$types/environment-mode";
 import type { TSESLint } from "@typescript-eslint/utils";
 
 type Mode = "definite" | "moderate" | "aggressive";
@@ -23,6 +24,7 @@ type Options = [MemoizedEffectDependenciesOptions?];
 
 type MessageIds = "unmemoizedDependency";
 
+type StableHookKind = "index1" | "whole";
 type Stability = "memoized" | "unmemoized" | "unknown";
 
 const DEFAULT_EFFECT_HOOKS = new Map<string, number>([
@@ -32,9 +34,13 @@ const DEFAULT_EFFECT_HOOKS = new Map<string, number>([
 ]);
 
 const MEMO_HOOKS = new Set(["useMemo", "useCallback"]);
-const STABLE_HOOKS_WHOLE = new Set(["useRef", "useBinding"]);
-const STABLE_HOOKS_INDEX1 = new Set(["useState", "useReducer", "useTransition"]);
-const STABLE_HOOKS = new Set([...STABLE_HOOKS_WHOLE, ...STABLE_HOOKS_INDEX1]);
+const STABLE_HOOK_KINDS = new Map<string, StableHookKind>([
+	["useRef", "whole"],
+	["useBinding", "whole"],
+	["useState", "index1"],
+	["useReducer", "index1"],
+	["useTransition", "index1"],
+]);
 
 const UNMEMOIZED_INLINE_TYPES = new Set<TSESTree.AST_NODE_TYPES>([
 	TSESTree.AST_NODE_TYPES.ObjectExpression,
@@ -51,40 +57,18 @@ const DEFAULT_OPTIONS: Required<MemoizedEffectDependenciesOptions> = {
 	mode: "definite",
 };
 
-function unwrapExpression(node: TSESTree.Node): TSESTree.Node {
-	let current: TSESTree.Node = node;
-
-	while (true) {
-		switch (current.type) {
-			case TSESTree.AST_NODE_TYPES.ChainExpression:
-			case TSESTree.AST_NODE_TYPES.TSAsExpression:
-			case TSESTree.AST_NODE_TYPES.TSInstantiationExpression:
-			case TSESTree.AST_NODE_TYPES.TSNonNullExpression:
-			case TSESTree.AST_NODE_TYPES.TSSatisfiesExpression:
-			case TSESTree.AST_NODE_TYPES.TSTypeAssertion: {
-				current = current.expression;
-				continue;
-			}
-
-			default:
-				return current;
-		}
-	}
-}
-
 function getMemberHookName(callee: TSESTree.MemberExpression, reactNamespaces: Set<string>): string | undefined {
 	if (callee.computed) return undefined;
 	if (callee.object.type !== TSESTree.AST_NODE_TYPES.Identifier) return undefined;
 	if (!reactNamespaces.has(callee.object.name)) return undefined;
-	if (callee.property.type !== TSESTree.AST_NODE_TYPES.Identifier) return undefined;
 	return callee.property.name;
 }
 
 function getRootIdentifier(node: TSESTree.Node): TSESTree.Identifier | undefined {
-	let current = unwrapExpression(node);
+	let current = unwrapNode(node);
 
 	while (current.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
-		current = unwrapExpression(current.object);
+		current = unwrapNode(current.object);
 	}
 
 	return current.type === TSESTree.AST_NODE_TYPES.Identifier ? current : undefined;
@@ -92,14 +76,6 @@ function getRootIdentifier(node: TSESTree.Node): TSESTree.Identifier | undefined
 
 function isUnmemoizedInline(node: TSESTree.Node): boolean {
 	return UNMEMOIZED_INLINE_TYPES.has(node.type);
-}
-
-function getImportedName(specifier: TSESTree.ImportSpecifier): string | undefined {
-	if (specifier.imported.type === TSESTree.AST_NODE_TYPES.Identifier) return specifier.imported.name;
-	if (specifier.imported.type === TSESTree.AST_NODE_TYPES.Literal && typeof specifier.imported.value === "string") {
-		return specifier.imported.value;
-	}
-	return undefined;
 }
 
 function getPatternElementName(element: TSESTree.ArrayPattern["elements"][number] | undefined): string | undefined {
@@ -147,23 +123,14 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 		const reactNamespaces = new Set<string>();
 		const effectHookIdentifiers = new Map<string, number>();
 		const memoHookIdentifiers = new Set<string>();
-		const stableHookIdentifiers = new Map<string, string>();
+		const stableHookIdentifiers = new Map<string, StableHookKind>();
 
-		const scopeCache = new WeakMap<TSESTree.Node, TSESLint.Scope.Scope>();
 		const variableStabilityCache = new WeakMap<TSESLint.Scope.Variable, Stability>();
 
 		const { sourceCode } = context;
 
-		function getScope(node: TSESTree.Node): TSESLint.Scope.Scope {
-			const cached = scopeCache.get(node);
-			if (cached) return cached;
-			const scope = sourceCode.getScope(node);
-			scopeCache.set(node, scope);
-			return scope;
-		}
-
 		function resolveVariable(identifier: TSESTree.Identifier): TSESLint.Scope.Variable | undefined {
-			let scope: TSESLint.Scope.Scope | null = getScope(identifier);
+			let scope: TSESLint.Scope.Scope | null = sourceCode.getScope(identifier);
 			while (scope) {
 				const found = scope.set.get(identifier.name);
 				if (found) return found;
@@ -179,42 +146,55 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 			}
 			if (callee.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
 				const hookName = getMemberHookName(callee, reactNamespaces);
-				return hookName ? MEMO_HOOKS.has(hookName) : false;
+				return hookName === undefined ? false : MEMO_HOOKS.has(hookName);
 			}
 			return false;
 		}
 
-		function getStableHookKind(node: TSESTree.CallExpression): "whole" | "index1" | undefined {
+		function getStableHookKind(node: TSESTree.CallExpression): StableHookKind | undefined {
 			const { callee } = node;
 			if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
-				const importedName = stableHookIdentifiers.get(callee.name);
-				if (!importedName) return undefined;
-				if (STABLE_HOOKS_WHOLE.has(importedName)) return "whole";
-				if (STABLE_HOOKS_INDEX1.has(importedName)) return "index1";
-				return undefined;
+				return stableHookIdentifiers.get(callee.name);
 			}
 			if (callee.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
 				const hookName = getMemberHookName(callee, reactNamespaces);
-				if (!hookName) return undefined;
-				if (STABLE_HOOKS_WHOLE.has(hookName)) return "whole";
-				if (STABLE_HOOKS_INDEX1.has(hookName)) return "index1";
+				if (hookName === undefined) return undefined;
+				return STABLE_HOOK_KINDS.get(hookName);
 			}
 			return undefined;
 		}
 
+		function getCallExpressionStability(
+			init: TSESTree.CallExpression,
+			variableName: string,
+			id: TSESTree.BindingName,
+		): Stability {
+			if (isMemoHookCall(init)) return "memoized";
+
+			const stableKind = getStableHookKind(init);
+			if (stableKind === "whole") return "memoized";
+			if (
+				stableKind === "index1" &&
+				id.type === TSESTree.AST_NODE_TYPES.ArrayPattern &&
+				isIdentifierAtArrayIndex(id, variableName, 1)
+			) {
+				return "memoized";
+			}
+
+			return options.mode === "definite" ? "unknown" : "unmemoized";
+		}
+
 		function getDefinitionStability(definition: TSESLint.Scope.Definition, variableName: string): Stability {
 			if (definition.type === DefinitionType.Parameter) return "unknown";
-			if (definition.type === DefinitionType.ImportBinding) return "memoized";
 
 			const { node } = definition;
-			if (!node) return "unknown";
 			if (
-				node.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration ||
-				node.type === TSESTree.AST_NODE_TYPES.ClassDeclaration
+				node?.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration ||
+				node?.type === TSESTree.AST_NODE_TYPES.ClassDeclaration
 			) {
 				return "unmemoized";
 			}
-			if (node.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator) return "unknown";
+			if (node?.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator) return "unknown";
 
 			const declarationParent = node.parent;
 			if (
@@ -224,23 +204,12 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 				return options.mode === "definite" ? "unknown" : "unmemoized";
 			}
 
-			const init = node.init ? unwrapExpression(node.init) : undefined;
-			if (!init) return "unknown";
-			if (isUnmemoizedInline(init)) return "unmemoized";
-
-			if (init.type === TSESTree.AST_NODE_TYPES.CallExpression) {
-				if (isMemoHookCall(init)) return "memoized";
-				const stableKind = getStableHookKind(init);
-				if (
-					stableKind === "whole" ||
-					(stableKind === "index1" &&
-						node.id.type === TSESTree.AST_NODE_TYPES.ArrayPattern &&
-						isIdentifierAtArrayIndex(node.id, variableName, 1))
-				) {
-					return "memoized";
+			if (node.init !== null) {
+				const init = unwrapNode(node.init);
+				if (isUnmemoizedInline(init)) return "unmemoized";
+				if (init.type === TSESTree.AST_NODE_TYPES.CallExpression) {
+					return getCallExpressionStability(init, variableName, node.id);
 				}
-
-				return options.mode === "definite" ? "unknown" : "unmemoized";
 			}
 
 			return "unknown";
@@ -273,7 +242,7 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 		}
 
 		function classifyDependency(node: TSESTree.Node): Stability {
-			const unwrapped = unwrapExpression(node);
+			const unwrapped = unwrapNode(node);
 			if (isUnmemoizedInline(unwrapped)) return "unmemoized";
 			if (unwrapped.type === TSESTree.AST_NODE_TYPES.CallExpression) {
 				return options.mode === "definite" ? "unknown" : "unmemoized";
@@ -292,7 +261,7 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 			}
 			if (callee.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
 				const hookName = getMemberHookName(callee, reactNamespaces);
-				return hookName ? effectHookNameToIndex.get(hookName) : undefined;
+				return hookName === undefined ? undefined : effectHookNameToIndex.get(hookName);
 			}
 			return undefined;
 		}
@@ -303,10 +272,10 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 				if (dependenciesIndex === undefined) return;
 
 				const depsArgument = node.arguments[dependenciesIndex];
-				if (!depsArgument || depsArgument.type !== TSESTree.AST_NODE_TYPES.ArrayExpression) return;
+				if (depsArgument === undefined || depsArgument.type !== TSESTree.AST_NODE_TYPES.ArrayExpression) return;
 
 				for (const element of depsArgument.elements) {
-					if (!element) continue;
+					if (element === null) continue;
 					if (element.type === TSESTree.AST_NODE_TYPES.SpreadElement) {
 						if (options.mode === "definite") continue;
 						const spreadTarget = element.argument;
@@ -341,22 +310,21 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 						continue;
 					}
 
-					if (specifier.type !== TSESTree.AST_NODE_TYPES.ImportSpecifier) continue;
+					const importedName = getImportSpecifierName(specifier);
 
-					const importedName = getImportedName(specifier);
-					if (!importedName) continue;
-
-					if (effectHookNameToIndex.has(importedName)) {
-						effectHookIdentifiers.set(specifier.local.name, effectHookNameToIndex.get(importedName) ?? 1);
+					const dependenciesIndex = effectHookNameToIndex.get(importedName);
+					if (dependenciesIndex !== undefined) {
+						effectHookIdentifiers.set(specifier.local.name, dependenciesIndex);
 					}
 					if (MEMO_HOOKS.has(importedName)) memoHookIdentifiers.add(specifier.local.name);
-					if (STABLE_HOOKS.has(importedName)) stableHookIdentifiers.set(specifier.local.name, importedName);
+					const stableHookKind = STABLE_HOOK_KINDS.get(importedName);
+					if (stableHookKind !== undefined) stableHookIdentifiers.set(specifier.local.name, stableHookKind);
 				}
 			},
 		};
 	},
-	defaultOptions: [DEFAULT_OPTIONS],
 	meta: {
+		defaultOptions: [DEFAULT_OPTIONS],
 		docs: {
 			description:
 				"Experimental: Flags effect dependencies that are not memoized. Unmemoized dependencies can cause unnecessary re-renders or infinite loops.",

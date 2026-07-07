@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { PredefinedFormatToCheckFunction } from "@utilities/naming-convention-utilities/format";
+import { PredefinedFormatToCheckFunction } from "$utilities/naming-convention-utilities/format";
 
 vi.setConfig({ testTimeout: 500 });
 
+// oxlint-disable-next-line vitest/prefer-lowercase-title -- no lol
 describe("PredefinedFormatToCheckFunction", () => {
 	describe("camelCase", () => {
 		it("should return true for valid camelCase", () => {
@@ -36,7 +37,7 @@ describe("PredefinedFormatToCheckFunction", () => {
 		});
 	});
 
-	describe("PascalCase", () => {
+	describe("pascalCase", () => {
 		it("should return true for valid PascalCase", () => {
 			expect.assertions(1);
 			expect(PredefinedFormatToCheckFunction.PascalCase("FooBar")).toBe(true);
@@ -147,7 +148,7 @@ describe("PredefinedFormatToCheckFunction", () => {
 		});
 	});
 
-	describe("StrictPascalCase", () => {
+	describe("strictPascalCase", () => {
 		it("should return true for valid strict PascalCase", () => {
 			expect.assertions(1);
 			expect(PredefinedFormatToCheckFunction.StrictPascalCase("FooBar")).toBe(true);
@@ -189,7 +190,7 @@ describe("PredefinedFormatToCheckFunction", () => {
 		});
 	});
 
-	describe("UPPER_CASE", () => {
+	describe("uPPER_CASE", () => {
 		it("should return true for valid UPPER_CASE", () => {
 			expect.assertions(1);
 			expect(PredefinedFormatToCheckFunction.UPPER_CASE("FOO_BAR")).toBe(true);

@@ -5,25 +5,25 @@ function isUppercaseCharacter(character: string): boolean {
 function isPascalCase(name: string): boolean {
 	if (name.length === 0) return true;
 	const [first] = name;
-	return first !== undefined && first === first.toUpperCase() && !name.includes("_");
+	return first === first?.toUpperCase() && !name.includes("_");
 }
 
 function isStrictPascalCase(name: string): boolean {
 	if (name.length === 0) return true;
 	const [first] = name;
-	return first !== undefined && first === first.toUpperCase() && hasStrictCamelHumps(name, true);
+	return first === first?.toUpperCase() && hasStrictCamelHumps(name, true);
 }
 
 function isCamelCase(name: string): boolean {
 	if (name.length === 0) return true;
 	const [first] = name;
-	return first !== undefined && first === first.toLowerCase() && !name.includes("_");
+	return first === first?.toLowerCase() && !name.includes("_");
 }
 
 function isStrictCamelCase(name: string): boolean {
 	if (name.length === 0) return true;
 	const [first] = name;
-	return first !== undefined && first === first.toLowerCase() && hasStrictCamelHumps(name, false);
+	return first === first?.toLowerCase() && hasStrictCamelHumps(name, false);
 }
 
 function hasStrictCamelHumps(name: string, isUpper: boolean): boolean {
@@ -53,9 +53,7 @@ function validateUnderscores(name: string): boolean {
 	if (name.length === 0 || name.startsWith("_")) return false;
 
 	let boolean = false;
-	for (let index = 1; index < name.length; index += 1) {
-		const character = name[index];
-		if (character === undefined) return false;
+	for (const character of name.slice(1)) {
 		if (character === "_") {
 			if (boolean) return false;
 			boolean = true;
@@ -65,10 +63,10 @@ function validateUnderscores(name: string): boolean {
 }
 
 export const PredefinedFormatToCheckFunction: Record<string, (name: string) => boolean> = {
-	camelCase: isCamelCase,
 	PascalCase: isPascalCase,
-	snake_case: isSnakeCase,
-	strictCamelCase: isStrictCamelCase,
 	StrictPascalCase: isStrictPascalCase,
 	UPPER_CASE: isUpperCase,
+	camelCase: isCamelCase,
+	snake_case: isSnakeCase,
+	strictCamelCase: isStrictCamelCase,
 };

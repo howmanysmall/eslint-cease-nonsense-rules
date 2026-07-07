@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/prefer-single-world-query";
+import rule from "$rules/prefer-single-world-query";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -139,6 +139,42 @@ const hasAll = world.has(entity, ComponentA, ComponentB);
 const result = hasA && hasB ? "yes" : "no";
 `,
 			},
+			{
+				code: `
+const hasA = world.has(entity, ComponentA);
+const hasB = world.has(entity, ComponentB);
+const result = hasA && hasB;
+`,
+				errors: [{ messageId: "preferSingleHas" }],
+				output: `
+const hasAll = world.has(entity, ComponentA, ComponentB);
+const result = hasA && hasB;
+`,
+			},
+			{
+				code: `
+const hasA = world.has(entity, ComponentA);
+const hasB = world.has(entity, ComponentB);
+do { doSomething(); } while (hasA && hasB);
+`,
+				errors: [{ messageId: "preferSingleHas" }],
+				output: `
+const hasAll = world.has(entity, ComponentA, ComponentB);
+do { doSomething(); } while (hasA && hasB);
+`,
+			},
+			{
+				code: `
+const hasA = world.has(entity, ComponentA);
+const hasB = world.has(entity, ComponentB);
+for (; hasA && hasB;) { doSomething(); }
+`,
+				errors: [{ messageId: "preferSingleHas" }],
+				output: `
+const hasAll = world.has(entity, ComponentA, ComponentB);
+for (; hasA && hasB;) { doSomething(); }
+`,
+			},
 		],
 		valid: [
 			// Single world.get call (nothing to optimize)
@@ -199,6 +235,14 @@ const { b } = world.get(entity, ComponentB);
 			{
 				code: "const componentA = world.get(entity, ...components);",
 			},
+			{
+				code: "const componentA = world.get(...entities, ComponentA);",
+			},
+			{
+				code: `
+const componentA = world.get(entity, ComponentA), componentB = world.get(entity, ComponentB);
+`,
+			},
 			// Non-identifier variable name
 			{
 				code: `
@@ -221,6 +265,14 @@ if (hasB) { doB(); }
 const hasA = world.has(entity, ComponentA);
 const hasB = world.has(entity, ComponentB);
 if (hasA || hasB) { doSomething(); }
+`,
+			},
+			// Consecutive has() calls on different worlds should not be combined, even in &&
+			{
+				code: `
+const hasA = worldA.has(entity, ComponentA);
+const hasB = worldB.has(entity, ComponentB);
+if (hasA && hasB) { doSomething(); }
 `,
 			},
 			// Has() calls used independently

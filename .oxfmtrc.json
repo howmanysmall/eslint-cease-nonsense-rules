@@ -13,7 +13,7 @@
 		"**/*.json",
 		".context/**",
 		"!package.json",
-		"aube-lock.yaml",
+		"**/*-lock.{yaml,yml,json}"
 	],
 	"insertFinalNewline": true,
 	"jsdoc": true,
@@ -24,21 +24,21 @@
 			"files": ["**/*.{yaml,yml}"],
 			"options": {
 				"tabWidth": 2,
-				"useTabs": false,
-			},
+				"useTabs": false
+			}
 		},
 		{
 			"files": ["**/*.jsonc"],
 			"options": {
-				"trailingComma": "none",
-			},
+				"trailingComma": "none"
+			}
 		},
 		{
 			"files": ["opencode.jsonc"],
 			"options": {
-				"trailingComma": "all",
-			},
-		},
+				"trailingComma": "all"
+			}
+		}
 	],
 	"printWidth": 120,
 	"proseWrap": "always",
@@ -62,11 +62,11 @@
 					"svelte/**",
 					"@sveltejs/**",
 					"solid-js",
-					"@solidjs/**",
+					"@solidjs/**"
 				],
 				"groupName": "framework",
 				"modifiers": ["value"],
-				"selector": "external",
+				"selector": "external"
 			},
 			{
 				"elementNamePattern": [
@@ -80,12 +80,12 @@
 					"playwright",
 					"@playwright/**",
 					"cypress",
-					"@cypress/**",
+					"@cypress/**"
 				],
 				"groupName": "testing",
 				"modifiers": ["value"],
-				"selector": "external",
-			},
+				"selector": "external"
+			}
 		],
 		"groups": [
 			"side_effect",
@@ -117,7 +117,7 @@
 			"type-import",
 			{ "newlinesBetween": true },
 
-			"unknown",
+			"unknown"
 		],
 		"ignoreCase": true,
 		"internalPattern": ["@/", "~/"],
@@ -125,10 +125,10 @@
 		"order": "asc",
 		"partitionByComment": false,
 		"partitionByNewline": false,
-		"sortSideEffects": false,
+		"sortSideEffects": false
 	},
-	"sortPackageJson": true,
+	"sortPackageJson": { "sortScripts": true },
 	"tabWidth": 4,
 	"trailingComma": "all",
-	"useTabs": true,
+	"useTabs": true
 }

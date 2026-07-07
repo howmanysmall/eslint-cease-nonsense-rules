@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-unused-imports";
+import rule from "$rules/no-unused-imports";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -50,9 +50,49 @@ describe("no-unused-imports", () => {
 				output: "/** @see {unusedFunction} */\n",
 			},
 			{
+				code: "/** @see {} */\nimport { unusedFunction } from './utils';",
+				errors: [{ data: { identifierName: "unusedFunction" }, messageId: "unusedImport" }],
+				output: "/** @see {} */\n",
+			},
+			{
 				code: "import { used, unused } from './module';\nused();",
 				errors: [{ data: { identifierName: "unused" }, messageId: "unusedImport" }],
 				output: "import { used } from './module';\nused();",
+			},
+			{
+				code: "import { used, unused, kept } from './module';\nused();\nkept();",
+				errors: [{ data: { identifierName: "unused" }, messageId: "unusedImport" }],
+				output: "import { used, kept } from './module';\nused();\nkept();",
+			},
+			{
+				code: "import { unused, kept } from './module';\nkept();",
+				errors: [{ data: { identifierName: "unused" }, messageId: "unusedImport" }],
+				output: "import { kept } from './module';\nkept();",
+			},
+			{
+				code: "import { kept, unused } from './module';\nkept();",
+				errors: [{ data: { identifierName: "unused" }, messageId: "unusedImport" }],
+				output: "import { kept } from './module';\nkept();",
+			},
+			{
+				code: "import { unused as alias, kept } from './module';\nkept();",
+				errors: [{ data: { identifierName: "alias" }, messageId: "unusedImport" }],
+				output: "import { kept } from './module';\nkept();",
+			},
+			{
+				code: "import UnusedDefault, { kept } from './module';\nkept();",
+				errors: [{ data: { identifierName: "UnusedDefault" }, messageId: "unusedImport" }],
+				output: "import { kept } from './module';\nkept();",
+			},
+			{
+				code: "import UsedDefault, { unused } from './module';\nUsedDefault();",
+				errors: [{ data: { identifierName: "unused" }, messageId: "unusedImport" }],
+				output: "import UsedDefault from './module';\nUsedDefault();",
+			},
+			{
+				code: "import { Unused }\nfrom './module';\n\nconst value = 1;",
+				errors: [{ data: { identifierName: "Unused" }, messageId: "unusedImport" }],
+				output: "\n\nconst value = 1;",
 			},
 		],
 		valid: [
@@ -79,6 +119,9 @@ describe("no-unused-imports", () => {
 			},
 			{
 				code: "/** @type {usedFunction} */\nimport { usedFunction } from './utils';",
+			},
+			{
+				code: "// @see {unusedFunction}\nimport { usedFunction } from './utils';\nusedFunction();",
 			},
 		],
 	});

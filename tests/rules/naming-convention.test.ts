@@ -1,13 +1,14 @@
-import { join, resolve } from "node:path";
+import nodePath from "node:path";
 import { describe } from "vitest";
-import rule from "@rules/naming-convention";
+import rule from "$rules/naming-convention";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 
 const __dirname = import.meta.dirname;
-const fromFixturesDir = resolve(__dirname, "..", "fixtures", "naming-convention", "from-match");
-const fromFixturesProject = join(fromFixturesDir, "tsconfig.json");
+const fromFixturesDir = nodePath.resolve(__dirname, "..", "fixtures", "naming-convention", "from-match");
+const fromFixturesProject = nodePath.join(fromFixturesDir, "tsconfig.json");
 const fromFixturesCase = "case.ts";
+const absoluteLocalThingSpecifier = nodePath.join(fromFixturesDir, "src/shared/local-thing");
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -797,6 +798,69 @@ describe("naming-convention", () => {
 				errors: [{ messageId: "doesNotMatchFormat" }],
 				options: [{ format: ["UPPER_CASE"], modifiers: ["global"], selector: "variable" }],
 			},
+
+			// Test class field initialized with an arrow function is treated as a class method
+			{
+				code: "class Foo { foo_bar = () => {}; }",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [{ format: ["camelCase"], selector: "classMethod" }],
+			},
+
+			// Test abstract class field with a function type is treated as a class property
+			{
+				code: "abstract class Foo { abstract foo_bar: () => void; }",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [{ format: ["camelCase"], modifiers: ["abstract"], selector: "classProperty" }],
+			},
+
+			// Test auto-accessor selector
+			{
+				code: "class Foo { accessor foo_bar = 1; }",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [{ format: ["camelCase"], selector: "autoAccessor" }],
+			},
+
+			// Test object literal property selector
+			{
+				code: "const obj = { foo_bar: 1 };",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [{ format: ["camelCase"], selector: "objectLiteralProperty" }],
+			},
+
+			// Test object literal method selector with method syntax
+			{
+				code: "const obj = { foo_bar() {} };",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [{ format: ["camelCase"], selector: "objectLiteralMethod" }],
+			},
+
+			// Test object literal method selector with function expression value
+			{
+				code: "const obj = { foo_bar: function () {} };",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [{ format: ["camelCase"], selector: "objectLiteralMethod" }],
+			},
+
+			// Test export default declaration on a named function
+			{
+				code: "export default function foo_bar() {}",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [{ format: ["camelCase"], modifiers: ["exported"], selector: "function" }],
+			},
+
+			// Test export default declaration on a named class
+			{
+				code: "export default class foo_bar {}",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [{ format: ["PascalCase"], modifiers: ["exported"], selector: "class" }],
+			},
+
+			// Test literal member names that start with an invalid identifier character
+			{
+				code: "const obj = { '1startsWithNumber': 1 };",
+				errors: [{ messageId: "doesNotMatchFormat" }],
+				options: [{ format: ["camelCase"], modifiers: ["requiresQuotes"], selector: "objectLiteralProperty" }],
+			},
 		],
 		valid: [
 			// Test unused variable with correct format
@@ -877,6 +941,12 @@ describe("naming-convention", () => {
 				options: [{ format: ["camelCase"], modifiers: ["destructured"], selector: "parameter" }],
 			},
 
+			// Test destructured parameter with a default value
+			{
+				code: "function fn({ fooBar = 1 }: { fooBar?: number }) { return fooBar; }",
+				options: [{ format: ["camelCase"], modifiers: ["destructured"], selector: "parameter" }],
+			},
+
 			// Test type parameter with correct format
 			{
 				code: "function fn<T>() {}",
@@ -923,6 +993,15 @@ describe("naming-convention", () => {
 			{
 				code: "const FOO_BAR = 1;",
 				options: [{ format: ["UPPER_CASE"], modifiers: ["global"], selector: "variable" }],
+			},
+
+			// Test local variable does not receive the global modifier
+			{
+				code: "function fn() { const fooBar = 1; return fooBar; }",
+				options: [
+					{ format: ["UPPER_CASE"], modifiers: ["global"], selector: "variable" },
+					{ format: ["camelCase"], selector: "variable" },
+				],
 			},
 
 			// Test import default specifier (lines 329-330)
@@ -985,10 +1064,28 @@ describe("naming-convention", () => {
 				options: [{ format: ["PascalCase"], modifiers: ["unused"], selector: "enum" }],
 			},
 
+			// Test used enum does not receive the unused modifier
+			{
+				code: "enum UsedEnum { A } const value = UsedEnum.A;",
+				options: [
+					{ format: ["UPPER_CASE"], modifiers: ["unused"], selector: "enum" },
+					{ format: ["PascalCase"], selector: "enum" },
+				],
+			},
+
 			// Test unused interface (line 400-401)
 			{
 				code: "interface UnusedInterface {}",
 				options: [{ format: ["PascalCase"], modifiers: ["unused"], selector: "interface" }],
+			},
+
+			// Test used interface does not receive the unused modifier
+			{
+				code: "interface UsedInterface { value: number } const value: UsedInterface = { value: 1 };",
+				options: [
+					{ format: ["UPPER_CASE"], modifiers: ["unused"], selector: "interface" },
+					{ format: ["PascalCase"], selector: "interface" },
+				],
 			},
 
 			// Test unused type alias (line 449-450)
@@ -1100,6 +1197,33 @@ describe("naming-convention", () => {
 			{
 				code: "class Foo { fooBar = 1; }",
 				options: [{ format: ["camelCase"], selector: "classProperty" }],
+			},
+
+			// Test function-valued class field with correct method-style name
+			{
+				code: "class Foo { fooBar = function () {}; }",
+				options: [{ format: ["camelCase"], selector: "classMethod" }],
+			},
+
+			// Test computed object literal properties are skipped
+			{
+				code: "const obj = { [foo_bar]: 1, [method_name]() {} };",
+				options: [
+					{ format: ["camelCase"], selector: "objectLiteralProperty" },
+					{ format: ["camelCase"], selector: "objectLiteralMethod" },
+				],
+			},
+
+			// Test unicode identifier text that does not require quotes
+			{
+				code: "const obj = { café: 1 };",
+				options: [{ format: ["camelCase"], selector: "objectLiteralProperty" }],
+			},
+
+			// Test astral unicode identifier text that does not require quotes
+			{
+				code: "const obj = { 𐊧: 1, a𐊧: 2 };",
+				options: [{ format: [], selector: "objectLiteralProperty" }],
 			},
 
 			// Test export default declaration (line 166-167)
@@ -1289,6 +1413,19 @@ describe("naming-convention", () => {
 					{ format: ["camelCase"], selector: "variable" },
 				],
 			},
+			// Test type reference mismatch across every union arm - uses fallback rule
+			{
+				code: "const maybePrimitive: string | number = Math.random() > 0.5 ? 'test' : 1;",
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "Entity" }],
+					},
+					{ format: ["camelCase"], selector: "variable" },
+				],
+			},
 
 			// Test tuple type as array
 			{
@@ -1406,6 +1543,47 @@ describe("naming-convention", () => {
 				],
 			},
 
+			// Test type reference - mixed union falls back when one arm misses the reference
+			{
+				code: "type Entity<TData = unknown> = { readonly __type: TData }; declare function maybeComponent<T = unknown>(): Entity<T> | number; const maybeComponentValue = maybeComponent();",
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "Entity" }],
+					},
+					{ format: ["camelCase"], selector: "variable" },
+				],
+			},
+
+			// Test type reference - union arm order still matches after a miss.
+			{
+				code: "type Entity<TData = unknown> = { readonly __type: TData }; declare function maybeComponent<T = unknown>(): number | Entity<T>; const maybeComponentValue = maybeComponent();",
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "Entity" }],
+					},
+					{ format: ["camelCase"], selector: "variable" },
+				],
+			},
+
+			// Test type reference - intersection arm order still matches after a miss.
+			{
+				code: "type Entity<TData = unknown> = { readonly __type: TData }; type Other = { readonly other: true }; type Mixed = Other & Entity; declare function makeMixed(): Mixed; const MixedValue = makeMixed();",
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ name: "Entity" }],
+					},
+				],
+			},
+
 			// Test type reference - structural type (no nominal brand symbol) matches by alias name alone;
 			// confirms the matcher does not rely on the `__nominal_*` brand pattern.
 			{
@@ -1429,6 +1607,20 @@ describe("naming-convention", () => {
 						modifiers: ["const"],
 						selector: "variable",
 						types: [{ name: "Entity" }, { name: "Pair" }],
+					},
+				],
+			},
+
+			// Test type reference - same-file relative `from` matches an inline declaration.
+			{
+				code: "type InlineThing = { readonly __inline: true }; declare function makeInline(): InlineThing; const InlineValue = makeInline();",
+				filename: fromFixturesCase,
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ from: "./case", name: "InlineThing" }],
 					},
 				],
 			},
@@ -1482,6 +1674,35 @@ describe("naming-convention", () => {
 						selector: "variable",
 						types: [{ from: "./src/shared/local-thing", name: "LocalThing" }],
 					},
+				],
+			},
+
+			// `from` (absolute path-form): PascalCase const typed via the exact local source passes.
+			{
+				code: `import { makeLocal } from "./src/shared/local-thing"; const LocalValue = makeLocal();`,
+				filename: fromFixturesCase,
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ from: absoluteLocalThingSpecifier, name: "LocalThing" }],
+					},
+				],
+			},
+
+			// `from` (Windows absolute path-form): wrong drive path does not match on this fixture.
+			{
+				code: `import { component } from "fake-pkg"; const myComponent = component();`,
+				filename: fromFixturesCase,
+				options: [
+					{
+						format: ["PascalCase"],
+						modifiers: ["const"],
+						selector: "variable",
+						types: [{ from: "C:/not-real/fake-pkg", name: "Entity" }],
+					},
+					{ format: ["camelCase"], selector: "variable" },
 				],
 			},
 

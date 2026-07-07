@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-constant-condition-with-break";
+import rule from "$rules/no-constant-condition-with-break";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({
@@ -72,6 +72,10 @@ describe("no-constant-condition-with-break", () => {
 			{
 				code: "if (condition ? true : true) { doThing(); }",
 				errors: [{ messageId: "unexpected" }],
+			},
+			{
+				code: "if (false ? condition : true) { doThing(); }",
+				errors: [{ messageId: "unexpected" }, { messageId: "unexpected" }],
 			},
 			{
 				code: "if (null ?? true) { doThing(); }",
@@ -264,6 +268,10 @@ describe("no-constant-condition-with-break", () => {
 				options: [{ loopExitCalls: ["task.wait"] }],
 			},
 			{
+				code: "while (true) { break; }",
+				options: [{}],
+			},
+			{
 				code: "while (true) { const exits = [task.wait()]; doThing(exits); }",
 				options: [{ loopExitCalls: ["task.wait"] }],
 			},
@@ -320,6 +328,22 @@ describe("no-constant-condition-with-break", () => {
 				options: [{ loopExitCalls: ["task.wait"] }],
 			},
 			{
+				code: "class Widget extends Base { method() { while (true) { super[task.wait()]; doThing(); } } }",
+				options: [{ loopExitCalls: ["task.wait"] }],
+			},
+			{
+				code: "class Widget extends Base { constructor() { while (true) { super(task.wait()); doThing(); } } }",
+				options: [{ loopExitCalls: ["task.wait"] }],
+			},
+			{
+				code: "class Widget extends Base { method() { while (true) { super.value; break; } } }",
+				options: [{ loopExitCalls: ["task.wait"] }],
+			},
+			{
+				code: "class Widget extends Base { #value; method() { while (true) { #value in task.wait(); doThing(); } } }",
+				options: [{ loopExitCalls: ["task.wait"] }],
+			},
+			{
 				code: "while (true) { helper(...items, task.wait()); doThing(); }",
 				options: [{ loopExitCalls: ["task.wait"] }],
 			},
@@ -353,6 +377,10 @@ describe("no-constant-condition-with-break", () => {
 			},
 			{
 				code: "while (true) { (task.wait(), doThing()); }",
+				options: [{ loopExitCalls: ["task.wait"] }],
+			},
+			{
+				code: `while (true) { tag\`\${task.wait()}\`; doThing(); }`,
 				options: [{ loopExitCalls: ["task.wait"] }],
 			},
 			{
@@ -428,6 +456,8 @@ describe("no-constant-condition-with-break", () => {
 				options: [{ loopExitCalls: ["task.wait"] }],
 			},
 			"while (true) { if (done) { doThing(); } else { break; } }",
+			"if (delete true) { doThing(); }",
+			{ code: `if (\`\${value}\`) { doThing(); }` },
 			"while (true) { label: { break; } }",
 			"while (true) { try { break; } catch (error) { doThing(error); } }",
 			"while (true) { try { doThing(); } catch (error) { break; } }",

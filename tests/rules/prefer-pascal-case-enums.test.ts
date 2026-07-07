@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/prefer-pascal-case-enums";
+import rule from "$rules/prefer-pascal-case-enums";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -64,6 +64,8 @@ describe("prefer-pascal-case-enums", () => {
 
 			// Single letter enum name
 			{ code: "enum X {Foo, Bar}" },
+			// Numeric string enum members are skipped
+			{ code: "enum AssetSize {'1024' = '1024'}" },
 		],
 	});
 });

@@ -2,9 +2,9 @@ import { regex } from "arktype";
 
 import type { Detector } from "./detector";
 
-// oxlint-disable-next-line prefer-string-raw
+// oxlint-disable-next-line prefer-string-raw -- Dynamic regex source is built from escaped string fragments.
 const WHITESPACE_GLOBAL_REGEX = regex("\\s+", "gu");
-// oxlint-disable-next-line prefer-string-raw
+// oxlint-disable-next-line prefer-string-raw -- Dynamic regex source is built from caller-provided pattern text.
 const ESCAPE = regex("[-/\\^$*+?.()|[\\]{}]", "gu");
 
 function escapeForRegex(value: string): string {

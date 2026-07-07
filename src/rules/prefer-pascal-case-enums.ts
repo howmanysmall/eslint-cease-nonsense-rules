@@ -1,17 +1,16 @@
+import { toPascalCase } from "$utilities/casing-utilities";
+import { createRule } from "$utilities/create-rule";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { toPascalCase } from "@utilities/casing-utilities";
-import { createRule } from "@utilities/create-rule";
 import { regex } from "arktype";
 
 import type { TSESTree } from "@typescript-eslint/utils";
 
-// oxlint-disable-next-line prefer-string-raw
+// oxlint-disable-next-line prefer-string-raw -- Regex strings are easier to scan with escaped source fragments.
 const STARTS_WITH_DIGIT = regex("^\\d", "u");
 
 function getIdentifierName(node: TSESTree.TSEnumMember["id"] | TSESTree.Identifier): string | undefined {
 	if (node.type === AST_NODE_TYPES.Identifier) return node.name;
-	if (node.type !== AST_NODE_TYPES.Literal || typeof node.value !== "string") return undefined;
-	return STARTS_WITH_DIGIT.test(node.value) ? undefined : node.value;
+	return typeof node.value === "string" && !STARTS_WITH_DIGIT.test(node.value) ? node.value : undefined;
 }
 
 const preferPascalCaseEnums = createRule({
@@ -37,8 +36,8 @@ const preferPascalCaseEnums = createRule({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description: "Enforce Pascal case when naming enums.",
 		},

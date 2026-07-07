@@ -2,10 +2,12 @@
 	"compilerOptions": {
 		"declaration": false,
 		"declarationMap": false,
+		"lib": ["ESNext"],
 		"noEmit": true,
 		"resolveJsonModule": true,
 		"rootDir": "scripts",
+		"target": "esnext"
 	},
 	"extends": "./tsconfig.base.json",
-	"include": ["scripts/**/*.ts"],
+	"include": ["scripts/**/*.ts"]
 }

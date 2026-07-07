@@ -1,17 +1,24 @@
+import { getMemberPropertyName, unwrapNode } from "$utilities/ast-utilities";
+import { createRule } from "$utilities/create-rule";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "@utilities/create-rule";
 
 import type { TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds = "preferFunctions";
 
 export interface NoEventsInEventsCallbackOptions {
-	readonly eventsImportPaths?: ReadonlyArray<string>;
+	readonly eventsImportPaths: ReadonlyArray<string>;
 }
 
-type Options = [NoEventsInEventsCallbackOptions?];
+type Options = [NoEventsInEventsCallbackOptions];
 
 type TaintKind = "container" | "none" | "value";
+type PresentTaintKind = Exclude<TaintKind, "none">;
+type TrackableAssignmentTarget =
+	| TSESTree.ArrayPattern
+	| TSESTree.AssignmentPattern
+	| TSESTree.Identifier
+	| TSESTree.ObjectPattern;
 
 interface CallbackState {
 	readonly playerContainers: Set<string>;
@@ -25,42 +32,8 @@ interface FunctionState {
 
 type CallbackFunction = TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression;
 
-function isNonEmptyString(value: unknown): value is string {
-	return typeof value === "string" && value.length > 0;
-}
-
-function normalizeImportPaths(options: NoEventsInEventsCallbackOptions | undefined): ReadonlySet<string> {
-	const normalized = new Set<string>();
-	if (!options?.eventsImportPaths) return normalized;
-
-	for (const importPath of options.eventsImportPaths) {
-		if (isNonEmptyString(importPath)) normalized.add(importPath);
-	}
-
-	return normalized;
-}
-
-function unwrapNode(node: TSESTree.Node): TSESTree.Node {
-	switch (node.type) {
-		case AST_NODE_TYPES.ChainExpression:
-		case AST_NODE_TYPES.TSAsExpression:
-		case AST_NODE_TYPES.TSInstantiationExpression:
-		case AST_NODE_TYPES.TSNonNullExpression:
-		case AST_NODE_TYPES.TSTypeAssertion:
-			return unwrapNode(node.expression);
-
-		default:
-			return node;
-	}
-}
-
-function getMemberPropertyName({ computed, property }: TSESTree.MemberExpression): string | undefined {
-	if (!computed && property.type === AST_NODE_TYPES.Identifier) return property.name;
-	if (computed && property.type === AST_NODE_TYPES.Literal && typeof property.value === "string") {
-		return property.value;
-	}
-
-	return undefined;
+function normalizeImportPaths(options: NoEventsInEventsCallbackOptions): ReadonlySet<string> {
+	return new Set(options.eventsImportPaths);
 }
 
 function getRootIdentifierName(node: TSESTree.Node): string | undefined {
@@ -81,7 +54,7 @@ function getConnectCallback(
 	if (getMemberPropertyName(unwrappedCallee) !== "connect") return undefined;
 
 	const rootIdentifier = getRootIdentifierName(unwrappedCallee.object);
-	if (!(rootIdentifier && eventsIdentifiers.has(rootIdentifier))) return undefined;
+	if (rootIdentifier === undefined || !eventsIdentifiers.has(rootIdentifier)) return undefined;
 
 	const [callbackArgument] = node.arguments;
 	switch (callbackArgument?.type) {
@@ -99,7 +72,7 @@ function isEventsMethodCall(node: TSESTree.CallExpression, eventsIdentifiers: Re
 	if (unwrappedCallee.type !== AST_NODE_TYPES.MemberExpression) return false;
 
 	const rootIdentifier = getRootIdentifierName(unwrappedCallee);
-	return rootIdentifier ? eventsIdentifiers.has(rootIdentifier) : false;
+	return rootIdentifier !== undefined && eventsIdentifiers.has(rootIdentifier);
 }
 
 function addIfMissing(set: Set<string>, value: string): boolean {
@@ -157,106 +130,129 @@ function markPatternValues(pattern: TSESTree.Node, state: CallbackState): boolea
 
 function markBindingPattern(
 	pattern: TSESTree.BindingName | TSESTree.AssignmentPattern,
-	kind: TaintKind,
+	kind: PresentTaintKind,
 	state: CallbackState,
 ): boolean {
-	if (kind === "none") return false;
-
 	if (pattern.type === AST_NODE_TYPES.Identifier) {
 		if (kind === "value") return markAsPlayerValue(pattern.name, state);
 		return markAsPlayerContainer(pattern.name, state);
 	}
 
-	if (
-		pattern.type === AST_NODE_TYPES.ArrayPattern ||
-		pattern.type === AST_NODE_TYPES.AssignmentPattern ||
-		pattern.type === AST_NODE_TYPES.ObjectPattern
-	) {
-		return markPatternValues(pattern, state);
-	}
-
-	return false;
+	return markPatternValues(pattern, state);
 }
 
-function markAssignmentTarget(target: TSESTree.Node, kind: TaintKind, state: CallbackState): boolean {
-	if (target.type === AST_NODE_TYPES.MemberExpression || kind === "none") return false;
-
-	if (
+function isTrackableAssignmentTarget(target: TSESTree.Node): target is TrackableAssignmentTarget {
+	return (
 		target.type === AST_NODE_TYPES.ArrayPattern ||
 		target.type === AST_NODE_TYPES.AssignmentPattern ||
 		target.type === AST_NODE_TYPES.Identifier ||
-		target.type === AST_NODE_TYPES.ObjectPattern ||
-		target.type === AST_NODE_TYPES.RestElement
-	) {
-		if (target.type === AST_NODE_TYPES.Identifier) {
-			if (kind === "value") return markAsPlayerValue(target.name, state);
-			return markAsPlayerContainer(target.name, state);
-		}
+		target.type === AST_NODE_TYPES.ObjectPattern
+	);
+}
 
-		return markPatternValues(target, state);
+function markAssignmentTarget(target: TSESTree.Node, kind: TaintKind, state: CallbackState): boolean {
+	if (target.type === AST_NODE_TYPES.MemberExpression || kind === "none" || !isTrackableAssignmentTarget(target)) {
+		return false;
 	}
 
-	return false;
+	if (target.type === AST_NODE_TYPES.Identifier) {
+		if (kind === "value") return markAsPlayerValue(target.name, state);
+		return markAsPlayerContainer(target.name, state);
+	}
+
+	return markPatternValues(target, state);
+}
+
+function classifyArrayTaint(node: TSESTree.ArrayExpression, state: CallbackState): TaintKind {
+	for (const element of node.elements) {
+		if (element === null) continue;
+
+		const target = element.type === AST_NODE_TYPES.SpreadElement ? element.argument : element;
+		if (classifyNodeTaint(target, state) !== "none") return "container";
+	}
+
+	return "none";
+}
+
+function classifyObjectTaint(node: TSESTree.ObjectExpression, state: CallbackState): TaintKind {
+	for (const property of node.properties) {
+		if (property.type === AST_NODE_TYPES.SpreadElement) {
+			if (classifyNodeTaint(property.argument, state) !== "none") return "container";
+			continue;
+		}
+
+		if (classifyNodeTaint(property.value, state) !== "none") return "container";
+	}
+
+	return "none";
+}
+
+function classifyConditionalTaint(node: TSESTree.ConditionalExpression, state: CallbackState): TaintKind {
+	const consequent = classifyNodeTaint(node.consequent, state);
+	return consequent === classifyNodeTaint(node.alternate, state) ? consequent : "none";
+}
+
+function classifyIdentifierTaint(node: TSESTree.Identifier, state: CallbackState): TaintKind {
+	if (state.playerValues.has(node.name)) return "value";
+	if (state.playerContainers.has(node.name)) return "container";
+	return "none";
+}
+
+function classifySequenceTaint(node: TSESTree.SequenceExpression, state: CallbackState): TaintKind {
+	let taint: TaintKind = "none";
+	for (const expression of node.expressions) {
+		taint = classifyNodeTaint(expression, state);
+	}
+
+	return taint;
 }
 
 function classifyNodeTaint(node: TSESTree.Node, state: CallbackState): TaintKind {
 	const unwrapped = unwrapNode(node);
 
 	switch (unwrapped.type) {
-		case AST_NODE_TYPES.ArrayExpression: {
-			for (const element of unwrapped.elements) {
-				if (!element) continue;
-
-				if (element.type === AST_NODE_TYPES.SpreadElement) {
-					if (classifyNodeTaint(element.argument, state) !== "none") return "container";
-					continue;
-				}
-
-				if (classifyNodeTaint(element, state) !== "none") return "container";
-			}
-
-			return "none";
-		}
+		case AST_NODE_TYPES.ArrayExpression:
+			return classifyArrayTaint(unwrapped, state);
 
 		case AST_NODE_TYPES.AssignmentExpression:
 			return classifyNodeTaint(unwrapped.right, state);
 
-		case AST_NODE_TYPES.ConditionalExpression: {
-			const consequent = classifyNodeTaint(unwrapped.consequent, state);
-			return consequent === classifyNodeTaint(unwrapped.alternate, state) ? consequent : "none";
-		}
+		case AST_NODE_TYPES.ConditionalExpression:
+			return classifyConditionalTaint(unwrapped, state);
 
-		case AST_NODE_TYPES.Identifier: {
-			if (state.playerValues.has(unwrapped.name)) return "value";
-			if (state.playerContainers.has(unwrapped.name)) return "container";
-			return "none";
-		}
+		case AST_NODE_TYPES.Identifier:
+			return classifyIdentifierTaint(unwrapped, state);
 
 		case AST_NODE_TYPES.MemberExpression: {
 			const objectKind = classifyNodeTaint(unwrapped.object, state);
 			return objectKind === "container" ? "value" : "none";
 		}
 
-		case AST_NODE_TYPES.ObjectExpression: {
-			for (const property of unwrapped.properties) {
-				if (property.type === AST_NODE_TYPES.SpreadElement) {
-					if (classifyNodeTaint(property.argument, state) !== "none") return "container";
-					continue;
-				}
+		case AST_NODE_TYPES.ObjectExpression:
+			return classifyObjectTaint(unwrapped, state);
 
-				if (classifyNodeTaint(property.value, state) !== "none") return "container";
-			}
-
-			return "none";
-		}
-
-		case AST_NODE_TYPES.SequenceExpression: {
-			const lastExpression = unwrapped.expressions.at(-1);
-			return lastExpression ? classifyNodeTaint(lastExpression, state) : "none";
-		}
+		case AST_NODE_TYPES.SequenceExpression:
+			return classifySequenceTaint(unwrapped, state);
 
 		default:
 			return "none";
+	}
+}
+
+function trackEventsImportSpecifier(specifier: TSESTree.ImportClause, trackedEventsIdentifiers: Set<string>): void {
+	if (specifier.type === AST_NODE_TYPES.ImportDefaultSpecifier) {
+		if (specifier.local.name === "Events") trackedEventsIdentifiers.add(specifier.local.name);
+		return;
+	}
+
+	if (specifier.type !== AST_NODE_TYPES.ImportSpecifier) return;
+	if (specifier.imported.type === AST_NODE_TYPES.Identifier && specifier.imported.name === "Events") {
+		trackedEventsIdentifiers.add(specifier.local.name);
+		return;
+	}
+
+	if (specifier.imported.type === AST_NODE_TYPES.Literal && specifier.imported.value === "Events") {
+		trackedEventsIdentifiers.add(specifier.local.name);
 	}
 }
 
@@ -306,7 +302,7 @@ const noEventsInEventsCallback = createRule<Options, MessageIds>({
 
 			AssignmentExpression(node): void {
 				const callbackState = getCurrentTopLevelCallbackState();
-				if (!callbackState || node.operator !== "=") return;
+				if (callbackState === undefined || node.operator !== "=") return;
 
 				const taint = classifyNodeTaint(node.right, callbackState);
 				if (taint !== "none") markAssignmentTarget(node.left, taint, callbackState);
@@ -314,23 +310,23 @@ const noEventsInEventsCallback = createRule<Options, MessageIds>({
 
 			CallExpression(node): void {
 				const callback = getConnectCallback(node, trackedEventsIdentifiers);
-				if (callback) {
+				if (callback !== undefined) {
 					const callbackState: CallbackState = {
 						playerContainers: new Set<string>(),
 						playerValues: new Set<string>(),
 					};
 
 					const [playerParameter] = callback.params;
-					if (playerParameter) markPatternValues(playerParameter, callbackState);
+					if (playerParameter !== undefined) markPatternValues(playerParameter, callbackState);
 
 					callbackStateByFunction.set(callback, callbackState);
 				}
 
 				const currentCallbackState = getCurrentTopLevelCallbackState();
-				if (!currentCallbackState || !isEventsMethodCall(node, trackedEventsIdentifiers)) return;
+				if (currentCallbackState === undefined || !isEventsMethodCall(node, trackedEventsIdentifiers)) return;
 
 				const [firstArgument] = node.arguments;
-				if (!firstArgument || firstArgument.type === AST_NODE_TYPES.SpreadElement) return;
+				if (firstArgument === undefined || firstArgument.type === AST_NODE_TYPES.SpreadElement) return;
 
 				if (classifyNodeTaint(firstArgument, currentCallbackState) === "value") {
 					context.report({
@@ -347,31 +343,16 @@ const noEventsInEventsCallback = createRule<Options, MessageIds>({
 
 			ImportDeclaration(node): void {
 				const importSource = node.source.value;
-				if (typeof importSource !== "string") return;
 				if (!allowedImportPaths.has(importSource)) return;
 
 				for (const specifier of node.specifiers) {
-					if (specifier.type === AST_NODE_TYPES.ImportDefaultSpecifier) {
-						if (specifier.local.name === "Events") trackedEventsIdentifiers.add(specifier.local.name);
-						continue;
-					}
-
-					if (specifier.type !== AST_NODE_TYPES.ImportSpecifier) continue;
-
-					if (specifier.imported.type === AST_NODE_TYPES.Identifier && specifier.imported.name === "Events") {
-						trackedEventsIdentifiers.add(specifier.local.name);
-						continue;
-					}
-
-					if (specifier.imported.type === AST_NODE_TYPES.Literal && specifier.imported.value === "Events") {
-						trackedEventsIdentifiers.add(specifier.local.name);
-					}
+					trackEventsImportSpecifier(specifier, trackedEventsIdentifiers);
 				}
 			},
 
 			VariableDeclarator(node): void {
 				const callbackState = getCurrentTopLevelCallbackState();
-				if (!(callbackState && node.init)) return;
+				if (callbackState === undefined || node.init === null) return;
 
 				const taint = classifyNodeTaint(node.init, callbackState);
 				if (taint === "none") return;
@@ -380,8 +361,8 @@ const noEventsInEventsCallback = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [{ eventsImportPaths: [] }],
 	meta: {
+		defaultOptions: [{ eventsImportPaths: [] }],
 		docs: {
 			description:
 				"Disallow sending Events back to the same player inside an Events.connect callback; use Functions for request/response.",

@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-new-instance-in-use-memo";
+import rule from "$rules/no-new-instance-in-use-memo";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 
@@ -19,6 +19,25 @@ describe("no-new-instance-in-use-memo", () => {
 import { useMemo } from "@rbxts/react";
 
 const model = useMemo(() => {
+    return new Instance("Model");
+}, []);
+`,
+				errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const model = useMemo(() => new Instance("Model"), []);
+`,
+				errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
+				options: [{ environment: "roblox-ts", maxHelperTraceDepth: 4 }],
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const model = useMemo(function createModel() {
     return new Instance("Model");
 }, []);
 `,
@@ -67,6 +86,14 @@ const model = memo(() => new Instance("Model"), []);
 			},
 			{
 				code: `
+import { "useMemo" as memo } from "@rbxts/react";
+
+const model = memo(() => new Instance("Model"), []);
+`,
+				errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
+			},
+			{
+				code: `
 import { useMemo } from "@rbxts/react";
 
 const value = useMemo(() => new Vector3(1, 2, 3), []);
@@ -101,6 +128,70 @@ const part = useMemo(createPart, []);
 				code: `
 import { useMemo } from "@rbxts/react";
 
+const createPart = () => new Instance("Part");
+
+const parts = useMemo(() => [createPart(), createPart()], []);
+`,
+				errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const createPart = () => new Instance("Part");
+
+const firstPart = useMemo(createPart, []);
+const secondPart = useMemo(createPart, []);
+`,
+				errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const createPart = () => new Instance("Part");
+const createPartAlias = createPart;
+const part = useMemo(createPartAlias, []);
+`,
+				errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const createPart = function createPart() {
+    createPart();
+    return new Instance("Part");
+};
+
+const part = useMemo(createPart, []);
+`,
+				errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+function makeLeaf() {
+    return new Instance("Part");
+}
+
+function makeLeftBranch() {
+    return makeLeaf();
+}
+
+function makeRightBranch() {
+    return makeLeaf();
+}
+
+const value = useMemo(() => [makeLeftBranch(), makeRightBranch()], []);
+`,
+				errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
 function makeLeaf() {
     return new Instance("Part");
 }
@@ -121,6 +212,14 @@ const model = useMemo(() => new Instance("Model"), []);
 `,
 				errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
 				options: [{ environment: "standard" }],
+			},
+			{
+				code: `
+import React from "@rbxts/react";
+
+const model = React?.useMemo(() => new Instance("Model"), []);
+`,
+				errors: [{ data: { constructorName: "Instance" }, messageId: "noNewInUseMemo" }],
 			},
 		],
 		valid: [
@@ -181,6 +280,46 @@ const part = createPart();
 			},
 			{
 				code: `
+export default function () {
+    return new Instance("Part");
+}
+`,
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const createPart = () => new Instance("Part");
+const createPartAlias = shouldCreate ? createPart : undefined;
+const part = useMemo(createPartAlias, []);
+`,
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const createPartAlias = createPart;
+const part = useMemo(createPartAlias, []);
+`,
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+let createPart = createPartAlias;
+let createPartAlias = createPart;
+const part = useMemo(createPartAlias, []);
+`,
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const part = useMemo(createPart, []);
+`,
+			},
+			{
+				code: `
 import { useMemo } from "@rbxts/react";
 
 function makeLeaf() {
@@ -216,6 +355,56 @@ const value = useMemo(() => makeBranch(), []);
 import React from "@rbxts/react";
 
 const value = React.useMemo(() => ({ value: 1 }), []);
+`,
+			},
+			{
+				code: `
+import React from "@rbxts/react";
+
+React.useMemo();
+`,
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const value = useMemo(42, []);
+`,
+			},
+			{
+				code: `
+import { useState } from "@rbxts/react";
+
+const model = useMemo(() => new Instance("Model"), []);
+`,
+			},
+			{
+				code: `
+import React from "@rbxts/react";
+
+const model = React["useMemo"](() => new Instance("Model"), []);
+`,
+			},
+			{
+				code: `
+import React from "@rbxts/react";
+
+const model = React.#useMemo(() => new Instance("Model"), []);
+`,
+				languageOptions: { parserOptions: { ecmaVersion: 2022 } },
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const model = (0, useMemo)(() => new Instance("Model"), []);
+`,
+			},
+			{
+				code: `
+import { useMemo } from "@rbxts/react";
+
+const model = useMemo(() => new InstanceFactory.Model(), []);
 `,
 			},
 		],

@@ -1,14 +1,14 @@
-import { getReactSources, isReactImport } from "@constants/react-sources";
+import { getReactSources, isReactImport } from "$constants/react-sources";
+import { getImportSpecifierName } from "$utilities/ast-utilities";
+import { createRule } from "$utilities/create-rule";
+import { isNamedReactHookCall } from "$utilities/react-hook-utilities";
 import { TSESTree } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
 
-import type { EnvironmentMode } from "@lint-types/environment-mode";
+import type { ReactEnvironmentOptions } from "$types/react-environment-options";
 
 type MessageIds = "unusedUseMemo";
 
-export interface NoUnusedUseMemoOptions {
-	readonly environment?: EnvironmentMode;
-}
+export type NoUnusedUseMemoOptions = ReactEnvironmentOptions;
 
 type Options = [NoUnusedUseMemoOptions?];
 
@@ -16,36 +16,16 @@ const DEFAULT_OPTIONS: Required<NoUnusedUseMemoOptions> = {
 	environment: "roblox-ts",
 };
 
-function isUseMemoCall(
-	node: TSESTree.CallExpression,
-	memoIdentifiers: Set<string>,
-	reactNamespaces: Set<string>,
-): boolean {
-	const { callee } = node;
-
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return memoIdentifiers.has(callee.name);
-
-	if (callee.type !== TSESTree.AST_NODE_TYPES.MemberExpression) return false;
-	if (callee.computed) return false;
-	if (callee.object.type !== TSESTree.AST_NODE_TYPES.Identifier) return false;
-	if (callee.property.type !== TSESTree.AST_NODE_TYPES.Identifier) return false;
-
-	return reactNamespaces.has(callee.object.name) && callee.property.name === "useMemo";
-}
-
 function isStandaloneUseMemo(node: TSESTree.CallExpression): boolean {
 	const { parent } = node;
-	if (!parent) return false;
 
-	if (parent.type === TSESTree.AST_NODE_TYPES.ExpressionStatement) return true;
+	if (parent?.type === TSESTree.AST_NODE_TYPES.ExpressionStatement) return true;
 
-	if (parent.type === TSESTree.AST_NODE_TYPES.UnaryExpression && parent.operator === "void") {
-		const grandparent = parent.parent;
-		if (!grandparent) return false;
-		return grandparent.type === TSESTree.AST_NODE_TYPES.ExpressionStatement;
-	}
-
-	return false;
+	return (
+		parent?.type === TSESTree.AST_NODE_TYPES.UnaryExpression &&
+		parent.operator === "void" &&
+		parent.parent?.type === TSESTree.AST_NODE_TYPES.ExpressionStatement
+	);
 }
 
 const noUnusedUseMemo = createRule<Options, MessageIds>({
@@ -61,7 +41,7 @@ const noUnusedUseMemo = createRule<Options, MessageIds>({
 
 		return {
 			CallExpression(node): void {
-				if (!isUseMemoCall(node, memoIdentifiers, reactNamespaces)) return;
+				if (!isNamedReactHookCall(node, "useMemo", memoIdentifiers, reactNamespaces)) return;
 				if (!isStandaloneUseMemo(node)) return;
 
 				context.report({
@@ -81,25 +61,14 @@ const noUnusedUseMemo = createRule<Options, MessageIds>({
 						continue;
 					}
 
-					if (specifier.type !== TSESTree.AST_NODE_TYPES.ImportSpecifier) continue;
-
-					let importedName: string | undefined;
-					if (specifier.imported.type === TSESTree.AST_NODE_TYPES.Identifier) {
-						importedName = specifier.imported.name;
-					} else if (
-						specifier.imported.type === TSESTree.AST_NODE_TYPES.Literal &&
-						typeof specifier.imported.value === "string"
-					) {
-						importedName = specifier.imported.value;
-					}
-
+					const importedName = getImportSpecifierName(specifier);
 					if (importedName === "useMemo") memoIdentifiers.add(specifier.local.name);
 				}
 			},
 		};
 	},
-	defaultOptions: [{}],
 	meta: {
+		defaultOptions: [{}],
 		docs: {
 			description:
 				"Disallow standalone useMemo calls that ignore the memoized value; use useEffect for side effects instead.",

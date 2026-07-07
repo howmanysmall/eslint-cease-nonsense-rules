@@ -5,6 +5,12 @@ import type { Type, TypeChecker } from "typescript";
 
 const REACT_ELEMENT_TYPE_NAMES = new Set(["Element", "ReactElement", "ReactNode", "ReactChild", "ReactFragment"]);
 
+type NonEmptyArray<TValue> = readonly [TValue, ...Array<TValue>];
+
+function isNonEmptyArray<TValue>(values: ReadonlyArray<TValue>): values is NonEmptyArray<TValue> {
+	return values.length > 0;
+}
+
 export function isFunctionLikeNode(
 	node: TSESTree.Node,
 ): node is TSESTree.FunctionDeclaration | TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression {
@@ -41,10 +47,7 @@ function isDefinitelyNotReactReturnType(checker: TypeChecker, type: Type): boole
 	}
 
 	const symbol = type.getSymbol() ?? type.aliasSymbol;
-	if (symbol) {
-		const name = symbol.getName();
-		if (REACT_ELEMENT_TYPE_NAMES.has(name)) return false;
-	}
+	if (REACT_ELEMENT_TYPE_NAMES.has(symbol?.getName() ?? "")) return false;
 
 	if (
 		typeString === "string" ||
@@ -67,11 +70,9 @@ function isDefinitelyNotReactReturnType(checker: TypeChecker, type: Type): boole
 
 export function isReactComponentFunction(checker: TypeChecker, functionType: Type): boolean {
 	const callSignatures = functionType.getCallSignatures();
-	if (callSignatures.length === 0) return true;
+	if (!isNonEmptyArray(callSignatures)) return true;
 
 	const [firstSignature] = callSignatures;
-	if (!firstSignature) return true;
-
 	const returnType = checker.getReturnTypeOfSignature(firstSignature);
 	return !isDefinitelyNotReactReturnType(checker, returnType);
 }

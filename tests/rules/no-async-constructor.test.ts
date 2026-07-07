@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-async-constructor";
+import rule from "$rules/no-async-constructor";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -321,6 +321,13 @@ class GoodEmpty {
 }
 `,
 			},
+			{
+				code: `
+declare class GoodDeclaredConstructor {
+    constructor();
+}
+`,
+			},
 
 			// Constructor with parameters only
 			{
@@ -409,6 +416,46 @@ class GoodComputedMethod {
         this['dynamicMethod']();
     }
     async dynamicMethod() {}
+}
+`,
+			},
+			{
+				code: `
+class GoodComputedAsyncMethodDefinition {
+    constructor() {
+        this.dynamicMethod();
+    }
+    async ["dynamicMethod"]() {}
+}
+`,
+			},
+			{
+				code: `
+class GoodVoidAsyncMethod {
+    constructor() {
+        void this.load();
+    }
+    async load() {}
+}
+`,
+			},
+			{
+				code: `
+class GoodDetachedAsyncMethod {
+    constructor() {
+        const load = this.load();
+    }
+    async ["load"]() {}
+}
+`,
+			},
+			{
+				code: `
+class GoodDestructuredPromise {
+    constructor() {
+        const [promise] = this.load();
+    }
+    async load() {}
 }
 `,
 			},

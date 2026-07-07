@@ -1,8 +1,8 @@
+import { createRule } from "$utilities/create-rule";
 import { DefinitionType } from "@typescript-eslint/scope-manager";
 import { TSESTree } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
 
-import type { EnvironmentMode } from "@lint-types/environment-mode";
+import type { EnvironmentMode } from "$types/environment-mode";
 import type { TSESLint } from "@typescript-eslint/utils";
 
 export interface HookConfiguration {
@@ -30,10 +30,7 @@ type MessageIds =
 
 type Options = [EffectFunctionOptions?];
 
-interface NormalizedOptions {
-	readonly environment: EnvironmentMode;
-	readonly hooks: ReadonlyArray<HookConfiguration>;
-}
+type NormalizedOptions = Required<EffectFunctionOptions>;
 
 type ResolvedFunction =
 	| {
@@ -158,7 +155,7 @@ const requireNamedEffectFunctions = createRule<Options, MessageIds>({
 		const isRobloxTsMode = environment === "roblox-ts";
 
 		function isAsyncAllowed(hookName: string): boolean {
-			return hookAsyncConfig.get(hookName) ?? false;
+			return hookAsyncConfig.get(hookName) === true;
 		}
 
 		function report(node: TSESTree.CallExpression, messageId: MessageIds, hook: string): void {
@@ -268,8 +265,8 @@ const requireNamedEffectFunctions = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description:
 				"Enforce named effect functions for better debuggability. Prevents inline arrow functions in useEffect and similar hooks.",

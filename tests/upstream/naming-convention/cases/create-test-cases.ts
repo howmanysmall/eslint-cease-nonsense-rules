@@ -1,4 +1,4 @@
-import { selectorTypeToMessageString } from "@utilities/naming-convention-utilities";
+import { selectorTypeToMessageString } from "$utilities/naming-convention-utilities/shared";
 
 import type { InvalidTestCase, ValidTestCase } from "@typescript-eslint/rule-tester";
 
@@ -11,21 +11,9 @@ type RuleValidCase = ValidTestCase<RuleOptions>;
 type FormatTestNames = Record<string, Record<"invalid" | "valid", ReadonlyArray<string>>>;
 
 export const formatTestNames: FormatTestNames = {
-	camelCase: {
-		invalid: ["snake_case", "UPPER_CASE", "UPPER", "StrictPascalCase"],
-		valid: ["strictCamelCase", "lower", "camelCaseUNSTRICT"],
-	},
 	PascalCase: {
 		invalid: ["snake_case", "UPPER_CASE", "strictCamelCase"],
 		valid: ["StrictPascalCase", "Pascal", "I18n", "PascalCaseUNSTRICT", "UPPER"],
-	},
-	snake_case: {
-		invalid: ["UPPER_CASE", "SNAKE_case_UNSTRICT", "strictCamelCase", "StrictPascalCase"],
-		valid: ["snake_case", "lower"],
-	},
-	strictCamelCase: {
-		invalid: ["snake_case", "UPPER_CASE", "UPPER", "StrictPascalCase", "camelCaseUNSTRICT"],
-		valid: ["strictCamelCase", "lower"],
 	},
 	StrictPascalCase: {
 		invalid: ["snake_case", "UPPER_CASE", "UPPER", "strictCamelCase", "PascalCaseUNSTRICT"],
@@ -34,6 +22,18 @@ export const formatTestNames: FormatTestNames = {
 	UPPER_CASE: {
 		invalid: ["lower", "snake_case", "SNAKE_case_UNSTRICT", "strictCamelCase", "StrictPascalCase"],
 		valid: ["UPPER_CASE", "UPPER"],
+	},
+	camelCase: {
+		invalid: ["snake_case", "UPPER_CASE", "UPPER", "StrictPascalCase"],
+		valid: ["strictCamelCase", "lower", "camelCaseUNSTRICT"],
+	},
+	snake_case: {
+		invalid: ["UPPER_CASE", "SNAKE_case_UNSTRICT", "strictCamelCase", "StrictPascalCase"],
+		valid: ["snake_case", "lower"],
+	},
+	strictCamelCase: {
+		invalid: ["snake_case", "UPPER_CASE", "UPPER", "StrictPascalCase", "camelCaseUNSTRICT"],
+		valid: ["strictCamelCase", "lower"],
 	},
 };
 

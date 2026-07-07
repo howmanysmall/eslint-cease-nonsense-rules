@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { parseParameters, parsePattern, parseReplacement } from "@utilities/pattern-replacement/pattern-parser";
+import { parseParameters, parsePattern, parseReplacement } from "$utilities/pattern-replacement/pattern-parser";
 
 vi.setConfig({ testTimeout: 500 });
 
@@ -129,6 +129,13 @@ describe("parsePattern", () => {
 
 		const result = parsePattern("new Vector2($x, $x)", "fromUniform($x)", { x: "!= 0" });
 		expect(result.conditions.get("x")).toBe("!= 0");
+	});
+
+	it("should ignore undefined conditions from when clause", () => {
+		expect.assertions(1);
+
+		const result = parsePattern("new Vector2($x, $x)", "fromUniform($x)", { x: undefined });
+		expect(result.conditions.has("x")).toBe(false);
 	});
 
 	it("should throw on invalid pattern", () => {

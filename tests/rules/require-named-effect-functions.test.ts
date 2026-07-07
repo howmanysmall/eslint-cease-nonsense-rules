@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/require-named-effect-functions";
+import rule from "$rules/require-named-effect-functions";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -230,6 +230,17 @@ useEffect(callback, []);
 `,
 				errors: [{ messageId: "identifierReferencesCallback" }],
 			},
+			// Anonymous function expression via identifier in standard mode
+			{
+				code: `
+const effect = function() {
+    console.log("effect");
+};
+useEffect(effect, []);
+`,
+				errors: [{ messageId: "anonymousFunction" }],
+				options: [{ environment: "standard" }],
+			},
 		],
 		valid: [
 			// Named function reference (function declaration)
@@ -345,6 +356,71 @@ useEffect(effect, []);
 				code: `
 import { handleEffect } from './effects';
 useEffect(handleEffect, []);
+`,
+			},
+			// Unresolved function reference (can't resolve, assume valid)
+			{
+				code: `
+useEffect(handleEffect, []);
+`,
+			},
+			// Declared without initializer (can't resolve function shape, assume valid)
+			{
+				code: `
+let effect;
+useEffect(effect, []);
+`,
+			},
+			// Non-function initializer (can't resolve function shape, assume valid)
+			{
+				code: `
+const effect = 1;
+useEffect(effect, []);
+`,
+			},
+			// No callback argument
+			{
+				code: `
+useEffect();
+`,
+			},
+			// Non-function callback argument
+			{
+				code: `
+useEffect(1, []);
+`,
+			},
+			// Non-callback hook result referenced via identifier is ignored
+			{
+				code: `
+const reference = useRef();
+useEffect(reference, []);
+`,
+			},
+			// Function reference from an upper scope
+			{
+				code: `
+function Component() {
+    function handleEffect() {
+        console.log("effect");
+    }
+
+    function renderEffect() {
+        useEffect(handleEffect, []);
+    }
+
+    renderEffect();
+}
+`,
+			},
+			// Function expression self-reference is not a named declaration
+			{
+				code: `
+const effect = function handleEffect() {
+    useEffect(handleEffect, []);
+};
+
+effect();
 `,
 			},
 			// Async arrow via identifier with per-hook allowAsync enabled

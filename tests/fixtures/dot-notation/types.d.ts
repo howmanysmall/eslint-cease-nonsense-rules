@@ -1,1 +1,1 @@
-export {};
+export const nobodyCares = true;

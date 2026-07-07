@@ -1,13 +1,12 @@
-import { getReactSources, isReactImport } from "@constants/react-sources";
+import { getReactSources, isReactImport } from "$constants/react-sources";
+import { createRule } from "$utilities/create-rule";
+import { isNamedReactHookCall } from "$utilities/react-hook-utilities";
 import { TSESTree } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
 
-import type { EnvironmentMode } from "@lint-types/environment-mode";
+import type { ReactEnvironmentOptions } from "$types/react-environment-options";
 import type { Scope } from "@typescript-eslint/utils/ts-eslint";
 
-export interface RequireReactDisplayNamesOptions {
-	readonly environment?: EnvironmentMode;
-}
+export type RequireReactDisplayNamesOptions = ReactEnvironmentOptions;
 
 type Options = [RequireReactDisplayNamesOptions?];
 type MessageIds = "directContextExport" | "directMemoExport" | "missingContextDisplayName" | "missingMemoDisplayName";
@@ -24,25 +23,9 @@ interface TrackedVariable {
 	readonly node: TSESTree.VariableDeclarator;
 }
 
-function isMemoCall(
-	node: TSESTree.CallExpression,
-	memoIdentifiers: Set<string>,
-	reactNamespaces: Set<string>,
-): boolean {
-	const { callee } = node;
-
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return memoIdentifiers.has(callee.name);
-
-	if (
-		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-		callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
-		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-	) {
-		return reactNamespaces.has(callee.object.name) && callee.property.name === "memo";
-	}
-
-	return false;
-}
+type DisplayNameAssignmentExpression = TSESTree.AssignmentExpression & {
+	readonly left: TSESTree.MemberExpression;
+};
 
 function isCreateContextCall(
 	node: TSESTree.CallExpression,
@@ -74,7 +57,6 @@ function isNodeInExport(node: TSESTree.Node): boolean {
 	while (current) {
 		const { type } = current;
 		if (type === TSESTree.AST_NODE_TYPES.ExportNamedDeclaration) return true;
-		if (type === TSESTree.AST_NODE_TYPES.ExportDefaultDeclaration) return true;
 		current = current.parent;
 	}
 	return false;
@@ -100,10 +82,9 @@ const requireReactDisplayNames = createRule<Options, MessageIds>({
 
 		return {
 			"AssignmentExpression[left.type='MemberExpression'][left.property.name='displayName']"(
-				node: TSESTree.AssignmentExpression,
+				node: DisplayNameAssignmentExpression,
 			): void {
 				const { left } = node;
-				if (left.type !== TSESTree.AST_NODE_TYPES.MemberExpression) return;
 
 				if (left.object.type === TSESTree.AST_NODE_TYPES.Identifier) {
 					displayNameAssignments.add(left.object.name);
@@ -114,7 +95,11 @@ const requireReactDisplayNames = createRule<Options, MessageIds>({
 				const { declaration } = node;
 
 				if (declaration.type === TSESTree.AST_NODE_TYPES.CallExpression) {
-					if (isMemoCall(declaration, memoIdentifiers, reactNamespaces)) {
+					if (
+						isNamedReactHookCall(declaration, "memo", memoIdentifiers, reactNamespaces, {
+							allowComputedIdentifierProperty: true,
+						})
+					) {
 						context.report({
 							messageId: "directMemoExport",
 							node,
@@ -143,11 +128,7 @@ const requireReactDisplayNames = createRule<Options, MessageIds>({
 			},
 
 			ExportNamedDeclaration(node): void {
-				if (!node.specifiers) return;
-
 				for (const specifier of node.specifiers) {
-					if (specifier.type !== TSESTree.AST_NODE_TYPES.ExportSpecifier) continue;
-
 					const localName =
 						specifier.local.type === TSESTree.AST_NODE_TYPES.Identifier
 							? specifier.local.name
@@ -160,7 +141,7 @@ const requireReactDisplayNames = createRule<Options, MessageIds>({
 
 					if (exportedName === "default") {
 						const tracked = trackedVariables.get(localName);
-						if (tracked) {
+						if (tracked !== undefined) {
 							trackedVariables.set(localName, {
 								...tracked,
 								isDefaultExported: true,
@@ -178,7 +159,7 @@ const requireReactDisplayNames = createRule<Options, MessageIds>({
 						specifier.type === TSESTree.AST_NODE_TYPES.ImportNamespaceSpecifier
 					) {
 						reactNamespaces.add(specifier.local.name);
-					} else if (specifier.type === TSESTree.AST_NODE_TYPES.ImportSpecifier) {
+					} else {
 						const importedName =
 							specifier.imported.type === TSESTree.AST_NODE_TYPES.Identifier
 								? specifier.imported.name
@@ -195,12 +176,11 @@ const requireReactDisplayNames = createRule<Options, MessageIds>({
 					const hasDisplayName = displayNameAssignments.has(name);
 					if (hasDisplayName) continue;
 
-					const declaredVariables = context.sourceCode.getDeclaredVariables(tracked.node);
-					const variable = declaredVariables.find((declared) => declared.name === name);
-
 					let isExported = tracked.isDefaultExported;
 
-					if (variable) isExported ||= variable.references.some(isReferenceExported);
+					for (const variable of context.sourceCode.getDeclaredVariables(tracked.node)) {
+						isExported ||= variable.references.some(isReferenceExported);
+					}
 
 					const declarationParent = tracked.node.parent;
 					if (declarationParent?.parent?.type === TSESTree.AST_NODE_TYPES.ExportNamedDeclaration) {
@@ -218,12 +198,16 @@ const requireReactDisplayNames = createRule<Options, MessageIds>({
 			},
 
 			VariableDeclarator(node): void {
-				if (!node.init || node.init.type !== TSESTree.AST_NODE_TYPES.CallExpression) return;
+				if (node.init === null || node.init.type !== TSESTree.AST_NODE_TYPES.CallExpression) return;
 
 				const name = getVariableName(node);
-				if (!name) return;
+				if (name === undefined) return;
 
-				if (isMemoCall(node.init, memoIdentifiers, reactNamespaces)) {
+				if (
+					isNamedReactHookCall(node.init, "memo", memoIdentifiers, reactNamespaces, {
+						allowComputedIdentifierProperty: true,
+					})
+				) {
 					trackedVariables.set(name, {
 						hasDisplayName: false,
 						isDefaultExported: false,
@@ -243,8 +227,8 @@ const requireReactDisplayNames = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [DEFAULT_OPTIONS],
 	meta: {
+		defaultOptions: [DEFAULT_OPTIONS],
 		docs: {
 			description:
 				"Require displayName property on exported React.memo components and React.createContext contexts for better debugging.",

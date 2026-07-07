@@ -13,17 +13,19 @@ function colorizeValue(value: unknown, indent: string): string {
 
 	if (Array.isArray(value)) {
 		if (value.length === 0) return dim("[]");
-		const items = value.map((item) => colorizeValue(item, `${indent}  `));
-		return `[\n${indent}  ${items.join(`,\n${indent}  `)}\n${indent}]`;
+		const items = value.map((item) => colorizeValue(item, `${indent}  `)).join(`,\n${indent}  `);
+		return `[\n${indent}  ${items}\n${indent}]`;
 	}
 
 	if (typeof value === "object" && value !== null) {
 		const entries = Object.entries(value);
 		if (entries.length === 0) return dim("{}");
 
-		const lines = entries.map(
-			([key, subValue]) => `${indent}  ${blue(`"${key}"`)}: ${colorizeValue(subValue, `${indent}  `)}`,
-		);
+		const lines = entries.map(([key, subValue]) => {
+			const blueKey = blue(`"${key}"`);
+			const colorValue = colorizeValue(subValue, `${indent}  `);
+			return `${indent}  ${blueKey}: ${colorValue}`;
+		});
 		return `{\n${lines.join(",\n")}\n${indent}}`;
 	}
 
@@ -62,6 +64,5 @@ function formatRule(entry: RuleEntry): string {
  * @returns The formatted string.
  */
 export function formatRulesAsJson(entries: ReadonlyArray<RuleEntry>): ReturnType<RuleFormatter> {
-	// oxlint-disable-next-line no-array-callback-reference
 	return entries.map(formatRule).join("\n\n");
 }

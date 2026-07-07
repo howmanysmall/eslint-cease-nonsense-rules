@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-god-components";
+import rule from "$rules/no-god-components";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -85,6 +85,35 @@ function Deep() {
 			},
 			{
 				code: `
+function DeepFragment() {
+    return (
+        <>
+            <div>
+                <span />
+            </div>
+        </>
+    );
+}
+`,
+				errors: [{ messageId: "tsxNestingTooDeep" }],
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+				options: [
+					{
+						enforceTargetLines: false,
+						maxLines: 1000,
+						maxStateHooks: 1000,
+						maxTsxNesting: 2,
+						targetLines: 1000,
+					},
+				],
+			},
+			{
+				code: `
 function Statey() {
     const [a, setA] = useState(0);
     const [b, setB] = useState(0);
@@ -125,6 +154,28 @@ function Propsy({ a, b, c }) {
 					{
 						enforceTargetLines: false,
 						maxDestructuredProperties: 2,
+						maxLines: 1000,
+						targetLines: 1000,
+					},
+				],
+			},
+			{
+				code: `
+function PropsyWithRest({ a, ...rest }) {
+    return <div />;
+}
+`,
+				errors: [{ messageId: "tooManyProperties" }],
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+				options: [
+					{
+						enforceTargetLines: false,
+						maxDestructuredProperties: 0,
 						maxLines: 1000,
 						targetLines: 1000,
 					},
@@ -280,6 +331,23 @@ const Components = {
 			},
 			{
 				code: `
+const Components = {
+    Lowercase() {
+        const value = null;
+        return <div>{value}</div>;
+    },
+};
+`,
+				errors: [{ messageId: "nullLiteral" }],
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			{
+				code: `
 class View {
     BigClassMethod() {
         const value = null;
@@ -340,6 +408,74 @@ function Small({ a, b }) {
 						ecmaFeatures: { jsx: true },
 					},
 				},
+			},
+			{
+				code: `
+function PlainProps(props) {
+    return <div>{props.children}</div>;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			{
+				code: `
+function ComponentWithoutJsx() {
+    const value = 1;
+    return value;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			{
+				code: `
+function SparseArray() {
+    const values = [, 1];
+    return <div>{values.length}</div>;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			{
+				code: `
+declare function DeclaredComponent(): JSX.Element;
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			{
+				code: `
+function PartialOptionsUseDefaults() {
+    const [value, setValue] = useBinding(0);
+    if (value > 0) setValue(value - 1);
+    return <div>{value}</div>;
+}
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+				options: [{ maxLines: 1000 }],
 			},
 			// Export default HOC with named function expression (covers getComponentNameFromCallParent export default case)
 			{
@@ -422,6 +558,51 @@ function NotReact() {
 memo(function DirectMemo() {
     return <div />;
 });
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			{
+				code: `
+export default memo(function () {
+    return <div />;
+});
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			{
+				code: `
+const Components = {
+    lowercase: function () {
+        const value = null;
+        return <div>{value}</div>;
+    },
+};
+`,
+				languageOptions: {
+					parser,
+					parserOptions: {
+						ecmaFeatures: { jsx: true },
+					},
+				},
+			},
+			{
+				code: `
+class View {
+    helper() {
+        const value = null;
+        return <div>{value}</div>;
+    }
+}
 `,
 				languageOptions: {
 					parser,

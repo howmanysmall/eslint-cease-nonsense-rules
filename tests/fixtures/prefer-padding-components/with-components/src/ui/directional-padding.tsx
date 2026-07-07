@@ -6,5 +6,3 @@ export interface DirectionalPaddingProperties {
 export function DirectionalPadding({ horizontal, vertical }: DirectionalPaddingProperties): ReadonlyArray<unknown> {
 	return [horizontal, vertical];
 }
-
-export default DirectionalPadding;

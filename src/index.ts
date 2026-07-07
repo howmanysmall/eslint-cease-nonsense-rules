@@ -1,176 +1,103 @@
-import arrayTypeGeneric from "./rules/array-type-generic";
-import banInstances from "./rules/ban-instances";
-import banReactFC from "./rules/ban-react-fc";
-import dotNotation from "./rules/dot-notation";
-import enforceIanitorCheckType from "./rules/enforce-ianitor-check-type";
-import fastFormat from "./rules/fast-format";
-import memoizedEffectDependencies from "./rules/memoized-effect-dependencies";
-import misleadingLuaTupleChecks from "./rules/misleading-lua-tuple-checks";
-import namingConvention from "./rules/naming-convention";
-import noArrayConstructorElements from "./rules/no-array-constructor-elements";
-import noArraySizeAssignment from "./rules/no-array-size-assignment";
-import noAsyncConstructor from "./rules/no-async-constructor";
-import noColor3Constructor from "./rules/no-color3-constructor";
-import noCommentedCode from "./rules/no-commented-code";
-import noConstantConditionWithBreak from "./rules/no-constant-condition-with-break";
-import noEmptyArrayLiteral from "./rules/no-empty-array-literal";
-import noEventsInEventsCallback from "./rules/no-events-in-events-callback";
-import noGodComponents from "./rules/no-god-components";
-import noIdentityMap from "./rules/no-identity-map";
-import noInstanceMethodsWithoutThis from "./rules/no-instance-methods-without-this";
-import noManualChildrenProperty from "./rules/no-manual-children-property";
-import noMemoChildren from "./rules/no-memo-children";
-import noNewInstanceInUseMemo from "./rules/no-new-instance-in-use-memo";
-import noPrint from "./rules/no-print";
-import noRenderHelperFunctions from "./rules/no-render-helper-functions";
-import noShorthandNames from "./rules/no-shorthand-names";
-import noTableCreateMap from "./rules/no-table-create-map";
-import noUnderscoreReactProperties from "./rules/no-underscore-react-properties";
-import noUnusedImports from "./rules/no-unused-imports";
-import noUnusedUseMemo from "./rules/no-unused-use-memo";
-import noUselessUseEffect from "./rules/no-useless-use-effect";
-import noUselessUseMemo from "./rules/no-useless-use-memo";
-import noUselessUseSpring from "./rules/no-useless-use-spring";
-import noWarn from "./rules/no-warn";
-import preferClassProperties from "./rules/prefer-class-properties";
-import preferContextStack from "./rules/prefer-context-stack";
-import preferEarlyReturn from "./rules/prefer-early-return";
-import preferEnumItem from "./rules/prefer-enum-item";
-import preferEnumMember from "./rules/prefer-enum-member";
-import preferIdiv from "./rules/prefer-idiv";
-import preferLocalPortalComponent from "./rules/prefer-local-portal-component";
-import preferModuleScopeConstants from "./rules/prefer-module-scope-constants";
-import preferPaddingComponents from "./rules/prefer-padding-components";
-import preferPascalCaseEnums from "./rules/prefer-pascal-case-enums";
-import preferPatternReplacements from "./rules/prefer-pattern-replacements";
-import preferReadOnlyProperties from "./rules/prefer-read-only-properties";
-import preferSequenceOverloads from "./rules/prefer-sequence-overloads";
-import preferSingleWorldQuery from "./rules/prefer-single-world-query";
-import preferSingularEnums from "./rules/prefer-singular-enums";
-import preferTernaryConditionalRendering from "./rules/prefer-ternary-conditional-rendering";
-import preferUDim2Shorthand from "./rules/prefer-udim2-shorthand";
-import preventAbbreviations from "./rules/prevent-abbreviations";
-import reactHooksStrictReturn from "./rules/react-hooks-strict-return";
-import requireModuleLevelInstantiation from "./rules/require-module-level-instantiation";
-import requireNamedEffectFunctions from "./rules/require-named-effect-functions";
-import requirePairedCalls from "./rules/require-paired-calls";
-import requireReactComponentKeys from "./rules/require-react-component-keys";
-import requireReactDisplayNames from "./rules/require-react-display-names";
-import requireSerializedNumericDataType from "./rules/require-serialized-numeric-data-type";
-import strictComponentBoundaries from "./rules/strict-component-boundaries";
-import useExhaustiveDependencies from "./rules/use-exhaustive-dependencies";
-import useHookAtTopLevel from "./rules/use-hook-at-top-level";
-import {
-	createBanInstancesOptions,
-	createComplexityConfiguration,
-	createDotNotationOptions,
-	createEffectFunctionOptions,
-	createHookConfiguration,
-	createNamingConventionOptions,
-	createNoArrayConstructorElementsOptions,
-	createNoConstantConditionWithBreakOptions,
-	createNoEmptyArrayLiteralOptions,
-	createNoEventsInEventsCallbackOptions,
-	createNoGodComponentsOptions,
-	createNoInstanceMethodsOptions,
-	createNoManualChildrenPropertyOptions,
-	createNoMemoChildrenOptions,
-	createNoNewInstanceInUseMemoOptions,
-	createNoShorthandOptions,
-	createNoUnusedImportsOptions,
-	createNoUnusedUseMemoOptions,
-	createNoUselessUseEffectOptions,
-	createNoUselessUseMemoOptions,
-	createNoUselessUseSpringOptions,
-	createPairConfiguration,
-	createPreferEnumItemOptions,
-	createPreferPatternReplacementsOptions,
-	createPreventAbbreviationsOptions,
-	createReactKeysOptions,
-	createRequireModuleLevelInstantiationOptions,
-	createRequirePairedCallsOptions,
-	createRequireReactDisplayNamesOptions,
-	createRequireSerializedNumericDataTypeOptions,
-	createUseExhaustiveDependenciesOptions,
-	createUseHookAtTopLevelOptions,
-	defaultRobloxProfilePair,
-} from "./utilities/configure-utilities";
-import { pattern } from "./utilities/pattern-replacement";
+import arrayTypeGeneric from "$rules/array-type-generic";
+import banInstances from "$rules/ban-instances";
+import banReactFC from "$rules/ban-react-fc";
+import dotNotation from "$rules/dot-notation";
+import enforceIanitorCheckType from "$rules/enforce-ianitor-check-type";
+import fastFormat from "$rules/fast-format";
+import memoizedEffectDependencies from "$rules/memoized-effect-dependencies";
+import misleadingLuaTupleChecks from "$rules/misleading-lua-tuple-checks";
+import namingConvention from "$rules/naming-convention";
+import noArrayConstructorElements from "$rules/no-array-constructor-elements";
+import noArraySizeAssignment from "$rules/no-array-size-assignment";
+import noAsyncConstructor from "$rules/no-async-constructor";
+import noColor3Constructor from "$rules/no-color3-constructor";
+import noCommentedCode from "$rules/no-commented-code";
+import noConstantConditionWithBreak from "$rules/no-constant-condition-with-break";
+import noEmptyArrayLiteral from "$rules/no-empty-array-literal";
+import noEventsInEventsCallback from "$rules/no-events-in-events-callback";
+import noGodComponents from "$rules/no-god-components";
+import noIdentityMap from "$rules/no-identity-map";
+import noInstanceMethodsWithoutThis from "$rules/no-instance-methods-without-this";
+import noManualChildrenProperty from "$rules/no-manual-children-property";
+import noMemoChildren from "$rules/no-memo-children";
+import noNewInstanceInUseMemo from "$rules/no-new-instance-in-use-memo";
+import noPrint from "$rules/no-print";
+import noRenderHelperFunctions from "$rules/no-render-helper-functions";
+import noShorthandNames from "$rules/no-shorthand-names";
+import noTableCreateMap from "$rules/no-table-create-map";
+import noUnderscoreReactProperties from "$rules/no-underscore-react-properties";
+import noUnusedImports from "$rules/no-unused-imports";
+import noUnusedUseMemo from "$rules/no-unused-use-memo";
+import noUselessUseEffect from "$rules/no-useless-use-effect";
+import noUselessUseMemo from "$rules/no-useless-use-memo";
+import noUselessUseSpring from "$rules/no-useless-use-spring";
+import noWarn from "$rules/no-warn";
+import preferClassProperties from "$rules/prefer-class-properties";
+import preferContextStack from "$rules/prefer-context-stack";
+import preferEarlyReturn from "$rules/prefer-early-return";
+import preferEnumItem from "$rules/prefer-enum-item";
+import preferEnumMember from "$rules/prefer-enum-member";
+import preferIdiv from "$rules/prefer-idiv";
+import preferLocalPortalComponent from "$rules/prefer-local-portal-component";
+import preferModuleScopeConstants from "$rules/prefer-module-scope-constants";
+import preferPaddingComponents from "$rules/prefer-padding-components";
+import preferPascalCaseEnums from "$rules/prefer-pascal-case-enums";
+import preferPatternReplacements from "$rules/prefer-pattern-replacements";
+import preferReadOnlyProperties from "$rules/prefer-read-only-properties";
+import preferSequenceOverloads from "$rules/prefer-sequence-overloads";
+import preferSingleWorldQuery from "$rules/prefer-single-world-query";
+import preferSingularEnums from "$rules/prefer-singular-enums";
+import preferTernaryConditionalRendering from "$rules/prefer-ternary-conditional-rendering";
+import preferUDim2Shorthand from "$rules/prefer-udim2-shorthand";
+import preventAbbreviations from "$rules/prevent-abbreviations";
+import reactHooksStrictReturn from "$rules/react-hooks-strict-return";
+import requireModuleLevelInstantiation from "$rules/require-module-level-instantiation";
+import requireNamedEffectFunctions from "$rules/require-named-effect-functions";
+import requirePairedCalls from "$rules/require-paired-calls";
+import requireReactComponentKeys from "$rules/require-react-component-keys";
+import requireReactDisplayNames from "$rules/require-react-display-names";
+import requireSerializedNumericDataType from "$rules/require-serialized-numeric-data-type";
+import strictComponentBoundaries from "$rules/strict-component-boundaries";
+import useExhaustiveDependencies from "$rules/use-exhaustive-dependencies";
+import useHookAtTopLevel from "$rules/use-hook-at-top-level";
 
+import type { ReadonlyRecord } from "$types/utility-types.d";
 import type { LooseRuleDefinition } from "@typescript-eslint/utils/ts-eslint";
 
-import type { ReadonlyRecord } from "./types/utility-types.d";
-
-export type { BanInstancesOptions } from "./rules/ban-instances";
-export type { ComplexityConfiguration } from "./rules/enforce-ianitor-check-type";
-export type { DotNotationOptions } from "./rules/dot-notation";
-export type { MemoizedEffectDependenciesOptions } from "./rules/memoized-effect-dependencies";
-export type { NamingConventionOptions } from "./rules/naming-convention";
-export type { TypeMatcher, TypeReference } from "./utilities/naming-convention-utilities/types";
-export type { NoArrayConstructorElementsOptions } from "./rules/no-array-constructor-elements";
-export type { NoArraySizeAssignmentOptions } from "./rules/no-array-size-assignment";
-export type { NoConstantConditionWithBreakOptions } from "./rules/no-constant-condition-with-break";
-export type { NoEmptyArrayLiteralOptions } from "./rules/no-empty-array-literal";
-export type { NoEventsInEventsCallbackOptions } from "./rules/no-events-in-events-callback";
-export type { NoGodComponentsOptions } from "./rules/no-god-components";
-export type { NoIdentityMapOptions } from "./rules/no-identity-map";
-export type { NoInstanceMethodsOptions } from "./rules/no-instance-methods-without-this";
-export type { NoManualChildrenPropertyOptions } from "./rules/no-manual-children-property";
-export type { NoMemoChildrenOptions } from "./rules/no-memo-children";
-export type { NoNewInstanceInUseMemoOptions } from "./rules/no-new-instance-in-use-memo";
-export type { NoShorthandOptions } from "./rules/no-shorthand-names";
-export type { NoUnusedImportsOptions } from "./rules/no-unused-imports";
-export type { NoUnusedUseMemoOptions } from "./rules/no-unused-use-memo";
-export type { NoUselessUseEffectOptions } from "./rules/no-useless-use-effect";
-export type { NoUselessUseMemoOptions } from "./rules/no-useless-use-memo";
-export type { NoUselessUseSpringOptions } from "./rules/no-useless-use-spring";
-export type { PreferEnumItemOptions } from "./rules/prefer-enum-item";
-export type { PreventAbbreviationsOptions } from "./rules/prevent-abbreviations";
-export type { RequireModuleLevelInstantiationOptions } from "./rules/require-module-level-instantiation";
-export type { EffectFunctionOptions, HookConfiguration } from "./rules/require-named-effect-functions";
-export type { PairConfiguration, RequirePairedCallsOptions } from "./rules/require-paired-calls";
-export type { ReactKeysOptions } from "./rules/require-react-component-keys";
-export type { RequireReactDisplayNamesOptions } from "./rules/require-react-display-names";
-export type { RequireSerializedNumericDataTypeOptions } from "./rules/require-serialized-numeric-data-type";
-export type { HookEntry, UseExhaustiveDependenciesOptions } from "./rules/use-exhaustive-dependencies";
-export type { EnvironmentMode } from "./types/environment-mode";
-export {
-	createBanInstancesOptions,
-	createComplexityConfiguration,
-	createDotNotationOptions,
-	createEffectFunctionOptions,
-	createHookConfiguration,
-	createNamingConventionOptions,
-	createNoArrayConstructorElementsOptions,
-	createNoConstantConditionWithBreakOptions,
-	createNoEmptyArrayLiteralOptions,
-	createNoEventsInEventsCallbackOptions,
-	createNoGodComponentsOptions,
-	createNoInstanceMethodsOptions,
-	createNoManualChildrenPropertyOptions,
-	createNoMemoChildrenOptions,
-	createNoNewInstanceInUseMemoOptions,
-	createNoShorthandOptions,
-	createNoUnusedImportsOptions,
-	createNoUnusedUseMemoOptions,
-	createNoUselessUseEffectOptions,
-	createNoUselessUseMemoOptions,
-	createNoUselessUseSpringOptions,
-	createPairConfiguration,
-	createPreferEnumItemOptions,
-	createPreferPatternReplacementsOptions,
-	createPreventAbbreviationsOptions,
-	createReactKeysOptions,
-	createRequireModuleLevelInstantiationOptions,
-	createRequirePairedCallsOptions,
-	createRequireReactDisplayNamesOptions,
-	createRequireSerializedNumericDataTypeOptions,
-	createUseExhaustiveDependenciesOptions,
-	createUseHookAtTopLevelOptions,
-	defaultRobloxProfilePair,
-};
-export type { Pattern, PreferPatternReplacementsOptions } from "./utilities/pattern-replacement";
-export { pattern };
+export type { BanInstancesOptions } from "$rules/ban-instances";
+export type { ComplexityConfiguration } from "$rules/enforce-ianitor-check-type";
+export type { DotNotationOptions } from "$rules/dot-notation";
+export type { MemoizedEffectDependenciesOptions } from "$rules/memoized-effect-dependencies";
+export type { NamingConventionOptions } from "$rules/naming-convention";
+export type { TypeMatcher, TypeReference } from "$utilities/naming-convention-utilities/types";
+export type { NoArrayConstructorElementsOptions } from "$rules/no-array-constructor-elements";
+export type { NoArraySizeAssignmentOptions } from "$rules/no-array-size-assignment";
+export type { NoConstantConditionWithBreakOptions } from "$rules/no-constant-condition-with-break";
+export type { NoEmptyArrayLiteralOptions } from "$rules/no-empty-array-literal";
+export type { NoEventsInEventsCallbackOptions } from "$rules/no-events-in-events-callback";
+export type { NoGodComponentsOptions } from "$rules/no-god-components";
+export type { NoIdentityMapOptions } from "$rules/no-identity-map";
+export type { NoInstanceMethodsOptions } from "$rules/no-instance-methods-without-this";
+export type { NoManualChildrenPropertyOptions } from "$rules/no-manual-children-property";
+export type { NoMemoChildrenOptions } from "$rules/no-memo-children";
+export type { NoNewInstanceInUseMemoOptions } from "$rules/no-new-instance-in-use-memo";
+export type { NoShorthandOptions } from "$rules/no-shorthand-names";
+export type { NoUnusedImportsOptions } from "$rules/no-unused-imports";
+export type { NoUnusedUseMemoOptions } from "$rules/no-unused-use-memo";
+export type { NoUselessUseEffectOptions } from "$rules/no-useless-use-effect";
+export type { NoUselessUseMemoOptions } from "$rules/no-useless-use-memo";
+export type { NoUselessUseSpringOptions } from "$rules/no-useless-use-spring";
+export type { PreferEnumItemOptions } from "$rules/prefer-enum-item";
+export type { PreventAbbreviationsOptions } from "$rules/prevent-abbreviations";
+export type { RequireModuleLevelInstantiationOptions } from "$rules/require-module-level-instantiation";
+export type { EffectFunctionOptions, HookConfiguration } from "$rules/require-named-effect-functions";
+export type { PairConfiguration, RequirePairedCallsOptions } from "$rules/require-paired-calls";
+export type { ReactKeysOptions } from "$rules/require-react-component-keys";
+export type { RequireReactDisplayNamesOptions } from "$rules/require-react-display-names";
+export type { RequireSerializedNumericDataTypeOptions } from "$rules/require-serialized-numeric-data-type";
+export type { HookEntry, UseExhaustiveDependenciesOptions } from "$rules/use-exhaustive-dependencies";
+export type { EnvironmentMode } from "$types/environment-mode";
+export type { Pattern, PreferPatternReplacementsOptions } from "$utilities/pattern-replacement/pattern-types";
 
 /**
  * ESLint plugin entry for eslint-cease-nonsense-rules.
@@ -317,3 +244,40 @@ const plugin: Plugin = {
 } as const;
 
 export default plugin;
+
+export {
+	createBanInstancesOptions,
+	createComplexityConfiguration,
+	createDotNotationOptions,
+	createEffectFunctionOptions,
+	createHookConfiguration,
+	createNamingConventionOptions,
+	createNoArrayConstructorElementsOptions,
+	createNoConstantConditionWithBreakOptions,
+	createNoEmptyArrayLiteralOptions,
+	createNoEventsInEventsCallbackOptions,
+	createNoGodComponentsOptions,
+	createNoInstanceMethodsOptions,
+	createNoManualChildrenPropertyOptions,
+	createNoMemoChildrenOptions,
+	createNoNewInstanceInUseMemoOptions,
+	createNoShorthandOptions,
+	createNoUnusedImportsOptions,
+	createNoUnusedUseMemoOptions,
+	createNoUselessUseEffectOptions,
+	createNoUselessUseMemoOptions,
+	createNoUselessUseSpringOptions,
+	createPairConfiguration,
+	createPreferEnumItemOptions,
+	createPreferPatternReplacementsOptions,
+	createPreventAbbreviationsOptions,
+	createReactKeysOptions,
+	createRequireModuleLevelInstantiationOptions,
+	createRequirePairedCallsOptions,
+	createRequireReactDisplayNamesOptions,
+	createRequireSerializedNumericDataTypeOptions,
+	createUseExhaustiveDependenciesOptions,
+	createUseHookAtTopLevelOptions,
+	defaultRobloxProfilePair,
+} from "$utilities/configure-utilities";
+export { pattern } from "$utilities/pattern-replacement/pattern-types";

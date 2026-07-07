@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/no-underscore-react-properties";
+import rule from "$rules/no-underscore-react-properties";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "@typescript-eslint/rule-tester";
 

@@ -1,6 +1,6 @@
-import { join } from "node:path";
+import nodePath from "node:path";
 import { describe, vi } from "vitest";
-import rule from "@rules/misleading-lua-tuple-checks";
+import rule from "$rules/misleading-lua-tuple-checks";
 import tsParser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -8,8 +8,8 @@ const testDirectory = import.meta.dirname;
 
 vi.setConfig({ testTimeout: 30_000 });
 
-const fixturesDir = join(testDirectory, "../fixtures/misleading-lua-tuple-checks");
-const filename = join(fixturesDir, "input.ts");
+const fixturesDir = nodePath.join(testDirectory, "../fixtures/misleading-lua-tuple-checks");
+const filename = nodePath.join(fixturesDir, "input.ts");
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -19,7 +19,7 @@ const ruleTester = new RuleTester({
 			ecmaFeatures: { jsx: true },
 			projectService: {
 				allowDefaultProject: ["*.ts", "*.tsx"],
-				defaultProject: join(fixturesDir, "tsconfig.json"),
+				defaultProject: nodePath.join(fixturesDir, "tsconfig.json"),
 				maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 64,
 			},
 			tsconfigRootDir: fixturesDir,
@@ -45,6 +45,9 @@ const wrappedTargetDeclarations =
 
 const wrappedArrayDeclarations =
 	"type WrappedArray<T> = Array<T>; declare const wrappedArray: WrappedArray<LuaTuple<[string]>>;";
+
+const namespacedIterableDeclarations =
+	"declare namespace Types { interface IterableFunction<T> { (this: unknown): T; } }";
 
 const tupleDeclarations = `
 type LuaTuple<T extends unknown[]> = T & { readonly LUA_TUPLE: never };
@@ -75,6 +78,32 @@ const validSamples = [
 	"if (!game.Loaded.Wait()[0]) {}",
 	"if (a && game.Loaded.Wait()[0]) {}",
 	"if (game.Loaded.Wait()[0] || b) {}",
+	"function check<T extends LuaTuple<[string]>>(tuple: T) { if (tuple[0]) {} }",
+	"interface EmptyReference { [Symbol.iterator](): Iterator<string>; } declare const emptyReference: EmptyReference; for (const value of emptyReference) {}",
+	"interface IterableFunction<T> { (this: unknown): T; } function iterate<T extends IterableFunction<string>>(iterable: T) { for (const value of iterable) {} }",
+	"function iterate<T extends string>([iterable]: [T]) { for (const value of iterable) {} }",
+	"function iterate(iterable: string[]) { for (const value of iterable) {} }",
+	"declare namespace Types { type Box<T> = { value: T }; } declare const values: Types.Box<LuaTuple<[string]>>; for (const value of values) {}",
+	"type Box<T> = { values: Array<T> }; declare const boxed: Box<LuaTuple<[string]>>; for (const value of boxed) {}",
+	"interface IterableFunction<T = string> { (this: unknown): T; } declare const bareIterable: IterableFunction; for (const value of bareIterable) {}",
+	"function iterate<T extends string, U extends IterableFunction<LuaTuple<[string]>>>(iterable: T) { for (const value of iterable) {} }",
+	"declare const values: MissingArrayAlias<LuaTuple<[string]>>; for (const value of values) {}",
+	"type CircularArray<T> = CircularArray<T>; declare const values: CircularArray<LuaTuple<[string]>>; for (const value of values) {}",
+	"interface IterableFunction { (this: unknown): string; } declare const bareIterable: IterableFunction; for (const value of bareIterable) {}",
+	"const createValues = () => [1, 2, 3]; for (const value of createValues()) {}",
+	"function createValues() { return [1, 2, 3]; } for (const value of createValues()) {}",
+	"function createValues(): Array<number> { return [1, 2, 3]; } for (const value of createValues()) {}",
+	"function createValues(): number[] { return [1, 2, 3]; } for (const value of createValues()) {}",
+	"function createValues(): number[] { return [1, 2, 3]; } for (const first of createValues()) {} for (const second of createValues()) {}",
+	"declare namespace Types { type Values = Array<number>; } function createValues(): Types.Values { return [1, 2, 3]; } for (const value of createValues()) {}",
+	"declare const source: { create: Function }; for (const value of source.create()) {}",
+	"declare const createValues: Function; for (const value of createValues()) {}",
+	"for (const value of (function (): number[] { return []; })()) {}",
+	"for (const value of missingIterable) {}",
+	"(function (): number[] { return []; })();",
+	"if (typeof game.Loaded.Wait()) {}",
+	`${namespacedIterableDeclarations} declare const values: Types.IterableFunction<string>; for (const value of values()) {}`,
+	`${namespacedIterableDeclarations} function iterate(iterable: Types.IterableFunction<string>) { for (const value of iterable) {} }`,
 	'const [player] = game.GetService("Players").PlayerAdded.Wait();',
 	'const player = game.GetService("Players").PlayerAdded.Wait()[0];',
 	"let player: LuaTuple<[Player]>;",
@@ -179,6 +208,11 @@ const invalidCases = [
 		output: `${iterableDeclarations} for (const [x] of getIterable()) {}`,
 	},
 	{
+		code: `${iterableDeclarations} for (const first of getIterable()) {} for (const second of getIterable()) {}`,
+		errors: [{ messageId: "luaTupleDeclaration" }, { messageId: "luaTupleDeclaration" }],
+		output: `${iterableDeclarations} for (const [first] of getIterable()) {} for (const [second] of getIterable()) {}`,
+	},
+	{
 		code: `${iterableDeclarations} let x; for (x of getIterable()) {}`,
 		errors: [{ messageId: "luaTupleDeclaration" }],
 		output: `${iterableDeclarations} let x; for ([x] of getIterable()) {}`,
@@ -194,6 +228,11 @@ const invalidCases = [
 		output: `${constrainedIterableDeclarations} for (const [value] of getConstrainedIterable()) {}`,
 	},
 	{
+		code: "function createIterable<T extends IterableFunction<LuaTuple<[string]>>>(): T { throw new Error(); } for (const value of createIterable()) {}",
+		errors: [{ messageId: "luaTupleDeclaration" }],
+		output: "function createIterable<T extends IterableFunction<LuaTuple<[string]>>>(): T { throw new Error(); } for (const [value] of createIterable()) {}",
+	},
+	{
 		code: "function iterate<T extends IterableFunction<LuaTuple<[string]>>>(iterable: T) { for (const value of iterable) {} }",
 		errors: [{ messageId: "luaTupleDeclaration" }],
 		output: "function iterate<T extends IterableFunction<LuaTuple<[string]>>>(iterable: T) { for (const [value] of iterable) {} }",
@@ -202,6 +241,46 @@ const invalidCases = [
 		code: `${wrappedArrayDeclarations} for (const value of wrappedArray) {}`,
 		errors: [{ messageId: "luaTupleDeclaration" }],
 		output: `${wrappedArrayDeclarations} for (const [value] of wrappedArray) {}`,
+	},
+	{
+		code: "function check<T extends LuaTuple<[string]>>(tuple: T) { if (tuple) {} }",
+		errors: [{ messageId: "misleadingLuaTupleCheck" }],
+		output: "function check<T extends LuaTuple<[string]>>(tuple: T) { if (tuple[0]) {} }",
+	},
+	{
+		code: "interface TupleIndexIterable { [index: number]: LuaTuple<[string]>; } declare const tupleIndexIterable: TupleIndexIterable; for (const value of tupleIndexIterable) {}",
+		errors: [{ messageId: "luaTupleDeclaration" }],
+		output: "interface TupleIndexIterable { [index: number]: LuaTuple<[string]>; } declare const tupleIndexIterable: TupleIndexIterable; for (const [value] of tupleIndexIterable) {}",
+	},
+	{
+		code: `${iterableDeclarations} declare const unionIterable: IterableFunction<LuaTuple<[string]>> | IterableFunction<string>; for (const value of unionIterable) {}`,
+		errors: [{ messageId: "luaTupleDeclaration" }],
+		output: `${iterableDeclarations} declare const unionIterable: IterableFunction<LuaTuple<[string]>> | IterableFunction<string>; for (const [value] of unionIterable) {}`,
+	},
+	{
+		code: "type ReadonlyWrappedArray<T> = ReadonlyArray<T>; declare const values: ReadonlyWrappedArray<LuaTuple<[string]>>; for (const value of values) {}",
+		errors: [{ messageId: "luaTupleDeclaration" }],
+		output: "type ReadonlyWrappedArray<T> = ReadonlyArray<T>; declare const values: ReadonlyWrappedArray<LuaTuple<[string]>>; for (const [value] of values) {}",
+	},
+	{
+		code: "declare const values: Array<LuaTuple<[string]>>; for (const value of values) {}",
+		errors: [{ messageId: "luaTupleDeclaration" }],
+		output: "declare const values: Array<LuaTuple<[string]>>; for (const [value] of values) {}",
+	},
+	{
+		code: "declare const values: LuaTuple<[string]>[]; for (const value of values) {}",
+		errors: [{ messageId: "luaTupleDeclaration" }],
+		output: "declare const values: LuaTuple<[string]>[]; for (const [value] of values) {}",
+	},
+	{
+		code: "declare const values: [LuaTuple<[string]>]; for (const value of values) {}",
+		errors: [{ messageId: "luaTupleDeclaration" }],
+		output: "declare const values: [LuaTuple<[string]>]; for (const [value] of values) {}",
+	},
+	{
+		code: "const source = { create<T extends IterableFunction<LuaTuple<[string]>>>(): T { throw new Error(); } }; for (const value of source.create()) {}",
+		errors: [{ messageId: "luaTupleDeclaration" }],
+		output: "const source = { create<T extends IterableFunction<LuaTuple<[string]>>>(): T { throw new Error(); } }; for (const [value] of source.create()) {}",
 	},
 ];
 

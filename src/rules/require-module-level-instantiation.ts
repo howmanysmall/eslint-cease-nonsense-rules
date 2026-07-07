@@ -1,10 +1,8 @@
+import { createRule } from "$utilities/create-rule";
 import { ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "@utilities/create-rule";
-import Typebox from "typebox";
-import { Compile } from "typebox/compile";
 
-import type { ReadonlyRecord } from "@lint-types/utility-types";
+import type { ReadonlyRecord } from "$types/utility-types";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 /**
@@ -26,14 +24,8 @@ export interface RequireModuleLevelInstantiationOptions {
 	readonly classes: ReadonlyRecord<string, string>;
 }
 
-type Options = [RequireModuleLevelInstantiationOptions?];
+type Options = [RequireModuleLevelInstantiationOptions];
 type MessageIds = "mustBeModuleLevel";
-
-const isOptionsObject = Compile(
-	Typebox.Object({
-		classes: Typebox.Record(Typebox.String(), Typebox.String()),
-	}),
-);
 
 interface TrackedImport {
 	readonly className: string;
@@ -44,9 +36,7 @@ interface NormalizedConfiguration {
 	readonly trackedImports: ReadonlyMap<string, TrackedImport>;
 }
 
-function normalizeConfiguration(options: unknown): NormalizedConfiguration {
-	if (!isOptionsObject.Check(options)) return { trackedImports: new Map() };
-
+function normalizeConfiguration(options: RequireModuleLevelInstantiationOptions): NormalizedConfiguration {
 	const { classes } = options;
 	const trackedImports = new Map<string, TrackedImport>();
 
@@ -56,6 +46,50 @@ function normalizeConfiguration(options: unknown): NormalizedConfiguration {
 
 function isTopScope({ type }: TSESLint.Scope.Scope): boolean {
 	return type === ScopeType.module || type === ScopeType.global;
+}
+
+function getImportedClassName(specifier: TSESTree.ImportClause, className: string): string | undefined {
+	if (specifier.type === AST_NODE_TYPES.ImportDefaultSpecifier && specifier.local.name === className) {
+		return specifier.local.name;
+	}
+
+	if (specifier.type !== AST_NODE_TYPES.ImportSpecifier) return undefined;
+
+	const importedName =
+		specifier.imported.type === AST_NODE_TYPES.Identifier ? specifier.imported.name : specifier.imported.value;
+
+	return importedName === className ? specifier.local.name : undefined;
+}
+
+function trackImportSpecifier(
+	specifier: TSESTree.ImportClause,
+	trackedImports: ReadonlyMap<string, TrackedImport>,
+	source: string,
+	localBindings: Map<string, TrackedImport>,
+): void {
+	for (const [className, tracked] of trackedImports) {
+		if (tracked.source !== source) continue;
+
+		const localName = getImportedClassName(specifier, className);
+		if (localName !== undefined) localBindings.set(localName, tracked);
+	}
+}
+
+function getTrackedConstructor(
+	node: TSESTree.NewExpression,
+	localBindings: ReadonlyMap<string, TrackedImport>,
+	trackedImports: ReadonlyMap<string, TrackedImport>,
+): TrackedImport | undefined {
+	if (node.callee.type === AST_NODE_TYPES.Identifier) return localBindings.get(node.callee.name);
+
+	if (
+		node.callee.type === AST_NODE_TYPES.MemberExpression &&
+		node.callee.property.type === AST_NODE_TYPES.Identifier
+	) {
+		return trackedImports.get(node.callee.property.name);
+	}
+
+	return undefined;
 }
 
 const requireModuleLevelInstantiation = createRule<Options, MessageIds>({
@@ -70,46 +104,13 @@ const requireModuleLevelInstantiation = createRule<Options, MessageIds>({
 				const source = node.source.value;
 
 				for (const specifier of node.specifiers) {
-					for (const [className, tracked] of trackedImports) {
-						if (tracked.source !== source) continue;
-
-						if (
-							specifier.type === AST_NODE_TYPES.ImportDefaultSpecifier &&
-							specifier.local.name === className
-						) {
-							localBindings.set(specifier.local.name, tracked);
-						}
-
-						if (specifier.type === AST_NODE_TYPES.ImportSpecifier) {
-							const importedName =
-								specifier.imported.type === AST_NODE_TYPES.Identifier
-									? specifier.imported.name
-									: specifier.imported.value;
-
-							if (importedName === className) localBindings.set(specifier.local.name, tracked);
-						}
-					}
+					trackImportSpecifier(specifier, trackedImports, source, localBindings);
 				}
 			},
 
 			NewExpression(node: TSESTree.NewExpression): void {
-				let trackedInfo: TrackedImport | undefined;
-				let calleeName: string | undefined;
-
-				if (node.callee.type === AST_NODE_TYPES.Identifier) {
-					calleeName = node.callee.name;
-					trackedInfo = localBindings.get(calleeName);
-				}
-
-				if (node.callee.type === AST_NODE_TYPES.MemberExpression) {
-					const { property } = node.callee;
-					if (property.type === AST_NODE_TYPES.Identifier) {
-						calleeName = property.name;
-						trackedInfo = trackedImports.get(calleeName);
-					}
-				}
-
-				if (!(trackedInfo && calleeName)) return;
+				const trackedInfo = getTrackedConstructor(node, localBindings, trackedImports);
+				if (trackedInfo === undefined) return;
 
 				const scope = context.sourceCode.getScope(node);
 				if (isTopScope(scope)) return;
@@ -125,8 +126,8 @@ const requireModuleLevelInstantiation = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [{ classes: {} }],
 	meta: {
+		defaultOptions: [{ classes: {} }],
 		docs: {
 			description:
 				"Require certain classes to be instantiated at module level rather than inside functions. Classes like Log should be instantiated once at module scope, not recreated on every function call.",

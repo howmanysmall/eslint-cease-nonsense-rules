@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/ban-instances";
+import rule from "$rules/ban-instances";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -58,6 +58,11 @@ describe("ban-instances", () => {
 				errors: [{ messageId: "bannedInstanceCustom" }],
 				options: [{ bannedInstances: { Part: "Use MeshPart instead" } }],
 			},
+			{
+				code: 'new Instance("Part");',
+				errors: [{ messageId: "bannedInstance" }],
+				options: [{ bannedInstances: { Part: "" } }],
+			},
 			// Object config with custom messages - JSX (lowercase)
 			{
 				code: "<script />;",
@@ -115,7 +120,14 @@ describe("ban-instances", () => {
 			// No config (empty bannedInstances)
 			{
 				code: 'new Instance("Part");',
+			},
+			{
+				code: 'new Instance("Part");',
 				options: [{ bannedInstances: [] }],
+			},
+			{
+				code: 'new Instance("Part");',
+				options: [{}],
 			},
 			// Non-banned classes - new Instance()
 			{
@@ -143,6 +155,10 @@ describe("ban-instances", () => {
 			// Not Instance constructor
 			{
 				code: 'new SomethingElse("Part");',
+				options: [{ bannedInstances: ["Part"] }],
+			},
+			{
+				code: 'new namespace.Instance("Part");',
 				options: [{ bannedInstances: ["Part"] }],
 			},
 			// Variable argument (not a literal)

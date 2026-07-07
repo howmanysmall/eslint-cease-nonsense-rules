@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import plugin, { rules } from "@small-rules";
+import plugin, { rules } from "$small-rules";
 
 // Minimal smoke test that our plugin shape is valid
 

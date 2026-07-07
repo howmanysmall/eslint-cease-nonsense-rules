@@ -1,7 +1,7 @@
 import { describe } from "vitest";
-import rule from "@rules/prefer-pattern-replacements";
+import rule from "$rules/prefer-pattern-replacements";
+import { pattern } from "$utilities/pattern-replacement/pattern-types";
 import parser from "@typescript-eslint/parser";
-import { pattern } from "@utilities/pattern-replacement";
 import { RuleTester } from "eslint";
 
 const ruleTester = new RuleTester({
@@ -320,6 +320,10 @@ describe("prefer-pattern-replacements", () => {
 			},
 			{
 				code: "const x = new Vector2(1, 1);",
+				options: [{ patterns: [pattern({ match: "new Vector2(0, 0)", replacement: "Vector2.zero" })] }],
+			},
+			{
+				code: "const x = UDim2.fromScale(1, 1);",
 				options: [{ patterns: [pattern({ match: "new Vector2(0, 0)", replacement: "Vector2.zero" })] }],
 			},
 			{

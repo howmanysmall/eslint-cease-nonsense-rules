@@ -1,6 +1,8 @@
-import { AST_NODE_TYPES } from "@typescript-eslint/utils";
-import { createRule } from "@utilities/create-rule";
-import { IndexKind, isExpression, isTypeNode } from "typescript";
+import { createRule } from "$utilities/create-rule";
+import { getDefinedValue } from "$utilities/defined-utilities";
+import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
+import { regex } from "arktype";
+import { IndexKind } from "typescript";
 
 import type { TSESTree } from "@typescript-eslint/types";
 import type { TSESLint } from "@typescript-eslint/utils";
@@ -34,7 +36,11 @@ interface NoEmptyArrayLiteralAllowedContexts {
 	readonly typeAssertions?: boolean;
 }
 
-type Options = [NoEmptyArrayLiteralOptions?];
+type Options = [NoEmptyArrayLiteralOptions];
+type ParserServices = ReturnType<typeof ESLintUtils.getParserServices>;
+type TypeAwareParserServices = Except<ParserServices, "program"> & {
+	readonly program: NonNullable<ParserServices["program"]>;
+};
 
 type ResolvedOptions = Required<NoEmptyArrayLiteralOptions> & {
 	readonly allowedEmptyArrayContexts: NoEmptyArrayLiteralContextDefaults;
@@ -68,17 +74,14 @@ const RULE_DOCS = {
 
 function getTransparentParentExpression(expression: TSESTree.Expression): TSESTree.Expression | undefined {
 	const { parent } = expression;
-	if (!parent) return undefined;
 
 	switch (parent.type) {
-		case AST_NODE_TYPES.ChainExpression:
-			return parent.expression === expression ? parent : undefined;
 		case AST_NODE_TYPES.TSAsExpression:
-			return parent.expression === expression ? parent : undefined;
+			return parent;
 		case AST_NODE_TYPES.TSNonNullExpression:
-			return parent.expression === expression ? parent : undefined;
+			return parent;
 		case AST_NODE_TYPES.TSTypeAssertion:
-			return parent.expression === expression ? parent : undefined;
+			return parent;
 		default:
 			return undefined;
 	}
@@ -96,11 +99,6 @@ function getOutermostUsageExpression(node: TSESTree.ArrayExpression): TSESTree.E
 	return currentExpression;
 }
 
-function getBooleanContextValue(value: boolean | undefined, fallback: boolean): boolean {
-	if (value === undefined) return fallback;
-	return value;
-}
-
 function isArgumentOfExpressionCall(
 	parent: TSESTree.CallExpression | TSESTree.NewExpression,
 	expression: TSESTree.Expression,
@@ -112,6 +110,35 @@ function isArgumentOfExpressionCall(
 	return false;
 }
 
+function getTypeAssertionAnnotation(expression: TSESTree.Expression): TSESTree.TypeNode | undefined {
+	let current = expression;
+
+	while (current.type === AST_NODE_TYPES.ChainExpression || current.type === AST_NODE_TYPES.TSNonNullExpression) {
+		current = current.expression;
+	}
+
+	if (current.type === AST_NODE_TYPES.TSAsExpression || current.type === AST_NODE_TYPES.TSTypeAssertion) {
+		return current.typeAnnotation;
+	}
+
+	return undefined;
+}
+
+function isAllowedTypeAssertionContext(
+	expression: TSESTree.Expression,
+	sourceCode: Readonly<TSESLint.SourceCode>,
+	context: Readonly<TSESLint.RuleContext<MessageIds, Options>>,
+): boolean {
+	const typeAnnotation = getTypeAssertionAnnotation(expression);
+
+	return (
+		typeAnnotation !== undefined &&
+		(isArrayTypeFromTypeNode(typeAnnotation, context) ||
+			isArrayTypeNode(typeAnnotation, sourceCode, new Set<string>(), false))
+	);
+}
+
+// oxlint-disable-next-line sonar/cognitive-complexity -- lol.
 function isAllowedEmptyArrayContext(
 	node: TSESTree.ArrayExpression,
 	sourceCode: Readonly<TSESLint.SourceCode>,
@@ -120,7 +147,6 @@ function isAllowedEmptyArrayContext(
 ): boolean {
 	const usageExpression = getOutermostUsageExpression(node);
 	const { parent } = usageExpression;
-	if (!parent) return false;
 
 	if (
 		options.allowedEmptyArrayContexts.arrowFunctionBody &&
@@ -172,7 +198,6 @@ function isAllowedEmptyArrayContext(
 		) {
 			return true;
 		}
-		if (isReadonlyArrayTypeFromChecker(usageExpression, context)) return true;
 	}
 
 	if (
@@ -194,10 +219,7 @@ function isAllowedEmptyArrayContext(
 
 	if (
 		options.allowedEmptyArrayContexts.typeAssertions &&
-		(usageExpression.type === AST_NODE_TYPES.TSAsExpression ||
-			usageExpression.type === AST_NODE_TYPES.TSTypeAssertion) &&
-		(isArrayTypeFromTypeNode(usageExpression.typeAnnotation, context) ||
-			isArrayTypeNode(usageExpression.typeAnnotation, sourceCode, new Set<string>(), false))
+		isAllowedTypeAssertionContext(usageExpression, sourceCode, context)
 	) {
 		return true;
 	}
@@ -217,8 +239,7 @@ function isAllowedEmptyArrayContext(
 	if (
 		parent.type === AST_NODE_TYPES.VariableDeclarator &&
 		parent.init === usageExpression &&
-		(parent.parent?.type === AST_NODE_TYPES.VariableDeclaration ||
-			parent.parent?.type === AST_NODE_TYPES.ForOfStatement)
+		parent.parent?.type === AST_NODE_TYPES.VariableDeclaration
 	) {
 		const typeAnnotation = getBindingTypeAnnotation(parent.id);
 		if (typeAnnotation && isArrayTypeAnnotation(typeAnnotation, sourceCode)) return true;
@@ -229,7 +250,7 @@ function isAllowedEmptyArrayContext(
 		) {
 			return true;
 		}
-		return isReadonlyArrayTypeFromChecker(usageExpression, context);
+		return isReadonlyArrayTypeFromChecker(node, context);
 	}
 
 	if (
@@ -282,9 +303,9 @@ function findTypeAliasDeclaration(
 	sourceCode: Readonly<TSESLint.SourceCode>,
 	typeName: string,
 ): TSESTree.TSTypeAliasDeclaration | undefined {
-	let currentNode: TSESTree.Node | undefined = typeNode;
+	let currentNode: TSESTree.Node | null | undefined = typeNode;
 
-	while (currentNode) {
+	while (currentNode !== undefined && currentNode !== null) {
 		const scopeBody = getTypeAliasScopeBody(currentNode);
 		const declaration = scopeBody ? findTypeAliasDeclarationInBody(scopeBody, typeName) : undefined;
 		if (declaration) return declaration;
@@ -304,8 +325,6 @@ function isReadonlyArrayTypeNode(
 		case AST_NODE_TYPES.TSTypeReference: {
 			if (typeNode.typeName.type !== AST_NODE_TYPES.Identifier) return false;
 			const { name } = typeNode.typeName;
-			if (name === "ReadonlyArray") return true;
-			if (name === "Array") return false;
 			if (seenAliases.has(name)) return false;
 
 			const aliasDeclaration = findTypeAliasDeclaration(typeNode, sourceCode, name);
@@ -322,13 +341,11 @@ function isReadonlyArrayTypeNode(
 }
 
 function isArrayTypeNode(
-	typeNode: TSESTree.TypeNode | undefined,
+	typeNode: TSESTree.TypeNode,
 	sourceCode: Readonly<TSESLint.SourceCode>,
 	seenAliases: Set<string>,
 	allowDirectArray: boolean,
 ): boolean {
-	if (!typeNode) return false;
-
 	switch (typeNode.type) {
 		case AST_NODE_TYPES.TSTypeReference: {
 			if (typeNode.typeName.type !== AST_NODE_TYPES.Identifier) return false;
@@ -343,24 +360,27 @@ function isArrayTypeNode(
 			seenAliases.add(name);
 			return isArrayTypeNode(aliasDeclaration.typeAnnotation, sourceCode, seenAliases, true);
 		}
-		case AST_NODE_TYPES.TSTypeOperator:
-			return isArrayTypeNode(typeNode.typeAnnotation, sourceCode, seenAliases, allowDirectArray);
+		case AST_NODE_TYPES.TSTypeOperator: {
+			return isArrayTypeNode(
+				getDefinedValue(typeNode.typeAnnotation, "Expected type operator to include a type annotation."),
+				sourceCode,
+				seenAliases,
+				allowDirectArray,
+			);
+		}
 		default:
 			return false;
 	}
 }
 
 function isArrayTypeAnnotation(
-	typeAnnotation: TSESTree.TSTypeAnnotation | undefined,
+	typeAnnotation: TSESTree.TSTypeAnnotation,
 	sourceCode: Readonly<TSESLint.SourceCode>,
 ): boolean {
-	if (!typeAnnotation) return false;
 	return isArrayTypeNode(typeAnnotation.typeAnnotation, sourceCode, new Set<string>(), false);
 }
 
-function isDirectArrayTypeAnnotation(typeAnnotation: TSESTree.TSTypeAnnotation | undefined): boolean {
-	if (!typeAnnotation) return false;
-
+function isDirectArrayTypeAnnotation(typeAnnotation: TSESTree.TSTypeAnnotation): boolean {
 	const { typeAnnotation: annotationType } = typeAnnotation;
 	return (
 		annotationType.type === AST_NODE_TYPES.TSTypeReference &&
@@ -369,67 +389,60 @@ function isDirectArrayTypeAnnotation(typeAnnotation: TSESTree.TSTypeAnnotation |
 	);
 }
 
+function getTypeAwareParserServices(
+	context: Readonly<TSESLint.RuleContext<MessageIds, Options>>,
+): TypeAwareParserServices | undefined {
+	const services = ESLintUtils.getParserServices(context, true);
+	const { program } = services;
+	if (!program) return undefined;
+
+	return { ...services, program };
+}
+
 function isArrayTypeFromTypeNode(
-	typeNode: TSESTree.TypeNode | undefined,
+	typeNode: TSESTree.TypeNode,
 	context: Readonly<TSESLint.RuleContext<MessageIds, Options>>,
 ): boolean {
-	const { parserServices } = context.sourceCode;
-	if (!(parserServices && "program" in parserServices && parserServices.program)) return false;
-	if (!("esTreeNodeToTSNodeMap" in parserServices)) return false;
-	if (!typeNode) return false;
+	const parserServices = getTypeAwareParserServices(context);
+	if (!parserServices) return false;
 
 	const { esTreeNodeToTSNodeMap } = parserServices;
 	const tsNode = esTreeNodeToTSNodeMap.get(typeNode);
-	if (!isTypeNode(tsNode)) return false;
 	const checker = parserServices.program.getTypeChecker();
 
-	let resolvedType: Type;
-	try {
-		resolvedType = checker.getTypeFromTypeNode(tsNode);
-	} catch {
-		return false;
-	}
-
-	return checker.getIndexTypeOfType(resolvedType, IndexKind.Number) !== undefined;
+	return checker.getIndexTypeOfType(checker.getTypeAtLocation(tsNode), IndexKind.Number) !== undefined;
 }
 
 function isArrayTypeFromChecker(
-	typeAnnotation: TSESTree.TSTypeAnnotation | undefined,
+	typeAnnotation: TSESTree.TSTypeAnnotation,
 	context: Readonly<TSESLint.RuleContext<MessageIds, Options>>,
 ): boolean {
-	if (!typeAnnotation) return false;
 	return isArrayTypeFromTypeNode(typeAnnotation.typeAnnotation, context);
 }
 
 function isDirectReadonlyArrayAnnotation(
-	typeAnnotation: TSESTree.TSTypeAnnotation | undefined,
+	typeAnnotation: TSESTree.TSTypeAnnotation,
 	sourceCode: Readonly<TSESLint.SourceCode>,
 ): boolean {
-	if (!typeAnnotation) return false;
 	return isReadonlyArrayTypeNode(typeAnnotation.typeAnnotation, sourceCode, new Set<string>());
 }
 
 function isReadonlyArrayTypeFromChecker(
-	node: TSESTree.Expression,
+	node: TSESTree.ArrayExpression,
 	context: Readonly<TSESLint.RuleContext<MessageIds, Options>>,
 ): boolean {
-	const { parserServices } = context.sourceCode;
-	if (!(parserServices && "program" in parserServices && parserServices.program)) return false;
-	if (!("esTreeNodeToTSNodeMap" in parserServices)) return false;
+	const parserServices = getTypeAwareParserServices(context);
+	if (!parserServices) return false;
 
 	const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
-	if (!isExpression(tsNode)) return false;
 	const checker = parserServices.program.getTypeChecker();
-	const resolvedType = checker.getTypeAtLocation(tsNode);
-	const contextualType = checker.getContextualType(tsNode);
 
 	function isReadonlyArrayLike(type: Type): boolean {
 		const indexType = checker.getIndexTypeOfType(type, IndexKind.Number);
 		return indexType !== undefined && checker.getPropertyOfType(type, "push") === undefined;
 	}
 
-	if (contextualType && isReadonlyArrayLike(contextualType)) return true;
-	return isReadonlyArrayLike(resolvedType);
+	return isReadonlyArrayLike(checker.getContextualType(tsNode) ?? checker.getTypeAtLocation(tsNode));
 }
 
 function isReadonlyArrayConstInitializer(
@@ -438,33 +451,27 @@ function isReadonlyArrayConstInitializer(
 ): boolean {
 	const usageExpression = getOutermostUsageExpression(node);
 	const { parent } = usageExpression;
-	if (!(parent && parent.type === AST_NODE_TYPES.VariableDeclarator && parent.init === usageExpression)) return false;
-	if (!(parent.parent && parent.parent.type === AST_NODE_TYPES.VariableDeclaration)) return false;
+	if (!(parent.type === AST_NODE_TYPES.VariableDeclarator && parent.init === usageExpression)) return false;
 	if (parent.parent.kind !== "const") return false;
 
 	const typeAnnotation = getBindingTypeAnnotation(parent.id);
-	if (isDirectReadonlyArrayAnnotation(typeAnnotation, context.sourceCode)) return true;
 	if (!typeAnnotation) return false;
+	if (isDirectReadonlyArrayAnnotation(typeAnnotation, context.sourceCode)) return true;
 
-	return isReadonlyArrayTypeFromChecker(usageExpression, context);
+	return isReadonlyArrayTypeFromChecker(node, context);
 }
 
-function extractElementTypeFromTypeText(typeText: string): string | undefined {
-	if (typeText.startsWith("Array<") && typeText.endsWith(">")) return typeText.slice(6, -1);
-	if (typeText.startsWith("ReadonlyArray<") && typeText.endsWith(">")) return typeText.slice(14, -1);
-	return undefined;
+function extractElementTypeFromTypeText(typeText: string): string {
+	return typeText.startsWith("ReadonlyArray<") ? typeText.slice(14, -1) : typeText.slice(6, -1);
 }
 
-const IS_ANNOTATION = /:\s*(Array<.+>|ReadonlyArray<.+>)\s*=/u;
+// oxlint-disable-next-line unicorn/prefer-string-raw -- naur
+const IS_ANNOTATION = regex(":\\s*(?<typeText>Array<.+>|ReadonlyArray<.+>)\\s*=", "u");
 
 function extractElementTypeFromAssignmentPatternText(assignmentText: string): string | undefined {
 	const annotationMatch = IS_ANNOTATION.exec(assignmentText);
 	if (!annotationMatch) return undefined;
-
-	const [, typeText] = annotationMatch;
-	if (!typeText) return undefined;
-
-	return extractElementTypeFromTypeText(typeText.trim());
+	return extractElementTypeFromTypeText(annotationMatch.groups.typeText.trim());
 }
 
 function extractElementTypeFromGenericReference(
@@ -474,18 +481,15 @@ function extractElementTypeFromGenericReference(
 	if (typeNode.type !== AST_NODE_TYPES.TSTypeReference) return undefined;
 	if (typeNode.typeName.type !== AST_NODE_TYPES.Identifier) return undefined;
 	if (typeNode.typeName.name !== "Array" && typeNode.typeName.name !== "ReadonlyArray") return undefined;
-	if (!typeNode.typeArguments || typeNode.typeArguments.params.length !== 1) return undefined;
+	if (typeNode.typeArguments?.params.length !== 1) return undefined;
 
-	const [elementType] = typeNode.typeArguments.params;
-	if (!elementType) return undefined;
-	return sourceCode.getText(elementType);
+	return sourceCode.getText(typeNode.typeArguments.params[0]);
 }
 
 function getBindingTypeAnnotation(bindingName: TSESTree.BindingName): TSESTree.TSTypeAnnotation | undefined {
 	if (bindingName.type === AST_NODE_TYPES.Identifier) return bindingName.typeAnnotation;
 	if (bindingName.type === AST_NODE_TYPES.ArrayPattern) return bindingName.typeAnnotation;
-	if (bindingName.type === AST_NODE_TYPES.ObjectPattern) return bindingName.typeAnnotation;
-	return undefined;
+	return bindingName.typeAnnotation;
 }
 
 function getExplicitElementTypeFromContext(
@@ -503,7 +507,6 @@ function getExplicitElementTypeFromContext(
 
 	const usageExpression = getOutermostUsageExpression(node);
 	const { parent } = usageExpression;
-	if (!parent) return undefined;
 
 	if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.init === usageExpression) {
 		const typeAnnotation = getBindingTypeAnnotation(parent.id);
@@ -531,94 +534,49 @@ function getElementTypeFromTypeChecker(
 	node: TSESTree.ArrayExpression,
 	context: Readonly<TSESLint.RuleContext<MessageIds, Options>>,
 ): string | undefined {
-	const { parserServices } = context.sourceCode;
-	if (!(parserServices && "program" in parserServices && parserServices.program)) return undefined;
-	if (!("esTreeNodeToTSNodeMap" in parserServices)) return undefined;
+	const parserServices = getTypeAwareParserServices(context);
+	if (!parserServices) return undefined;
 
 	const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
 	const checker = parserServices.program.getTypeChecker();
+
+	function getElementTypeTextForExpression(): string | undefined {
+		const contextualType = checker.getContextualType(tsNode);
+		if (contextualType) {
+			const contextualElement = toElementTypeText(contextualType);
+			if (contextualElement !== undefined && contextualElement.length > 0) return contextualElement;
+		}
+
+		return toElementTypeText(checker.getTypeAtLocation(tsNode));
+	}
 
 	function toElementTypeText(candidateType: Type): string | undefined {
 		const elementType = checker.getIndexTypeOfType(candidateType, IndexKind.Number);
 		return elementType ? checker.typeToString(elementType, tsNode) : undefined;
 	}
 
-	const contextualType = checker.getContextualType(tsNode);
-	if (contextualType) {
-		const contextualElement = toElementTypeText(contextualType);
-		if (contextualElement) return contextualElement;
-	}
-
-	const fallbackType = checker.getTypeAtLocation(tsNode);
-	return toElementTypeText(fallbackType);
+	return getElementTypeTextForExpression();
 }
 
 function createReplacementText(
 	elementType: string | undefined,
 	options: Readonly<Required<NoEmptyArrayLiteralOptions>>,
 ): string {
-	if (options.requireExplicitGenericOnNewArray && elementType) return `new Array<${elementType}>()`;
-	return "new Array()";
+	return options.requireExplicitGenericOnNewArray && elementType !== undefined && elementType.length > 0
+		? `new Array<${elementType}>()`
+		: "new Array()";
 }
 
 const noEmptyArrayLiteral = createRule<Options, MessageIds>({
 	create(context) {
-		const userOptions = context.options[0] ?? {};
-		const allowedContexts = userOptions.allowedEmptyArrayContexts;
-		const resolvedContexts: Required<NoEmptyArrayLiteralAllowedContexts> = {
-			arrowFunctionBody: getBooleanContextValue(
-				allowedContexts?.arrowFunctionBody,
-				DEFAULT_OPTIONS.allowedEmptyArrayContexts.arrowFunctionBody,
-			),
-			assignmentExpressions: getBooleanContextValue(
-				allowedContexts?.assignmentExpressions,
-				DEFAULT_OPTIONS.allowedEmptyArrayContexts.assignmentExpressions,
-			),
-			assignmentPatterns: getBooleanContextValue(
-				allowedContexts?.assignmentPatterns,
-				DEFAULT_OPTIONS.allowedEmptyArrayContexts.assignmentPatterns,
-			),
-			callArguments: getBooleanContextValue(
-				allowedContexts?.callArguments,
-				DEFAULT_OPTIONS.allowedEmptyArrayContexts.callArguments,
-			),
-			conditionalExpressions: getBooleanContextValue(
-				allowedContexts?.conditionalExpressions,
-				DEFAULT_OPTIONS.allowedEmptyArrayContexts.conditionalExpressions,
-			),
-			forOfStatements: getBooleanContextValue(
-				allowedContexts?.forOfStatements,
-				DEFAULT_OPTIONS.allowedEmptyArrayContexts.forOfStatements,
-			),
-			jsxAttributes: getBooleanContextValue(
-				allowedContexts?.jsxAttributes,
-				DEFAULT_OPTIONS.allowedEmptyArrayContexts.jsxAttributes,
-			),
-			logicalExpressions: getBooleanContextValue(
-				allowedContexts?.logicalExpressions,
-				DEFAULT_OPTIONS.allowedEmptyArrayContexts.logicalExpressions,
-			),
-			propertyValues: getBooleanContextValue(
-				allowedContexts?.propertyValues,
-				DEFAULT_OPTIONS.allowedEmptyArrayContexts.propertyValues,
-			),
-			returnStatements: getBooleanContextValue(
-				allowedContexts?.returnStatements,
-				DEFAULT_OPTIONS.allowedEmptyArrayContexts.returnStatements,
-			),
-			typeAssertions: getBooleanContextValue(
-				allowedContexts?.typeAssertions,
-				DEFAULT_OPTIONS.allowedEmptyArrayContexts.typeAssertions,
-			),
-		};
+		const [userOptions] = context.options;
 		const options: ResolvedOptions = {
-			allowedEmptyArrayContexts: resolvedContexts,
-			ignoreInferredNonEmptyLiterals:
-				userOptions.ignoreInferredNonEmptyLiterals ?? DEFAULT_OPTIONS.ignoreInferredNonEmptyLiterals,
-			inferTypeForEmptyArrayFix:
-				userOptions.inferTypeForEmptyArrayFix ?? DEFAULT_OPTIONS.inferTypeForEmptyArrayFix,
-			requireExplicitGenericOnNewArray:
-				userOptions.requireExplicitGenericOnNewArray ?? DEFAULT_OPTIONS.requireExplicitGenericOnNewArray,
+			...DEFAULT_OPTIONS,
+			...userOptions,
+			allowedEmptyArrayContexts: {
+				...DEFAULT_OPTIONS.allowedEmptyArrayContexts,
+				...userOptions.allowedEmptyArrayContexts,
+			},
 		};
 		const { sourceCode } = context;
 
@@ -662,8 +620,8 @@ const noEmptyArrayLiteral = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [DEFAULT_OPTIONS],
 	meta: {
+		defaultOptions: [DEFAULT_OPTIONS],
 		docs: RULE_DOCS,
 		fixable: "code",
 		hasSuggestions: true,

@@ -1,9 +1,7 @@
+import { createRule } from "$utilities/create-rule";
 import { TSESTree } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
-import Typebox from "typebox";
-import { Compile } from "typebox/compile";
 
-import type { ReadonlyRecord } from "@lint-types/utility-types";
+import type { ReadonlyRecord } from "$types/utility-types";
 
 /**
  * Configuration for banned Roblox Instance classes.
@@ -24,19 +22,8 @@ export interface BanInstancesOptions {
 	readonly bannedInstances: ReadonlyArray<string> | ReadonlyRecord<string, string>;
 }
 
-type Options = [BanInstancesOptions?];
+type Options = [BanInstancesOptions];
 type MessageIds = "bannedInstance" | "bannedInstanceCustom";
-
-const isArrayConfig = Compile(Typebox.Array(Typebox.String()));
-const isObjectConfig = Compile(Typebox.Record(Typebox.String(), Typebox.String()));
-const isOptionsObject = Compile(
-	Typebox.Object({
-		bannedInstances: Typebox.Union([
-			Typebox.Array(Typebox.String()),
-			Typebox.Record(Typebox.String(), Typebox.String()),
-		]),
-	}),
-);
 
 interface BannedClassEntry {
 	readonly message: string | undefined;
@@ -47,20 +34,25 @@ interface NormalizedConfig {
 	readonly bannedClasses: ReadonlyMap<string, BannedClassEntry>;
 }
 
-function normalizeConfig(options: unknown): NormalizedConfig {
-	if (!isOptionsObject.Check(options)) return { bannedClasses: new Map() };
+function isBannedInstancesArray(
+	bannedInstances: BanInstancesOptions["bannedInstances"],
+): bannedInstances is ReadonlyArray<string> {
+	return Array.isArray(bannedInstances);
+}
 
+function normalizeConfig(options: BanInstancesOptions): NormalizedConfig {
 	const { bannedInstances } = options;
 	const bannedClasses = new Map<string, BannedClassEntry>();
 
-	if (isArrayConfig.Check(bannedInstances)) {
+	if (isBannedInstancesArray(bannedInstances)) {
 		for (const className of bannedInstances) {
 			bannedClasses.set(className.toLowerCase(), { message: undefined, originalName: className });
 		}
-	} else if (isObjectConfig.Check(bannedInstances)) {
-		for (const [className, message] of Object.entries(bannedInstances)) {
-			bannedClasses.set(className.toLowerCase(), { message, originalName: className });
-		}
+		return { bannedClasses };
+	}
+
+	for (const [className, message] of Object.entries(bannedInstances)) {
+		bannedClasses.set(className.toLowerCase(), { message, originalName: className });
 	}
 
 	return { bannedClasses };
@@ -122,8 +114,8 @@ const banInstances = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [{ bannedInstances: [] }],
 	meta: {
+		defaultOptions: [{ bannedInstances: [] }],
 		docs: {
 			description: "Ban specified Roblox Instance classes in new Instance() calls and JSX elements.",
 		},

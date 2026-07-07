@@ -20,11 +20,10 @@ interface WorkerData {
 	readonly requestPort: MessagePort;
 }
 
-// oxlint-disable-next-line consistent-type-imports
+// oxlint-disable-next-line consistent-type-imports -- Worker constructor needs the runtime value from node:worker_threads.
 type FormatFunction = typeof import("oxfmt").format;
 
-const OXFMT_NOT_INSTALLED_ERROR =
-	"oxfmt is not installed. Install it with: aube add -D oxfmt (or npm install -D oxfmt)";
+const OXFMT_NOT_INSTALLED_ERROR = "oxfmt is not installed. Install it with: ni -D oxfmt (or npm install -D oxfmt)";
 
 let oxfmtFormat: FormatFunction | undefined;
 let loadError: string | undefined;

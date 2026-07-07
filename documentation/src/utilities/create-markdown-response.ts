@@ -4,7 +4,7 @@ const markdownHeaders = {
 	"content-type": "text/markdown; charset=utf-8",
 };
 
-export async function createMarkdownResponse(path?: string): Promise<Response> {
+export async function createMarkdownResponseAsync(path?: string): Promise<Response> {
 	const entryId = path === undefined || path.length === 0 ? "index" : path;
 	const document = await getEntry("docs", entryId);
 

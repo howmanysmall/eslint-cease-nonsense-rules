@@ -1,11 +1,7 @@
-import { describe, expect, it } from "vitest";
-import rule from "@rules/enforce-ianitor-check-type";
+import { describe } from "vitest";
+import rule from "$rules/enforce-ianitor-check-type";
 import parser from "@typescript-eslint/parser";
-import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import { RuleTester } from "eslint";
-
-import type { TSESTree } from "@typescript-eslint/types";
-import type { Rule } from "eslint";
+import { RuleTester } from "@typescript-eslint/rule-tester";
 
 const ruleTester = new RuleTester({
 	languageOptions: {
@@ -21,15 +17,11 @@ const ruleTester = new RuleTester({
 });
 
 describe("enforce-ianitor-check-type", () => {
-	const originalLog2 = Math.log2;
-	Math.log2 = (value: number): number => (value === 1 ? 1 : originalLog2(value));
-	try {
-		// @ts-expect-error The RuleTester types from @types/eslint are stricter than our rule's runtime shape
-		ruleTester.run("enforce-ianitor-check-type", rule, {
-			invalid: [
-				// Complex Ianitor validator without type annotation
-				{
-					code: `
+	ruleTester.run("enforce-ianitor-check-type", rule, {
+		invalid: [
+			// Complex Ianitor validator without type annotation
+			{
+				code: `
 const isUser = Ianitor.strictInterface({
     name: Ianitor.string,
     age: Ianitor.number,
@@ -39,66 +31,91 @@ const isUser = Ianitor.strictInterface({
     })
 });
 `,
-					errors: 1,
-					languageOptions: {
-						parser,
-					},
-				},
-			],
-			valid: [
-				// Simple types (score < 10)
-				{
-					code: "type Simple = string;",
-					languageOptions: {
-						parser,
-					},
-				},
-				{
-					code: "type BasicObject = { id: string; name: string };",
-					languageOptions: {
-						parser,
-					},
-				},
-				{
-					code: "const isSimple = Ianitor.string;",
-					languageOptions: {
-						parser,
-					},
-				},
-				// Has annotation
-				{
-					code: "const isTyped: Ianitor.Check<SomeType> = Ianitor.interface({ name: Ianitor.string });",
-					languageOptions: {
-						parser,
-					},
-				},
-				// Simple validator that should pass
-				{
-					code: "const validator = Ianitor.strictInterface({ name: Ianitor.string });",
-					languageOptions: {
-						parser,
-					},
-					options: [{ baseThreshold: 20 }],
-				},
-				// Computed member call (covers calculateIanitorComplexity early-return)
-				{
-					code: "const validator = Ianitor['string']();",
-					languageOptions: {
-						parser,
-					},
-					options: [{ baseThreshold: 20 }],
-				},
-				// Interface() without object expression argument (covers interface case fallback)
-				{
-					code: "const validator = Ianitor.interface();",
-					languageOptions: {
-						parser,
-					},
-					options: [{ baseThreshold: 20 }],
-				},
-				// Ianitor.Static<typeof ...> pattern
-				{
-					code: `
+				errors: [{ messageId: "missingIanitorCheckType" }],
+			},
+			{
+				code: "const isCustom = Ianitor.custom();",
+				errors: [{ messageId: "missingIanitorCheckType" }],
+				options: [{ baseThreshold: 1 }],
+			},
+			{
+				code: "type ComplexTuple = [{ a: string; b: number }, { c: boolean; d: string }];",
+				errors: [{ messageId: "missingIanitorCheckType" }],
+				options: [{ baseThreshold: 1, performanceMode: false }],
+			},
+			{
+				code: `
+type ComplexAlias = {
+    id: string;
+    values: number[];
+};
+`,
+				errors: [{ messageId: "missingIanitorCheckType" }],
+				options: [{ baseThreshold: 1, interfacePenalty: 1 }],
+			},
+			{
+				code: `
+interface ComplexService extends Base {
+    config: {
+        mode: string;
+    };
+}
+`,
+				errors: [{ messageId: "complexInterfaceNeedsCheck" }],
+				options: [{ baseThreshold: 1, interfacePenalty: 1 }],
+			},
+			{
+				code: `
+const isUser = Ianitor.strictInterface({
+    name: Ianitor.string,
+});
+export type User = Ianitor.Static<typeof Validators.isUser>;
+`,
+				errors: [{ messageId: "missingIanitorCheckType" }],
+			},
+		],
+		valid: [
+			// Simple types (score < 10)
+			{
+				code: "type Simple = string;",
+			},
+			{
+				code: "type BasicObject = { id: string; name: string };",
+			},
+			{
+				code: "const isSimple = Ianitor.string;",
+			},
+			// Has annotation
+			{
+				code: "const isTyped: Ianitor.Check<SomeType> = Ianitor.interface({ name: Ianitor.string });",
+			},
+			// Destructuring does not declare an Ianitor validator variable.
+			{
+				code: `
+const { isUser } = Ianitor.strictInterface({
+    name: Ianitor.string,
+    age: Ianitor.number,
+});
+`,
+			},
+			// Simple validator that should pass
+			{
+				code: "const validator = Ianitor.strictInterface({ name: Ianitor.string });",
+				options: [{ baseThreshold: 20 }],
+			},
+			// Computed member call (covers calculateIanitorComplexity early-return)
+			{
+				code: "const validator = Ianitor['string']();",
+				options: [{ baseThreshold: 20 }],
+			},
+			// Interface() without object expression argument (covers interface case fallback)
+			{
+				code: "const validator = Ianitor.interface();",
+				options: [{ baseThreshold: 20 }],
+			},
+			// Ianitor.Static<typeof ...> pattern
+			{
+				code: `
 const isSpinOptions = Ianitor.strictInterface({
     maxAttempts: Ianitor.optional(Ianitor.intersection(Ianitor.integer, Ianitor.numberPositive)),
     random: Ianitor.optional(Ianitor.Random),
@@ -106,13 +123,10 @@ const isSpinOptions = Ianitor.strictInterface({
 });
 export type SpinOptions = Ianitor.Static<typeof isSpinOptions>;
 `,
-					languageOptions: {
-						parser,
-					},
-				},
-				// Readonly<Ianitor.Static<typeof ...>> pattern
-				{
-					code: `
+			},
+			// Readonly<Ianitor.Static<typeof ...>> pattern
+			{
+				code: `
 const isSpinOptions = Ianitor.strictInterface({
     maxAttempts: Ianitor.optional(Ianitor.intersection(Ianitor.integer, Ianitor.numberPositive)),
     random: Ianitor.optional(Ianitor.Random),
@@ -120,294 +134,164 @@ const isSpinOptions = Ianitor.strictInterface({
 });
 export type SpinOptions = Readonly<Ianitor.Static<typeof isSpinOptions>>;
 `,
-					languageOptions: {
-						parser,
-					},
-				},
-				// Various Ianitor validator methods
-				{
-					code: "const validator = Ianitor.optional(Ianitor.string);",
-					languageOptions: {
-						parser,
-					},
-					options: [{ baseThreshold: 20 }],
-				},
-				{
-					code: "const validator = Ianitor.array(Ianitor.number);",
-					languageOptions: {
-						parser,
-					},
-					options: [{ baseThreshold: 20 }],
-				},
-				{
-					code: "const validator = Ianitor.record(Ianitor.string, Ianitor.number);",
-					languageOptions: {
-						parser,
-					},
-					options: [{ baseThreshold: 20 }],
-				},
-				{
-					code: "const validator = Ianitor.map(Ianitor.string, Ianitor.number);",
-					languageOptions: {
-						parser,
-					},
-					options: [{ baseThreshold: 20 }],
-				},
-				{
-					code: "const validator = Ianitor.union(Ianitor.string, Ianitor.number);",
-					languageOptions: {
-						parser,
-					},
-					options: [{ baseThreshold: 20 }],
-				},
-				{
-					code: "const validator = Ianitor.intersection(Ianitor.string, Ianitor.number);",
-					languageOptions: {
-						parser,
-					},
-					options: [{ baseThreshold: 20 }],
-				},
-				{
-					code: "const validator = Ianitor.instanceIsA(SomeClass);",
-					languageOptions: {
-						parser,
-					},
-					options: [{ baseThreshold: 20 }],
-				},
-				{
-					code: "const validator = Ianitor.instanceOf(SomeClass);",
-					languageOptions: {
-						parser,
-					},
-					options: [{ baseThreshold: 20 }],
-				},
-				{
-					code: "const validator = Ianitor.boolean;",
-					languageOptions: {
-						parser,
-					},
-					options: [{ baseThreshold: 20 }],
-				},
-				// Type aliases with various complexity levels
-				{
-					code: "type SimpleUnion = string | number;",
-					languageOptions: {
-						parser,
-					},
-				},
-				{
-					code: "type SimpleIntersection = { a: string } & { b: number };",
-					languageOptions: {
-						parser,
-					},
-				},
-				{
-					code: "type SimpleArray = Array<string>;",
-					languageOptions: {
-						parser,
-					},
-				},
-				{
-					code: "type SimpleTuple = [string, number];",
-					languageOptions: {
-						parser,
-					},
-				},
-				{
-					code: "type SimpleConditional<T> = T extends string ? string : number;",
-					languageOptions: {
-						parser,
-					},
-				},
-				{
-					code: "type SimpleMapped<T> = { [K in keyof T]: T[K] };",
-					languageOptions: {
-						parser,
-					},
-				},
-				{
-					code: "type SimpleFunction = (a: string) => number;",
-					languageOptions: {
-						parser,
-					},
-				},
-				{
-					code: "type SimpleGeneric<T> = { data: T };",
-					languageOptions: {
-						parser,
-					},
-				},
-				// Interface declarations
-				{
-					code: "interface SimpleInterface { id: string; name: string; }",
-					languageOptions: {
-						parser,
-					},
-				},
-				// Function declarations with return types
-				{
-					code: "function foo(): string { return 'x'; }",
-					languageOptions: {
-						parser,
-					},
-				},
-				{
-					code: "const bar = function(): number { return 42; };",
-					languageOptions: {
-						parser,
-					},
-				},
-				// Types with primitive keywords
-				{
-					code: "type PrimitiveUnion = string | number | boolean | null | undefined | void | symbol | bigint;",
-					languageOptions: {
-						parser,
-					},
-				},
-				// Nested arrays
-				{
-					code: "type NestedArray = Array<Array<string>>;",
-					languageOptions: {
-						parser,
-					},
-				},
-				// Non-Ianitor type aliases
-				{
-					code: "type RegularType = { data: string };",
-					languageOptions: {
-						parser,
-					},
-				},
-				// Ianitor primitive validators (low complexity, should pass)
-				{
-					code: "const validator = Ianitor.string();",
-					languageOptions: {
-						parser,
-					},
-					options: [{ baseThreshold: 20 }],
-				},
-				{
-					code: "const validator = Ianitor.number();",
-					languageOptions: {
-						parser,
-					},
-					options: [{ baseThreshold: 20 }],
-				},
-				// Complex arrays
-				{
-					code: "type DeepArray = string[][][];",
-					languageOptions: {
-						parser,
-					},
-				},
-				{
-					code: "type ComplexArrayType = Array<Array<{ id: string }>>;",
-					languageOptions: {
-						parser,
-					},
-				},
-				// Special TypeScript keywords
-				{
-					code: "type NeverType = never;",
-					languageOptions: {
-						parser,
-					},
-				},
-				{
-					code: "type UnknownType = unknown;",
-					languageOptions: {
-						parser,
-					},
-				},
-				{
-					code: "type AnyType = any;",
-					languageOptions: {
-						parser,
-					},
-				},
-				// Non-Ianitor call expressions (to hit isIanitorValidator false path)
-				{
-					code: "const result = someFunction();",
-					languageOptions: {
-						parser,
-					},
-				},
-				{
-					code: "const data = OtherLib.method();",
-					languageOptions: {
-						parser,
-					},
-				},
-			],
-		});
-	} finally {
-		Math.log2 = originalLog2;
-	}
-
-	it("reports complex types without Ianitor checks", () => {
-		expect.assertions(1);
-		const originalLog2Local = Math.log2;
-		// oxlint-disable-next-line vitest/no-conditional-in-test
-		Math.log2 = (value: number): number => (value === 1 ? 1 : originalLog2Local(value));
-		try {
-			const reports: Array<{ messageId: string }> = [];
-			const fakeContext = {
-				options: [{ baseThreshold: 1, interfacePenalty: 1 }],
-				report(descriptor: Rule.ReportDescriptor): void {
-					// oxlint-disable-next-line vitest/no-conditional-in-test
-					if (typeof descriptor === "string") return;
-					// oxlint-disable-next-line vitest/no-conditional-in-test
-					if ("messageId" in descriptor && typeof descriptor.messageId === "string") {
-						reports.push({ messageId: descriptor.messageId });
-					}
-				},
-			};
-
-			const parsed = parser.parse(
-				`
-type ComplexAlias = {
-    id: string;
-    values: number[];
-};
-
-interface ComplexService extends Base {
-    config: {
-        mode: string;
-    };
-}
-`,
-				{
-					ecmaVersion: 2022,
-					sourceType: "module",
-				},
-			);
-
-			const aliasNode = parsed.body.find(
-				(statement): statement is TSESTree.TSTypeAliasDeclaration =>
-					statement.type === AST_NODE_TYPES.TSTypeAliasDeclaration,
-			);
-			// oxlint-disable-next-line vitest/no-conditional-in-test
-			if (!aliasNode) throw new Error("Expected type alias node");
-
-			const interfaceNode = parsed.body.find(
-				(statement): statement is TSESTree.TSInterfaceDeclaration =>
-					statement.type === AST_NODE_TYPES.TSInterfaceDeclaration,
-			);
-			// oxlint-disable-next-line vitest/no-conditional-in-test
-			if (!interfaceNode) throw new Error("Expected interface node");
-
-			// The rule expects a full ESLint context; for this focused assertion, provide the minimal shape.
-			// @ts-expect-error - Tests use a minimal fake context tailored for this rule's requirements.
-			const visitor = rule.create(fakeContext);
-			visitor.TSTypeAliasDeclaration?.(aliasNode);
-			visitor.TSInterfaceDeclaration?.(interfaceNode);
-
-			expect(reports).toStrictEqual([
-				{ messageId: "missingIanitorCheckType" },
-				{ messageId: "complexInterfaceNeedsCheck" },
-			]);
-		} finally {
-			Math.log2 = originalLog2Local;
-		}
-	}, 1500);
+			},
+			// Various Ianitor validator methods
+			{
+				code: "const validator = Ianitor.optional(Ianitor.string);",
+				options: [{ baseThreshold: 20 }],
+			},
+			{
+				code: "const validator = Ianitor.array(Ianitor.number);",
+				options: [{ baseThreshold: 20 }],
+			},
+			{
+				code: "const validator = Ianitor.record(Ianitor.string, Ianitor.number);",
+				options: [{ baseThreshold: 20 }],
+			},
+			{
+				code: "const validator = Ianitor.map(Ianitor.string, Ianitor.number);",
+				options: [{ baseThreshold: 20 }],
+			},
+			{
+				code: "const validator = Ianitor.union(Ianitor.string, Ianitor.number);",
+				options: [{ baseThreshold: 20 }],
+			},
+			{
+				code: "const validator = Ianitor.union();",
+				options: [{ baseThreshold: 20 }],
+			},
+			{
+				code: "const validator = Ianitor.intersection(Ianitor.string, Ianitor.number);",
+				options: [{ baseThreshold: 20 }],
+			},
+			{
+				code: "const validator = Ianitor.instanceIsA(SomeClass);",
+				options: [{ baseThreshold: 20 }],
+			},
+			{
+				code: "const validator = Ianitor.instanceOf(SomeClass);",
+				options: [{ baseThreshold: 20 }],
+			},
+			{
+				code: "const validator = Ianitor.boolean;",
+				options: [{ baseThreshold: 20 }],
+			},
+			// Type aliases with various complexity levels
+			{
+				code: "type SimpleUnion = string | number;",
+			},
+			{
+				code: "type SimpleIntersection = { a: string } & { b: number };",
+				options: [{ baseThreshold: 30 }],
+			},
+			{
+				code: "type SimpleArray = Array<string>;",
+			},
+			{
+				code: "type SimpleTuple = [string, number];",
+			},
+			{
+				code: "type TupleWithSkippedElements = [name?: string, ...scores: number[]];",
+			},
+			{
+				code: "type SimpleConditional<T> = T extends string ? string : number;",
+			},
+			{
+				code: "type SimpleMapped<T> = { [K in keyof T]: T[K] };",
+			},
+			{
+				code: "type KeyMap<T> = { [K in keyof T]?: string };",
+			},
+			{
+				code: "type KeyPresenceMap<T> = { [K in keyof T]; };",
+			},
+			{
+				code: "type ModifierMap<T> = { [K in keyof T]+?: never };",
+			},
+			{
+				code: "type SimpleFunction = (a: string) => number;",
+			},
+			{
+				code: "type BoundFunction = (this: Context) => void;",
+			},
+			{
+				code: "type RestFunction = (...values: string[]) => void;",
+			},
+			{
+				code: "type DestructuredFunction = ({ value }: { value: string }) => void;",
+			},
+			{
+				code: "type LooseFunction = (value) => void;",
+			},
+			{
+				code: "type SimpleGeneric<T> = { data: T };",
+			},
+			{
+				code: "type CallableObject = { (value: string): boolean; label: string };",
+				options: [{ baseThreshold: 30 }],
+			},
+			{
+				code: "interface BasicService { id: string; name: string; }",
+				options: [{ errorThreshold: 1, interfacePenalty: 20 }],
+			},
+			{
+				code: "interface UntypedHandler { handle(value); }",
+				options: [{ errorThreshold: 1, interfacePenalty: 20 }],
+			},
+			// Function declarations with return types
+			{
+				code: "function foo(): string { return 'x'; }",
+			},
+			{
+				code: "const bar = function(): number { return 42; };",
+			},
+			// Types with primitive keywords
+			{
+				code: "type PrimitiveUnion = string | number | boolean | null | undefined | void | symbol | bigint;",
+				options: [{ baseThreshold: 30 }],
+			},
+			// Nested arrays
+			{
+				code: "type NestedArray = Array<Array<string>>;",
+			},
+			// Non-Ianitor type aliases
+			{
+				code: "type RegularType = { data: string };",
+			},
+			// Ianitor primitive validators (low complexity, should pass)
+			{
+				code: "const validator = Ianitor.string();",
+				options: [{ baseThreshold: 20 }],
+			},
+			{
+				code: "const validator = Ianitor.number();",
+				options: [{ baseThreshold: 20 }],
+			},
+			// Complex arrays
+			{
+				code: "type DeepArray = string[][][];",
+			},
+			{
+				code: "type ComplexArrayType = Array<Array<{ id: string }>>;",
+				options: [{ baseThreshold: 30 }],
+			},
+			// Special TypeScript keywords
+			{
+				code: "type NeverType = never;",
+			},
+			{
+				code: "type UnknownType = unknown;",
+			},
+			{
+				code: "type AnyType = any;",
+			},
+			// Non-Ianitor call expressions (to hit isIanitorValidator false path)
+			{
+				code: "const result = someFunction();",
+			},
+			{
+				code: "const data = OtherLib.method();",
+			},
+		],
+	});
 });

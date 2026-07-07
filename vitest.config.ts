@@ -28,7 +28,6 @@ const typeAwareTestGlobs = [
 
 const configuration = defineConfig({
 	resolve: { tsconfigPaths: true },
-	// oxlint-disable-next-line unicorn/no-null
 	server: { watch: null },
 	test: {
 		bail: 1,
@@ -39,8 +38,8 @@ const configuration = defineConfig({
 			exclude: ["src/**/*.d.ts", "src/oxfmt-worker.ts"],
 			include: ["src/**/*.ts"],
 			provider: "v8",
-			reporter: ["text", "text-summary"],
 			reportOnFailure: false,
+			reporter: ["text", "text-summary"],
 			thresholds: {
 				branches: 80,
 				functions: 95,
@@ -78,7 +77,12 @@ const configuration = defineConfig({
 				},
 			},
 		],
-		reporters: ["dot"],
+		reporters: ["github-actions", "tree"],
+		// `typescript` ships `typescript.js` with a `//# sourceMappingURL=typescript.js.map`
+		// comment but never publishes the map, so type-aware suites that pull it through Vite's
+		// SSR transform spam "Failed to load source map". Externalizing sends the 6MB CJS bundle
+		// straight to Node (no transform, faster) and silences the ENOENT noise.
+		server: { deps: { external: [/[/\\]node_modules[/\\]typescript[/\\]/u] } },
 		testTimeout: 30_000,
 		typecheck: {
 			checker: "tsgo",

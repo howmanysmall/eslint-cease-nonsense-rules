@@ -1,5 +1,7 @@
-import { createMarkdownResponse } from "../utilities/create-markdown-response";
+import { createMarkdownResponseAsync } from "../utilities/create-markdown-response";
 
 import type { APIRoute } from "astro";
 
-export const GET: APIRoute = async () => createMarkdownResponse(undefined);
+const getMarkdownRouteAsync: APIRoute = async () => createMarkdownResponseAsync(undefined);
+
+export { getMarkdownRouteAsync as GET };

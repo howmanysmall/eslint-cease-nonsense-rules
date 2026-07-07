@@ -26,25 +26,27 @@ jobs:
       - name: Setup Mise
         uses: jdx/mise-action@v2
 
-      - name: Cache Aube store
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.local/share/aube/store
-            ~/.cache/aube
-          key: ${{ runner.os }}-aube-v3-${{ hashFiles('aube-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-aube-v3-
-
       - name: Setup Node.js for documentation build
         uses: actions/setup-node@v4
         with:
           node-version: "22.12.0"
 
+      - name: Get pnpm store directory
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-v1-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-v1-
+
       - name: Install dependencies
         run: |
           for attempt in 1 2 3; do
-            if aube ci --enable-global-virtual-store --fetch-retries 5 --fetch-timeout 60000 --fetch-retry-maxtimeout 20000; then
+            if pnpm install --frozen-lockfile; then
               exit 0
             fi
             if [ "$attempt" = "3" ]; then
@@ -54,7 +56,7 @@ jobs:
           done
 
       - name: Build documentation
-        run: aube run -F docs build
+        run: pnpm --filter docs build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

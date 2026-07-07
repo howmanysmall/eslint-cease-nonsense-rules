@@ -1,7 +1,7 @@
-import { createRule } from "@utilities/create-rule";
+import { createRule } from "$utilities/create-rule";
 import { regex } from "arktype";
 
-// oxlint-disable prefer-string-raw
+// oxlint-disable prefer-string-raw -- Regex strings are easier to scan with escaped source fragments.
 import type { TSESTree } from "@typescript-eslint/utils";
 
 // Irregular plurals, using lowercase for matching against tokens
@@ -149,8 +149,8 @@ const preferSingularEnums = createRule({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description: "Prefer singular TypeScript enums.",
 		},

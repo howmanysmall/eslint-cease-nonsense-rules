@@ -1,6 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import { parse } from "@typescript-eslint/parser";
-import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import {
 	buildPatternIndex,
 	canSafelySubstitute,
@@ -8,22 +6,32 @@ import {
 	evaluateConditions,
 	matchParameters,
 	resolveCallee,
-} from "@utilities/pattern-replacement/pattern-matcher";
-import { parsePattern } from "@utilities/pattern-replacement/pattern-parser";
+} from "$utilities/pattern-replacement/pattern-matcher";
+import { parsePattern } from "$utilities/pattern-replacement/pattern-parser";
+import { parse } from "@typescript-eslint/parser";
+import { AST_NODE_TYPES } from "@typescript-eslint/types";
 
+import type { CapturedValue, ParsedParameter, WhenCondition } from "$utilities/pattern-replacement/pattern-types";
 import type { TSESTree } from "@typescript-eslint/types";
-import type { CapturedValue, WhenCondition } from "@utilities/pattern-replacement/pattern-types";
 
 vi.setConfig({ testTimeout: 10000 });
 
 function parseExpression(code: string): TSESTree.Expression {
 	const program = parse(`const value = ${code};`, { loc: false, range: false });
 	const [statement] = program.body;
-	if (statement?.type !== AST_NODE_TYPES.VariableDeclaration) throw new Error(`Could not parse expression: ${code}`);
+	if (statement?.type !== AST_NODE_TYPES.VariableDeclaration) {
+		const error = new Error(`Could not parse expression: ${code}`);
+		Error.captureStackTrace(error, parseExpression);
+		throw error;
+	}
 
 	const [declaration] = statement.declarations;
 	const expression = declaration?.init;
-	if (expression === null || expression === undefined) throw new Error(`Could not parse expression: ${code}`);
+	if (expression === null || expression === undefined) {
+		const error = new Error(`Could not parse expression: ${code}`);
+		Error.captureStackTrace(error, parseExpression);
+		throw error;
+	}
 
 	return expression;
 }
@@ -40,7 +48,18 @@ function parseCallableExpression(
 		return expression;
 	}
 
-	throw new Error(`Expected callable expression: ${code}`);
+	const error = new Error(`Expected callable expression: ${code}`);
+	Error.captureStackTrace(error, parseCallableExpression);
+	throw error;
+}
+
+function parseCallArguments(code: string): ReadonlyArray<TSESTree.CallExpressionArgument> {
+	const expression = parseCallableExpression(code);
+	if (expression.type === AST_NODE_TYPES.CallExpression) return expression.arguments;
+
+	const error = new Error(`Expected call expression: ${code}`);
+	Error.captureStackTrace(error, parseCallArguments);
+	throw error;
 }
 
 function capturedValue(sourceText: string, constValue?: number): CapturedValue {
@@ -109,10 +128,24 @@ describe("resolveCallee", () => {
 		expect(result).toStrictEqual({ kind: "unknown" });
 	});
 
+	it("should return unknown for non-call chain expressions", () => {
+		expect.assertions(1);
+
+		const result = resolveCallee(parseCallableExpression("value?.prop"));
+		expect(result).toStrictEqual({ kind: "unknown" });
+	});
+
 	it("should return unknown for computed member access", () => {
 		expect.assertions(1);
 
 		const result = resolveCallee(parseCallableExpression('UDim2["fromScale"]()'));
+		expect(result).toStrictEqual({ kind: "unknown" });
+	});
+
+	it("should return unknown for non-identifier new expression callees", () => {
+		expect.assertions(1);
+
+		const result = resolveCallee(parseCallableExpression("new namespace.Vector2()"));
 		expect(result).toStrictEqual({ kind: "unknown" });
 	});
 
@@ -225,6 +258,15 @@ describe("matchArgs", () => {
 		expect(result).toBeDefined();
 	});
 
+	it("should match optional arguments when explicitly undefined", () => {
+		expect.assertions(1);
+
+		const pattern = parsePattern("new Vector2($x, 0?)", "fromX($x)", undefined);
+		const args = [parseExpression("1"), parseExpression("undefined")];
+		const result = matchParameters(pattern.parameters, args, mockSourceCode);
+		expect(result).toBeDefined();
+	});
+
 	it("should match wildcard arguments", () => {
 		expect.assertions(1);
 
@@ -270,6 +312,15 @@ describe("matchArgs", () => {
 		expect(result).toBeUndefined();
 	});
 
+	it("should reject missing capture arguments", () => {
+		expect.assertions(1);
+
+		const pattern = parsePattern("new Vector2($x)", "copy($x)", undefined);
+		const args = [parseExpression("undefined")];
+		const result = matchParameters(pattern.parameters, args, mockSourceCode);
+		expect(result).toBeUndefined();
+	});
+
 	it("should handle wildcard missing argument", () => {
 		expect.assertions(1);
 
@@ -277,6 +328,23 @@ describe("matchArgs", () => {
 		const args = [parseExpression("undefined")];
 		const result = matchParameters(pattern.parameters, args, mockSourceCode);
 		expect(result).toBeUndefined();
+	});
+
+	it("should reject spread arguments", () => {
+		expect.assertions(1);
+
+		const pattern = parsePattern("new Vector2(_)", "copy", undefined);
+		const result = matchParameters(pattern.parameters, parseCallArguments("Vector2(...values)"), mockSourceCode);
+		expect(result).toBeUndefined();
+	});
+
+	it("should ignore sparse pattern holes", () => {
+		expect.assertions(1);
+
+		const patterns: Array<ParsedParameter> = [];
+		patterns.length = 1;
+		const result = matchParameters(patterns, [parseExpression("1")], mockSourceCode);
+		expect(result).toBeDefined();
 	});
 });
 
@@ -343,6 +411,14 @@ describe("evaluateConditions", () => {
 		const conditions = new Map<string, WhenCondition>([["x", "<= 5"]]);
 		const captures = new Map<string, CapturedValue>([["x", capturedValue("5", 5)]]);
 		expect(evaluateConditions(conditions, captures)).toBe(true);
+	});
+
+	it("should fail when a comparison target is not numeric", () => {
+		expect.assertions(1);
+
+		const conditions = new Map<string, WhenCondition>([["x", "== nope"]]);
+		const captures = new Map<string, CapturedValue>([["x", capturedValue("5", 5)]]);
+		expect(evaluateConditions(conditions, captures)).toBe(false);
 	});
 
 	it("should return true when no conditions", () => {

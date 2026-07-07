@@ -1,5 +1,5 @@
+import { createRule } from "$utilities/create-rule";
 import { TSESTree } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
 
 type MessageIds = "banReactFC";
 
@@ -15,13 +15,12 @@ const banReactFc = createRule<[], MessageIds>({
 				const inner = typeAnnotation.typeAnnotation;
 				if (inner.type !== TSESTree.AST_NODE_TYPES.TSTypeReference) return;
 
-				const { typeName } = inner;
-
 				let isBannedFc = false;
-				if (typeName.type === TSESTree.AST_NODE_TYPES.Identifier) {
-					isBannedFc = BANNED_FC_NAMES.has(typeName.name);
-				} else if (typeName.type === TSESTree.AST_NODE_TYPES.TSQualifiedName) {
-					isBannedFc = BANNED_FC_NAMES.has(typeName.right.name);
+				if (inner.typeName.type === TSESTree.AST_NODE_TYPES.Identifier) {
+					isBannedFc = BANNED_FC_NAMES.has(inner.typeName.name);
+				}
+				if (inner.typeName.type === TSESTree.AST_NODE_TYPES.TSQualifiedName) {
+					isBannedFc = BANNED_FC_NAMES.has(inner.typeName.right.name);
 				}
 
 				if (!isBannedFc || node.init?.type !== TSESTree.AST_NODE_TYPES.ArrowFunctionExpression) return;
@@ -33,8 +32,8 @@ const banReactFc = createRule<[], MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [],
 	meta: {
+		defaultOptions: [],
 		docs: {
 			description:
 				"Ban React.FC and similar component type annotations. Use explicit function declarations instead.",

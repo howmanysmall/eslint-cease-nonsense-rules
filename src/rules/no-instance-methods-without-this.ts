@@ -1,7 +1,7 @@
+import { createRule } from "$utilities/create-rule";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
 
-import type { ReadonlyRecord } from "@lint-types/utility-types";
+import type { ReadonlyRecord } from "$types/utility-types";
 import type { TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds = "noInstanceMethodWithoutThis";
@@ -20,18 +20,20 @@ const DEFAULT_OPTIONS: NormalizedOptions = {
 	checkPublic: true,
 };
 
-function normalizeOptions(rawOptions: NoInstanceMethodsOptions | undefined): NormalizedOptions {
-	const mergedOptions: Required<NoInstanceMethodsOptions> = { ...DEFAULT_OPTIONS };
-	if (rawOptions?.checkPrivate !== undefined) mergedOptions.checkPrivate = rawOptions.checkPrivate;
-	if (rawOptions?.checkProtected !== undefined) mergedOptions.checkProtected = rawOptions.checkProtected;
-	if (rawOptions?.checkPublic !== undefined) mergedOptions.checkPublic = rawOptions.checkPublic;
-
-	return mergedOptions;
+function normalizeOptions({
+	checkPrivate = DEFAULT_OPTIONS.checkPrivate,
+	checkProtected = DEFAULT_OPTIONS.checkProtected,
+	checkPublic = DEFAULT_OPTIONS.checkPublic,
+}: NoInstanceMethodsOptions): NormalizedOptions {
+	return {
+		checkPrivate,
+		checkProtected,
+		checkPublic,
+	};
 }
 
 function shouldCheckMethod(node: TSESTree.MethodDefinition, options: NormalizedOptions): boolean {
-	if (node.static) return false;
-	if (node.kind !== "method") return false;
+	if (node.static || node.kind !== "method") return false;
 
 	const accessibility = node.accessibility ?? "public";
 	if (accessibility === "private" && !options.checkPrivate) return false;
@@ -45,22 +47,19 @@ function isNode(value: unknown): value is TSESTree.Node {
 	return typeof value === "object" && value !== null && "type" in value;
 }
 
-// Widen node to allow safe enumeration without producing implicit any values
-function hasDynamicProperties(_node: TSESTree.Node): _node is TSESTree.Node & ReadonlyRecord<string, unknown> {
-	return true;
+function getNodeProperties(node: TSESTree.Node): TSESTree.Node & ReadonlyRecord<string, unknown> {
+	return { ...node };
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- lol.
 function traverseForThis(currentNode: TSESTree.Node, visited: WeakSet<TSESTree.Node>): boolean {
 	if (visited.has(currentNode)) return false;
 	visited.add(currentNode);
 	if (currentNode.type === AST_NODE_TYPES.ThisExpression || currentNode.type === AST_NODE_TYPES.Super) return true;
 
-	if (!hasDynamicProperties(currentNode)) return false;
+	const currentNodeProperties = getNodeProperties(currentNode);
 
-	for (const key in currentNode) {
-		if (!Object.hasOwn(currentNode, key)) continue;
-
-		const childValue = currentNode[key];
+	for (const childValue of Object.values(currentNodeProperties)) {
 		if (childValue === null || childValue === undefined) continue;
 
 		if (Array.isArray(childValue)) {
@@ -80,7 +79,7 @@ function methodUsesThis(node: TSESTree.MethodDefinition): boolean {
 	return traverseForThis(value, new WeakSet());
 }
 
-const noInstanceMethodsWithoutThis = createRule<[NoInstanceMethodsOptions | undefined], MessageIds>({
+const noInstanceMethodsWithoutThis = createRule<[NoInstanceMethodsOptions], MessageIds>({
 	create(context) {
 		const [rawOptions] = context.options;
 		const options = normalizeOptions(rawOptions);
@@ -100,8 +99,8 @@ const noInstanceMethodsWithoutThis = createRule<[NoInstanceMethodsOptions | unde
 			},
 		};
 	},
-	defaultOptions: [DEFAULT_OPTIONS],
 	meta: {
+		defaultOptions: [DEFAULT_OPTIONS],
 		docs: {
 			description:
 				"Detect instance methods that do not use 'this' and suggest converting them to standalone functions for better performance in roblox-ts.",

@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import rule from "@rules/prefer-idiv";
+import rule from "$rules/prefer-idiv";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -121,6 +121,21 @@ describe("prefer-idiv", () => {
 				errors: [{ messageId: "useIdiv" }],
 				output: "a.idiv(b / c);",
 			},
+			{
+				code: "math.floor(this / y);",
+				errors: [{ messageId: "useIdiv" }],
+				output: "this.idiv(y);",
+			},
+			{
+				code: "math.floor(new Vector2() / y);",
+				errors: [{ messageId: "useIdiv" }],
+				output: "new Vector2().idiv(y);",
+			},
+			{
+				code: "math.floor(object.value / y);",
+				errors: [{ messageId: "useIdiv" }],
+				output: "object.value.idiv(y);",
+			},
 		],
 		valid: [
 			// Already using idiv
@@ -145,6 +160,7 @@ describe("prefer-idiv", () => {
 			"math?.floor(x / y);",
 			// Optional chaining on floor - should not match
 			"math.floor?.(x / y);",
+			"math?.floor?.(x / y);",
 			// Not the floor method
 			"math.ceil(x / y);",
 			"math.round(x / y);",
@@ -154,6 +170,8 @@ describe("prefer-idiv", () => {
 			// Computed property with non-string literal (should not match)
 			"math[0](x / y);",
 			"math[123](x / y);",
+			"class Derived extends Base { method() { super.floor(x / y); } }",
+			"class Derived extends Base { constructor() { super(x / y); } }",
 		],
 	});
 });

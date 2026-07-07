@@ -1,3 +1,5 @@
+import { getDefinedValue } from "$utilities/defined-utilities";
+
 import {
 	MetaSelectors,
 	ModifierWeights,
@@ -12,7 +14,7 @@ import { createValidator } from "./validator";
 
 import type { Except } from "type-fest";
 
-import type { MetaSelectorsString } from "./enums";
+import type { IndividualAndMetaSelectorsString, MetaSelectorsString } from "./enums";
 import type { Context, NormalizedMatchRegex, NormalizedSelector, ParsedOptions, Selector } from "./types";
 
 const META_SELECTOR_MAP: Record<MetaSelectorsString, Array<keyof typeof Selectors>> = {
@@ -47,6 +49,7 @@ function normalizeCustom(option: Selector): NormalizedMatchRegex | undefined {
 	return { match: option.custom.match, regex: new RegExp(option.custom.regex, "u") };
 }
 
+// oxlint-disable-next-line sonar/cognitive-complexity -- lol.
 function normalizeOption(option: Selector): Array<NormalizedSelector> {
 	let weight = 0;
 	if (option.modifiers) for (const modifier of option.modifiers) weight += ModifierWeights[modifier];
@@ -86,22 +89,13 @@ function normalizeOption(option: Selector): Array<NormalizedSelector> {
 	const normalizedSelectors = new Array<NormalizedSelector>();
 
 	for (const selector of selectors) {
-		const isDefault = selector === MetaSelectors.default;
-		const selectorPriority = isDefault
-			? 0
-			: isMetaSelector(selector)
-				? isMethodOrPropertySelector(selector)
-					? 2
-					: 1
-				: 3;
-
-		const resolvedSelectors = (
-			isMetaSelector(selector) ? (META_SELECTOR_MAP[selector] ?? []) : [Selectors[selector]]
-		) as Array<string>;
+		const resolvedSelectors = isMetaSelector(selector)
+			? getDefinedValue(META_SELECTOR_MAP[selector])
+			: [Selectors[selector]];
 
 		normalizedSelectors.push({
 			...normalizedOption,
-			selectorPriority,
+			selectorPriority: getSelectorPriority(selector),
 			selectors: resolvedSelectors,
 		});
 	}
@@ -109,8 +103,14 @@ function normalizeOption(option: Selector): Array<NormalizedSelector> {
 	return normalizedSelectors;
 }
 
+function getSelectorPriority(selector: IndividualAndMetaSelectorsString): number {
+	if (selector === MetaSelectors.default) return 0;
+	if (isMetaSelector(selector)) return isMethodOrPropertySelector(selector) ? 2 : 1;
+	return 3;
+}
+
 export function parseOptions(context: Context, options: ReadonlyArray<Selector> = context.options): ParsedOptions {
-	const normalizedOptions = options.flatMap((option) => normalizeOption(option));
+	const normalizedOptions = options.flatMap(normalizeOption);
 	const selectorNames = getEnumNames(Selectors);
 	const selectorMap = new Map<string, Array<NormalizedSelector>>();
 
@@ -122,7 +122,11 @@ export function parseOptions(context: Context, options: ReadonlyArray<Selector> 
 
 	const parsedOptions: ParsedOptions = {};
 	for (const selectorName of selectorNames) {
-		parsedOptions[selectorName] = createValidator(selectorName, context, selectorMap.get(selectorName) ?? []);
+		parsedOptions[selectorName] = createValidator(
+			selectorName,
+			context,
+			getDefinedValue(selectorMap.get(selectorName)),
+		);
 	}
 	return parsedOptions;
 }

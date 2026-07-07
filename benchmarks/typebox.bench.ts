@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+// oxlint-disable sonar/pseudo-random small-rules/no-array-constructor-elements -- shut
 
 import { barplot, bench, do_not_optimize, run } from "mitata";
 import Typebox from "typebox";

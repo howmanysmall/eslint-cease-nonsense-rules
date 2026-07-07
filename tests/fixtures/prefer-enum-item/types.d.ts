@@ -8,35 +8,35 @@ declare global {
 	namespace Enum {
 		namespace ScaleType {
 			interface Stretch extends EnumItem {
-				EnumType: typeof Enum.ScaleType;
+				EnumType: typeof ScaleType;
 				Name: "Stretch";
 				Value: 0;
 			}
 			const Stretch: Stretch;
 
 			interface Slice extends EnumItem {
-				EnumType: typeof Enum.ScaleType;
+				EnumType: typeof ScaleType;
 				Name: "Slice";
 				Value: 1;
 			}
 			const Slice: Slice;
 
 			interface Tile extends EnumItem {
-				EnumType: typeof Enum.ScaleType;
+				EnumType: typeof ScaleType;
 				Name: "Tile";
 				Value: 2;
 			}
 			const Tile: Tile;
 
 			interface Fit extends EnumItem {
-				EnumType: typeof Enum.ScaleType;
+				EnumType: typeof ScaleType;
 				Name: "Fit";
 				Value: 3;
 			}
 			const Fit: Fit;
 
 			interface Crop extends EnumItem {
-				EnumType: typeof Enum.ScaleType;
+				EnumType: typeof ScaleType;
 				Name: "Crop";
 				Value: 4;
 			}
@@ -46,35 +46,35 @@ declare global {
 
 		namespace UIFlexMode {
 			interface None extends EnumItem {
-				EnumType: typeof Enum.UIFlexMode;
+				EnumType: typeof UIFlexMode;
 				Name: "None";
 				Value: 0;
 			}
 			const None: None;
 
 			interface Grow extends EnumItem {
-				EnumType: typeof Enum.UIFlexMode;
+				EnumType: typeof UIFlexMode;
 				Name: "Grow";
 				Value: 1;
 			}
 			const Grow: Grow;
 
 			interface Shrink extends EnumItem {
-				EnumType: typeof Enum.UIFlexMode;
+				EnumType: typeof UIFlexMode;
 				Name: "Shrink";
 				Value: 2;
 			}
 			const Shrink: Shrink;
 
 			interface Fill extends EnumItem {
-				EnumType: typeof Enum.UIFlexMode;
+				EnumType: typeof UIFlexMode;
 				Name: "Fill";
 				Value: 3;
 			}
 			const Fill: Fill;
 
 			interface Custom extends EnumItem {
-				EnumType: typeof Enum.UIFlexMode;
+				EnumType: typeof UIFlexMode;
 				Name: "Custom";
 				Value: 4;
 			}

@@ -1,7 +1,8 @@
+import { createRule } from "$utilities/create-rule";
+import { getDefinedValue } from "$utilities/defined-utilities";
 import { TSESTree } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
 
-import type { TypeChecker, TypeNode } from "typescript";
+import type { Node as TypeScriptNode, TypeChecker } from "typescript";
 
 /** Configuration options for the require-serialized-numeric-data-type rule. */
 export interface RequireSerializedNumericDataTypeOptions {
@@ -30,6 +31,18 @@ type Options = [RequireSerializedNumericDataTypeOptions?];
 type MessageIds = "requireSerializedNumericDataType";
 
 const DEFAULT_FUNCTION_NAMES = ["registerComponent"];
+
+const DEFAULT_OPTIONS: Required<RequireSerializedNumericDataTypeOptions> = {
+	functionNames: DEFAULT_FUNCTION_NAMES,
+	mode: "type-arguments",
+	strict: false,
+};
+
+interface StrictTypeServices {
+	readonly esTreeNodeToTSNodeMap: {
+		readonly get: (node: TSESTree.Node) => TypeScriptNode;
+	};
+}
 
 function isRawNumberType(node: TSESTree.TypeNode): boolean {
 	return node.type === TSESTree.AST_NODE_TYPES.TSNumberKeyword;
@@ -64,6 +77,19 @@ function isDataTypeReference(node: TSESTree.TypeNode): boolean {
 	return false;
 }
 
+function onTypeLiteral(node: TSESTree.TSTypeLiteral): boolean {
+	for (const member of node.members) {
+		if (
+			member.type === TSESTree.AST_NODE_TYPES.TSPropertySignature &&
+			member.typeAnnotation?.typeAnnotation !== undefined &&
+			containsRawNumber(member.typeAnnotation.typeAnnotation)
+		) {
+			return true;
+		}
+	}
+	return false;
+}
+
 function containsRawNumber(node: TSESTree.TypeNode): boolean {
 	if (isRawNumberType(node)) return true;
 	if (isDataTypeReference(node)) return false;
@@ -72,26 +98,12 @@ function containsRawNumber(node: TSESTree.TypeNode): boolean {
 		return node.types.some(containsRawNumber);
 	}
 
-	if (node.type === TSESTree.AST_NODE_TYPES.TSTypeLiteral) {
-		for (const member of node.members) {
-			if (
-				member.type === TSESTree.AST_NODE_TYPES.TSPropertySignature &&
-				member.typeAnnotation !== undefined &&
-				member.typeAnnotation.typeAnnotation !== undefined &&
-				containsRawNumber(member.typeAnnotation.typeAnnotation)
-			) {
-				return true;
-			}
-		}
-		return false;
-	}
-
+	if (node.type === TSESTree.AST_NODE_TYPES.TSTypeLiteral) return onTypeLiteral(node);
 	if (node.type === TSESTree.AST_NODE_TYPES.TSArrayType) return containsRawNumber(node.elementType);
 	if (node.type === TSESTree.AST_NODE_TYPES.TSTupleType) return node.elementTypes.some(containsRawNumber);
 	if (node.type === TSESTree.AST_NODE_TYPES.TSIndexedAccessType) return containsRawNumber(node.objectType);
 	if (node.type === TSESTree.AST_NODE_TYPES.TSTypeOperator) {
-		const { typeAnnotation } = node;
-		if (typeAnnotation !== undefined) return containsRawNumber(typeAnnotation);
+		return containsRawNumber(getDefinedValue(node.typeAnnotation, "Expected type operator to include an operand."));
 	}
 
 	// Check type arguments of generic type references (e.g., Array<number>, Promise<number>)
@@ -106,11 +118,7 @@ function containsRawNumber(node: TSESTree.TypeNode): boolean {
 	return false;
 }
 
-function checkTypeWithTypeChecker(typeChecker: TypeChecker, node: TypeNode, visited = new Set<number>()): boolean {
-	const nodeId = node.pos;
-	if (visited.has(nodeId)) return false;
-	visited.add(nodeId);
-
+function checkTypeWithTypeChecker(typeChecker: TypeChecker, node: TypeScriptNode): boolean {
 	const type = typeChecker.getTypeAtLocation(node);
 	const typeString = typeChecker.typeToString(type);
 
@@ -124,14 +132,20 @@ function checkTypeWithTypeChecker(typeChecker: TypeChecker, node: TypeNode, visi
 
 const requireSerializedNumericDataType = createRule<Options, MessageIds>({
 	create(context) {
-		const options = context.options[0] ?? {};
-		const mode = options.mode ?? "type-arguments";
-		const functionNames = new Set(options.functionNames ?? DEFAULT_FUNCTION_NAMES);
-		const strictMode = options.strict ?? false;
+		const options = { ...DEFAULT_OPTIONS, ...context.options[0] };
+		const { mode, strict: strictMode } = options;
+		const functionNames = new Set(options.functionNames);
 
 		const { parserServices } = context.sourceCode;
 
 		const typeChecker = strictMode && parserServices?.program ? parserServices.program.getTypeChecker() : undefined;
+		const strictTypeServices: StrictTypeServices | undefined =
+			strictMode &&
+			parserServices !== undefined &&
+			"esTreeNodeToTSNodeMap" in parserServices &&
+			parserServices.esTreeNodeToTSNodeMap !== undefined
+				? { esTreeNodeToTSNodeMap: parserServices.esTreeNodeToTSNodeMap }
+				: undefined;
 
 		function reportError(node: TSESTree.Node): void {
 			context.report({
@@ -143,15 +157,9 @@ const requireSerializedNumericDataType = createRule<Options, MessageIds>({
 		function checkTypeNode(node: TSESTree.TypeNode): boolean {
 			if (containsRawNumber(node)) return true;
 
-			if (
-				typeChecker !== undefined &&
-				parserServices !== undefined &&
-				"esTreeNodeToTSNodeMap" in parserServices
-			) {
-				const tsNode = parserServices.esTreeNodeToTSNodeMap.get(node);
-				if (tsNode !== undefined && "_typeNodeBrand" in tsNode) {
-					return checkTypeWithTypeChecker(typeChecker, tsNode);
-				}
+			if (typeChecker !== undefined && strictTypeServices !== undefined) {
+				const tsNode = strictTypeServices.esTreeNodeToTSNodeMap.get(node);
+				return checkTypeWithTypeChecker(typeChecker, tsNode);
 			}
 
 			return false;
@@ -203,14 +211,13 @@ const requireSerializedNumericDataType = createRule<Options, MessageIds>({
 			},
 
 			MethodDefinition(node: TSESTree.MethodDefinition): void {
-				if (node.value.type === TSESTree.AST_NODE_TYPES.FunctionExpression) {
-					for (const parameter of node.value.params) {
-						if (parameter.type === TSESTree.AST_NODE_TYPES.Identifier) {
-							checkTypeAnnotation(parameter.typeAnnotation);
-						}
+				if (node.value.type !== TSESTree.AST_NODE_TYPES.FunctionExpression) return;
+				for (const parameter of node.value.params) {
+					if (parameter.type === TSESTree.AST_NODE_TYPES.Identifier) {
+						checkTypeAnnotation(parameter.typeAnnotation);
 					}
-					checkTypeAnnotation(node.value.returnType);
 				}
+				checkTypeAnnotation(node.value.returnType);
 			},
 
 			PropertyDefinition(node: TSESTree.PropertyDefinition): void {
@@ -238,14 +245,14 @@ const requireSerializedNumericDataType = createRule<Options, MessageIds>({
 			},
 		};
 	},
-	defaultOptions: [
-		{
-			functionNames: DEFAULT_FUNCTION_NAMES,
-			mode: "type-arguments",
-			strict: false,
-		},
-	],
 	meta: {
+		defaultOptions: [
+			{
+				functionNames: DEFAULT_FUNCTION_NAMES,
+				mode: "type-arguments",
+				strict: false,
+			},
+		],
 		docs: {
 			description:
 				"Require specific serialized numeric data types (DataType.*) instead of generic `number` for ECS components and other serialization contexts.",

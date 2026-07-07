@@ -1,7 +1,7 @@
+import { unwrapNode } from "$utilities/ast-utilities";
+import { createRule } from "$utilities/create-rule";
+import { getDefinedValue } from "$utilities/defined-utilities";
 import { TSESTree } from "@typescript-eslint/types";
-import { createRule } from "@utilities/create-rule";
-import Typebox from "typebox";
-import { Compile } from "typebox/compile";
 
 import type { TSESLint } from "@typescript-eslint/utils";
 
@@ -37,11 +37,6 @@ interface HookConfig {
 
 type StableResult = boolean | ReadonlySet<number> | ReadonlySet<string>;
 
-const testingMetrics = {
-	moduleLevelStableConst: 0,
-	outerScopeSkip: 0,
-};
-
 interface VariableDefinitionLike {
 	readonly node: TSESTree.Node;
 	readonly type: string;
@@ -63,8 +58,10 @@ interface CaptureInfo {
 	readonly name: string;
 	readonly node: TSESTree.Node;
 	readonly usagePath: string;
-	readonly variable: VariableLike | undefined;
+	readonly variable: VariableLike;
 }
+
+type ClosureFunction = TSESTree.ArrowFunctionExpression | TSESTree.FunctionDeclaration | TSESTree.FunctionExpression;
 
 const DEFAULT_HOOKS = new Map<string, HookConfig>([
 	["useEffect", { closureIndex: 0, dependenciesIndex: 1 }],
@@ -203,29 +200,42 @@ function nodeToDependencyString(node: TSESTree.Node, sourceCode: TSESLint.Source
 }
 
 function nodeToSafeDependencyPath(node: TSESTree.Node, sourceCode: TSESLint.SourceCode): string {
-	if (node.type === TSESTree.AST_NODE_TYPES.Identifier) return node.name;
+	let dependencyPath = sourceCode.getText(node);
 
-	if (node.type === TSESTree.AST_NODE_TYPES.ChainExpression) {
-		return nodeToSafeDependencyPath(node.expression, sourceCode);
+	if (node.type === TSESTree.AST_NODE_TYPES.Identifier) {
+		dependencyPath = node.name;
 	}
 
-	if (TS_RUNTIME_EXPRESSIONS.has(node.type)) {
-		const expr = node as TSESTree.TSNonNullExpression | TSESTree.TSAsExpression | TSESTree.TSSatisfiesExpression;
-		return nodeToSafeDependencyPath(expr.expression, sourceCode);
+	if (node.type === TSESTree.AST_NODE_TYPES.ChainExpression) {
+		dependencyPath = nodeToSafeDependencyPath(node.expression, sourceCode);
 	}
 
 	if (node.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
 		const objectPath = nodeToSafeDependencyPath(node.object, sourceCode);
 		if (node.computed) {
 			const propertyText = sourceCode.getText(node.property);
-			return `${objectPath}[${propertyText}]`;
+			dependencyPath = `${objectPath}[${propertyText}]`;
+		} else {
+			const propertyName =
+				node.property.type === TSESTree.AST_NODE_TYPES.Identifier
+					? node.property.name
+					: sourceCode.getText(node.property);
+			const separator = node.optional ? "?." : ".";
+			dependencyPath = `${objectPath}${separator}${propertyName}`;
 		}
-		const propertyName = node.property.type === TSESTree.AST_NODE_TYPES.Identifier ? node.property.name : "";
-		const separator = node.optional ? "?." : ".";
-		return `${objectPath}${separator}${propertyName}`;
 	}
 
-	return sourceCode.getText(node);
+	if (
+		node.type === TSESTree.AST_NODE_TYPES.TSAsExpression ||
+		node.type === TSESTree.AST_NODE_TYPES.TSInstantiationExpression ||
+		node.type === TSESTree.AST_NODE_TYPES.TSNonNullExpression ||
+		node.type === TSESTree.AST_NODE_TYPES.TSSatisfiesExpression ||
+		node.type === TSESTree.AST_NODE_TYPES.TSTypeAssertion
+	) {
+		dependencyPath = nodeToSafeDependencyPath(node.expression, sourceCode);
+	}
+
+	return dependencyPath;
 }
 
 function isStableArrayIndex(
@@ -233,7 +243,7 @@ function isStableArrayIndex(
 	node: TSESLint.Scope.Definition["node"],
 	identifierName: string,
 ): boolean {
-	if (!stableResult) return false;
+	if (stableResult === undefined || stableResult === false || stableResult === true) return false;
 	if (
 		!(stableResult instanceof Set) ||
 		node.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator ||
@@ -256,6 +266,42 @@ function isStableArrayIndex(
 	return false;
 }
 
+function getObjectPatternPropertyName(property: TSESTree.Property): string | undefined {
+	if (property.computed) return undefined;
+	if (property.key.type === TSESTree.AST_NODE_TYPES.Literal) return String(property.key.value);
+	return property.key.name;
+}
+
+function isStableObjectProperty(
+	stableResult: StableResult | undefined,
+	node: TSESLint.Scope.Definition["node"],
+	identifierName: string,
+): boolean {
+	if (stableResult === undefined || stableResult === false || stableResult === true) return false;
+	if (
+		!(stableResult instanceof Set) ||
+		node.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator ||
+		node.id.type !== TSESTree.AST_NODE_TYPES.ObjectPattern
+	) {
+		return false;
+	}
+
+	for (const property of node.id.properties) {
+		if (
+			property.type !== TSESTree.AST_NODE_TYPES.Property ||
+			property.value.type !== TSESTree.AST_NODE_TYPES.Identifier ||
+			property.value.name !== identifierName
+		) {
+			continue;
+		}
+
+		const propertyName = getObjectPatternPropertyName(property);
+		return propertyName !== undefined && stableResult.has(propertyName);
+	}
+
+	return false;
+}
+
 function isStableHookValue(
 	init: TSESTree.Expression,
 	node: TSESLint.Scope.Definition["node"],
@@ -265,87 +311,86 @@ function isStableHookValue(
 	if (init.type !== TSESTree.AST_NODE_TYPES.CallExpression) return false;
 
 	const hookName = getHookName(init);
-	if (!hookName) return false;
+	if (hookName === undefined || hookName === "") return false;
 
 	const stableResult = stableHooks.get(hookName);
 	if (stableResult === true) return true;
 
-	return isStableArrayIndex(stableResult, node, identifierName);
+	return (
+		isStableArrayIndex(stableResult, node, identifierName) ||
+		isStableObjectProperty(stableResult, node, identifierName)
+	);
 }
 
-function isStableValue(
-	variable: VariableLike | undefined,
+function isReactJoinBindingsCall(callee: TSESTree.CallExpression["callee"]): boolean {
+	return (
+		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+		callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
+		callee.object.name === "React" &&
+		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
+		callee.property.name === "joinBindings"
+	);
+}
+
+function isMapCall(callee: TSESTree.CallExpression["callee"]): boolean {
+	return (
+		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
+		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
+		callee.property.name === "map"
+	);
+}
+
+function isKnownStableCall(init: TSESTree.Expression | null): boolean {
+	if (init === null || init.type !== TSESTree.AST_NODE_TYPES.CallExpression) return false;
+	return isReactJoinBindingsCall(init.callee) || isMapCall(init.callee);
+}
+
+function isStableLiteralExpression(init: TSESTree.Expression | null): boolean {
+	if (init === null) return false;
+	if (init.type === TSESTree.AST_NODE_TYPES.Literal) return true;
+	if (init.type === TSESTree.AST_NODE_TYPES.TemplateLiteral) return true;
+	return (
+		init.type === TSESTree.AST_NODE_TYPES.UnaryExpression && init.argument.type === TSESTree.AST_NODE_TYPES.Literal
+	);
+}
+
+function isConstVariableDeclarator(node: TSESTree.VariableDeclarator): boolean {
+	const { parent } = node;
+	return (
+		parent !== undefined && parent.type === TSESTree.AST_NODE_TYPES.VariableDeclaration && parent.kind === "const"
+	);
+}
+
+function isStableVariableDeclarator(
+	node: TSESTree.VariableDeclarator,
 	identifierName: string,
 	stableHooks: Map<string, StableResult>,
 ): boolean {
-	if (!variable) return false;
+	const { init } = node;
+	if (init !== null && isStableHookValue(init, node, identifierName, stableHooks)) return true;
+	if (isKnownStableCall(init)) return true;
+	if (isStableLiteralExpression(init)) return true;
+	return false;
+}
 
+function isStableValue(
+	variable: VariableLike,
+	identifierName: string,
+	stableHooks: Map<string, StableResult>,
+): boolean {
 	const definitions = variable.defs;
-	if (definitions.length === 0) return false;
 
 	for (const definition of definitions) {
 		const { node, type } = definition;
 
 		if (STABLE_VALUE_TYPES.has(type)) return true;
 
-		if (type === "Variable" && node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator) {
-			const { parent } = node as TSESTree.VariableDeclarator;
-			if (!parent || parent.type !== TSESTree.AST_NODE_TYPES.VariableDeclaration || parent.kind !== "const") {
-				continue;
-			}
-
-			const init = node.init as TSESTree.Expression | undefined | null;
-			if (init && isStableHookValue(init, node, identifierName, stableHooks)) return true;
-
-			if (init?.type === TSESTree.AST_NODE_TYPES.CallExpression) {
-				const { callee } = init;
-
-				if (
-					callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-					callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
-					callee.object.name === "React" &&
-					callee.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
-					callee.property.name === "joinBindings"
-				) {
-					return true;
-				}
-
-				if (
-					callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-					callee.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
-					callee.property.name === "map"
-				) {
-					return true;
-				}
-			}
-
-			if (init) {
-				if (
-					init.type === TSESTree.AST_NODE_TYPES.Literal ||
-					init.type === TSESTree.AST_NODE_TYPES.TemplateLiteral
-				) {
-					return true;
-				}
-				if (
-					init.type === TSESTree.AST_NODE_TYPES.UnaryExpression &&
-					init.argument.type === TSESTree.AST_NODE_TYPES.Literal
-				) {
-					return true;
-				}
-			}
-
-			const variableDefinition = variable.defs.find((matchedDefinition) => matchedDefinition.node === node);
-			if (variableDefinition && variableDefinition.node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator) {
-				const declarationParent = (variableDefinition.node as TSESTree.VariableDeclarator).parent?.parent;
-				if (
-					declarationParent &&
-					(declarationParent.type === TSESTree.AST_NODE_TYPES.Program ||
-						declarationParent.type === TSESTree.AST_NODE_TYPES.ExportNamedDeclaration)
-				) {
-					testingMetrics.moduleLevelStableConst += 1;
-					return true;
-				}
-			}
+		if (
+			type === "Variable" &&
+			node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
+			isConstVariableDeclarator(node)
+		) {
+			return isStableVariableDeclarator(node, identifierName, stableHooks);
 		}
 	}
 
@@ -398,19 +443,18 @@ function isComputedPropertyIdentifier(identifier: TSESTree.Identifier): boolean 
 }
 
 function isInTypePosition(identifier: TSESTree.Identifier): boolean {
-	let parent: TSESTree.Node | undefined = identifier.parent ?? undefined;
+	let { parent }: { parent: TSESTree.Node | undefined } = identifier;
 
-	while (parent) {
+	while (parent !== undefined && !IS_CEASE_BOUNDARY.has(parent.type)) {
 		if (TS_RUNTIME_EXPRESSIONS.has(parent.type)) {
-			parent = parent.parent ?? undefined;
+			({ parent } = parent);
 			continue;
 		}
 		if (parent.type.startsWith("TS")) return true;
-		if (IS_CEASE_BOUNDARY.has(parent.type)) return false;
-		parent = parent.parent ?? undefined;
+		({ parent } = parent);
 	}
 
-	return false;
+	return parent?.type.startsWith("TS") === true;
 }
 
 function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree.Node): boolean {
@@ -445,7 +489,7 @@ function isDeclaredInComponentBody(variable: VariableLike, closureNode: TSESTree
 function resolveFunctionReference(
 	identifier: TSESTree.Identifier,
 	scope: TSESLint.Scope.Scope,
-): TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression | undefined {
+): ClosureFunction | undefined {
 	let variable: TSESLint.Scope.Variable | undefined;
 	let currentScope: TSESLint.Scope.Scope | null = scope;
 
@@ -461,12 +505,12 @@ function resolveFunctionReference(
 		const { node } = definition;
 
 		if (node.type === TSESTree.AST_NODE_TYPES.FunctionDeclaration) {
-			return node as unknown as TSESTree.FunctionExpression;
+			return node;
 		}
 
 		if (
 			node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator &&
-			node.init &&
+			node.init !== null &&
 			(node.init.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression ||
 				node.init.type === TSESTree.AST_NODE_TYPES.FunctionExpression)
 		) {
@@ -477,64 +521,107 @@ function resolveFunctionReference(
 	return undefined;
 }
 
-function collectCaptures(node: TSESTree.Node, sourceCode: TSESLint.SourceCode): ReadonlyArray<CaptureInfo> {
+function getVisitorKeys(sourceCode: TSESLint.SourceCode, nodeType: string): ReadonlyArray<string> {
+	return getDefinedValue(sourceCode.visitorKeys[nodeType], "Expected visitor keys for AST node.");
+}
+
+function getPropertyValue(target: object, key: string): unknown {
+	return Reflect.get(target, key);
+}
+
+function isNode(value: unknown): value is TSESTree.Node {
+	return value !== null && typeof value === "object" && "type" in value;
+}
+
+function findVariableInScope(name: string, scope: TSESLint.Scope.Scope): TSESLint.Scope.Variable | undefined {
+	let currentScope: TSESLint.Scope.Scope | null = scope;
+
+	while (currentScope !== null) {
+		const variable = currentScope.set.get(name);
+		if (variable !== undefined) return variable;
+		currentScope = currentScope.upper;
+	}
+
+	return undefined;
+}
+
+function isDefinitionInsideNode(definition: VariableDefinitionLike, node: TSESTree.Node): boolean {
+	let definitionNode: TSESTree.Node | undefined = definition.node;
+
+	while (definitionNode !== undefined) {
+		if (definitionNode === node) return true;
+		definitionNode = definitionNode.parent ?? undefined;
+	}
+
+	return false;
+}
+
+function addCapture(
+	captures: Array<CaptureInfo>,
+	captureSet: Set<string>,
+	current: TSESTree.Identifier,
+	node: TSESTree.Node,
+	sourceCode: TSESLint.SourceCode,
+	variable: VariableLike,
+): void {
+	const { name } = current;
+
+	if (!isDeclaredInComponentBody(variable, node)) {
+		return;
+	}
+
+	captureSet.add(name);
+	const depthNode = findTopmostMemberExpression(current);
+	captures.push({
+		depth: getMemberExpressionDepth(depthNode),
+		forceDependency: isComputedPropertyIdentifier(current),
+		name,
+		node: depthNode,
+		usagePath: nodeToSafeDependencyPath(depthNode, sourceCode),
+		variable,
+	});
+}
+
+function collectIdentifierCapture(
+	captures: Array<CaptureInfo>,
+	captureSet: Set<string>,
+	current: TSESTree.Identifier,
+	node: TSESTree.Node,
+	sourceCode: TSESLint.SourceCode,
+): void {
+	const { name } = current;
+	if (captureSet.has(name) || GLOBAL_BUILTINS.has(name) || isInTypePosition(current)) return;
+
+	const variable = findVariableInScope(name, sourceCode.getScope(current));
+	if (variable === undefined) return;
+	if (variable.defs.some((definition) => isDefinitionInsideNode(definition, node))) return;
+
+	addCapture(captures, captureSet, current, node, sourceCode, variable);
+}
+
+function collectCaptures(node: ClosureFunction, sourceCode: TSESLint.SourceCode): ReadonlyArray<CaptureInfo> {
 	const captures = new Array<CaptureInfo>();
 	const captureSet = new Set<string>();
 
+	function visitChildren(current: TSESTree.Node): void {
+		const keys = getVisitorKeys(sourceCode, current.type);
+
+		for (const key of keys) {
+			const value = getPropertyValue(current, key);
+			if (Array.isArray(value)) {
+				for (const item of value) {
+					if (isNode(item)) visit(item);
+				}
+				continue;
+			}
+
+			if (isNode(value)) visit(value);
+		}
+	}
+
 	function visit(current: TSESTree.Node): void {
 		if (current.type === TSESTree.AST_NODE_TYPES.Identifier) {
-			const { name } = current;
-
-			if (captureSet.has(name) || GLOBAL_BUILTINS.has(name) || isInTypePosition(current)) return;
-
-			let variable: TSESLint.Scope.Variable | undefined;
-			let currentScope: TSESLint.Scope.Scope | null = sourceCode.getScope(current);
-
-			while (currentScope) {
-				variable = currentScope.set.get(name);
-				if (variable) break;
-				currentScope = currentScope.upper;
-			}
-
-			if (variable) {
-				const isDefinedInClosure = variable.defs.some((definition) => {
-					let definitionNode: TSESTree.Node | undefined = definition.node;
-					while (definitionNode) {
-						if (definitionNode === node) return true;
-						definitionNode = definitionNode.parent;
-					}
-					return false;
-				});
-
-				if (!isDefinedInClosure) {
-					if (!isDeclaredInComponentBody(variable as VariableLike, node)) {
-						testingMetrics.outerScopeSkip += 1;
-						return;
-					}
-
-					captureSet.add(name);
-					const depthNode = findTopmostMemberExpression(current);
-					const usagePath = nodeToSafeDependencyPath(depthNode, sourceCode);
-					const depth = getMemberExpressionDepth(depthNode);
-					captures.push({
-						depth,
-						forceDependency: isComputedPropertyIdentifier(current),
-						name,
-						node: depthNode,
-						usagePath,
-						variable: variable as VariableLike,
-					});
-				}
-			}
-		}
-
-		if (
-			current.type === TSESTree.AST_NODE_TYPES.TSSatisfiesExpression ||
-			current.type === TSESTree.AST_NODE_TYPES.TSAsExpression ||
-			current.type === TSESTree.AST_NODE_TYPES.TSTypeAssertion ||
-			current.type === TSESTree.AST_NODE_TYPES.TSNonNullExpression
-		) {
-			visit(current.expression);
+			collectIdentifierCapture(captures, captureSet, current, node, sourceCode);
 			return;
 		}
 
@@ -544,8 +631,9 @@ function collectCaptures(node: TSESTree.Node, sourceCode: TSESLint.SourceCode): 
 			return;
 		}
 
-		if (current.type === TSESTree.AST_NODE_TYPES.ChainExpression) {
-			visit(current.expression);
+		const unwrapped = unwrapNode(current);
+		if (unwrapped !== current) {
+			visit(unwrapped);
 			return;
 		}
 
@@ -555,15 +643,7 @@ function collectCaptures(node: TSESTree.Node, sourceCode: TSESLint.SourceCode): 
 			return;
 		}
 
-		const keys = sourceCode.visitorKeys?.[current.type] ?? [];
-		for (const key of keys) {
-			const value = (current as unknown as Record<string, unknown>)[key];
-			if (Array.isArray(value)) {
-				for (const item of value) {
-					if (item && typeof item === "object" && "type" in item) visit(item as TSESTree.Node);
-				}
-			} else if (value && typeof value === "object" && "type" in value) visit(value as TSESTree.Node);
-		}
+		visitChildren(current);
 	}
 
 	visit(node);
@@ -599,28 +679,28 @@ function returnName({ name }: { readonly name: string }): string {
 }
 
 function isUnstableValue(node: TSESTree.Node | undefined): boolean {
-	return node ? UNSTABLE_VALUES.has(node.type) : false;
+	return node !== undefined && UNSTABLE_VALUES.has(node.type);
 }
 
 function isSelfReferenceCapture(capture: CaptureInfo, callNode: TSESTree.CallExpression): boolean {
 	const { parent } = callNode;
-	if (!parent || parent.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator) return false;
-	return capture.variable?.defs.some((definition) => definition.node === parent) ?? false;
+	if (parent === undefined || parent.type !== TSESTree.AST_NODE_TYPES.VariableDeclarator) return false;
+	return capture.variable.defs.some((definition) => definition.node === parent);
 }
 
-const isNumberArray = Compile(Typebox.Array(Typebox.Number(), { minItems: 1, readOnly: true }));
-const isStringArray = Compile(Typebox.Array(Typebox.String(), { minItems: 1, readOnly: true }));
+function isNumberStableResult(
+	stableResult: ReadonlyArray<number> | ReadonlyArray<string>,
+): stableResult is ReadonlyArray<number> {
+	return stableResult.every((value) => typeof value === "number");
+}
 
 function convertStableResult(
 	stableResult: boolean | number | ReadonlyArray<number> | ReadonlyArray<string>,
 ): StableResult {
 	if (typeof stableResult === "boolean") return stableResult;
 	if (typeof stableResult === "number") return new Set([stableResult]);
-
-	if (isNumberArray.Check(stableResult)) return new Set(stableResult);
-	if (isStringArray.Check(stableResult)) return new Set(stableResult);
-
-	return false;
+	if (isNumberStableResult(stableResult)) return new Set(stableResult);
+	return new Set(stableResult);
 }
 
 type MessageIds =
@@ -635,6 +715,307 @@ type MessageIds =
 	| "addMissingDependenciesSuggestion";
 
 type Options = [UseExhaustiveDependenciesOptions?];
+type RuleContext = TSESLint.RuleContext<MessageIds, Options>;
+
+function getClosureFunction(
+	closureArgument: TSESTree.CallExpressionArgument,
+	callNode: TSESTree.CallExpression,
+	getScope: (node: TSESTree.Node) => TSESLint.Scope.Scope,
+): ClosureFunction | undefined {
+	if (
+		closureArgument.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression ||
+		closureArgument.type === TSESTree.AST_NODE_TYPES.FunctionExpression
+	) {
+		return closureArgument;
+	}
+
+	if (closureArgument.type !== TSESTree.AST_NODE_TYPES.Identifier) return undefined;
+	return resolveFunctionReference(closureArgument, getScope(callNode));
+}
+
+function getCallCaptures(
+	closureFunction: ClosureFunction,
+	callNode: TSESTree.CallExpression,
+	sourceCode: TSESLint.SourceCode,
+): ReadonlyArray<CaptureInfo> {
+	return collectCaptures(closureFunction, sourceCode).filter((capture) => !isSelfReferenceCapture(capture, callNode));
+}
+
+function getRequiredCaptures(
+	captures: ReadonlyArray<CaptureInfo>,
+	stableHooks: Map<string, StableResult>,
+): ReadonlyArray<CaptureInfo> {
+	return captures.filter(
+		(capture) => capture.forceDependency || !isStableValue(capture.variable, capture.name, stableHooks),
+	);
+}
+
+function reportMissingDependenciesArray(
+	context: RuleContext,
+	callNode: TSESTree.CallExpression,
+	closureArgument: TSESTree.CallExpressionArgument,
+	requiredCaptures: ReadonlyArray<CaptureInfo>,
+): void {
+	if (requiredCaptures.length === 0) return;
+
+	const missingNames = [...new Set(requiredCaptures.map(returnName))].join(", ");
+	const usagePaths = requiredCaptures.map(({ usagePath }) => usagePath);
+	const uniqueDependencies = [...new Set(usagePaths)].toSorted();
+	const dependenciesString = `[${uniqueDependencies.join(", ")}]`;
+
+	context.report({
+		data: { deps: missingNames },
+		messageId: "missingDependenciesArray",
+		node: callNode,
+		suggest: [
+			{
+				data: { dependencies: dependenciesString },
+				fix(fixer): TSESLint.RuleFix {
+					return fixer.insertTextAfter(closureArgument, `, ${dependenciesString}`);
+				},
+				messageId: "addDependenciesArraySuggestion",
+			},
+		],
+	});
+}
+
+function captureMatchesDependency(capture: CaptureInfo, dependency: DependencyInfo): boolean {
+	const captureRootIdentifier = getRootIdentifier(capture.node);
+	const dependencyRootIdentifier = getRootIdentifier(dependency.node);
+
+	return (
+		captureRootIdentifier !== undefined &&
+		dependencyRootIdentifier !== undefined &&
+		captureRootIdentifier.name === dependencyRootIdentifier.name
+	);
+}
+
+function reportUnnecessaryDependency(
+	context: RuleContext,
+	dependenciesArray: TSESTree.ArrayExpression,
+	dependencies: ReadonlyArray<DependencyInfo>,
+	dependency: DependencyInfo,
+): void {
+	const newDependencies = dependencies.filter((value) => value.name !== dependency.name).map(returnName);
+	const dependenciesString = `[${newDependencies.join(", ")}]`;
+
+	context.report({
+		data: { name: dependency.name },
+		messageId: "unnecessaryDependency",
+		node: dependency.node,
+		suggest: [
+			{
+				data: { name: dependency.name },
+				fix(fixer): TSESLint.RuleFix | null {
+					return fixer.replaceText(dependenciesArray, dependenciesString);
+				},
+				messageId: "removeDependencySuggestion",
+			},
+		],
+	});
+}
+
+function checkUnnecessaryDependencies(
+	context: RuleContext,
+	dependenciesArray: TSESTree.ArrayExpression,
+	dependencies: ReadonlyArray<DependencyInfo>,
+	captures: ReadonlyArray<CaptureInfo>,
+	reportUnnecessaryDependencies: boolean,
+): void {
+	if (!reportUnnecessaryDependencies) return;
+
+	for (const dependency of dependencies) {
+		const matchingCaptures = captures.filter((capture) => captureMatchesDependency(capture, dependency));
+		if (matchingCaptures.length === 0) {
+			reportUnnecessaryDependency(context, dependenciesArray, dependencies, dependency);
+			continue;
+		}
+
+		const maxCaptureDepth = Math.max(...matchingCaptures.map(({ depth }) => depth));
+		if (dependency.depth > maxCaptureDepth) {
+			reportUnnecessaryDependency(context, dependenciesArray, dependencies, dependency);
+		}
+	}
+}
+
+function hasDependencyForCapture(capture: CaptureInfo, dependencies: ReadonlyArray<DependencyInfo>): boolean {
+	const rootName = getRootIdentifier(capture.node)?.name;
+
+	for (const dependency of dependencies) {
+		const dependencyRootIdentifier = getRootIdentifier(dependency.node);
+		if (
+			rootName !== undefined &&
+			dependencyRootIdentifier?.name === rootName &&
+			dependency.depth <= capture.depth
+		) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+function getMissingCaptures(
+	captures: ReadonlyArray<CaptureInfo>,
+	dependencies: ReadonlyArray<DependencyInfo>,
+	stableHooks: Map<string, StableResult>,
+): ReadonlyArray<CaptureInfo> {
+	const missingCaptures = new Array<CaptureInfo>();
+
+	for (const capture of captures) {
+		if (!capture.forceDependency && isStableValue(capture.variable, capture.name, stableHooks)) continue;
+		if (!hasDependencyForCapture(capture, dependencies)) missingCaptures.push(capture);
+	}
+
+	return missingCaptures;
+}
+
+function reportMissingCaptures(
+	context: RuleContext,
+	dependenciesArray: TSESTree.ArrayExpression,
+	dependencies: ReadonlyArray<DependencyInfo>,
+	missingCaptures: ReadonlyArray<CaptureInfo>,
+): void {
+	if (missingCaptures.length === 0) return;
+
+	const dependencyNames = dependencies.map(({ name }) => name);
+	const missingPaths = missingCaptures.map(({ usagePath }) => usagePath);
+	const newDependencies = [...dependencyNames, ...missingPaths].toSorted();
+	const newDependenciesString = `[${newDependencies.join(", ")}]`;
+	const reportNode = dependencies.at(-1)?.node ?? dependenciesArray;
+	const firstMissing = missingCaptures.at(0);
+
+	if (missingCaptures.length === 1 && firstMissing !== undefined) {
+		context.report({
+			data: { name: firstMissing.usagePath },
+			messageId: "missingDependency",
+			node: reportNode,
+			suggest: [
+				{
+					data: { name: firstMissing.usagePath },
+					fix(fixer): TSESLint.RuleFix | null {
+						return fixer.replaceText(dependenciesArray, newDependenciesString);
+					},
+					messageId: "addDependencySuggestion",
+				},
+			],
+		});
+		return;
+	}
+
+	context.report({
+		data: { names: missingPaths.join(", ") },
+		messageId: "missingDependencies",
+		node: reportNode,
+		suggest: [
+			{
+				fix(fixer): TSESLint.RuleFix | null {
+					return fixer.replaceText(dependenciesArray, newDependenciesString);
+				},
+				messageId: "addMissingDependenciesSuggestion",
+			},
+		],
+	});
+}
+
+function dependencyMatchesCaptureDepth(dependency: DependencyInfo, capture: CaptureInfo): boolean {
+	const captureRootIdentifier = getRootIdentifier(capture.node);
+	const dependencyRootIdentifier = getRootIdentifier(dependency.node);
+
+	return (
+		captureRootIdentifier !== undefined &&
+		dependencyRootIdentifier?.name === captureRootIdentifier.name &&
+		dependency.depth === capture.depth
+	);
+}
+
+function getCaptureInitialNode(capture: CaptureInfo): TSESTree.Node | undefined {
+	const [variableDefinition] = capture.variable.defs;
+	return variableDefinition?.node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator
+		? (variableDefinition.node.init ?? undefined)
+		: undefined;
+}
+
+function reportUnstableDependency(context: RuleContext, dependency: DependencyInfo, capture: CaptureInfo): void {
+	context.report({
+		data: { name: capture.usagePath },
+		messageId: "unstableDependency",
+		node: dependency.node,
+	});
+}
+
+function checkUnstableCapture(
+	context: RuleContext,
+	dependencies: ReadonlyArray<DependencyInfo>,
+	capture: CaptureInfo,
+): void {
+	for (const dependency of dependencies) {
+		if (!dependencyMatchesCaptureDepth(dependency, capture)) continue;
+		if (dependency.depth !== 0) break;
+
+		if (isUnstableValue(getCaptureInitialNode(capture))) {
+			reportUnstableDependency(context, dependency, capture);
+		}
+		break;
+	}
+}
+
+function reportUnstableDependencies(
+	context: RuleContext,
+	dependencies: ReadonlyArray<DependencyInfo>,
+	captures: ReadonlyArray<CaptureInfo>,
+	stableHooks: Map<string, StableResult>,
+): void {
+	for (const capture of captures) {
+		if (!capture.forceDependency && isStableValue(capture.variable, capture.name, stableHooks)) continue;
+		checkUnstableCapture(context, dependencies, capture);
+	}
+}
+
+function checkHookCall(
+	context: RuleContext,
+	callNode: TSESTree.CallExpression,
+	hookConfig: HookConfig,
+	stableHooks: Map<string, StableResult>,
+	options: Required<UseExhaustiveDependenciesOptions>,
+	getScope: (node: TSESTree.Node) => TSESLint.Scope.Scope,
+): void {
+	const parameters = callNode.arguments;
+	const closureArgument = parameters[hookConfig.closureIndex];
+	if (closureArgument === undefined) return;
+
+	const closureFunction = getClosureFunction(closureArgument, callNode, getScope);
+	if (closureFunction === undefined) return;
+
+	const dependenciesArgument = parameters[hookConfig.dependenciesIndex];
+	if (dependenciesArgument === undefined) {
+		if (!options.reportMissingDependenciesArray) return;
+
+		const captures = getCallCaptures(closureFunction, callNode, context.sourceCode);
+		const requiredCaptures = getRequiredCaptures(captures, stableHooks);
+		reportMissingDependenciesArray(context, callNode, closureArgument, requiredCaptures);
+		return;
+	}
+
+	if (dependenciesArgument.type !== TSESTree.AST_NODE_TYPES.ArrayExpression) return;
+
+	const captures = getCallCaptures(closureFunction, callNode, context.sourceCode);
+	const dependencies = parseDependencies(dependenciesArgument, context.sourceCode);
+	checkUnnecessaryDependencies(
+		context,
+		dependenciesArgument,
+		dependencies,
+		captures,
+		options.reportUnnecessaryDependencies,
+	);
+	reportMissingCaptures(
+		context,
+		dependenciesArgument,
+		dependencies,
+		getMissingCaptures(captures, dependencies, stableHooks),
+	);
+	reportUnstableDependencies(context, dependencies, captures, stableHooks);
+}
 
 const useExhaustiveDependencies = createRule<Options, MessageIds>({
 	create(context): TSESLint.RuleListener {
@@ -660,15 +1041,8 @@ const useExhaustiveDependencies = createRule<Options, MessageIds>({
 			stableHooks.set(customHook.name, convertStableResult(customHook.stableResult));
 		}
 
-		const scopeCache = new WeakMap<TSESTree.Node, TSESLint.Scope.Scope>();
-
 		function getScope(node: TSESTree.Node): TSESLint.Scope.Scope {
-			const cached = scopeCache.get(node);
-			if (cached) return cached;
-
-			const scope = context.sourceCode.getScope(node);
-			scopeCache.set(node, scope);
-			return scope;
+			return context.sourceCode.getScope(node);
 		}
 
 		return {
@@ -679,246 +1053,20 @@ const useExhaustiveDependencies = createRule<Options, MessageIds>({
 				if (hookName === undefined || hookName === "") return;
 
 				const hookConfig = hookConfigs.get(hookName);
-				if (!hookConfig) return;
+				if (hookConfig === undefined) return;
 
-				const { closureIndex, dependenciesIndex } = hookConfig;
-				const parameters = callNode.arguments;
-
-				const closureArgument = parameters[closureIndex];
-				if (closureArgument === undefined) return;
-
-				let closureFunction: TSESTree.FunctionExpression | TSESTree.ArrowFunctionExpression | undefined;
-
-				if (
-					closureArgument.type === TSESTree.AST_NODE_TYPES.ArrowFunctionExpression ||
-					closureArgument.type === TSESTree.AST_NODE_TYPES.FunctionExpression
-				) {
-					closureFunction = closureArgument;
-				} else if (closureArgument.type === TSESTree.AST_NODE_TYPES.Identifier) {
-					const scope = getScope(callNode);
-					closureFunction = resolveFunctionReference(closureArgument, scope);
-				}
-
-				if (!closureFunction) return;
-
-				const dependenciesArgument = parameters[dependenciesIndex];
-				if (!dependenciesArgument && options.reportMissingDependenciesArray) {
-					const captures = collectCaptures(closureFunction, context.sourceCode).filter(
-						(capture) => !isSelfReferenceCapture(capture, callNode),
-					);
-
-					const requiredCaptures = captures.filter(
-						(capture) =>
-							capture.forceDependency || !isStableValue(capture.variable, capture.name, stableHooks),
-					);
-
-					if (requiredCaptures.length > 0) {
-						// oxlint-disable-next-line no-array-callback-reference
-						const missingNames = [...new Set(requiredCaptures.map(returnName))].join(", ");
-
-						const usagePaths = requiredCaptures.map(({ usagePath }) => usagePath);
-						const uniqueDependencies = [...new Set(usagePaths)].toSorted();
-						const dependenciesString = `[${uniqueDependencies.join(", ")}]`;
-
-						context.report({
-							data: { deps: missingNames },
-							messageId: "missingDependenciesArray",
-							node: callNode,
-							suggest: [
-								{
-									data: { dependencies: dependenciesString },
-									fix(fixer): TSESLint.RuleFix {
-										return fixer.insertTextAfter(closureArgument, `, ${dependenciesString}`);
-									},
-									messageId: "addDependenciesArraySuggestion",
-								},
-							],
-						});
-					}
-					return;
-				}
-
-				if (!dependenciesArgument) return;
-				if (dependenciesArgument.type !== TSESTree.AST_NODE_TYPES.ArrayExpression) return;
-				const dependenciesArray = dependenciesArgument;
-				const captures = collectCaptures(closureFunction, context.sourceCode).filter(
-					(capture) => !isSelfReferenceCapture(capture, callNode),
-				);
-
-				const dependencies = parseDependencies(dependenciesArray, context.sourceCode);
-
-				for (const dependency of dependencies) {
-					const dependencyRootIdentifier = getRootIdentifier(dependency.node);
-					if (!dependencyRootIdentifier) continue;
-
-					const dependencyName = dependencyRootIdentifier.name;
-
-					const matchingCaptures = captures.filter(
-						(capture) => getRootIdentifier(capture.node)?.name === dependencyName,
-					);
-
-					if (matchingCaptures.length === 0) {
-						if (options.reportUnnecessaryDependencies) {
-							const newDependencies = dependencies
-								.filter((value) => value.name !== dependency.name)
-								// oxlint-disable-next-line no-array-callback-reference
-								.map(returnName);
-							const dependenciesString = `[${newDependencies.join(", ")}]`;
-
-							context.report({
-								data: { name: dependency.name },
-								messageId: "unnecessaryDependency",
-								node: dependency.node,
-								suggest: [
-									{
-										data: { name: dependency.name },
-										fix(fixer): TSESLint.RuleFix | null {
-											return fixer.replaceText(dependenciesArray, dependenciesString);
-										},
-										messageId: "removeDependencySuggestion",
-									},
-								],
-							});
-						}
-						continue;
-					}
-
-					const maxCaptureDepth = Math.max(...matchingCaptures.map(({ depth }) => depth));
-					if (dependency.depth > maxCaptureDepth && options.reportUnnecessaryDependencies) {
-						const newDependencies = dependencies
-							.filter(({ name }) => name !== dependency.name)
-							// oxlint-disable-next-line no-array-callback-reference
-							.map(returnName);
-						const dependencyString = `[${newDependencies.join(", ")}]`;
-
-						context.report({
-							data: { name: dependency.name },
-							messageId: "unnecessaryDependency",
-							node: dependency.node,
-							suggest: [
-								{
-									data: { name: dependency.name },
-									fix(fixer): TSESLint.RuleFix | null {
-										return fixer.replaceText(dependenciesArray, dependencyString);
-									},
-									messageId: "removeDependencySuggestion",
-								},
-							],
-						});
-					}
-				}
-
-				const missingCaptures = new Array<CaptureInfo>();
-				for (const capture of captures) {
-					if (!capture.forceDependency && isStableValue(capture.variable, capture.name, stableHooks)) {
-						continue;
-					}
-
-					const rootIdentifier = getRootIdentifier(capture.node);
-					if (!rootIdentifier) continue;
-
-					const captureName = rootIdentifier.name;
-					let isInDependencies = false;
-
-					for (const dependency of dependencies) {
-						const dependencyRootIdentifier = getRootIdentifier(dependency.node);
-
-						if (dependencyRootIdentifier?.name === captureName && dependency.depth <= capture.depth) {
-							isInDependencies = true;
-							break;
-						}
-					}
-
-					if (!isInDependencies) missingCaptures.push(capture);
-				}
-
-				if (missingCaptures.length > 0) {
-					const dependencyNames = dependencies.map(({ name }) => name);
-					const missingPaths = missingCaptures.map(({ usagePath }) => usagePath);
-					const newDependencies = [...dependencyNames, ...missingPaths].toSorted();
-					const newDependenciesString = `[${newDependencies.join(", ")}]`;
-					const lastDependency = dependencies.at(-1);
-					const firstMissing = missingCaptures.at(0);
-
-					if (missingCaptures.length === 1 && firstMissing) {
-						context.report({
-							data: { name: firstMissing.usagePath },
-							messageId: "missingDependency",
-							node: lastDependency?.node ?? dependenciesArray,
-							suggest: [
-								{
-									data: { name: firstMissing.usagePath },
-									fix(fixer): TSESLint.RuleFix | null {
-										return fixer.replaceText(dependenciesArray, newDependenciesString);
-									},
-									messageId: "addDependencySuggestion",
-								},
-							],
-						});
-					} else {
-						const missingNames = missingPaths.join(", ");
-						context.report({
-							data: { names: missingNames },
-							messageId: "missingDependencies",
-							node: lastDependency?.node ?? dependenciesArray,
-							suggest: [
-								{
-									fix(fixer): TSESLint.RuleFix | null {
-										return fixer.replaceText(dependenciesArray, newDependenciesString);
-									},
-									messageId: "addMissingDependenciesSuggestion",
-								},
-							],
-						});
-					}
-				}
-
-				for (const capture of captures) {
-					if (!capture.forceDependency && isStableValue(capture.variable, capture.name, stableHooks)) {
-						continue;
-					}
-
-					const rootIdentifier = getRootIdentifier(capture.node);
-					if (!rootIdentifier) continue;
-
-					const captureName = rootIdentifier.name;
-
-					for (const dependency of dependencies) {
-						const dependencyRootIdentifier = getRootIdentifier(dependency.node);
-						const isMatch =
-							dependencyRootIdentifier?.name === captureName && dependency.depth === capture.depth;
-						const isDirectIdentifier = dependency.depth === 0;
-
-						if (isMatch && isDirectIdentifier) {
-							const variableDefinition = capture.variable?.defs[0];
-							const initialNode: TSESTree.Node | undefined =
-								variableDefinition?.node.type === TSESTree.AST_NODE_TYPES.VariableDeclarator
-									? (variableDefinition.node.init ?? undefined)
-									: undefined;
-
-							if (isUnstableValue(initialNode)) {
-								context.report({
-									data: { name: capture.usagePath },
-									messageId: "unstableDependency",
-									node: dependency.node,
-								});
-							}
-							break;
-						}
-						if (isMatch) break;
-					}
-				}
+				checkHookCall(context, callNode, hookConfig, stableHooks, options, getScope);
 			},
 		};
 	},
-	defaultOptions: [
-		{
-			hooks: [],
-			reportMissingDependenciesArray: true,
-			reportUnnecessaryDependencies: true,
-		},
-	],
 	meta: {
+		defaultOptions: [
+			{
+				hooks: [],
+				reportMissingDependenciesArray: true,
+				reportUnnecessaryDependencies: true,
+			},
+		],
 		docs: {
 			description:
 				"Enforce exhaustive and correct dependency specification in React hooks to prevent stale closures and unnecessary re-renders",

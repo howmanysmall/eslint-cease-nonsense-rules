@@ -1,6 +1,6 @@
-import { join } from "node:path";
+import nodePath from "node:path";
 import { describe, vi } from "vitest";
-import rule from "@rules/prefer-read-only-properties";
+import rule from "$rules/prefer-read-only-properties";
 import parser from "@typescript-eslint/parser";
 import { RuleTester } from "eslint";
 
@@ -20,7 +20,7 @@ const ruleTester = new RuleTester({
 	},
 });
 
-const fixturesDir = join(__dirname, "../fixtures/prefer-read-only-props");
+const fixturesDir = nodePath.join(__dirname, "../fixtures/prefer-read-only-props");
 
 const ruleTesterWithTypes = new RuleTester({
 	languageOptions: {
@@ -29,7 +29,7 @@ const ruleTesterWithTypes = new RuleTester({
 		parserOptions: {
 			projectService: {
 				allowDefaultProject: ["*.ts", "*.tsx"],
-				defaultProject: join(fixturesDir, "tsconfig.json"),
+				defaultProject: nodePath.join(fixturesDir, "tsconfig.json"),
 				maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 64,
 			},
 			tsconfigRootDir: fixturesDir,
@@ -99,6 +99,11 @@ describe("prefer-read-only-props", () => {
 				errors: [{ data: { name: "value" }, messageId: "readOnlyProperty" }],
 				output: "function Component(other: number, props: { readonly value: string }) { return null; }",
 			},
+			{
+				code: 'function Component(props: { value: string } = { value: "" }) { return null; }',
+				errors: [{ data: { name: "value" }, messageId: "readOnlyProperty" }],
+				output: 'function Component(props: { readonly value: string } = { value: "" }) { return null; }',
+			},
 		],
 		valid: [
 			// Non-component functions should be ignored
@@ -145,6 +150,9 @@ describe("prefer-read-only-props", () => {
 			{
 				code: "const Component = function(props: { readonly value: string }) { return null; };",
 			},
+			{
+				code: "const Component;",
+			},
 			// TSTypeReference (type alias) - getPropertiesFromType returns empty array
 			{
 				code: "type Props = { value: string }; function Component(props: Props) { return null; }",
@@ -152,6 +160,12 @@ describe("prefer-read-only-props", () => {
 			// Function with no type annotation
 			{
 				code: "function Component(props) { return null; }",
+			},
+			{
+				code: 'function Component(props: { readonly value: string } = { value: "" }) { return null; }',
+			},
+			{
+				code: "function Component(...props: [{ value: string }]) { return null; }",
 			},
 			// Empty type literal
 			{
@@ -169,6 +183,9 @@ describe("prefer-read-only-props", () => {
 			{
 				code: "function Component(props: { [key: string]: string }) { return null; }",
 			},
+			{
+				code: "function Component(props: { [name]: string }) { return null; }",
+			},
 			// Component cache - same function visited twice (should not duplicate errors)
 			// This is tested implicitly by the rule's cache mechanism
 		],
@@ -185,8 +202,267 @@ function Component(props: { value: string }): JSX.Element {
 }`,
 				errors: [{ messageId: "preferReadOnlyProperties" }],
 			},
+			{
+				code: `
+declare function jsxElement(): JSX.Element;
+interface Props {
+	[key: string]: string;
+}
+function Component(props: Props): JSX.Element {
+    return jsxElement();
+}`,
+				errors: [{ messageId: "preferReadOnlyProperties" }],
+			},
+			{
+				code: `
+declare function jsxElement(): JSX.Element;
+interface BaseProps {
+	readonly inherited: string;
+}
+interface Props extends BaseProps {
+	value: string;
+}
+function Component(props: Props): JSX.Element {
+    return jsxElement();
+}`,
+				errors: [{ messageId: "preferReadOnlyProperties" }],
+			},
+			{
+				code: `
+declare function jsxElement(): JSX.Element;
+interface GrandProps {
+	value: string;
+}
+interface BaseProps extends GrandProps {}
+interface Props extends BaseProps {
+	readonly label: string;
+}
+function Component(props: Props): JSX.Element {
+    return jsxElement();
+}`,
+				errors: [{ messageId: "preferReadOnlyProperties" }],
+			},
+			{
+				code: `
+declare namespace React {
+	type FC<Props> = (props: Props) => JSX.Element;
+}
+const Component: React.FC<{ value: string }> = (props) => props.value;`,
+				errors: [{ messageId: "preferReadOnlyProperties" }],
+			},
+			{
+				code: `
+declare namespace React {
+	function forwardRef<Ref, Props>(render: (props: Props, ref: Ref) => JSX.Element): JSX.Element;
+}
+const Component = React.forwardRef<HTMLDivElement, { value: string }>((props) => {
+	return props.value;
+});`,
+				errors: [{ messageId: "preferReadOnlyProperties" }],
+			},
+			{
+				code: `
+declare namespace React {
+	function memo<Props>(component: (props: Props) => JSX.Element): JSX.Element;
+}
+const Component = React.memo<{ value: string }>((props) => {
+	return props.value;
+});`,
+				errors: [{ messageId: "preferReadOnlyProperties" }],
+			},
+			{
+				code: `
+declare function memo<Props>(component: (props: Props) => JSX.Element): JSX.Element;
+const Component = memo<{ value: string }>((props) => {
+	return props.value;
+});`,
+				errors: [{ messageId: "preferReadOnlyProperties" }],
+			},
+			{
+				code: `
+declare namespace React {
+	function memo<Props>(component: (props: Props) => JSX.Element): JSX.Element;
+}
+declare function hoc(component: JSX.Element): JSX.Element;
+const Component = hoc(React.memo<{ value: string }>((props) => {
+	return props.value;
+}));`,
+				errors: [{ messageId: "preferReadOnlyProperties" }],
+			},
+			{
+				code: `
+declare function hoc<Props>(component: (props: Props) => JSX.Element): JSX.Element;
+const Component = hoc((props: { value: string }) => {
+	return props.value;
+});`,
+				errors: [{ messageId: "preferReadOnlyProperties" }],
+			},
+			{
+				code: `
+declare function memo<Props>(component: (props: Props) => JSX.Element): JSX.Element;
+declare function getWrapper(): { memo: typeof memo };
+const Component = getWrapper()["memo"]<{ value: string }>((props) => props.value);`,
+				errors: [{ messageId: "preferReadOnlyProperties" }],
+			},
 		],
 		valid: [
+			{
+				code: "const Component = 1;",
+			},
+			{
+				code: "const { Component } = { Component: 1 };",
+			},
+			{
+				code: "let Component;",
+			},
+			{
+				code: "const Component = getComponent();",
+			},
+			{
+				code: `
+declare function getComponent(): JSX.Element;
+const Component = getComponent;`,
+			},
+			{
+				code: `
+declare function jsxElement(): JSX.Element;
+function Component(): JSX.Element {
+	return jsxElement();
+}`,
+			},
+			{
+				code: `
+declare function jsxElement(): JSX.Element;
+interface CallableComponent {
+	(): JSX.Element;
+}
+const Component: CallableComponent = () => jsxElement();`,
+			},
+			{
+				code: `
+declare function hoc(value: number): JSX.Element;
+const Component = hoc(42);`,
+			},
+			{
+				code: `
+declare namespace React {
+	type FC<Props> = (props: Props) => JSX.Element;
+}
+declare function jsxElement(): JSX.Element;
+const Component: React.FC = () => jsxElement();`,
+			},
+			{
+				code: `
+declare namespace React {
+	type ComponentType<Props> = {
+		readonly props: Props;
+	};
+}
+const Component: React.ComponentType<{ value: string }> = { props: { value: "" } };`,
+			},
+			{
+				code: `
+declare namespace React {
+	type FC<Props> = (props: Props) => JSX.Element;
+}
+const Component: React.FC<Readonly<{ value: string }>> = (props) => props.value;`,
+			},
+			{
+				code: `
+declare function jsxElement(): JSX.Element;
+interface Props {
+	children: string;
+}
+function Component(props: Props): JSX.Element {
+	return jsxElement();
+}`,
+			},
+			{
+				code: `
+declare function jsxElement(): JSX.Element;
+interface BaseProps {
+	readonly value: string;
+}
+interface Props extends BaseProps {
+	readonly label: string;
+}
+function Component(props: Props): JSX.Element {
+	return jsxElement();
+}`,
+			},
+			{
+				code: `
+declare function jsxElement(): JSX.Element;
+type DeepReadOnly<T> = {
+	readonly [K in keyof T]: T[K];
+};
+interface BaseProps {
+	value: string;
+}
+type ReadonlyBaseProps = DeepReadOnly<BaseProps>;
+interface Props extends ReadonlyBaseProps {
+	readonly label: string;
+}
+function Component(props: Props): JSX.Element {
+	return jsxElement();
+}`,
+			},
+			{
+				code: `
+declare function jsxElement(): JSX.Element;
+interface BaseProps {
+	readonly value: string;
+}
+interface MiddleProps extends BaseProps {}
+interface Props extends MiddleProps {
+	readonly label: string;
+}
+function Component(props: Props): JSX.Element {
+	return jsxElement();
+}`,
+			},
+			{
+				code: `
+declare function jsxElement(): JSX.Element;
+interface Props {
+	readonly [key: string]: string;
+}
+function Component(props: Props): JSX.Element {
+	return jsxElement();
+}`,
+			},
+			{
+				code: `
+declare function jsxElement(): JSX.Element;
+type Props = { readonly value: string } & { readonly label: string };
+function Component(props: Props): JSX.Element {
+	return jsxElement();
+}`,
+			},
+			{
+				code: `
+declare namespace React {
+	function forwardRef<Ref, Props>(render: (props: Props, ref: Ref) => JSX.Element): JSX.Element;
+}
+declare function jsxElement(): JSX.Element;
+const Component = React.forwardRef<HTMLDivElement>((props) => {
+	return jsxElement();
+});`,
+			},
+			{
+				code: `
+declare namespace React {
+	function lazy<Props>(): (props: Props) => JSX.Element;
+}
+const Component = React.lazy<{ value: string }>();`,
+			},
+			{
+				code: `
+declare function jsxElement(): JSX.Element;
+function helper(props: { value: string }): JSX.Element {
+	return jsxElement();
+}`,
+			},
 			{
 				code: `
 function UnionComponent(props: { value: string }): string | number {

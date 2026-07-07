@@ -1,20 +1,54 @@
 import { describe, expect, it, vi } from "vitest";
+import { evaluateConstant, normalizeZero } from "$utilities/pattern-replacement/constant-folder";
 import { parse } from "@typescript-eslint/parser";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
-import { evaluateConstant, normalizeZero } from "@utilities/pattern-replacement/constant-folder";
 
 import type { TSESTree } from "@typescript-eslint/types";
 
 function parseExpression(code: string): TSESTree.Expression {
 	const program = parse(`const value = ${code};`, { loc: false, range: false });
 	const [statement] = program.body;
-	if (statement?.type !== AST_NODE_TYPES.VariableDeclaration) throw new Error(`Could not parse expression: ${code}`);
+	if (statement?.type !== AST_NODE_TYPES.VariableDeclaration) {
+		const error = new Error(`Could not parse expression: ${code}`);
+		Error.captureStackTrace(error, parseExpression);
+		throw error;
+	}
 
 	const [declaration] = statement.declarations;
 	const expression = declaration?.init;
-	if (expression === null || expression === undefined) throw new Error(`Could not parse expression: ${code}`);
+	if (expression === null || expression === undefined) {
+		const error = new Error(`Could not parse expression: ${code}`);
+		Error.captureStackTrace(error, parseExpression);
+		throw error;
+	}
 
 	return expression;
+}
+
+function parseReturnExpression(code: string): TSESTree.Expression {
+	const program = parse(`class Example { #value = 1; method() { return ${code}; } }`, { loc: false, range: false });
+	const [statement] = program.body;
+	if (statement?.type !== AST_NODE_TYPES.ClassDeclaration) {
+		const error = new Error(`Could not parse class expression: ${code}`);
+		Error.captureStackTrace(error, parseReturnExpression);
+		throw error;
+	}
+
+	const [, method] = statement.body.body;
+	if (method?.type !== AST_NODE_TYPES.MethodDefinition || method.value.body === null) {
+		const error = new Error(`Could not parse method expression: ${code}`);
+		Error.captureStackTrace(error, parseReturnExpression);
+		throw error;
+	}
+
+	const [returnStatement] = method.value.body.body;
+	if (returnStatement?.type !== AST_NODE_TYPES.ReturnStatement || returnStatement.argument === null) {
+		const error = new Error(`Could not parse return expression: ${code}`);
+		Error.captureStackTrace(error, parseReturnExpression);
+		throw error;
+	}
+
+	return returnStatement.argument;
 }
 
 vi.setConfig({ testTimeout: 500 });
@@ -73,6 +107,12 @@ describe("evaluateConstant", () => {
 		expect(evaluateConstant(parseExpression("!5"))).toBeUndefined();
 	});
 
+	it("should reject unary operators over non-constant expressions", () => {
+		expect.assertions(1);
+
+		expect(evaluateConstant(parseExpression("-foo"))).toBeUndefined();
+	});
+
 	it("should normalize -0 in literals", () => {
 		expect.assertions(2);
 
@@ -111,6 +151,12 @@ describe("evaluateConstant", () => {
 		expect(evaluateConstant(parseExpression("10 % 3"))).toBeUndefined();
 	});
 
+	it("should reject binary expressions with private identifiers", () => {
+		expect.assertions(1);
+
+		expect(evaluateConstant(parseReturnExpression("this.#value + 1"))).toBeUndefined();
+	});
+
 	it("should reject NaN results", () => {
 		expect.assertions(1);
 
@@ -127,6 +173,12 @@ describe("evaluateConstant", () => {
 		expect.assertions(1);
 
 		expect(evaluateConstant(parseExpression("42 as number"))).toBe(42);
+	});
+
+	it("should unwrap nested TSAsExpression", () => {
+		expect.assertions(1);
+
+		expect(evaluateConstant(parseExpression("(42 as number) as number"))).toBe(42);
 	});
 
 	it("should unwrap TSNonNullExpression", () => {
