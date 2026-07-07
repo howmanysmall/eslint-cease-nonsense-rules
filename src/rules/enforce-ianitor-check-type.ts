@@ -153,6 +153,9 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 		const ianitorStaticVariables = new Set<string>();
 		const depthMultiplierCache = new Map<number, number>();
 		const complexityCeiling = config.errorThreshold * 2;
+		let hasIanitorReference = false;
+		const interfacesToCheck = new Map<TSESTree.TSInterfaceDeclaration, { complexity: number }>();
+		const typeAliasesToCheck = new Map<TSESTree.TSTypeAliasDeclaration, { complexity: number }>();
 
 		function getDepthMultiplier(depth: number): number {
 			const cached = depthMultiplierCache.get(depth);
@@ -344,7 +347,29 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 		const variableDeclaratorsToCheck = new Map<TSESTree.VariableDeclarator, { complexity: number }>();
 
 		return {
+			Identifier(node): void {
+				if (node.name === "Ianitor") hasIanitorReference = true;
+			},
+
 			"Program:exit"(): void {
+				if (!hasIanitorReference) return;
+
+				for (const [node, data] of typeAliasesToCheck.entries()) {
+					context.report({
+						data: { score: data.complexity.toFixed(1) },
+						messageId: "missingIanitorCheckType",
+						node,
+					});
+				}
+
+				for (const [node] of interfacesToCheck.entries()) {
+					context.report({
+						data: { name: node.id.name },
+						messageId: "complexInterfaceNeedsCheck",
+						node,
+					});
+				}
+
 				for (const [node, data] of variableDeclaratorsToCheck.entries()) {
 					if (
 						node.id.type === TSESTree.AST_NODE_TYPES.Identifier &&
@@ -363,30 +388,23 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 
 			TSInterfaceDeclaration(node): void {
 				const complexity = calculateStructuralComplexity(node);
-				const { name } = node.id;
+				if (complexity < config.interfacePenalty) return;
 
-				if (complexity >= config.interfacePenalty) {
-					context.report({
-						data: { name },
-						messageId: "complexInterfaceNeedsCheck",
-						node,
-					});
-				}
+				interfacesToCheck.set(node, { complexity });
 			},
 
 			TSTypeAliasDeclaration(node): void {
 				const variableName = extractIanitorStaticVariable(node.typeAnnotation);
-				if (variableName !== undefined) ianitorStaticVariables.add(variableName);
+				if (variableName !== undefined) {
+					hasIanitorReference = true;
+					ianitorStaticVariables.add(variableName);
+				}
 				if (hasIanitorStaticType(node.typeAnnotation)) return;
 
 				const complexity = calculateStructuralComplexity(node.typeAnnotation);
 				if (complexity < config.baseThreshold) return;
 
-				context.report({
-					data: { score: complexity.toFixed(1) },
-					messageId: "missingIanitorCheckType",
-					node,
-				});
+				typeAliasesToCheck.set(node, { complexity });
 			},
 
 			VariableDeclarator(node): void {

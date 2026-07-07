@@ -39,12 +39,16 @@ const isUser = Ianitor.strictInterface({
 				options: [{ baseThreshold: 1 }],
 			},
 			{
-				code: "type ComplexTuple = [{ a: string; b: number }, { c: boolean; d: string }];",
+				code: `
+const _ianitor = Ianitor.string;
+type ComplexTuple = [{ a: string; b: number }, { c: boolean; d: string }];
+`,
 				errors: [{ messageId: "missingIanitorCheckType" }],
 				options: [{ baseThreshold: 1, performanceMode: false }],
 			},
 			{
 				code: `
+const _ianitor = Ianitor.string;
 type ComplexAlias = {
     id: string;
     values: number[];
@@ -55,6 +59,7 @@ type ComplexAlias = {
 			},
 			{
 				code: `
+const _ianitor = Ianitor.string;
 interface ComplexService extends Base {
     config: {
         mode: string;
