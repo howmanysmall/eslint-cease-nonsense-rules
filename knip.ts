@@ -5,7 +5,7 @@ const config: KnipConfig = {
 	bumpp: true,
 	commitlint: true,
 	eslint: true,
-	ignore: ["tests/fixtures/**"],
+	ignore: ["tests/fixtures/**", "pncat.config.ts"],
 	ignoreBinaries: ["hk", "notify-send", "osascript", "powershell"],
 	ignoreDependencies: [
 		"@astrojs/ts-plugin",
