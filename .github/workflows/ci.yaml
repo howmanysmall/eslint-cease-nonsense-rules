@@ -67,6 +67,9 @@ jobs:
       - name: Biome CI
         run: pnpm run biome:ci
 
+      - name: Generate Astro types
+        run: pnpm --filter docs astro sync
+
       - name: Lint
         run: pnpm run oxlint
 

@@ -1,7 +1,7 @@
 {
 	"dependencies": {
 		"@octokit/rest": "22.0.1",
-		"@opencode-ai/plugin": "1.14.45",
+		"@opencode-ai/plugin": "1.17.14",
 		"@toon-format/toon": "2.3.0",
 		"@types/bun": "latest",
 		"arkenv": "0.12.2",
