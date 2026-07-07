@@ -47,6 +47,7 @@
 		"oxfmt": "oxfmt",
 		"oxlint": "oxlint",
 		"oxlint:agent": "oxlint --format agent",
+		"pncat": "pncat",
 		"prepare": "node --run hooks:install",
 		"prepublishOnly": "node --run build -- --minify",
 		"release": "bumpp",

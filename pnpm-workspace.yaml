@@ -33,9 +33,6 @@ packageExtensions:
 
 patchedDependencies:
   starlight-scroll-to-top@0.4.0: patches/starlight-scroll-to-top@0.4.0.patch
-  # astro@6.1.1: patches/astro@6.1.1.patch
-  # astro-vtbot@2.1.12: patches/astro-vtbot@2.1.12.patch
-  package-manager-detector@1.6.0: patches/package-manager-detector@1.6.0.patch
   "@vitest/expect@4.1.9": patches/@vitest__expect@4.1.9.patch
 
 enableGlobalVirtualStore: true
@@ -172,8 +169,6 @@ catalogs:
     eslint-plugin-unused-imports: 4.4.1
     knip: 6.24.0
     vue-eslint-parser: 10.4.1
-  override:
-    picomatch: ^4.0.3
   prod:
     "@astrojs/mdx": 7.0.2
     "@astrojs/starlight": 0.41.3
