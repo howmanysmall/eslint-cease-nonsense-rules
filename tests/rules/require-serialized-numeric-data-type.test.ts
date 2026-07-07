@@ -412,6 +412,28 @@ registerComponent<SerializedNumber>({ replicated: true });
 		valid: [
 			{
 				code: `
+enum DataType {
+	f32,
+	f64,
+	u8,
+}
+registerComponent<DataType.f32>({ replicated: true });
+`,
+				options: [{ strict: true }],
+			},
+			{
+				code: `
+declare namespace DataType {
+	type f32 = number & {
+		_f32?: never;
+	};
+}
+registerComponent<DataType.f32>({ replicated: true });
+`,
+				options: [{ strict: true }],
+			},
+			{
+				code: `
 type SerializedText = string;
 registerComponent<SerializedText>({ replicated: true });
 `,

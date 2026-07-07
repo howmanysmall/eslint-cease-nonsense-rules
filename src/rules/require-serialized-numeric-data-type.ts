@@ -130,6 +130,10 @@ function checkTypeWithTypeChecker(typeChecker: TypeChecker, node: TypeScriptNode
 	return false;
 }
 
+function isIdentifierParameter(parameter: TSESTree.Parameter): parameter is TSESTree.Identifier {
+	return parameter.type === TSESTree.AST_NODE_TYPES.Identifier;
+}
+
 const requireSerializedNumericDataType = createRule<Options, MessageIds>({
 	create(context) {
 		const options = { ...DEFAULT_OPTIONS, ...context.options[0] };
@@ -155,21 +159,40 @@ const requireSerializedNumericDataType = createRule<Options, MessageIds>({
 		}
 
 		function checkTypeNode(node: TSESTree.TypeNode): boolean {
-			if (containsRawNumber(node)) return true;
-
-			if (typeChecker !== undefined && strictTypeServices !== undefined) {
-				const tsNode = strictTypeServices.esTreeNodeToTSNodeMap.get(node);
-				return checkTypeWithTypeChecker(typeChecker, tsNode);
+			const hasRawNumber = containsRawNumber(node);
+			if (
+				hasRawNumber ||
+				isDataTypeReference(node) ||
+				typeChecker === undefined ||
+				strictTypeServices === undefined
+			) {
+				return hasRawNumber;
 			}
 
-			return false;
+			const tsNode = strictTypeServices.esTreeNodeToTSNodeMap.get(node);
+			return checkTypeWithTypeChecker(typeChecker, tsNode);
 		}
 
-		function checkTypeAnnotation(annotation: TSESTree.TSTypeAnnotation | undefined): void {
+		function checkTypeAnnotation(annotation?: TSESTree.TSTypeAnnotation): void {
 			if (annotation === undefined) return;
 
 			const { typeAnnotation } = annotation;
 			if (typeAnnotation !== undefined && checkTypeNode(typeAnnotation)) reportError(typeAnnotation);
+		}
+
+		function reportTypeNode(node: TSESTree.TypeNode): void {
+			if (checkTypeNode(node)) reportError(node);
+		}
+
+		function checkTypeArguments(typeArguments?: TSESTree.TSTypeParameterInstantiation): void {
+			if (typeArguments === undefined) return;
+			for (const parameter of typeArguments.params) reportTypeNode(parameter);
+		}
+
+		function checkIdentifierParameterAnnotations(parameters: ReadonlyArray<TSESTree.Parameter>): void {
+			for (const parameter of parameters.filter(isIdentifierParameter)) {
+				checkTypeAnnotation(parameter.typeAnnotation);
+			}
 		}
 
 		if (mode === "type-arguments") {
@@ -178,45 +201,29 @@ const requireSerializedNumericDataType = createRule<Options, MessageIds>({
 					if (node.callee.type !== TSESTree.AST_NODE_TYPES.Identifier) return;
 					if (!functionNames.has(node.callee.name)) return;
 
-					if (node.typeArguments === undefined) return;
-					for (const parameter of node.typeArguments.params) {
-						if (checkTypeNode(parameter)) reportError(parameter);
-					}
+					checkTypeArguments(node.typeArguments);
 				},
 			};
 		}
 
 		return {
 			ArrowFunctionExpression(node: TSESTree.ArrowFunctionExpression): void {
-				for (const parameter of node.params) {
-					if (parameter.type === TSESTree.AST_NODE_TYPES.Identifier) {
-						checkTypeAnnotation(parameter.typeAnnotation);
-					}
-				}
+				checkIdentifierParameterAnnotations(node.params);
 				checkTypeAnnotation(node.returnType);
 			},
 
 			CallExpression(node: TSESTree.CallExpression): void {
-				if (node.typeArguments === undefined) return;
-				for (const parameter of node.typeArguments.params) if (checkTypeNode(parameter)) reportError(parameter);
+				checkTypeArguments(node.typeArguments);
 			},
 
 			FunctionDeclaration(node: TSESTree.FunctionDeclaration): void {
-				for (const parameter of node.params) {
-					if (parameter.type === TSESTree.AST_NODE_TYPES.Identifier) {
-						checkTypeAnnotation(parameter.typeAnnotation);
-					}
-				}
+				checkIdentifierParameterAnnotations(node.params);
 				checkTypeAnnotation(node.returnType);
 			},
 
 			MethodDefinition(node: TSESTree.MethodDefinition): void {
 				if (node.value.type !== TSESTree.AST_NODE_TYPES.FunctionExpression) return;
-				for (const parameter of node.value.params) {
-					if (parameter.type === TSESTree.AST_NODE_TYPES.Identifier) {
-						checkTypeAnnotation(parameter.typeAnnotation);
-					}
-				}
+				checkIdentifierParameterAnnotations(node.value.params);
 				checkTypeAnnotation(node.value.returnType);
 			},
 
@@ -225,11 +232,7 @@ const requireSerializedNumericDataType = createRule<Options, MessageIds>({
 			},
 
 			TSFunctionType(node: TSESTree.TSFunctionType): void {
-				for (const parameter of node.params) {
-					if (parameter.type === TSESTree.AST_NODE_TYPES.Identifier) {
-						checkTypeAnnotation(parameter.typeAnnotation);
-					}
-				}
+				checkIdentifierParameterAnnotations(node.params);
 				checkTypeAnnotation(node.returnType);
 			},
 
