@@ -154,3 +154,4 @@ screenshots/
 .agents/skills/vitest/
 .agents/skills/pnpm/
 .agents/skills/tsdown/
+.omo/
