@@ -18,6 +18,7 @@ const config: KnipConfig = {
 		"source-map",
 	],
 	oxlint: true,
+	pnpm: true,
 	project: ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts"],
 	rules: {
 		binaries: "error",
