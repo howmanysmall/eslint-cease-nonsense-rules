@@ -5,6 +5,7 @@ import { isUnionType, unionConstituents } from "ts-api-utils";
 
 import type { EnumValueLookup } from "$utilities/enum-utilities";
 import type { TSESTree } from "@typescript-eslint/utils";
+import type { Writable } from "type-fest";
 import type { Symbol as TypeScriptSymbol, Type, TypeChecker } from "typescript";
 
 type MessageIds = "preferEnumItem";
@@ -124,11 +125,9 @@ const preferEnumItem = createRule<Options, MessageIds>({
 
 			const nameLiteral = getPropertyLiteralType(checker, type, "Name");
 			const valueLiteral = getPropertyLiteralType(checker, type, "Value");
-			const info: EnumItemInfo = {
-				enumPath,
-				...(typeof nameLiteral === "string" ? { nameLiteral } : {}),
-				...(typeof valueLiteral === "number" ? { valueLiteral } : {}),
-			};
+			const info: Writable<EnumItemInfo> = { enumPath };
+			if (typeof nameLiteral === "string") info.nameLiteral = nameLiteral;
+			if (typeof valueLiteral === "number") info.valueLiteral = valueLiteral;
 			if (symbol !== undefined) enumItemInfoCache.set(symbol, info);
 			return info;
 		}
