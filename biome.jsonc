@@ -50,7 +50,12 @@
 		"enabled": true,
 		"expand": "auto",
 		"formatWithErrors": true,
-		"includes": ["**", "!**/*.js", "!**/{dist,do-not-sync-ever,garbage,node_modules}/**"],
+		"includes": [
+			"**",
+			"!**/*.js",
+			"!**/{dist,do-not-sync-ever,garbage,node_modules}/**",
+			"!tests/scripts/shard-test-plan.test.ts"
+		],
 		"indentStyle": "tab",
 		"indentWidth": 4,
 		"lineEnding": "lf",
