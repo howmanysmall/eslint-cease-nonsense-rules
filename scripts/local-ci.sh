@@ -40,11 +40,12 @@ function test() {
 	else
 		# Run tests in shards locally
 		echo "Running tests across ${TEST_SHARDS} shards..."
+		local HEAVY_TEST_SHARDS="${HEAVY_TEST_SHARDS:-4}"
 		local failed=0
 
 		for shard in $(seq 1 "${TEST_SHARDS}"); do
 			echo "Running shard ${shard}/${TEST_SHARDS}..."
-			SHARD_FILES=$(./scripts/shard-tests.ts "${shard}" "${TEST_SHARDS}")
+			SHARD_FILES=$(./scripts/shard-tests.ts --normal-lane "${shard}" "${TEST_SHARDS}")
 
 			if [[ -n "${SHARD_FILES}" ]]; then
 				# Don't quote SHARD_FILES so bash splits it into separate arguments
@@ -56,6 +57,17 @@ function test() {
 				echo "Shard ${shard} has no test files (empty shard)"
 			fi
 		done
+
+		while IFS= read -r heavy_file; do
+			[[ -z "${heavy_file}" ]] && continue
+			for case_shard in $(seq 1 "${HEAVY_TEST_SHARDS}"); do
+				echo "Running heavy ${heavy_file} case shard ${case_shard}/${HEAVY_TEST_SHARDS}..."
+				if ! TEST_CASE_SHARD="${case_shard}/${HEAVY_TEST_SHARDS}" AGENT=1 nr test -- --bail "${heavy_file}"; then
+					echo "Heavy test ${heavy_file} case shard ${case_shard} failed"
+					failed=1
+				fi
+			done
+		done < <(bun -e 'import { getHeavyFiles } from "./scripts/test-shard-plan.ts"; process.stdout.write(getHeavyFiles().join("\n") + "\n")')
 
 		if [[ ${failed} -eq 1 ]]; then
 			echo "One or more test shards failed"

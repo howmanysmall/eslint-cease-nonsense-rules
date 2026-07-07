@@ -5,6 +5,8 @@ import nodePath from "node:path";
 import { argv, cwd } from "node:process";
 import { Command, ValidationError } from "@cliffy/command";
 
+import { collectAllTestsAsync, getHeavyFiles } from "./test-shard-plan";
+
 async function collectUnitTestsAsync(rootDirectory: string): Promise<ReadonlyArray<string>> {
 	const unitTests = new Array<string>();
 
@@ -57,18 +59,33 @@ function selectShardFiles(
 	return allFiles.filter((_, index) => index % totalShards === shardIndex - 1);
 }
 
+async function resolveShardFilesAsync(
+	normalLane: true | undefined,
+	shardIndex: number,
+	totalShards: number,
+): Promise<ReadonlyArray<string>> {
+	if (!normalLane) {
+		const rootDirectory = nodePath.resolve(cwd(), "tests");
+		const unitTests = await collectUnitTestsAsync(rootDirectory);
+		validateShardArgumentsOrThrow(shardIndex, totalShards, unitTests.length);
+		return selectShardFiles(unitTests, shardIndex, totalShards);
+	}
+
+	const allFiles = await collectAllTestsAsync("tests");
+	const heavySet = new Set(getHeavyFiles());
+	const normalFiles = allFiles.filter((file) => !heavySet.has(file));
+	validateShardArgumentsOrThrow(shardIndex, totalShards, normalFiles.length);
+	return selectShardFiles(normalFiles, shardIndex, totalShards);
+}
+
 const command = new Command()
 	.name("shard-tests")
 	.version("0.1.0")
 	.description("Shard unit tests for parallel execution.")
+	.option("--normal-lane", "Select only non-heavy test files, excluding the manifest heavy file list")
 	.arguments("<shard-index:integer> <total-shards:integer>")
-	.action(async (_, shardIndex, totalShards) => {
-		const rootDirectory = nodePath.resolve(cwd(), "tests");
-		const unitTests = await collectUnitTestsAsync(rootDirectory);
-
-		validateShardArgumentsOrThrow(shardIndex, totalShards, unitTests.length);
-
-		const shardFiles = selectShardFiles(unitTests, shardIndex, totalShards);
+	.action(async ({ normalLane }, shardIndex, totalShards) => {
+		const shardFiles = await resolveShardFilesAsync(normalLane, shardIndex, totalShards);
 		if (shardFiles.length > 0) console.log(shardFiles.join(" "));
 	});
 

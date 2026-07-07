@@ -178,9 +178,7 @@ jobs:
       - name: Get shard test files
         id: shard
         run: |
-          ALL_FILES=$(./scripts/shard-tests.ts ${{ matrix.shard }} ${{ env.TEST_SHARDS }})
-          # Exclude heavy test files (handled by test-heavy job)
-          SHARD_FILES=$(echo "$ALL_FILES" | tr ' ' '\n' | grep -v -E '(prevent-abbreviations|naming-convention\.test)' | tr '\n' ' ')
+          SHARD_FILES=$(./scripts/shard-tests.ts --normal-lane ${{ matrix.shard }} ${{ env.TEST_SHARDS }})
           echo "files=$SHARD_FILES" >> $GITHUB_OUTPUT
           echo "Shard ${{ matrix.shard }}/${{ env.TEST_SHARDS }} files: $SHARD_FILES"
 

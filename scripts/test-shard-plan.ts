@@ -1,6 +1,19 @@
+import { readdirSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { cwd } from "node:process";
+
+function walkDirectorySync(directory: string, results: Array<string>): void {
+	const entries = readdirSync(directory, { withFileTypes: true });
+	for (const entry of entries) {
+		const fullPath = path.resolve(directory, entry.name);
+		if (entry.isDirectory()) {
+			walkDirectorySync(fullPath, results);
+		} else if (entry.isFile() && entry.name.endsWith(".test.ts")) {
+			results.push(path.relative(cwd(), fullPath));
+		}
+	}
+}
 
 async function walkDirectoryAsync(directory: string, results: Array<string>): Promise<void> {
 	const entries = await readdir(directory, { withFileTypes: true });
@@ -16,6 +29,12 @@ async function walkDirectoryAsync(directory: string, results: Array<string>): Pr
 	);
 }
 
+export function collectAllTests(rootDirectory: string): ReadonlyArray<string> {
+	const results = new Array<string>();
+	walkDirectorySync(path.resolve(rootDirectory), results);
+	return results.toSorted();
+}
+
 export async function collectAllTestsAsync(rootDirectory: string): Promise<ReadonlyArray<string>> {
 	const results = new Array<string>();
 	await walkDirectoryAsync(path.resolve(rootDirectory), results);
@@ -24,6 +43,17 @@ export async function collectAllTestsAsync(rootDirectory: string): Promise<Reado
 
 export function getHeavyFiles(): ReadonlyArray<string> {
 	return ["tests/upstream/prevent-abbreviations.test.ts"];
+}
+
+export function selectNormalShardFiles(
+	shardIndex: number,
+	totalShards: number,
+	allFiles: ReadonlyArray<string>,
+	heavyFiles: ReadonlyArray<string>,
+): ReadonlyArray<string> {
+	const heavySet = new Set(heavyFiles);
+	const normalFiles = allFiles.filter((file) => !heavySet.has(file));
+	return normalFiles.filter((_, index) => index % totalShards === shardIndex - 1);
 }
 
 export async function selectNormalShardFilesAsync(

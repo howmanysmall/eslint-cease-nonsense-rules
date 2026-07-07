@@ -1,97 +1,110 @@
 import { describe, expect, it } from "vitest";
 
 import {
-	collectAllTestsAsync,
+	collectAllTests,
 	getHeavyFiles,
-	selectNormalShardFilesAsync,
+	selectNormalShardFiles,
 	verifyAssignment,
 } from "../../scripts/test-shard-plan";
 
-const TESTS_ROOT = "tests";
-const TOTAL_NORMAL_SHARDS = 8;
-const SHARD_INDICES: ReadonlyArray<number> = [1, 2, 3, 4, 5, 6, 7, 8];
-
-async function gatherAllNormalShardsAsync(): Promise<ReadonlyArray<ReadonlyArray<string>>> {
-	return Promise.all(
-		SHARD_INDICES.map(async (shardIndex) => selectNormalShardFilesAsync(shardIndex, TOTAL_NORMAL_SHARDS)),
-	);
+function toSortedCopy(values: ReadonlyArray<string>): Array<string> {
+	return [...values].toSorted();
 }
 
-describe("test-shard-plan", () => {
-	it("collectAllTestsAsync returns a sorted array of .test.ts paths", async () => {
-		expect.hasAssertions();
-		const files = await collectAllTestsAsync(TESTS_ROOT);
+function countOccurrences(values: ReadonlyArray<string>, target: string): number {
+	return values.filter((value) => value === target).length;
+}
 
-		expect(files.length).toBeGreaterThan(0);
+describe("scripts/test-shard-plan", () => {
+	it("collectAllTests('tests') returns a recursively discovered sorted list", () => {
+		expect.assertions(1);
+		const allFiles = collectAllTests("tests");
 
-		for (const file of files) {
-			expect(file).toMatch(/\.test\.ts$/u);
-		}
-
-		const sortedCopy = [...files].toSorted();
-		expect(files).toStrictEqual(sortedCopy);
+		expect(allFiles).toStrictEqual(toSortedCopy(allFiles));
 	});
 
-	it("getHeavyFiles returns exactly the upstream prevent-abbreviations test", () => {
+	it.each([
+		"tests/rules/prevent-abbreviations.test.ts",
+		"tests/rules/naming-convention.test.ts",
+		"tests/upstream/prevent-abbreviations.test.ts",
+	])("collectAllTests('tests') includes %s", (filePath: string) => {
+		expect.assertions(1);
+		const allFiles = collectAllTests("tests");
+
+		expect(allFiles).toContain(filePath);
+	});
+
+	it("getHeavyFiles() returns the exact heavy file list", () => {
 		expect.assertions(1);
 		expect(getHeavyFiles()).toStrictEqual(["tests/upstream/prevent-abbreviations.test.ts"]);
 	});
 
-	it("union of all 8 normal shards covers all tests except heavy files", async () => {
+	it("selectNormalShardFiles() uses deterministic modulo assignment and excludes only heavy files", () => {
 		expect.hasAssertions();
-		const [allFiles, shardSets] = await Promise.all([
-			collectAllTestsAsync(TESTS_ROOT),
-			gatherAllNormalShardsAsync(),
-		]);
-		const heavySet = new Set(getHeavyFiles());
+		const totalShards = 8;
+		const allFiles = collectAllTests("tests");
+		const heavyFiles = getHeavyFiles();
+		const heavySet = new Set(heavyFiles);
+		const normalFiles = allFiles.filter((file: string) => !heavySet.has(file));
 
-		const union = new Set(shardSets.flat());
-		const expected = new Set(allFiles.filter((file) => !heavySet.has(file)));
+		for (let shardIndex = 1; shardIndex <= totalShards; shardIndex += 1) {
+			const shardFiles = selectNormalShardFiles(shardIndex, totalShards, allFiles, heavyFiles);
+			const expectedShardFiles = normalFiles.filter(
+				(_: string, index: number) => index % totalShards === shardIndex - 1,
+			);
 
-		expect(union).toStrictEqual(expected);
-	});
-
-	it("tests/rules/prevent-abbreviations.test.ts appears in exactly one normal shard", async () => {
-		expect.hasAssertions();
-		const target = "tests/rules/prevent-abbreviations.test.ts";
-		const shardSets = await gatherAllNormalShardsAsync();
-		const containingShards = shardSets.filter((files) => files.includes(target));
-
-		expect(containingShards).toHaveLength(1);
-	});
-
-	it("tests/rules/naming-convention.test.ts appears in exactly one normal shard", async () => {
-		expect.hasAssertions();
-		const target = "tests/rules/naming-convention.test.ts";
-		const shardSets = await gatherAllNormalShardsAsync();
-		const containingShards = shardSets.filter((files) => files.includes(target));
-
-		expect(containingShards).toHaveLength(1);
-	});
-
-	it("heavy files do not appear in any normal shard", async () => {
-		expect.hasAssertions();
-		const heavySet = new Set(getHeavyFiles());
-		const shardSets = await gatherAllNormalShardsAsync();
-
-		for (const shardFiles of shardSets) {
-			for (const file of shardFiles) {
-				expect(heavySet.has(file)).toBe(false);
-			}
+			expect(shardFiles).toStrictEqual(expectedShardFiles);
+			expect(shardFiles).toStrictEqual(toSortedCopy(shardFiles));
+			expect(shardFiles).not.toContain("tests/upstream/prevent-abbreviations.test.ts");
 		}
 	});
 
-	it("verifyAssignment reports no missing files across normal shards plus heavy set", async () => {
-		expect.hasAssertions();
-		const [allFiles, shardSets] = await Promise.all([
-			collectAllTestsAsync(TESTS_ROOT),
-			gatherAllNormalShardsAsync(),
-		]);
+	it("normal shards cover every non-heavy file exactly once across all eight shards", () => {
+		expect.assertions(4);
+		const totalShards = 8;
+		const allFiles = collectAllTests("tests");
 		const heavyFiles = getHeavyFiles();
+		const normalShardSets = Array.from({ length: totalShards }, (_, shardOffset) =>
+			selectNormalShardFiles(shardOffset + 1, totalShards, allFiles, heavyFiles),
+		);
+		const normalUnion = normalShardSets.flat();
+		const heavySet = new Set(heavyFiles);
+		const expectedNormalFiles = allFiles.filter((file: string) => !heavySet.has(file));
 
-		const result = verifyAssignment(allFiles, shardSets, heavyFiles);
+		expect(normalUnion.toSorted()).toStrictEqual(expectedNormalFiles);
+		expect(normalUnion).not.toContain("tests/upstream/prevent-abbreviations.test.ts");
+		expect(countOccurrences(normalUnion, "tests/rules/prevent-abbreviations.test.ts")).toBe(1);
+		expect(countOccurrences(normalUnion, "tests/rules/naming-convention.test.ts")).toBe(1);
+	});
 
-		expect(result.success).toBe(true);
-		expect(result.issues).toHaveLength(0);
+	it.each(["tests/rules/prevent-abbreviations.test.ts", "tests/rules/naming-convention.test.ts"])(
+		"%s appears in exactly one normal shard",
+		(filePath: string) => {
+			expect.assertions(1);
+			const totalShards = 8;
+			const allFiles = collectAllTests("tests");
+			const heavyFiles = getHeavyFiles();
+			const normalShardSets = Array.from({ length: totalShards }, (_, shardOffset) =>
+				selectNormalShardFiles(shardOffset + 1, totalShards, allFiles, heavyFiles),
+			);
+			const appearances = normalShardSets.flat().filter((file: string) => file === filePath).length;
+
+			expect(appearances).toBe(1);
+		},
+	);
+
+	it("verifyAssignment() accepts the full normal shard union plus the heavy set", () => {
+		expect.assertions(1);
+		const totalShards = 8;
+		const allFiles = collectAllTests("tests");
+		const heavyFiles = getHeavyFiles();
+		const normalShardSets = Array.from({ length: totalShards }, (_, shardOffset) =>
+			selectNormalShardFiles(shardOffset + 1, totalShards, allFiles, heavyFiles),
+		);
+
+		expect(verifyAssignment(allFiles, normalShardSets, heavyFiles)).toStrictEqual({
+			issues: [],
+			success: true,
+		});
 	});
 });
