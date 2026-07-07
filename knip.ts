@@ -4,7 +4,6 @@ const config: KnipConfig = {
 	biome: true,
 	bumpp: true,
 	commitlint: true,
-	entry: ["scripts/*.ts", "benchmarks/**/*.bench.ts", ".opencode/**/*.ts", "tests/**/*.ts"],
 	eslint: true,
 	ignore: ["tests/fixtures/**"],
 	ignoreBinaries: ["hk", "notify-send", "osascript", "powershell"],
@@ -19,7 +18,6 @@ const config: KnipConfig = {
 	],
 	oxlint: true,
 	pnpm: true,
-	project: ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts"],
 	rules: {
 		binaries: "error",
 		catalog: "error",
@@ -38,6 +36,12 @@ const config: KnipConfig = {
 	},
 	typescript: {
 		config: ["tsconfig.json", "tsconfig.base.json"],
+	},
+	workspaces: {
+		".": {
+			entry: ["scripts/*.ts", "benchmarks/**/*.bench.ts", ".opencode/**/*.ts", "tests/**/*.ts"],
+			project: ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts"],
+		},
 	},
 };
 
