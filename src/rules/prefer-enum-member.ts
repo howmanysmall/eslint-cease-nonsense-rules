@@ -51,7 +51,7 @@ function getReferenceRoot(name: string): string {
 	return separatorIndex === -1 ? name : name.slice(0, separatorIndex);
 }
 
-function hasSingleTypeArgument(types: ReadonlyArray<Type> | undefined): types is readonly [Type] {
+function hasSingleTypeArgument(types?: ReadonlyArray<Type>): types is readonly [Type] {
 	return types?.length === 1;
 }
 
@@ -139,6 +139,21 @@ const preferEnumMember = createRule<Options, MessageIds>({
 		const services = ESLintUtils.getParserServices(context);
 		const checker = services.program.getTypeChecker();
 		const { sourceCode } = context;
+		const enumMembersCache = new WeakMap<TypeScriptSymbol, EnumValueLookup | false>();
+		const enumSymbolFromTypeCache = new WeakMap<Type, TypeScriptSymbol | false>();
+		const objectKeyTypeCache = new WeakMap<Type, Type | false>();
+		const runtimeBindingCache = new Map<string, boolean>();
+
+		for (const statement of sourceCode.ast.body) {
+			if (statement.type !== AST_NODE_TYPES.ImportDeclaration) continue;
+			for (const specifier of statement.specifiers) {
+				const isTypeOnly =
+					statement.importKind === "type" ||
+					(specifier.type === AST_NODE_TYPES.ImportSpecifier && specifier.importKind === "type");
+				const previous = runtimeBindingCache.get(specifier.local.name);
+				runtimeBindingCache.set(specifier.local.name, previous === true || !isTypeOnly);
+			}
+		}
 
 		function isEquivalentType(left: Type, right: Type): boolean {
 			if (left === right) {
@@ -149,14 +164,28 @@ const preferEnumMember = createRule<Options, MessageIds>({
 		}
 
 		function getEnumSymbolFromType(type: Type): TypeScriptSymbol | undefined {
-			const symbol = type.aliasSymbol ?? type.getSymbol();
-			if (symbol === undefined) return undefined;
+			const cached = enumSymbolFromTypeCache.get(type);
+			if (cached !== undefined) return cached === false ? undefined : cached;
 
-			if ((symbol.flags & (SymbolFlags.Enum | SymbolFlags.ConstEnum)) !== 0) return symbol;
-			if ((symbol.flags & SymbolFlags.EnumMember) === 0) return undefined;
+			const symbol = type.aliasSymbol ?? type.getSymbol();
+			if (symbol === undefined) {
+				enumSymbolFromTypeCache.set(type, false);
+				return undefined;
+			}
+
+			if ((symbol.flags & (SymbolFlags.Enum | SymbolFlags.ConstEnum)) !== 0) {
+				enumSymbolFromTypeCache.set(type, symbol);
+				return symbol;
+			}
+			if ((symbol.flags & SymbolFlags.EnumMember) === 0) {
+				enumSymbolFromTypeCache.set(type, false);
+				return undefined;
+			}
 
 			const declaration = getRequiredEnumMemberDeclaration(symbol.valueDeclaration);
-			return checker.getSymbolAtLocation(declaration.parent.name);
+			const enumSymbol = checker.getSymbolAtLocation(declaration.parent.name);
+			enumSymbolFromTypeCache.set(type, enumSymbol ?? false);
+			return enumSymbol;
 		}
 
 		function getSharedEnumSymbol(left: Type, right: Type): TypeScriptSymbol | undefined {
@@ -201,6 +230,9 @@ const preferEnumMember = createRule<Options, MessageIds>({
 		}
 
 		function getEnumMembers(enumSymbol: TypeScriptSymbol): EnumValueLookup | undefined {
+			const cached = enumMembersCache.get(enumSymbol);
+			if (cached !== undefined) return cached === false ? undefined : cached;
+
 			const enumType = checker.getTypeOfSymbol(enumSymbol);
 			const stringMap = new Map<string, string>();
 			const numberMap = new Map<number, string>();
@@ -215,9 +247,14 @@ const preferEnumMember = createRule<Options, MessageIds>({
 				}
 			}
 
-			if (stringMap.size === 0 && numberMap.size === 0) return undefined;
+			if (stringMap.size === 0 && numberMap.size === 0) {
+				enumMembersCache.set(enumSymbol, false);
+				return undefined;
+			}
 
-			return { numberMap, stringMap };
+			const lookup = { numberMap, stringMap };
+			enumMembersCache.set(enumSymbol, lookup);
+			return lookup;
 		}
 
 		function getEnumCandidates(contextualType: Type): ReadonlyArray<EnumCandidate> | undefined {
@@ -263,23 +300,7 @@ const preferEnumMember = createRule<Options, MessageIds>({
 		}
 
 		function hasRuntimeBinding(name: string): boolean {
-			const rootName = getReferenceRoot(name);
-			for (const statement of sourceCode.ast.body) {
-				if (statement.type !== AST_NODE_TYPES.ImportDeclaration) continue;
-
-				for (const specifier of statement.specifiers) {
-					if (specifier.local.name !== rootName) continue;
-					if (statement.importKind === "type") return false;
-					const isTypeOnlySpecifier =
-						specifier.type === AST_NODE_TYPES.ImportSpecifier && specifier.importKind === "type";
-					if (isTypeOnlySpecifier) {
-						return false;
-					}
-					return true;
-				}
-			}
-
-			return true;
+			return runtimeBindingCache.get(getReferenceRoot(name)) ?? true;
 		}
 
 		function getEnumReferenceName(enumSymbol: TypeScriptSymbol, location: TypeScriptNode): string | undefined {
@@ -537,8 +558,13 @@ const preferEnumMember = createRule<Options, MessageIds>({
 		}
 
 		function getObjectKeyType(type: Type): Type | undefined {
+			const cached = objectKeyTypeCache.get(type);
+			if (cached !== undefined) return cached === false ? undefined : cached;
+
 			const visited = new WeakSet<Type>();
-			return getObjectKeyTypeInternal(type, visited);
+			const result = getObjectKeyTypeInternal(type, visited);
+			objectKeyTypeCache.set(type, result ?? false);
+			return result;
 		}
 
 		function getMergedObjectKeyTypeFromTypes(types: ReadonlyArray<Type>, visited: WeakSet<Type>): Type | undefined {

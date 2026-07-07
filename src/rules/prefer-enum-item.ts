@@ -5,7 +5,8 @@ import { isUnionType, unionConstituents } from "ts-api-utils";
 
 import type { EnumValueLookup } from "$utilities/enum-utilities";
 import type { TSESTree } from "@typescript-eslint/utils";
-import type { Type, TypeChecker } from "typescript";
+import type { Writable } from "type-fest";
+import type { Symbol as TypeScriptSymbol, Type, TypeChecker } from "typescript";
 
 type MessageIds = "preferEnumItem";
 
@@ -59,11 +60,13 @@ const ENUM_PREFIX = "Enum.";
 const NESTED_ENUM_PREFIX = `.${ENUM_PREFIX}`;
 
 interface EnumItemCaches {
+	readonly enumItemInfoCache: WeakMap<TypeScriptSymbol, EnumItemInfo | false>;
 	readonly enumLookupCache: WeakMap<Type, EnumValueLookup | false>;
 }
 
 function createEnumItemCaches(): EnumItemCaches {
 	return {
+		enumItemInfoCache: new WeakMap<TypeScriptSymbol, EnumItemInfo | false>(),
 		enumLookupCache: new WeakMap<Type, EnumValueLookup | false>(),
 	};
 }
@@ -76,9 +79,7 @@ function getFullEnumPath(checker: TypeChecker, type: Type): string | undefined {
 	if (fullName.startsWith(ENUM_PREFIX)) return fullName;
 
 	const enumStart = fullName.indexOf(NESTED_ENUM_PREFIX);
-	if (enumStart === -1) return undefined;
-
-	return fullName.slice(enumStart + 1);
+	return enumStart === -1 ? undefined : fullName.slice(enumStart + 1);
 }
 
 function getPropertyLiteralType(
@@ -90,10 +91,7 @@ function getPropertyLiteralType(
 	if (property === undefined) return undefined;
 
 	const propertyType = checker.getTypeOfSymbol(property);
-	if (propertyType.isStringLiteral()) return propertyType.value;
-	if (propertyType.isNumberLiteral()) return propertyType.value;
-
-	return undefined;
+	return propertyType.isStringLiteral() || propertyType.isNumberLiteral() ? propertyType.value : undefined;
 }
 
 function getUnionTypesCached(type: Type): ReadonlyArray<Type> {
@@ -110,19 +108,27 @@ const preferEnumItem = createRule<Options, MessageIds>({
 		const [{ fixNumericToValue = false, performanceMode = true } = {}] = context.options;
 		const services = ESLintUtils.getParserServices(context);
 		const checker = services.program.getTypeChecker();
-		const { enumLookupCache } = createEnumItemCaches();
+		const { enumItemInfoCache, enumLookupCache } = createEnumItemCaches();
 
 		function getEnumItemInfo(type: Type): EnumItemInfo | undefined {
+			const symbol = type.getSymbol();
+			if (symbol !== undefined) {
+				const cached = enumItemInfoCache.get(symbol);
+				if (cached !== undefined) return cached === false ? undefined : cached;
+			}
+
 			const enumPath = getFullEnumPath(checker, type);
-			if (enumPath === undefined) return undefined;
+			if (enumPath === undefined) {
+				if (symbol !== undefined) enumItemInfoCache.set(symbol, false);
+				return undefined;
+			}
 
 			const nameLiteral = getPropertyLiteralType(checker, type, "Name");
 			const valueLiteral = getPropertyLiteralType(checker, type, "Value");
-			const info: EnumItemInfo = {
-				enumPath,
-				...(typeof nameLiteral === "string" ? { nameLiteral } : {}),
-				...(typeof valueLiteral === "number" ? { valueLiteral } : {}),
-			};
+			const info: Writable<EnumItemInfo> = { enumPath };
+			if (typeof nameLiteral === "string") info.nameLiteral = nameLiteral;
+			if (typeof valueLiteral === "number") info.valueLiteral = valueLiteral;
+			if (symbol !== undefined) enumItemInfoCache.set(symbol, info);
 			return info;
 		}
 
