@@ -17,6 +17,7 @@ on:
         default: false
 
 env:
+  NODE_VERSION: "25"
   TEST_SHARDS: 4
   HEAVY_TEST_SHARDS: 2
 
@@ -53,7 +54,7 @@ jobs:
       - name: Setup Node.js for NPM publishing
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: ${{ env.NODE_VERSION }}
           registry-url: "https://registry.npmjs.org"
 
       - name: Get pnpm store directory
@@ -255,7 +256,7 @@ jobs:
       - name: Setup Node.js for NPM publishing
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: ${{ env.NODE_VERSION }}
           registry-url: "https://registry.npmjs.org"
 
       - name: Get pnpm store directory
