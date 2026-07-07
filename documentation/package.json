@@ -10,26 +10,26 @@
 		"start": "astro dev"
 	},
 	"dependencies": {
-		"@astrojs/mdx": "7.0.2",
-		"@astrojs/react": "6.0.1",
-		"@astrojs/starlight": "0.41.3",
-		"@total-typescript/ts-reset": "0.6.1",
-		"@types/react": "19.2.10",
-		"@types/react-dom": "19.2.3",
-		"astro": "7.0.6",
-		"astro-vtbot": "2.1.10",
-		"react": "19.2.4",
-		"react-dom": "19.2.4",
-		"sharp": "0.34.5",
-		"starlight-codeblock-fullscreen": "0.1.4",
-		"starlight-heading-badges": "0.7.0",
-		"starlight-links-validator": "0.21.0",
-		"starlight-scroll-to-top": "0.4.0"
+		"@astrojs/mdx": "catalog:prod",
+		"@astrojs/react": "catalog:frontend",
+		"@astrojs/starlight": "catalog:prod",
+		"@total-typescript/ts-reset": "catalog:prod",
+		"@types/react": "catalog:types",
+		"@types/react-dom": "catalog:types",
+		"astro": "catalog:prod",
+		"astro-vtbot": "catalog:prod",
+		"react": "catalog:frontend",
+		"react-dom": "catalog:frontend",
+		"sharp": "catalog:prod",
+		"starlight-codeblock-fullscreen": "catalog:prod",
+		"starlight-heading-badges": "catalog:prod",
+		"starlight-links-validator": "catalog:prod",
+		"starlight-scroll-to-top": "catalog:prod"
 	},
 	"devDependencies": {
-		"typescript": "5.7.3"
+		"typescript": "catalog:dev"
 	},
 	"overrides": {
-		"picomatch": "^4.0.3"
+		"picomatch": "catalog:override"
 	}
 }
