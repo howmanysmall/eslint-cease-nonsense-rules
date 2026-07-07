@@ -155,17 +155,21 @@ const requireSerializedNumericDataType = createRule<Options, MessageIds>({
 		}
 
 		function checkTypeNode(node: TSESTree.TypeNode): boolean {
-			if (containsRawNumber(node)) return true;
-
-			if (typeChecker !== undefined && strictTypeServices !== undefined) {
-				const tsNode = strictTypeServices.esTreeNodeToTSNodeMap.get(node);
-				return checkTypeWithTypeChecker(typeChecker, tsNode);
+			const hasRawNumber = containsRawNumber(node);
+			if (
+				hasRawNumber ||
+				isDataTypeReference(node) ||
+				typeChecker === undefined ||
+				strictTypeServices === undefined
+			) {
+				return hasRawNumber;
 			}
 
-			return false;
+			const tsNode = strictTypeServices.esTreeNodeToTSNodeMap.get(node);
+			return checkTypeWithTypeChecker(typeChecker, tsNode);
 		}
 
-		function checkTypeAnnotation(annotation: TSESTree.TSTypeAnnotation | undefined): void {
+		function checkTypeAnnotation(annotation?: TSESTree.TSTypeAnnotation): void {
 			if (annotation === undefined) return;
 
 			const { typeAnnotation } = annotation;
