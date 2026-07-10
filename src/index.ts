@@ -104,7 +104,7 @@ export type { Pattern, PreferPatternReplacementsOptions } from "$utilities/patte
  *
  * Exposes rule implementations and configuration presets for ESLint flat config.
  */
-export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
+const ruleImplementations = {
 	"array-type-generic": arrayTypeGeneric,
 	"ban-instances": banInstances,
 	"ban-react-fc": banReactFC,
@@ -167,9 +167,11 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"strict-component-boundaries": strictComponentBoundaries,
 	"use-exhaustive-dependencies": useExhaustiveDependencies,
 	"use-hook-at-top-level": useHookAtTopLevel,
-} as const;
+} as const satisfies ReadonlyRecord<string, LooseRuleDefinition>;
 
-const recommendedRuleNames: ReadonlyArray<string> = [
+export const rules: ReadonlyRecord<string, LooseRuleDefinition> = ruleImplementations;
+
+const recommendedRuleNames = [
 	"array-type-generic",
 	"ban-react-fc",
 	"dot-notation",
@@ -208,9 +210,9 @@ const recommendedRuleNames: ReadonlyArray<string> = [
 	"require-react-display-names",
 	"use-exhaustive-dependencies",
 	"use-hook-at-top-level",
-];
+] as const satisfies ReadonlyArray<keyof typeof ruleImplementations>;
 
-function createRecommendedRules(ruleNames: ReadonlyArray<string>): Record<string, "error"> {
+function createRecommendedRules(ruleNames: ReadonlyArray<keyof typeof ruleImplementations>): Record<string, "error"> {
 	const recommendedRules: Record<string, "error"> = {};
 
 	for (const ruleName of ruleNames) {
