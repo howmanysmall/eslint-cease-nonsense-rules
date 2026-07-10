@@ -111,6 +111,17 @@ const accent = useMemo(() => COLOR, []);
 			{
 				code: `
 import { useMemo } from "react";
+
+const COLOR = Color3.fromRGB(255, 255, 255);
+
+const accent = useMemo(() => COLOR, [COLOR]);
+`,
+				errors: [{ messageId: "uselessUseMemo" }],
+				options: [{ environment: "standard" }],
+			},
+			{
+				code: `
+import { useMemo } from "react";
 import { AnimationLibrary, SpringConfiguration, getAnimationConfiguration } from "./animation-config";
 
 const value = useMemo(() => ({ enabled: true, label: "Ready" }), ["Ready"]);

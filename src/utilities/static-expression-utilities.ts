@@ -6,14 +6,17 @@ import { unwrapExpression } from "./ast-utilities";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 interface StaticExpressionOptions {
-	readonly allowArrayHoles?: boolean;
-	readonly allowAssignmentExpression?: boolean;
-	readonly circularReferenceResult?: boolean;
+	readonly allowArrayHoles?: boolean | undefined;
+	readonly allowAssignmentExpression?: boolean | undefined;
+	readonly circularReferenceResult?: boolean | undefined;
 	readonly expression: TSESTree.Expression;
-	readonly seen: Set<TSESTree.Node>;
 	readonly sourceCode: TSESLint.SourceCode;
 	readonly staticGlobalFactories: ReadonlySet<string>;
 	readonly unaryOperators: ReadonlySet<string>;
+}
+
+interface StaticExpressionState extends StaticExpressionOptions {
+	readonly seen: Set<TSESTree.Node>;
 }
 
 type ObjectPropertyValue =
@@ -60,7 +63,7 @@ export function getConstInitializer(
 	return definition.node.init ?? undefined;
 }
 
-function isStaticIdentifierReference(options: StaticExpressionOptions, identifier: TSESTree.Identifier): boolean {
+function isStaticIdentifierReference(options: StaticExpressionState, identifier: TSESTree.Identifier): boolean {
 	const variable = findVariableInScope(options.sourceCode, identifier);
 	if (variable === undefined) return options.staticGlobalFactories.has(identifier.name);
 	if (!isModuleLevelScope(variable.scope)) return false;
@@ -69,7 +72,7 @@ function isStaticIdentifierReference(options: StaticExpressionOptions, identifie
 	for (const definition of variable.defs) {
 		const initializer = getConstInitializer(definition);
 		if (initializer === undefined) continue;
-		if (isStaticExpression(options, initializer)) return true;
+		if (isStaticExpressionInner(options, initializer)) return true;
 	}
 
 	return false;
@@ -90,7 +93,7 @@ function isNonPrivateExpression(value: TSESTree.Expression | TSESTree.PrivateIde
 	return value.type !== AST_NODE_TYPES.PrivateIdentifier;
 }
 
-function isStaticArrayExpression(arrayExpression: TSESTree.ArrayExpression, options: StaticExpressionOptions): boolean {
+function isStaticArrayExpression(arrayExpression: TSESTree.ArrayExpression, options: StaticExpressionState): boolean {
 	for (const element of arrayExpression.elements) {
 		if (element === null) {
 			if (options.allowArrayHoles === true) continue;
@@ -98,7 +101,7 @@ function isStaticArrayExpression(arrayExpression: TSESTree.ArrayExpression, opti
 		}
 
 		if (element.type === AST_NODE_TYPES.SpreadElement) return false;
-		if (!isStaticExpression(options, element)) return false;
+		if (!isStaticExpressionInner(options, element)) return false;
 	}
 
 	return true;
@@ -106,25 +109,25 @@ function isStaticArrayExpression(arrayExpression: TSESTree.ArrayExpression, opti
 
 function isStaticObjectExpression(
 	objectExpression: TSESTree.ObjectExpression,
-	options: StaticExpressionOptions,
+	options: StaticExpressionState,
 ): boolean {
 	for (const property of objectExpression.properties) {
 		if (property.type !== AST_NODE_TYPES.Property) return false;
 		if (property.kind !== "init") return false;
-		if (property.computed && !isStaticExpression(options, property.key)) return false;
+		if (property.computed && !isStaticExpressionInner(options, property.key)) return false;
 		if (!isExpression(property.value)) return false;
-		if (!isStaticExpression(options, property.value)) return false;
+		if (!isStaticExpressionInner(options, property.value)) return false;
 	}
 
 	return true;
 }
 
-function isStaticMemberProperty(property: TSESTree.Expression, options: StaticExpressionOptions): boolean {
+function isStaticMemberProperty(property: TSESTree.Expression, options: StaticExpressionState): boolean {
 	if (property.type === AST_NODE_TYPES.Identifier) return true;
-	return isStaticExpression(options, property);
+	return isStaticExpressionInner(options, property);
 }
 
-function isStaticCallCallee(callee: TSESTree.Expression, options: StaticExpressionOptions): boolean {
+function isStaticCallCallee(callee: TSESTree.Expression, options: StaticExpressionState): boolean {
 	const unwrapped = unwrapExpression(callee);
 
 	if (unwrapped.type === AST_NODE_TYPES.Identifier) {
@@ -132,98 +135,111 @@ function isStaticCallCallee(callee: TSESTree.Expression, options: StaticExpressi
 	}
 
 	if (unwrapped.type !== AST_NODE_TYPES.MemberExpression) return false;
-	if (!isStaticExpression(options, unwrapped.object)) return false;
+	if (!isStaticExpressionInner(options, unwrapped.object)) return false;
 	if (unwrapped.computed) return isStaticMemberProperty(unwrapped.property, options);
 	return unwrapped.property.type === AST_NODE_TYPES.Identifier;
 }
 
 function isStaticCallOrNewExpression(
 	expression: TSESTree.CallExpression | TSESTree.NewExpression,
-	options: StaticExpressionOptions,
+	options: StaticExpressionState,
 ): boolean {
 	if (!isStaticCallCallee(expression.callee, options)) return false;
 
 	return expression.arguments.every(
-		(argument) => argument.type !== AST_NODE_TYPES.SpreadElement && isStaticExpression(options, argument),
+		(argument) => argument.type !== AST_NODE_TYPES.SpreadElement && isStaticExpressionInner(options, argument),
 	);
 }
 
 function isStaticBinaryOrLogicalExpression(
 	expression: TSESTree.BinaryExpression | TSESTree.LogicalExpression,
-	options: StaticExpressionOptions,
+	options: StaticExpressionState,
 ): boolean {
 	return (
 		isNonPrivateExpression(expression.left) &&
 		isNonPrivateExpression(expression.right) &&
-		isStaticExpression(options, expression.left) &&
-		isStaticExpression(options, expression.right)
+		isStaticExpressionInner(options, expression.left) &&
+		isStaticExpressionInner(options, expression.right)
 	);
 }
 
-export function isStaticExpression(
-	options: StaticExpressionOptions,
+function isStaticExpressionInner(
+	options: StaticExpressionState,
 	expression: TSESTree.Expression = options.expression,
 ): boolean {
 	const unwrapped = unwrapExpression(expression);
 	if (options.seen.has(unwrapped)) return options.circularReferenceResult === true;
 	options.seen.add(unwrapped);
 
-	switch (unwrapped.type) {
-		case AST_NODE_TYPES.Literal:
-			return true;
+	try {
+		switch (unwrapped.type) {
+			case AST_NODE_TYPES.Literal:
+				return true;
 
-		case AST_NODE_TYPES.TemplateLiteral:
-			return unwrapped.expressions.length === 0;
+			case AST_NODE_TYPES.TemplateLiteral:
+				return unwrapped.expressions.length === 0;
 
-		case AST_NODE_TYPES.UnaryExpression: {
-			return options.unaryOperators.has(unwrapped.operator) && isStaticExpression(options, unwrapped.argument);
+			case AST_NODE_TYPES.UnaryExpression: {
+				return (
+					options.unaryOperators.has(unwrapped.operator) &&
+					isStaticExpressionInner(options, unwrapped.argument)
+				);
+			}
+
+			case AST_NODE_TYPES.BinaryExpression:
+			case AST_NODE_TYPES.LogicalExpression:
+				return isStaticBinaryOrLogicalExpression(unwrapped, options);
+
+			case AST_NODE_TYPES.ConditionalExpression: {
+				return (
+					isStaticExpressionInner(options, unwrapped.test) &&
+					isStaticExpressionInner(options, unwrapped.consequent) &&
+					isStaticExpressionInner(options, unwrapped.alternate)
+				);
+			}
+
+			case AST_NODE_TYPES.ArrayExpression:
+				return isStaticArrayExpression(unwrapped, options);
+
+			case AST_NODE_TYPES.ObjectExpression:
+				return isStaticObjectExpression(unwrapped, options);
+
+			case AST_NODE_TYPES.Identifier: {
+				return isStaticIdentifierReference(options, unwrapped);
+			}
+
+			case AST_NODE_TYPES.MemberExpression: {
+				return (
+					isStaticExpressionInner(options, unwrapped.object) &&
+					(!unwrapped.computed || isStaticMemberProperty(unwrapped.property, options))
+				);
+			}
+
+			case AST_NODE_TYPES.CallExpression:
+			case AST_NODE_TYPES.NewExpression:
+				return isStaticCallOrNewExpression(unwrapped, options);
+
+			case AST_NODE_TYPES.SequenceExpression: {
+				return (
+					unwrapped.expressions.length > 0 &&
+					unwrapped.expressions.every((nestedExpression) =>
+						isStaticExpressionInner(options, nestedExpression),
+					)
+				);
+			}
+
+			case AST_NODE_TYPES.AssignmentExpression: {
+				return options.allowAssignmentExpression === true && isStaticExpressionInner(options, unwrapped.right);
+			}
+
+			default:
+				return false;
 		}
-
-		case AST_NODE_TYPES.BinaryExpression:
-		case AST_NODE_TYPES.LogicalExpression:
-			return isStaticBinaryOrLogicalExpression(unwrapped, options);
-
-		case AST_NODE_TYPES.ConditionalExpression: {
-			return (
-				isStaticExpression(options, unwrapped.test) &&
-				isStaticExpression(options, unwrapped.consequent) &&
-				isStaticExpression(options, unwrapped.alternate)
-			);
-		}
-
-		case AST_NODE_TYPES.ArrayExpression:
-			return isStaticArrayExpression(unwrapped, options);
-
-		case AST_NODE_TYPES.ObjectExpression:
-			return isStaticObjectExpression(unwrapped, options);
-
-		case AST_NODE_TYPES.Identifier: {
-			return isStaticIdentifierReference(options, unwrapped);
-		}
-
-		case AST_NODE_TYPES.MemberExpression: {
-			return (
-				isStaticExpression(options, unwrapped.object) &&
-				(!unwrapped.computed || isStaticMemberProperty(unwrapped.property, options))
-			);
-		}
-
-		case AST_NODE_TYPES.CallExpression:
-		case AST_NODE_TYPES.NewExpression:
-			return isStaticCallOrNewExpression(unwrapped, options);
-
-		case AST_NODE_TYPES.SequenceExpression: {
-			return (
-				unwrapped.expressions.length > 0 &&
-				unwrapped.expressions.every((nestedExpression) => isStaticExpression(options, nestedExpression))
-			);
-		}
-
-		case AST_NODE_TYPES.AssignmentExpression: {
-			return options.allowAssignmentExpression === true && isStaticExpression(options, unwrapped.right);
-		}
-
-		default:
-			return false;
+	} finally {
+		options.seen.delete(unwrapped);
 	}
+}
+
+export function isStaticExpression(options: StaticExpressionOptions): boolean {
+	return isStaticExpressionInner({ ...options, seen: new Set<TSESTree.Node>() });
 }

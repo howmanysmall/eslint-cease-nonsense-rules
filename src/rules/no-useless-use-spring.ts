@@ -63,24 +63,12 @@ const DEFAULT_OPTION_VALUES: Required<NoUselessUseSpringOptions> = {
 
 const STATIC_UNARY_OPERATORS = new Set(["-", "+", "!", "~", "typeof", "void", "delete"]);
 
-function isStaticObjectExpression(
-	context: TSESLint.RuleContext<MessageIds, Options>,
-	objectExpr: TSESTree.ObjectExpression,
-	seen: Set<TSESTree.Node>,
-	options: NormalizedOptions,
-): boolean {
-	return isStaticSpringExpression(context, objectExpr, seen, options);
-}
-
-function isObjectProperty(property: TSESTree.ObjectExpression["properties"][number]): property is TSESTree.Property {
-	return property.type === AST_NODE_TYPES.Property;
-}
-
 function objectHasFromAndTo(objectExpr: TSESTree.ObjectExpression): boolean {
 	let hasFrom = false;
 	let hasTo = false;
 
-	for (const property of objectExpr.properties.filter(isObjectProperty)) {
+	for (const property of objectExpr.properties) {
+		if (property.type !== AST_NODE_TYPES.Property) continue;
 		if (property.computed) continue;
 		if (property.key.type !== AST_NODE_TYPES.Identifier) continue;
 
@@ -115,19 +103,18 @@ function getModuleLevelConstObjectInitializer(
 function getStaticObjectLikeConfigInitializers(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	expression: TSESTree.Expression,
-	seen: Set<TSESTree.Node>,
 	options: NormalizedOptions,
 ): ReadonlyArray<TSESTree.ObjectExpression> {
 	const unwrapped = unwrapExpression(expression);
 	if (unwrapped.type === AST_NODE_TYPES.ObjectExpression) {
-		return isStaticObjectExpression(context, unwrapped, seen, options) ? [unwrapped] : [];
+		return isStaticSpringExpression(context, unwrapped, options) ? [unwrapped] : [];
 	}
 
 	if (unwrapped.type !== AST_NODE_TYPES.Identifier) return [];
 
 	const staticInitializers = new Array<TSESTree.ObjectExpression>();
 	for (const normalizedInitializer of getModuleLevelConstObjectInitializer(context, unwrapped)) {
-		if (isStaticObjectExpression(context, normalizedInitializer, seen, options)) {
+		if (isStaticSpringExpression(context, normalizedInitializer, options)) {
 			staticInitializers.push(normalizedInitializer);
 		}
 	}
@@ -135,19 +122,9 @@ function getStaticObjectLikeConfigInitializers(
 	return staticInitializers;
 }
 
-function isStaticArrayExpression(
-	context: TSESLint.RuleContext<MessageIds, Options>,
-	arrayExpr: TSESTree.ArrayExpression,
-	seen: Set<TSESTree.Node>,
-	options: NormalizedOptions,
-): boolean {
-	return isStaticSpringExpression(context, arrayExpr, seen, options);
-}
-
 function isStaticSpringExpression(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	expression: TSESTree.Expression,
-	seen: Set<TSESTree.Node>,
 	options: NormalizedOptions,
 ): boolean {
 	return isStaticExpression({
@@ -155,7 +132,6 @@ function isStaticSpringExpression(
 		allowAssignmentExpression: true,
 		circularReferenceResult: true,
 		expression,
-		seen,
 		sourceCode: context.sourceCode,
 		staticGlobalFactories: options.staticGlobalFactories,
 		unaryOperators: STATIC_UNARY_OPERATORS,
@@ -191,20 +167,14 @@ const noUselessUseSpring = createRule<Options, MessageIds>({
 				if (configArgument === undefined) return;
 				if (configArgument.type === AST_NODE_TYPES.SpreadElement) return;
 
-				const seen = new Set<TSESTree.Node>();
-				const staticConfigObjects = getStaticObjectLikeConfigInitializers(
-					context,
-					configArgument,
-					seen,
-					normalized,
-				);
+				const staticConfigObjects = getStaticObjectLikeConfigInitializers(context, configArgument, normalized);
 				if (staticConfigObjects.length === 0) return;
 
 				// Mount animations with both `from` and `to` are valid - they animate once on mount
 				if (staticConfigObjects.some(objectHasFromAndTo)) return;
 
 				const depsKind = classifyDependencyArray(node.arguments[1], (arrayExpression) =>
-					isStaticArrayExpression(context, arrayExpression, seen, normalized),
+					isStaticSpringExpression(context, arrayExpression, normalized),
 				);
 				if (!depsAreNonUpdating(depsKind, normalized)) return;
 

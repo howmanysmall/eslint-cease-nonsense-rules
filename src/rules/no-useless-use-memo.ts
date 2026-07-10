@@ -63,37 +63,22 @@ function isStandaloneUseMemo(node: TSESTree.CallExpression): boolean {
 	switch (node.parent?.type) {
 		case AST_NODE_TYPES.ExpressionStatement:
 			return true;
+
 		case AST_NODE_TYPES.UnaryExpression:
 			return node.parent.operator === "void" && node.parent.parent?.type === AST_NODE_TYPES.ExpressionStatement;
+
 		default:
 			return false;
 	}
 }
 
-function isStaticArrayExpression(
-	context: TSESLint.RuleContext<MessageIds, Options>,
-	arrayExpr: TSESTree.ArrayExpression,
-	seen: Set<TSESTree.Node>,
-	options: NormalizedOptions,
-): boolean {
-	return isStaticExpression({
-		expression: arrayExpr,
-		seen,
-		sourceCode: context.sourceCode,
-		staticGlobalFactories: options.staticGlobalFactories,
-		unaryOperators: STATIC_UNARY_OPERATORS,
-	});
-}
-
 function isStaticMemoExpression(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	expression: TSESTree.Expression,
-	seen: Set<TSESTree.Node>,
 	options: NormalizedOptions,
 ): boolean {
 	return isStaticExpression({
 		expression,
-		seen,
 		sourceCode: context.sourceCode,
 		staticGlobalFactories: options.staticGlobalFactories,
 		unaryOperators: STATIC_UNARY_OPERATORS,
@@ -143,11 +128,10 @@ const noUselessUseMemo = createRule<Options, MessageIds>({
 				const callbackExpression = getMemoCallbackExpression(callbackArgument);
 				if (callbackExpression === undefined) return;
 
-				const seen = new Set<TSESTree.Node>();
-				if (!isStaticMemoExpression(context, callbackExpression, seen, options)) return;
+				if (!isStaticMemoExpression(context, callbackExpression, options)) return;
 
 				const dependencies = classifyDependencyArray(node.arguments[1], (arrayExpression) =>
-					isStaticArrayExpression(context, arrayExpression, seen, options),
+					isStaticMemoExpression(context, arrayExpression, options),
 				);
 				if (!dependenciesAreNonUpdating(dependencies, options)) return;
 
