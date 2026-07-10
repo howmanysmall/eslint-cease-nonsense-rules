@@ -1,7 +1,7 @@
 import { getReactSources, isReactImport } from "$constants/react-sources";
-import { getImportSpecifierName, unwrapNode } from "$utilities/ast-utilities";
+import { getImportSpecifierName, getStaticCalleeName, unwrapNode } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
-import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
+import { isModuleOrGlobalScope, isParameterDefinition } from "$utilities/scope-utilities";
 import { TSESTree } from "@typescript-eslint/types";
 
 import type { EnvironmentMode } from "$types/environment-mode";
@@ -61,7 +61,7 @@ function getMemberHookName(callee: TSESTree.MemberExpression, reactNamespaces: S
 	if (callee.computed) return undefined;
 	if (callee.object.type !== TSESTree.AST_NODE_TYPES.Identifier) return undefined;
 	if (!reactNamespaces.has(callee.object.name)) return undefined;
-	return callee.property.name;
+	return getStaticCalleeName(callee);
 }
 
 function getRootIdentifier(node: TSESTree.Node): TSESTree.Identifier | undefined {
@@ -102,8 +102,8 @@ function isIdentifierAtArrayIndex(pattern: TSESTree.ArrayPattern, identifierName
 }
 
 function isModuleScope(variable: TSESLint.Scope.Variable): boolean {
-	const scopeType = variable.scope?.type;
-	return scopeType === ScopeType.module || scopeType === ScopeType.global;
+	const { scope } = variable;
+	return scope !== undefined && isModuleOrGlobalScope(scope);
 }
 
 const memoizedEffectDependencies = createRule<Options, MessageIds>({
@@ -142,7 +142,7 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 		function isMemoHookCall(node: TSESTree.CallExpression): boolean {
 			const { callee } = node;
 			if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
-				return memoHookIdentifiers.has(callee.name);
+				return memoHookIdentifiers.has(getStaticCalleeName(callee) ?? "");
 			}
 			if (callee.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
 				const hookName = getMemberHookName(callee, reactNamespaces);
@@ -154,7 +154,7 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 		function getStableHookKind(node: TSESTree.CallExpression): StableHookKind | undefined {
 			const { callee } = node;
 			if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
-				return stableHookIdentifiers.get(callee.name);
+				return stableHookIdentifiers.get(getStaticCalleeName(callee) ?? "");
 			}
 			if (callee.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
 				const hookName = getMemberHookName(callee, reactNamespaces);
@@ -185,7 +185,7 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 		}
 
 		function getDefinitionStability(definition: TSESLint.Scope.Definition, variableName: string): Stability {
-			if (definition.type === DefinitionType.Parameter) return "unknown";
+			if (isParameterDefinition(definition)) return "unknown";
 
 			const { node } = definition;
 			if (
@@ -257,7 +257,7 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 		function getDependenciesIndex(node: TSESTree.CallExpression): number | undefined {
 			const { callee } = node;
 			if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
-				return effectHookIdentifiers.get(callee.name);
+				return effectHookIdentifiers.get(getStaticCalleeName(callee) ?? "");
 			}
 			if (callee.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
 				const hookName = getMemberHookName(callee, reactNamespaces);

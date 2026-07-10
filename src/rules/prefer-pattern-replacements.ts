@@ -8,7 +8,7 @@ import {
 } from "$utilities/pattern-replacement/pattern-matcher";
 import { parsePattern } from "$utilities/pattern-replacement/pattern-parser";
 import { getReplacementIdentifier, generateReplacement } from "$utilities/pattern-replacement/replacement-generator";
-import { DefinitionType } from "@typescript-eslint/scope-manager";
+import { isImportBindingDefinition } from "$utilities/scope-utilities";
 
 import type { PatternIndex } from "$utilities/pattern-replacement/pattern-matcher";
 import type { ParsedPattern, Pattern } from "$utilities/pattern-replacement/pattern-types";
@@ -35,7 +35,7 @@ const preferPatternReplacements = createRule<Options, MessageIds>({
 			let scope = sourceCode.getScope(node) as TSESLint.Scope.Scope | undefined;
 			while (scope) {
 				const variable = scope.set.get(identifierName);
-				if (variable?.defs.some((definition) => definition.type !== DefinitionType.ImportBinding) === true) {
+				if (variable?.defs.some((definition) => !isImportBindingDefinition(definition)) === true) {
 					return true;
 				}
 				scope = scope.upper ?? undefined;

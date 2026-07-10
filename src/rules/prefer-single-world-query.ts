@@ -3,7 +3,6 @@ import { getDefinedValue } from "$utilities/defined-utilities";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { regex } from "arktype";
 
-import type { Reference } from "@typescript-eslint/scope-manager";
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds = "preferSingleGet" | "preferSingleHas";
@@ -90,7 +89,7 @@ function isIdentifierDirectlyInAndExpression(node: TSESTree.Identifier): boolean
 	return parent?.type === AST_NODE_TYPES.LogicalExpression && parent.operator === "&&";
 }
 
-function isDirectlyInAndExpression(reference: Reference): boolean {
+function isDirectlyInAndExpression(reference: TSESLint.Scope.Reference): boolean {
 	if (reference.isWrite() || reference.identifier.type !== AST_NODE_TYPES.Identifier) return false;
 	return isIdentifierDirectlyInAndExpression(reference.identifier);
 }

@@ -1,4 +1,4 @@
-import { unwrapNode } from "$utilities/ast-utilities";
+import { getCallExpressionName, getCalleeName, unwrapNode } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
 import { getDefinedValue } from "$utilities/defined-utilities";
 import { TSESTree } from "@typescript-eslint/types";
@@ -151,21 +151,6 @@ const GLOBAL_BUILTINS = new Set([
 	"Event",
 ]);
 
-function getHookName(node: TSESTree.CallExpression): string | undefined {
-	const { callee } = node;
-
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return callee.name;
-
-	if (
-		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-	) {
-		return callee.property.name;
-	}
-
-	return undefined;
-}
-
 function getMemberExpressionDepth(node: TSESTree.Node): number {
 	let depth = 0;
 	let current: TSESTree.Node = node;
@@ -310,7 +295,7 @@ function isStableHookValue(
 ): boolean {
 	if (init.type !== TSESTree.AST_NODE_TYPES.CallExpression) return false;
 
-	const hookName = getHookName(init);
+	const hookName = getCallExpressionName(init);
 	if (hookName === undefined || hookName === "") return false;
 
 	const stableResult = stableHooks.get(hookName);
@@ -327,17 +312,12 @@ function isReactJoinBindingsCall(callee: TSESTree.CallExpression["callee"]): boo
 		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 		callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
 		callee.object.name === "React" &&
-		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
-		callee.property.name === "joinBindings"
+		getCalleeName(callee) === "joinBindings"
 	);
 }
 
 function isMapCall(callee: TSESTree.CallExpression["callee"]): boolean {
-	return (
-		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
-		callee.property.name === "map"
-	);
+	return callee.type === TSESTree.AST_NODE_TYPES.MemberExpression && getCalleeName(callee) === "map";
 }
 
 function isKnownStableCall(init: TSESTree.Expression | null): boolean {
@@ -1049,7 +1029,7 @@ const useExhaustiveDependencies = createRule<Options, MessageIds>({
 			CallExpression(node) {
 				const callNode = node;
 
-				const hookName = getHookName(callNode);
+				const hookName = getCallExpressionName(callNode);
 				if (hookName === undefined || hookName === "") return;
 
 				const hookConfig = hookConfigs.get(hookName);

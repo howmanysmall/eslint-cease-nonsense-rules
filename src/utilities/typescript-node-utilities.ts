@@ -1,8 +1,8 @@
-import { ScopeType } from "@typescript-eslint/scope-manager";
+import { isGlobalScope } from "$utilities/scope-utilities";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import { isEnumMember, isExpression, isTypeNode } from "typescript";
 
-import type { Scope } from "@typescript-eslint/scope-manager";
+import type { TSESLint } from "@typescript-eslint/utils";
 import type { Declaration, EnumMember, Node as TypeScriptNode, Type, TypeChecker, TypeNode } from "typescript";
 
 interface ContextualTypeChecker {
@@ -33,9 +33,9 @@ export function getRequiredEnumMemberDeclaration(declaration: Declaration | unde
 	throw error;
 }
 
-export function isScriptProgramScope(scope: Scope): boolean {
+export function isScriptProgramScope(scope: TSESLint.Scope.Scope): boolean {
 	const upperScope = scope.upper;
-	if (upperScope?.type !== ScopeType.global) return false;
+	if (upperScope === null || !isGlobalScope(upperScope)) return false;
 
 	const { block } = upperScope;
 	return block.type === AST_NODE_TYPES.Program && block.sourceType === "script";

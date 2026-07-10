@@ -1,5 +1,5 @@
 import { createRule } from "$utilities/create-rule";
-import { ScopeType } from "@typescript-eslint/scope-manager";
+import { isModuleScope } from "$utilities/scope-utilities";
 import { AST_TOKEN_TYPES } from "@typescript-eslint/utils";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
@@ -130,7 +130,7 @@ const noUnusedImports = createRule<Options, MessageIds>({
 				let moduleScope = programScope;
 
 				for (const scope of [programScope, ...programScope.childScopes]) {
-					if (scope.type !== ScopeType.module) continue;
+					if (!isModuleScope(scope)) continue;
 
 					moduleScope = scope;
 					break;

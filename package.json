@@ -60,6 +60,7 @@
 		"typescript": "tsgo"
 	},
 	"dependencies": {
+		"@typescript-eslint/scope-manager": "catalog:lint",
 		"arktype": "catalog:prod",
 		"fast-diff": "catalog:prod",
 		"oxc-parser": "catalog:prod",
@@ -86,7 +87,6 @@
 		"@types/node": "catalog:types",
 		"@typescript-eslint/parser": "catalog:lint",
 		"@typescript-eslint/rule-tester": "catalog:lint",
-		"@typescript-eslint/scope-manager": "catalog:lint",
 		"@typescript-eslint/types": "catalog:lint",
 		"@typescript-eslint/utils": "catalog:lint",
 		"@typescript/native-preview": "catalog:dev",

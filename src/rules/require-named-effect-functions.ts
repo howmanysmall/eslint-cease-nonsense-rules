@@ -1,5 +1,7 @@
+import { getCallExpressionName } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
-import { DefinitionType } from "@typescript-eslint/scope-manager";
+import { isFunctionNameDefinition, isVariableDefinition } from "$utilities/scope-utilities";
+import { findVariableInScope } from "$utilities/static-expression-utilities";
 import { TSESTree } from "@typescript-eslint/types";
 
 import type { EnvironmentMode } from "$types/environment-mode";
@@ -69,32 +71,9 @@ function normalizeOptions(options?: EffectFunctionOptions): NormalizedOptions {
 	};
 }
 
-function getHookName({ callee }: TSESTree.CallExpression): string | undefined {
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return callee.name;
-	if (
-		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-	) {
-		return callee.property.name;
-	}
-	return undefined;
-}
-
-function getVariableByName(scope: TSESLint.Scope.Scope | null, name: string): TSESLint.Scope.Variable | undefined {
-	let currentScope = scope;
-
-	while (currentScope !== null) {
-		const variable = currentScope.set.get(name);
-		if (variable !== undefined) return variable;
-		currentScope = currentScope.upper;
-	}
-
-	return undefined;
-}
-
 function resolveFunctionFromVariable(variable: TSESLint.Scope.Variable): ResolvedFunction | undefined {
 	for (const definition of variable.defs) {
-		if (definition.type === DefinitionType.FunctionName) {
+		if (isFunctionNameDefinition(definition)) {
 			const { node } = definition;
 			if (node.type !== TSESTree.AST_NODE_TYPES.FunctionDeclaration) continue;
 
@@ -105,7 +84,7 @@ function resolveFunctionFromVariable(variable: TSESLint.Scope.Variable): Resolve
 			};
 		}
 
-		if (definition.type !== DefinitionType.Variable) continue;
+		if (!isVariableDefinition(definition)) continue;
 
 		const { init } = definition.node;
 		if (init === null) continue;
@@ -131,16 +110,18 @@ function resolveFunctionFromVariable(variable: TSESLint.Scope.Variable): Resolve
 }
 
 function isCallbackHookResult(sourceCode: TSESLint.SourceCode, identifier: TSESTree.Identifier): boolean {
-	const variable = getVariableByName(sourceCode.getScope(identifier), identifier.name);
+	const variable = findVariableInScope(sourceCode, identifier);
 	if (variable === undefined) return false;
 
 	for (const definition of variable.defs) {
-		if (definition.type !== DefinitionType.Variable) continue;
+		if (!isVariableDefinition(definition)) continue;
 
 		const { init } = definition.node;
-		if (init?.type !== TSESTree.AST_NODE_TYPES.CallExpression) continue;
+		if (init?.type !== TSESTree.AST_NODE_TYPES.CallExpression) {
+			continue;
+		}
 
-		const calleeHookName = getHookName(init);
+		const calleeHookName = getCallExpressionName(init);
 		if (calleeHookName === "useCallback" || calleeHookName === "useMemo") return true;
 	}
 
@@ -203,7 +184,7 @@ const requireNamedEffectFunctions = createRule<Options, MessageIds>({
 			hookName: string,
 			identifier: TSESTree.Identifier,
 		): void {
-			const variable = getVariableByName(context.sourceCode.getScope(identifier), identifier.name);
+			const variable = findVariableInScope(context.sourceCode, identifier);
 			const resolved = variable === undefined ? undefined : resolveFunctionFromVariable(variable);
 
 			if (resolved !== undefined) {
@@ -243,7 +224,7 @@ const requireNamedEffectFunctions = createRule<Options, MessageIds>({
 
 		return {
 			CallExpression(node): void {
-				const hookName = getHookName(node);
+				const hookName = getCallExpressionName(node);
 				if (hookName === undefined || !effectHooks.has(hookName)) return;
 
 				const [firstArgument] = node.arguments;

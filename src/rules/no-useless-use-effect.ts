@@ -1,5 +1,5 @@
 import { getReactSources, isReactImport } from "$constants/react-sources";
-import { getImportSpecifierName, unwrapExpression } from "$utilities/ast-utilities";
+import { getCalleeName, getImportSpecifierName, getStaticCalleeName, unwrapExpression } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
 import { TSESTree } from "@typescript-eslint/types";
 
@@ -263,14 +263,14 @@ function isHookCall(
 	hookNames: ReadonlySet<string>,
 ): boolean {
 	const { callee } = node;
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return hookIdentifiers.has(callee.name);
+	const calleeName = getStaticCalleeName(callee);
+	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return hookIdentifiers.has(calleeName ?? "");
 	if (
 		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-		!callee.computed &&
 		callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
-		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
+		calleeName !== undefined
 	) {
-		return reactNamespaces.has(callee.object.name) && hookNames.has(callee.property.name);
+		return reactNamespaces.has(callee.object.name) && hookNames.has(calleeName);
 	}
 	return false;
 }
@@ -784,20 +784,20 @@ function isPropertyCallbackCall(
 	propertyCallbackPrefixes: ReadonlySet<string>,
 ): boolean {
 	const { callee } = callExpression;
+	const calleeName = getStaticCalleeName(callee);
 	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
-		return functionContext.propertyCallbackIdentifiers.has(callee.name);
+		return functionContext.propertyCallbackIdentifiers.has(calleeName ?? "");
 	}
 
 	if (
 		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-		!callee.computed &&
 		callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
-		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
+		calleeName !== undefined
 	) {
 		return (
 			functionContext.propertyObjectName !== undefined &&
 			callee.object.name === functionContext.propertyObjectName &&
-			hasPrefix(callee.property.name, propertyCallbackPrefixes)
+			hasPrefix(calleeName, propertyCallbackPrefixes)
 		);
 	}
 
@@ -879,17 +879,17 @@ function hasNonSetterSideEffect(
 		if (!callExpression) continue;
 
 		if (isStateSetterCall(callExpression, stateSetterIdentifiers)) continue;
+		const callExpressionName = getStaticCalleeName(callExpression.callee);
 		if (
 			callExpression.callee.type === TSESTree.AST_NODE_TYPES.Identifier &&
-			propertyCallbackIdentifiers.has(callExpression.callee.name)
+			propertyCallbackIdentifiers.has(callExpressionName ?? "")
 		) {
 			continue;
 		}
 		if (
 			callExpression.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-			!callExpression.callee.computed &&
 			callExpression.callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
-			callExpression.callee.property.type === TSESTree.AST_NODE_TYPES.Identifier &&
+			callExpressionName !== undefined &&
 			propertyCallbackIdentifiers.has(callExpression.callee.object.name)
 		) {
 			continue;
@@ -976,13 +976,13 @@ function hasOnlyLogCalls(statements: ReadonlyArray<TSESTree.Statement>): boolean
 
 		const callExpression = getCallExpressionFromStatement(statement);
 		if (!callExpression) return false;
+		const callExpressionName = getStaticCalleeName(callExpression.callee);
 
 		if (
 			callExpression.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-			!callExpression.callee.computed &&
 			callExpression.callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
 			callExpression.callee.object.name === "console" &&
-			callExpression.callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
+			callExpressionName !== undefined
 		) {
 			continue;
 		}
@@ -999,12 +999,9 @@ function hasExternalStorePattern(statements: ReadonlyArray<TSESTree.Statement>):
 		const callExpression = getCallExpressionFromStatement(statement);
 		if (!callExpression) return false;
 
-		if (
-			callExpression.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-			!callExpression.callee.computed &&
-			callExpression.callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-		) {
-			return SUBSCRIBE_METHODS.has(callExpression.callee.property.name);
+		const methodName = getStaticCalleeName(callExpression.callee);
+		if (callExpression.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression && methodName !== undefined) {
+			return SUBSCRIBE_METHODS.has(methodName);
 		}
 
 		return false;
@@ -1031,7 +1028,7 @@ function hasRefPassedToParent(
 
 		if (
 			callExpression.callee.type === TSESTree.AST_NODE_TYPES.Identifier &&
-			propertyCallbackIdentifiers.has(callExpression.callee.name)
+			propertyCallbackIdentifiers.has(getCalleeName(callExpression.callee) ?? "")
 		) {
 			for (const argument of callExpression.arguments) {
 				if (
@@ -1181,19 +1178,15 @@ function hasEventSpecificLogic(
 					const call = getCallExpressionFromStatement(stmt);
 					if (!call || isStateSetterCall(call, stateSetterIdentifiers)) return false;
 
-					if (call.callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
-						const { name } = call.callee;
+					const callName = getStaticCalleeName(call.callee);
+					if (call.callee.type === TSESTree.AST_NODE_TYPES.Identifier && callName !== undefined) {
 						for (const prefix of EVENT_SIDE_EFFECT_PREFIXES) {
-							if (name.toLowerCase().startsWith(prefix)) return true;
+							if (callName.toLowerCase().startsWith(prefix)) return true;
 						}
 					}
 
-					if (
-						call.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-						!call.callee.computed &&
-						call.callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-					) {
-						const method = call.callee.property.name.toLowerCase();
+					if (call.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression && callName !== undefined) {
+						const method = callName.toLowerCase();
 						for (const prefix of EVENT_SIDE_EFFECT_PREFIXES) if (method.startsWith(prefix)) return true;
 					}
 
@@ -1387,34 +1380,30 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 
 				if (isStateSetterCall(call, setterIds)) continue;
 
-				if (call.callee.type === TSESTree.AST_NODE_TYPES.Identifier && callbackIds.has(call.callee.name)) {
+				const callName = getStaticCalleeName(call.callee);
+				if (call.callee.type === TSESTree.AST_NODE_TYPES.Identifier && callbackIds.has(callName ?? "")) {
 					continue;
 				}
 
-				if (call.callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
-					const { name } = call.callee;
-					if (KNOWN_EXTERNAL_PATTERNS.has(name)) return true;
+				if (call.callee.type === TSESTree.AST_NODE_TYPES.Identifier && callName !== undefined) {
+					if (KNOWN_EXTERNAL_PATTERNS.has(callName)) return true;
 					if (
-						name.startsWith("log") ||
-						name.startsWith("fetch") ||
-						name.startsWith("send") ||
-						name.startsWith("track") ||
-						name.startsWith("report") ||
-						name.startsWith("show") ||
-						name.startsWith("navigate") ||
-						name.startsWith("submit") ||
-						name.startsWith("post") ||
-						name.startsWith("notify")
+						callName.startsWith("log") ||
+						callName.startsWith("fetch") ||
+						callName.startsWith("send") ||
+						callName.startsWith("track") ||
+						callName.startsWith("report") ||
+						callName.startsWith("show") ||
+						callName.startsWith("navigate") ||
+						callName.startsWith("submit") ||
+						callName.startsWith("post") ||
+						callName.startsWith("notify")
 					) {
 						return true;
 					}
 				}
 
-				if (
-					call.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-					!call.callee.computed &&
-					call.callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-				) {
+				if (call.callee.type === TSESTree.AST_NODE_TYPES.MemberExpression && callName !== undefined) {
 					if (
 						call.callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
 						callbackIds.has(call.callee.object.name)
@@ -1422,7 +1411,7 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 						continue;
 					}
 
-					const method = call.callee.property.name;
+					const method = callName;
 					// Only consider console.log/warn/error as real side effects
 					if (
 						(method === "log" ||

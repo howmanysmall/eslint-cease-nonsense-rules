@@ -1,6 +1,6 @@
 import { createRule } from "$utilities/create-rule";
+import { isModuleOrGlobalScope } from "$utilities/scope-utilities";
 import { isScriptProgramScope } from "$utilities/typescript-node-utilities";
-import { ScopeType } from "@typescript-eslint/scope-manager";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
@@ -10,8 +10,7 @@ type MessageIds = "mustUseConst" | "mustBeModuleScope";
 const SCREAMING_SNAKE_CASE = /^[A-Z][A-Z0-9_]*$/u;
 
 function isTopScope(scope: TSESLint.Scope.Scope): boolean {
-	const { type } = scope;
-	if (type === ScopeType.module || type === ScopeType.global) return true;
+	if (isModuleOrGlobalScope(scope)) return true;
 
 	return isScriptProgramScope(scope);
 }

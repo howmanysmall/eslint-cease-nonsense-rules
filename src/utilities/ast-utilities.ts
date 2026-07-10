@@ -54,6 +54,24 @@ export function getMemberPropertyName(memberExpression: TSESTree.MemberExpressio
 	return typeof memberExpression.property.value === "string" ? memberExpression.property.value : undefined;
 }
 
+export function getCalleeName(callee: TSESTree.CallExpression["callee"]): string | undefined {
+	if (callee.type === AST_NODE_TYPES.Identifier) return callee.name;
+	if (callee.type === AST_NODE_TYPES.MemberExpression && callee.property.type === AST_NODE_TYPES.Identifier) {
+		return callee.property.name;
+	}
+
+	return undefined;
+}
+
+export function getStaticCalleeName(callee: TSESTree.CallExpression["callee"]): string | undefined {
+	if (callee.type === AST_NODE_TYPES.MemberExpression && callee.computed) return undefined;
+	return getCalleeName(callee);
+}
+
+export function getCallExpressionName(callExpression: TSESTree.CallExpression): string | undefined {
+	return getCalleeName(callExpression.callee);
+}
+
 export function getImportSpecifierName(specifier: TSESTree.ImportSpecifier): string {
 	if (specifier.imported.type === AST_NODE_TYPES.Identifier) return specifier.imported.name;
 	return specifier.imported.value;

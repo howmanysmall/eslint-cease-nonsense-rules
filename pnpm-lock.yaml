@@ -254,6 +254,9 @@ importers:
 
   .:
     dependencies:
+      '@typescript-eslint/scope-manager':
+        specifier: catalog:lint
+        version: 8.62.1
       arktype:
         specifier: catalog:prod
         version: 2.2.2
@@ -327,9 +330,6 @@ importers:
       '@typescript-eslint/rule-tester':
         specifier: catalog:lint
         version: 8.62.1(eslint@10.6.0(jiti@2.7.0))(typescript@5.9.3)
-      '@typescript-eslint/scope-manager':
-        specifier: catalog:lint
-        version: 8.62.1
       '@typescript-eslint/types':
         specifier: catalog:lint
         version: 8.62.1

@@ -100,6 +100,26 @@ function hasIanitorStaticType(typeAnnotation: TSESTree.TypeNode): boolean {
 	);
 }
 
+function isLuaTupleType(typeAnnotation: TSESTree.TypeNode): boolean {
+	let currentType = typeAnnotation;
+
+	// Unwrap Readonly<...>
+	if (
+		currentType.type === TSESTree.AST_NODE_TYPES.TSTypeReference &&
+		currentType.typeName.type === TSESTree.AST_NODE_TYPES.Identifier &&
+		currentType.typeName.name === "Readonly" &&
+		currentType.typeArguments?.params[0]
+	) {
+		[currentType] = currentType.typeArguments.params;
+	}
+
+	return (
+		currentType.type === TSESTree.AST_NODE_TYPES.TSTypeReference &&
+		currentType.typeName.type === TSESTree.AST_NODE_TYPES.Identifier &&
+		currentType.typeName.name === "LuaTuple"
+	);
+}
+
 function calculateIanitorComplexity(node: TSESTree.CallExpression): number {
 	const { callee } = node;
 	if (
@@ -400,6 +420,10 @@ const enforceIanitorCheckType = createRule<Options, MessageIds>({
 					ianitorStaticVariables.add(variableName);
 				}
 				if (hasIanitorStaticType(node.typeAnnotation)) return;
+
+				// LuaTuple types represent variadic return types and cannot be
+				// annotated with Ianitor.Check<T>, so skip them entirely.
+				if (isLuaTupleType(node.typeAnnotation)) return;
 
 				const complexity = calculateStructuralComplexity(node.typeAnnotation);
 				if (complexity < config.baseThreshold) return;

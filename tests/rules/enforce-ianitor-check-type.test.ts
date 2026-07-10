@@ -290,6 +290,13 @@ export type SpinOptions = Readonly<Ianitor.Static<typeof isSpinOptions>>;
 			{
 				code: "type AnyType = any;",
 			},
+			// LuaTuple types cannot be Ianitor'd
+			{
+				code: "type TimeTuple = LuaTuple<[days: number, hours: number, minutes: number, seconds: number]>;",
+			},
+			{
+				code: "type WrappedTuple = Readonly<LuaTuple<[a: string, b: number]>>;",
+			},
 			// Non-Ianitor call expressions (to hit isIanitorValidator false path)
 			{
 				code: "const result = someFunction();",

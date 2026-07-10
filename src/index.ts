@@ -169,6 +169,57 @@ export const rules: ReadonlyRecord<string, LooseRuleDefinition> = {
 	"use-hook-at-top-level": useHookAtTopLevel,
 } as const;
 
+const recommendedRuleNames: ReadonlyArray<string> = [
+	"array-type-generic",
+	"ban-react-fc",
+	"dot-notation",
+	"enforce-ianitor-check-type",
+	"fast-format",
+	"misleading-lua-tuple-checks",
+	"no-array-constructor-elements",
+	"no-array-size-assignment",
+	"no-async-constructor",
+	"no-color3-constructor",
+	"no-empty-array-literal",
+	"no-god-components",
+	"no-identity-map",
+	"no-instance-methods-without-this",
+	"no-memo-children",
+	"no-new-instance-in-use-memo",
+	"no-print",
+	"no-render-helper-functions",
+	"no-shorthand-names",
+	"no-table-create-map",
+	"no-underscore-react-props",
+	"no-unused-imports",
+	"no-unused-use-memo",
+	"no-useless-use-effect",
+	"no-useless-use-memo",
+	"no-useless-use-spring",
+	"no-warn",
+	"prefer-enum-member",
+	"prefer-idiv",
+	"prefer-read-only-props",
+	"prefer-sequence-overloads",
+	"prefer-ternary-conditional-rendering",
+	"prefer-udim2-shorthand",
+	"require-named-effect-functions",
+	"require-react-component-keys",
+	"require-react-display-names",
+	"use-exhaustive-dependencies",
+	"use-hook-at-top-level",
+];
+
+function createRecommendedRules(ruleNames: ReadonlyArray<string>): Record<string, "error"> {
+	const recommendedRules: Record<string, "error"> = {};
+
+	for (const ruleName of ruleNames) {
+		recommendedRules[`cease-nonsense/${ruleName}`] = "error";
+	}
+
+	return recommendedRules;
+}
+
 /**
  * Recommended configuration for ESLint flat config.
  *
@@ -189,46 +240,7 @@ export const recommended = {
 	plugins: {
 		"cease-nonsense": { rules },
 	},
-	rules: {
-		"cease-nonsense/array-type-generic": "error",
-		"cease-nonsense/ban-react-fc": "error",
-		"cease-nonsense/dot-notation": "error",
-		"cease-nonsense/enforce-ianitor-check-type": "error",
-		"cease-nonsense/fast-format": "error",
-		"cease-nonsense/misleading-lua-tuple-checks": "error",
-		"cease-nonsense/no-array-constructor-elements": "error",
-		"cease-nonsense/no-array-size-assignment": "error",
-		"cease-nonsense/no-async-constructor": "error",
-		"cease-nonsense/no-color3-constructor": "error",
-		"cease-nonsense/no-empty-array-literal": "error",
-		"cease-nonsense/no-god-components": "error",
-		"cease-nonsense/no-identity-map": "error",
-		"cease-nonsense/no-instance-methods-without-this": "error",
-		"cease-nonsense/no-memo-children": "error",
-		"cease-nonsense/no-new-instance-in-use-memo": "error",
-		"cease-nonsense/no-print": "error",
-		"cease-nonsense/no-render-helper-functions": "error",
-		"cease-nonsense/no-shorthand-names": "error",
-		"cease-nonsense/no-table-create-map": "error",
-		"cease-nonsense/no-underscore-react-props": "error",
-		"cease-nonsense/no-unused-imports": "error",
-		"cease-nonsense/no-unused-use-memo": "error",
-		"cease-nonsense/no-useless-use-effect": "error",
-		"cease-nonsense/no-useless-use-memo": "error",
-		"cease-nonsense/no-useless-use-spring": "error",
-		"cease-nonsense/no-warn": "error",
-		"cease-nonsense/prefer-enum-member": "error",
-		"cease-nonsense/prefer-idiv": "error",
-		"cease-nonsense/prefer-read-only-props": "error",
-		"cease-nonsense/prefer-sequence-overloads": "error",
-		"cease-nonsense/prefer-ternary-conditional-rendering": "error",
-		"cease-nonsense/prefer-udim2-shorthand": "error",
-		"cease-nonsense/require-named-effect-functions": "error",
-		"cease-nonsense/require-react-component-keys": "error",
-		"cease-nonsense/require-react-display-names": "error",
-		"cease-nonsense/use-exhaustive-dependencies": "error",
-		"cease-nonsense/use-hook-at-top-level": "error",
-	},
+	rules: createRecommendedRules(recommendedRuleNames),
 } as const;
 
 type PluginConfiguration = typeof recommended;
@@ -245,39 +257,4 @@ const plugin: Plugin = {
 
 export default plugin;
 
-export {
-	createBanInstancesOptions,
-	createComplexityConfiguration,
-	createDotNotationOptions,
-	createEffectFunctionOptions,
-	createHookConfiguration,
-	createNamingConventionOptions,
-	createNoArrayConstructorElementsOptions,
-	createNoConstantConditionWithBreakOptions,
-	createNoEmptyArrayLiteralOptions,
-	createNoEventsInEventsCallbackOptions,
-	createNoGodComponentsOptions,
-	createNoInstanceMethodsOptions,
-	createNoManualChildrenPropertyOptions,
-	createNoMemoChildrenOptions,
-	createNoNewInstanceInUseMemoOptions,
-	createNoShorthandOptions,
-	createNoUnusedImportsOptions,
-	createNoUnusedUseMemoOptions,
-	createNoUselessUseEffectOptions,
-	createNoUselessUseMemoOptions,
-	createNoUselessUseSpringOptions,
-	createPairConfiguration,
-	createPreferEnumItemOptions,
-	createPreferPatternReplacementsOptions,
-	createPreventAbbreviationsOptions,
-	createReactKeysOptions,
-	createRequireModuleLevelInstantiationOptions,
-	createRequirePairedCallsOptions,
-	createRequireReactDisplayNamesOptions,
-	createRequireSerializedNumericDataTypeOptions,
-	createUseExhaustiveDependenciesOptions,
-	createUseHookAtTopLevelOptions,
-	defaultRobloxProfilePair,
-} from "$utilities/configure-utilities";
 export { pattern } from "$utilities/pattern-replacement/pattern-types";
