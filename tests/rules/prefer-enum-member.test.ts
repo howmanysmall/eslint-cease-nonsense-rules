@@ -865,6 +865,17 @@ type ColorKey = Color;
 type Palette<TKey extends Color> = Record<ColorKey, string>;
 const palette: Palette<Color> = { [Color.Blue]: "#00F" };`,
 				},
+				{
+					code: `${declarations}
+type PaletteRecord<TValue> = Record<Color, string>;
+type Palette<TValue = string> = PaletteRecord<TValue>;
+const palette: Palette = { Blue: "#00F" };`,
+					errors: [{ messageId: "preferEnumMember" }],
+					output: `${declarations}
+type PaletteRecord<TValue> = Record<Color, string>;
+type Palette<TValue = string> = PaletteRecord<TValue>;
+const palette: Palette = { [Color.Blue]: "#00F" };`,
+				},
 			],
 			"prefer-enum-member-invalid",
 		),

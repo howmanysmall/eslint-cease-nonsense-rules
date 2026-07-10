@@ -312,7 +312,7 @@ const preferEnumMember = createRule<Options, MessageIds>({
 			aliasSymbol: TypeScriptSymbol,
 			aliasTypeArguments: ReadonlyArray<Type> | undefined,
 			constraint: TypeNode,
-		): Type | undefined {
+		): Type {
 			if (isParenthesizedTypeNode(constraint)) {
 				return resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, constraint.type);
 			}
@@ -338,7 +338,9 @@ const preferEnumMember = createRule<Options, MessageIds>({
 					shouldReturnResolvedReference = resolvedReferenceKeyType !== undefined;
 				}
 
-				if (shouldReturnResolvedReference) return resolvedReferenceKeyType;
+				if (shouldReturnResolvedReference) {
+					return resolvedReferenceKeyType ?? checker.getTypeFromTypeNode(constraint);
+				}
 			}
 			return checker.getTypeFromTypeNode(constraint);
 		}
@@ -407,10 +409,7 @@ const preferEnumMember = createRule<Options, MessageIds>({
 
 			const resolvedTypeArguments = new Array<Type>();
 			for (const typeArgument of typeArguments) {
-				const resolvedTypeArgument = getDefinedValue(
-					resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, typeArgument),
-					"Expected alias type argument to resolve to a type.",
-				);
+				const resolvedTypeArgument = resolveMappedTypeConstraint(aliasSymbol, aliasTypeArguments, typeArgument);
 				resolvedTypeArguments.push(resolvedTypeArgument);
 			}
 			return resolvedTypeArguments;
