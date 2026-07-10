@@ -1123,6 +1123,8 @@ const preventAbbreviations = createRule<Options, MessageIds>({
 
 			if (isClassScope(variable.scope)) {
 				for (const definition of variable.defs) {
+					// A ClassNameDefinition always owns an identifier name.
+					/* v8 ignore next */
 					if (!isIdentifier(definition.name)) {
 						checkVariable(variable);
 						return;
@@ -1147,7 +1149,11 @@ const preventAbbreviations = createRule<Options, MessageIds>({
 			}
 
 			for (const definition of variable.defs) {
-				if (!isIdentifier(definition.name)) continue;
+				// A ClassNameDefinition always owns an identifier name.
+				/* v8 ignore next */
+				if (!isIdentifier(definition.name)) {
+					continue;
+				}
 				identifierToOuterClassVariable.set(definition.name, variable);
 			}
 		}

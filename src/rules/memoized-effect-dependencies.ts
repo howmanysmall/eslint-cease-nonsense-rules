@@ -142,7 +142,7 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 		function isMemoHookCall(node: TSESTree.CallExpression): boolean {
 			const { callee } = node;
 			if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
-				return memoHookIdentifiers.has(getStaticCalleeName(callee) ?? "");
+				return memoHookIdentifiers.has(callee.name);
 			}
 			if (callee.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
 				const hookName = getMemberHookName(callee, reactNamespaces);
@@ -154,7 +154,7 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 		function getStableHookKind(node: TSESTree.CallExpression): StableHookKind | undefined {
 			const { callee } = node;
 			if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
-				return stableHookIdentifiers.get(getStaticCalleeName(callee) ?? "");
+				return stableHookIdentifiers.get(callee.name);
 			}
 			if (callee.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
 				const hookName = getMemberHookName(callee, reactNamespaces);
@@ -257,7 +257,7 @@ const memoizedEffectDependencies = createRule<Options, MessageIds>({
 		function getDependenciesIndex(node: TSESTree.CallExpression): number | undefined {
 			const { callee } = node;
 			if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
-				return effectHookIdentifiers.get(getStaticCalleeName(callee) ?? "");
+				return effectHookIdentifiers.get(callee.name);
 			}
 			if (callee.type === TSESTree.AST_NODE_TYPES.MemberExpression) {
 				const hookName = getMemberHookName(callee, reactNamespaces);

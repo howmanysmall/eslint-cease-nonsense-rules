@@ -556,6 +556,8 @@ function getIdentifiersFromPattern(pattern: TSESTree.DestructuringPattern): Arra
 				break;
 			}
 
+			// DestructuringPattern cannot contain another AST node type.
+			/* v8 ignore next */
 			default:
 				break;
 		}

@@ -323,6 +323,17 @@ interface SafeProps {
 
 const MemoizedComponent = React.memo<SafeProps>((props) => null);`,
 			},
+			// Computed React namespace member without children
+			{
+				code: `
+import React from "@rbxts/react";
+
+interface SafeProps {
+    readonly id: string;
+}
+
+const MemoizedComponent = React["memo"]<SafeProps>((props) => null);`,
+			},
 			// Allowed component via options
 			{
 				code: `

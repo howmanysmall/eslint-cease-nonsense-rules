@@ -18,7 +18,7 @@ export function isNamedReactHookCall(
 	const calleeName =
 		options.allowComputedIdentifierProperty === true ? getCalleeName(callee) : getStaticCalleeName(callee);
 
-	if (callee.type === AST_NODE_TYPES.Identifier) return hookIdentifiers.has(calleeName ?? "");
+	if (callee.type === AST_NODE_TYPES.Identifier) return hookIdentifiers.has(callee.name);
 	if (callee.type !== AST_NODE_TYPES.MemberExpression) return false;
 	if (callee.computed && options.allowComputedIdentifierProperty !== true) return false;
 	if (callee.object.type !== AST_NODE_TYPES.Identifier) return false;
