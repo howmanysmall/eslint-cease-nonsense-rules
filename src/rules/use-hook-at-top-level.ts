@@ -1,3 +1,4 @@
+import { getCallExpressionName } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 
@@ -79,18 +80,8 @@ function isComponentOrHook(
 }
 
 function getHookName(node: TSESTree.CallExpression): string | undefined {
-	const { callee } = node;
-
-	if (callee.type === AST_NODE_TYPES.Identifier) {
-		return isReactHook(callee.name) ? callee.name : undefined;
-	}
-
-	if (callee.type === AST_NODE_TYPES.MemberExpression && callee.property.type === AST_NODE_TYPES.Identifier) {
-		const { name } = callee.property;
-		return isReactHook(name) ? name : undefined;
-	}
-
-	return undefined;
+	const name = getCallExpressionName(node);
+	return name !== undefined && isReactHook(name) ? name : undefined;
 }
 
 const FUNCTION_BOUNDARIES = new Set<AST_NODE_TYPES>([

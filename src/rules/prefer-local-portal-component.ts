@@ -3,7 +3,8 @@ import { getImportSpecifierName } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
 import { discoverLocalComponent, inspectLocalComponentFile } from "$utilities/local-component-discovery";
 import { resolveRelativeImport } from "$utilities/resolve-import";
-import { DefinitionType } from "@typescript-eslint/scope-manager";
+import { isImportBindingDefinition } from "$utilities/scope-utilities";
+import { findVariableInScope } from "$utilities/static-expression-utilities";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
@@ -23,25 +24,11 @@ const PORTAL_COMPONENT = {
 const PORTAL_SOURCES = new Set(["@rbxts/react-roblox", "react-dom"]);
 const JSX_EXTENSIONS = new Set([".jsx", ".tsx"]);
 
-function findVariable(
-	context: TSESLint.RuleContext<MessageIds, Options>,
-	identifier: TSESTree.Identifier,
-): TSESLint.Scope.Variable | undefined {
-	let scope = context.sourceCode.getScope(identifier) as TSESLint.Scope.Scope | undefined;
-	while (scope !== undefined) {
-		const variable = scope.set.get(identifier.name);
-		if (variable !== undefined) return variable;
-		scope = scope.upper ?? undefined;
-	}
-
-	return undefined;
-}
-
 function isCreatePortalImport(variable: TSESLint.Scope.Variable | undefined): boolean {
 	if (variable === undefined) return false;
 
 	for (const definition of variable.defs) {
-		if (definition.type !== DefinitionType.ImportBinding) continue;
+		if (!isImportBindingDefinition(definition)) continue;
 		if (definition.parent.type !== AST_NODE_TYPES.ImportDeclaration) continue;
 		if (definition.node.type !== AST_NODE_TYPES.ImportSpecifier) continue;
 		if (!PORTAL_SOURCES.has(definition.parent.source.value)) continue;
@@ -56,7 +43,7 @@ function isPortalNamespaceImport(variable: TSESLint.Scope.Variable | undefined):
 	if (variable === undefined) return false;
 
 	for (const definition of variable.defs) {
-		if (definition.type !== DefinitionType.ImportBinding) continue;
+		if (!isImportBindingDefinition(definition)) continue;
 		if (definition.parent.type !== AST_NODE_TYPES.ImportDeclaration) continue;
 		if (definition.node.type !== AST_NODE_TYPES.ImportNamespaceSpecifier) continue;
 		if (PORTAL_SOURCES.has(definition.parent.source.value)) return true;
@@ -76,7 +63,7 @@ function isPortalFactoryCall(
 	const { callee } = node;
 
 	if (callee.type === AST_NODE_TYPES.Identifier) {
-		return isCreatePortalImport(findVariable(context, callee));
+		return isCreatePortalImport(findVariableInScope(context.sourceCode, callee));
 	}
 
 	if (callee.type !== AST_NODE_TYPES.MemberExpression) return false;
@@ -85,7 +72,7 @@ function isPortalFactoryCall(
 	if (callee.property.type !== AST_NODE_TYPES.Identifier) return false;
 	if (callee.property.name !== "createPortal") return false;
 
-	return isPortalNamespaceImport(findVariable(context, callee.object));
+	return isPortalNamespaceImport(findVariableInScope(context.sourceCode, callee.object));
 }
 
 function renderPortalChild(argument: TSESTree.CallExpressionArgument, sourceCode: TSESLint.SourceCode): string {

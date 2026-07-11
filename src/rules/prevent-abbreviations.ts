@@ -1,12 +1,18 @@
 // oxlint-disable small-rules/prevent-abbreviations -- This rule intentionally contains abbreviation examples and replacements.
 import path from "node:path";
 import { createRule } from "$utilities/create-rule";
-import { DefinitionType, ScopeType } from "@typescript-eslint/scope-manager";
+import {
+	isClassNameDefinition,
+	isClassScope,
+	isFunctionScope,
+	isImportBindingDefinition,
+	isParameterDefinition,
+	isVariableDefinition,
+} from "$utilities/scope-utilities";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 import { regex } from "arktype";
 import { isIdentifierPart, isIdentifierStart, ScriptTarget } from "typescript";
 
-import type { ClassNameDefinition } from "@typescript-eslint/scope-manager";
 import type { JSONSchema, TSESLint, TSESTree } from "@typescript-eslint/utils";
 
 type MessageIds = "replace" | "suggestion";
@@ -850,15 +856,7 @@ function isDefaultOrNamespaceImportName(identifier: TSESTree.Identifier): boolea
 	return false;
 }
 
-type ClassVariable = TSESLint.Scope.Variable & {
-	readonly defs: ReadonlyArray<ClassNameDefinition>;
-};
-
-function isClassNameDefinition(definition: TSESLint.Scope.Definition): definition is ClassNameDefinition {
-	return definition.type === DefinitionType.ClassName;
-}
-
-function isClassVariable(variable: TSESLint.Scope.Variable): variable is ClassVariable {
+function isClassVariable(variable: TSESLint.Scope.Variable): boolean {
 	return variable.defs.length === 1 && variable.defs.every(isClassNameDefinition);
 }
 
@@ -915,11 +913,9 @@ function isObjectPropertyKey(identifier: TSESTree.Identifier): boolean {
 	);
 }
 
-function getImportDeclarationSource(
-	definition: TSESLint.Scope.Definition & { type: DefinitionType.ImportBinding },
-): string | undefined {
+function getImportDeclarationSource(definition: TSESLint.Scope.Definition): string | undefined {
 	const { parent } = definition;
-	return parent.type === AST_NODE_TYPES.ImportDeclaration ? parent.source.value : undefined;
+	return parent?.type === AST_NODE_TYPES.ImportDeclaration ? parent.source.value : undefined;
 }
 
 function isInternalImportSource(source: string | undefined): boolean {
@@ -951,7 +947,7 @@ function shouldSkipImportVariable(
 	definition: TSESLint.Scope.Definition,
 	options: PreparedOptions,
 ): boolean {
-	if (definition.type === DefinitionType.ImportBinding) {
+	if (isImportBindingDefinition(definition)) {
 		if (isDefaultOrNamespaceImportName(definitionName)) {
 			return !shouldCheckImportSource(
 				options.checkDefaultAndNamespaceImports,
@@ -965,7 +961,7 @@ function shouldSkipImportVariable(
 		);
 	}
 
-	if (definition.type !== DefinitionType.Variable || !isDefaultOrNamespaceImportName(definitionName)) return false;
+	if (!(isVariableDefinition(definition) && isDefaultOrNamespaceImportName(definitionName))) return false;
 
 	return !shouldCheckImportSource(
 		options.checkDefaultAndNamespaceImports,
@@ -975,12 +971,12 @@ function shouldSkipImportVariable(
 
 function shouldAvoidArgumentsName(definition: TSESLint.Scope.Definition, variable: VariableLike): boolean {
 	const avoidArgumentsReplacement =
-		definition.type === DefinitionType.Variable &&
+		isVariableDefinition(definition) &&
 		definition.node.type === AST_NODE_TYPES.VariableDeclarator &&
 		definition.node.init === null;
 	const avoidArgumentsInArrowParameter =
-		definition.type === DefinitionType.Parameter &&
-		variable.scope.type === ScopeType.function &&
+		isParameterDefinition(definition) &&
+		isFunctionScope(variable.scope) &&
 		variable.scope.block.type === AST_NODE_TYPES.ArrowFunctionExpression;
 
 	return avoidArgumentsReplacement || avoidArgumentsInArrowParameter;
@@ -1125,8 +1121,15 @@ const preventAbbreviations = createRule<Options, MessageIds>({
 				return;
 			}
 
-			if (variable.scope.type === ScopeType.class) {
+			if (isClassScope(variable.scope)) {
 				for (const definition of variable.defs) {
+					// A ClassNameDefinition always owns an identifier name.
+					/* v8 ignore next */
+					if (!isIdentifier(definition.name)) {
+						checkVariable(variable);
+						return;
+					}
+
 					const outerClassVariable = identifierToOuterClassVariable.get(definition.name);
 					if (!outerClassVariable) {
 						checkVariable(variable);
@@ -1146,6 +1149,11 @@ const preventAbbreviations = createRule<Options, MessageIds>({
 			}
 
 			for (const definition of variable.defs) {
+				// A ClassNameDefinition always owns an identifier name.
+				/* v8 ignore next */
+				if (!isIdentifier(definition.name)) {
+					continue;
+				}
 				identifierToOuterClassVariable.set(definition.name, variable);
 			}
 		}

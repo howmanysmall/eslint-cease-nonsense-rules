@@ -1,5 +1,7 @@
+import { getCallExpressionName, getCalleeName } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
-import { DefinitionType } from "@typescript-eslint/scope-manager";
+import { isVariableDefinition } from "$utilities/scope-utilities";
+import { findVariableInScope } from "$utilities/static-expression-utilities";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
@@ -66,53 +68,20 @@ function isIdentityCallback(callback: TSESTree.Expression): boolean {
 	return false;
 }
 
-function findVariable(
-	context: TSESLint.RuleContext<MessageIds, Options>,
-	identifier: TSESTree.Identifier,
-): TSESLint.Scope.Variable | undefined {
-	let scope = context.sourceCode.getScope(identifier) as TSESLint.Scope.Scope | undefined;
-	while (scope) {
-		const variable = scope.set.get(identifier.name);
-		if (variable !== undefined) return variable;
-		scope = scope.upper ?? undefined;
-	}
-	return undefined;
-}
-
-function getHookName(node: TSESTree.CallExpression): string | undefined {
-	const { callee } = node;
-	if (callee.type === AST_NODE_TYPES.Identifier) return callee.name;
-	if (callee.type === AST_NODE_TYPES.MemberExpression && callee.property.type === AST_NODE_TYPES.Identifier) {
-		return callee.property.name;
-	}
-	return undefined;
-}
-
 function isJoinBindingsCall(node: TSESTree.CallExpression): boolean {
-	const { callee } = node;
-	if (callee.type === AST_NODE_TYPES.Identifier) return callee.name === "joinBindings";
-	if (callee.type === AST_NODE_TYPES.MemberExpression && callee.property.type === AST_NODE_TYPES.Identifier) {
-		return callee.property.name === "joinBindings";
-	}
-	return false;
+	return getCallExpressionName(node) === "joinBindings";
 }
 
 function isBindingInitialization(variable: TSESLint.Scope.Variable): boolean {
 	for (const definition of variable.defs) {
-		if (definition.type !== DefinitionType.Variable) continue;
+		if (!isVariableDefinition(definition)) continue;
 		const { init } = definition.node;
 		if (!init || init.type !== AST_NODE_TYPES.CallExpression) continue;
 
-		const hookName = getHookName(init);
+		const hookName = getCallExpressionName(init);
 		if (hookName === "useBinding" || isJoinBindingsCall(init)) return true;
 
-		if (
-			init.callee.type === AST_NODE_TYPES.MemberExpression &&
-			init.callee.property.type === AST_NODE_TYPES.Identifier &&
-			init.callee.property.name === "map"
-		) {
-			return true;
-		}
+		if (init.callee.type === AST_NODE_TYPES.MemberExpression && getCalleeName(init.callee) === "map") return true;
 	}
 	return false;
 }
@@ -128,15 +97,14 @@ function isLikelyBinding(
 		const lowerName = object.name.toLowerCase();
 		for (const pattern of patterns) if (lowerName.includes(pattern.toLowerCase())) return true;
 
-		const variable = findVariable(context, object);
+		const variable = findVariableInScope(context.sourceCode, object);
 		if (variable !== undefined && isBindingInitialization(variable)) return true;
 	}
 
 	if (
 		object.type === AST_NODE_TYPES.CallExpression &&
 		object.callee.type === AST_NODE_TYPES.MemberExpression &&
-		object.callee.property.type === AST_NODE_TYPES.Identifier &&
-		object.callee.property.name === "map"
+		getCalleeName(object.callee) === "map"
 	) {
 		return true;
 	}

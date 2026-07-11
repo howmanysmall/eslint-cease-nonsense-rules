@@ -3,7 +3,7 @@ import { getDefinedValue } from "$utilities/defined-utilities";
 import { Modifiers } from "$utilities/naming-convention-utilities/enums";
 import { parseOptions } from "$utilities/naming-convention-utilities/parse-options";
 import { SCHEMA } from "$utilities/naming-convention-utilities/schema";
-import { PatternVisitor, ScopeType } from "@typescript-eslint/scope-manager";
+import { isModuleOrGlobalScope } from "$utilities/scope-utilities";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { isIdentifierPart, isIdentifierStart, ScriptTarget } from "typescript";
 
@@ -137,7 +137,7 @@ function isExported(node: TSESTree.Node, name: string, scope: TSESLint.Scope.Sco
 }
 
 function isGlobal(scope: TSESLint.Scope.Scope): boolean {
-	return scope.type === ScopeType.global || scope.type === ScopeType.module;
+	return isModuleOrGlobalScope(scope);
 }
 
 const namingConventions = createRule<Options, MessageIds>({
@@ -522,10 +522,47 @@ export default namingConventions;
 
 function getIdentifiersFromPattern(pattern: TSESTree.DestructuringPattern): Array<TSESTree.Identifier> {
 	const identifiers = new Array<TSESTree.Identifier>();
-	const visitor = new PatternVisitor({}, pattern, (identifier) => {
-		identifiers.push(identifier);
-	});
-	visitor.visit(pattern);
+	const stack: Array<TSESTree.Node> = [pattern];
+
+	for (const node of stack) {
+		switch (node.type) {
+			case AST_NODE_TYPES.Identifier: {
+				identifiers.push(node);
+				break;
+			}
+
+			case AST_NODE_TYPES.ArrayPattern: {
+				for (const element of node.elements) if (element !== null) stack.push(element);
+				break;
+			}
+
+			case AST_NODE_TYPES.AssignmentPattern: {
+				stack.push(node.left);
+				break;
+			}
+
+			case AST_NODE_TYPES.ObjectPattern: {
+				for (const property of node.properties) stack.push(property);
+				break;
+			}
+
+			case AST_NODE_TYPES.Property: {
+				stack.push(node.value);
+				break;
+			}
+
+			case AST_NODE_TYPES.RestElement: {
+				stack.push(node.argument);
+				break;
+			}
+
+			// DestructuringPattern cannot contain another AST node type.
+			/* v8 ignore next */
+			default:
+				break;
+		}
+	}
+
 	return identifiers;
 }
 

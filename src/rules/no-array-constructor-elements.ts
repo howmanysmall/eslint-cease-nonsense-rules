@@ -1,5 +1,6 @@
 import { getMemberPropertyName, hasShadowedBinding, unwrapExpression } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
+import { getArrayElementTypeText, getBindingTypeAnnotation } from "$utilities/typescript-node-utilities";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 
 import type { EnvironmentMode } from "$types/environment-mode";
@@ -36,30 +37,11 @@ function isGlobalArrayConstructor(
 	return !hasShadowedBinding(context.sourceCode, callee, "Array");
 }
 
-function extractElementTypeFromArrayAnnotation(
-	typeNode: TSESTree.TypeNode,
-	sourceCode: Readonly<TSESLint.SourceCode>,
-): string | undefined {
-	if (typeNode.type !== AST_NODE_TYPES.TSTypeReference) return undefined;
-	if (typeNode.typeName.type !== AST_NODE_TYPES.Identifier) return undefined;
-	if (typeNode.typeName.name !== "Array" && typeNode.typeName.name !== "ReadonlyArray") return undefined;
-	if (typeNode.typeArguments?.params.length !== 1) return undefined;
-
-	const [elementType] = typeNode.typeArguments.params;
-	return sourceCode.getText(elementType);
-}
-
 const IS_ANNOTATION = /:\s*(?:Array<.+>|ReadonlyArray<.+>)\s*=/u;
 
 function hasArrayAnnotationInAssignmentPatternText(assignmentText: string): boolean {
 	const annotationMatch = IS_ANNOTATION.exec(assignmentText);
 	return Boolean(annotationMatch);
-}
-
-function getBindingTypeAnnotation(bindingName: TSESTree.BindingName): TSESTree.TSTypeAnnotation | undefined {
-	if (bindingName.type === AST_NODE_TYPES.Identifier) return bindingName.typeAnnotation;
-	if (bindingName.type === AST_NODE_TYPES.ArrayPattern) return bindingName.typeAnnotation;
-	return bindingName.typeAnnotation;
 }
 
 function hasContextualArrayAnnotation(
@@ -70,7 +52,7 @@ function hasContextualArrayAnnotation(
 	if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.init === node) {
 		const typeAnnotation = getBindingTypeAnnotation(parent.id);
 		if (!typeAnnotation) return false;
-		return extractElementTypeFromArrayAnnotation(typeAnnotation.typeAnnotation, sourceCode) !== undefined;
+		return getArrayElementTypeText(typeAnnotation.typeAnnotation, sourceCode) !== undefined;
 	}
 
 	if (parent.type === AST_NODE_TYPES.AssignmentPattern && parent.right === node) {
@@ -78,15 +60,15 @@ function hasContextualArrayAnnotation(
 	}
 
 	if (parent.type === AST_NODE_TYPES.PropertyDefinition && parent.value === node && parent.typeAnnotation) {
-		return extractElementTypeFromArrayAnnotation(parent.typeAnnotation.typeAnnotation, sourceCode) !== undefined;
+		return getArrayElementTypeText(parent.typeAnnotation.typeAnnotation, sourceCode) !== undefined;
 	}
 
 	if (parent.type === AST_NODE_TYPES.TSAsExpression && parent.expression === node) {
-		return extractElementTypeFromArrayAnnotation(parent.typeAnnotation, sourceCode) !== undefined;
+		return getArrayElementTypeText(parent.typeAnnotation, sourceCode) !== undefined;
 	}
 
 	if (parent.type === AST_NODE_TYPES.TSTypeAssertion && parent.expression === node) {
-		return extractElementTypeFromArrayAnnotation(parent.typeAnnotation, sourceCode) !== undefined;
+		return getArrayElementTypeText(parent.typeAnnotation, sourceCode) !== undefined;
 	}
 
 	return false;

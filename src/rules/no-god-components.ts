@@ -1,3 +1,4 @@
+import { getCallExpressionName, getCalleeName } from "$utilities/ast-utilities";
 import { getDefinedValue } from "$utilities/defined-utilities";
 import { TSESTree } from "@typescript-eslint/utils";
 
@@ -31,18 +32,16 @@ function isComponentName(name: string): boolean {
 
 function isReactComponentHOC(callExpr: TSESTree.CallExpression): boolean {
 	const { callee } = callExpr;
+	const calleeName = getCalleeName(callee);
 
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
-		return callee.name === "forwardRef" || callee.name === "memo";
-	}
+	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return calleeName === "forwardRef" || calleeName === "memo";
 
 	if (
 		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 		callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
-		callee.object.name === "React" &&
-		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
+		callee.object.name === "React"
 	) {
-		return callee.property.name === "forwardRef" || callee.property.name === "memo";
+		return calleeName === "forwardRef" || calleeName === "memo";
 	}
 
 	return false;
@@ -122,21 +121,6 @@ function getComponentNameFromCallParent(callExpr: TSESTree.CallExpression): stri
 	return nameFromExportDefault;
 }
 
-function getHookName(callExpression: TSESTree.CallExpression): string | undefined {
-	const { callee } = callExpression;
-
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return callee.name;
-
-	if (
-		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-	) {
-		return callee.property.name;
-	}
-
-	return undefined;
-}
-
 function countDestructuredProperties(node: FunctionNode): number | undefined {
 	const [firstParameter] = node.params;
 	if (!firstParameter) return undefined;
@@ -209,7 +193,7 @@ function analyzeComponentBody(
 		}
 
 		if (current.type === TSESTree.AST_NODE_TYPES.CallExpression) {
-			const hookName = getHookName(current);
+			const hookName = getCallExpressionName(current);
 			if (hookName !== undefined && hookName.length > 0 && stateHooks.has(hookName)) stateHookCount += 1;
 		}
 

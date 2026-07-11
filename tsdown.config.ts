@@ -7,16 +7,11 @@ import { defineConfig } from "tsdown";
 
 const { bold, cyan, dim, gray, green } = picocolors;
 
-const bundledPackages = [
-	"@typescript-eslint/scope-manager",
-	"@typescript-eslint/visitor-keys",
-	"confbox",
-	"eslint-visitor-keys",
-	"ts-api-utils",
-];
+const bundledPackages = ["@typescript-eslint/visitor-keys", "confbox", "eslint-visitor-keys", "ts-api-utils"];
 
 const externalPackages = [
 	"@typescript-eslint/parser",
+	"@typescript-eslint/scope-manager",
 	"@typescript-eslint/types",
 	"@typescript-eslint/utils",
 	"eslint",

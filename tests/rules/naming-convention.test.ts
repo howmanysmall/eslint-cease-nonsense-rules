@@ -1057,6 +1057,10 @@ describe("naming-convention", () => {
 				code: "const { fooBar } = obj;",
 				options: [{ format: ["camelCase"], modifiers: ["destructured"], selector: "variable" }],
 			},
+			{
+				code: "const [, fooBar] = values;",
+				options: [{ format: ["camelCase"], modifiers: ["destructured"], selector: "variable" }],
+			},
 
 			// Test unused enum (line 371-372)
 			{

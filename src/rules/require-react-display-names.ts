@@ -27,26 +27,6 @@ type DisplayNameAssignmentExpression = TSESTree.AssignmentExpression & {
 	readonly left: TSESTree.MemberExpression;
 };
 
-function isCreateContextCall(
-	node: TSESTree.CallExpression,
-	createContextIdentifiers: Set<string>,
-	reactNamespaces: Set<string>,
-): boolean {
-	const { callee } = node;
-
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return createContextIdentifiers.has(callee.name);
-
-	if (
-		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
-		callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
-		callee.property.type === TSESTree.AST_NODE_TYPES.Identifier
-	) {
-		return reactNamespaces.has(callee.object.name) && callee.property.name === "createContext";
-	}
-
-	return false;
-}
-
 function getVariableName(node: TSESTree.VariableDeclarator): string | undefined {
 	if (node.id.type === TSESTree.AST_NODE_TYPES.Identifier) return node.id.name;
 	return undefined;
@@ -107,7 +87,11 @@ const requireReactDisplayNames = createRule<Options, MessageIds>({
 						return;
 					}
 
-					if (isCreateContextCall(declaration, createContextIdentifiers, reactNamespaces)) {
+					if (
+						isNamedReactHookCall(declaration, "createContext", createContextIdentifiers, reactNamespaces, {
+							allowComputedIdentifierProperty: true,
+						})
+					) {
 						context.report({
 							messageId: "directContextExport",
 							node,
@@ -215,7 +199,11 @@ const requireReactDisplayNames = createRule<Options, MessageIds>({
 						name,
 						node,
 					});
-				} else if (isCreateContextCall(node.init, createContextIdentifiers, reactNamespaces)) {
+				} else if (
+					isNamedReactHookCall(node.init, "createContext", createContextIdentifiers, reactNamespaces, {
+						allowComputedIdentifierProperty: true,
+					})
+				) {
 					trackedVariables.set(name, {
 						hasDisplayName: false,
 						isDefaultExported: false,

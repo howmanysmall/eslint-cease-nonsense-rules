@@ -280,8 +280,13 @@ const springs = useSpring({
 				code: `
 const springs = useSpring({
   from: { x: 0 },
-  to: { x: 1 },
+	  to: { x: 1 },
 }, []);
+`,
+			},
+			{
+				code: `
+const springs = useSpring({ from: 0, to: 1 }, []);
 `,
 			},
 			{

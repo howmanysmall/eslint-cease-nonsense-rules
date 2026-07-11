@@ -1,5 +1,5 @@
 import { createRule } from "$utilities/create-rule";
-import { ScopeType } from "@typescript-eslint/scope-manager";
+import { isModuleOrGlobalScope } from "$utilities/scope-utilities";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 
 import type { ReadonlyRecord } from "$types/utility-types";
@@ -44,8 +44,8 @@ function normalizeConfiguration(options: RequireModuleLevelInstantiationOptions)
 	return { trackedImports };
 }
 
-function isTopScope({ type }: TSESLint.Scope.Scope): boolean {
-	return type === ScopeType.module || type === ScopeType.global;
+function isTopScope(scope: TSESLint.Scope.Scope): boolean {
+	return isModuleOrGlobalScope(scope);
 }
 
 function getImportedClassName(specifier: TSESTree.ImportClause, className: string): string | undefined {

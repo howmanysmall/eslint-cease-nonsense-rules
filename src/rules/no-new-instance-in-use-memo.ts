@@ -2,7 +2,8 @@ import { getReactSources, isReactImport } from "$constants/react-sources";
 import { getImportSpecifierName, unwrapExpression } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
 import { isNamedReactHookCall } from "$utilities/react-hook-utilities";
-import { DefinitionType } from "@typescript-eslint/scope-manager";
+import { isVariableDefinition } from "$utilities/scope-utilities";
+import { findVariableInScope } from "$utilities/static-expression-utilities";
 import { TSESTree } from "@typescript-eslint/types";
 
 import type { EnvironmentMode } from "$types/environment-mode";
@@ -73,21 +74,6 @@ function isCallExpression(node: TSESTree.Node | undefined): node is TSESTree.Cal
 	return node?.type === TSESTree.AST_NODE_TYPES.CallExpression;
 }
 
-function findVariable(
-	context: TSESLint.RuleContext<MessageIds, Options>,
-	identifier: TSESTree.Identifier,
-): TSESLint.Scope.Variable | undefined {
-	let scope: TSESLint.Scope.Scope | null = context.sourceCode.getScope(identifier);
-
-	while (scope !== null) {
-		const variable = scope.set.get(identifier.name);
-		if (variable !== undefined) return variable;
-		scope = scope.upper;
-	}
-
-	return undefined;
-}
-
 function resolveVariableToFunctionInfos(
 	context: TSESLint.RuleContext<MessageIds, Options>,
 	variable: TSESLint.Scope.Variable,
@@ -107,11 +93,11 @@ function resolveVariableToFunctionInfos(
 		const directFunctionInfo = directFunctionInfosByDefinition.get(definition.name);
 		if (directFunctionInfo !== undefined) functionInfos.add(directFunctionInfo);
 
-		if (definition.type !== DefinitionType.Variable || definition.node.init === null) continue;
+		if (!isVariableDefinition(definition) || definition.node.init === null) continue;
 
 		const initializer = unwrapExpression(definition.node.init);
 		if (initializer.type !== TSESTree.AST_NODE_TYPES.Identifier) continue;
-		const aliasVariable = findVariable(context, initializer);
+		const aliasVariable = findVariableInScope(context.sourceCode, initializer);
 		if (aliasVariable === undefined) continue;
 
 		const resolved = resolveVariableToFunctionInfos(
@@ -135,7 +121,7 @@ function resolveIdentifierToFunctionInfos(
 	directFunctionInfosByDefinition: ReadonlyMap<TSESTree.Node, FunctionInfo>,
 	cache: Map<TSESLint.Scope.Variable, ReadonlySet<FunctionInfo>>,
 ): ReadonlySet<FunctionInfo> {
-	const variable = findVariable(context, identifier);
+	const variable = findVariableInScope(context.sourceCode, identifier);
 	if (variable === undefined) return new Set<FunctionInfo>();
 
 	return resolveVariableToFunctionInfos(

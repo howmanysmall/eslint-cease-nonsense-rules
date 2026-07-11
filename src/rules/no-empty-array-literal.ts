@@ -1,5 +1,6 @@
 import { createRule } from "$utilities/create-rule";
 import { getDefinedValue } from "$utilities/defined-utilities";
+import { getArrayElementTypeText, getBindingTypeAnnotation } from "$utilities/typescript-node-utilities";
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils";
 import { regex } from "arktype";
 import { IndexKind } from "typescript";
@@ -474,35 +475,17 @@ function extractElementTypeFromAssignmentPatternText(assignmentText: string): st
 	return extractElementTypeFromTypeText(annotationMatch.groups.typeText.trim());
 }
 
-function extractElementTypeFromGenericReference(
-	typeNode: TSESTree.TypeNode,
-	sourceCode: Readonly<TSESLint.SourceCode>,
-): string | undefined {
-	if (typeNode.type !== AST_NODE_TYPES.TSTypeReference) return undefined;
-	if (typeNode.typeName.type !== AST_NODE_TYPES.Identifier) return undefined;
-	if (typeNode.typeName.name !== "Array" && typeNode.typeName.name !== "ReadonlyArray") return undefined;
-	if (typeNode.typeArguments?.params.length !== 1) return undefined;
-
-	return sourceCode.getText(typeNode.typeArguments.params[0]);
-}
-
-function getBindingTypeAnnotation(bindingName: TSESTree.BindingName): TSESTree.TSTypeAnnotation | undefined {
-	if (bindingName.type === AST_NODE_TYPES.Identifier) return bindingName.typeAnnotation;
-	if (bindingName.type === AST_NODE_TYPES.ArrayPattern) return bindingName.typeAnnotation;
-	return bindingName.typeAnnotation;
-}
-
 function getExplicitElementTypeFromContext(
 	node: TSESTree.ArrayExpression,
 	sourceCode: Readonly<TSESLint.SourceCode>,
 ): string | undefined {
 	const directParent = node.parent;
 	if (directParent?.type === AST_NODE_TYPES.TSAsExpression && directParent.expression === node) {
-		return extractElementTypeFromGenericReference(directParent.typeAnnotation, sourceCode);
+		return getArrayElementTypeText(directParent.typeAnnotation, sourceCode);
 	}
 
 	if (directParent?.type === AST_NODE_TYPES.TSTypeAssertion && directParent.expression === node) {
-		return extractElementTypeFromGenericReference(directParent.typeAnnotation, sourceCode);
+		return getArrayElementTypeText(directParent.typeAnnotation, sourceCode);
 	}
 
 	const usageExpression = getOutermostUsageExpression(node);
@@ -510,9 +493,9 @@ function getExplicitElementTypeFromContext(
 
 	if (parent.type === AST_NODE_TYPES.VariableDeclarator && parent.init === usageExpression) {
 		const typeAnnotation = getBindingTypeAnnotation(parent.id);
-		return typeAnnotation
-			? extractElementTypeFromGenericReference(typeAnnotation.typeAnnotation, sourceCode)
-			: undefined;
+		return typeAnnotation === undefined
+			? undefined
+			: getArrayElementTypeText(typeAnnotation.typeAnnotation, sourceCode);
 	}
 
 	if (parent.type === AST_NODE_TYPES.AssignmentPattern && parent.right === usageExpression) {
@@ -524,7 +507,7 @@ function getExplicitElementTypeFromContext(
 		parent.value === usageExpression &&
 		parent.typeAnnotation
 	) {
-		return extractElementTypeFromGenericReference(parent.typeAnnotation.typeAnnotation, sourceCode);
+		return getArrayElementTypeText(parent.typeAnnotation.typeAnnotation, sourceCode);
 	}
 
 	return undefined;

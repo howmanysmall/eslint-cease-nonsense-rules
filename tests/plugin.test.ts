@@ -11,4 +11,16 @@ describe("plugin.test", () => {
 		expect(Object.keys(rules)).toContain("no-print");
 		expect(plugin.configs.recommended).toBeDefined();
 	}, 100);
+
+	it("recommended config only enables exported rules as errors", () => {
+		expect.assertions(3);
+		const configuredRules = Object.entries(plugin.configs.recommended.rules);
+		const exportedRuleNames = configuredRules.map(([ruleName]) => ruleName.replace(/^cease-nonsense\//u, ""));
+
+		expect(configuredRules.length).toBeGreaterThan(0);
+		expect(exportedRuleNames.map((ruleName) => Object.hasOwn(rules, ruleName))).not.toContain(false);
+		expect(configuredRules.map(([, severity]) => severity)).toStrictEqual(
+			Array.from({ length: configuredRules.length }, () => "error"),
+		);
+	}, 100);
 });
