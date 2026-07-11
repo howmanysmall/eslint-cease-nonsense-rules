@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+	getArrayElementTypeNode,
+	getBindingTypeAnnotation,
 	getContextualTypeForExpressionNode,
 	getRequiredEnumMemberDeclaration,
 	getTypeNodeResult,
 } from "$utilities/typescript-node-utilities";
+import parser from "@typescript-eslint/parser";
+import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import {
 	createSourceFile,
 	isEnumDeclaration,
@@ -14,6 +18,7 @@ import {
 	ScriptTarget,
 } from "typescript";
 
+import type { TSESTree } from "@typescript-eslint/utils";
 import type {
 	EnumDeclaration,
 	Expression,
@@ -80,6 +85,20 @@ function unexpectedTypeNodeCallback(): number {
 	throw invariantError("Expected non-type nodes to skip callback execution.", unexpectedTypeNodeCallback);
 }
 
+function variableDeclarator(code: string): TSESTree.VariableDeclarator {
+	const { ast } = parser.parseForESLint(code, { ecmaVersion: 2022, sourceType: "module" });
+	const [statement] = ast.body;
+	if (statement?.type !== AST_NODE_TYPES.VariableDeclaration) {
+		throw invariantError(`Expected a variable declaration for ${code}`, variableDeclarator);
+	}
+
+	const [declarator] = statement.declarations;
+	if (declarator === undefined) {
+		throw invariantError(`Expected a variable declarator for ${code}`, variableDeclarator);
+	}
+	return declarator;
+}
+
 describe("getContextualTypeForExpressionNode", () => {
 	it("returns undefined for non-expression nodes", () => {
 		expect.assertions(1);
@@ -127,6 +146,34 @@ describe("getTypeNodeResult", () => {
 		const statement = typeAliasStatement("type Value = string;");
 
 		expect(getTypeNodeResult(statement.type, (typeNode) => typeNode.kind)).toBe(statement.type.kind);
+	});
+});
+
+describe("array annotation helpers", () => {
+	it("returns the type annotation from identifier and array bindings", () => {
+		expect.assertions(2);
+
+		const identifierDeclarator = variableDeclarator("const values: Array<string> = [];");
+		const arrayDeclarator = variableDeclarator("const [value]: ReadonlyArray<number> = values;");
+
+		expect(getBindingTypeAnnotation(identifierDeclarator.id)).toBe(identifierDeclarator.id.typeAnnotation);
+		expect(getBindingTypeAnnotation(arrayDeclarator.id)).toBe(arrayDeclarator.id.typeAnnotation);
+	});
+
+	it("returns the sole element type from Array and ReadonlyArray references", () => {
+		expect.assertions(3);
+
+		const arrayDeclarator = variableDeclarator("const values: Array<string> = [];");
+		const readonlyArrayDeclarator = variableDeclarator("const values: ReadonlyArray<number> = [];");
+		const tupleDeclarator = variableDeclarator('const values: [string, number] = ["", 0];');
+
+		expect(getArrayElementTypeNode(arrayDeclarator.id.typeAnnotation?.typeAnnotation)).toMatchObject({
+			type: "TSStringKeyword",
+		});
+		expect(getArrayElementTypeNode(readonlyArrayDeclarator.id.typeAnnotation?.typeAnnotation)).toMatchObject({
+			type: "TSNumberKeyword",
+		});
+		expect(getArrayElementTypeNode(tupleDeclarator.id.typeAnnotation?.typeAnnotation)).toBeUndefined();
 	});
 });
 

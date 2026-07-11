@@ -182,6 +182,7 @@ const recommendedRuleNames = [
 	"no-array-size-assignment",
 	"no-async-constructor",
 	"no-color3-constructor",
+	"no-commented-code",
 	"no-empty-array-literal",
 	"no-god-components",
 	"no-identity-map",

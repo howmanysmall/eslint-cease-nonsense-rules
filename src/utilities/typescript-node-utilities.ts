@@ -2,11 +2,35 @@ import { isGlobalScope } from "$utilities/scope-utilities";
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import { isEnumMember, isExpression, isTypeNode } from "typescript";
 
-import type { TSESLint } from "@typescript-eslint/utils";
+import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 import type { Declaration, EnumMember, Node as TypeScriptNode, Type, TypeChecker, TypeNode } from "typescript";
 
 interface ContextualTypeChecker {
 	readonly getContextualType: (node: Parameters<TypeChecker["getContextualType"]>[0]) => Type | undefined;
+}
+
+export function getBindingTypeAnnotation(bindingName: TSESTree.BindingName): TSESTree.TSTypeAnnotation | undefined {
+	if (bindingName.type === AST_NODE_TYPES.Identifier) return bindingName.typeAnnotation;
+	if (bindingName.type === AST_NODE_TYPES.ArrayPattern) return bindingName.typeAnnotation;
+	return bindingName.typeAnnotation;
+}
+
+export function getArrayElementTypeNode(typeNode: TSESTree.TypeNode | undefined): TSESTree.TypeNode | undefined {
+	if (typeNode?.type !== AST_NODE_TYPES.TSTypeReference) return undefined;
+	if (typeNode.typeName.type !== AST_NODE_TYPES.Identifier) return undefined;
+	if (typeNode.typeName.name !== "Array" && typeNode.typeName.name !== "ReadonlyArray") return undefined;
+	if (typeNode.typeArguments?.params.length !== 1) return undefined;
+
+	const [elementType] = typeNode.typeArguments.params;
+	return elementType;
+}
+
+export function getArrayElementTypeText(
+	typeNode: TSESTree.TypeNode | undefined,
+	sourceCode: Pick<TSESLint.SourceCode, "getText">,
+): string | undefined {
+	const elementType = getArrayElementTypeNode(typeNode);
+	return elementType === undefined ? undefined : sourceCode.getText(elementType);
 }
 
 export function getContextualTypeForExpressionNode(

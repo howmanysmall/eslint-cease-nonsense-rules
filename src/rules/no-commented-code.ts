@@ -257,7 +257,7 @@ const noCommentedCode: Rule.RuleModule = {
 	meta: {
 		docs: {
 			description: "Disallow commented-out code",
-			recommended: false,
+			recommended: true,
 		},
 		hasSuggestions: true,
 		messages: {
