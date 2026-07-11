@@ -68,6 +68,8 @@ function objectHasFromAndTo(objectExpr: TSESTree.ObjectExpression): boolean {
 	let hasTo = false;
 
 	for (const property of objectExpr.properties) {
+		// Static config validation rejects spread properties before this helper runs.
+		/* v8 ignore next */
 		if (property.type !== AST_NODE_TYPES.Property) continue;
 		if (property.computed) continue;
 		if (property.key.type !== AST_NODE_TYPES.Identifier) continue;

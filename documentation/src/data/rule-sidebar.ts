@@ -78,6 +78,7 @@ export const ruleCategoryDefinitions = {
 			"rules/no-array-size-assignment",
 			"rules/no-color3-constructor",
 			"rules/no-instance-methods-without-this",
+			"rules/no-network-fast-result",
 			"rules/no-print",
 			"rules/no-table-create-map",
 			"rules/no-warn",

@@ -324,6 +324,15 @@ const value = React["useMemo"](() => 1, []);
 			},
 			{
 				code: `
+import { useMemo } from "react";
+
+declare const key: string;
+const value = useMemo(() => ({ [key]: true }), []);
+`,
+				options: [{ environment: "standard" }],
+			},
+			{
+				code: `
 import * as React from "react";
 
 const value = React.memo.useMemo(() => 1, []);

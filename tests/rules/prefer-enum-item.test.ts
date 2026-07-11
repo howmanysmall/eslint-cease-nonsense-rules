@@ -136,6 +136,12 @@ declare namespace Enum {
 
 declare function setMissingName(value: Enum.MissingName | string | number): void;
 declare function setMissingValue(value: Enum.MissingValue | string | number): void;
+
+interface UnrelatedItem {
+    Name: "Unrelated";
+}
+
+declare function setUnrelated(value: UnrelatedItem | string): void;
 `;
 
 describe("prefer-enum-item", () => {
@@ -390,6 +396,11 @@ setCustomScaleType("Slice");`,
 				code: `${typeDeclarations}
 setMissingName("Item");
 setMissingValue(1);`,
+			},
+			{
+				code: `${typeDeclarations}
+setUnrelated("Unrelated");
+setUnrelated("Unrelated");`,
 			},
 			// Regression: union contextual type should still resolve enum lookup safely
 			{

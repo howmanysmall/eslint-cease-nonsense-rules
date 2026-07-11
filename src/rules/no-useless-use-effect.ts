@@ -1,5 +1,5 @@
 import { getReactSources, isReactImport } from "$constants/react-sources";
-import { getCalleeName, getImportSpecifierName, getStaticCalleeName, unwrapExpression } from "$utilities/ast-utilities";
+import { getImportSpecifierName, getStaticCalleeName, unwrapExpression } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
 import { TSESTree } from "@typescript-eslint/types";
 
@@ -264,7 +264,7 @@ function isHookCall(
 ): boolean {
 	const { callee } = node;
 	const calleeName = getStaticCalleeName(callee);
-	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return hookIdentifiers.has(calleeName ?? "");
+	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) return hookIdentifiers.has(callee.name);
 	if (
 		callee.type === TSESTree.AST_NODE_TYPES.MemberExpression &&
 		callee.object.type === TSESTree.AST_NODE_TYPES.Identifier &&
@@ -786,7 +786,7 @@ function isPropertyCallbackCall(
 	const { callee } = callExpression;
 	const calleeName = getStaticCalleeName(callee);
 	if (callee.type === TSESTree.AST_NODE_TYPES.Identifier) {
-		return functionContext.propertyCallbackIdentifiers.has(calleeName ?? "");
+		return functionContext.propertyCallbackIdentifiers.has(callee.name);
 	}
 
 	if (
@@ -882,7 +882,7 @@ function hasNonSetterSideEffect(
 		const callExpressionName = getStaticCalleeName(callExpression.callee);
 		if (
 			callExpression.callee.type === TSESTree.AST_NODE_TYPES.Identifier &&
-			propertyCallbackIdentifiers.has(callExpressionName ?? "")
+			propertyCallbackIdentifiers.has(callExpression.callee.name)
 		) {
 			continue;
 		}
@@ -1028,7 +1028,7 @@ function hasRefPassedToParent(
 
 		if (
 			callExpression.callee.type === TSESTree.AST_NODE_TYPES.Identifier &&
-			propertyCallbackIdentifiers.has(getCalleeName(callExpression.callee) ?? "")
+			propertyCallbackIdentifiers.has(callExpression.callee.name)
 		) {
 			for (const argument of callExpression.arguments) {
 				if (
@@ -1381,7 +1381,7 @@ const noUselessUseEffect = createRule<Options, MessageIds>({
 				if (isStateSetterCall(call, setterIds)) continue;
 
 				const callName = getStaticCalleeName(call.callee);
-				if (call.callee.type === TSESTree.AST_NODE_TYPES.Identifier && callbackIds.has(callName ?? "")) {
+				if (call.callee.type === TSESTree.AST_NODE_TYPES.Identifier && callbackIds.has(call.callee.name)) {
 					continue;
 				}
 

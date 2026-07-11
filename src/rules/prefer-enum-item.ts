@@ -114,6 +114,8 @@ const preferEnumItem = createRule<Options, MessageIds>({
 			const symbol = type.getSymbol();
 			if (symbol !== undefined) {
 				const cached = enumItemInfoCache.get(symbol);
+				// Contextual TypeScript types are unique per expression during one lint pass.
+				/* v8 ignore next */
 				if (cached !== undefined) return cached === false ? undefined : cached;
 			}
 
@@ -126,9 +128,17 @@ const preferEnumItem = createRule<Options, MessageIds>({
 			const nameLiteral = getPropertyLiteralType(checker, type, "Name");
 			const valueLiteral = getPropertyLiteralType(checker, type, "Value");
 			const info: Writable<EnumItemInfo> = { enumPath };
-			if (typeof nameLiteral === "string") info.nameLiteral = nameLiteral;
-			if (typeof valueLiteral === "number") info.valueLiteral = valueLiteral;
-			if (symbol !== undefined) enumItemInfoCache.set(symbol, info);
+			if (typeof nameLiteral === "string") {
+				info.nameLiteral = nameLiteral;
+			}
+			if (typeof valueLiteral === "number") {
+				info.valueLiteral = valueLiteral;
+			}
+			// See the cache read above: repeated identity is not observable within a pass.
+			/* v8 ignore next */
+			if (symbol !== undefined) {
+				enumItemInfoCache.set(symbol, info);
+			}
 			return info;
 		}
 

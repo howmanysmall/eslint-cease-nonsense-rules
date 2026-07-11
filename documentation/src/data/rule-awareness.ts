@@ -6,6 +6,7 @@ const typeAwareRulePaths = [
 	"rules/no-empty-array-literal",
 	"rules/no-manual-children-property",
 	"rules/no-memo-children",
+	"rules/no-network-fast-result",
 	"rules/prefer-enum-item",
 	"rules/prefer-enum-member",
 	"rules/prefer-read-only-props",

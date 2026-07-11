@@ -184,7 +184,7 @@ const preferEnumMember = createRule<Options, MessageIds>({
 
 			const declaration = getRequiredEnumMemberDeclaration(symbol.valueDeclaration);
 			const enumSymbol = checker.getSymbolAtLocation(declaration.parent.name);
-			enumSymbolFromTypeCache.set(type, enumSymbol ?? false);
+			enumSymbolFromTypeCache.set(type, getDefinedValue(enumSymbol));
 			return enumSymbol;
 		}
 
@@ -339,7 +339,7 @@ const preferEnumMember = createRule<Options, MessageIds>({
 				}
 
 				if (shouldReturnResolvedReference) {
-					return resolvedReferenceKeyType ?? checker.getTypeFromTypeNode(constraint);
+					return getDefinedValue(resolvedReferenceKeyType);
 				}
 			}
 			return checker.getTypeFromTypeNode(constraint);

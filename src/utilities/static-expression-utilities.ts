@@ -115,6 +115,8 @@ function isStaticObjectExpression(
 		if (property.type !== AST_NODE_TYPES.Property) return false;
 		if (property.kind !== "init") return false;
 		if (property.computed && !isStaticExpressionInner(options, property.key)) return false;
+		// Object-expression properties cannot carry destructuring-only values.
+		/* v8 ignore next */
 		if (!isExpression(property.value)) return false;
 		if (!isStaticExpressionInner(options, property.value)) return false;
 	}

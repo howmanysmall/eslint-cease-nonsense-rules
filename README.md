@@ -308,6 +308,40 @@ export const Position = registerComponent<{
 }>({ replicated: true });
 ```
 
+#### `no-network-fast-result`
+
+Disallow `FastResult` in Flamework RPC contracts. `FastResult` is a `LuaTuple`, which cannot cross the network boundary.
+
+**Configuration**
+
+```typescript
+{
+  "cease-nonsense/no-network-fast-result": ["error", {
+    "checkParameters": false // Also check FastResult in RPC parameter types
+  }]
+}
+```
+
+**❌ Bad**
+
+```typescript
+interface ClientToServer {
+	warp: { toCFrame: () => FastResult };
+}
+
+Networking.createFunction<ClientToServer, undefined>();
+```
+
+**✅ Good**
+
+```typescript
+interface ClientToServer {
+	warp: { toCFrame: () => { success: boolean; message?: string } };
+}
+
+Networking.createFunction<ClientToServer, undefined>();
+```
+
 #### `no-unused-imports`
 
 Disallow unused imports. Uses ESLint's scope analysis to detect unused imports and optionally checks JSDoc comments for
