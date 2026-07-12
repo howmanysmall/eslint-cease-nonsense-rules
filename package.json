@@ -32,6 +32,7 @@
 		"biome:ci": "biome ci",
 		"biome:lint": "biome lint",
 		"build": "tsdown",
+		"changelogithub": "changelogithub",
 		"commitlint": "commitlint",
 		"dev": "tsgo -w",
 		"docs:build": "nr -F docs build",

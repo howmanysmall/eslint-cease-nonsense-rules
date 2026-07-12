@@ -127,7 +127,7 @@ jobs:
         if: ${{ env.DRY_RUN != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm dlx changelogithub
+        run: node --run changelogithub
 
       - name: Upload npm debug log on failure
         if: failure()
