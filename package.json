@@ -125,7 +125,8 @@
 		"type-fest": "catalog:dev",
 		"typescript": "catalog:dev",
 		"vitest": "catalog:test",
-		"vue-eslint-parser": "catalog:lint"
+		"vue-eslint-parser": "catalog:lint",
+		"zx": "catalog:dev"
 	},
 	"peerDependencies": {
 		"@typescript-eslint/parser": "catalog:lint",

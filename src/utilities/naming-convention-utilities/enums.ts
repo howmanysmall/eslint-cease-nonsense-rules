@@ -1,10 +1,10 @@
 export const PredefinedFormats = {
+	camelCase: "camelCase",
 	PascalCase: "PascalCase",
 	StrictPascalCase: "StrictPascalCase",
-	UPPER_CASE: "UPPER_CASE",
-	camelCase: "camelCase",
 	snake_case: "snake_case",
 	strictCamelCase: "strictCamelCase",
+	UPPER_CASE: "UPPER_CASE",
 } as const;
 export type PredefinedFormatsString = keyof typeof PredefinedFormats;
 export type PredefinedFormats = (typeof PredefinedFormats)[PredefinedFormatsString];
@@ -23,9 +23,9 @@ export type UnderscoreOptions = (typeof UnderscoreOptions)[UnderscoreOptionsStri
 export const Selectors = {
 	autoAccessor: "autoAccessor",
 	class: "class",
+	classicAccessor: "classicAccessor",
 	classMethod: "classMethod",
 	classProperty: "classProperty",
-	classicAccessor: "classicAccessor",
 	enum: "enum",
 	enumMember: "enumMember",
 	function: "function",

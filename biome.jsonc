@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
+	"$schema": "https://biomejs.dev/schemas/latest/schema.json",
 	"assist": {
 		"actions": {
 			"source": {
@@ -9,21 +9,15 @@
 				"useSortedAttributes": "on",
 				"useSortedEnumMembers": "on",
 				"useSortedInterfaceMembers": "on",
-				"useSortedKeys": {
-					"level": "on",
-					"options": {
-						"groupByNesting": false,
-						"sortOrder": "lexicographic"
-					}
-				},
+				"useSortedKeys": "on",
 				"useSortedPackageJson": "off",
 				"useSortedProperties": "on",
 				"useSortedSelectionSet": "on",
-				"useSortedTypeFields": "on"
-			}
+				"useSortedTypeFields": "on",
+			},
 		},
 		"enabled": true,
-		"includes": ["**", "!**/*.js", "!**/*-lock.{json,yaml}"]
+		"includes": ["**", "!**/*.js", "!**/*-lock.{json,yaml}"],
 	},
 
 	"css": {
@@ -33,14 +27,14 @@
 			"indentStyle": "tab",
 			"indentWidth": 4,
 			"lineWidth": 120,
-			"quoteStyle": "double"
+			"quoteStyle": "double",
 		},
 		"globals": [],
-		"linter": { "enabled": true }
+		"linter": { "enabled": true },
 	},
 
 	"files": {
-		"includes": ["**", "!**/package.json", "!**/*.js", "!**/*-lock.{json,yaml}"]
+		"includes": ["**", "!**/package.json", "!**/*.js", "!**/*-lock.{json,yaml}"],
 	},
 
 	"formatter": {
@@ -54,13 +48,13 @@
 			"**",
 			"!**/*.js",
 			"!**/{dist,do-not-sync-ever,garbage,node_modules}/**",
-			"!tests/scripts/shard-test-plan.test.ts"
+			"!tests/scripts/shard-test-plan.test.ts",
 		],
 		"indentStyle": "tab",
 		"indentWidth": 4,
 		"lineEnding": "lf",
 		"lineWidth": 120,
-		"useEditorconfig": false
+		"useEditorconfig": false,
 	},
 
 	"graphql": {
@@ -71,9 +65,9 @@
 			"indentStyle": "tab",
 			"indentWidth": 4,
 			"lineWidth": 120,
-			"quoteStyle": "double"
+			"quoteStyle": "double",
 		},
-		"linter": { "enabled": true }
+		"linter": { "enabled": true },
 	},
 
 	"grit": {
@@ -82,14 +76,12 @@
 			"enabled": true,
 			"indentStyle": "tab",
 			"indentWidth": 4,
-			"lineWidth": 120
+			"lineWidth": 120,
 		},
-		"linter": { "enabled": true }
+		"linter": { "enabled": true },
 	},
 
 	"html": {
-		"assist": { "enabled": true },
-		"experimentalFullSupportEnabled": true,
 		"formatter": {
 			"attributePosition": "auto",
 			"bracketSameLine": true,
@@ -100,13 +92,8 @@
 			"lineEnding": "lf",
 			"lineWidth": 120,
 			"selfCloseVoidElements": "always",
-			"whitespaceSensitivity": "strict"
+			"whitespaceSensitivity": "strict",
 		},
-		"linter": { "enabled": true },
-		"parser": {
-			"interpolation": true,
-			"vue": false
-		}
 	},
 
 	"javascript": {
@@ -115,6 +102,7 @@
 			"attributePosition": "auto",
 			"bracketSameLine": false,
 			"bracketSpacing": true,
+			"delimiterSpacing": false,
 			"enabled": true,
 			"expand": "auto",
 			"indentStyle": "tab",
@@ -125,10 +113,10 @@
 			"quoteProperties": "asNeeded",
 			"quoteStyle": "double",
 			"semicolons": "always",
-			"trailingCommas": "all"
+			"trailingCommas": "all",
 		},
 		"globals": ["Bun"],
-		"linter": { "enabled": true }
+		"linter": { "enabled": true },
 	},
 
 	"json": {
@@ -140,10 +128,10 @@
 			"indentStyle": "tab",
 			"indentWidth": 4,
 			"lineWidth": 120,
-			"trailingCommas": "none"
+			"trailingCommas": "none",
 		},
 		"linter": { "enabled": true },
-		"parser": {}
+		"parser": {},
 	},
 
 	"linter": {
@@ -170,12 +158,12 @@
 				"useLiteralKeys": "error",
 				"useMaxParams": {
 					"level": "error",
-					"options": { "max": 7 }
+					"options": { "max": 7 },
 				},
 				"useOptionalChain": "error",
 				"useSimpleNumberKeys": "error",
 				"useSimplifiedLogicExpression": "error",
-				"useWhile": "error"
+				"useWhile": "error",
 			},
 
 			"correctness": {
@@ -183,11 +171,11 @@
 				"noNodejsModules": "off",
 				"noUndeclaredDependencies": {
 					"level": "error",
-					"options": {}
+					"options": {},
 				},
 				"noUndeclaredVariables": {
 					"level": "error",
-					"options": { "checkTypes": true }
+					"options": { "checkTypes": true },
 				},
 				"noUnresolvedImports": "off",
 				"noUnusedImports": "error",
@@ -197,7 +185,7 @@
 				"preset": "recommended",
 				"useInlineScriptId": "error",
 				"useJsonImportAttributes": "off",
-				"useSingleJsDocAsterisk": "error"
+				"useSingleJsDocAsterisk": "error",
 			},
 
 			"nursery": {
@@ -206,7 +194,7 @@
 				"noExcessiveNestedCallbacks": {
 					// temporarily disabled
 					"level": "off",
-					"options": { "max": 5 }
+					"options": { "max": 5 },
 				},
 				"noFloatingPromises": "error",
 				"noIdenticalTestTitle": "error",
@@ -241,7 +229,7 @@
 				"useTestHooksOnTop": "error",
 				"useThisInClassMethods": "error",
 				"useUnicodeRegex": "error",
-				"useVarsOnTop": "error"
+				"useVarsOnTop": "error",
 			},
 
 			"performance": {
@@ -251,13 +239,13 @@
 				"noSyncScripts": "error",
 				"preset": "recommended",
 				"useSolidForComponent": "error",
-				"useTopLevelRegex": "error"
+				"useTopLevelRegex": "error",
 			},
 
 			"security": {
 				"noDangerouslySetInnerHtml": "off",
 				"noScriptUrl": "error",
-				"preset": "recommended"
+				"preset": "recommended",
 			},
 
 			"style": {
@@ -268,14 +256,14 @@
 				"noEnum": "off",
 				"noExcessiveClassesPerFile": {
 					"level": "error",
-					"options": { "maxClasses": 3 }
+					"options": { "maxClasses": 3 },
 				},
 				"noExcessiveLinesPerFile": {
 					"level": "off",
 					"options": {
 						"maxLines": 200,
-						"skipBlankLines": true
-					}
+						"skipBlankLines": true,
+					},
 				},
 				"noExportedImports": "error",
 				"noHeadElement": "error",
@@ -300,10 +288,10 @@
 						"types": {
 							"Omit": {
 								"message": "Use Except from type-fest instead.",
-								"use": "Except"
-							}
-						}
-					}
+								"use": "Except",
+							},
+						},
+					},
 				},
 				"preset": "recommended",
 				"useArrayLiterals": "off",
@@ -313,7 +301,7 @@
 				"useConsistentMethodSignatures": "off",
 				"useConst": {
 					"fix": "safe",
-					"level": "error"
+					"level": "error",
 				},
 				"useDefaultParameterLast": "error",
 				"useDestructuring": "off",
@@ -322,11 +310,11 @@
 					"level": "error",
 					"options": {
 						"filenameCases": ["kebab-case"],
-						"requireAscii": true
-					}
+						"requireAscii": true,
+					},
 				},
 				"useGlobalThis": "error",
-				"useSpreadOverApply": "error"
+				"useSpreadOverApply": "error",
 			},
 
 			"suspicious": {
@@ -347,36 +335,54 @@
 					"level": "off",
 					"options": {
 						"ignoreFunctionTypeParameterNameValueShadow": false,
-						"ignoreTypeValueShadow": false
-					}
+						"ignoreTypeValueShadow": false,
+					},
 				},
 				"noTemplateCurlyInString": "off",
 				"noUndeclaredEnvVars": "error",
 				"noUnnecessaryConditions": "off",
 				"preset": "recommended",
-				"useArraySortCompare": "error"
-			}
-		}
+				"useArraySortCompare": "error",
+			},
+		},
 	},
 
 	"overrides": [
 		// JSONC Files
 		{
-			"includes": ["**/*.jsonc", "!**/biome.jsonc"],
+			"includes": ["**/*.jsonc", "**/*.code-workspace"],
 			"json": {
 				"formatter": {
 					"enabled": true,
 					"indentStyle": "tab",
 					"indentWidth": 4,
 					"lineWidth": 120,
-					"trailingCommas": "all"
+					"trailingCommas": "all",
 				},
 				"linter": { "enabled": true },
 				"parser": {
 					"allowComments": true,
-					"allowTrailingCommas": true
-				}
-			}
+					"allowTrailingCommas": true,
+				},
+			},
+		},
+
+		{
+			"includes": [],
+			"json": {
+				"formatter": {
+					"enabled": true,
+					"indentStyle": "tab",
+					"indentWidth": 4,
+					"lineWidth": 120,
+					"trailingCommas": "none",
+				},
+				"linter": { "enabled": true },
+				"parser": {
+					"allowComments": true,
+					"allowTrailingCommas": false,
+				},
+			},
 		},
 
 		// JSON Files
@@ -388,14 +394,14 @@
 					"indentStyle": "tab",
 					"indentWidth": 4,
 					"lineWidth": 120,
-					"trailingCommas": "none"
+					"trailingCommas": "none",
 				},
 				"linter": { "enabled": true },
 				"parser": {
 					"allowComments": false,
-					"allowTrailingCommas": false
-				}
-			}
+					"allowTrailingCommas": false,
+				},
+			},
 		},
 
 		{
@@ -404,13 +410,13 @@
 				"rules": {
 					"nursery": {},
 					"performance": {
-						"useTopLevelRegex": "off"
+						"useTopLevelRegex": "off",
 					},
 					"style": {
-						"noExcessiveLinesPerFile": "off"
-					}
-				}
-			}
+						"noExcessiveLinesPerFile": "off",
+					},
+				},
+			},
 		},
 
 		{
@@ -418,13 +424,27 @@
 			"linter": {
 				"rules": {
 					"correctness": {
-						"noUndeclaredDependencies": "off"
+						"noUndeclaredDependencies": "off",
+						"noUnusedVariables": "off",
 					},
 					"style": {
-						"useImportType": "off"
-					}
-				}
-			}
+						"noNamespace": "off",
+						"useFilenamingConvention": "off",
+						"useImportType": "off",
+					},
+				},
+			},
+		},
+
+		{
+			"includes": ["documentation/src/**/*.astro"],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"noUnusedVariables": "off",
+					},
+				},
+			},
 		},
 
 		{
@@ -432,76 +452,11 @@
 			"linter": {
 				"rules": {
 					"style": {
-						"noProcessEnv": "off"
-					}
-				}
-			}
-		},
-
-		{
-			"assist": {
-				"actions": {
-					"source": {
-						"useSortedAttributes": "off"
-					}
-				}
+						"noProcessEnv": "off",
+					},
+				},
 			},
-			"includes": [
-				"documentation/src/components/badge.astro",
-				"documentation/src/components/icon.astro",
-				"documentation/src/components/rule-example.astro"
-			]
 		},
-
-		{
-			"includes": ["documentation/src/components/rule-options.astro"],
-			"linter": {
-				"rules": {
-					"performance": {
-						"useSolidForComponent": "off"
-					},
-					"style": {
-						"noJsxLiterals": "off"
-					}
-				}
-			}
-		},
-
-		{
-			"includes": ["documentation/src/types/satteri-optional-peers.d.ts"],
-			"linter": {
-				"rules": {
-					"correctness": {
-						"noUndeclaredDependencies": "off"
-					}
-				}
-			}
-		},
-
-		{
-			"includes": ["**/*.d.ts"],
-			"linter": {
-				"rules": {
-					"correctness": {
-						"noUnusedVariables": "off"
-					},
-					"style": {
-						"noNamespace": "off"
-					}
-				}
-			}
-		},
-
-		{
-			"includes": ["tests/fixtures/strict-boundaries/basic-app/app/components/**/*.ts"],
-			"linter": {
-				"rules": {
-					"style": {
-						"useFilenamingConvention": "off"
-					}
-				}
-			}
-		}
 
 		// package.json exception
 		// {
@@ -522,6 +477,6 @@
 		"clientKind": "git",
 		"defaultBranch": "main",
 		"enabled": true,
-		"useIgnoreFile": true
-	}
+		"useIgnoreFile": true,
+	},
 }

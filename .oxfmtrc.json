@@ -34,7 +34,7 @@
 			}
 		},
 		{
-			"files": ["opencode.jsonc"],
+			"files": ["opencode.jsonc", "biome.jsonc"],
 			"options": {
 				"trailingComma": "all"
 			}
