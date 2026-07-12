@@ -49,7 +49,7 @@
 		"oxlint": "oxlint",
 		"oxlint:agent": "oxlint --format agent",
 		"pncat": "pncat",
-		"prepare": "node --run hooks:install",
+		"prepare": "node -e \"process.exit(process.env.CI ? 0 : 1)\" || node --run hooks:install",
 		"prepublishOnly": "node --run build -- --minify",
 		"release": "bumpp",
 		"test": "vitest run --sequence.shuffle",
