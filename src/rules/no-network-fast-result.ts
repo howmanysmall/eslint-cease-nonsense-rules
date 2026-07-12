@@ -64,9 +64,7 @@ function containsFastResult(
 
 	if (isTypeReferenceNode(node)) {
 		const { typeArguments } = node;
-		if (typeArgumentsContainFastResult(typeArguments, checker, seenSymbols)) {
-			return true;
-		}
+		if (typeArgumentsContainFastResult(typeArguments, checker, seenSymbols)) return true;
 
 		const symbol = getResolvedSymbol(checker, node.typeName);
 		if (symbol !== undefined && !seenSymbols.has(symbol)) {
