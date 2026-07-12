@@ -1,17 +1,21 @@
 import { getCollection } from "astro:content";
 
-import { createMarkdownResponseAsync } from "../../utilities/create-markdown-response";
+import { createMarkdownResponseAsync, isDocumentationEntry } from "../../utilities/create-markdown-response";
 
 import type { APIRoute, GetStaticPaths } from "astro";
 
 const getMarkdownRouteAsync: APIRoute = async ({ params: parameters }) => createMarkdownResponseAsync(parameters.path);
 
 const getMarkdownStaticPathsAsync: GetStaticPaths = async () => {
-	const documentation = await getCollection("docs");
+	const documentation: unknown = await getCollection("docs");
 	const staticPaths = new Array<{ readonly params: { readonly path: string } }>();
 	let size = 0;
 
-	for (const { id } of documentation) {
+	if (!Array.isArray(documentation)) return staticPaths;
+
+	for (const entry of documentation) {
+		if (!isDocumentationEntry(entry)) continue;
+		const { id } = entry;
 		if (id === "index") continue;
 		staticPaths[size++] = { params: { path: id } };
 	}
