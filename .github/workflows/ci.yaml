@@ -1,181 +1,39 @@
-name: ci
+name: CI
 
 on:
   push:
     branches:
       - main
-    paths:
-      - "src/**/*.ts"
-      - "tests/**/*.ts"
+    paths: &ci-paths
+      - "src/**/*.{ts,tsx,json}"
+      - "tests/**"
+      - "scripts/**"
+      - "patches/**"
+      - "documentation/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
-      - "knip.ts"
+      - "mise.toml"
+      - "mise.lock"
+      - "*.config.ts"
       - "tsconfig*.json"
-      - ".oxlintrc.json"
+      - ".ox*trc.json"
       - "biome.jsonc"
+      - "knip.ts"
+      - ".github/actions/**"
+      - ".github/workflows/checks.yaml"
+      - ".github/workflows/ci.yaml"
   pull_request:
-    paths:
-      - "src/**/*.ts"
-      - "tests/**/*.ts"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - "knip.ts"
-      - "tsconfig*.json"
-      - ".oxlintrc.json"
-      - "biome.jsonc"
+    paths: *ci-paths
 
-env:
-  TEST_SHARDS: 8
-  HEAVY_TEST_SHARDS: 4
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
 
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Mise
-        uses: jdx/mise-action@v4
-
-      - name: Get pnpm store directory
-        id: pnpm-store
-        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache pnpm store
-        uses: actions/cache@v6
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-v1-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-v1-
-
-      - name: Install
-        run: |
-          for attempt in 1 2 3; do
-            if pnpm install --frozen-lockfile; then
-              exit 0
-            fi
-            if [ "$attempt" = "3" ]; then
-              exit 1
-            fi
-            sleep $((attempt * 10))
-          done
-
-      - name: Biome CI
-        run: pnpm run biome:ci
-
-      - name: Generate Astro types
-        run: pnpm --filter docs astro sync
-
-      - name: Lint
-        run: pnpm run oxlint
-
-      - name: Type Checking
-        run: pnpm run type-check
-
-      - name: Knip
-        run: pnpm run knip
-
-      - name: Build
-        run: pnpm run build
-
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Mise
-        uses: jdx/mise-action@v4
-
-      - name: Get pnpm store directory
-        id: pnpm-store
-        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache pnpm store
-        uses: actions/cache@v6
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-v1-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-v1-
-
-      - name: Install
-        run: |
-          for attempt in 1 2 3; do
-            if pnpm install --frozen-lockfile; then
-              exit 0
-            fi
-            if [ "$attempt" = "3" ]; then
-              exit 1
-            fi
-            sleep $((attempt * 10))
-          done
-
-      - name: Get shard test files
-        id: shard
-        run: |
-          SHARD_FILES=$(./scripts/shard-tests.ts --normal-lane ${{ matrix.shard }} ${{ env.TEST_SHARDS }})
-          echo "files=$SHARD_FILES" >> $GITHUB_OUTPUT
-          echo "Shard ${{ matrix.shard }}/${{ env.TEST_SHARDS }} files: $SHARD_FILES"
-
-      - name: Run tests for shard
-        if: steps.shard.outputs.files != ''
-        env:
-          AGENT: 1
-        run: |
-          pnpm run test:agent ${{ steps.shard.outputs.files }}
-
-  test-heavy:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        file:
-          - tests/upstream/prevent-abbreviations.test.ts
-        case_shard: [1, 2, 3, 4]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Mise
-        uses: jdx/mise-action@v4
-
-      - name: Get pnpm store directory
-        id: pnpm-store
-        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache pnpm store
-        uses: actions/cache@v6
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-v1-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-v1-
-
-      - name: Install
-        run: |
-          for attempt in 1 2 3; do
-            if pnpm install --frozen-lockfile; then
-              exit 0
-            fi
-            if [ "$attempt" = "3" ]; then
-              exit 1
-            fi
-            sleep $((attempt * 10))
-          done
-
-      - name: Run heavy test file with case sharding
-        env:
-          AGENT: 1
-          TEST_CASE_SHARD: ${{ matrix.case_shard }}/${{ env.HEAVY_TEST_SHARDS }}
-        run: |
-          echo "Running ${{ matrix.file }} with case shard ${{ matrix.case_shard }}/${{ env.HEAVY_TEST_SHARDS }}"
-          pnpm run test:agent ${{ matrix.file }}
+  checks:
+    uses: ./.github/workflows/checks.yaml
+    permissions:
+      contents: read
