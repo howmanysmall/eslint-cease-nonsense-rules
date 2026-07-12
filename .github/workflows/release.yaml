@@ -1,9 +1,5 @@
 name: Publish Package
 
-permissions:
-  contents: write # For creating GitHub releases
-  id-token: write # Required for NPM Trusted Publishing (OIDC)
-
 on:
   push:
     tags:
@@ -14,72 +10,46 @@ on:
         description: "Skip publish & release creation"
         type: boolean
         required: false
-        default: false
+        default: true
 
-env:
-  NODE_VERSION: "25"
-  TEST_SHARDS: 4
-  HEAVY_TEST_SHARDS: 2
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  validate-and-build:
+  validate-release:
     runs-on: ubuntu-latest
-    env:
-      DRY_RUN: "false"
+    permissions:
+      contents: read
     outputs:
       dry_run: ${{ steps.set_dry_run.outputs.dry_run }}
-      package_version: ${{ steps.version_check.outputs.PACKAGE_VERSION }}
     steps:
       - name: Checkout (full history)
-        uses: actions/checkout@v7
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           fetch-depth: 0
-
-      - name: Setup Mise
-        uses: jdx/mise-action@v4
+          persist-credentials: false
 
       - name: Determine dry run flag
         id: set_dry_run
         run: |
           DRY_RUN="false"
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
-            VALUE=$(jq -r '.inputs.dry_run // "false"' "$GITHUB_EVENT_PATH")
-            if [ "$VALUE" = "true" ]; then
+            VALUE=$(jq -r '.inputs.dry_run // "true"' "$GITHUB_EVENT_PATH")
+            if [ "$VALUE" != "false" ]; then
               DRY_RUN="true"
             fi
           fi
           echo "DRY_RUN=$DRY_RUN" >> "$GITHUB_ENV"
           echo "dry_run=$DRY_RUN" >> "$GITHUB_OUTPUT"
 
-      - name: Setup Node.js for NPM publishing
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          registry-url: "https://registry.npmjs.org"
-
-      - name: Get pnpm store directory
-        id: pnpm-store
-        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache pnpm store
-        uses: actions/cache@v6
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-v1-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-v1-
-
-      - name: Install dependencies
+      - name: Require tag for real release
+        if: ${{ env.DRY_RUN != 'true' && !startsWith(github.ref, 'refs/tags/') }}
         run: |
-          for attempt in 1 2 3; do
-            if pnpm install --frozen-lockfile; then
-              exit 0
-            fi
-            if [ "$attempt" = "3" ]; then
-              exit 1
-            fi
-            sleep $((attempt * 10))
-          done
+          echo "::error title=Refusing non-tag publish::Run this workflow from a v*.*.* tag, or enable dry_run." >&2
+          exit 1
 
       - name: Validate tag matches package.json version
         id: version_check
@@ -93,214 +63,75 @@ jobs:
             echo "::error title=Version mismatch::Tag $TAG_VERSION does not match package.json $PACKAGE_VERSION" >&2
             exit 1
           fi
-          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "package_version=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Verify tag commit reachable from main
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           git fetch origin main
           if git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
-            echo "Tag commit is on main lineage";
+            echo "Tag commit is on main lineage"
           else
             echo "::error title=Tag not on main::Tag commit $GITHUB_SHA not reachable from main" >&2
             exit 1
           fi
 
-      - name: Lint
-        run: pnpm run lint
-
-      - name: Type Checking
-        run: pnpm run type-check
-
-      - name: Build
-        run: pnpm run build
-
-      - name: Assert build artifacts exist
-        run: |
-          if [ ! -d dist ]; then
-            echo "::error title=Missing output::dist directory not found" >&2
-            exit 1
-          fi
-          if [ ! -f dist/index.js ]; then
-            echo "::error title=Missing artifact::dist/index.js not found" >&2
-            ls -R dist || true
-            exit 1
-          fi
-          echo "Build artifacts OK"
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: dist
-          path: dist/
-          retention-days: 1
-
-  test:
-    runs-on: ubuntu-latest
-    needs: validate-and-build
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Setup Mise
-        uses: jdx/mise-action@v4
-
-      - name: Get pnpm store directory
-        id: pnpm-store
-        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache pnpm store
-        uses: actions/cache@v6
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-v1-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-v1-
-
-      - name: Install dependencies
-        run: |
-          for attempt in 1 2 3; do
-            if pnpm install --frozen-lockfile; then
-              exit 0
-            fi
-            if [ "$attempt" = "3" ]; then
-              exit 1
-            fi
-            sleep $((attempt * 10))
-          done
-
-      - name: Get shard test files
-        id: shard
-        run: |
-          SHARD_FILES=$(./scripts/shard-tests.ts --normal-lane ${{ matrix.shard }} ${{ env.TEST_SHARDS }})
-          echo "files=$SHARD_FILES" >> $GITHUB_OUTPUT
-          echo "Shard ${{ matrix.shard }}/${{ env.TEST_SHARDS }} files: $SHARD_FILES"
-
-      - name: Run tests for shard
-        if: steps.shard.outputs.files != ''
-        env:
-          AGENT: 1
-        run: |
-          pnpm run test:agent ${{ steps.shard.outputs.files }}
-
-  test-heavy:
-    runs-on: ubuntu-latest
-    needs: validate-and-build
-    strategy:
-      fail-fast: false
-      matrix:
-        file:
-          - tests/upstream/prevent-abbreviations.test.ts
-        case_shard: [1, 2]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Mise
-        uses: jdx/mise-action@v4
-
-      - name: Get pnpm store directory
-        id: pnpm-store
-        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache pnpm store
-        uses: actions/cache@v6
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-v1-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-v1-
-
-      - name: Install dependencies
-        run: |
-          for attempt in 1 2 3; do
-            if pnpm install --frozen-lockfile; then
-              exit 0
-            fi
-            if [ "$attempt" = "3" ]; then
-              exit 1
-            fi
-            sleep $((attempt * 10))
-          done
-
-      - name: Run heavy test file with case sharding
-        env:
-          AGENT: 1
-          TEST_CASE_SHARD: ${{ matrix.case_shard }}/${{ env.HEAVY_TEST_SHARDS }}
-        run: |
-          echo "Running ${{ matrix.file }} with case shard ${{ matrix.case_shard }}/${{ env.HEAVY_TEST_SHARDS }}"
-          pnpm run test:agent ${{ matrix.file }}
+  checks:
+    needs: validate-release
+    uses: ./.github/workflows/checks.yaml
+    permissions:
+      contents: read
 
   publish:
     runs-on: ubuntu-latest
-    needs: [validate-and-build, test, test-heavy]
+    needs:
+      - validate-release
+      - checks
+    permissions:
+      contents: write # For creating GitHub releases
+      id-token: write # Required for NPM Trusted Publishing (OIDC)
+    if: startsWith(github.ref, 'refs/tags/') || needs.validate-release.outputs.dry_run == 'true'
     env:
-      DRY_RUN: ${{ needs.validate-and-build.outputs.dry_run }}
+      DRY_RUN: ${{ needs.validate-release.outputs.dry_run }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           fetch-depth: 0
+          persist-credentials: false
 
-      - name: Setup Mise
-        uses: jdx/mise-action@v4
+      - name: Setup toolchain
+        uses: ./.github/actions/setup
+        with:
+          cache: false
 
       - name: Setup Node.js for NPM publishing
-        uses: actions/setup-node@v6
+        # This step is only here to configure the NPM registry URL.
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: "25"
+          package-manager-cache: false
           registry-url: "https://registry.npmjs.org"
 
-      - name: Get pnpm store directory
-        id: pnpm-store
-        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache pnpm store
-        uses: actions/cache@v6
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-v1-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-v1-
-
       - name: Install dependencies
-        run: |
-          for attempt in 1 2 3; do
-            if pnpm install --frozen-lockfile; then
-              exit 0
-            fi
-            if [ "$attempt" = "3" ]; then
-              exit 1
-            fi
-            sleep $((attempt * 10))
-          done
+        uses: ./.github/actions/install
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v8
-        with:
-          name: dist
-          path: dist/
+      - name: Build
+        run: node --run build -- --minify
+
+      - name: Publish to NPM (Trusted Publishing)
+        if: ${{ env.DRY_RUN != 'true' }}
+        run: pnpm publish --provenance --access public
 
       - name: Generate changelog & GitHub release
         if: ${{ env.DRY_RUN != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          pnpm dlx changelogithub
-
-      - name: Publish to NPM (Trusted Publishing)
-        if: ${{ env.DRY_RUN != 'true' }}
-        run: pnpm publish --provenance --access public --no-git-checks
+        run: pnpm dlx changelogithub
 
       - name: Upload npm debug log on failure
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: npm-debug-log
           path: /home/runner/.npm/_logs/*.log

@@ -6,66 +6,49 @@ on:
     types: [completed]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+permissions: {}
+
+concurrency:
+  group: deploy-docs-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     if:
       ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' &&
       github.event.workflow_run.conclusion == 'success') }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
 
-      - name: Setup Mise
-        uses: jdx/mise-action@v4
-
-      - name: Setup Node.js for documentation build
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22.12.0"
-
-      - name: Get pnpm store directory
-        id: pnpm-store
-        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache pnpm store
-        uses: actions/cache@v6
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-v1-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-v1-
+      - name: Setup toolchain
+        uses: ./.github/actions/setup
 
       - name: Install dependencies
-        run: |
-          for attempt in 1 2 3; do
-            if pnpm install --frozen-lockfile; then
-              exit 0
-            fi
-            if [ "$attempt" = "3" ]; then
-              exit 1
-            fi
-            sleep $((attempt * 10))
-          done
+        uses: ./.github/actions/install
 
       - name: Build documentation
         run: pnpm --filter docs build
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: documentation/dist
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     if:
       ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' &&
       github.event.workflow_run.conclusion == 'success') }}
@@ -73,4 +56,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5
