@@ -249,8 +249,8 @@ const noNewInstanceInUseMemo = createRule<Options, MessageIds>({
 
 		function createFunctionInfo(): FunctionInfo {
 			const created: FunctionInfo = {
-				callees: new Set<FunctionInfo>(),
 				callIdentifiers: [],
+				callees: new Set<FunctionInfo>(),
 			};
 
 			functionInfos.push(created);

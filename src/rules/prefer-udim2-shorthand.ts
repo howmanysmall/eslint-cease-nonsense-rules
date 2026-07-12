@@ -26,11 +26,11 @@ type NumericUnaryOperator = "+" | "-";
 const BINARY_OPERATORS: ReadonlySet<string> = new Set(["+", "-", "*", "/", "%"]);
 const UNARY_OPERATORS: ReadonlySet<string> = new Set(["+", "-"]);
 const BINARY_EVALUATORS: Record<NumericBinaryOperator, (left: number, right: number) => number | undefined> = {
-	"-": (left, right) => left - right,
-	"*": (left, right) => left * right,
-	"/": (left, right) => (right === 0 ? undefined : left / right),
 	"%": (left, right) => (right === 0 ? undefined : left % right),
+	"*": (left, right) => left * right,
 	"+": (left, right) => left + right,
+	"-": (left, right) => left - right,
+	"/": (left, right) => (right === 0 ? undefined : left / right),
 };
 
 function isNumericBinaryOperator(operator: string): operator is NumericBinaryOperator {
