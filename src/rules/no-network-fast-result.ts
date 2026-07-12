@@ -239,11 +239,11 @@ const noNetworkFastResult = createRule<Options, MessageIds>({
 		defaultOptions: [DEFAULT_OPTIONS],
 		docs: {
 			description:
-				"Disallow FastResult in Flamework RPC contracts because LuaTuples cannot cross the network boundary.",
+				"Disallow FastResult in Flamework RPC contracts because LuaTuples should not cross the network boundary.",
 		},
 		messages: {
 			noNetworkFastResult:
-				"FastResult is a LuaTuple and cannot cross a Flamework network boundary. Return a serializable response instead.",
+				"FastResult is a LuaTuple and should not cross a Flamework network boundary. Return a serializable response instead.",
 		},
 		schema: [
 			{
