@@ -1282,9 +1282,9 @@
 			"testerOptions": {
 				"languageOptions": {
 					"globals": {
-						"Response": "readonly",
 						"document": "readonly",
-						"event": "readonly"
+						"event": "readonly",
+						"Response": "readonly"
 					}
 				}
 			},
@@ -2793,9 +2793,9 @@
 			"testerOptions": {
 				"languageOptions": {
 					"globals": {
-						"Response": "readonly",
 						"document": "readonly",
-						"event": "readonly"
+						"event": "readonly",
+						"Response": "readonly"
 					}
 				}
 			},
@@ -4438,9 +4438,9 @@
 			"testerOptions": {
 				"languageOptions": {
 					"globals": {
-						"Response": "readonly",
 						"document": "readonly",
-						"event": "readonly"
+						"event": "readonly",
+						"Response": "readonly"
 					}
 				}
 			},
@@ -6468,9 +6468,9 @@
 			"testerOptions": {
 				"languageOptions": {
 					"globals": {
-						"Response": "readonly",
 						"document": "readonly",
-						"event": "readonly"
+						"event": "readonly",
+						"Response": "readonly"
 					}
 				}
 			},

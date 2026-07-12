@@ -38,8 +38,8 @@ const configuration = defineConfig({
 			exclude: ["src/**/*.d.ts", "src/oxfmt-worker.ts"],
 			include: ["src/**/*.ts"],
 			provider: "v8",
-			reportOnFailure: false,
 			reporter: ["text", "text-summary"],
+			reportOnFailure: false,
 			thresholds: {
 				branches: 80,
 				functions: 95,

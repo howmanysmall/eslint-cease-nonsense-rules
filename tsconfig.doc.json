@@ -1,8 +1,8 @@
 {
 	"compilerOptions": {
 		"paths": {
-			"*": ["./documentation/*"],
-			"@/*": ["src/*"]
+			"@/*": ["src/*"],
+			"*": ["./documentation/*"]
 		},
 		"plugins": [{ "name": "@astrojs/ts-plugin" }]
 	},
