@@ -74,9 +74,7 @@ jobs:
 
       - name: Run tests for shard
         if: steps.shard.outputs.files != ''
-        env:
-          AGENT: 1
-        run: node --run test -- --reporter agent ${{ steps.shard.outputs.files }}
+        run: node --run test -- ${{ steps.shard.outputs.files }}
 
   test-heavy:
     name: Heavy (${{ matrix.case_shard }}/4)
@@ -103,8 +101,7 @@ jobs:
 
       - name: Run heavy test file with case sharding
         env:
-          AGENT: 1
           TEST_CASE_SHARD: ${{ matrix.case_shard }}/${{ env.HEAVY_TEST_SHARDS }}
         run: |
           echo "Running ${{ matrix.file }} with case shard ${{ matrix.case_shard }}/${{ env.HEAVY_TEST_SHARDS }}"
-          node --run test -- --reporter agent ${{ matrix.file }}
+          node --run test -- ${{ matrix.file }}
