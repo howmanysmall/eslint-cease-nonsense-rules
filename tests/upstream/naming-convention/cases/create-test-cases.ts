@@ -11,10 +11,6 @@ type RuleValidCase = ValidTestCase<RuleOptions>;
 type FormatTestNames = Record<string, Record<"invalid" | "valid", ReadonlyArray<string>>>;
 
 export const formatTestNames: FormatTestNames = {
-	camelCase: {
-		invalid: ["snake_case", "UPPER_CASE", "UPPER", "StrictPascalCase"],
-		valid: ["strictCamelCase", "lower", "camelCaseUNSTRICT"],
-	},
 	PascalCase: {
 		invalid: ["snake_case", "UPPER_CASE", "strictCamelCase"],
 		valid: ["StrictPascalCase", "Pascal", "I18n", "PascalCaseUNSTRICT", "UPPER"],
@@ -23,6 +19,14 @@ export const formatTestNames: FormatTestNames = {
 		invalid: ["snake_case", "UPPER_CASE", "UPPER", "strictCamelCase", "PascalCaseUNSTRICT"],
 		valid: ["StrictPascalCase", "Pascal", "I18n"],
 	},
+	UPPER_CASE: {
+		invalid: ["lower", "snake_case", "SNAKE_case_UNSTRICT", "strictCamelCase", "StrictPascalCase"],
+		valid: ["UPPER_CASE", "UPPER"],
+	},
+	camelCase: {
+		invalid: ["snake_case", "UPPER_CASE", "UPPER", "StrictPascalCase"],
+		valid: ["strictCamelCase", "lower", "camelCaseUNSTRICT"],
+	},
 	snake_case: {
 		invalid: ["UPPER_CASE", "SNAKE_case_UNSTRICT", "strictCamelCase", "StrictPascalCase"],
 		valid: ["snake_case", "lower"],
@@ -30,10 +34,6 @@ export const formatTestNames: FormatTestNames = {
 	strictCamelCase: {
 		invalid: ["snake_case", "UPPER_CASE", "UPPER", "StrictPascalCase", "camelCaseUNSTRICT"],
 		valid: ["strictCamelCase", "lower"],
-	},
-	UPPER_CASE: {
-		invalid: ["lower", "snake_case", "SNAKE_case_UNSTRICT", "strictCamelCase", "StrictPascalCase"],
-		valid: ["UPPER_CASE", "UPPER"],
 	},
 };
 
