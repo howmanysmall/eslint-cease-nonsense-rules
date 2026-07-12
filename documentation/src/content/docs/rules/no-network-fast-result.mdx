@@ -1,0 +1,74 @@
+---
+title: no-network-fast-result
+badges:
+    - text: "error"
+      variant: danger
+    - text: "Type-aware"
+      variant: note
+description: Disallow FastResult in Flamework RPC contracts.
+---
+
+import { Aside, Code } from "@astrojs/starlight/components";
+
+import RuleExample from "../../../components/rule-example.astro";
+
+Disallows `FastResult` in contracts passed to `Networking.createFunction` from `@flamework/networking`.
+
+## Rule details :badge[Problem]{variant=danger}
+
+`FastResult` is a `LuaTuple`, which cannot cross a Flamework network boundary. The rule resolves imported and aliased
+`FastResult` types, including nested response types such as `Promise<FastResult>`.
+
+It only checks RPC contracts. Local helpers may still return `FastResult` normally.
+
+<Aside type="caution" title="No automatic fix">
+	Choose a serializable response shape for each endpoint, such as an object with `success` and `message` properties.
+</Aside>
+
+## Examples
+
+<RuleExample type="fail" title="Incorrect">
+	<Code
+		code={[
+			'import { Networking } from "@flamework/networking";',
+			"",
+			"interface ClientToServer {",
+			"\twarp: { toCFrame: () => FastResult };",
+			"}",
+			"",
+			"Networking.createFunction<ClientToServer, undefined>();",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
+
+<RuleExample type="pass" title="Correct">
+	<Code
+		code={[
+			'import { Networking } from "@flamework/networking";',
+			"",
+			"interface ClientToServer {",
+			"\twarp: { toCFrame: () => { success: boolean; message?: string } };",
+			"}",
+			"",
+			"Networking.createFunction<ClientToServer, undefined>();",
+		].join("\n")}
+		lang="ts"
+	/>
+</RuleExample>
+
+## Options
+
+| Option            | Type      | Default | Description                                      |
+| :---------------- | :-------- | :------ | :----------------------------------------------- |
+| `checkParameters` | `boolean` | `false` | Also report `FastResult` in RPC parameter types. |
+
+```js
+export default [
+	{
+		rules: {
+			"cease-nonsense/no-network-fast-result": ["error", { checkParameters: true }],
+		},
+	},
+];
+```

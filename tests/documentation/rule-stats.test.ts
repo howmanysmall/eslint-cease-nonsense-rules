@@ -16,7 +16,7 @@ describe("rule stats", () => {
 	it("derives totals from the shared rule catalog", () => {
 		expect.assertions(4);
 		expect(totalCategories).toBe(4);
-		expect(totalRules).toBe(58);
+		expect(totalRules).toBe(59);
 		expect(ruleAwareness).toStrictEqual({
 			astOnly: {
 				count: 49,
@@ -24,14 +24,14 @@ describe("rule stats", () => {
 				label: "AST-only rules",
 			},
 			typeAware: {
-				count: 9,
+				count: 10,
 				description: "Rules that use parser services or the TypeScript checker for deeper analysis.",
 				label: "Type-aware rules",
 			},
 		});
 		expect(totalRuleAwareness).toStrictEqual({
 			astOnly: 49,
-			typeAware: 9,
+			typeAware: 10,
 		});
 	}, 1000);
 
@@ -62,10 +62,10 @@ describe("rule stats", () => {
 			},
 			roblox: {
 				astOnlyCount: 14,
-				count: 17,
+				count: 18,
 				label: "Roblox & Luau Rules",
 				slug: "/eslint-cease-nonsense-rules/rules/ban-instances/",
-				typeAwareCount: 3,
+				typeAwareCount: 4,
 			},
 		});
 
@@ -77,7 +77,7 @@ describe("rule stats", () => {
 			})),
 		).toStrictEqual([
 			{ count: 22, first: "rules/ban-react-fc", label: "React Rules" },
-			{ count: 17, first: "rules/ban-instances", label: "Roblox & Luau Rules" },
+			{ count: 18, first: "rules/ban-instances", label: "Roblox & Luau Rules" },
 			{ count: 7, first: "rules/array-type-generic", label: "Naming & Conventions" },
 			{ count: 12, first: "rules/dot-notation", label: "General Logic & Style" },
 		]);

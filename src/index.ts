@@ -20,6 +20,7 @@ import noIdentityMap from "$rules/no-identity-map";
 import noInstanceMethodsWithoutThis from "$rules/no-instance-methods-without-this";
 import noManualChildrenProperty from "$rules/no-manual-children-property";
 import noMemoChildren from "$rules/no-memo-children";
+import noNetworkFastResult from "$rules/no-network-fast-result";
 import noNewInstanceInUseMemo from "$rules/no-new-instance-in-use-memo";
 import noPrint from "$rules/no-print";
 import noRenderHelperFunctions from "$rules/no-render-helper-functions";
@@ -81,6 +82,7 @@ export type { NoInstanceMethodsOptions } from "$rules/no-instance-methods-withou
 export type { NoManualChildrenPropertyOptions } from "$rules/no-manual-children-property";
 export type { NoMemoChildrenOptions } from "$rules/no-memo-children";
 export type { NoNewInstanceInUseMemoOptions } from "$rules/no-new-instance-in-use-memo";
+export type { NoNetworkFastResultOptions } from "$rules/no-network-fast-result";
 export type { NoShorthandOptions } from "$rules/no-shorthand-names";
 export type { NoUnusedImportsOptions } from "$rules/no-unused-imports";
 export type { NoUnusedUseMemoOptions } from "$rules/no-unused-use-memo";
@@ -127,6 +129,7 @@ const ruleImplementations = {
 	"no-instance-methods-without-this": noInstanceMethodsWithoutThis,
 	"no-manual-children-property": noManualChildrenProperty,
 	"no-memo-children": noMemoChildren,
+	"no-network-fast-result": noNetworkFastResult,
 	"no-new-instance-in-use-memo": noNewInstanceInUseMemo,
 	"no-print": noPrint,
 	"no-render-helper-functions": noRenderHelperFunctions,
@@ -189,6 +192,7 @@ const recommendedRuleNames = [
 	"no-instance-methods-without-this",
 	"no-memo-children",
 	"no-new-instance-in-use-memo",
+	"no-network-fast-result",
 	"no-print",
 	"no-render-helper-functions",
 	"no-shorthand-names",
