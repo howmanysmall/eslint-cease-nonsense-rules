@@ -130,6 +130,7 @@
 	--sl-text-body: 1.1rem;
 	--sl-line-height: 1.75;
 	--sl-font-mono: "JetBrains Mono", ui-monospace, monospace;
+	--sl-content-width: 64rem;
 
 	--sl-color-accent-low: #fffbeb;
 	--sl-color-accent: #b45309;
@@ -1021,5 +1022,11 @@ header.header button,
 		color: #000 !important;
 		-webkit-text-fill-color: #000;
 		background: none;
+	}
+}
+
+@media (min-width: 72rem) {
+	.main-frame {
+		max-width: 102rem;
 	}
 }
