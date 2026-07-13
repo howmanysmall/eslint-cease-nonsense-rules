@@ -215,8 +215,8 @@ catalogs:
       specifier: 0.1.4
       version: 0.1.4
     starlight-heading-badges:
-      specifier: 0.7.0
-      version: 0.7.0
+      specifier: 0.8.0
+      version: 0.8.0
     starlight-links-validator:
       specifier: 0.21.0
       version: 0.21.0
@@ -250,7 +250,7 @@ catalogs:
       specifier: 19.2.3
       version: 19.2.3
 
-packageExtensionsChecksum: sha256-AuDhEeOMXzk+kFhfKdYmo3VOTc5rWFyPdFKEaWtTW00=
+packageExtensionsChecksum: sha256-UL9c5knSJ+ttVM1MAcTgBoI1LC61c2SU/4F21Dnn89o=
 
 patchedDependencies:
   '@vitest/expect@4.1.9': c752c548d859b224b7109039fcf594784e5780d367fe82bf3afcad29cd3db2bf
@@ -494,7 +494,7 @@ importers:
         version: 0.1.4(@astrojs/starlight@0.41.3(@astrojs/markdown-remark@7.2.1)(astro@7.0.6(@astrojs/markdown-remark@7.2.1)(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0))(typescript@5.9.3))
       starlight-heading-badges:
         specifier: catalog:prod
-        version: 0.7.0(@astrojs/starlight@0.41.3(@astrojs/markdown-remark@7.2.1)(astro@7.0.6(@astrojs/markdown-remark@7.2.1)(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0))(typescript@5.9.3))
+        version: 0.8.0(@astrojs/starlight@0.41.3(@astrojs/markdown-remark@7.2.1)(astro@7.0.6(@astrojs/markdown-remark@7.2.1)(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0))(typescript@5.9.3))(astro@7.0.6(@astrojs/markdown-remark@7.2.1)(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0))
       starlight-links-validator:
         specifier: catalog:prod
         version: 0.21.0(@astrojs/starlight@0.41.3(@astrojs/markdown-remark@7.2.1)(astro@7.0.6(@astrojs/markdown-remark@7.2.1)(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0))(typescript@5.9.3))(astro@7.0.6(@astrojs/markdown-remark@7.2.1)(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0))
@@ -4721,11 +4721,12 @@ packages:
     peerDependencies:
       '@astrojs/starlight': '>=0.34'
 
-  starlight-heading-badges@0.7.0:
-    resolution: {integrity: sha512-mzxTn7lFd2OPB6naJKYelZbu1EUGCT2hm8Ozx/9EqgGy68y7ggUGxrDmdTvpozzi5OLkijiZw8zcvdq63JdRbA==}
+  starlight-heading-badges@0.8.0:
+    resolution: {integrity: sha512-iX7YwXqzJrVYqVxqHXW4BPL+SPIzsfTPmiWI6dbZD2qfaJ34zn7TiymUuAIyfSRpHz7jmlIw29dRz0cpjqhUAA==}
     engines: {node: '>=22.12.0'}
     peerDependencies:
-      '@astrojs/starlight': '>=0.38.0'
+      '@astrojs/starlight': '>=0.41.0'
+      astro: '>=7.0.0'
 
   starlight-links-validator@0.21.0:
     resolution: {integrity: sha512-X7pQC/5Dc7peDoZW/F4L+fD5qs9JmVXo3klNHsxRcVs3mSJXp2wFKZ/38hgr7yGLkp126IFKeHLy6jmOvnwvCA==}
@@ -9868,12 +9869,15 @@ snapshots:
     dependencies:
       '@astrojs/starlight': 0.41.3(@astrojs/markdown-remark@7.2.1)(astro@7.0.6(@astrojs/markdown-remark@7.2.1)(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0))(typescript@5.9.3)
 
-  starlight-heading-badges@0.7.0(@astrojs/starlight@0.41.3(@astrojs/markdown-remark@7.2.1)(astro@7.0.6(@astrojs/markdown-remark@7.2.1)(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0))(typescript@5.9.3)):
+  starlight-heading-badges@0.8.0(@astrojs/starlight@0.41.3(@astrojs/markdown-remark@7.2.1)(astro@7.0.6(@astrojs/markdown-remark@7.2.1)(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0))(typescript@5.9.3))(astro@7.0.6(@astrojs/markdown-remark@7.2.1)(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0)):
     dependencies:
       '@astrojs/markdown-remark': 7.2.1
+      '@astrojs/markdown-satteri': 0.3.3
       '@astrojs/starlight': 0.41.3(@astrojs/markdown-remark@7.2.1)(astro@7.0.6(@astrojs/markdown-remark@7.2.1)(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0))(typescript@5.9.3)
+      astro: 7.0.6(@astrojs/markdown-remark@7.2.1)(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.2)(@types/node@24.13.2)(jiti@2.7.0)(yaml@2.9.0)
       github-slugger: 2.0.0
       mdast-util-directive: 3.1.0
+      satteri: 0.9.4
       unist-util-visit: 5.1.0
     transitivePeerDependencies:
       - supports-color
@@ -10386,7 +10390,7 @@ time:
   skills@1.5.14: '2026-06-29T23:32:55.848Z'
   source-map@0.7.6: '2025-07-24T05:12:51.288Z'
   starlight-codeblock-fullscreen@0.1.4: '2025-07-05T04:16:10.320Z'
-  starlight-heading-badges@0.7.0: '2026-03-12T07:27:57.542Z'
+  starlight-heading-badges@0.8.0: '2026-07-01T09:16:09.983Z'
   starlight-links-validator@0.21.0: '2026-03-27T15:36:08.942Z'
   starlight-scroll-to-top@0.4.0: '2025-09-08T21:27:46.982Z'
   ts-api-utils@2.5.0: '2026-03-19T02:50:49.789Z'
