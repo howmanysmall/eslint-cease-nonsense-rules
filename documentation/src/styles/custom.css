@@ -340,7 +340,11 @@ starlight-toc a {
 	}
 }
 
-nav.sidebar a {
+/*
+ * Only style the sidebar page list — not `.mobile-preferences` social links / theme
+ * select, which also live under `nav.sidebar` and break if they inherit these paddings.
+ */
+nav.sidebar ul a {
 	padding: 0.4rem 0.75rem !important;
 	margin-block: 0.15rem;
 	border-radius: 4px;
@@ -350,25 +354,25 @@ nav.sidebar a {
 }
 
 @media (hover: hover) {
-	nav.sidebar a:hover {
+	nav.sidebar ul a:hover {
 		color: var(--sl-color-white);
 		background-color: rgba(15, 23, 42, 0.05);
 	}
 }
 
-nav.sidebar a[aria-current="page"] {
+nav.sidebar ul a[aria-current="page"] {
 	font-weight: 600;
 	color: var(--sl-color-accent) !important;
 	background-color: rgba(180, 83, 9, 0.1) !important;
 }
 
-:root[data-theme="dark"] nav.sidebar a[aria-current="page"] {
+:root[data-theme="dark"] nav.sidebar ul a[aria-current="page"] {
 	color: #ffffff !important;
 	background-color: rgba(245, 158, 11, 0.15) !important;
 }
 
 @media (hover: hover) {
-	:root[data-theme="dark"] nav.sidebar a:hover {
+	:root[data-theme="dark"] nav.sidebar ul a:hover {
 		color: var(--sl-color-white);
 		background-color: rgba(255, 255, 255, 0.06);
 	}
@@ -969,7 +973,7 @@ a.category-card {
 /* Ensure links/buttons in Starlight components get proper focus */
 starlight-toc a:focus-visible,
 starlight-link-card:focus-visible,
-nav.sidebar a:focus-visible,
+nav.sidebar ul a:focus-visible,
 .card:focus-visible {
 	outline: none;
 	border-radius: 6px;
@@ -1052,9 +1056,19 @@ header.header button,
 		gap: 0.5rem;
 	}
 
-	nav.sidebar a {
+	nav.sidebar ul a {
 		min-height: 2.5rem;
 		padding-block: 0.55rem !important;
+	}
+
+	/* Keep the theme picker + social row compact and vertically centered */
+	.mobile-preferences {
+		align-items: center;
+	}
+
+	.mobile-preferences starlight-theme-select {
+		display: flex;
+		align-items: center;
 	}
 
 	.sl-markdown-content .sl-heading-wrapper .sl-anchor-link {
