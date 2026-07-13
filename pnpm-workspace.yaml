@@ -15,6 +15,10 @@ peerDependencyRules:
   allowedVersions:
     eslint: "10"
 
+overrides:
+  # SonarJS requires the full compiler API, which the TypeScript 7 compatibility package does not expose.
+  "eslint-plugin-sonarjs>typescript": "5.9.3"
+
 trustPolicyExclude:
   - effect
   - starlight-scroll-to-top
@@ -156,7 +160,7 @@ catalogs:
     ts-api-utils: 2.5.0
     ts-case-convert: 2.3.1
     type-fest: 5.8.0
-    typescript: ^7.0.2
+    typescript: ^5
     zx: 8.8.5
   frontend:
     "@astrojs/react": 6.0.1
