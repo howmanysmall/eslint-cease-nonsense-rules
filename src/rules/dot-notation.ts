@@ -299,8 +299,7 @@ function reportStaticTemplateProperty(
 ): void {
 	if (node.property.type !== AST_NODE_TYPES.TemplateLiteral || !isStaticTemplateLiteral(node.property)) return;
 
-	const quasi = node.property.quasis.at(0);
-	if (quasi === undefined) return;
+	const quasi = getDefinedValue(node.property.quasis.at(0));
 
 	const cookedValue = getDefinedValue(
 		quasi.value.cooked?.toString(),
