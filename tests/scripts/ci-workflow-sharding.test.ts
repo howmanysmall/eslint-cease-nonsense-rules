@@ -10,9 +10,9 @@ const LOCAL_CI_SH = readFileSync("scripts/local-ci.sh", "utf8");
 const HEAVY_FILES = getHeavyFiles();
 
 describe("checks-workflow-sharding", () => {
-	it("neither test nor test-heavy job has a needs: validate declaration", () => {
+	it("runs repository validation in one job", () => {
 		expect.assertions(1);
-		expect(CHECKS_YAML).not.toMatch(/^\s+needs:\s+validate\s*$/mu);
+		expect(CHECKS_YAML).not.toContain("matrix.name");
 	});
 
 	it("test job normal shard matrix is [1, 2, 3, 4, 5, 6, 7, 8]", () => {
@@ -20,15 +20,15 @@ describe("checks-workflow-sharding", () => {
 		expect(CHECKS_YAML).toMatch(/shard:\s+\[1,\s*2,\s*3,\s*4,\s*5,\s*6,\s*7,\s*8\]/u);
 	});
 
-	it("both test matrices keep fail-fast: false", () => {
+	it("the test matrix keeps fail-fast disabled", () => {
 		expect.assertions(1);
 		const failFastMatches = [...CHECKS_YAML.matchAll(/fail-fast:\s+false/gu)];
-		expect(failFastMatches.length).toBeGreaterThanOrEqual(2);
+		expect(failFastMatches).toHaveLength(1);
 	});
 
-	it("test-heavy job matrix case_shard is [1, 2, 3, 4]", () => {
+	it("does not launch dedicated heavy-test runners", () => {
 		expect.assertions(1);
-		expect(CHECKS_YAML).toMatch(/case_shard:\s+\[1,\s*2,\s*3,\s*4\]/u);
+		expect(CHECKS_YAML).not.toContain("test-heavy:");
 	});
 
 	it("old grep filter blocking orphaned test files is removed", () => {
@@ -41,12 +41,17 @@ describe("checks-workflow-sharding", () => {
 		expect(CHECKS_YAML).toContain("--normal-lane");
 	});
 
+	it("uses compact Vitest reporting in CI", () => {
+		expect.assertions(1);
+		expect(CHECKS_YAML).toContain("--reporter github-actions --reporter dot");
+	});
+
 	it("manifest heavy file list has exactly one entry", () => {
 		expect.assertions(1);
 		expect(HEAVY_FILES).toHaveLength(1);
 	});
 
-	it("test-heavy matrix file section contains all manifest heavy files", () => {
+	it("runs every manifest heavy file on an existing test runner", () => {
 		expect.hasAssertions();
 		for (const file of HEAVY_FILES) expect(CHECKS_YAML).toContain(file);
 	});
@@ -60,11 +65,20 @@ describe("ci-workflow-sharding", () => {
 });
 
 describe("release-workflow-sharding", () => {
-	it("delegates checks to the reusable checks workflow after release validation", () => {
+	it("does not rerun CI checks for a tag already validated on main", () => {
 		expect.assertions(1);
-		expect(RELEASE_YAML).toMatch(
-			/checks:\s+needs:\s+validate-release\s+uses: \.\/\.github\/workflows\/checks\.yaml/u,
-		);
+		expect(RELEASE_YAML).not.toContain("uses: ./.github/workflows/checks.yaml");
+	});
+
+	it("waits for the matching main-branch CI run before publishing", () => {
+		expect.assertions(2);
+		expect(RELEASE_YAML).toContain('gh run list --workflow ci.yaml --commit "$GITHUB_SHA"');
+		expect(RELEASE_YAML).toContain('gh run watch "$CI_RUN_ID" --exit-status');
+	});
+
+	it("does not explicitly build before pnpm runs prepublishOnly", () => {
+		expect.assertions(1);
+		expect(RELEASE_YAML).not.toContain("name: Build");
 	});
 });
 
