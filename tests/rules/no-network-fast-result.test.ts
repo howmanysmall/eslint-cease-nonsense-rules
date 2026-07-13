@@ -94,6 +94,84 @@ Networking.createFunction<ClientToServer, undefined>();`,
 				filename: filename("parameter"),
 				options: [{ checkParameters: true }],
 			},
+			{
+				code: `${imports}
+interface ClientToServer {
+	warp: {
+		toCFrame: () => FastResult;
+		toPosition: () => FastResult;
+	};
+}
+Networking.createFunction<ClientToServer, undefined>();`,
+				errors: [{ messageId: "noNetworkFastResult" }, { messageId: "noNetworkFastResult" }],
+				filename: filename("multiple-responses"),
+			},
+			{
+				code: `${imports}
+interface ClientToServer {
+	a: { get: () => FastResult };
+}
+interface ServerToClient {
+	b: { get: () => FastResult };
+}
+Networking.createFunction<ClientToServer, ServerToClient>();`,
+				errors: [{ messageId: "noNetworkFastResult" }, { messageId: "noNetworkFastResult" }],
+				filename: filename("multiple-type-arguments"),
+			},
+			{
+				code: `${imports}
+interface ClientToServer {
+	request: { send: (first: FastResult, second: FastResult) => boolean };
+}
+Networking.createFunction<ClientToServer, undefined>();`,
+				errors: [{ messageId: "noNetworkFastResult" }, { messageId: "noNetworkFastResult" }],
+				filename: filename("multiple-parameters"),
+				options: [{ checkParameters: true }],
+			},
+			{
+				code: `${imports}
+type ClientToServer = {
+	warp: { toCFrame: () => FastResult };
+};
+Networking.createFunction<ClientToServer, undefined>();`,
+				errors: [{ messageId: "noNetworkFastResult" }],
+				filename: filename("type-alias-contract"),
+			},
+			{
+				code: `
+	import { createNetworking } from "@flamework/networking";
+	import type { FastResult } from "./fast-result.js";
+
+	interface ClientToServer {
+		warp: { toCFrame: () => FastResult };
+	}
+	createNetworking.createFunction<ClientToServer, undefined>();`,
+				errors: [{ messageId: "noNetworkFastResult" }],
+				filename: filename("create-networking-export"),
+			},
+			{
+				code: `
+	import DefaultNetworking, { NetworkClient, Networking as RenamedNetworking } from "@flamework/networking";
+	import type { FastResult } from "./fast-result.js";
+
+	type SharedResponse = FastResult;
+	type SharedContract = ClientToServer;
+	type DuplicateContract = SharedContract & SharedContract;
+
+	interface ClientToServer {
+		first: { get: () => SharedResponse };
+		second: { get: () => SharedResponse };
+		incomplete(value): void;
+		noReturn();
+		unknown: () => UnknownResponse;
+	}
+	RenamedNetworking.createFunction<DuplicateContract, undefined>();
+	DefaultNetworking.createFunction<ClientToServer, undefined>();
+	NetworkClient;`,
+				errors: [{ messageId: "noNetworkFastResult" }],
+				filename: filename("contract-edge-cases"),
+				options: [{ checkParameters: true }],
+			},
 		],
 		valid: [
 			{

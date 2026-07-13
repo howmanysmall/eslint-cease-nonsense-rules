@@ -8,4 +8,6 @@ declare module "@flamework/networking" {
 			readonly serverToClient?: ServerToClient;
 		};
 	}
+
+	export const createNetworking: typeof Networking;
 }
