@@ -302,12 +302,26 @@ h3 {
 }
 
 .sidebar-pane {
-	background-color: transparent !important;
 	border-inline-end: 1px solid var(--glass-border) !important;
 }
 
-.sidebar-content {
-	background-color: transparent !important;
+/*
+ * Desktop: transparent sidebar so the page gradient shows through.
+ * Mobile: Starlight uses this pane as a full-screen drawer — transparent
+ * makes the page content bleed through the open menu (unreadable).
+ */
+@media (min-width: 50rem) {
+	.sidebar-pane,
+	.sidebar-content {
+		background-color: transparent !important;
+	}
+}
+
+@media (max-width: 49.99rem) {
+	.sidebar-pane,
+	.sidebar-content {
+		background-color: var(--sl-color-black) !important;
+	}
 }
 
 starlight-toc {
