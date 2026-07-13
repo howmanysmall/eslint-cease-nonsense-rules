@@ -148,14 +148,11 @@ const preferReadOnlyProperties = createRule<Options, MessageIds>({
 		function getPropertiesTypeFromCallableType(callableType: Type): Type | undefined {
 			const callSignatures = callableType.getCallSignatures();
 
-			for (const firstSignature of callSignatures) {
-				const parameters = firstSignature.getParameters();
-				if (parameters.length === 0) return undefined;
+			const firstSignature = callSignatures.at(0);
+			if (firstSignature === undefined) return undefined;
 
-				for (const propertiesParameter of parameters) return checker.getTypeOfSymbol(propertiesParameter);
-			}
-
-			return undefined;
+			const propertiesParameter = firstSignature.getParameters().at(0);
+			return propertiesParameter === undefined ? undefined : checker.getTypeOfSymbol(propertiesParameter);
 		}
 
 		function getPropertiesTypeFromFunctionNode(functionNode: FunctionComponentNode): Type | undefined {

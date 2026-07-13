@@ -299,22 +299,22 @@ function reportStaticTemplateProperty(
 ): void {
 	if (node.property.type !== AST_NODE_TYPES.TemplateLiteral || !isStaticTemplateLiteral(node.property)) return;
 
-	for (const quasi of node.property.quasis) {
-		const cookedValue = getDefinedValue(
-			quasi.value.cooked?.toString(),
-			"Expected static template property to be cooked.",
-		);
-		reportComputedProperty(
-			context,
-			node,
-			{
-				formattedValue: `\`${cookedValue}\``,
-				propertyName: cookedValue,
-			},
-			options,
-		);
-		return;
-	}
+	const quasi = node.property.quasis.at(0);
+	if (quasi === undefined) return;
+
+	const cookedValue = getDefinedValue(
+		quasi.value.cooked?.toString(),
+		"Expected static template property to be cooked.",
+	);
+	reportComputedProperty(
+		context,
+		node,
+		{
+			formattedValue: `\`${cookedValue}\``,
+			propertyName: cookedValue,
+		},
+		options,
+	);
 }
 
 function shouldSkipComputedProperty(

@@ -530,14 +530,15 @@ const noArrayConstructorElements = createRule<Options, MessageIds>({
 				return;
 			}
 
+			const firstArgument = node.arguments.at(0);
+			if (firstArgument === undefined) return;
+
 			if (node.arguments.length > 1) {
-				for (const firstArgument of node.arguments) {
-					reportMultipleArgumentConstructor(node, firstArgument);
-					return;
-				}
+				reportMultipleArgumentConstructor(node, firstArgument);
+				return;
 			}
 
-			for (const firstArgument of node.arguments) reportSingleArgumentConstructor(node, firstArgument);
+			reportSingleArgumentConstructor(node, firstArgument);
 		}
 
 		return {

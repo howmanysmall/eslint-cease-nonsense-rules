@@ -168,7 +168,7 @@ catalogs:
     react-dom: 19.2.4
   lint:
     "@babel/eslint-parser": 7.28.6
-    "@biomejs/biome": 2.5.3
+    "@biomejs/biome": 2.5.1
     "@typescript-eslint/parser": 8.63.0
     "@typescript-eslint/rule-tester": 8.63.0
     "@typescript-eslint/scope-manager": 8.63.0
