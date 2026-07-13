@@ -52,8 +52,21 @@ Networking.createFunction<ClientToServer, undefined>();`,
 				filename: filename("direct-response"),
 			},
 			{
+				code: `
+import * as Networking from "@flamework/networking";
+import type { FastResult } from "./fast-result.js";
+
+interface ClientToServer {
+	warp: { toCFrame: () => FastResult };
+}
+Networking.createFunction<ClientToServer, undefined>();`,
+				errors: [{ messageId: "noNetworkFastResult" }],
+				filename: filename("namespace-response"),
+			},
+
+			{
 				code: `${imports}
-type Result = FastResult;
+	type Result = FastResult;
 type Response = Promise<Result> | undefined;
 interface ClientToServer {
 	request: { get: () => Response };

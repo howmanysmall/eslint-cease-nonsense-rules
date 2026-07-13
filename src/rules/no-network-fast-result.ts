@@ -225,10 +225,10 @@ function isNetworkingCreateFunction(
 	const callee = services.esTreeNodeToTSNodeMap.get(node.callee);
 	if (!isPropertyAccessExpression(callee) || callee.name.text !== "createFunction") return false;
 
-	if (networkingIdentifiers.has(node.callee.object.name)) return true;
-
 	const symbol = getResolvedSymbol(checker, callee.name);
-	return (symbol?.declarations ?? []).some(isNetworkingPackageDeclaration);
+	if ((symbol?.declarations ?? []).some(isNetworkingPackageDeclaration)) return true;
+
+	return networkingIdentifiers.has(node.callee.object.name);
 }
 
 function isNetworkingPackageDeclaration(declaration: TypeScriptNode): boolean {
