@@ -11,9 +11,10 @@ import {
 
 describe("package manager registry", () => {
 	it("defaults to pnpm and keeps the install tab order", () => {
-		expect.assertions(2);
+		expect.assertions(3);
 		expect(defaultSelectedManager).toBe("pnpm");
 		expect(defaultManagerOrder).toStrictEqual(["ni", "pnpm", "aube", "bun", "yarn", "vlt", "npm"]);
+		expect(packageManagerRegistry.ni.label).toBe("@antfu/ni");
 	}, 1000);
 
 	it("uses Starlight icons for managers that have built-in marks", () => {
@@ -30,7 +31,7 @@ describe("package manager registry", () => {
 		expect(packageManagerRegistry.aube.icon).toBeUndefined();
 		expect(packageManagerRegistry.vlt.icon).toBeUndefined();
 		expect(getCustomPackageManagerIconEntries()).toStrictEqual([
-			{ iconSrc: "icons/ni.svg", label: "ni" },
+			{ iconSrc: "icons/ni.svg", label: "@antfu/ni" },
 			{ iconSrc: "icons/aube.svg", label: "aube" },
 			{ iconSrc: "icons/vlt.svg", label: "vlt" },
 		]);

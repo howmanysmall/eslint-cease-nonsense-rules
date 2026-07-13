@@ -59,7 +59,7 @@ const tabs = managerIds.map((managerId) => {
 <script is:inline set:html={`(() => { const k = ${JSON.stringify(storageKey)}; const d = ${JSON.stringify(defaultManager)}; try { if (globalThis.localStorage.getItem(k) === null) globalThis.localStorage.setItem(k, d); } catch {} })();`} />
 
 {/*
-  Custom icons for ni / aube / vlt are painted via CSS (::before + mask/background)
+  Custom icons for @antfu/ni / aube / vlt are painted via CSS (::before + mask/background)
   because Starlight TabItem only accepts built-in StarlightIcon names.
   Order must match defaultManagerOrder in the package-manager registry.
 */}

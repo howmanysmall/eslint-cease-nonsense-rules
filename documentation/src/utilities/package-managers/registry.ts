@@ -75,7 +75,7 @@ export const packageManagerRegistry: Record<PackageManagerId, PackageManagerDefi
 		},
 		iconSrc: "icons/ni.svg",
 		id: "ni",
-		label: "ni",
+		label: "@antfu/ni",
 	},
 	npm: {
 		commands: {

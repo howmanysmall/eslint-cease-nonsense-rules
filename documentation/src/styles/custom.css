@@ -979,7 +979,7 @@ header.header button,
 }
 
 /*
- * Package manager tabs: custom icons for managers without a Starlight icon.
+ * Package manager tabs: custom icons for @antfu/ni / aube / vlt (no Starlight icon).
  * Positions match `defaultManagerOrder`: ni, pnpm, aube, bun, yarn, vlt, npm.
  * Starlight TabItem only accepts built-in StarlightIcon names, so these use
  * ::before art instead of the `icon` prop.
@@ -994,7 +994,7 @@ header.header button,
 	content: "";
 }
 
-/* ni — monochrome monogram, follows tab text color */
+/* @antfu/ni — monochrome mark, follows tab text color (replace icons/ni.svg to redesign) */
 .package-managers [role="tablist"] > .tab:nth-child(1) > [role="tab"]::before {
 	background-color: currentColor;
 	-webkit-mask: url("/eslint-cease-nonsense-rules/icons/ni.svg") center / contain no-repeat;
