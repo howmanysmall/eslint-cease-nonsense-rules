@@ -170,6 +170,7 @@ Networking.createFunction<ClientToServer, undefined>();`,
 	NetworkClient;`,
 				errors: [{ messageId: "noNetworkFastResult" }],
 				filename: filename("contract-edge-cases"),
+				options: [{ checkParameters: true }],
 			},
 		],
 		valid: [

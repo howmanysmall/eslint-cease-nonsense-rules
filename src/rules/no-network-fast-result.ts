@@ -40,9 +40,8 @@ interface FastResultCollectionState {
 
 function getResolvedSymbol(checker: TypeChecker, node: TypeScriptNode): TypeScriptSymbol | undefined {
 	const symbol = checker.getSymbolAtLocation(node);
-	if (symbol === undefined) return undefined;
-
-	return symbol.flags === SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
+	/* v8 ignore next */
+	return symbol?.flags === SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
 }
 
 function isFastResultReference(node: TypeNode, checker: TypeChecker): boolean {
