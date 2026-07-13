@@ -101,6 +101,16 @@ Networking.createFunction<ClientToServer, undefined>();`,
 			},
 			{
 				code: `${imports}
+type Serializable = boolean;
+interface ClientToServer {
+	request: { send: (value: Serializable) => Promise<Serializable> };
+}
+Networking.createFunction<ClientToServer, undefined>();`,
+				filename: filename("serializable-parameter"),
+				options: [{ checkParameters: true }],
+			},
+			{
+				code: `${imports}
 interface ClientToServer {
 	request: { get: () => { success: boolean; message?: string } };
 }
