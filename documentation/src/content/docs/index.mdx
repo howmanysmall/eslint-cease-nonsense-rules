@@ -1,100 +1,84 @@
 ---
-title: Cease Nonsense
+title: Home
 description: An ESLint plugin that catches common mistakes before they reach production.
 template: splash
 hero:
+    title: Cease Nonsense
     tagline:
-        An ESLint plugin for TypeScript, React, and roblox-ts that catches bugs, enforces patterns, and flags
-        performance issues before you ship.
+        ESLint rules for TypeScript, React, and roblox-ts. Catches the bugs and bad patterns that usually ship by
+        accident.
     image:
-        file: ../../assets/new-logo.svg
+        file: ../../assets/new-logo.webp
         alt: Cease Nonsense Logo
     actions:
         - text: Get Started
-          link: /eslint-cease-nonsense-rules/introduction/
+          link: /eslint-cease-nonsense-rules/quick-start/
           icon: right-arrow
           variant: primary
-        - text: View on GitHub
-          link: https://github.com/howmanysmall/eslint-cease-nonsense-rules
-          icon: external
+        - text: Browse rules
+          link: /eslint-cease-nonsense-rules/rules/no-print/
+          icon: right-arrow
           variant: minimal
 ---
 
-import { Card, CardGrid, LinkCard, Aside } from "@astrojs/starlight/components";
+import { Aside, LinkCard, CardGrid } from "@astrojs/starlight/components";
 import { ruleAwareness, ruleCategories, totalCategories, totalRules } from "../../data/rule-stats";
 
-## Why Cease Nonsense?
+## {totalRules} rules in {totalCategories} categories
 
-<CardGrid>
-	<Card title="Type Safe" icon="seti:typescript">
-		Leverages TypeScript's type system for precise, context-aware linting without false positives.
-	</Card>
-	<Card title="React Optimized" icon="seti:react">
-		Catches hook violations, component anti-patterns, and memoization mistakes in React and roblox-ts.
-	</Card>
-	<Card title="Performance First" icon="rocket">
-		Flags performance regressions and costly patterns early, not after they hit production.
-	</Card>
-	<Card title="Batteries Included" icon="puzzle">
-		Ships {totalRules} rules covering naming conventions, architectural patterns, and more.
-	</Card>
-</CardGrid>
+<div class="category-grid">
+	<a class="category-card" href={ruleCategories.react.slug}>
+		<div class="category-count">{ruleCategories.react.count}</div>
+		<div class="category-label">{ruleCategories.react.label}</div>
+		<div class="category-description">Hooks, components, memoization, rendering</div>
+	</a>
+	<a class="category-card" href={ruleCategories.roblox.slug}>
+		<div class="category-count">{ruleCategories.roblox.count}</div>
+		<div class="category-label">{ruleCategories.roblox.label}</div>
+		<div class="category-description">Instances, Luau interop, roblox-ts specifics</div>
+	</a>
+	<a class="category-card" href={ruleCategories.naming.slug}>
+		<div class="category-count">{ruleCategories.naming.count}</div>
+		<div class="category-label">{ruleCategories.naming.label}</div>
+		<div class="category-description">Casing, abbreviations, convention checks</div>
+	</a>
+	<a class="category-card" href={ruleCategories.general.slug}>
+		<div class="category-count">{ruleCategories.general.count}</div>
+		<div class="category-label">{ruleCategories.general.label}</div>
+		<div class="category-description">Control flow, dead code, imports, structure</div>
+	</a>
+</div>
 
-## {totalRules} Rules, {totalCategories} Categories
+## Type-aware vs AST-only
 
-<CardGrid>
-	<LinkCard
-		title={ruleCategories.react.label}
-		description={`${ruleCategories.react.count} rules for hooks, components, and patterns`}
-		href={ruleCategories.react.slug}
-	/>
-	<LinkCard
-		title={ruleCategories.roblox.label}
-		description={`${ruleCategories.roblox.count} rules for roblox-ts game development`}
-		href={ruleCategories.roblox.slug}
-	/>
-	<LinkCard
-		title={ruleCategories.naming.label}
-		description={`${ruleCategories.naming.count} rules for consistent naming`}
-		href={ruleCategories.naming.slug}
-	/>
-	<LinkCard
-		title={ruleCategories.general.label}
-		description={`${ruleCategories.general.count} rules for clean, maintainable code`}
-		href={ruleCategories.general.slug}
-	/>
-</CardGrid>
+Most rules only need the syntax tree. A smaller set uses TypeScript's checker when that is the only way to be sure.
 
-## Rule Type Awareness
-
-<CardGrid>
-	<Card title={ruleAwareness.typeAware.label} icon="seti:typescript">
-		{ruleAwareness.typeAware.count} rules use parser services or the TypeScript checker.
-		<br />
-		React: {ruleCategories.react.typeAwareCount}, Roblox: {ruleCategories.roblox.typeAwareCount}, Naming:
-		{ruleCategories.naming.typeAwareCount}, General: {ruleCategories.general.typeAwareCount}
-	</Card>
-	<Card title={ruleAwareness.astOnly.label} icon="list-format">
-		{ruleAwareness.astOnly.count} rules stay AST-only.
-		<br />
-		React: {ruleCategories.react.astOnlyCount}, Roblox: {ruleCategories.roblox.astOnlyCount}, Naming:
-		{ruleCategories.naming.astOnlyCount}, General: {ruleCategories.general.astOnlyCount}
-	</Card>
-</CardGrid>
-
-| Category                       | Type-aware                              | AST-only                              |
-| ------------------------------ | --------------------------------------- | ------------------------------------- |
-| {ruleCategories.react.label}   | {ruleCategories.react.typeAwareCount}   | {ruleCategories.react.astOnlyCount}   |
-| {ruleCategories.roblox.label}  | {ruleCategories.roblox.typeAwareCount}  | {ruleCategories.roblox.astOnlyCount}  |
-| {ruleCategories.naming.label}  | {ruleCategories.naming.typeAwareCount}  | {ruleCategories.naming.astOnlyCount}  |
+|                                |                              Type-aware |                              AST-only |
+| ------------------------------ | --------------------------------------: | ------------------------------------: |
+| All rules                      |         {ruleAwareness.typeAware.count} |         {ruleAwareness.astOnly.count} |
+| {ruleCategories.react.label}   |   {ruleCategories.react.typeAwareCount} |   {ruleCategories.react.astOnlyCount} |
+| {ruleCategories.roblox.label}  |  {ruleCategories.roblox.typeAwareCount} |  {ruleCategories.roblox.astOnlyCount} |
+| {ruleCategories.naming.label}  |  {ruleCategories.naming.typeAwareCount} |  {ruleCategories.naming.astOnlyCount} |
 | {ruleCategories.general.label} | {ruleCategories.general.typeAwareCount} | {ruleCategories.general.astOnlyCount} |
 
 <Aside type="note" title="What counts as type-aware?">
-	These rules use parser services or the TypeScript checker in at least one code path. `naming-convention` stays
-	AST-only; the rest of the rules without this badge do not need project type information.
+	The rule uses parser services or the TypeScript checker on at least one path. Rules without that badge stay
+	AST-only. `naming-convention` is AST-only.
 </Aside>
 
-<Aside type="tip" title="Ready to install?">
-	Follow the [Quick Start guide](/eslint-cease-nonsense-rules/quick-start/) to get up and running in a couple of
-	minutes.
-</Aside>
+## Install
+
+One package, one recommended config. Takes a couple of minutes.
+
+<CardGrid>
+	<LinkCard
+		title="Quick Start"
+		description="Install, enable recommended, run ESLint"
+		href="/eslint-cease-nonsense-rules/quick-start/"
+	/>
+	<LinkCard
+		title="Configuration"
+		description="Category presets, severity, and per-rule overrides"
+		href="/eslint-cease-nonsense-rules/configuration/"
+	/>
+</CardGrid>

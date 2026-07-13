@@ -1,5 +1,6 @@
 import { getMemberPropertyName, hasShadowedBinding, unwrapExpression } from "$utilities/ast-utilities";
 import { createRule } from "$utilities/create-rule";
+import { getDefinedValue } from "$utilities/defined-utilities";
 import { getArrayElementTypeText, getBindingTypeAnnotation } from "$utilities/typescript-node-utilities";
 import { AST_NODE_TYPES } from "@typescript-eslint/utils";
 
@@ -530,14 +531,14 @@ const noArrayConstructorElements = createRule<Options, MessageIds>({
 				return;
 			}
 
+			const firstArgument = getDefinedValue(node.arguments.at(0));
+
 			if (node.arguments.length > 1) {
-				for (const firstArgument of node.arguments) {
-					reportMultipleArgumentConstructor(node, firstArgument);
-					return;
-				}
+				reportMultipleArgumentConstructor(node, firstArgument);
+				return;
 			}
 
-			for (const firstArgument of node.arguments) reportSingleArgumentConstructor(node, firstArgument);
+			reportSingleArgumentConstructor(node, firstArgument);
 		}
 
 		return {

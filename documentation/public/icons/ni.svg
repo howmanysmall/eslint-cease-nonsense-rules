@@ -1,0 +1,15 @@
+<svg
+	aria-hidden="true"
+	fill="none"
+	stroke="currentColor"
+	stroke-linecap="round"
+	stroke-linejoin="round"
+	stroke-width="2"
+	viewBox="0 0 24 24"
+	xmlns="http://www.w3.org/2000/svg">
+	<path d="M3 16l3-3-3-3" />
+	<path d="M9 18v-8" />
+	<path d="M9 14a4 4 0 0 1 8 0v4" />
+	<path d="M21 18v-8" />
+	<circle cx="21" cy="5" fill="currentColor" r="1.5" stroke="none" />
+</svg>

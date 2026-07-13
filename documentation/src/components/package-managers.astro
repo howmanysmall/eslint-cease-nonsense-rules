@@ -1,0 +1,82 @@
+---
+import { Code, TabItem, Tabs } from "@astrojs/starlight/components";
+
+import type { PackageManagerCommandType, PackageManagerId } from "../utilities/package-managers/registry";
+import {
+	buildPackageManagerCommand,
+	defaultManagerOrder,
+	defaultSelectedManager,
+	packageManagerRegistry,
+	packageManagersSyncKey,
+	publishedPackageName,
+	resolveManagerOrder,
+} from "../utilities/package-managers/registry";
+
+interface Props {
+	defaultManager?: PackageManagerId;
+	development?: boolean;
+	managers?: ReadonlyArray<PackageManagerId>;
+	parameters?: string;
+	pkg?: string;
+	type?: PackageManagerCommandType;
+}
+
+// Keep component bindings so static analysis sees template usage.
+const PackageCode = Code;
+const PackageTabItem = TabItem;
+const PackageTabs = Tabs;
+
+const {
+	defaultManager = defaultSelectedManager,
+	development = false,
+	managers,
+	parameters,
+	pkg = publishedPackageName,
+	type = "add",
+} = Astro.props;
+
+const managerIds = resolveManagerOrder(managers ?? defaultManagerOrder);
+const storageKey = `starlight-synced-tabs__${packageManagersSyncKey}`;
+
+const tabs = managerIds.map((managerId) => {
+	const definition = packageManagerRegistry[managerId];
+	const code = buildPackageManagerCommand(managerId, {
+		development,
+		packageName: type === "add" ? pkg : undefined,
+		parameters,
+		type,
+	});
+
+	return {
+		code,
+		icon: definition.icon,
+		id: managerId,
+		label: definition.label,
+	};
+});
+---
+
+<script is:inline set:html={`(() => { const k = ${JSON.stringify(storageKey)}; const d = ${JSON.stringify(defaultManager)}; try { if (globalThis.localStorage.getItem(k) === null) globalThis.localStorage.setItem(k, d); } catch {} })();`} />
+
+{/*
+  Custom icons for @antfu/ni / aube / vlt are painted via CSS (::before + mask/background)
+  because Starlight TabItem only accepts built-in StarlightIcon names.
+  Order must match defaultManagerOrder in the package-manager registry.
+*/}
+<div class="package-managers" data-default-manager={defaultManager}>
+	<PackageTabs syncKey={packageManagersSyncKey}>
+		{
+			tabs.map((tab) =>
+				tab.icon === undefined ? (
+					<PackageTabItem label={tab.label}>
+						<PackageCode code={tab.code} lang="sh" frame="terminal" />
+					</PackageTabItem>
+				) : (
+					<PackageTabItem label={tab.label} icon={tab.icon}>
+						<PackageCode code={tab.code} lang="sh" frame="terminal" />
+					</PackageTabItem>
+				),
+			)
+		}
+	</PackageTabs>
+</div>

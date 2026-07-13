@@ -33,6 +33,10 @@ const configuration = defineConfig({
 	integrations: [
 		ensureAstroIntegration(
 			starlight({
+				components: {
+					Hero: "./src/components/hero.astro",
+					PageTitle: "./src/components/page-title.astro",
+				},
 				customCss: ["./src/styles/custom.css"],
 				editLink: {
 					baseUrl: "https://github.com/howmanysmall/eslint-cease-nonsense-rules/edit/main/documentation/",
@@ -44,6 +48,12 @@ const configuration = defineConfig({
 						borderWidth: "1px",
 					},
 					themes: ["github-light", "dracula"],
+				},
+				favicon: "/favicon.svg",
+				logo: {
+					alt: "Cease Nonsense",
+					replacesTitle: false,
+					src: "./src/assets/new-logo.webp",
 				},
 				plugins: [
 					starlightCodeblockFullscreen({
@@ -78,7 +88,7 @@ const configuration = defineConfig({
 						label: "GitHub",
 					},
 					{
-						href: "https://www.npmjs.com/package/eslint-plugin-cease-nonsense",
+						href: "https://www.npmjs.com/package/@pobammer-ts/eslint-cease-nonsense-rules",
 						icon: "external",
 						label: "NPM Package",
 					},

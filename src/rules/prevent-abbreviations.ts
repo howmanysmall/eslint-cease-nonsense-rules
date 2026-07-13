@@ -934,12 +934,11 @@ function isVueTemplateReference(reference: TSESLint.Scope.Reference): boolean {
 }
 
 function getReportableVariableDefinition(variable: VariableLike): ReportableVariableDefinition | undefined {
-	for (const definition of variable.defs) {
-		const definitionName = definition.name;
-		return isIdentifier(definitionName) ? { definition, definitionName } : undefined;
-	}
+	const definition = variable.defs.at(0);
+	if (definition === undefined) return undefined;
 
-	return undefined;
+	const definitionName = definition.name;
+	return isIdentifier(definitionName) ? { definition, definitionName } : undefined;
 }
 
 function shouldSkipImportVariable(

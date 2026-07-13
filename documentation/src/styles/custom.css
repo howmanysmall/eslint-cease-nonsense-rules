@@ -130,6 +130,7 @@
 	--sl-text-body: 1.1rem;
 	--sl-line-height: 1.75;
 	--sl-font-mono: "JetBrains Mono", ui-monospace, monospace;
+	--sl-content-width: 64rem;
 
 	--sl-color-accent-low: #fffbeb;
 	--sl-color-accent: #b45309;
@@ -218,7 +219,7 @@ h1::selection {
 body {
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-	color: var(--text-secondary);
+	color: var(--sl-color-gray-2);
 	background-color: var(--sl-color-black);
 }
 
@@ -301,12 +302,26 @@ h3 {
 }
 
 .sidebar-pane {
-	background-color: transparent !important;
 	border-inline-end: 1px solid var(--glass-border) !important;
 }
 
-.sidebar-content {
-	background-color: transparent !important;
+/*
+ * Desktop: transparent sidebar so the page gradient shows through.
+ * Mobile: Starlight uses this pane as a full-screen drawer — transparent
+ * makes the page content bleed through the open menu (unreadable).
+ */
+@media (min-width: 50rem) {
+	.sidebar-pane,
+	.sidebar-content {
+		background-color: transparent !important;
+	}
+}
+
+@media (max-width: 49.99rem) {
+	.sidebar-pane,
+	.sidebar-content {
+		background-color: var(--sl-color-black) !important;
+	}
 }
 
 starlight-toc {
@@ -325,7 +340,11 @@ starlight-toc a {
 	}
 }
 
-nav.sidebar a {
+/*
+ * Only style the sidebar page list — not `.mobile-preferences` social links / theme
+ * select, which also live under `nav.sidebar` and break if they inherit these paddings.
+ */
+nav.sidebar ul a {
 	padding: 0.4rem 0.75rem !important;
 	margin-block: 0.15rem;
 	border-radius: 4px;
@@ -335,25 +354,25 @@ nav.sidebar a {
 }
 
 @media (hover: hover) {
-	nav.sidebar a:hover {
+	nav.sidebar ul a:hover {
 		color: var(--sl-color-white);
 		background-color: rgba(15, 23, 42, 0.05);
 	}
 }
 
-nav.sidebar a[aria-current="page"] {
+nav.sidebar ul a[aria-current="page"] {
 	font-weight: 600;
 	color: var(--sl-color-accent) !important;
 	background-color: rgba(180, 83, 9, 0.1) !important;
 }
 
-:root[data-theme="dark"] nav.sidebar a[aria-current="page"] {
+:root[data-theme="dark"] nav.sidebar ul a[aria-current="page"] {
 	color: #ffffff !important;
 	background-color: rgba(245, 158, 11, 0.15) !important;
 }
 
 @media (hover: hover) {
-	:root[data-theme="dark"] nav.sidebar a:hover {
+	:root[data-theme="dark"] nav.sidebar ul a:hover {
 		color: var(--sl-color-white);
 		background-color: rgba(255, 255, 255, 0.06);
 	}
@@ -408,29 +427,160 @@ nav.sidebar a[aria-current="page"] {
 	color: var(--text-tertiary);
 }
 
-.badge {
-	padding: 0.2em 0.5em !important;
-	font-size: 0.75rem !important;
-	font-weight: 500 !important;
-	letter-spacing: 0.01em !important;
-	border-radius: 6px !important;
+:root {
+	--sl-badge-default-border: var(--sl-color-accent);
+	--sl-badge-default-bg: var(--sl-color-accent-low);
+	--sl-badge-default-text: #fff;
+
+	--sl-badge-note-border: var(--sl-color-blue);
+	--sl-badge-note-bg: var(--sl-color-blue-low);
+	--sl-badge-note-text: #fff;
+
+	--sl-badge-danger-border: var(--sl-color-red);
+	--sl-badge-danger-bg: var(--sl-color-red-low);
+	--sl-badge-danger-text: #fff;
+
+	--sl-badge-success-border: var(--sl-color-green);
+	--sl-badge-success-bg: var(--sl-color-green-low);
+	--sl-badge-success-text: #fff;
+
+	--sl-badge-caution-border: var(--sl-color-orange);
+	--sl-badge-caution-bg: var(--sl-color-orange-low);
+	--sl-badge-caution-text: #fff;
+
+	--sl-badge-tip-border: var(--sl-color-purple);
+	--sl-badge-tip-bg: var(--sl-color-purple-low);
+	--sl-badge-tip-text: #fff;
 }
 
-.badge[variant="caution"],
-.badge[variant="danger"],
-.badge[variant="tip"],
-.badge[variant="note"] {
-	color: var(--sl-color-accent) !important;
-	background: rgba(245, 158, 11, 0.08) !important;
-	border: 1px solid rgba(245, 158, 11, 0.15) !important;
+:root[data-theme="light"] {
+	--sl-badge-default-bg: var(--sl-color-accent-high);
+	--sl-badge-note-bg: var(--sl-color-blue-high);
+	--sl-badge-danger-bg: var(--sl-color-red-high);
+	--sl-badge-success-bg: var(--sl-color-green-high);
+	--sl-badge-caution-bg: var(--sl-color-orange-high);
+	--sl-badge-tip-bg: var(--sl-color-purple-high);
 }
 
-:root[data-theme="dark"] .badge[variant="caution"],
-:root[data-theme="dark"] .badge[variant="danger"],
-:root[data-theme="dark"] .badge[variant="tip"],
-:root[data-theme="dark"] .badge[variant="note"] {
-	background: rgba(245, 158, 11, 0.1) !important;
-	border-color: rgba(245, 158, 11, 0.2) !important;
+.sl-badge {
+	display: inline-block;
+	padding: 0.175rem 0.4rem;
+	font-family: var(--sl-font-mono);
+	font-size: 0.75rem;
+	font-weight: 600;
+	line-height: normal;
+	color: var(--sl-color-text-badge, var(--sl-badge-default-text));
+	letter-spacing: 0.01em;
+	overflow-wrap: anywhere;
+	background-color: var(--sl-color-bg-badge, var(--sl-badge-default-bg));
+	border: 1px solid var(--sl-color-border-badge, var(--sl-badge-default-border));
+	border-radius: 6px;
+}
+
+.sl-badge.default {
+	--sl-color-bg-badge: var(--sl-badge-default-bg);
+	--sl-color-border-badge: var(--sl-badge-default-border);
+	--sl-color-text-badge: var(--sl-badge-default-text);
+}
+
+.sl-badge.note {
+	--sl-color-bg-badge: var(--sl-badge-note-bg);
+	--sl-color-border-badge: var(--sl-badge-note-border);
+	--sl-color-text-badge: var(--sl-badge-note-text);
+}
+
+.sl-badge.danger {
+	--sl-color-bg-badge: var(--sl-badge-danger-bg);
+	--sl-color-border-badge: var(--sl-badge-danger-border);
+	--sl-color-text-badge: var(--sl-badge-danger-text);
+}
+
+.sl-badge.success {
+	--sl-color-bg-badge: var(--sl-badge-success-bg);
+	--sl-color-border-badge: var(--sl-badge-success-border);
+	--sl-color-text-badge: var(--sl-badge-success-text);
+}
+
+.sl-badge.tip {
+	--sl-color-bg-badge: var(--sl-badge-tip-bg);
+	--sl-color-border-badge: var(--sl-badge-tip-border);
+	--sl-color-text-badge: var(--sl-badge-tip-text);
+}
+
+.sl-badge.caution {
+	--sl-color-bg-badge: var(--sl-badge-caution-bg);
+	--sl-color-border-badge: var(--sl-badge-caution-border);
+	--sl-color-text-badge: var(--sl-badge-caution-text);
+}
+
+.sl-badge.small {
+	padding: 0.125rem 0.3rem;
+	font-size: 0.7rem;
+}
+
+.sl-badge.medium {
+	padding: 0.175rem 0.4rem;
+	font-size: 0.75rem;
+}
+
+.sl-badge.large {
+	padding: 0.225rem 0.5rem;
+	font-size: 0.875rem;
+}
+
+.page-title-badges .sl-badge {
+	text-transform: none;
+}
+
+/* Heading badges from starlight-heading-badges */
+span[data-shb-badge] {
+	display: inline-block;
+	padding: 0.175rem 0.4rem;
+	font-family: var(--sl-font-mono);
+	font-size: 0.75rem;
+	font-weight: 600;
+	line-height: normal;
+	vertical-align: middle;
+	color: var(--sl-color-text-badge);
+	background-color: var(--sl-color-bg-badge);
+	border: 1px solid var(--sl-color-border-badge);
+	border-radius: 6px;
+}
+
+span[data-shb-badge-variant="default"] {
+	--sl-color-bg-badge: var(--sl-badge-default-bg);
+	--sl-color-border-badge: var(--sl-badge-default-border);
+	--sl-color-text-badge: var(--sl-badge-default-text);
+}
+
+span[data-shb-badge-variant="note"] {
+	--sl-color-bg-badge: var(--sl-badge-note-bg);
+	--sl-color-border-badge: var(--sl-badge-note-border);
+	--sl-color-text-badge: var(--sl-badge-note-text);
+}
+
+span[data-shb-badge-variant="danger"] {
+	--sl-color-bg-badge: var(--sl-badge-danger-bg);
+	--sl-color-border-badge: var(--sl-badge-danger-border);
+	--sl-color-text-badge: var(--sl-badge-danger-text);
+}
+
+span[data-shb-badge-variant="success"] {
+	--sl-color-bg-badge: var(--sl-badge-success-bg);
+	--sl-color-border-badge: var(--sl-badge-success-border);
+	--sl-color-text-badge: var(--sl-badge-success-text);
+}
+
+span[data-shb-badge-variant="tip"] {
+	--sl-color-bg-badge: var(--sl-badge-tip-bg);
+	--sl-color-border-badge: var(--sl-badge-tip-border);
+	--sl-color-text-badge: var(--sl-badge-tip-text);
+}
+
+span[data-shb-badge-variant="caution"] {
+	--sl-color-bg-badge: var(--sl-badge-caution-bg);
+	--sl-color-border-badge: var(--sl-badge-caution-border);
+	--sl-color-text-badge: var(--sl-badge-caution-text);
 }
 
 :not(pre) > code {
@@ -645,8 +795,14 @@ starlight-aside .title {
 	filter: drop-shadow(0 2px 12px rgba(245, 158, 11, 0.3));
 }
 
+a.category-card {
+	color: inherit;
+	text-decoration: none;
+}
+
 .category-card {
 	position: relative;
+	display: block;
 	padding: 1.5rem;
 	overflow: hidden;
 	background: var(--sl-color-black);
@@ -736,9 +892,17 @@ starlight-aside .title {
 
 /* ── Tables ──────────────────────────────────────────── */
 
+.sl-markdown-content .table-wrap,
+.sl-markdown-content > div:has(> table) {
+	overflow-x: auto;
+}
+
 .sl-markdown-content table {
-	display: block;
+	display: table;
+	width: 100%;
 	overflow: hidden;
+	border-spacing: 0;
+	border-collapse: separate;
 	border: 1px solid var(--glass-border);
 	border-radius: 10px;
 }
@@ -809,11 +973,69 @@ starlight-aside .title {
 /* Ensure links/buttons in Starlight components get proper focus */
 starlight-toc a:focus-visible,
 starlight-link-card:focus-visible,
-nav.sidebar a:focus-visible,
+nav.sidebar ul a:focus-visible,
 .card:focus-visible {
 	outline: none;
 	border-radius: 6px;
 	box-shadow: 0 0 0 2px var(--sl-color-accent);
+}
+
+/* Title badges sit next to the rule name */
+.page-title-block {
+	width: 100%;
+}
+
+.page-title-badges {
+	margin-block: 0.15rem;
+}
+
+/* Larger mobile hit targets for common chrome */
+site-search button,
+header.header button,
+.contextual-action {
+	min-height: 2.5rem;
+}
+
+/*
+ * Package manager tabs: custom icons for @antfu/ni / aube / vlt (no Starlight icon).
+ * Positions match `defaultManagerOrder`: ni, pnpm, aube, bun, yarn, vlt, npm.
+ * Starlight TabItem only accepts built-in StarlightIcon names, so these use
+ * ::before art instead of the `icon` prop.
+ */
+.package-managers [role="tablist"] > .tab:nth-child(1) > [role="tab"]::before,
+.package-managers [role="tablist"] > .tab:nth-child(3) > [role="tab"]::before,
+.package-managers [role="tablist"] > .tab:nth-child(6) > [role="tab"]::before {
+	display: block;
+	flex-shrink: 0;
+	width: 1em;
+	height: 1em;
+	content: "";
+}
+
+/* @antfu/ni — monochrome mark, follows tab text color (replace icons/ni.svg to redesign) */
+.package-managers [role="tablist"] > .tab:nth-child(1) > [role="tab"]::before {
+	background-color: currentColor;
+	-webkit-mask: url("/eslint-cease-nonsense-rules/icons/ni.svg") center / contain no-repeat;
+	mask: url("/eslint-cease-nonsense-rules/icons/ni.svg") center / contain no-repeat;
+}
+
+/* aube — branded sunrise mark (fixed palette) */
+.package-managers [role="tablist"] > .tab:nth-child(3) > [role="tab"]::before {
+	background: url("/eslint-cease-nonsense-rules/icons/aube.svg") center / contain no-repeat;
+}
+
+/* vlt — monochrome network mark, follows tab text color */
+.package-managers [role="tablist"] > .tab:nth-child(6) > [role="tab"]::before {
+	background-color: currentColor;
+	-webkit-mask: url("/eslint-cease-nonsense-rules/icons/vlt.svg") center / contain no-repeat;
+	mask: url("/eslint-cease-nonsense-rules/icons/vlt.svg") center / contain no-repeat;
+}
+
+.contextual-action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 2.5rem;
 }
 
 /* Mobile: more breathing room for category grid and rule examples */
@@ -828,5 +1050,229 @@ nav.sidebar a:focus-visible,
 
 	h1 {
 		font-size: 2rem !important;
+	}
+
+	.page-title-block {
+		gap: 0.5rem;
+	}
+
+	nav.sidebar ul a {
+		min-height: 2.5rem;
+		padding-block: 0.55rem !important;
+	}
+
+	/* Keep the theme picker + social row compact and vertically centered */
+	.mobile-preferences {
+		align-items: center;
+	}
+
+	.mobile-preferences starlight-theme-select {
+		display: flex;
+		align-items: center;
+	}
+
+	.sl-markdown-content .sl-heading-wrapper .sl-anchor-link {
+		min-width: 2.5rem;
+		min-height: 2.5rem;
+	}
+}
+
+/* Forced-colors / print: gradient titles must stay readable */
+@media (forced-colors: active) {
+	h1 {
+		color: CanvasText !important;
+		-webkit-text-fill-color: CanvasText;
+		background: none;
+	}
+}
+
+@media print {
+	h1 {
+		color: #000 !important;
+		-webkit-text-fill-color: #000;
+		background: none;
+	}
+}
+
+@media (min-width: 72rem) {
+	.main-frame {
+		max-width: 102rem;
+	}
+}
+
+/* ── Hero lint ticket (fail → pass signature) ─────────── */
+
+.hero--with-ticket .stack {
+	width: 100%;
+}
+
+/* Splash content panels add large vertical padding; pull the hero block tighter */
+:root[data-has-hero] .content-panel:first-child {
+	padding-top: 0.5rem;
+}
+
+:root[data-has-hero] .content-panel:first-child .sl-container {
+	margin-top: 0;
+}
+
+/* First section after splash hero shouldn't add a huge gap */
+:root[data-has-hero] .sl-markdown-content > h2:first-child {
+	margin-top: 1.25rem !important;
+}
+
+.lint-ticket {
+	width: min(100%, 40rem);
+	margin-top: 0.15rem;
+	margin-bottom: 0;
+	overflow: hidden;
+	text-align: start;
+	background: var(--code-bg);
+	border: 1px solid var(--glass-border);
+	border-radius: 12px;
+	box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.lint-ticket__chrome {
+	display: flex;
+	gap: 0.75rem;
+	align-items: center;
+	padding: 0.55rem 0.85rem;
+	font-size: 0.75rem;
+	color: var(--text-tertiary);
+	background: rgba(127, 127, 127, 0.08);
+	border-bottom: 1px solid var(--glass-border);
+}
+
+.lint-ticket__dots {
+	display: inline-flex;
+	gap: 0.3rem;
+}
+
+.lint-ticket__dots span {
+	width: 0.5rem;
+	height: 0.5rem;
+	background: var(--sl-color-gray-4);
+	border-radius: 999px;
+}
+
+.lint-ticket__dots span:nth-child(1) {
+	background: #ff5f57;
+}
+
+.lint-ticket__dots span:nth-child(2) {
+	background: #febc2e;
+}
+
+.lint-ticket__dots span:nth-child(3) {
+	background: #28c840;
+}
+
+.lint-ticket__title {
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+	align-items: baseline;
+	min-width: 0;
+	font-family: var(--sl-font-mono);
+}
+
+.lint-ticket__plugin {
+	color: var(--text-secondary);
+}
+
+.lint-ticket__sep {
+	opacity: 0.5;
+}
+
+.lint-ticket__rule {
+	padding: 0;
+	font-size: inherit;
+	font-weight: 600;
+	color: var(--sl-color-white);
+	background: transparent;
+	border: 0;
+}
+
+.lint-ticket__body {
+	display: grid;
+	grid-template-columns: 1fr;
+}
+
+@media (min-width: 36rem) {
+	.lint-ticket__body {
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.lint-ticket__pane--fail {
+		border-inline-end: 1px solid var(--glass-border);
+	}
+}
+
+.lint-ticket__pane {
+	padding: 0.85rem 1rem 1rem;
+}
+
+.lint-ticket__label {
+	margin-bottom: 0.45rem;
+	font-size: 0.7rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+}
+
+.lint-ticket__message {
+	margin-top: 0.5rem;
+	font-family: var(--sl-font-mono);
+	font-size: 0.72rem;
+	font-weight: 600;
+}
+
+.lint-ticket__code {
+	padding: 0.65rem 0.75rem;
+	margin: 0;
+	overflow-x: auto;
+	font-family: var(--sl-font-mono);
+	font-size: 0.8rem;
+	line-height: 1.5;
+	color: var(--sl-color-white);
+	background: var(--sl-color-black);
+	border: 1px solid var(--glass-border);
+	border-radius: 8px;
+}
+
+.lint-ticket__pane--fail .lint-ticket__label,
+.lint-ticket__pane--fail .lint-ticket__message {
+	color: #f43f5e;
+}
+
+.lint-ticket__pane--pass .lint-ticket__label,
+.lint-ticket__pane--pass .lint-ticket__message {
+	color: #10b981;
+}
+
+:root[data-theme="dark"] .lint-ticket__pane--fail .lint-ticket__label,
+:root[data-theme="dark"] .lint-ticket__pane--fail .lint-ticket__message {
+	color: #fb7185;
+}
+
+:root[data-theme="dark"] .lint-ticket__pane--pass .lint-ticket__label,
+:root[data-theme="dark"] .lint-ticket__pane--pass .lint-ticket__message {
+	color: #34d399;
+}
+
+@media (hover: hover) {
+	.lint-ticket:hover {
+		border-color: var(--amber-glow-border);
+		box-shadow: 0 16px 48px var(--amber-glow-shadow);
+	}
+}
+
+@media (max-width: 50rem) {
+	.hero--with-ticket > img {
+		width: min(42%, 10rem);
+	}
+
+	.lint-ticket {
+		width: 100%;
 	}
 }
