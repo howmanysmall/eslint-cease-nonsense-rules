@@ -4,10 +4,8 @@ import {
 	isFunctionTypeNode,
 	isInterfaceDeclaration,
 	isMethodSignature,
-	isModuleDeclaration,
 	isPropertyAccessExpression,
 	isPropertySignature,
-	isStringLiteral,
 	isTypeNode,
 	isTypeAliasDeclaration,
 	isTypeLiteralNode,
@@ -31,7 +29,6 @@ const DEFAULT_OPTIONS: Required<NoNetworkFastResultOptions> = {
 	checkParameters: false,
 };
 
-const NETWORKING_PACKAGE_PATH = "/@flamework/networking/";
 const NETWORKING_PACKAGE_NAME = "@flamework/networking";
 
 interface FastResultCollectionState {
@@ -217,7 +214,6 @@ function collectAllFastResultsInContract(
 
 function isNetworkingCreateFunction(
 	node: TSESTree.CallExpression,
-	checker: TypeChecker,
 	services: ReturnType<typeof ESLintUtils.getParserServices>,
 	networkingIdentifiers: ReadonlySet<string>,
 ): boolean {
@@ -234,30 +230,7 @@ function isNetworkingCreateFunction(
 	const callee = services.esTreeNodeToTSNodeMap.get(node.callee);
 	if (!isPropertyAccessExpression(callee) || callee.name.text !== "createFunction") return false;
 
-	const symbol = getResolvedSymbol(checker, callee.name);
-	if ((symbol?.declarations ?? []).some(isNetworkingPackageDeclaration)) return true;
-
 	return networkingIdentifiers.has(node.callee.object.name);
-}
-
-function isNetworkingPackageDeclaration(declaration: TypeScriptNode): boolean {
-	if (declaration.getSourceFile().fileName.replaceAll("\\", "/").includes(NETWORKING_PACKAGE_PATH)) return true;
-
-	let { parent } = declaration;
-	while (parent !== undefined) {
-		if (
-			isModuleDeclaration(parent) &&
-			isStringLiteral(parent.name) &&
-			parent.name.text === NETWORKING_PACKAGE_NAME
-		) {
-			return true;
-		}
-
-		const { parent: nextParent } = parent;
-		parent = nextParent;
-	}
-
-	return false;
 }
 
 const noNetworkFastResult = createRule<Options, MessageIds>({
@@ -270,7 +243,7 @@ const noNetworkFastResult = createRule<Options, MessageIds>({
 		return {
 			CallExpression(node): void {
 				if (
-					!isNetworkingCreateFunction(node, checker, services, networkingIdentifiers) ||
+					!isNetworkingCreateFunction(node, services, networkingIdentifiers) ||
 					node.typeArguments === undefined
 				) {
 					return;
