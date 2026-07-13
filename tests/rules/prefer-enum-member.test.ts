@@ -12,7 +12,6 @@ const currentDirectory = import.meta.dirname;
 vi.setConfig({ testTimeout: 30_000 });
 
 const testsDir = nodePath.resolve(currentDirectory, "..");
-const eslintProjectPath = nodePath.join(testsDir, "tsconfig.eslint.json");
 const fixturesRelativeDir = "fixtures/prefer-enum-member";
 
 const ruleTester = new RuleTester({
@@ -21,7 +20,11 @@ const ruleTester = new RuleTester({
 		parser,
 		parserOptions: {
 			ecmaFeatures: { jsx: true },
-			project: eslintProjectPath,
+			projectService: {
+				allowDefaultProject: [`${fixturesRelativeDir}/*.tsx`],
+				defaultProject: `${fixturesRelativeDir}/tsconfig.json`,
+				maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 134,
+			},
 			tsconfigRootDir: testsDir,
 		},
 		sourceType: "module",
@@ -62,9 +65,9 @@ function withStableFilenames<TTestCase extends RuleTestCase>(
 	cases: ReadonlyArray<TTestCase>,
 	prefix: string,
 ): Array<TTestCase> {
-	return cases.map((testCase) => ({
+	return cases.map((testCase, index) => ({
 		...testCase,
-		filename: nodePath.join(fixturesRelativeDir, `${prefix}.tsx`),
+		filename: nodePath.join(fixturesRelativeDir, `${prefix}-${index}.tsx`),
 	}));
 }
 
