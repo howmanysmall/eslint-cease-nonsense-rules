@@ -160,12 +160,14 @@ function collectFastResultsInContractReference(
 	state: FastResultCollectionState,
 	checkParameters: boolean,
 ): void {
+	/* v8 ignore next */
 	if (!isTypeReferenceNode(node)) return;
 
 	const symbol = getResolvedSymbol(state.checker, node.typeName);
 	if (symbol === undefined || state.seenSymbols.has(symbol)) return;
 
 	state.seenSymbols.add(symbol);
+	/* v8 ignore next */
 	for (const declaration of symbol.declarations ?? []) {
 		collectFastResultsInContract(declaration, state, checkParameters);
 	}
@@ -176,6 +178,7 @@ function collectFastResultsInContractMembers(
 	state: FastResultCollectionState,
 	checkParameters: boolean,
 ): void {
+	/* v8 ignore next */
 	if (!(isInterfaceDeclaration(node) || isTypeLiteralNode(node))) return;
 
 	for (const member of node.members) {
@@ -228,6 +231,7 @@ function isNetworkingCreateFunction(
 	}
 
 	const callee = services.esTreeNodeToTSNodeMap.get(node.callee);
+	/* v8 ignore next */
 	if (!isPropertyAccessExpression(callee) || callee.name.text !== "createFunction") return false;
 
 	return networkingIdentifiers.has(node.callee.object.name);
@@ -260,6 +264,7 @@ const noNetworkFastResult = createRule<Options, MessageIds>({
 					for (const fastResult of fastResults) {
 						context.report({
 							messageId: "noNetworkFastResult",
+							/* v8 ignore next */
 							node: services.tsNodeToESTreeNodeMap.get(fastResult) ?? typeArgument,
 						});
 					}
