@@ -47,101 +47,163 @@ function isFastResultReference(node: TypeNode, checker: TypeChecker): boolean {
 	return getResolvedSymbol(checker, node.typeName)?.getName() === "FastResult";
 }
 
-function typeArgumentsContainFastResult(
+function findFastResultInTypeArguments(
 	typeArguments: ReadonlyArray<TypeNode> | undefined,
 	checker: TypeChecker,
 	seenSymbols: Set<TypeScriptSymbol>,
-): boolean {
-	return typeArguments?.some((typeArgument) => containsFastResult(typeArgument, checker, seenSymbols)) === true;
+): TypeNode | undefined {
+	if (typeArguments === undefined) return undefined;
+
+	for (const typeArgument of typeArguments) {
+		const fastResult = findFastResult(typeArgument, checker, seenSymbols);
+		if (fastResult !== undefined) return fastResult;
+	}
+
+	return undefined;
 }
 
-function containsFastResult(
+function findFastResult(
 	node: TypeNode,
 	checker: TypeChecker,
 	seenSymbols: Set<TypeScriptSymbol> = new Set<TypeScriptSymbol>(),
-): boolean {
-	if (isFastResultReference(node, checker)) return true;
+): TypeNode | undefined {
+	if (isFastResultReference(node, checker)) return node;
+	if (!isTypeReferenceNode(node)) return findFastResultInChildren(node, checker, seenSymbols);
 
-	if (isTypeReferenceNode(node)) {
-		const { typeArguments } = node;
-		if (typeArgumentsContainFastResult(typeArguments, checker, seenSymbols)) return true;
+	const typeArgumentFastResult = findFastResultInTypeArguments(node.typeArguments, checker, seenSymbols);
+	if (typeArgumentFastResult !== undefined) return typeArgumentFastResult;
 
-		const symbol = getResolvedSymbol(checker, node.typeName);
-		if (symbol !== undefined && !seenSymbols.has(symbol)) {
-			seenSymbols.add(symbol);
-			for (const declaration of symbol.declarations ?? []) {
-				if (isTypeAliasDeclaration(declaration) && containsFastResult(declaration.type, checker, seenSymbols)) {
-					return true;
-				}
-			}
-		}
-	}
-
-	return containsFastResultInChildren(node, checker, seenSymbols);
+	const aliasFastResult = findFastResultInAlias(getResolvedSymbol(checker, node.typeName), checker, seenSymbols);
+	return aliasFastResult ?? findFastResultInChildren(node, checker, seenSymbols);
 }
 
-function containsFastResultInChildren(
+function findFastResultInAlias(
+	symbol: TypeScriptSymbol | undefined,
+	checker: TypeChecker,
+	seenSymbols: Set<TypeScriptSymbol>,
+): TypeNode | undefined {
+	if (symbol === undefined || seenSymbols.has(symbol)) return undefined;
+
+	seenSymbols.add(symbol);
+	for (const declaration of symbol.declarations ?? []) {
+		if (!isTypeAliasDeclaration(declaration)) continue;
+
+		const fastResult = findFastResult(declaration.type, checker, seenSymbols);
+		if (fastResult !== undefined) return fastResult;
+	}
+
+	return undefined;
+}
+
+function findFastResultInChildren(
 	node: TypeScriptNode,
 	checker: TypeChecker,
 	seenSymbols: Set<TypeScriptSymbol>,
-): boolean {
-	let contains = false;
+): TypeNode | undefined {
+	let fastResult: TypeNode | undefined;
 	node.forEachChild((child) => {
-		if (contains) return;
-		contains = isTypeNode(child)
-			? containsFastResult(child, checker, seenSymbols)
-			: containsFastResultInChildren(child, checker, seenSymbols);
+		if (fastResult !== undefined) return;
+		fastResult = isTypeNode(child)
+			? findFastResult(child, checker, seenSymbols)
+			: findFastResultInChildren(child, checker, seenSymbols);
 	});
-	return contains;
+	return fastResult;
 }
 
-function functionTypeContainsFastResult(node: TypeScriptNode, checker: TypeChecker, checkParameters: boolean): boolean {
-	if (isFunctionTypeNode(node) || isMethodSignature(node)) {
-		if (node.type !== undefined && containsFastResult(node.type, checker)) return true;
-		return (
-			checkParameters &&
-			node.parameters.some(
-				(parameter) => parameter.type !== undefined && containsFastResult(parameter.type, checker),
-			)
-		);
+function findFastResultInFunctionType(
+	node: TypeScriptNode,
+	checker: TypeChecker,
+	checkParameters: boolean,
+): TypeNode | undefined {
+	if (!(isFunctionTypeNode(node) || isMethodSignature(node))) return undefined;
+
+	if (node.type !== undefined) {
+		const responseFastResult = findFastResult(node.type, checker);
+		if (responseFastResult !== undefined) return responseFastResult;
 	}
 
-	return false;
+	if (!checkParameters) return undefined;
+
+	for (const parameter of node.parameters) {
+		if (parameter.type === undefined) continue;
+
+		const parameterFastResult = findFastResult(parameter.type, checker);
+		if (parameterFastResult !== undefined) return parameterFastResult;
+	}
+
+	return undefined;
 }
 
-function contractContainsFastResult(
+function findFastResultInContract(
 	node: TypeScriptNode,
 	checker: TypeChecker,
 	checkParameters: boolean,
 	seenSymbols: Set<TypeScriptSymbol> = new Set<TypeScriptSymbol>(),
-): boolean {
-	if (functionTypeContainsFastResult(node, checker, checkParameters)) return true;
+): TypeNode | undefined {
+	const functionFastResult = findFastResultInFunctionType(node, checker, checkParameters);
+	if (functionFastResult !== undefined) return functionFastResult;
 
-	if (isTypeReferenceNode(node)) {
-		const symbol = getResolvedSymbol(checker, node.typeName);
-		if (symbol !== undefined && !seenSymbols.has(symbol)) {
-			seenSymbols.add(symbol);
-			for (const declaration of symbol.declarations ?? []) {
-				if (contractContainsFastResult(declaration, checker, checkParameters, seenSymbols)) return true;
-			}
-		}
+	const referenceFastResult = findFastResultInContractReference(node, checker, checkParameters, seenSymbols);
+	if (referenceFastResult !== undefined) return referenceFastResult;
+
+	const memberFastResult = findFastResultInContractMembers(node, checker, checkParameters, seenSymbols);
+	if (memberFastResult !== undefined) return memberFastResult;
+
+	return findFastResultInContractChildren(node, checker, checkParameters, seenSymbols);
+}
+
+function findFastResultInContractReference(
+	node: TypeScriptNode,
+	checker: TypeChecker,
+	checkParameters: boolean,
+	seenSymbols: Set<TypeScriptSymbol>,
+): TypeNode | undefined {
+	if (!isTypeReferenceNode(node)) return undefined;
+
+	const symbol = getResolvedSymbol(checker, node.typeName);
+	if (symbol === undefined || seenSymbols.has(symbol)) return undefined;
+
+	seenSymbols.add(symbol);
+	for (const declaration of symbol.declarations ?? []) {
+		const fastResult = findFastResultInContract(declaration, checker, checkParameters, seenSymbols);
+		if (fastResult !== undefined) return fastResult;
 	}
 
-	if (isInterfaceDeclaration(node) || isTypeLiteralNode(node)) {
-		return node.members.some((member) => {
-			if (functionTypeContainsFastResult(member, checker, checkParameters)) return true;
-			return isPropertySignature(member) && member.type !== undefined
-				? contractContainsFastResult(member.type, checker, checkParameters, seenSymbols)
-				: false;
-		});
+	return undefined;
+}
+
+function findFastResultInContractMembers(
+	node: TypeScriptNode,
+	checker: TypeChecker,
+	checkParameters: boolean,
+	seenSymbols: Set<TypeScriptSymbol>,
+): TypeNode | undefined {
+	if (!(isInterfaceDeclaration(node) || isTypeLiteralNode(node))) return undefined;
+
+	for (const member of node.members) {
+		const functionFastResult = findFastResultInFunctionType(member, checker, checkParameters);
+		if (functionFastResult !== undefined) return functionFastResult;
+		if (!isPropertySignature(member) || member.type === undefined) continue;
+
+		const propertyFastResult = findFastResultInContract(member.type, checker, checkParameters, seenSymbols);
+		if (propertyFastResult !== undefined) return propertyFastResult;
 	}
 
-	let contains = false;
+	return undefined;
+}
+
+function findFastResultInContractChildren(
+	node: TypeScriptNode,
+	checker: TypeChecker,
+	checkParameters: boolean,
+	seenSymbols: Set<TypeScriptSymbol>,
+): TypeNode | undefined {
+	let fastResult: TypeNode | undefined;
 	node.forEachChild((child) => {
-		if (contains) return;
-		contains = contractContainsFastResult(child, checker, checkParameters, seenSymbols);
+		if (fastResult !== undefined) return;
+		fastResult = findFastResultInContract(child, checker, checkParameters, seenSymbols);
 	});
-	return contains;
+	return fastResult;
 }
 
 function isNetworkingCreateFunction(
@@ -207,11 +269,12 @@ const noNetworkFastResult = createRule<Options, MessageIds>({
 
 				for (const typeArgument of node.typeArguments.params) {
 					const tsTypeArgument = services.esTreeNodeToTSNodeMap.get(typeArgument);
-					if (!contractContainsFastResult(tsTypeArgument, checker, options.checkParameters)) continue;
+					const fastResult = findFastResultInContract(tsTypeArgument, checker, options.checkParameters);
+					if (fastResult === undefined) continue;
 
 					context.report({
 						messageId: "noNetworkFastResult",
-						node: typeArgument,
+						node: services.tsNodeToESTreeNodeMap.get(fastResult) ?? typeArgument,
 					});
 				}
 			},
