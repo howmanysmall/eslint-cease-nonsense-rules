@@ -5,13 +5,17 @@ const config: KnipConfig = {
 	bumpp: true,
 	commitlint: true,
 	eslint: true,
-	ignore: ["tests/fixtures/**"],
+	ignore: ["tests/fixtures/**", "documentation/src/content/**"],
 	ignoreBinaries: ["hk", "notify-send", "osascript", "powershell"],
 	ignoreDependencies: [
 		"@astrojs/ts-plugin",
 		"@mitata/counters",
 		"@rbxts/react",
 		"@rbxts/types",
+		// Self-references in docs code samples; not a real docs-package dependency.
+		"@pobammer-ts/eslint-cease-nonsense-rules",
+		// Peer via starlight-heading-badges packageExtension in pnpm-workspace.yaml.
+		"astro",
 		"eslint-plugin-cease-nonsense",
 		"skills",
 		"source-map",
@@ -41,6 +45,10 @@ const config: KnipConfig = {
 		".": {
 			entry: ["scripts/*.ts", "benchmarks/**/*.bench.ts", ".opencode/**/*.ts", "tests/**/*.ts"],
 			project: ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts"],
+		},
+		documentation: {
+			entry: ["astro.config.ts", "src/**/*.{ts,astro}"],
+			project: ["src/**/*.{ts,astro}"],
 		},
 	},
 };

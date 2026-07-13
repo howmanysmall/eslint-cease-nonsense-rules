@@ -7,7 +7,7 @@ export interface PageBadge {
 
 const badgeVariants = new Set<string>(["note", "danger", "success", "caution", "tip", "default"]);
 
-export function isPageBadgeVariant(value: string): value is PageBadgeVariant {
+function isPageBadgeVariant(value: string): value is PageBadgeVariant {
 	return badgeVariants.has(value);
 }
 

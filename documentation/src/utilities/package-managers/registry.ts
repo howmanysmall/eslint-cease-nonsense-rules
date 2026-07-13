@@ -2,7 +2,7 @@ export type PackageManagerId = "ni" | "pnpm" | "aube" | "bun" | "yarn" | "vlt" |
 
 export type PackageManagerCommandType = "add" | "run";
 
-export interface PackageManagerCommands {
+interface PackageManagerCommands {
 	readonly add: string;
 	readonly developmentOption: string;
 	readonly run: string;
