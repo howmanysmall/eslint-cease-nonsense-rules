@@ -34,6 +34,7 @@ const configuration = defineConfig({
 		ensureAstroIntegration(
 			starlight({
 				components: {
+					Hero: "./src/components/hero.astro",
 					PageTitle: "./src/components/page-title.astro",
 				},
 				customCss: ["./src/styles/custom.css"],
@@ -87,7 +88,7 @@ const configuration = defineConfig({
 						label: "GitHub",
 					},
 					{
-						href: "https://www.npmjs.com/package/eslint-plugin-cease-nonsense",
+						href: "https://www.npmjs.com/package/@pobammer-ts/eslint-cease-nonsense-rules",
 						icon: "external",
 						label: "NPM Package",
 					},

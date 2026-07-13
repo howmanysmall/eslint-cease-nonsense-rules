@@ -1,26 +1,585 @@
 ---
 title: Changelog
-description: See what changed in each release of Cease Nonsense.
+description: Release history for Cease Nonsense, from GitHub Releases.
 ---
 
-import { Aside, LinkCard, CardGrid } from "@astrojs/starlight/components";
+import { Aside } from "@astrojs/starlight/components";
 
-All notable changes to this project are documented on GitHub Releases.
+Release notes for stable tags. Source of truth is still
+[GitHub Releases](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases).
 
-<CardGrid>
-	<LinkCard
-		title="View on GitHub"
-		description="Browse all releases, release notes, and version history"
-		href="https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases"
-	/>
-	<LinkCard
-		title="Latest Release"
-		description="Check the most recent version and what changed"
-		href="https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/latest"
-	/>
-</CardGrid>
-
-<Aside type="note">
-	This documentation reflects the latest stable version of the plugin. Make sure your installed version matches when
-	referencing rule behavior.
+<Aside type="tip" title="Latest">
+	**v1.42.3** published 2026-07-13.
 </Aside>
+
+## v1.42.3
+
+Published 2026-07-13.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.42.3).
+
+### Bug fixes
+
+- **no-network-fast-result**: Handle createNetworking export, by @howmanysmall
+  [(2936b)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/2936bc8)
+- **rules**: Handle aliased fast-result symbols, by @howmanysmall
+  [(0fbbd)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/0fbbd88)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.42.2...v1.42.3)
+
+## v1.42.2
+
+Published 2026-07-13.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.42.2).
+
+### Bug fixes
+
+- **rules**: Detect namespace networking createFunction, by @howmanysmall
+  [(c5bfc)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/c5bfce0)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.42.1...v1.42.2)
+
+## v1.42.1
+
+Published 2026-07-13.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.42.1).
+
+### Features
+
+- **plugin**: Export all utility configuration factories, by @howmanysmall
+  [(bbf8c)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/bbf8c70)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.42.0...v1.42.1)
+
+## v1.42.0
+
+Published 2026-07-13.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.42.0).
+
+### Features
+
+- Add release workflow tests and zx dependency, by @howmanysmall
+  [(dfea8)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/dfea817)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.41.0...v1.42.0)
+
+## v1.41.0
+
+Published 2026-07-12.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.41.0).
+
+### Features
+
+- Add recommended config and extract scope utilities, by @howmanysmall
+  [(6ff70)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/6ff7016)
+- Add no-network-fast-result rule, by @howmanysmall
+  [(c7267)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/c72671a)
+
+### Bug fixes
+
+- **docs**: Validate Astro content entries, by @howmanysmall
+  [(c4457)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/c44577e)
+- **rules**: Resolve undefined in mapped type constraint handling, by @howmanysmall
+  [(f803c)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/f803c16)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.40.2...v1.41.0)
+
+## v1.40.2
+
+Published 2026-07-10.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.40.2).
+
+### Bug fixes
+
+- **rules**: Resolve undefined in mapped type constraint handling, by @howmanysmall
+  [(1cde2)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/1cde26c)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.40.1...v1.40.2)
+
+## v1.40.1
+
+Published 2026-07-07.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.40.1).
+
+### Performance
+
+- **rules**: Cache enum lookups and symbol info, by @howmanysmall
+  [(94f70)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/94f7014)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.40.0...v1.40.1)
+
+## v1.40.0
+
+Published 2026-07-07.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.40.0).
+
+### Features
+
+- **ci**: Separate normal and heavy test shards, by @howmanysmall
+  [(cce0a)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/cce0a0a)
+- **rule**: Support DataType enum/namespace, by @howmanysmall
+  [(0fbfd)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/0fbfdcc)
+
+### Bug fixes
+
+- **enforce-ianitor-check-type**: Only report interfaces/type-aliases when Ianitor is referenced, by @howmanysmall
+  [(fef25)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/fef25c6)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.39.1...v1.40.0)
+
+## v1.39.1
+
+Published 2026-07-07.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.39.1).
+
+### Bug fixes
+
+- Handle undefined declarations in dot-notation accessibility check, by @howmanysmall
+  [(279fb)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/279fbd1)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.39.0...v1.39.1)
+
+## v1.39.0
+
+Published 2026-07-07.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.39.0).
+
+### Features
+
+- Coal pls undo, by @howmanysmall [(e225e)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/e225e27)
+- Big coverage, by @howmanysmall [(a2d8b)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/a2d8b70)
+- **benchmark**:
+- Add summary, by @howmanysmall [(7466c)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/7466cdb)
+- **build**:
+- Use tsdown and drop old scripts, by @howmanysmall
+  [(e3191)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/e3191dd)
+- Add build summary output and tsconfig tweaks, by @howmanysmall
+  [(2e3f8)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/2e3f8dd)
+- **ci**:
+- Use NODE_VERSION env in workflow, by @howmanysmall
+  [(83019)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/8301988)
+- **knip**:
+- Enable pnpm support in knip config, by @howmanysmall
+  [(43502)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/435026b)
+- Add workspace entry and project config, by @howmanysmall
+  [(dcdf4)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/dcdf4d5)
+
+### Bug fixes
+
+- **build**: Use default import for picocolors, by @howmanysmall
+  [(6f5d4)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/6f5d4c3)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.38.0...v1.39.0)
+
+## v1.38.0
+
+Published 2026-06-18.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.38.0).
+
+### Features
+
+- Support eslint v10, by @christopher-buss
+  [(d3b4a)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/d3b4ab9)
+
+### Bug fixes
+
+- **tests**: Remove unused fileURLToPath import in run-shard, by @christopher-buss
+  [(1e06e)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/1e06e8d)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.37.0...v1.38.0)
+
+## v1.37.0
+
+Published 2026-05-27.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.37.0).
+
+### Features
+
+- **naming-convention**: Add type-reference entry to `types` filter, by @christopher-buss
+  [(5f259)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/5f259a4)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.36.0...v1.37.0)
+
+## v1.36.0
+
+Published 2026-05-12.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.36.0).
+
+### Features
+
+- **declaration-bundler**: Support path mappings for local aliases, by @howmanysmall
+  [(485d9)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/485d9f0)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.35.0...v1.36.0)
+
+## v1.35.0
+
+Published 2026-05-11.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.35.0).
+
+### Features
+
+- Redesign project away from bun, by @howmanysmall
+  [(1f971)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/1f97106)
+- **opencode**: Enhance test injection and update bun integration, by @howmanysmall
+  [(5e471)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/5e4717c)
+- **oxlint**: Enable small rules and Vitest tests, by @howmanysmall
+  [(52de6)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/52de649)
+- **react**: Add `no-manual-children-property` rule, by @howmanysmall
+  [(9bb21)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/9bb21ca)
+- **rules**: Improve prefer-enum-member and shard upstream tests, by @howmanysmall
+  [(095ef)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/095ef59)
+
+### Bug fixes
+
+- **ci**:
+- Run sharded tests through agent task, by @howmanysmall
+  [(a1f67)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/a1f67a0)
+- Retry transient aube installs, by @howmanysmall
+  [(d0172)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/d01721c)
+- Cache aube virtual store, by @howmanysmall
+  [(fe55f)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/fe55f49)
+- Stabilize tuple shard checks, by @howmanysmall
+  [(afd14)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/afd14f0)
+- Switch changelogithub command to abbreviated alias, by @howmanysmall
+  [(7d26a)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/7d26a9e)
+- **config**:
+- Adjust coverage thresholds for branches and statements, by @howmanysmall
+  [(be1cb)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/be1cbb2)
+- **no-empty-array-literal**:
+- Resolve type aliases in local scopes, by @howmanysmall
+  [(70887)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/7088793)
+- **prefer-enum-item**:
+- Guard unionConstituents against undefined return, by @howmanysmall
+  [(dc706)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/dc706e1)
+- **prefer-enum-member**:
+- Handle empty union constituents in type cache, by @howmanysmall
+  [(03dfd)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/03dfd88)
+- **rules**:
+- Read tuple constraints from type parameters, by @howmanysmall
+  [(7a72f)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/7a72f27)
+- Detect tuple factory return constraints, by @howmanysmall
+  [(c756a)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/c756abb)
+- Inspect generic signature constraints, by @howmanysmall
+  [(70636)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/706364a)
+- Detect tuple iterable parameter constraints, by @howmanysmall
+  [(93f94)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/93f941e)
+- Detect tuple iterable call constraints, by @howmanysmall
+  [(f452e)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/f452ebb)
+- Detect tuple array aliases, by @howmanysmall
+  [(64c63)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/64c63bf)
+- Resolve tuple aliases from source, by @howmanysmall
+  [(df7b4)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/df7b440)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.34.0...v1.35.0)
+
+## v1.34.0
+
+Published 2026-04-02.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.34.0).
+
+### Features
+
+- Add mcp servers and improve documentation UI, by @howmanysmall
+  [(2e142)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/2e142f8)
+- **rules**: Add no-useless-use-memo, by @howmanysmall
+  [(91b7c)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/91b7c93)
+
+### Bug fixes
+
+- **ci**:
+- Add Node.js setup step for documentation build, by @howmanysmall
+  [(2347f)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/2347f64)
+- **no-instance-methods-without-this**:
+- Skip parent property to avoid AST traversal cycles, by @howmanysmall
+  [(9ecb7)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/9ecb70f)
+- Skip parent property to avoid AST traversal cycles", by @howmanysmall
+  [(eaaab)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/eaaab89)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.33.0...v1.34.0)
+
+## v1.33.0
+
+Published 2026-03-28.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.33.0).
+
+### Features
+
+- **branding**: Add new logo assets and update documentation, by @howmanysmall
+  [(25b5d)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/25b5d14)
+- **docs**: Implement custom contextual menu and markdown preview, by @howmanysmall
+  [(19ad8)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/19ad818)
+- **rules**: Add dot-notation rule with roblox-ts visibility-safe escape, by @howmanysmall
+  [(1ce30)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/1ce30c6)
+
+### Bug fixes
+
+- **docs**:
+- Allow manual deploy, by @howmanysmall
+  [(1d164)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/1d16435)
+- Replace any types with specific interfaces in astro patch, by @howmanysmall
+  [(0d06d)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/0d06d34)
+
+### Performance
+
+- **docs**: Optimize getStaticPaths logic, by @howmanysmall
+  [(be002)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/be00218)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.32.0...v1.33.0)
+
+## v1.32.0
+
+Published 2026-03-25.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.32.0).
+
+### Features
+
+- **rules**:
+- Add context-stack, portal, and padding preference rules, by @howmanysmall
+  [(0f75c)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/0f75cda)
+- Add prefer-idiv rule, by @howmanysmall
+  [(ceb94)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/ceb94d1)
+
+### Bug fixes
+
+- **config**: Fix knip v6 compatibility and add bun types to test tsconfigs, by @howmanysmall
+  [(df6fd)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/df6fd77)
+- **prefer-enum-member**: Preserve zero index, by @howmanysmall
+  [(130dc)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/130dcb9)
+- **tsconfig**: Update include paths for TypeScript files, by @howmanysmall
+  [(1b973)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/1b973b7)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.31.0...v1.32.0)
+
+## v1.31.0
+
+Published 2026-03-02.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.31.0).
+
+### Features
+
+- Overhaul documentation UI and enhance rule configuration, by @howmanysmall
+  [(0237a)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/0237a24)
+- **rules**: Add array-related rules and refactor tester utility, by @howmanysmall
+  [(497d5)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/497d5d6)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.30.0...v1.31.0)
+
+## v1.30.0
+
+Published 2026-02-18.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.30.0).
+
+### Features
+
+- **rules**: Add `no-render-helper-functions` rule, by @howmanysmall
+  [(04eea)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/04eea8b)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.29.1...v1.30.0)
+
+## v1.29.1
+
+Published 2026-02-14.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.29.1).
+
+### Bug fixes
+
+- **no-useless-use-effect**: Fix false positives and expand side-effects, by @howmanysmall
+  [(c520d)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/c520d5d)
+
+[Compare](https://github.com/howmanysmall/eslint-cease-nonsense-rules/compare/v1.29.0...v1.29.1)
+
+## v1.29.0
+
+Published 2026-02-14.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.29.0).
+
+- **rules**: Enhance no-constant-condition-with-break to support return and custom exit calls, by @howmanysmall
+  [(1916a)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/1916aa1)
+
+## v1.28.0
+
+Published 2026-02-14.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.28.0).
+
+- **no-useless-use-effect**: Enhance rule with comprehensive effect pattern detection, by @howmanysmall
+  [(d6d6b)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/d6d6bfa)
+- **rules**: Add no-constant-condition-with-break and no-events-in-events-callback, by @howmanysmall
+  [(8ffb8)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/8ffb83e)
+
+## v1.27.0
+
+Published 2026-02-12.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.27.0).
+
+- **rules**: Add no-table-create-map rule, by @howmanysmall
+  [(c6c73)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/c6c735d)
+
+## v1.26.0
+
+Published 2026-02-12.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.26.0).
+
+- **rule**: Trace helper calls in no-new-instance-in-use-memo, by @howmanysmall
+  [(df147)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/df147e2)
+
+## v1.25.1
+
+Published 2026-02-11.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.25.1).
+
+[Release notes](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.25.1)
+
+## v1.25.0
+
+Published 2026-02-11.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.25.0).
+
+- Update OpenAI model version to 5.3-codex and disable tsconfig-error rule, by @howmanysmall
+  [(0534c)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/0534cc2)
+- Add templates for ESLint rule creation, documentation, and testing, by @howmanysmall
+  [(7ec31)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/7ec31ba)
+- Enhance type resolution for enum member references, by @howmanysmall
+  [(ca5f8)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/ca5f80c)
+- Ban underscore react props, by @howmanysmall
+  [(d30a3)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/d30a3f7)
+- **prefer-enum-member**:
+- Support complex type aliases and union records, by @howmanysmall
+  [(a3552)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/a355296)
+
+[Full notes for v1.25.0](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.25.0)
+
+## v1.24.0
+
+Published 2026-02-05.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.24.0).
+
+- Add no-array-size-assignment rule and refine fragment key logic, by @howmanysmall
+  [(c9d1c)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/c9d1c48)
+
+## v1.23.2
+
+Published 2026-02-05.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.23.2).
+
+[Release notes](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.23.2)
+
+## v1.23.1
+
+Published 2026-02-05.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.23.1).
+
+[Release notes](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.23.1)
+
+## v1.23.0
+
+Published 2026-02-05.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.23.0).
+
+- **ci**:
+- Implement parallel test sharding and coverage merging, by @howmanysmall
+  [(876f0)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/876f05b)
+- Implement case-level sharding for heavy tests, by @howmanysmall
+  [(e2179)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/e21791f)
+- **memoized-effect-dependencies**:
+- Add experimental rule, by @howmanysmall
+  [(5d61c)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/5d61ca2)
+- **rules**:
+
+[Full notes for v1.23.0](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.23.0)
+
+## v1.22.0
+
+Published 2026-02-03.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.22.0).
+
+- **rules**: Add no-unused-use-memo rule, by @howmanysmall
+  [(927c3)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/927c33d)
+- **require-react-component-keys**: Allow short fragments in logical expression JSX children, by @howmanysmall
+  [(86ab8)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/86ab8f4)
+
+## v1.21.0
+
+Published 2026-01-31.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.21.0).
+
+- **docs**:
+- Migrate documentation to Astro Starlight, by @howmanysmall
+  [(adfa6)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/adfa620)
+- **prefer-enum-member**:
+- Improve record key resolution for aliases and unions, by @howmanysmall
+  [(e356a)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/e356afe)
+- **rules**:
+- Add `prefer-single-get` rule, by @howmanysmall
+  [(7b0ae)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/7b0aec8)
+
+[Full notes for v1.21.0](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.21.0)
+
+## v1.20.2
+
+Published 2026-01-27.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.20.2).
+
+- **require-serialized-numeric-data-type**: Support generic type arguments, by @howmanysmall
+  [(e77b4)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/e77b4dd)
+
+## v1.20.0
+
+Published 2026-01-27.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.20.0).
+
+- **opencode**: Add create-pull-request command, by @howmanysmall
+  [(2bbc5)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/2bbc5a0)
+- **rules**: Add `require-serialized-numeric-data-type` rule, by @howmanysmall
+  [(b1241)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/b1241b4)
+
+## v1.19.0
+
+Published 2026-01-27.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.19.0).
+
+- **index**: Export rules and recommended as named exports, by @howmanysmall
+  [(4769d)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/4769db6)
+
+## v1.18.1
+
+Published 2026-01-24.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.18.1).
+
+[Release notes](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.18.1)
+
+## v1.17.4
+
+Published 2026-01-23.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.17.4).
+
+- **require-react-component-keys**: Require keys for \*children props, by @howmanysmall
+  [(39c6c)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/39c6c14)
+
+## v1.17.3
+
+Published 2026-01-18.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.17.3).
+
+- **naming-convention**: Improve array-like type detection and handle branded types, by @howmanysmall
+  [(71835)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/71835f5)
+
+## v1.17.2
+
+Published 2026-01-18.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.17.2).
+
+- **prefer-read-only-props**: Use return type instead of casing to detect React components, by @howmanysmall
+  [(b12b6)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/b12b6d4)
+
+## v1.17.1
+
+Published 2026-01-17.
+[GitHub release](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases/tag/v1.17.1).
+
+- Fetch full main branch history for accurate tag verification, by @howmanysmall
+  [(e9f0c)](https://github.com/howmanysmall/eslint-cease-nonsense-rules/commit/e9f0cc7)
+
+---
+
+Older history and assets live on GitHub:
+[howmanysmall/eslint-cease-nonsense-rules/releases](https://github.com/howmanysmall/eslint-cease-nonsense-rules/releases).

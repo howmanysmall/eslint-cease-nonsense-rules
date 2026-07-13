@@ -36,7 +36,7 @@ describe("rule stats", () => {
 	}, 1000);
 
 	it("keeps category stats aligned with the sidebar groups", () => {
-		expect.assertions(3);
+		expect.assertions(14);
 		expect(Object.keys(ruleCategories)).toStrictEqual(["general", "naming", "react", "roblox"]);
 		expect(ruleCategories).toStrictEqual({
 			general: {
@@ -69,18 +69,33 @@ describe("rule stats", () => {
 			},
 		});
 
-		expect(
-			ruleSidebarGroups.map(({ items, label }) => ({
-				count: items.length,
-				first: items[0],
-				label,
-			})),
-		).toStrictEqual([
-			{ count: 22, first: "rules/ban-react-fc", label: "React Rules" },
-			{ count: 18, first: "rules/ban-instances", label: "Roblox & Luau Rules" },
-			{ count: 7, first: "rules/array-type-generic", label: "Naming & Conventions" },
-			{ count: 12, first: "rules/dot-notation", label: "General Logic & Style" },
-		]);
+		expect(ruleSidebarGroups[0]?.label).toBe("React Rules");
+		expect(ruleSidebarGroups[0]?.items).toHaveLength(22);
+		expect(ruleSidebarGroups[0]?.items[0]).toMatchObject({
+			label: "ban-react-fc",
+			slug: "rules/ban-react-fc",
+		});
+
+		expect(ruleSidebarGroups[1]?.label).toBe("Roblox & Luau Rules");
+		expect(ruleSidebarGroups[1]?.items).toHaveLength(18);
+		expect(ruleSidebarGroups[1]?.items[0]).toMatchObject({
+			label: "ban-instances",
+			slug: "rules/ban-instances",
+		});
+
+		expect(ruleSidebarGroups[2]?.label).toBe("Naming & Conventions");
+		expect(ruleSidebarGroups[2]?.items).toHaveLength(7);
+		expect(ruleSidebarGroups[2]?.items[0]).toMatchObject({
+			label: "array-type-generic",
+			slug: "rules/array-type-generic",
+		});
+
+		expect(ruleSidebarGroups[3]?.label).toBe("General Logic & Style");
+		expect(ruleSidebarGroups[3]?.items).toHaveLength(12);
+		expect(ruleSidebarGroups[3]?.items[0]).toMatchObject({
+			label: "dot-notation",
+			slug: "rules/dot-notation",
+		});
 	}, 1000);
 
 	it("throws when a category has no rules", () => {

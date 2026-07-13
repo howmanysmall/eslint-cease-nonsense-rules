@@ -3,24 +3,23 @@ title: Quick Start
 description: Install and configure Cease Nonsense in a couple of minutes.
 ---
 
-import { Steps, Tabs, TabItem, Code } from "@astrojs/starlight/components";
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+import PackageManagers from "../../components/package-managers.astro";
+import { publishedPackageName } from "../../utilities/package-managers/registry";
 
 ## Installation
 
-<Tabs>
-	<TabItem label="Aube">```bash aube add -D eslint-plugin-cease-nonsense ```</TabItem>
-	<TabItem label="npm">```bash npm install -D eslint-plugin-cease-nonsense ```</TabItem>
-	<TabItem label="pnpm">```bash pnpm add -D eslint-plugin-cease-nonsense ```</TabItem>
-</Tabs>
+<PackageManagers type="add" pkg={publishedPackageName} development />
 
 ## Configuration
 
 <Steps>
 
-1. **Add to your ESLint config**
+1. **Add the plugin to your ESLint flat config**
 
     ```typescript
-    import ceaseNonsense from "eslint-plugin-cease-nonsense";
+    import ceaseNonsense from "@pobammer-ts/eslint-cease-nonsense-rules";
 
     export default [
     	ceaseNonsense.configs.recommended,
@@ -30,16 +29,19 @@ import { Steps, Tabs, TabItem, Code } from "@astrojs/starlight/components";
 
 2. **Run ESLint**
 
-    ```bash
-    aube run eslint .
-    ```
+    <PackageManagers type="run" parameters="eslint ." />
 
 </Steps>
 
-## What You Get
+## What you get
 
-The `recommended` config turns on every rule with sensible defaults. Most are set to `warn`; a handful of critical rules
-default to `error`.
+The `recommended` config turns on every rule with sensible defaults. Most rules default to `warn`. A smaller set that
+almost always means a real bug defaults to `error`.
 
-If you want to cherry-pick categories, disable specific rules, or adjust severity levels, see the
-[Configuration Reference](/eslint-cease-nonsense-rules/configuration/).
+To enable only some categories, change severities, or turn individual rules off, see the
+[Configuration](/eslint-cease-nonsense-rules/configuration/) guide.
+
+<Aside type="tip" title="Already on recommended">
+	If you only wanted the install command, you are done. Open a rule page from the sidebar when something fires and you
+	want the fail/pass examples.
+</Aside>

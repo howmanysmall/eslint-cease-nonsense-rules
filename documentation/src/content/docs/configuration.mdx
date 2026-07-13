@@ -4,6 +4,8 @@ description: Configure Cease Nonsense with recommended presets, per-rule setting
 ---
 
 import { Aside } from "@astrojs/starlight/components";
+
+import PackageManagers from "../../components/package-managers.astro";
 import { ruleCategories, totalRules } from "../../data/rule-stats";
 
 ## Recommended Config
@@ -11,7 +13,7 @@ import { ruleCategories, totalRules } from "../../data/rule-stats";
 The quickest setup — one line, all {totalRules} rules enabled:
 
 ```typescript
-import ceaseNonsense from "eslint-plugin-cease-nonsense";
+import ceaseNonsense from "@pobammer-ts/eslint-cease-nonsense-rules";
 
 export default [ceaseNonsense.configs.recommended];
 ```
@@ -53,7 +55,7 @@ export default [
 Pull in rules for a single category instead of everything:
 
 ```typescript
-import ceaseNonsense from "eslint-plugin-cease-nonsense";
+import ceaseNonsense from "@pobammer-ts/eslint-cease-nonsense-rules";
 
 export default [
 	// React only
@@ -105,6 +107,4 @@ These rules support auto-fix via `eslint --fix`:
 | `prefer-ternary-conditional-rendering` | Suggestion fix            |
 | `no-shorthand-names`                   | Suggestion fix            |
 
-```bash
-aube run eslint . --fix
-```
+<PackageManagers type="run" parameters="eslint . --fix" />

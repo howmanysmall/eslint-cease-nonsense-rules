@@ -1,3 +1,5 @@
+import { loadRuleFrontmatter, pickSidebarBadge, rulePathToSlugLeaf } from "./load-rule-frontmatter";
+
 import type { StarlightUserConfig } from "@astrojs/starlight/types";
 
 export type RuleCategoryKey = "general" | "naming" | "react" | "roblox";
@@ -96,9 +98,35 @@ export const ruleCategoryDefinitions = {
 
 export const ruleCategoryOrder: ReadonlyArray<RuleCategoryKey> = ["react", "roblox", "naming", "general"];
 
+function createSidebarRuleItem(rulePath: string): {
+	badge?: { text: string; variant: "note" | "danger" | "success" | "caution" | "tip" | "default" };
+	label: string;
+	slug: string;
+} {
+	const slugLeaf = rulePathToSlugLeaf(rulePath);
+	const meta = loadRuleFrontmatter(slugLeaf);
+	const badge = pickSidebarBadge(meta.badges);
+
+	if (badge === undefined) {
+		return {
+			label: slugLeaf,
+			slug: rulePath,
+		};
+	}
+
+	return {
+		badge: {
+			text: badge.text,
+			variant: badge.variant,
+		},
+		label: slugLeaf,
+		slug: rulePath,
+	};
+}
+
 export const ruleSidebarGroups = ruleCategoryOrder.map((category) => ({
 	collapsed: false,
-	items: [...ruleCategoryDefinitions[category].rules],
+	items: ruleCategoryDefinitions[category].rules.map((rulePath) => createSidebarRuleItem(rulePath)),
 	label: ruleCategoryDefinitions[category].label,
 	translations: {},
 })) satisfies NonNullable<StarlightUserConfig["sidebar"]>;
