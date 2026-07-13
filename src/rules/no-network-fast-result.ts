@@ -304,7 +304,7 @@ const noNetworkFastResult = createRule<Options, MessageIds>({
 					if (
 						specifier.type === AST_NODE_TYPES.ImportSpecifier &&
 						specifier.imported.type === AST_NODE_TYPES.Identifier &&
-						specifier.imported.name === "Networking"
+						(specifier.imported.name === "Networking" || specifier.imported.name === "createNetworking")
 					) {
 						networkingIdentifiers.add(specifier.local.name);
 					}

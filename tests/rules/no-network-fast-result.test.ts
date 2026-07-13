@@ -128,6 +128,27 @@ Networking.createFunction<ClientToServer, undefined>();`,
 				filename: filename("multiple-parameters"),
 				options: [{ checkParameters: true }],
 			},
+			{
+				code: `${imports}
+type ClientToServer = {
+	warp: { toCFrame: () => FastResult };
+};
+Networking.createFunction<ClientToServer, undefined>();`,
+				errors: [{ messageId: "noNetworkFastResult" }],
+				filename: filename("type-alias-contract"),
+			},
+			{
+				code: `
+import { createNetworking } from "@flamework/networking";
+import type { FastResult } from "./fast-result.js";
+
+interface ClientToServer {
+	warp: { toCFrame: () => FastResult };
+}
+createNetworking.createFunction<ClientToServer, undefined>();`,
+				errors: [{ messageId: "noNetworkFastResult" }],
+				filename: filename("create-networking-export"),
+			},
 		],
 		valid: [
 			{
