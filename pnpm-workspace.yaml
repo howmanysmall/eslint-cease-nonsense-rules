@@ -37,8 +37,8 @@ packageExtensions:
       astro: ">=7.0.0"
 
 patchedDependencies:
+  "@vitest/expect@4.1.10": patches/@vitest__expect@4.1.10.patch
   starlight-scroll-to-top@0.4.0: patches/starlight-scroll-to-top@0.4.0.patch
-  "@vitest/expect@4.1.9": patches/@vitest__expect@4.1.9.patch
 
 enableGlobalVirtualStore: true
 

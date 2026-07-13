@@ -99,7 +99,7 @@
 		"confbox": "catalog:dev",
 		"consola": "catalog:dev",
 		"env-paths": "catalog:dev",
-		"eslint": "catalog:lint",
+		"eslint": "^10.7.0",
 		"eslint-plugin-antfu": "catalog:lint",
 		"eslint-plugin-regexp": "catalog:lint",
 		"eslint-plugin-sonarjs": "catalog:lint",
