@@ -40,12 +40,7 @@ const configuration = defineConfig({
 			provider: "v8",
 			reportOnFailure: false,
 			reporter: ["text", "text-summary"],
-			thresholds: {
-				branches: 80,
-				functions: 95,
-				lines: 95,
-				statements: 85,
-			},
+			thresholds: { 100: true },
 		},
 		deps: {
 			interopDefault: false,
