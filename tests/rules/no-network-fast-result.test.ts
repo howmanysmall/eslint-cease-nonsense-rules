@@ -40,7 +40,15 @@ interface ClientToServer {
 	warp: { toCFrame: () => FastResult };
 }
 Networking.createFunction<ClientToServer, undefined>();`,
-				errors: [{ messageId: "noNetworkFastResult" }],
+				errors: [
+					{
+						column: 26,
+						endColumn: 36,
+						endLine: 6,
+						line: 6,
+						messageId: "noNetworkFastResult",
+					},
+				],
 				filename: filename("direct-response"),
 			},
 			{
