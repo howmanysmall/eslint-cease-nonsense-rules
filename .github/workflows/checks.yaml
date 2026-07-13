@@ -7,28 +7,13 @@ permissions: {}
 
 env:
   TEST_SHARDS: 8
-  HEAVY_TEST_SHARDS: 4
 
 jobs:
   check:
-    name: ${{ matrix.name }}
+    name: Validate
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Build
-            command: node --run build -- --minify && test -f dist/index.js
-          - name: Biome
-            command: node --run biome -- ci
-          - name: Lint
-            command: node --run oxlint
-          - name: Type Check
-            command: pnpm --filter docs astro sync && node --run type-check
-          - name: Knip
-            command: node --run knip
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -41,8 +26,23 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/install
 
-      - name: ${{ matrix.name }}
-        run: ${{ matrix.command }}
+      - name: Biome
+        run: node --run biome -- ci
+
+      - name: Lint
+        run: node --run oxlint
+
+      - name: Generate documentation types
+        run: pnpm --filter docs astro sync
+
+      - name: Type Check
+        run: node --run type-check
+
+      - name: Knip
+        run: node --run knip
+
+      - name: Build
+        run: node --run build -- --minify && test -f dist/index.js
 
   test:
     name: Test (${{ matrix.shard }}/8)
@@ -69,39 +69,12 @@ jobs:
         id: shard
         run: |
           SHARD_FILES=$(./scripts/shard-tests.ts --normal-lane ${{ matrix.shard }} ${{ env.TEST_SHARDS }})
+          if [ "${{ matrix.shard }}" = "${{ env.TEST_SHARDS }}" ]; then
+            SHARD_FILES="$SHARD_FILES tests/upstream/prevent-abbreviations.test.ts"
+          fi
           echo "files=$SHARD_FILES" >> "$GITHUB_OUTPUT"
           echo "Shard ${{ matrix.shard }}/${{ env.TEST_SHARDS }} files: $SHARD_FILES"
 
       - name: Run tests for shard
         if: steps.shard.outputs.files != ''
-        run: node --run test -- ${{ steps.shard.outputs.files }}
-
-  test-heavy:
-    name: Heavy (${{ matrix.case_shard }}/4)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        file:
-          - tests/upstream/prevent-abbreviations.test.ts
-        case_shard: [1, 2, 3, 4]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
-        with:
-          persist-credentials: false
-
-      - name: Setup toolchain
-        uses: ./.github/actions/setup
-
-      - name: Install dependencies
-        uses: ./.github/actions/install
-
-      - name: Run heavy test file with case sharding
-        env:
-          TEST_CASE_SHARD: ${{ matrix.case_shard }}/${{ env.HEAVY_TEST_SHARDS }}
-        run: |
-          echo "Running ${{ matrix.file }} with case shard ${{ matrix.case_shard }}/${{ env.HEAVY_TEST_SHARDS }}"
-          node --run test -- ${{ matrix.file }}
+        run: node --run test -- --reporter github-actions --reporter dot ${{ steps.shard.outputs.files }}

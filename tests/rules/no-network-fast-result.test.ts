@@ -40,12 +40,33 @@ interface ClientToServer {
 	warp: { toCFrame: () => FastResult };
 }
 Networking.createFunction<ClientToServer, undefined>();`,
-				errors: [{ messageId: "noNetworkFastResult" }],
+				errors: [
+					{
+						column: 26,
+						endColumn: 36,
+						endLine: 6,
+						line: 6,
+						messageId: "noNetworkFastResult",
+					},
+				],
 				filename: filename("direct-response"),
 			},
 			{
+				code: `
+import * as Networking from "@flamework/networking";
+import type { FastResult } from "./fast-result.js";
+
+interface ClientToServer {
+	warp: { toCFrame: () => FastResult };
+}
+Networking.createFunction<ClientToServer, undefined>();`,
+				errors: [{ messageId: "noNetworkFastResult" }],
+				filename: filename("namespace-response"),
+			},
+
+			{
 				code: `${imports}
-type Result = FastResult;
+	type Result = FastResult;
 type Response = Promise<Result> | undefined;
 interface ClientToServer {
 	request: { get: () => Response };
@@ -90,6 +111,16 @@ interface ClientToServer {
 }
 Networking.createFunction<ClientToServer, undefined>();`,
 				filename: filename("parameter-default"),
+			},
+			{
+				code: `${imports}
+type Serializable = boolean;
+interface ClientToServer {
+	request: { send: (value: Serializable) => Promise<Serializable> };
+}
+Networking.createFunction<ClientToServer, undefined>();`,
+				filename: filename("serializable-parameter"),
+				options: [{ checkParameters: true }],
 			},
 			{
 				code: `${imports}
