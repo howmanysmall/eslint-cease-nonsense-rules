@@ -1,0 +1,79 @@
+---
+import type { PageBadge } from "../utilities/page-badge";
+import { normalizePageBadgeVariant } from "../utilities/page-badge";
+
+const PAGE_TITLE_ID = "_top";
+
+const {
+	entry: { data },
+} = Astro.locals.starlightRoute;
+
+const badges = new Array<PageBadge>();
+
+if ("badges" in data && Array.isArray(data.badges)) {
+	for (const badge of data.badges) {
+		if (typeof badge === "object" && badge !== null && "text" in badge && typeof badge.text === "string") {
+			const variant = "variant" in badge && typeof badge.variant === "string" ? badge.variant : "default";
+			badges.push({
+				text: badge.text,
+				variant: normalizePageBadgeVariant(variant),
+			});
+		}
+	}
+}
+
+if (
+	badges.length === 0 &&
+	"badge" in data &&
+	typeof data.badge === "object" &&
+	data.badge !== null &&
+	"text" in data.badge &&
+	typeof data.badge.text === "string"
+) {
+	const variant = "variant" in data.badge && typeof data.badge.variant === "string" ? data.badge.variant : "default";
+	badges.push({
+		text: data.badge.text,
+		variant: normalizePageBadgeVariant(variant),
+	});
+}
+---
+
+<div class="page-title-block">
+	<h1 id={PAGE_TITLE_ID}>{data.title}</h1>
+	{
+		badges.length > 0 && (
+			<div class="page-title-badges" aria-label="Page badges">
+				{badges.map((badge) => (
+					<span class:list={["sl-badge", badge.variant, "medium"]}>{badge.text}</span>
+				))}
+			</div>
+		)
+	}
+</div>
+
+<style>
+	@layer starlight.core {
+		.page-title-block {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.75rem 1rem;
+			align-items: center;
+			margin-top: 1rem;
+		}
+
+		h1 {
+			margin: 0;
+			font-size: var(--sl-text-h1);
+			font-weight: 600;
+			line-height: var(--sl-line-height-headings);
+			color: var(--sl-color-white);
+		}
+
+		.page-title-badges {
+			display: inline-flex;
+			flex-wrap: wrap;
+			gap: 0.4rem;
+			align-items: center;
+		}
+	}
+</style>

@@ -33,6 +33,9 @@ const configuration = defineConfig({
 	integrations: [
 		ensureAstroIntegration(
 			starlight({
+				components: {
+					PageTitle: "./src/components/page-title.astro",
+				},
 				customCss: ["./src/styles/custom.css"],
 				editLink: {
 					baseUrl: "https://github.com/howmanysmall/eslint-cease-nonsense-rules/edit/main/documentation/",
@@ -44,6 +47,12 @@ const configuration = defineConfig({
 						borderWidth: "1px",
 					},
 					themes: ["github-light", "dracula"],
+				},
+				favicon: "/favicon.svg",
+				logo: {
+					alt: "Cease Nonsense",
+					replacesTitle: false,
+					src: "./src/assets/new-logo.webp",
 				},
 				plugins: [
 					starlightCodeblockFullscreen({
