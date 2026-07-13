@@ -94,6 +94,40 @@ Networking.createFunction<ClientToServer, undefined>();`,
 				filename: filename("parameter"),
 				options: [{ checkParameters: true }],
 			},
+			{
+				code: `${imports}
+interface ClientToServer {
+	warp: {
+		toCFrame: () => FastResult;
+		toPosition: () => FastResult;
+	};
+}
+Networking.createFunction<ClientToServer, undefined>();`,
+				errors: [{ messageId: "noNetworkFastResult" }, { messageId: "noNetworkFastResult" }],
+				filename: filename("multiple-responses"),
+			},
+			{
+				code: `${imports}
+interface ClientToServer {
+	a: { get: () => FastResult };
+}
+interface ServerToClient {
+	b: { get: () => FastResult };
+}
+Networking.createFunction<ClientToServer, ServerToClient>();`,
+				errors: [{ messageId: "noNetworkFastResult" }, { messageId: "noNetworkFastResult" }],
+				filename: filename("multiple-type-arguments"),
+			},
+			{
+				code: `${imports}
+interface ClientToServer {
+	request: { send: (first: FastResult, second: FastResult) => boolean };
+}
+Networking.createFunction<ClientToServer, undefined>();`,
+				errors: [{ messageId: "noNetworkFastResult" }, { messageId: "noNetworkFastResult" }],
+				filename: filename("multiple-parameters"),
+				options: [{ checkParameters: true }],
+			},
 		],
 		valid: [
 			{
